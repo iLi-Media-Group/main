@@ -121,11 +121,31 @@ export function SignupForm({ onClose }: SignupFormProps) {
     }
   };
 
+  // Reset form fields
+  const resetForm = () => {
+    setEmail('');
+    setPassword('');
+    setFirstName('');
+    setLastName('');
+    setCompanyName('');
+    setAccountType('client');
+    setAgeVerified(false);
+    setInvitationCode('');
+    setError('');
+    setLoading(false);
+  };
+
+  // Handle close: reset form then close
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="glass-card p-8 rounded-xl w-full max-w-md relative">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
         >
           <X className="w-5 h-5" />
