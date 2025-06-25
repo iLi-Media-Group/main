@@ -719,7 +719,7 @@ export function ClientDashboard() {
                       <span className={`px-2 py-1 rounded-full text-xs ${proposal.status==='pending'?'bg-purple-600/20 text-purple-400':proposal.status==='accepted'?'bg-green-600/20 text-green-400':proposal.status==='rejected'?'bg-red-600/20 text-red-400':proposal.status==='pending_client'?'bg-yellow-600/20 text-yellow-500':'bg-gray-600/20 text-gray-400'}`}>{proposal.status.charAt(0).toUpperCase()+proposal.status.slice(1).replace('_',' ')}</span>
                     </div>
                   </div>
-                  {proposal.status === 'pending_client' && (
+                  {proposal.status === 'producer_accepted' && (
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
                       <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
                       <div className="flex space-x-2 mt-2 md:mt-0">
