@@ -118,8 +118,8 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white/5 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Submit Sync Proposal</h2>
           <button
@@ -284,14 +284,6 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
               )}
             </button>
           </div>
-          
-          <div className="mt-4">
-            <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-gray-600"></div>
-              <span className="flex-shrink mx-4 text-gray-400">or</span>
-              <div className="flex-grow border-t border-gray-600"></div>
-            </div>
-          </div>              
         </form>
       </div>
     </div>

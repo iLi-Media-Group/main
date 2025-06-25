@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
@@ -13,6 +13,9 @@ import { LicenseDialog } from './LicenseDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
 import { getUserSubscription } from '../lib/stripe';
+import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
+import { ProposalHistoryDialog } from './ProposalHistoryDialog';
+import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -106,6 +109,13 @@ export function ClientDashboard() {
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
+  const [proposals, setProposals] = useState<any[]>([]);
+  const [selectedProposal, setSelectedProposal] = useState<any>(null);
+  const [showNegotiationDialog, setShowNegotiationDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
+  const [proposalTab, setProposalTab] = useState<'pending' | 'accepted' | 'declined' | 'expired'>('pending');
 
   useEffect(() => {
     if (user) {
@@ -113,6 +123,7 @@ export function ClientDashboard() {
       refreshMembership().then(() => {
         fetchDashboardData();
         getUserSubscription().then((sub) => setSubscription(sub));
+        fetchProposals();
       });
     }
   }, [user, membershipPlan]);
@@ -334,6 +345,61 @@ export function ClientDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchProposals = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('sync_proposals')
+      .select(`
+        id,
+        track:tracks!track_id (id, title),
+        sync_fee,
+        expiration_date,
+        is_urgent,
+        status,
+        created_at
+      `)
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) setProposals(data);
+  };
+
+  const filteredProposals = proposals.filter((p) => {
+    if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active';
+    if (proposalTab === 'accepted') return p.status === 'accepted';
+    if (proposalTab === 'declined') return p.status === 'rejected';
+    if (proposalTab === 'expired') return p.status === 'expired';
+    return false;
+  });
+
+  const handleProposalAction = (proposal: any, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
+    setSelectedProposal(proposal);
+    switch (action) {
+      case 'negotiate': setShowNegotiationDialog(true); break;
+      case 'history': setShowHistoryDialog(true); break;
+      case 'accept': setConfirmAction('accept'); setShowConfirmDialog(true); break;
+      case 'reject': setConfirmAction('reject'); setShowConfirmDialog(true); break;
+    }
+  };
+
+  const handleClientAcceptDecline = async (proposal: any, action: 'client_accepted' | 'client_rejected') => {
+    if (!user) return;
+    // Update proposal status
+    await supabase
+      .from('sync_proposals')
+      .update({ status: action, updated_at: new Date().toISOString() })
+      .eq('id', proposal.id);
+    // Log to history
+    await supabase
+      .from('proposal_history')
+      .insert({
+        proposal_id: proposal.id,
+        previous_status: 'pending_client',
+        new_status: action,
+        changed_by: user.id
+      });
+    fetchProposals();
   };
 
   const handleSort = (field: typeof sortField) => {
@@ -563,6 +629,64 @@ export function ClientDashboard() {
               />
             </div>
           )}
+        </div>
+
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold text-white">Sync Proposals</h2>
+            <div className="flex space-x-2">
+              <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
+              <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
+              <button onClick={() => setProposalTab('declined')} className={`px-3 py-1 rounded ${proposalTab==='declined'?'bg-red-600 text-white':'bg-white/10 text-gray-300'}`}>Declined</button>
+              <button onClick={() => setProposalTab('expired')} className={`px-3 py-1 rounded ${proposalTab==='expired'?'bg-yellow-600 text-white':'bg-white/10 text-gray-300'}`}>Expired</button>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {filteredProposals.length === 0 ? (
+              <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
+                <p className="text-gray-400">No proposals found</p>
+              </div>
+            ) : (
+              filteredProposals.map((proposal) => (
+                <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h4 className="text-white font-medium">{proposal.track?.title}</h4>
+                      <p className="text-sm text-gray-400">Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee?.toFixed(2)}</span></p>
+                      <p className="text-xs text-gray-400">Expires: {new Date(proposal.expiration_date).toLocaleDateString()}</p>
+                      {proposal.is_urgent && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-500 text-xs font-semibold mt-1">
+                          <AlertTriangle className="w-3 h-3 mr-1" /> Urgent
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <span className={`px-2 py-1 rounded-full text-xs ${proposal.status==='pending'?'bg-purple-600/20 text-purple-400':proposal.status==='accepted'?'bg-green-600/20 text-green-400':proposal.status==='rejected'?'bg-red-600/20 text-red-400':proposal.status==='pending_client'?'bg-yellow-600/20 text-yellow-500':'bg-gray-600/20 text-gray-400'}`}>{proposal.status.charAt(0).toUpperCase()+proposal.status.slice(1).replace('_',' ')}</span>
+                    </div>
+                  </div>
+                  {proposal.status === 'pending_client' && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
+                      <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
+                      <div className="flex space-x-2 mt-2 md:mt-0">
+                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_accepted')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">Accept</button>
+                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex space-x-2 mt-2">
+                    <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
+                    <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
+                    {proposal.status === 'pending' && (
+                      <>
+                        <button onClick={() => handleProposalAction(proposal, 'accept')} className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"><Check className="w-3 h-3 inline mr-1" />Accept</button>
+                        <button onClick={() => handleProposalAction(proposal, 'reject')} className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"><X className="w-3 h-3 inline mr-1" />Decline</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -989,6 +1113,33 @@ export function ClientDashboard() {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
           }}
+        />
+      )}
+
+      {selectedProposal && showNegotiationDialog && (
+        <ProposalNegotiationDialog
+          isOpen={showNegotiationDialog}
+          onClose={() => { setShowNegotiationDialog(false); setSelectedProposal(null); fetchProposals(); }}
+          proposal={selectedProposal}
+          onNegotiationSent={() => { setShowNegotiationDialog(false); setSelectedProposal(null); fetchProposals(); }}
+        />
+      )}
+
+      {selectedProposal && showHistoryDialog && (
+        <ProposalHistoryDialog
+          isOpen={showHistoryDialog}
+          onClose={() => { setShowHistoryDialog(false); setSelectedProposal(null); }}
+          proposalId={selectedProposal.id}
+        />
+      )}
+
+      {selectedProposal && showConfirmDialog && (
+        <ProposalConfirmDialog
+          isOpen={showConfirmDialog}
+          onClose={() => { setShowConfirmDialog(false); setSelectedProposal(null); fetchProposals(); }}
+          action={confirmAction}
+          proposal={selectedProposal}
+          onConfirm={fetchProposals}
         />
       )}
     </div>
