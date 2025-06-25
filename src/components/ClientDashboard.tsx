@@ -863,7 +863,11 @@ export function ClientDashboard() {
                           console.log('Fixing status for proposal:', proposal.id);
                           const { data, error } = await supabase
                             .from('sync_proposals')
-                            .update({ status: 'accepted', updated_at: new Date().toISOString() })
+                            .update({ 
+                              status: 'accepted', 
+                              client_status: 'accepted',
+                              updated_at: new Date().toISOString() 
+                            })
                             .eq('id', proposal.id)
                             .select();
                           console.log('Update result:', { data, error });
