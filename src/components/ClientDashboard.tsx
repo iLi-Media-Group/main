@@ -1005,6 +1005,41 @@ export function ClientDashboard() {
                 <RefreshCw className="w-4 h-4 mr-1" />
                 Refresh
               </button>
+              <button
+                onClick={async () => {
+                  try {
+                    // Manual payment status fix for accepted proposals
+                    const { data, error } = await supabase
+                      .from('sync_proposals')
+                      .update({
+                        payment_status: 'paid',
+                        payment_date: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                      })
+                      .eq('client_id', user?.id)
+                      .eq('status', 'accepted')
+                      .eq('client_status', 'accepted')
+                      .eq('payment_status', 'pending')
+                      .neq('sync_fee', 0);
+
+                    if (error) {
+                      console.error('Error fixing payment status:', error);
+                      alert('Failed to fix payment status: ' + error.message);
+                    } else {
+                      console.log('Payment status fix result:', data);
+                      alert('Payment status updated for accepted proposals');
+                      await fetchProposals(); // Refresh the data
+                    }
+                  } catch (err) {
+                    console.error('Error in payment status fix:', err);
+                    alert('Failed to fix payment status');
+                  }
+                }}
+                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Fix Payment Status
+              </button>
               <div className="flex space-x-2">
                 <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
                 <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
