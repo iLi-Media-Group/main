@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -75,6 +75,8 @@ export function ProducerDashboard() {
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
+  const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
+  const negotiationDialogOpenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -122,7 +124,7 @@ export function ProducerDashboard() {
       if (tracksError) throw tracksError;
 
       // Fetch sales data for each track
-      const trackIds = tracksData?.map(track => track.id) || [];
+      const trackIds = tracksData?.map((track: any) => track.id) || [];
       
       // Get sales data for all tracks at once
       const { data: salesData, error: salesError } = await supabase
@@ -134,11 +136,11 @@ export function ProducerDashboard() {
       if (salesError) throw salesError;
 
       // Process sales data by track
-      const trackSalesMap = {};
-      const trackRevenueMap = {};
+      const trackSalesMap: { [key: string]: number } = {};
+      const trackRevenueMap: { [key: string]: number } = {};
       
       if (salesData) {
-        salesData.forEach(sale => {
+        salesData.forEach((sale: any) => {
           if (!trackSalesMap[sale.track_id]) {
             trackSalesMap[sale.track_id] = 0;
             trackRevenueMap[sale.track_id] = 0;
@@ -149,7 +151,7 @@ export function ProducerDashboard() {
       }
 
       // Add sales data to tracks
-      const tracksWithSales = tracksData?.map(track => ({
+      const tracksWithSales = tracksData?.map((track: any) => ({
         ...track,
         genres: typeof track.genres === 'string' ? track.genres.split(',') : track.genres,
         sales_count: trackSalesMap[track.id] || 0,
@@ -160,8 +162,8 @@ export function ProducerDashboard() {
 
       // Calculate total stats
       const totalTracks = tracksWithSales.length;
-      const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + count, 0);
-      const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + amount, 0);
+      const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + (count as number), 0);
+      const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + (amount as number), 0);
 
       // Fetch all proposals
       const { data: allProposalsData, error: allProposalsError } = await supabase
@@ -224,6 +226,23 @@ export function ProducerDashboard() {
       setProposals(allProposalsData || []);
       setPendingProposals(recentProposalsData || []);
 
+      // Check for unread negotiation messages for each proposal
+      const unread: string[] = [];
+      for (const proposal of allProposalsData || []) {
+        const { data: messages } = await supabase
+          .from('proposal_negotiations')
+          .select('id, created_at, sender_id')
+          .eq('proposal_id', proposal.id)
+          .order('created_at', { ascending: true });
+        if (messages && messages.length > 0) {
+          const lastViewed = localStorage.getItem(`negotiation_last_viewed_${proposal.id}_${user.id}`);
+          const lastViewedTime = lastViewed ? new Date(lastViewed).getTime() : 0;
+          const hasUnread = messages.some((msg: any) => new Date(msg.created_at).getTime() > lastViewedTime && msg.sender_id !== user.id);
+          if (hasUnread) unread.push(proposal.id);
+        }
+      }
+      setUnreadProposals(unread);
+
       // Update stats
       setStats({
         totalTracks,
@@ -275,22 +294,17 @@ export function ProducerDashboard() {
 
   const handleProposalAction = (proposal: Proposal, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
     setSelectedProposal(proposal);
-    
+    if (action === 'negotiate') {
+      negotiationDialogOpenRef.current = proposal.id;
+      // Mark as viewed now
+      localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
+      setUnreadProposals((prev: string[]) => prev.filter((id: string) => id !== proposal.id));
+    }
     switch (action) {
-      case 'negotiate':
-        setShowNegotiationDialog(true);
-        break;
-      case 'history':
-        setShowHistoryDialog(true);
-        break;
-      case 'accept':
-        setConfirmAction('accept');
-        setShowConfirmDialog(true);
-        break;
-      case 'reject':
-        setConfirmAction('reject');
-        setShowConfirmDialog(true);
-        break;
+      case 'negotiate': setShowNegotiationDialog(true); break;
+      case 'history': setShowHistoryDialog(true); break;
+      case 'accept': setConfirmAction('accept'); setShowConfirmDialog(true); break;
+      case 'reject': setConfirmAction('reject'); setShowConfirmDialog(true); break;
     }
   };
 
@@ -337,13 +351,13 @@ export function ProducerDashboard() {
       });
 
       // Update local state
-      setProposals(proposals.map(p => 
+      setProposals(proposals.map((p: any) => 
         p.id === selectedProposal.id 
           ? { ...p, status: confirmAction === 'accept' ? 'accepted' : 'rejected' } 
           : p
       ));
       
-      setPendingProposals(pendingProposals.filter(p => p.id !== selectedProposal.id));
+      setPendingProposals(pendingProposals.filter((p: any) => p.id !== selectedProposal.id));
       
       setShowConfirmDialog(false);
       setSelectedProposal(null);
@@ -483,7 +497,7 @@ export function ProducerDashboard() {
                   className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Genres</option>
-                  {Array.from(new Set(tracks.flatMap(track => track.genres))).map(genre => (
+                  {Array.from(new Set(tracks.flatMap((track: any) => track.genres))).map((genre: string) => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
@@ -502,7 +516,7 @@ export function ProducerDashboard() {
                 </Link>
               </div>
             ) : (
-              sortedTracks.map((track) => (
+              sortedTracks.map((track: any) => (
                 <div
                   key={track.id}
                   className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
@@ -597,11 +611,14 @@ export function ProducerDashboard() {
                     <p className="text-gray-400">No pending proposals</p>
                   </div>
                 ) : (
-                  pendingProposals.map((proposal) => (
+                  pendingProposals.map((proposal: any) => (
                     <div
                       key={proposal.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
                     >
+                      {unreadProposals.includes(proposal.id) && (
+                        <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">New Message</span>
+                      )}
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="text-white font-medium">{proposal.track.title}</h4>
