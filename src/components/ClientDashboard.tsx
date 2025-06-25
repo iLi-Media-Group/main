@@ -929,6 +929,8 @@ export function ClientDashboard() {
                     {proposals.map((p: any) => (
                       <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
                         ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
+                        <br />
+                        <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
                       </div>
                     ))}
                   </div>
