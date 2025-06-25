@@ -409,7 +409,10 @@ export function ClientDashboard() {
     }
   };
 
-  const handleClientAcceptDecline = async (proposal: any, action: 'client_accepted' | 'client_rejected') => {
+  const handleClientAcceptDecline = async (
+    proposal: any,
+    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected'
+  ) => {
     if (!user) return;
 
     let newStatus = action;
@@ -424,6 +427,8 @@ export function ClientDashboard() {
       if (latestProposal?.status === 'producer_accepted') {
         newStatus = 'accepted';
       }
+    } else if (action === 'client_rejected') {
+      newStatus = 'rejected'; // Always use 'rejected' for declined proposals
     }
 
     await supabase
@@ -718,7 +723,13 @@ export function ClientDashboard() {
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
                       <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
                       <div className="flex space-x-2 mt-2 md:mt-0">
-                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_accepted')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink">Accept</button>
+                        <button
+                          onClick={() => {
+                            console.log('Client Accept clicked', proposal);
+                            handleClientAcceptDecline(proposal, 'client_accepted');
+                          }}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
+                        >Accept</button>
                         <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
                       </div>
                     </div>
