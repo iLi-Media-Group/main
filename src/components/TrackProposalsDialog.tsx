@@ -116,11 +116,26 @@ export function TrackProposalsDialog({
     if (!selectedProposal || !user) return;
     
     try {
+      let newStatus = action === 'accept' ? 'producer_accepted' : 'rejected';
+
+      if (action === 'accept') {
+        // Check if client has already accepted
+        const { data: currentProposal } = await supabase
+          .from('sync_proposals')
+          .select('client_status')
+          .eq('id', selectedProposal.id)
+          .single();
+
+        if (currentProposal?.client_status === 'accepted') {
+          newStatus = 'accepted';
+        }
+      }
+
       // Update proposal status
       const { error } = await supabase
         .from('sync_proposals')
         .update({ 
-          status: action === 'accept' ? 'accepted' : 'rejected',
+          status: newStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedProposal.id);
@@ -132,8 +147,8 @@ export function TrackProposalsDialog({
         .from('proposal_history')
         .insert({
           proposal_id: selectedProposal.id,
-          previous_status: 'pending',
-          new_status: action === 'accept' ? 'accepted' : 'rejected',
+          previous_status: selectedProposal.status,
+          new_status: newStatus,
           changed_by: user.id
         });
 
@@ -157,7 +172,7 @@ export function TrackProposalsDialog({
       // Update local state
       setProposals(proposals.map(p => 
         p.id === selectedProposal.id 
-          ? { ...p, status: action === 'accept' ? 'accepted' : 'rejected' } 
+          ? { ...p, status: newStatus } 
           : p
       ));
       

@@ -23,22 +23,63 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Look up the proposal
+    // Look up the proposal with all necessary fields
     const { data: proposal, error: proposalError } = await supabaseClient
       .from('sync_proposals')
-      .select('id, final_amount, client_id, payment_due_date, payment_status, status')
+      .select(`
+        id, 
+        sync_fee, 
+        client_id, 
+        payment_terms,
+        payment_status, 
+        status,
+        client_status,
+        track:tracks!inner (
+          title,
+          producer:profiles!inner (
+            first_name,
+            last_name,
+            email
+          )
+        )
+      `)
       .eq('id', proposal_id)
       .single();
+      
     if (proposalError || !proposal) {
       return new Response(JSON.stringify({ error: 'Proposal not found' }), { headers: corsHeaders, status: 404 });
     }
 
-    // Ensure both parties have accepted (status should be 'accepted' or similar)
-    if (proposal.status === 'accepted') {
-      return;
+    // Check if proposal is already accepted by both parties
+    if (proposal.status !== 'accepted' || proposal.client_status !== 'accepted') {
+      return new Response(JSON.stringify({ error: 'Proposal must be accepted by both parties before creating invoice' }), { headers: corsHeaders, status: 400 });
     }
-    if (!proposal.final_amount || !proposal.client_id) {
-      return new Response(JSON.stringify({ error: 'Proposal missing final amount or client' }), { headers: corsHeaders, status: 400 });
+
+    // Check if payment is already pending or paid
+    if (proposal.payment_status === 'pending' || proposal.payment_status === 'paid') {
+      return new Response(JSON.stringify({ error: 'Payment already processed for this proposal' }), { headers: corsHeaders, status: 400 });
+    }
+
+    if (!proposal.sync_fee || !proposal.client_id) {
+      return new Response(JSON.stringify({ error: 'Proposal missing sync fee or client' }), { headers: corsHeaders, status: 400 });
+    }
+
+    // Calculate payment due date based on payment terms
+    let paymentDueDate = new Date();
+    switch (proposal.payment_terms) {
+      case 'net30':
+        paymentDueDate.setDate(paymentDueDate.getDate() + 30);
+        break;
+      case 'net60':
+        paymentDueDate.setDate(paymentDueDate.getDate() + 60);
+        break;
+      case 'net90':
+        paymentDueDate.setDate(paymentDueDate.getDate() + 90);
+        break;
+      case 'immediate':
+      default:
+        paymentDueDate.setDate(paymentDueDate.getDate() + 1); // Due tomorrow for immediate
+        break;
     }
 
     // Call the stripe-invoice function
@@ -51,11 +92,18 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         proposal_id,
-        amount: proposal.final_amount,
+        amount: Math.round(proposal.sync_fee * 100), // Convert to cents
         client_user_id: proposal.client_id,
-        payment_due_date: proposal.payment_due_date
+        payment_due_date: paymentDueDate.toISOString(),
+        metadata: {
+          description: `Sync license for "${proposal.track.title}"`,
+          track_title: proposal.track.title,
+          producer_name: `${proposal.track.producer.first_name} ${proposal.track.producer.last_name}`,
+          payment_terms: proposal.payment_terms || 'immediate'
+        }
       })
     });
+    
     const invoiceData = await invoiceRes.json();
     if (!invoiceRes.ok) {
       return new Response(JSON.stringify({ error: invoiceData.error || 'Failed to create Stripe invoice' }), { headers: corsHeaders, status: 500 });
@@ -67,25 +115,35 @@ serve(async (req) => {
       .update({
         stripe_checkout_session_id: invoiceData.sessionId,
         payment_status: 'pending',
-        payment_due_date: proposal.payment_due_date,
+        payment_due_date: paymentDueDate.toISOString(),
       })
       .eq('id', proposal_id);
+      
     if (updateError) {
       return new Response(JSON.stringify({ error: 'Failed to update proposal with payment info' }), { headers: corsHeaders, status: 500 });
     }
 
-    if (proposal.status !== 'accepted') {
-      await supabaseClient
-        .from('proposal_history')
-        .insert({
-          proposal_id: proposal.id,
-          previous_status: proposal.status,
-          new_status: 'accepted',
-          changed_by: proposal.client_id
-        });
-    }
+    // Send notification to producer about payment pending
+    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-proposal-update`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+      },
+      body: JSON.stringify({
+        proposalId: proposal.id,
+        action: 'payment_pending',
+        trackTitle: proposal.track.title,
+        producerEmail: proposal.track.producer.email
+      })
+    });
 
-    return new Response(JSON.stringify({ sessionId: invoiceData.sessionId, url: invoiceData.url }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ 
+      sessionId: invoiceData.sessionId, 
+      url: invoiceData.url,
+      message: 'Invoice created successfully'
+    }), { headers: corsHeaders });
+    
   } catch (error) {
     console.error('Error in trigger-proposal-payment:', error);
     return new Response(JSON.stringify({ error: error.message }), { headers: corsHeaders, status: 500 });

@@ -25,7 +25,6 @@ export function ProposalConfirmDialog({
     try {
       setLoading(true);
       setError('');
-      console.log('ProposalConfirmDialog: handleConfirm called');
       await onConfirm();
       onClose();
     } catch (err) {

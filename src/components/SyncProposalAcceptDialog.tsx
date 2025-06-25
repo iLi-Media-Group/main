@@ -30,11 +30,29 @@ export function SyncProposalAcceptDialog({
       setLoading(true);
       setError('');
 
-      // Update proposal status to client_accepted
+      // Check current proposal status to determine the new status
+      const { data: currentProposal, error: fetchError } = await supabase
+        .from('sync_proposals')
+        .select('status')
+        .eq('id', proposal.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      let newStatus = 'client_accepted';
+      let newClientStatus = 'accepted';
+
+      // If producer has already accepted, set status to 'accepted'
+      if (currentProposal?.status === 'producer_accepted') {
+        newStatus = 'accepted';
+      }
+
+      // Update both proposal status and client_status
       const { error: updateError } = await supabase
         .from('sync_proposals')
         .update({ 
-          client_status: 'accepted',
+          status: newStatus,
+          client_status: newClientStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', proposal.id);
@@ -46,8 +64,8 @@ export function SyncProposalAcceptDialog({
         .from('proposal_history')
         .insert({
           proposal_id: proposal.id,
-          previous_status: 'pending_client',
-          new_status: 'client_accepted',
+          previous_status: currentProposal?.status || 'pending',
+          new_status: newStatus,
           changed_by: user.id
         });
 
@@ -109,10 +127,20 @@ export function SyncProposalAcceptDialog({
       setLoading(true);
       setError('');
 
-      // Update proposal status to client_rejected
+      // Check current proposal status
+      const { data: currentProposal, error: fetchError } = await supabase
+        .from('sync_proposals')
+        .select('status')
+        .eq('id', proposal.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update both proposal status and client_status
       const { error: updateError } = await supabase
         .from('sync_proposals')
         .update({ 
+          status: 'rejected',
           client_status: 'rejected',
           updated_at: new Date().toISOString()
         })
@@ -125,8 +153,8 @@ export function SyncProposalAcceptDialog({
         .from('proposal_history')
         .insert({
           proposal_id: proposal.id,
-          previous_status: 'pending_client',
-          new_status: 'client_rejected',
+          previous_status: currentProposal?.status || 'pending',
+          new_status: 'rejected',
           changed_by: user.id
         });
 

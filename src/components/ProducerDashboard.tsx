@@ -315,14 +315,14 @@ export function ProducerDashboard() {
       let newStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
 
       if (confirmAction === 'accept') {
-        // Fetch the latest proposal status
-        const { data: latestProposal } = await supabase
+        // Check if client has already accepted
+        const { data: currentProposal } = await supabase
           .from('sync_proposals')
-          .select('status')
+          .select('client_status')
           .eq('id', selectedProposal.id)
           .single();
 
-        if (latestProposal?.status === 'client_accepted') {
+        if (currentProposal?.client_status === 'accepted') {
           newStatus = 'accepted';
         }
       }

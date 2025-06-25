@@ -371,6 +371,9 @@ export function ClientDashboard() {
         expiration_date, 
         is_urgent, 
         created_at,
+        payment_status,
+        payment_due_date,
+        stripe_checkout_session_id,
         tracks!inner(id, title)
       `)
       .eq('client_id', user.id)
@@ -420,6 +423,8 @@ export function ClientDashboard() {
     if (!user) return;
 
     let newStatus = action;
+    let newClientStatus = action;
+    
     if (action === 'client_accepted') {
       // Only allow if current status is producer_accepted
       const { data: latestProposal } = await supabase
@@ -430,6 +435,7 @@ export function ClientDashboard() {
 
       if (latestProposal?.status === 'producer_accepted') {
         newStatus = 'accepted';
+        newClientStatus = 'accepted';
       } else {
         // Do not proceed if not allowed
         alert('You can only accept after the producer has accepted.');
@@ -437,14 +443,19 @@ export function ClientDashboard() {
       }
     } else if (action === 'client_rejected') {
       newStatus = 'rejected';
+      newClientStatus = 'rejected';
     }
 
-    console.log('Updating proposal status to:', newStatus);
+    console.log('Updating proposal status to:', newStatus, 'client_status to:', newClientStatus);
 
-    // Update the proposal status
+    // Update both the proposal status and client_status
     const { error: updateError } = await supabase
       .from('sync_proposals')
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({ 
+        status: newStatus, 
+        client_status: newClientStatus,
+        updated_at: new Date().toISOString() 
+      })
       .eq('id', proposal.id);
 
     if (updateError) {
@@ -458,7 +469,7 @@ export function ClientDashboard() {
     setProposals(prevProposals => 
       prevProposals.map(p => 
         p.id === proposal.id 
-          ? { ...p, status: newStatus }
+          ? { ...p, status: newStatus, client_status: newClientStatus }
           : p
       )
     );
@@ -495,14 +506,27 @@ export function ClientDashboard() {
           })
         });
 
+        const responseData = await response.json();
+
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error triggering payment:', errorData);
+          console.error('Error triggering payment:', responseData);
+          // Show user-friendly error message
+          alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
         } else {
-          console.log('Payment triggered successfully');
+          console.log('Payment triggered successfully:', responseData);
+          
+          // If we got a payment URL, redirect to it
+          if (responseData.url) {
+            // Show success message before redirecting
+            alert('Invoice created successfully! Redirecting to payment...');
+            window.location.href = responseData.url;
+          } else {
+            alert('Invoice created successfully! You will receive payment instructions shortly.');
+          }
         }
       } catch (error) {
         console.error('Error calling trigger-proposal-payment:', error);
+        alert('Failed to set up payment. Please try again or contact support.');
       }
     }
   };
@@ -808,9 +832,9 @@ export function ClientDashboard() {
                             <Check className="w-4 h-4 mr-2" />
                             Proposal Accepted
                           </span>
-                          {proposal.final_amount && (
+                          {proposal.sync_fee && (
                             <p className="text-sm text-gray-300">
-                              Final Amount: <span className="text-green-400 font-semibold">${proposal.final_amount.toFixed(2)}</span>
+                              Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee.toFixed(2)}</span>
                             </p>
                           )}
                           {proposal.payment_due_date && (
@@ -850,6 +874,44 @@ export function ClientDashboard() {
                               <Check className="w-4 h-4 mr-2" />
                               Payment Complete
                             </span>
+                          </div>
+                        )}
+                        {proposal.payment_status === 'pending' && !proposal.stripe_checkout_session_id && (
+                          <div className="flex space-x-2 mt-2 md:mt-0">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
+                                    method: 'POST',
+                                    headers: {
+                                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                                      'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                      proposal_id: proposal.id
+                                    })
+                                  });
+
+                                  const responseData = await response.json();
+
+                                  if (!response.ok) {
+                                    alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
+                                  } else if (responseData.url) {
+                                    window.location.href = responseData.url;
+                                  } else {
+                                    alert('Invoice created successfully! You will receive payment instructions shortly.');
+                                    await fetchProposals(); // Refresh to show updated status
+                                  }
+                                } catch (error) {
+                                  console.error('Error setting up payment:', error);
+                                  alert('Failed to set up payment. Please try again.');
+                                }
+                              }}
+                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                            >
+                              <DollarSign className="w-4 h-4 mr-2" />
+                              Set Up Payment
+                            </button>
                           </div>
                         )}
                       </div>
