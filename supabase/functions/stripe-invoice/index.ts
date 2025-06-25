@@ -3,24 +3,26 @@ import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://mybeatfi.io',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
   'Access-Control-Max-Age': '86400',
+  'Content-Type': 'application/json'
 };
 
 serve(async (req) => {
   console.log('Stripe invoice function invoked with method:', req.method);
   
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS request');
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders, status: 200 });
   }
 
   try {
     if (req.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 405 
       });
     }
@@ -32,7 +34,7 @@ serve(async (req) => {
     if (!proposal_id || !amount || !client_user_id) {
       console.log('Missing required parameters');
       return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 400 
       });
     }
@@ -45,7 +47,7 @@ serve(async (req) => {
     if (!supabaseUrl || !supabaseKey || !stripeSecret) {
       console.error('Missing environment variables');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 500 
       });
     }
@@ -73,7 +75,7 @@ serve(async (req) => {
     if (getCustomerError) {
       console.error('Failed to fetch customer info', getCustomerError);
       return new Response(JSON.stringify({ error: 'Failed to fetch customer info' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 500 
       });
     }
@@ -92,7 +94,7 @@ serve(async (req) => {
       if (profileError || !profile?.email) {
         console.error('Could not find client email');
         return new Response(JSON.stringify({ error: 'Could not find client email' }), { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          headers: corsHeaders, 
           status: 400 
         });
       }
@@ -153,7 +155,7 @@ serve(async (req) => {
 
     console.log('Stripe session created successfully:', session.id);
     return new Response(JSON.stringify({ sessionId: session.id, url: session.url }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: corsHeaders
     });
     
   } catch (error: any) {
@@ -163,7 +165,7 @@ serve(async (req) => {
       error: 'Failed to create Stripe invoice', 
       details: error.message 
     }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      headers: corsHeaders, 
       status: 500 
     });
   }
