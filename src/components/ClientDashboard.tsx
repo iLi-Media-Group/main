@@ -359,31 +359,82 @@ export function ClientDashboard() {
   const fetchProposals = async () => {
     if (!user) return;
     console.log('Fetching proposals for user:', user.id);
-    const { data, error } = await supabase
-      .from('sync_proposals')
-      .select(`
-        id, 
-        status, 
-        track_id, 
-        client_id,
-        client_status,
-        sync_fee, 
-        expiration_date, 
-        is_urgent, 
-        created_at,
-        payment_status,
-        payment_due_date,
-        stripe_checkout_session_id,
-        tracks!inner(id, title)
-      `)
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false });
     
-    console.log('Proposals fetch result (with track):', { data, error });
-    
-    if (!error && data) {
-      setProposals(data);
+    try {
+      // First try with the full query including new columns
+      const { data, error } = await supabase
+        .from('sync_proposals')
+        .select(`
+          id, 
+          status, 
+          track_id, 
+          client_id,
+          client_status,
+          sync_fee, 
+          expiration_date, 
+          is_urgent, 
+          created_at,
+          tracks!inner(id, title)
+        `)
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      console.log('Proposals fetch result (basic):', { data, error });
+      
+      if (error) {
+        console.error('Error fetching proposals:', error);
+        // If there's an error, try a simpler query without the new columns
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('sync_proposals')
+          .select(`
+            id, 
+            status, 
+            track_id, 
+            client_id,
+            sync_fee, 
+            expiration_date, 
+            is_urgent, 
+            created_at,
+            tracks!inner(id, title)
+          `)
+          .eq('client_id', user.id)
+          .order('created_at', { ascending: false });
+        
+        console.log('Simple proposals fetch result:', { data: simpleData, error: simpleError });
+        
+        if (simpleError) {
+          console.error('Error with simple query:', simpleError);
+          setProposals([]);
+          return;
+        }
+        
+        // Add default values for missing columns
+        const proposalsWithDefaults = (simpleData || []).map((proposal: any) => ({
+          ...proposal,
+          client_status: proposal.client_status || 'pending',
+          payment_status: proposal.payment_status || 'pending',
+          payment_due_date: proposal.payment_due_date || null,
+          stripe_checkout_session_id: proposal.stripe_checkout_session_id || null
+        }));
+        
+        setProposals(proposalsWithDefaults);
+      } else {
+        // Add default values for missing columns if they don't exist
+        const proposalsWithDefaults = (data || []).map((proposal: any) => ({
+          ...proposal,
+          client_status: proposal.client_status || 'pending',
+          payment_status: proposal.payment_status || 'pending',
+          payment_due_date: proposal.payment_due_date || null,
+          stripe_checkout_session_id: proposal.stripe_checkout_session_id || null
+        }));
+        
+        setProposals(proposalsWithDefaults);
+      }
+      
       setUnreadProposals([]); // No negotiation check for now
+    } catch (err) {
+      console.error('Unexpected error fetching proposals:', err);
+      setProposals([]);
     }
   };
 
