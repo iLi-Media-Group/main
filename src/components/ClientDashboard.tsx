@@ -411,18 +411,14 @@ export function ClientDashboard() {
 
   const handleClientAcceptDecline = async (
     proposal: any,
-    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected' | 'accept' | 'reject'
+    action: 'client_accepted' | 'client_rejected'
   ) => {
     console.log('handleClientAcceptDecline called', { proposal, action });
     if (!user) return;
 
-    // Map 'accept' to 'accepted' and 'reject' to 'rejected' for DB
     let newStatus = action;
-    if (action === 'accept') newStatus = 'accepted';
-    if (action === 'reject') newStatus = 'rejected';
-
     if (action === 'client_accepted') {
-      // Fetch the latest proposal status
+      // Only allow if current status is producer_accepted
       const { data: latestProposal } = await supabase
         .from('sync_proposals')
         .select('status')
@@ -431,9 +427,13 @@ export function ClientDashboard() {
 
       if (latestProposal?.status === 'producer_accepted') {
         newStatus = 'accepted';
+      } else {
+        // Do not proceed if not allowed
+        alert('You can only accept after the producer has accepted.');
+        return;
       }
     } else if (action === 'client_rejected') {
-      newStatus = 'rejected'; // Always use 'rejected' for declined proposals
+      newStatus = 'rejected';
     }
 
     await supabase
@@ -742,12 +742,6 @@ export function ClientDashboard() {
                   <div className="flex space-x-2 mt-2">
                     <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
                     <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
-                    {proposal.status === 'pending' && (
-                      <>
-                        <button onClick={() => handleProposalAction(proposal, 'accept')} className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"><Check className="w-3 h-3 inline mr-1" />Accept</button>
-                        <button onClick={() => handleProposalAction(proposal, 'reject')} className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"><X className="w-3 h-3 inline mr-1" />Decline</button>
-                      </>
-                    )}
                   </div>
                 </div>
               ))
@@ -1205,11 +1199,12 @@ export function ClientDashboard() {
           onClose={() => { setShowConfirmDialog(false); setSelectedProposal(null); fetchProposals(); }}
           onConfirm={() => {
             console.log('onConfirm in ClientDashboard', { selectedProposal, confirmAction });
-            // Map 'accept' to 'accepted' and 'reject' to 'rejected' for DB
-            let actionForDb = confirmAction;
-            if (confirmAction === 'accept') actionForDb = 'accepted';
-            if (confirmAction === 'reject') actionForDb = 'rejected';
-            handleClientAcceptDecline(selectedProposal, actionForDb);
+            // Only allow 'accept' if status is producer_accepted
+            if (confirmAction === 'accept') {
+              handleClientAcceptDecline(selectedProposal, 'client_accepted');
+            } else if (confirmAction === 'reject') {
+              handleClientAcceptDecline(selectedProposal, 'client_rejected');
+            }
           }}
           action={confirmAction}
           proposal={selectedProposal}
