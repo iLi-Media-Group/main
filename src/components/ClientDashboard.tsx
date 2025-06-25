@@ -365,6 +365,7 @@ export function ClientDashboard() {
         id, 
         status, 
         track_id, 
+        client_id,
         sync_fee, 
         expiration_date, 
         is_urgent, 
