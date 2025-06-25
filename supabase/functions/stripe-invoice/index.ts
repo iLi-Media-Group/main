@@ -131,7 +131,24 @@ serve(async (req) => {
     console.log('Creating Stripe checkout session...');
     // Create Stripe Checkout session
     const siteUrl = Deno.env.get('SITE_URL') ?? '';
-    const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+    console.log('SITE_URL from env:', siteUrl);
+    
+    // Ensure we have a valid base URL
+    let baseSiteUrl;
+    if (!siteUrl) {
+      baseSiteUrl = 'https://mybeatfi.io'; // Fallback to production URL
+      console.log('No SITE_URL found, using fallback:', baseSiteUrl);
+    } else if (siteUrl.startsWith('http')) {
+      baseSiteUrl = siteUrl;
+      console.log('Using SITE_URL as is:', baseSiteUrl);
+    } else {
+      baseSiteUrl = `https://${siteUrl}`;
+      console.log('Adding https:// to SITE_URL:', baseSiteUrl);
+    }
+    
+    console.log('Final baseSiteUrl:', baseSiteUrl);
+    console.log('Success URL will be:', `${baseSiteUrl}/dashboard?payment=success`);
+    console.log('Cancel URL will be:', `${baseSiteUrl}/dashboard?payment=cancel`);
     
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
