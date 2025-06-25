@@ -361,42 +361,15 @@ export function ClientDashboard() {
     console.log('Fetching proposals for user:', user.id);
     const { data, error } = await supabase
       .from('sync_proposals')
-      .select(`
-        id,
-        track:tracks!track_id (id, title),
-        sync_fee,
-        final_amount,
-        payment_due_date,
-        payment_status,
-        stripe_checkout_session_id,
-        expiration_date,
-        is_urgent,
-        status,
-        created_at
-      `)
+      .select(`id, status`)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
     
-    console.log('Proposals fetch result:', { data, error });
+    console.log('Proposals fetch result (minimal):', { data, error });
     
     if (!error && data) {
       setProposals(data);
-      // Check for unread negotiation messages for each proposal
-      const unread: string[] = [];
-      for (const proposal of data) {
-        const { data: messages } = await supabase
-          .from('proposal_negotiations')
-          .select('id, created_at, sender_id')
-          .eq('proposal_id', proposal.id)
-          .order('created_at', { ascending: true });
-        if (messages && messages.length > 0) {
-          const lastViewed = localStorage.getItem(`negotiation_last_viewed_${proposal.id}_${user.id}`);
-          const lastViewedTime = lastViewed ? new Date(lastViewed).getTime() : 0;
-          const hasUnread = messages.some((msg: any) => new Date(msg.created_at).getTime() > lastViewedTime && msg.sender_id !== user.id);
-          if (hasUnread) unread.push(proposal.id);
-        }
-      }
-      setUnreadProposals(unread);
+      setUnreadProposals([]); // No negotiation check for now
     }
   };
 
