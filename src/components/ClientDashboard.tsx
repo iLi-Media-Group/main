@@ -12,6 +12,7 @@ import { EditRequestDialog } from './EditRequestDialog';
 import { LicenseDialog } from './LicenseDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
+import { getUserSubscription } from '../lib/stripe';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -104,12 +105,14 @@ export function ClientDashboard() {
   const [showLicenseDialog, setShowLicenseDialog] = useState(false);
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [subscription, setSubscription] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       // Refresh membership info first to ensure we have the latest data
       refreshMembership().then(() => {
         fetchDashboardData();
+        getUserSubscription().then((sub) => setSubscription(sub));
       });
     }
   }, [user, membershipPlan]);
@@ -538,14 +541,10 @@ export function ClientDashboard() {
                   'Single track license'
                 )}
               </p>
-              {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
+              {subscription && subscription.current_period_start && subscription.current_period_end && (
                 <p className="text-sm text-gray-400 mt-2">
-                  Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
-                  {userStats.daysUntilReset !== null && (
-                    <span className="ml-2">
-                      ({userStats.daysUntilReset} days until reset)
-                    </span>
-                  )}
+                  Plan Start: {new Date(subscription.current_period_start * 1000).toLocaleDateString()}<br />
+                  Plan End: {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
                 </p>
               )}
             </div>
