@@ -925,12 +925,14 @@ export function ClientDashboard() {
                 {/* Temporary debug section */}
                 {proposals.length > 0 && (
                   <div className="mt-4 text-left">
-                    <p className="text-yellow-400 text-sm mb-2">Debug: All proposals ({proposals.length}):</p>
+                    <p className="text-yellow-400 text-sm mb-2">Debug: All proposals ({proposals.length}) | Current tab: {proposalTab}</p>
                     {proposals.map((p: any) => (
                       <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
                         ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
                         <br />
                         <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
+                        <br />
+                        <span className="text-green-400">Tab filters: Pending={p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted' ? 'YES' : 'NO'} | Accepted={p.status === 'accepted' || p.client_status === 'accepted' ? 'YES' : 'NO'} | Declined={p.status === 'rejected' ? 'YES' : 'NO'}</span>
                       </div>
                     ))}
                   </div>
