@@ -385,9 +385,9 @@ export function ClientDashboard() {
   };
 
   const filteredProposals = proposals.filter((p: any) => {
-    console.log('Filtering proposal:', p.id, 'status:', p.status, 'tab:', proposalTab);
+    console.log('Filtering proposal:', p.id, 'status:', p.status, 'client_status:', p.client_status, 'tab:', proposalTab);
     if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted';
-    if (proposalTab === 'accepted') return p.status === 'accepted';
+    if (proposalTab === 'accepted') return p.status === 'accepted' || p.client_status === 'accepted';
     if (proposalTab === 'declined') return p.status === 'rejected';
     if (proposalTab === 'expired') return p.status === 'expired';
     return false;
@@ -880,7 +880,6 @@ export function ClientDashboard() {
                           const { data, error } = await supabase
                             .from('sync_proposals')
                             .update({ 
-                              status: 'accepted', 
                               client_status: 'accepted',
                               updated_at: new Date().toISOString() 
                             })
