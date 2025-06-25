@@ -13,6 +13,7 @@ interface ProducerStats {
   totalTracks: number;
   totalSales: number;
   totalRevenue: number;
+  syncRevenue: number;
   avgSyncFee: number;
   acceptanceRate: number;
   monthlyData: {
@@ -90,6 +91,7 @@ export function ProducerAnalyticsModal({
         .select(`
           sync_fee,
           status,
+          payment_status,
           created_at,
           track:tracks!inner (
             id,
@@ -109,8 +111,17 @@ export function ProducerAnalyticsModal({
       
       const totalProposals = proposals?.length || 0;
       const acceptedProposals = proposals?.filter(p => p.status === 'accepted').length || 0;
+      const paidProposals = proposals?.filter(p => p.status === 'accepted' && p.payment_status === 'paid').length || 0;
       const avgSyncFee = proposals?.reduce((sum, p) => sum + p.sync_fee, 0) / totalProposals || 0;
       const acceptanceRate = totalProposals > 0 ? (acceptedProposals / totalProposals) * 100 : 0;
+
+      // Calculate sync proposal revenue
+      const syncRevenue = proposals
+        ?.filter(p => p.status === 'accepted' && p.payment_status === 'paid')
+        .reduce((sum, p) => sum + p.sync_fee, 0) || 0;
+
+      // Total revenue includes both sales and sync proposals
+      const totalRevenueWithSync = totalRevenue + syncRevenue;
 
       // Calculate monthly data
       const monthlyData = sales?.reduce((acc, sale) => {
@@ -144,7 +155,8 @@ export function ProducerAnalyticsModal({
       setStats({
         totalTracks,
         totalSales,
-        totalRevenue,
+        totalRevenue: totalRevenueWithSync,
+        syncRevenue,
         avgSyncFee,
         acceptanceRate,
         monthlyData: Object.entries(monthlyData || {}).map(([month, data]) => ({
@@ -209,7 +221,7 @@ export function ProducerAnalyticsModal({
         ) : stats && (
           <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
                 <div className="flex items-center justify-between">
                   <div>
@@ -239,6 +251,18 @@ export function ProducerAnalyticsModal({
                     </p>
                   </div>
                   <DollarSign className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400">Sync Revenue</p>
+                    <p className="text-2xl font-bold text-white">
+                      ${stats.syncRevenue.toFixed(2)}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-yellow-500" />
                 </div>
               </div>
 

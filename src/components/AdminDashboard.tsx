@@ -145,11 +145,40 @@ export function AdminDashboard() {
           producer_revenue: 0
         };
 
+        // Fetch Sync Proposal revenue
+        const { data: syncRevenueData, error: syncRevenueError } = await supabase
+          .from('sync_proposals')
+          .select('sync_fee')
+          .eq('payment_status', 'paid');
+
+        if (syncRevenueError) {
+          console.error('Error fetching sync proposal revenue:', syncRevenueError);
+        }
+
+        // Calculate total sync proposal revenue
+        const syncRevenue = syncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
+
+        // Fetch Custom Sync Request revenue
+        const { data: customSyncRevenueData, error: customSyncRevenueError } = await supabase
+          .from('custom_sync_requests')
+          .select('sync_fee')
+          .eq('status', 'completed');
+
+        if (customSyncRevenueError) {
+          console.error('Error fetching custom sync revenue:', customSyncRevenueError);
+        }
+
+        // Calculate total custom sync revenue
+        const customSyncRevenue = customSyncRevenueData?.reduce((sum: number, request: any) => sum + (request.sync_fee || 0), 0) || 0;
+
+        // Total revenue includes sales, sync proposals, and custom sync requests
+        const totalRevenueWithSync = (latestAnalytics.monthly_revenue || 0) + syncRevenue + customSyncRevenue;
+
         // Update stats with sales data
         setStats(prev => ({
           ...prev,
           total_sales: latestAnalytics.monthly_sales_count || 0,
-          total_revenue: latestAnalytics.monthly_revenue || 0
+          total_revenue: totalRevenueWithSync
         }));
 
         // Transform producer data - create a map of producer analytics by producer_id
