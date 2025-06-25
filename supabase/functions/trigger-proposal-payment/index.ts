@@ -29,7 +29,7 @@ serve(async (req) => {
     if (!proposal_id) {
       console.log('Missing proposal_id, returning 400');
       return new Response(JSON.stringify({ error: 'Missing proposal_id' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 400 
       });
     }
@@ -41,7 +41,7 @@ serve(async (req) => {
     if (!supabaseUrl || !supabaseKey) {
       console.error('Missing environment variables');
       return new Response(JSON.stringify({ error: 'Server configuration error' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 500 
       });
     }
@@ -72,7 +72,7 @@ serve(async (req) => {
     if (proposalError || !proposal) {
       console.error('Proposal not found or error:', proposalError);
       return new Response(JSON.stringify({ error: 'Proposal not found', details: proposalError }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 404 
       });
     }
@@ -97,7 +97,7 @@ serve(async (req) => {
     if (trackError || !track) {
       console.error('Track not found:', trackError);
       return new Response(JSON.stringify({ error: 'Track not found', details: trackError }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 404 
       });
     }
@@ -105,7 +105,7 @@ serve(async (req) => {
     // Check if proposal is already accepted by both parties
     if (proposal.status !== 'accepted' || proposal.client_status !== 'accepted') {
       return new Response(JSON.stringify({ error: 'Proposal must be accepted by both parties before creating invoice' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 400 
       });
     }
@@ -113,14 +113,14 @@ serve(async (req) => {
     // Check if payment is already completed
     if (proposal.payment_status === 'paid') {
       return new Response(JSON.stringify({ error: 'Payment already completed for this proposal' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 400 
       });
     }
 
     if (!proposal.sync_fee || !proposal.client_id) {
       return new Response(JSON.stringify({ error: 'Proposal missing sync fee or client' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 400 
       });
     }
@@ -182,7 +182,7 @@ serve(async (req) => {
       const errorText = await invoiceRes.text();
       console.error('Stripe invoice creation failed:', errorText);
       return new Response(JSON.stringify({ error: 'Failed to create Stripe invoice', details: errorText }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 500 
       });
     }
@@ -204,7 +204,7 @@ serve(async (req) => {
     if (updateError) {
       console.error('Failed to update proposal:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to update proposal with payment info' }), { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        headers: corsHeaders, 
         status: 500 
       });
     }
@@ -237,13 +237,13 @@ serve(async (req) => {
       url: invoiceData.url,
       message: 'Invoice created successfully'
     }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      headers: corsHeaders 
     });
     
   } catch (error) {
     console.error('Error in trigger-proposal-payment:', error);
     return new Response(JSON.stringify({ error: error.message }), { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      headers: corsHeaders, 
       status: 500 
     });
   }
