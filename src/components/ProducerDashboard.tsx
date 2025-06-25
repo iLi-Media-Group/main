@@ -52,6 +52,8 @@ export function ProducerDashboard() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [pendingProposals, setPendingProposals] = useState<Proposal[]>([]);
+  const [acceptedProposals, setAcceptedProposals] = useState<Proposal[]>([]);
+  const [declinedProposals, setDeclinedProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortField, setSortField] = useState<'created_at' | 'title' | 'bpm'>('created_at');
@@ -225,6 +227,19 @@ export function ProducerDashboard() {
 
       setProposals(allProposalsData || []);
       setPendingProposals(recentProposalsData || []);
+
+      // Categorize proposals by status
+      const pending = allProposalsData?.filter((p: any) => 
+        p.status === 'pending' || p.status === 'producer_accepted' || p.status === 'client_accepted'
+      ) || [];
+      const accepted = allProposalsData?.filter((p: any) => p.status === 'accepted') || [];
+      const declined = allProposalsData?.filter((p: any) => 
+        p.status === 'rejected' || p.status === 'client_rejected'
+      ) || [];
+
+      setPendingProposals(pending);
+      setAcceptedProposals(accepted);
+      setDeclinedProposals(declined);
 
       // Check for unread negotiation messages for each proposal
       const unread: string[] = [];
@@ -680,6 +695,116 @@ export function ProducerDashboard() {
                       </div>
                     </div>
                   ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                  <Check className="w-5 h-5 mr-2 text-green-400" />
+                  Accepted Proposals
+                </h3>
+                <span className="text-sm text-gray-400">{acceptedProposals.length} total</span>
+              </div>
+              <div className="space-y-4">
+                {acceptedProposals.length === 0 ? (
+                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                    <p className="text-gray-400">No accepted proposals</p>
+                  </div>
+                ) : (
+                  acceptedProposals.slice(0, 3).map((proposal: any) => (
+                    <div
+                      key={proposal.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                          <p className="text-sm text-gray-400">
+                            From: {proposal.client.first_name} {proposal.client.last_name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">
+                            Accepted: {new Date(proposal.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'history')}
+                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                        >
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          History
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {acceptedProposals.length > 3 && (
+                  <div className="text-center">
+                    <button className="text-blue-400 hover:text-blue-300 text-sm">
+                      View all {acceptedProposals.length} accepted proposals
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                  <X className="w-5 h-5 mr-2 text-red-400" />
+                  Declined Proposals
+                </h3>
+                <span className="text-sm text-gray-400">{declinedProposals.length} total</span>
+              </div>
+              <div className="space-y-4">
+                {declinedProposals.length === 0 ? (
+                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                    <p className="text-gray-400">No declined proposals</p>
+                  </div>
+                ) : (
+                  declinedProposals.slice(0, 3).map((proposal: any) => (
+                    <div
+                      key={proposal.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                          <p className="text-sm text-gray-400">
+                            From: {proposal.client.first_name} {proposal.client.last_name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-red-400">${proposal.sync_fee.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">
+                            Declined: {new Date(proposal.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'history')}
+                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                        >
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          History
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {declinedProposals.length > 3 && (
+                  <div className="text-center">
+                    <button className="text-blue-400 hover:text-blue-300 text-sm">
+                      View all {declinedProposals.length} declined proposals
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
