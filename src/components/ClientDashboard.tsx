@@ -856,6 +856,23 @@ export function ClientDashboard() {
                   <div className="flex space-x-2 mt-2">
                     <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
                     <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
+                    {/* Temporary button to fix status for testing */}
+                    {proposal.status === 'pending' && (
+                      <button 
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('sync_proposals')
+                            .update({ status: 'accepted', updated_at: new Date().toISOString() })
+                            .eq('id', proposal.id);
+                          if (!error) {
+                            fetchProposals();
+                          }
+                        }} 
+                        className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                      >
+                        Fix Status
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
