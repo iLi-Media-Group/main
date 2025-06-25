@@ -130,6 +130,13 @@ export function ClientDashboard() {
     }
   }, [user, membershipPlan]);
 
+  // Force refresh proposals when proposalTab changes
+  useEffect(() => {
+    if (user) {
+      fetchProposals();
+    }
+  }, [proposalTab, user]);
+
   const fetchDashboardData = async () => {
     if (!user) return;
     
@@ -440,6 +447,8 @@ export function ClientDashboard() {
       newStatus = 'rejected';
     }
 
+    console.log('Updating proposal status to:', newStatus);
+
     // Update the proposal status
     const { error: updateError } = await supabase
       .from('sync_proposals')
@@ -451,6 +460,17 @@ export function ClientDashboard() {
       return;
     }
 
+    console.log('Proposal status updated successfully');
+
+    // Update the local state immediately for instant UI feedback
+    setProposals(prevProposals => 
+      prevProposals.map(p => 
+        p.id === proposal.id 
+          ? { ...p, status: newStatus }
+          : p
+      )
+    );
+
     // Log to history
     await supabase
       .from('proposal_history')
@@ -461,11 +481,16 @@ export function ClientDashboard() {
         changed_by: user.id
       });
 
+    console.log('Proposal history logged, refreshing proposals...');
+
     // Refresh proposals to show updated status
     await fetchProposals();
 
+    console.log('Proposals refreshed, checking if status is accepted...');
+
     // If accepted, trigger invoice creation
     if (newStatus === 'accepted') {
+      console.log('Triggering payment for accepted proposal...');
       try {
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
           method: 'POST',
