@@ -86,6 +86,8 @@ Deno.serve(async (req) => {
       currency: 'usd',
     });
     // Create Stripe Checkout session
+    const siteUrl = Deno.env.get('SITE_URL') ?? '';
+    const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -96,8 +98,8 @@ Deno.serve(async (req) => {
         },
       ],
       mode: 'payment',
-      success_url: metadata.success_url || `${Deno.env.get('SITE_URL')}/dashboard?payment=success`,
-      cancel_url: metadata.cancel_url || `${Deno.env.get('SITE_URL')}/dashboard?payment=cancel`,
+      success_url: metadata.success_url || `${baseSiteUrl}/dashboard?payment=success`,
+      cancel_url: metadata.cancel_url || `${baseSiteUrl}/dashboard?payment=cancel`,
       metadata: {
         proposal_id,
         ...metadata,
