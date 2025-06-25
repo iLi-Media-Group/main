@@ -9,18 +9,24 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('Function invoked with method:', req.method);
+  
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    console.log('Parsing request body...');
     const { proposal_id } = await req.json();
     console.log('Received proposal_id:', proposal_id);
     
     if (!proposal_id) {
+      console.log('Missing proposal_id, returning 400');
       return new Response(JSON.stringify({ error: 'Missing proposal_id' }), { headers: corsHeaders, status: 400 });
     }
 
+    console.log('Creating Supabase client...');
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -53,6 +59,7 @@ serve(async (req) => {
     }
 
     // Fetch track and producer data separately
+    console.log('Fetching track data...');
     const { data: track, error: trackError } = await supabaseClient
       .from('tracks')
       .select(`
@@ -108,14 +115,16 @@ serve(async (req) => {
         break;
     }
 
+    console.log('Calling stripe-invoice function...');
     // Call the stripe-invoice function
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const baseUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
     const stripeInvoiceUrl = `${baseUrl}/functions/v1/stripe-invoice`;
     console.log('Calling stripe-invoice function at:', stripeInvoiceUrl);
-    console.log('Request payload:', {
+    
+    const requestPayload = {
       proposal_id,
-      amount: Math.round(proposal.sync_fee * 100),
+      amount: Math.round(proposal.sync_fee * 100), // Convert to cents
       client_user_id: proposal.client_id,
       payment_due_date: paymentDueDate.toISOString(),
       metadata: {
@@ -124,25 +133,17 @@ serve(async (req) => {
         producer_name: `${track.producer.first_name} ${track.producer.last_name}`,
         payment_terms: proposal.payment_terms || 'immediate'
       }
-    });
+    };
+    
+    console.log('Request payload:', requestPayload);
+    
     const invoiceRes = await fetch(stripeInvoiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
       },
-      body: JSON.stringify({
-        proposal_id,
-        amount: Math.round(proposal.sync_fee * 100), // Convert to cents
-        client_user_id: proposal.client_id,
-        payment_due_date: paymentDueDate.toISOString(),
-        metadata: {
-          description: `Sync license for "${track.title}"`,
-          track_title: track.title,
-          producer_name: `${track.producer.first_name} ${track.producer.last_name}`,
-          payment_terms: proposal.payment_terms || 'immediate'
-        }
-      })
+      body: JSON.stringify(requestPayload)
     });
     
     console.log('Stripe invoice response status:', invoiceRes.status);
@@ -150,9 +151,11 @@ serve(async (req) => {
     console.log('Stripe invoice response data:', invoiceData);
 
     if (!invoiceRes.ok) {
+      console.error('Stripe invoice creation failed:', invoiceData);
       return new Response(JSON.stringify({ error: invoiceData.error || 'Failed to create Stripe invoice' }), { headers: corsHeaders, status: 500 });
     }
 
+    console.log('Updating proposal with payment info...');
     // Update the proposal with session info and set payment_status to pending
     const { error: updateError } = await supabaseClient
       .from('sync_proposals')
@@ -164,25 +167,33 @@ serve(async (req) => {
       .eq('id', proposal_id);
       
     if (updateError) {
+      console.error('Failed to update proposal:', updateError);
       return new Response(JSON.stringify({ error: 'Failed to update proposal with payment info' }), { headers: corsHeaders, status: 500 });
     }
 
+    console.log('Sending notification...');
     // Send notification to producer about payment pending
     const notifyUrl = `${baseUrl}/functions/v1/notify-proposal-update`;
-    await fetch(notifyUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-      },
-      body: JSON.stringify({
-        proposalId: proposal.id,
-        action: 'payment_pending',
-        trackTitle: track.title,
-        producerEmail: track.producer.email
-      })
-    });
+    try {
+      await fetch(notifyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          action: 'payment_pending',
+          trackTitle: track.title,
+          producerEmail: track.producer.email
+        })
+      });
+    } catch (notifyError) {
+      console.error('Failed to send notification (non-critical):', notifyError);
+      // Don't fail the whole request if notification fails
+    }
 
+    console.log('Returning success response');
     return new Response(JSON.stringify({ 
       sessionId: invoiceData.sessionId, 
       url: invoiceData.url,
