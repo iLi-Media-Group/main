@@ -111,6 +111,19 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const baseUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
     const stripeInvoiceUrl = `${baseUrl}/functions/v1/stripe-invoice`;
+    console.log('Calling stripe-invoice function at:', stripeInvoiceUrl);
+    console.log('Request payload:', {
+      proposal_id,
+      amount: Math.round(proposal.sync_fee * 100),
+      client_user_id: proposal.client_id,
+      payment_due_date: paymentDueDate.toISOString(),
+      metadata: {
+        description: `Sync license for "${track.title}"`,
+        track_title: track.title,
+        producer_name: `${track.producer.first_name} ${track.producer.last_name}`,
+        payment_terms: proposal.payment_terms || 'immediate'
+      }
+    });
     const invoiceRes = await fetch(stripeInvoiceUrl, {
       method: 'POST',
       headers: {
@@ -131,7 +144,10 @@ serve(async (req) => {
       })
     });
     
+    console.log('Stripe invoice response status:', invoiceRes.status);
     const invoiceData = await invoiceRes.json();
+    console.log('Stripe invoice response data:', invoiceData);
+
     if (!invoiceRes.ok) {
       return new Response(JSON.stringify({ error: invoiceData.error || 'Failed to create Stripe invoice' }), { headers: corsHeaders, status: 500 });
     }
