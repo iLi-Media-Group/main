@@ -150,6 +150,11 @@ serve(async (req) => {
     console.log('Success URL will be:', `${baseSiteUrl}/dashboard?payment=success`);
     console.log('Cancel URL will be:', `${baseSiteUrl}/dashboard?payment=cancel`);
     
+    // Calculate expires_at - must be within 24 hours from now
+    const now = Math.floor(Date.now() / 1000);
+    const expiresAt = now + (23 * 60 * 60); // 23 hours from now (within 24 hour limit)
+    console.log('Session expires at:', new Date(expiresAt * 1000).toISOString());
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -166,7 +171,7 @@ serve(async (req) => {
         proposal_id,
         ...metadata,
       },
-      expires_at: payment_due_date ? Math.floor(new Date(payment_due_date).getTime() / 1000) + 86400 : undefined, // Optionally set session expiry
+      expires_at: expiresAt, // Use calculated timestamp within 24 hours
     });
 
     console.log('Stripe session created successfully:', session.id);
