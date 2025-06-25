@@ -361,11 +361,20 @@ export function ClientDashboard() {
     console.log('Fetching proposals for user:', user.id);
     const { data, error } = await supabase
       .from('sync_proposals')
-      .select(`id, status, track_id, sync_fee, expiration_date, is_urgent, created_at`)
+      .select(`
+        id, 
+        status, 
+        track_id, 
+        sync_fee, 
+        expiration_date, 
+        is_urgent, 
+        created_at,
+        tracks!inner(id, title)
+      `)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
     
-    console.log('Proposals fetch result (with fields):', { data, error });
+    console.log('Proposals fetch result (with track):', { data, error });
     
     if (!error && data) {
       setProposals(data);
@@ -754,7 +763,7 @@ export function ClientDashboard() {
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="text-white font-medium">
-                        {proposal.track?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
+                        {proposal.tracks?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
                       </h4>
                       <p className="text-sm text-gray-400">
                         Sync Fee: <span className="text-green-400 font-semibold">
