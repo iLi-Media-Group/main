@@ -96,20 +96,21 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         throw new Error('Please enter a valid counter offer amount');
       }
 
-      // Create negotiation message
-      // const { data: negotiation, error: negotiationError } = await supabase
-      //   .from('proposal_negotiations')
-      //   .insert({
-      //     proposal_id: proposal.id,
-      //     sender_id: user.id,
-      //     message,
-      //     counter_offer: counterOffer ? parseFloat(counterOffer) : null,
-      //     counter_terms: counterTerms.trim() || null
-      //   })
-      //   .select()
-      //   .single();
-
-      // if (negotiationError) throw negotiationError;
+      // Ensure we have the client email
+      let clientEmail = proposal?.client?.email;
+      if (!clientEmail && proposal?.client_id) {
+        // Fetch client email from Supabase
+        const { data: clientProfile, error: clientError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', proposal.client_id)
+          .single();
+        if (clientProfile && clientProfile.email) {
+          clientEmail = clientProfile.email;
+        } else {
+          throw new Error('Could not determine client email for notification.');
+        }
+      }
 
       // Upload reference file if provided
       if (selectedFile) {
@@ -129,7 +130,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           message,
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
           counterTerms: counterTerms.trim() || null,
-          recipientEmail: proposal.client.email
+          recipientEmail: clientEmail
         })
       });
 
