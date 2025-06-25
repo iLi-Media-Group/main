@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
@@ -153,6 +153,8 @@ export function ClientDashboard() {
       setShowPaymentSuccess(true);
       // Remove the payment parameter from URL
       navigate('/dashboard', { replace: true });
+      // Refresh proposals to get updated payment status
+      fetchProposals();
     } else if (paymentStatus === 'cancel') {
       setShowPaymentCancel(true);
       // Remove the payment parameter from URL
@@ -906,12 +908,23 @@ export function ClientDashboard() {
                 <span className="text-green-400 font-semibold">Payment Successful!</span>
                 <span className="text-green-300 ml-2">Your sync proposal payment has been processed successfully.</span>
               </div>
-              <button 
-                onClick={() => setShowPaymentSuccess(false)} 
-                className="text-green-300 hover:text-green-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={async () => {
+                    await fetchProposals();
+                    setShowPaymentSuccess(false);
+                  }} 
+                  className="text-green-300 hover:text-green-100 text-sm underline"
+                >
+                  Refresh Data
+                </button>
+                <button 
+                  onClick={() => setShowPaymentSuccess(false)} 
+                  className="text-green-300 hover:text-green-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -980,11 +993,20 @@ export function ClientDashboard() {
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-white">Sync Proposals</h2>
-            <div className="flex space-x-2">
-              <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
-              <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
-              <button onClick={() => setProposalTab('declined')} className={`px-3 py-1 rounded ${proposalTab==='declined'?'bg-red-600 text-white':'bg-white/10 text-gray-300'}`}>Declined</button>
-              <button onClick={() => setProposalTab('expired')} className={`px-3 py-1 rounded ${proposalTab==='expired'?'bg-yellow-600 text-white':'bg-white/10 text-gray-300'}`}>Expired</button>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={fetchProposals}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center"
+              >
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Refresh
+              </button>
+              <div className="flex space-x-2">
+                <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
+                <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
+                <button onClick={() => setProposalTab('declined')} className={`px-3 py-1 rounded ${proposalTab==='declined'?'bg-red-600 text-white':'bg-white/10 text-gray-300'}`}>Declined</button>
+                <button onClick={() => setProposalTab('expired')} className={`px-3 py-1 rounded ${proposalTab==='expired'?'bg-yellow-600 text-white':'bg-white/10 text-gray-300'}`}>Expired</button>
+              </div>
             </div>
           </div>
           {unreadProposals.length > 0 && (
