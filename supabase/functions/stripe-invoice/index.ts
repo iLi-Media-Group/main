@@ -1,46 +1,64 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe@17.7.0';
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@17.7.0?target=deno";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripe = new Stripe(stripeSecret, {
-  appInfo: {
-    name: 'Bolt Integration',
-    version: '1.0.0',
-  },
-});
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS, GET',
+  'Access-Control-Max-Age': '86400',
+};
 
-function corsResponse(body: string | object | null, status = 200) {
-  const headers = {
-    'Access-Control-Allow-Origin': 'https://mybeatfi.io',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': '*',
-  };
-  if (status === 204) {
-    return new Response(null, { status, headers });
+serve(async (req) => {
+  console.log('Stripe invoice function invoked with method:', req.method);
+  
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
+    return new Response('ok', { headers: corsHeaders });
   }
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-    },
-  });
-}
 
-Deno.serve(async (req) => {
   try {
-    if (req.method === 'OPTIONS') {
-      return corsResponse({}, 204);
-    }
     if (req.method !== 'POST') {
-      return corsResponse({ error: 'Method not allowed' }, 405);
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 405 
+      });
     }
+
+    console.log('Parsing request body...');
     const { proposal_id, amount, client_user_id, payment_due_date, metadata = {} } = await req.json();
+    console.log('Received parameters:', { proposal_id, amount, client_user_id, payment_due_date: !!payment_due_date, metadata: !!metadata });
+    
     if (!proposal_id || !amount || !client_user_id) {
-      return corsResponse({ error: 'Missing required parameters' }, 400);
+      console.log('Missing required parameters');
+      return new Response(JSON.stringify({ error: 'Missing required parameters' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 400 
+      });
     }
+
+    console.log('Creating Supabase client...');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
+    
+    if (!supabaseUrl || !supabaseKey || !stripeSecret) {
+      console.error('Missing environment variables');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const stripe = new Stripe(stripeSecret, {
+      appInfo: {
+        name: 'MyBeatFi',
+        version: '1.0.0',
+      },
+    });
+
+    console.log('Looking up Stripe customer...');
     // Look up or create Stripe customer for client_user_id
     const { data: customer, error: getCustomerError } = await supabase
       .from('stripe_customers')
@@ -48,46 +66,73 @@ Deno.serve(async (req) => {
       .eq('user_id', client_user_id)
       .is('deleted_at', null)
       .maybeSingle();
+      
+    console.log('Customer lookup result:', { customer: customer ? 'found' : 'not found', error: getCustomerError });
+      
     let customerId;
     if (getCustomerError) {
       console.error('Failed to fetch customer info', getCustomerError);
-      return corsResponse({ error: 'Failed to fetch customer info' }, 500);
+      return new Response(JSON.stringify({ error: 'Failed to fetch customer info' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      });
     }
+    
     if (!customer || !customer.customer_id) {
+      console.log('Creating new Stripe customer...');
       // Fetch client email
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('email')
         .eq('id', client_user_id)
         .maybeSingle();
+        
+      console.log('Profile lookup result:', { profile: profile ? 'found' : 'not found', error: profileError });
+        
       if (profileError || !profile?.email) {
-        return corsResponse({ error: 'Could not find client email' }, 400);
+        console.error('Could not find client email');
+        return new Response(JSON.stringify({ error: 'Could not find client email' }), { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 400 
+        });
       }
+      
       const newCustomer = await stripe.customers.create({
         email: profile.email,
         metadata: { userId: client_user_id },
       });
+      
       await supabase.from('stripe_customers').insert({
         user_id: client_user_id,
         customer_id: newCustomer.id,
       });
+      
       customerId = newCustomer.id;
+      console.log('Created new customer:', customerId);
     } else {
       customerId = customer.customer_id;
+      console.log('Using existing customer:', customerId);
     }
+
+    console.log('Creating Stripe product...');
     // Create a product/price for the proposal
     const product = await stripe.products.create({
       name: metadata.description || `Sync Proposal #${proposal_id}`,
       metadata: { proposal_id },
     });
+    
+    console.log('Creating Stripe price...');
     const price = await stripe.prices.create({
       product: product.id,
       unit_amount: amount,
       currency: 'usd',
     });
+
+    console.log('Creating Stripe checkout session...');
     // Create Stripe Checkout session
     const siteUrl = Deno.env.get('SITE_URL') ?? '';
     const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+    
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
@@ -106,9 +151,17 @@ Deno.serve(async (req) => {
       },
       expires_at: payment_due_date ? Math.floor(new Date(payment_due_date).getTime() / 1000) + 86400 : undefined, // Optionally set session expiry
     });
-    return corsResponse({ sessionId: session.id, url: session.url });
+
+    console.log('Stripe session created successfully:', session.id);
+    return new Response(JSON.stringify({ sessionId: session.id, url: session.url }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
+    
   } catch (error: any) {
     console.error('Stripe invoice function error:', error.message);
-    return corsResponse({ error: error.message }, 500);
+    return new Response(JSON.stringify({ error: error.message }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 500 
+    });
   }
 }); 
