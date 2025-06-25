@@ -860,12 +860,18 @@ export function ClientDashboard() {
                     {proposal.status === 'pending' && (
                       <button 
                         onClick={async () => {
-                          const { error } = await supabase
+                          console.log('Fixing status for proposal:', proposal.id);
+                          const { data, error } = await supabase
                             .from('sync_proposals')
                             .update({ status: 'accepted', updated_at: new Date().toISOString() })
-                            .eq('id', proposal.id);
+                            .eq('id', proposal.id)
+                            .select();
+                          console.log('Update result:', { data, error });
                           if (!error) {
-                            fetchProposals();
+                            console.log('Status updated successfully, refreshing proposals...');
+                            await fetchProposals();
+                          } else {
+                            console.error('Error updating status:', error);
                           }
                         }} 
                         className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
