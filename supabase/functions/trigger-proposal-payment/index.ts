@@ -13,6 +13,8 @@ serve(async (req) => {
 
   try {
     const { proposal_id } = await req.json();
+    console.log('Received proposal_id:', proposal_id);
+    
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: 'Missing proposal_id' }), { headers: corsHeaders, status: 400 });
     }
@@ -24,6 +26,7 @@ serve(async (req) => {
     );
 
     // Look up the proposal with all necessary fields
+    console.log('Querying proposal with ID:', proposal_id);
     const { data: proposal, error: proposalError } = await supabaseClient
       .from('sync_proposals')
       .select(`
@@ -34,21 +37,38 @@ serve(async (req) => {
         payment_status, 
         status,
         client_status,
-        track:tracks!inner (
-          title,
-          producer:profiles!inner (
-            first_name,
-            last_name,
-            email
-          )
-        ),
-        created_at
+        created_at,
+        track_id
       `)
       .eq('id', proposal_id)
       .single();
       
+    console.log('Proposal query result:', { proposal, error: proposalError });
+      
     if (proposalError || !proposal) {
-      return new Response(JSON.stringify({ error: 'Proposal not found' }), { headers: corsHeaders, status: 404 });
+      console.error('Proposal not found or error:', proposalError);
+      return new Response(JSON.stringify({ error: 'Proposal not found', details: proposalError }), { headers: corsHeaders, status: 404 });
+    }
+
+    // Fetch track and producer data separately
+    const { data: track, error: trackError } = await supabaseClient
+      .from('tracks')
+      .select(`
+        title,
+        producer:profiles!inner (
+          first_name,
+          last_name,
+          email
+        )
+      `)
+      .eq('id', proposal.track_id)
+      .single();
+      
+    console.log('Track query result:', { track, error: trackError });
+    
+    if (trackError || !track) {
+      console.error('Track not found:', trackError);
+      return new Response(JSON.stringify({ error: 'Track not found', details: trackError }), { headers: corsHeaders, status: 404 });
     }
 
     // Check if proposal is already accepted by both parties
@@ -100,9 +120,9 @@ serve(async (req) => {
         client_user_id: proposal.client_id,
         payment_due_date: paymentDueDate.toISOString(),
         metadata: {
-          description: `Sync license for "${proposal.track.title}"`,
-          track_title: proposal.track.title,
-          producer_name: `${proposal.track.producer.first_name} ${proposal.track.producer.last_name}`,
+          description: `Sync license for "${track.title}"`,
+          track_title: track.title,
+          producer_name: `${track.producer.first_name} ${track.producer.last_name}`,
           payment_terms: proposal.payment_terms || 'immediate'
         }
       })
@@ -137,8 +157,8 @@ serve(async (req) => {
       body: JSON.stringify({
         proposalId: proposal.id,
         action: 'payment_pending',
-        trackTitle: proposal.track.title,
-        producerEmail: proposal.track.producer.email
+        trackTitle: track.title,
+        producerEmail: track.producer.email
       })
     });
 

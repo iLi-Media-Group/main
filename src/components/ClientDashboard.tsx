@@ -584,6 +584,7 @@ export function ClientDashboard() {
     if (newStatus === 'accepted') {
       console.log('Triggering payment for accepted proposal...');
       try {
+        console.log('Setting up payment for proposal:', proposal.id);
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
           method: 'POST',
           headers: {
@@ -596,6 +597,7 @@ export function ClientDashboard() {
         });
 
         const responseData = await response.json();
+        console.log('Payment setup response:', responseData);
 
         if (!response.ok) {
           console.error('Error triggering payment:', responseData);
@@ -985,6 +987,7 @@ export function ClientDashboard() {
                             <button
                               onClick={async () => {
                                 try {
+                                  console.log('Setting up payment for proposal:', proposal.id);
                                   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
                                     method: 'POST',
                                     headers: {
@@ -997,6 +1000,7 @@ export function ClientDashboard() {
                                   });
 
                                   const responseData = await response.json();
+                                  console.log('Payment setup response:', responseData);
 
                                   if (!response.ok) {
                                     alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
