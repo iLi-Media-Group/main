@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -96,6 +96,7 @@ const calculatePaymentDueDate = (acceptedDate: string, paymentTerms: string = 'i
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [newTracks, setNewTracks] = useState<Track[]>([]);
@@ -135,6 +136,8 @@ export function ClientDashboard() {
   const [proposalTab, setProposalTab] = useState<'pending' | 'accepted' | 'declined' | 'expired'>('pending');
   const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
   const negotiationDialogOpenRef = useRef<string | null>(null);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [showPaymentCancel, setShowPaymentCancel] = useState(false);
 
   // Ensure proposalTab is always set to a valid value
   useEffect(() => {
@@ -142,6 +145,20 @@ export function ClientDashboard() {
       setProposalTab('pending');
     }
   }, [proposalTab]);
+
+  // Check for payment status in URL parameters
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    if (paymentStatus === 'success') {
+      setShowPaymentSuccess(true);
+      // Remove the payment parameter from URL
+      navigate('/dashboard', { replace: true });
+    } else if (paymentStatus === 'cancel') {
+      setShowPaymentCancel(true);
+      // Remove the payment parameter from URL
+      navigate('/dashboard', { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -879,6 +896,44 @@ export function ClientDashboard() {
             </Link>
           </div>
         </div>
+
+        {/* Payment Success Message */}
+        {showPaymentSuccess && (
+          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/40 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Check className="w-5 h-5 mr-2 text-green-400" />
+                <span className="text-green-400 font-semibold">Payment Successful!</span>
+                <span className="text-green-300 ml-2">Your sync proposal payment has been processed successfully.</span>
+              </div>
+              <button 
+                onClick={() => setShowPaymentSuccess(false)} 
+                className="text-green-300 hover:text-green-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Cancel Message */}
+        {showPaymentCancel && (
+          <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/40 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
+                <span className="text-yellow-400 font-semibold">Payment Cancelled</span>
+                <span className="text-yellow-300 ml-2">Your payment was cancelled. You can try again anytime.</span>
+              </div>
+              <button 
+                onClick={() => setShowPaymentCancel(false)} 
+                className="text-yellow-300 hover:text-yellow-100"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">
