@@ -203,10 +203,19 @@ export function CheckoutSuccessPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Current Period:</span>
+                    <span className="text-white">Plan Start:</span>
                   </div>
                   <span className="text-white font-medium">
-                    {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
+                    {formatDate(subscription.current_period_start)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
+                    <span className="text-white">Plan End:</span>
+                  </div>
+                  <span className="text-white font-medium">
+                    {formatDate(subscription.current_period_end)}
                   </span>
                 </div>
                 
