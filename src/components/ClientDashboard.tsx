@@ -939,170 +939,183 @@ export function ClientDashboard() {
                 )}
               </div>
             ) : (
-              filteredProposals.map((proposal: any) => (
-                <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20 relative">
-                  {unreadProposals.includes(proposal.id) && (
-                    <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse flex items-center">
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      New Message
+              <>
+                {/* Debug section for filtered proposals */}
+                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <p className="text-blue-400 text-sm mb-2">Debug: Filtered proposals ({filteredProposals.length}) | Current tab: {proposalTab}</p>
+                  {filteredProposals.map((p: any) => (
+                    <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
+                      ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
+                      <br />
+                      <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
                     </div>
-                  )}
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <h4 className="text-white font-medium">
-                        {proposal.tracks?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
-                      </h4>
-                      <p className="text-sm text-gray-400">
-                        Sync Fee: <span className="text-green-400 font-semibold">
-                          ${proposal.sync_fee?.toFixed(2) || '0.00'}
-                        </span>
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Expires: {proposal.expiration_date ? new Date(proposal.expiration_date).toLocaleDateString() : 'No expiry date'}
-                      </p>
-                      {proposal.is_urgent && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-500 text-xs font-semibold mt-1">
-                          <AlertTriangle className="w-3 h-3 mr-1" /> Urgent
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-xs ${proposal.status==='pending'?'bg-purple-600/20 text-purple-400':proposal.status==='accepted'?'bg-green-600/20 text-green-400':proposal.status==='rejected'?'bg-red-600/20 text-red-400':proposal.status==='pending_client'?'bg-yellow-600/20 text-yellow-500':'bg-gray-600/20 text-gray-400'}`}>{proposal.status.charAt(0).toUpperCase()+proposal.status.slice(1).replace('_',' ')}</span>
-                    </div>
-                  </div>
-                  {proposal.status === 'producer_accepted' && (
-                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
-                      <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
-                      <div className="flex space-x-2 mt-2 md:mt-0">
-                        <button
-                          onClick={() => {
-                            console.log('Client Accept clicked', proposal);
-                            handleClientAcceptDecline(proposal, 'client_accepted');
-                          }}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
-                        >Accept</button>
-                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
+                  ))}
+                </div>
+                {filteredProposals.map((proposal: any) => (
+                  <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20 relative">
+                    {unreadProposals.includes(proposal.id) && (
+                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse flex items-center">
+                        <MessageSquare className="w-3 h-3 mr-1" />
+                        New Message
                       </div>
-                    </div>
-                  )}
-                  {proposal.status === 'pending' && (
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
-                      <span className="text-blue-600 font-semibold flex items-center mb-2 md:mb-0"><Clock className="w-4 h-4 mr-2" />Proposal is pending producer review. You can decline at any time.</span>
-                      <div className="flex space-x-2 mt-2 md:mt-0">
-                        <button 
-                          onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} 
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                        >
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {proposal.status === 'accepted' && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-2">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div className="mb-2 md:mb-0">
-                          <span className="text-green-600 font-semibold flex items-center mb-1">
-                            <Check className="w-4 h-4 mr-2" />
-                            Proposal Accepted
+                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">
+                          {proposal.tracks?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Sync Fee: <span className="text-green-400 font-semibold">
+                            ${proposal.sync_fee?.toFixed(2) || '0.00'}
                           </span>
-                          {proposal.sync_fee && (
-                            <p className="text-sm text-gray-300">
-                              Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee.toFixed(2)}</span>
-                            </p>
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Expires: {proposal.expiration_date ? new Date(proposal.expiration_date).toLocaleDateString() : 'No expiry date'}
+                        </p>
+                        {proposal.is_urgent && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-500 text-xs font-semibold mt-1">
+                            <AlertTriangle className="w-3 h-3 mr-1" /> Urgent
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-2 py-1 rounded-full text-xs ${proposal.status==='pending'?'bg-purple-600/20 text-purple-400':proposal.status==='accepted'?'bg-green-600/20 text-green-400':proposal.status==='rejected'?'bg-red-600/20 text-red-400':proposal.status==='pending_client'?'bg-yellow-600/20 text-yellow-500':'bg-gray-600/20 text-gray-400'}`}>{proposal.status.charAt(0).toUpperCase()+proposal.status.slice(1).replace('_',' ')}</span>
+                      </div>
+                    </div>
+                    {proposal.status === 'producer_accepted' && (
+                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
+                        <div className="flex space-x-2 mt-2 md:mt-0">
+                          <button
+                            onClick={() => {
+                              console.log('Client Accept clicked', proposal);
+                              handleClientAcceptDecline(proposal, 'client_accepted');
+                            }}
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
+                          >Accept</button>
+                          <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
+                        </div>
+                      </div>
+                    )}
+                    {proposal.status === 'pending' && (
+                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <span className="text-blue-600 font-semibold flex items-center mb-2 md:mb-0"><Clock className="w-4 h-4 mr-2" />Proposal is pending producer review. You can decline at any time.</span>
+                        <div className="flex space-x-2 mt-2 md:mt-0">
+                          <button 
+                            onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} 
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {proposal.status === 'accepted' && (
+                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-2">
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                          <div className="mb-2 md:mb-0">
+                            <span className="text-green-600 font-semibold flex items-center mb-1">
+                              <Check className="w-4 h-4 mr-2" />
+                              Proposal Accepted
+                            </span>
+                            {proposal.sync_fee && (
+                              <p className="text-sm text-gray-300">
+                                Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee.toFixed(2)}</span>
+                              </p>
+                            )}
+                            {proposal.payment_due_date ? (
+                              <p className="text-sm text-gray-300">
+                                Payment Due: <span className="text-yellow-400 font-semibold">{new Date(proposal.payment_due_date).toLocaleDateString()}</span>
+                              </p>
+                            ) : proposal.status === 'accepted' && proposal.created_at ? (
+                              <p className="text-sm text-gray-300">
+                                Payment Due: <span className="text-yellow-400 font-semibold">{calculatePaymentDueDate(proposal.created_at, 'immediate').toLocaleDateString()}</span>
+                              </p>
+                            ) : null}
+                            {proposal.payment_status && (
+                              <p className="text-sm text-gray-300">
+                                Payment Status: <span className={`font-semibold ${
+                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                  'text-red-400'
+                                }`}>
+                                  {proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                          {proposal.payment_status === 'pending' && proposal.stripe_checkout_session_id && (
+                            <div className="flex space-x-2 mt-2 md:mt-0">
+                              <button
+                                onClick={() => {
+                                  // Redirect to Stripe checkout
+                                  window.open(`https://checkout.stripe.com/pay/${proposal.stripe_checkout_session_id}`, '_blank');
+                                }}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+                              >
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                Pay Now
+                              </button>
+                            </div>
                           )}
-                          {proposal.payment_due_date ? (
-                            <p className="text-sm text-gray-300">
-                              Payment Due: <span className="text-yellow-400 font-semibold">{new Date(proposal.payment_due_date).toLocaleDateString()}</span>
-                            </p>
-                          ) : proposal.status === 'accepted' && proposal.created_at ? (
-                            <p className="text-sm text-gray-300">
-                              Payment Due: <span className="text-yellow-400 font-semibold">{calculatePaymentDueDate(proposal.created_at, 'immediate').toLocaleDateString()}</span>
-                            </p>
-                          ) : null}
-                          {proposal.payment_status && (
-                            <p className="text-sm text-gray-300">
-                              Payment Status: <span className={`font-semibold ${
-                                proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                'text-red-400'
-                              }`}>
-                                {proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                          {proposal.payment_status === 'paid' && (
+                            <div className="flex items-center mt-2 md:mt-0">
+                              <span className="text-green-400 font-semibold flex items-center">
+                                <Check className="w-4 h-4 mr-2" />
+                                Payment Complete
                               </span>
-                            </p>
+                            </div>
+                          )}
+                          {proposal.payment_status === 'pending' && !proposal.stripe_checkout_session_id && (
+                            <div className="flex space-x-2 mt-2 md:mt-0">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    console.log('Setting up payment for proposal:', proposal.id);
+                                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
+                                      method: 'POST',
+                                      headers: {
+                                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: JSON.stringify({
+                                        proposal_id: proposal.id
+                                      })
+                                    });
+
+                                    const responseData = await response.json();
+                                    console.log('Payment setup response:', responseData);
+
+                                    if (!response.ok) {
+                                      alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
+                                    } else if (responseData.url) {
+                                      window.location.href = responseData.url;
+                                    } else {
+                                      alert('Invoice created successfully! You will receive payment instructions shortly.');
+                                      await fetchProposals(); // Refresh to show updated status
+                                    }
+                                  } catch (error) {
+                                    console.error('Error setting up payment:', error);
+                                    alert('Failed to set up payment. Please try again.');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                              >
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                Pay Now
+                              </button>
+                            </div>
                           )}
                         </div>
-                        {proposal.payment_status === 'pending' && proposal.stripe_checkout_session_id && (
-                          <div className="flex space-x-2 mt-2 md:mt-0">
-                            <button
-                              onClick={() => {
-                                // Redirect to Stripe checkout
-                                window.open(`https://checkout.stripe.com/pay/${proposal.stripe_checkout_session_id}`, '_blank');
-                              }}
-                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-                            >
-                              <DollarSign className="w-4 h-4 mr-2" />
-                              Pay Now
-                            </button>
-                          </div>
-                        )}
-                        {proposal.payment_status === 'paid' && (
-                          <div className="flex items-center mt-2 md:mt-0">
-                            <span className="text-green-400 font-semibold flex items-center">
-                              <Check className="w-4 h-4 mr-2" />
-                              Payment Complete
-                            </span>
-                          </div>
-                        )}
-                        {proposal.payment_status === 'pending' && !proposal.stripe_checkout_session_id && (
-                          <div className="flex space-x-2 mt-2 md:mt-0">
-                            <button
-                              onClick={async () => {
-                                try {
-                                  console.log('Setting up payment for proposal:', proposal.id);
-                                  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
-                                    method: 'POST',
-                                    headers: {
-                                      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                                      'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                      proposal_id: proposal.id
-                                    })
-                                  });
-
-                                  const responseData = await response.json();
-                                  console.log('Payment setup response:', responseData);
-
-                                  if (!response.ok) {
-                                    alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
-                                  } else if (responseData.url) {
-                                    window.location.href = responseData.url;
-                                  } else {
-                                    alert('Invoice created successfully! You will receive payment instructions shortly.');
-                                    await fetchProposals(); // Refresh to show updated status
-                                  }
-                                } catch (error) {
-                                  console.error('Error setting up payment:', error);
-                                  alert('Failed to set up payment. Please try again.');
-                                }
-                              }}
-                              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-                            >
-                              <DollarSign className="w-4 h-4 mr-2" />
-                              Pay Now
-                            </button>
-                          </div>
-                        )}
                       </div>
+                    )}
+                    <div className="flex space-x-2 mt-2">
+                      <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
+                      <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
                     </div>
-                  )}
-                  <div className="flex space-x-2 mt-2">
-                    <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
-                    <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
                   </div>
-                </div>
-              ))
+                ))}
+              </>
             )}
           </div>
         </div>
