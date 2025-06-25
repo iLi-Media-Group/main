@@ -358,6 +358,7 @@ export function ClientDashboard() {
 
   const fetchProposals = async () => {
     if (!user) return;
+    console.log('Fetching proposals for user:', user.id);
     const { data, error } = await supabase
       .from('sync_proposals')
       .select(`
@@ -375,6 +376,9 @@ export function ClientDashboard() {
       `)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
+    
+    console.log('Proposals fetch result:', { data, error });
+    
     if (!error && data) {
       setProposals(data);
       // Check for unread negotiation messages for each proposal
@@ -397,12 +401,16 @@ export function ClientDashboard() {
   };
 
   const filteredProposals = proposals.filter((p: any) => {
-    if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active';
+    console.log('Filtering proposal:', p.id, 'status:', p.status, 'tab:', proposalTab);
+    if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted';
     if (proposalTab === 'accepted') return p.status === 'accepted';
     if (proposalTab === 'declined') return p.status === 'rejected';
     if (proposalTab === 'expired') return p.status === 'expired';
     return false;
   });
+
+  console.log('All proposals:', proposals);
+  console.log('Filtered proposals for tab', proposalTab, ':', filteredProposals);
 
   const handleProposalAction = (proposal: any, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
     setSelectedProposal(proposal);
