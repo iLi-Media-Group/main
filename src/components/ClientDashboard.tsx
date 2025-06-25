@@ -361,11 +361,11 @@ export function ClientDashboard() {
     console.log('Fetching proposals for user:', user.id);
     const { data, error } = await supabase
       .from('sync_proposals')
-      .select(`id, status`)
+      .select(`id, status, track_id, sync_fee, expiration_date, is_urgent, created_at`)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
     
-    console.log('Proposals fetch result (minimal):', { data, error });
+    console.log('Proposals fetch result (with fields):', { data, error });
     
     if (!error && data) {
       setProposals(data);
@@ -753,9 +753,17 @@ export function ClientDashboard() {
                   )}
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h4 className="text-white font-medium">{proposal.track?.title}</h4>
-                      <p className="text-sm text-gray-400">Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee?.toFixed(2)}</span></p>
-                      <p className="text-xs text-gray-400">Expires: {new Date(proposal.expiration_date).toLocaleDateString()}</p>
+                      <h4 className="text-white font-medium">
+                        {proposal.track?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
+                      </h4>
+                      <p className="text-sm text-gray-400">
+                        Sync Fee: <span className="text-green-400 font-semibold">
+                          ${proposal.sync_fee?.toFixed(2) || '0.00'}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Expires: {proposal.expiration_date ? new Date(proposal.expiration_date).toLocaleDateString() : 'No expiry date'}
+                      </p>
                       {proposal.is_urgent && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-500 text-xs font-semibold mt-1">
                           <AlertTriangle className="w-3 h-3 mr-1" /> Urgent
