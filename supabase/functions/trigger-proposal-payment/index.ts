@@ -39,7 +39,8 @@ serve(async (req) => {
         status,
         client_status,
         created_at,
-        track_id
+        track_id,
+        stripe_checkout_session_id
       `)
       .eq('id', proposal_id)
       .single();
@@ -78,8 +79,13 @@ serve(async (req) => {
     }
 
     // Check if payment is already pending or paid
-    if (proposal.payment_status === 'pending' || proposal.payment_status === 'paid') {
-      return new Response(JSON.stringify({ error: 'Payment already processed for this proposal' }), { headers: corsHeaders, status: 400 });
+    if (proposal.payment_status === 'paid') {
+      return new Response(JSON.stringify({ error: 'Payment already completed for this proposal' }), { headers: corsHeaders, status: 400 });
+    }
+
+    // Check if there's already a Stripe session (meaning payment was initiated)
+    if (proposal.stripe_checkout_session_id) {
+      return new Response(JSON.stringify({ error: 'Payment already initiated for this proposal' }), { headers: corsHeaders, status: 400 });
     }
 
     if (!proposal.sync_fee || !proposal.client_id) {
