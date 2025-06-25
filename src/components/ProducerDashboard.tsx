@@ -312,11 +312,26 @@ export function ProducerDashboard() {
     if (!selectedProposal || !user) return;
     
     try {
+      let newStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
+
+      if (confirmAction === 'accept') {
+        // Fetch the latest proposal status
+        const { data: latestProposal } = await supabase
+          .from('sync_proposals')
+          .select('status')
+          .eq('id', selectedProposal.id)
+          .single();
+
+        if (latestProposal?.status === 'client_accepted') {
+          newStatus = 'accepted';
+        }
+      }
+
       // Update proposal status
       const { error } = await supabase
         .from('sync_proposals')
         .update({ 
-          status: confirmAction === 'accept' ? 'accepted' : 'rejected',
+          status: newStatus,
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedProposal.id);
@@ -328,8 +343,8 @@ export function ProducerDashboard() {
         .from('proposal_history')
         .insert({
           proposal_id: selectedProposal.id,
-          previous_status: 'pending',
-          new_status: confirmAction === 'accept' ? 'accepted' : 'rejected',
+          previous_status: selectedProposal.status,
+          new_status: newStatus,
           changed_by: user.id
         });
 
@@ -353,7 +368,7 @@ export function ProducerDashboard() {
       // Update local state
       setProposals(proposals.map((p: any) => 
         p.id === selectedProposal.id 
-          ? { ...p, status: confirmAction === 'accept' ? 'accepted' : 'rejected' } 
+          ? { ...p, status: newStatus } 
           : p
       ));
       

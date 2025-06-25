@@ -411,20 +411,36 @@ export function ClientDashboard() {
 
   const handleClientAcceptDecline = async (proposal: any, action: 'client_accepted' | 'client_rejected') => {
     if (!user) return;
-    // Update proposal status
+
+    let newStatus = action;
+    if (action === 'client_accepted') {
+      // Fetch the latest proposal status
+      const { data: latestProposal } = await supabase
+        .from('sync_proposals')
+        .select('status')
+        .eq('id', proposal.id)
+        .single();
+
+      if (latestProposal?.status === 'producer_accepted') {
+        newStatus = 'accepted';
+      }
+    }
+
     await supabase
       .from('sync_proposals')
-      .update({ status: action, updated_at: new Date().toISOString() })
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', proposal.id);
+
     // Log to history
     await supabase
       .from('proposal_history')
       .insert({
         proposal_id: proposal.id,
-        previous_status: 'pending_client',
-        new_status: action,
+        previous_status: proposal.status,
+        new_status: newStatus,
         changed_by: user.id
       });
+
     fetchProposals();
   };
 
