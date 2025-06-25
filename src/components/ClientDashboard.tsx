@@ -366,6 +366,7 @@ export function ClientDashboard() {
         status, 
         track_id, 
         client_id,
+        client_status,
         sync_fee, 
         expiration_date, 
         is_urgent, 
@@ -864,6 +865,17 @@ export function ClientDashboard() {
                           console.log('Fixing status for proposal:', proposal.id);
                           console.log('Current user ID:', user?.id);
                           console.log('Proposal client_id:', proposal.client_id);
+                          console.log('Current proposal status:', proposal.status);
+                          console.log('Current proposal client_status:', proposal.client_status);
+                          
+                          // First, let's check what the current values are in the database
+                          const { data: currentProposal, error: fetchError } = await supabase
+                            .from('sync_proposals')
+                            .select('status, client_status')
+                            .eq('id', proposal.id)
+                            .single();
+                          
+                          console.log('Current database values:', currentProposal);
                           
                           const { data, error } = await supabase
                             .from('sync_proposals')
