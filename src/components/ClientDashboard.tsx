@@ -684,8 +684,8 @@ export function ClientDashboard() {
             </div>
           </div>
           {unreadProposals.length > 0 && (
-            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-700 font-semibold flex items-center">
-              <AlertTriangle className="w-4 h-4 mr-2" /> You have new negotiation messages waiting to be reviewed.
+            <div className="mb-4 p-3 bg-yellow-400/20 border border-yellow-400/40 rounded-lg text-yellow-900 font-semibold flex items-center">
+              <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" /> You have new negotiation messages waiting to be reviewed.
             </div>
           )}
           <div className="space-y-4">
