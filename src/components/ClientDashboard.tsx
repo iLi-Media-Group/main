@@ -1199,9 +1199,12 @@ export function ClientDashboard() {
         <ProposalConfirmDialog
           isOpen={showConfirmDialog}
           onClose={() => { setShowConfirmDialog(false); setSelectedProposal(null); fetchProposals(); }}
+          onConfirm={() => {
+            console.log('onConfirm in ClientDashboard', { selectedProposal, confirmAction });
+            handleClientAcceptDecline(selectedProposal, confirmAction);
+          }}
           action={confirmAction}
           proposal={selectedProposal}
-          onConfirm={fetchProposals}
         />
       )}
     </div>
