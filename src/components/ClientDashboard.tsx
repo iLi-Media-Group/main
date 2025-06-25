@@ -1118,7 +1118,13 @@ export function ClientDashboard() {
                                     console.log('Payment setup response:', responseData);
 
                                     if (!response.ok) {
-                                      alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
+                                      if (responseData.error === 'Payment already processed for this proposal') {
+                                        // If payment was already processed but we don't see the session, refresh the data
+                                        alert('Payment session already exists. Refreshing data...');
+                                        await fetchProposals();
+                                      } else {
+                                        alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
+                                      }
                                     } else if (responseData.url) {
                                       window.location.href = responseData.url;
                                     } else {
@@ -1127,7 +1133,11 @@ export function ClientDashboard() {
                                     }
                                   } catch (error) {
                                     console.error('Error setting up payment:', error);
-                                    alert('Failed to set up payment. Please try again.');
+                                    if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+                                      alert('Network error. Please check your connection and try again.');
+                                    } else {
+                                      alert('Failed to set up payment. Please try again.');
+                                    }
                                   }
                                 }}
                                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
