@@ -108,7 +108,9 @@ serve(async (req) => {
     }
 
     // Call the stripe-invoice function
-    const stripeInvoiceUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/stripe-invoice`;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const baseUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
+    const stripeInvoiceUrl = `${baseUrl}/functions/v1/stripe-invoice`;
     const invoiceRes = await fetch(stripeInvoiceUrl, {
       method: 'POST',
       headers: {
@@ -149,7 +151,8 @@ serve(async (req) => {
     }
 
     // Send notification to producer about payment pending
-    await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-proposal-update`, {
+    const notifyUrl = `${baseUrl}/functions/v1/notify-proposal-update`;
+    await fetch(notifyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
