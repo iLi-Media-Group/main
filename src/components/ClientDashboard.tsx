@@ -145,7 +145,7 @@ export function ClientDashboard() {
 
       if (profileData) {
         setProfile(profileData);
-        setUserStats(prev => ({
+        setUserStats((prev: UserStats) => ({
           ...prev,
           membershipType: profileData.membership_plan as UserStats['membershipType']
         }));
@@ -178,7 +178,7 @@ export function ClientDashboard() {
         .order('created_at', { ascending: false });
 
       if (licensesData) {
-        const formattedLicenses = licensesData.map(license => ({
+        const formattedLicenses = licensesData.map((license: any) => ({
           ...license,
           expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData.membership_plan),
           track: {
@@ -411,12 +411,16 @@ export function ClientDashboard() {
 
   const handleClientAcceptDecline = async (
     proposal: any,
-    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected'
+    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected' | 'accept' | 'reject'
   ) => {
     console.log('handleClientAcceptDecline called', { proposal, action });
     if (!user) return;
 
+    // Map 'accept' to 'accepted' and 'reject' to 'rejected' for DB
     let newStatus = action;
+    if (action === 'accept') newStatus = 'accepted';
+    if (action === 'reject') newStatus = 'rejected';
+
     if (action === 'client_accepted') {
       // Fetch the latest proposal status
       const { data: latestProposal } = await supabase
@@ -473,7 +477,7 @@ export function ClientDashboard() {
 
       if (error) throw error;
 
-      setFavorites(favorites.filter(track => track.id !== trackId));
+      setFavorites(favorites.filter((track: Track) => track.id !== trackId));
     } catch (error) {
       console.error('Error removing favorite:', error);
     } finally {
@@ -523,8 +527,8 @@ export function ClientDashboard() {
 
       if (error) throw error;
 
-      setSyncRequests(requests =>
-        requests.map(req =>
+      setSyncRequests((requests: CustomSyncRequest[]) =>
+        requests.map((req: CustomSyncRequest) =>
           req.id === requestId ? { ...req, ...updates } : req
         )
       );
@@ -571,8 +575,8 @@ export function ClientDashboard() {
   };
 
   const sortedAndFilteredLicenses = licenses
-    .filter((license: any) => !selectedGenre || license.track.genres.includes(selectedGenre))
-    .sort((a: any, b: any) => {
+    .filter((license: License) => !selectedGenre || license.track.genres.includes(selectedGenre))
+    .sort((a: License, b: License) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'renewal':
@@ -585,8 +589,8 @@ export function ClientDashboard() {
     });
 
   const sortedAndFilteredFavorites = favorites
-    .filter((track: any) => !selectedGenre || track.genres.includes(selectedGenre))
-    .sort((a: any, b: any) => {
+    .filter((track: Track) => !selectedGenre || track.genres.includes(selectedGenre))
+    .sort((a: Track, b: Track) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'title':
@@ -1201,7 +1205,11 @@ export function ClientDashboard() {
           onClose={() => { setShowConfirmDialog(false); setSelectedProposal(null); fetchProposals(); }}
           onConfirm={() => {
             console.log('onConfirm in ClientDashboard', { selectedProposal, confirmAction });
-            handleClientAcceptDecline(selectedProposal, confirmAction);
+            // Map 'accept' to 'accepted' and 'reject' to 'rejected' for DB
+            let actionForDb = confirmAction;
+            if (confirmAction === 'accept') actionForDb = 'accepted';
+            if (confirmAction === 'reject') actionForDb = 'rejected';
+            handleClientAcceptDecline(selectedProposal, actionForDb);
           }}
           action={confirmAction}
           proposal={selectedProposal}
