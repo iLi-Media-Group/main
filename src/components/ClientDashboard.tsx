@@ -525,11 +525,16 @@ export function ClientDashboard() {
       return isExpired;
     }
     
+    console.log('  No tab match, returning false');
     return false;
   });
 
+  console.log('=== FILTERING DEBUG ===');
+  console.log('Current tab:', proposalTab);
   console.log('All proposals:', proposals);
   console.log('Filtered proposals for tab', proposalTab, ':', filteredProposals);
+  console.log('Filtered proposals length:', filteredProposals.length);
+  console.log('=== END FILTERING DEBUG ===');
 
   const handleProposalAction = (proposal: any, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
     setSelectedProposal(proposal);
