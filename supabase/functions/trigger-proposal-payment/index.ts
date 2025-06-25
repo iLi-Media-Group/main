@@ -23,15 +23,26 @@ serve(async (req) => {
     
     if (!proposal_id) {
       console.log('Missing proposal_id, returning 400');
-      return new Response(JSON.stringify({ error: 'Missing proposal_id' }), { headers: corsHeaders, status: 400 });
+      return new Response(JSON.stringify({ error: 'Missing proposal_id' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 400 
+      });
     }
 
     console.log('Creating Supabase client...');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing environment variables');
+      return new Response(JSON.stringify({ error: 'Server configuration error' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      });
+    }
+
     // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Look up the proposal with all necessary fields
     console.log('Querying proposal with ID:', proposal_id);
@@ -51,11 +62,14 @@ serve(async (req) => {
       .eq('id', proposal_id)
       .single();
       
-    console.log('Proposal query result:', { proposal, error: proposalError });
+    console.log('Proposal query result:', { proposal: proposal ? 'found' : 'not found', error: proposalError });
       
     if (proposalError || !proposal) {
       console.error('Proposal not found or error:', proposalError);
-      return new Response(JSON.stringify({ error: 'Proposal not found', details: proposalError }), { headers: corsHeaders, status: 404 });
+      return new Response(JSON.stringify({ error: 'Proposal not found', details: proposalError }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 404 
+      });
     }
 
     // Fetch track and producer data separately
@@ -73,25 +87,37 @@ serve(async (req) => {
       .eq('id', proposal.track_id)
       .single();
       
-    console.log('Track query result:', { track, error: trackError });
+    console.log('Track query result:', { track: track ? 'found' : 'not found', error: trackError });
     
     if (trackError || !track) {
       console.error('Track not found:', trackError);
-      return new Response(JSON.stringify({ error: 'Track not found', details: trackError }), { headers: corsHeaders, status: 404 });
+      return new Response(JSON.stringify({ error: 'Track not found', details: trackError }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 404 
+      });
     }
 
     // Check if proposal is already accepted by both parties
     if (proposal.status !== 'accepted' || proposal.client_status !== 'accepted') {
-      return new Response(JSON.stringify({ error: 'Proposal must be accepted by both parties before creating invoice' }), { headers: corsHeaders, status: 400 });
+      return new Response(JSON.stringify({ error: 'Proposal must be accepted by both parties before creating invoice' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 400 
+      });
     }
 
     // Check if payment is already completed
     if (proposal.payment_status === 'paid') {
-      return new Response(JSON.stringify({ error: 'Payment already completed for this proposal' }), { headers: corsHeaders, status: 400 });
+      return new Response(JSON.stringify({ error: 'Payment already completed for this proposal' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 400 
+      });
     }
 
     if (!proposal.sync_fee || !proposal.client_id) {
-      return new Response(JSON.stringify({ error: 'Proposal missing sync fee or client' }), { headers: corsHeaders, status: 400 });
+      return new Response(JSON.stringify({ error: 'Proposal missing sync fee or client' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 400 
+      });
     }
 
     // Calculate payment due date based on payment terms
@@ -117,7 +143,6 @@ serve(async (req) => {
 
     console.log('Calling stripe-invoice function...');
     // Call the stripe-invoice function
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const baseUrl = supabaseUrl.startsWith('http') ? supabaseUrl : `https://${supabaseUrl}`;
     const stripeInvoiceUrl = `${baseUrl}/functions/v1/stripe-invoice`;
     console.log('Calling stripe-invoice function at:', stripeInvoiceUrl);
@@ -141,19 +166,24 @@ serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        'Authorization': `Bearer ${supabaseKey}`
       },
       body: JSON.stringify(requestPayload)
     });
     
     console.log('Stripe invoice response status:', invoiceRes.status);
+    
+    if (!invoiceRes.ok) {
+      const errorText = await invoiceRes.text();
+      console.error('Stripe invoice creation failed:', errorText);
+      return new Response(JSON.stringify({ error: 'Failed to create Stripe invoice', details: errorText }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      });
+    }
+    
     const invoiceData = await invoiceRes.json();
     console.log('Stripe invoice response data:', invoiceData);
-
-    if (!invoiceRes.ok) {
-      console.error('Stripe invoice creation failed:', invoiceData);
-      return new Response(JSON.stringify({ error: invoiceData.error || 'Failed to create Stripe invoice' }), { headers: corsHeaders, status: 500 });
-    }
 
     console.log('Updating proposal with payment info...');
     // Update the proposal with session info and set payment_status to pending
@@ -168,7 +198,10 @@ serve(async (req) => {
       
     if (updateError) {
       console.error('Failed to update proposal:', updateError);
-      return new Response(JSON.stringify({ error: 'Failed to update proposal with payment info' }), { headers: corsHeaders, status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to update proposal with payment info' }), { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+        status: 500 
+      });
     }
 
     console.log('Sending notification...');
@@ -179,7 +212,7 @@ serve(async (req) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          'Authorization': `Bearer ${supabaseKey}`
         },
         body: JSON.stringify({
           proposalId: proposal.id,
@@ -198,10 +231,15 @@ serve(async (req) => {
       sessionId: invoiceData.sessionId, 
       url: invoiceData.url,
       message: 'Invoice created successfully'
-    }), { headers: corsHeaders });
+    }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    });
     
   } catch (error) {
     console.error('Error in trigger-proposal-payment:', error);
-    return new Response(JSON.stringify({ error: error.message }), { headers: corsHeaders, status: 500 });
+    return new Response(JSON.stringify({ error: error.message }), { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+      status: 500 
+    });
   }
 }); 
