@@ -207,6 +207,7 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
+          payment_status,
           created_at,
           client:profiles!client_id (
             first_name,
@@ -235,6 +236,7 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
+          payment_status,
           created_at,
           client:profiles!client_id (
             first_name,
@@ -711,6 +713,18 @@ export function ProducerDashboard() {
                           <p className="text-sm text-gray-400">
                             From: {proposal.client.first_name} {proposal.client.last_name}
                           </p>
+                          {proposal.payment_status && (
+                            <p className="text-sm text-gray-400">
+                              Payment: <span className={`font-semibold ${
+                                proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                'text-red-400'
+                              }`}>
+                                {proposal.payment_status === 'paid' ? 'Paid' : 
+                                 proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                              </span>
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
@@ -780,6 +794,18 @@ export function ProducerDashboard() {
                           <p className="text-sm text-gray-400">
                             From: {proposal.client.first_name} {proposal.client.last_name}
                           </p>
+                          {proposal.payment_status && (
+                            <p className="text-sm text-gray-400">
+                              Payment: <span className={`font-semibold ${
+                                proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                'text-red-400'
+                              }`}>
+                                {proposal.payment_status === 'paid' ? 'Paid' : 
+                                 proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                              </span>
+                            </p>
+                          )}
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
