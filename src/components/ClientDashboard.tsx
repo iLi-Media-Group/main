@@ -136,6 +136,13 @@ export function ClientDashboard() {
   const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
   const negotiationDialogOpenRef = useRef<string | null>(null);
 
+  // Ensure proposalTab is always set to a valid value
+  useEffect(() => {
+    if (!proposalTab || !['pending', 'accepted', 'declined', 'expired'].includes(proposalTab)) {
+      setProposalTab('pending');
+    }
+  }, [proposalTab]);
+
   useEffect(() => {
     if (user) {
       // Refresh membership info first to ensure we have the latest data
@@ -924,6 +931,13 @@ export function ClientDashboard() {
             </div>
           )}
           <div className="space-y-4">
+            {/* Debug info */}
+            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+              Debug: Tab={proposalTab} | All proposals={proposals.length} | Filtered={filteredProposals.length} | 
+              Pending proposals={proposals.filter(p => p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted').length} |
+              Accepted proposals={proposals.filter(p => p.status === 'accepted' || p.client_status === 'accepted').length}
+            </div>
+            
             {filteredProposals.length === 0 ? (
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-gray-400">No proposals found</p>
