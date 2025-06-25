@@ -417,6 +417,10 @@ export function ClientDashboard() {
           expiration_date, 
           is_urgent, 
           created_at,
+          payment_status,
+          payment_due_date,
+          stripe_checkout_session_id,
+          accepted_at,
           tracks!inner(id, title)
         `)
         .eq('client_id', user.id)
