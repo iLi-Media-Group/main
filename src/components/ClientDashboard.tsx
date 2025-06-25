@@ -413,6 +413,7 @@ export function ClientDashboard() {
     proposal: any,
     action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected'
   ) => {
+    console.log('handleClientAcceptDecline called', { proposal, action });
     if (!user) return;
 
     let newStatus = action;
