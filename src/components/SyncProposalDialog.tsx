@@ -119,7 +119,7 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-blue-900 p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Submit Sync Proposal</h2>
           <button
