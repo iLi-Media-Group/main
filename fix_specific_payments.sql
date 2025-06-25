@@ -7,7 +7,7 @@ SET
   payment_status = 'paid',
   payment_date = NOW(),
   updated_at = NOW()
-WHERE id LIKE '7af40356%'
+WHERE id = '7af40356-66f3-45d7-87f3-710dff65b46a'
   AND payment_status = 'pending'
   AND status = 'accepted';
 
@@ -17,7 +17,7 @@ SET
   payment_status = 'paid',
   payment_date = NOW(),
   updated_at = NOW()
-WHERE id LIKE '6b2c0641%'
+WHERE id = '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b'
   AND payment_status = 'pending'
   AND status = 'accepted';
 
@@ -27,7 +27,7 @@ SET
   payment_status = 'paid',
   payment_date = NOW(),
   updated_at = NOW()
-WHERE id LIKE '3e7e991d%'
+WHERE id = '3e7e991d-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
   AND payment_status = 'pending'
   AND status = 'accepted';
 
@@ -51,9 +51,7 @@ SELECT
   created_at,
   updated_at
 FROM sync_proposals 
-WHERE id LIKE '7af40356%' 
-   OR id LIKE '6b2c0641%' 
-   OR id LIKE '3e7e991d%'
+WHERE id IN ('7af40356-66f3-45d7-87f3-710dff65b46a', '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b')
 ORDER BY updated_at DESC;
 
 -- Show all paid proposals

@@ -404,7 +404,7 @@ export function ClientDashboard() {
     console.log('Fetching proposals for user:', user.id);
     
     try {
-      // First try with the full query including new columns
+      // First try with the full query including payment columns (excluding non-existent columns)
       const { data, error } = await supabase
         .from('sync_proposals')
         .select(`
@@ -419,18 +419,17 @@ export function ClientDashboard() {
           created_at,
           payment_status,
           payment_due_date,
-          stripe_checkout_session_id,
           accepted_at,
           tracks!inner(id, title)
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
       
-      console.log('Proposals fetch result (basic):', { data, error });
+      console.log('Proposals fetch result (with payment):', { data, error });
       
       if (error) {
         console.error('Error fetching proposals:', error);
-        // If there's an error, try a simpler query without the new columns
+        // If there's an error, try a simpler query without the payment columns
         const { data: simpleData, error: simpleError } = await supabase
           .from('sync_proposals')
           .select(`
@@ -461,21 +460,13 @@ export function ClientDashboard() {
           client_status: proposal.client_status || 'pending',
           payment_status: proposal.payment_status || 'pending',
           payment_due_date: proposal.payment_due_date || null,
-          stripe_checkout_session_id: proposal.stripe_checkout_session_id || null
+          accepted_at: proposal.accepted_at || null
         }));
         
         setProposals(proposalsWithDefaults);
       } else {
-        // Add default values for missing columns if they don't exist
-        const proposalsWithDefaults = (data || []).map((proposal: any) => ({
-          ...proposal,
-          client_status: proposal.client_status || 'pending',
-          payment_status: proposal.payment_status || 'pending',
-          payment_due_date: proposal.payment_due_date || null,
-          stripe_checkout_session_id: proposal.stripe_checkout_session_id || null
-        }));
-        
-        setProposals(proposalsWithDefaults);
+        // Use the data as-is since we're now fetching all the payment columns that exist
+        setProposals(data || []);
       }
       
       // Check for new negotiation messages
@@ -1275,7 +1266,7 @@ export function ClientDashboard() {
                               </button>
                             </div>
                           )}
-                          {proposal.payment_status === 'pending' && !proposal.stripe_checkout_session_id && (
+                          {proposal.payment_status === 'pending' && (
                             <div className="flex space-x-2 mt-2 md:mt-0">
                               <button
                                 onClick={async () => {
