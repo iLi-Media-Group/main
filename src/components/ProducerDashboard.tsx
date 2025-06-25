@@ -529,27 +529,31 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          {balanceData && (
-            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-green-500/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400">Pending Balance</p>
-                  <p className="text-3xl font-bold text-white">${balanceData.pending_balance?.toFixed(2) || '0.00'}</p>
+          {/* Producer Balance Cards */}
+          {typeof balanceData !== 'undefined' && balanceData !== null ? (
+            <>
+              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-green-500/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400">Pending Balance</p>
+                    <p className="text-3xl font-bold text-white">${balanceData.pending_balance?.toFixed(2) || '0.00'}</p>
+                  </div>
+                  <DollarSign className="w-12 h-12 text-green-500" />
                 </div>
-                <DollarSign className="w-12 h-12 text-green-500" />
               </div>
-            </div>
-          )}
-
-          {balanceData && (
-            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-purple-500/20">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400">Lifetime Earnings</p>
-                  <p className="text-3xl font-bold text-white">${balanceData.lifetime_earnings?.toFixed(2) || '0.00'}</p>
+              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400">Lifetime Earnings</p>
+                    <p className="text-3xl font-bold text-white">${balanceData.lifetime_earnings?.toFixed(2) || '0.00'}</p>
+                  </div>
+                  <BarChart3 className="w-12 h-12 text-purple-500" />
                 </div>
-                <BarChart3 className="w-12 h-12 text-purple-500" />
               </div>
+            </>
+          ) : (
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-gray-500/20 text-center text-gray-400">
+              No balance data available.
             </div>
           )}
         </div>
