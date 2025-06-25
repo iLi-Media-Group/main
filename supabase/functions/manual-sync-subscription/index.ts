@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         planName = 'Unknown';
     }
 
-    // Store subscription state
+    // Store subscription state in stripe_subscriptions (trigger will sync to subscriptions)
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
