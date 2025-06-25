@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { supabaseAdmin } from '../lib/supabaseAdmin';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -888,6 +889,30 @@ export function ClientDashboard() {
                             .select();
                           
                           console.log('Test update result (just updated_at):', { data: testUpdate, error: testError });
+                          
+                          // Test with a different client_id to see if we get permission error
+                          const { data: wrongClientTest, error: wrongClientError } = await supabase
+                            .from('sync_proposals')
+                            .update({ 
+                              updated_at: new Date().toISOString() 
+                            })
+                            .eq('id', proposal.id)
+                            .eq('client_id', '00000000-0000-0000-0000-000000000000') // Wrong client ID
+                            .select();
+                          
+                          console.log('Wrong client test result:', { data: wrongClientTest, error: wrongClientError });
+                          
+                          // Test with admin client to bypass RLS
+                          const { data: adminTest, error: adminError } = await supabaseAdmin
+                            .from('sync_proposals')
+                            .update({ 
+                              client_status: 'accepted',
+                              updated_at: new Date().toISOString() 
+                            })
+                            .eq('id', proposal.id)
+                            .select();
+                          
+                          console.log('Admin client test result:', { data: adminTest, error: adminError });
                           
                           // Now try updating client_status
                           const { data, error } = await supabase
