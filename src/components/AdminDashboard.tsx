@@ -196,12 +196,43 @@ export function AdminDashboard() {
         }, {});
 
         // Map producer users to include their analytics
-        const transformedProducers = producerUsers.map(producer => {
+        const transformedProducers = await Promise.all(producerUsers.map(async (producer) => {
           const analytics = producerAnalyticsMap[producer.id] || {
             producer_sales_count: 0,
             producer_revenue: 0,
             track_count: 0
           };
+          
+          // Fetch Sync Proposals revenue for this producer
+          const { data: producerSyncRevenueData, error: producerSyncError } = await supabase
+            .from('sync_proposals')
+            .select('sync_fee')
+            .eq('payment_status', 'paid')
+            .eq('producer_id', producer.id);
+
+          if (producerSyncError) {
+            console.error('Error fetching producer sync revenue:', producerSyncError);
+          }
+
+          // Calculate producer's sync proposal revenue
+          const producerSyncRevenue = producerSyncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
+
+          // Fetch Custom Sync Request revenue for this producer
+          const { data: producerCustomSyncRevenueData, error: producerCustomSyncError } = await supabase
+            .from('custom_sync_requests')
+            .select('sync_fee')
+            .eq('status', 'completed')
+            .eq('producer_id', producer.id);
+
+          if (producerCustomSyncError) {
+            console.error('Error fetching producer custom sync revenue:', producerCustomSyncError);
+          }
+
+          // Calculate producer's custom sync revenue
+          const producerCustomSyncRevenue = producerCustomSyncRevenueData?.reduce((sum: number, request: any) => sum + (request.sync_fee || 0), 0) || 0;
+
+          // Total producer revenue includes sales analytics + sync proposals + custom sync requests
+          const totalProducerRevenue = (analytics.producer_revenue || 0) + producerSyncRevenue + producerCustomSyncRevenue;
           
           return {
             id: producer.id,
@@ -213,9 +244,9 @@ export function AdminDashboard() {
             producer_number: producer.producer_number,
             total_tracks: analytics.track_count,
             total_sales: analytics.producer_sales_count,
-            total_revenue: analytics.producer_revenue
+            total_revenue: totalProducerRevenue
           };
-        });
+        }));
 
         setProducers(transformedProducers);
       }
