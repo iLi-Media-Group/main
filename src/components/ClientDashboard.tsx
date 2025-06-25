@@ -1173,10 +1173,44 @@ export function ClientDashboard() {
                           </div>
                           {proposal.payment_status === 'paid' && (
                             <div className="flex items-center mt-2 md:mt-0">
-                              <span className="text-green-400 font-semibold flex items-center">
-                                <Check className="w-4 h-4 mr-2" />
-                                Payment Complete
-                              </span>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    // Generate invoice PDF
+                                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf`, {
+                                      method: 'POST',
+                                      headers: {
+                                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                                        'Content-Type': 'application/json'
+                                      },
+                                      body: JSON.stringify({
+                                        proposal_id: proposal.id
+                                      })
+                                    });
+
+                                    if (response.ok) {
+                                      const blob = await response.blob();
+                                      const url = window.URL.createObjectURL(blob);
+                                      const a = document.createElement('a');
+                                      a.href = url;
+                                      a.download = `invoice-${proposal.id.slice(0, 8)}.pdf`;
+                                      document.body.appendChild(a);
+                                      a.click();
+                                      window.URL.revokeObjectURL(url);
+                                      document.body.removeChild(a);
+                                    } else {
+                                      alert('Failed to generate invoice. Please try again.');
+                                    }
+                                  } catch (error) {
+                                    console.error('Error generating invoice:', error);
+                                    alert('Failed to generate invoice. Please try again.');
+                                  }
+                                }}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                              >
+                                <FileText className="w-4 h-4 mr-2" />
+                                Download Invoice
+                              </button>
                             </div>
                           )}
                           {proposal.payment_status === 'pending' && !proposal.stripe_checkout_session_id && (
