@@ -861,6 +861,9 @@ export function ClientDashboard() {
                       <button 
                         onClick={async () => {
                           console.log('Fixing status for proposal:', proposal.id);
+                          console.log('Current user ID:', user?.id);
+                          console.log('Proposal client_id:', proposal.client_id);
+                          
                           const { data, error } = await supabase
                             .from('sync_proposals')
                             .update({ 
@@ -869,6 +872,7 @@ export function ClientDashboard() {
                               updated_at: new Date().toISOString() 
                             })
                             .eq('id', proposal.id)
+                            .eq('client_id', user?.id) // Ensure we're updating the correct client's proposal
                             .select();
                           console.log('Update result:', { data, error });
                           if (!error) {
