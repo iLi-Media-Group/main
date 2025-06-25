@@ -1031,6 +1031,21 @@ export function ClientDashboard() {
               Accepted proposals={proposals.filter(p => p.status === 'accepted' || p.client_status === 'accepted').length}
             </div>
             
+            {/* Payment Status Debug */}
+            <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400">
+              Payment Debug: 
+              {proposals.filter(p => p.payment_status).map((p: any) => (
+                <div key={p.id} className="mt-1">
+                  Proposal {p.id.slice(0, 8)}... | Status: {p.status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
+                </div>
+              ))}
+              {proposals.filter(p => !p.payment_status).length > 0 && (
+                <div className="mt-1 text-yellow-400">
+                  {proposals.filter(p => !p.payment_status).length} proposals with no payment_status
+                </div>
+              )}
+            </div>
+            
             {filteredProposals.length === 0 ? (
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-gray-400">No proposals found</p>
@@ -1156,20 +1171,6 @@ export function ClientDashboard() {
                               </p>
                             )}
                           </div>
-                          {proposal.payment_status === 'pending' && proposal.stripe_checkout_session_id && (
-                            <div className="flex space-x-2 mt-2 md:mt-0">
-                              <button
-                                onClick={() => {
-                                  // Redirect to Stripe checkout
-                                  window.open(`https://checkout.stripe.com/pay/${proposal.stripe_checkout_session_id}`, '_blank');
-                                }}
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-                              >
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Pay Now
-                              </button>
-                            </div>
-                          )}
                           {proposal.payment_status === 'paid' && (
                             <div className="flex items-center mt-2 md:mt-0">
                               <span className="text-green-400 font-semibold flex items-center">
@@ -1247,7 +1248,17 @@ export function ClientDashboard() {
                     )}
                     <div className="flex space-x-2 mt-2">
                       <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
-                      <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
+                      {/* Only show negotiate button if proposal is not fully accepted */}
+                      {proposal.status !== 'accepted' && proposal.status !== 'client_accepted' && proposal.status !== 'producer_accepted' && (
+                        <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
+                      )}
+                      {/* Show negotiation disabled message if proposal is accepted */}
+                      {proposal.status === 'accepted' && (
+                        <span className="px-2 py-1 bg-gray-600/20 text-gray-400 text-xs rounded flex items-center">
+                          <MessageSquare className="w-3 h-3 inline mr-1" />
+                          Negotiation Closed
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
