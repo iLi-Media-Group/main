@@ -357,6 +357,10 @@ export function ClientDashboard() {
         id,
         track:tracks!track_id (id, title),
         sync_fee,
+        final_amount,
+        payment_due_date,
+        payment_status,
+        stripe_checkout_session_id,
         expiration_date,
         is_urgent,
         status,
@@ -411,7 +415,7 @@ export function ClientDashboard() {
 
   const handleClientAcceptDecline = async (
     proposal: any,
-    action: 'client_accepted' | 'client_rejected'
+    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected'
   ) => {
     console.log('handleClientAcceptDecline called', { proposal, action });
     if (!user) return;
@@ -436,10 +440,16 @@ export function ClientDashboard() {
       newStatus = 'rejected';
     }
 
-    await supabase
+    // Update the proposal status
+    const { error: updateError } = await supabase
       .from('sync_proposals')
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq('id', proposal.id);
+
+    if (updateError) {
+      console.error('Error updating proposal status:', updateError);
+      return;
+    }
 
     // Log to history
     await supabase
@@ -451,7 +461,33 @@ export function ClientDashboard() {
         changed_by: user.id
       });
 
-    fetchProposals();
+    // Refresh proposals to show updated status
+    await fetchProposals();
+
+    // If accepted, trigger invoice creation
+    if (newStatus === 'accepted') {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            proposal_id: proposal.id
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Error triggering payment:', errorData);
+        } else {
+          console.log('Payment triggered successfully');
+        }
+      } catch (error) {
+        console.error('Error calling trigger-proposal-payment:', error);
+      }
+    }
   };
 
   const handleSort = (field: typeof sortField) => {
@@ -736,6 +772,61 @@ export function ClientDashboard() {
                           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
                         >Accept</button>
                         <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
+                      </div>
+                    </div>
+                  )}
+                  {proposal.status === 'accepted' && (
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-2">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div className="mb-2 md:mb-0">
+                          <span className="text-green-600 font-semibold flex items-center mb-1">
+                            <Check className="w-4 h-4 mr-2" />
+                            Proposal Accepted
+                          </span>
+                          {proposal.final_amount && (
+                            <p className="text-sm text-gray-300">
+                              Final Amount: <span className="text-green-400 font-semibold">${proposal.final_amount.toFixed(2)}</span>
+                            </p>
+                          )}
+                          {proposal.payment_due_date && (
+                            <p className="text-sm text-gray-300">
+                              Payment Due: <span className="text-yellow-400 font-semibold">{new Date(proposal.payment_due_date).toLocaleDateString()}</span>
+                            </p>
+                          )}
+                          {proposal.payment_status && (
+                            <p className="text-sm text-gray-300">
+                              Payment Status: <span className={`font-semibold ${
+                                proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                'text-red-400'
+                              }`}>
+                                {proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                              </span>
+                            </p>
+                          )}
+                        </div>
+                        {proposal.payment_status === 'pending' && proposal.stripe_checkout_session_id && (
+                          <div className="flex space-x-2 mt-2 md:mt-0">
+                            <button
+                              onClick={() => {
+                                // Redirect to Stripe checkout
+                                window.open(`https://checkout.stripe.com/pay/${proposal.stripe_checkout_session_id}`, '_blank');
+                              }}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+                            >
+                              <DollarSign className="w-4 h-4 mr-2" />
+                              Pay Now
+                            </button>
+                          </div>
+                        )}
+                        {proposal.payment_status === 'paid' && (
+                          <div className="flex items-center mt-2 md:mt-0">
+                            <span className="text-green-400 font-semibold flex items-center">
+                              <Check className="w-4 h-4 mr-2" />
+                              Payment Complete
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
