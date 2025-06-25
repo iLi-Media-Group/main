@@ -877,6 +877,19 @@ export function ClientDashboard() {
                           
                           console.log('Current database values:', currentProposal);
                           
+                          // Try updating just updated_at first to test RLS
+                          const { data: testUpdate, error: testError } = await supabase
+                            .from('sync_proposals')
+                            .update({ 
+                              updated_at: new Date().toISOString() 
+                            })
+                            .eq('id', proposal.id)
+                            .eq('client_id', user?.id)
+                            .select();
+                          
+                          console.log('Test update result (just updated_at):', { data: testUpdate, error: testError });
+                          
+                          // Now try updating client_status
                           const { data, error } = await supabase
                             .from('sync_proposals')
                             .update({ 
