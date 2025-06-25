@@ -640,6 +640,8 @@ export function ClientDashboard() {
       console.log('Triggering payment for accepted proposal...');
       try {
         console.log('Setting up payment for proposal:', proposal.id);
+        console.log('Calling trigger-proposal-payment with proposal_id:', proposal.id);
+        
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
           method: 'POST',
           headers: {
@@ -651,13 +653,18 @@ export function ClientDashboard() {
           })
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
         const responseData = await response.json();
         console.log('Payment setup response:', responseData);
 
         if (!response.ok) {
           console.error('Error triggering payment:', responseData);
-          // Show user-friendly error message
-          alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
+          // Show user-friendly error message with more details
+          const errorMessage = responseData.error || responseData.message || 'Unknown error';
+          console.error('Payment setup failed with error:', errorMessage);
+          alert(`Payment setup failed: ${errorMessage}`);
         } else {
           console.log('Payment triggered successfully:', responseData);
           
@@ -672,7 +679,12 @@ export function ClientDashboard() {
         }
       } catch (error) {
         console.error('Error calling trigger-proposal-payment:', error);
-        alert('Failed to set up payment. Please try again or contact support.');
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        alert(`Failed to set up payment. Error: ${error.message}. Please try again or contact support.`);
       }
     }
   };
