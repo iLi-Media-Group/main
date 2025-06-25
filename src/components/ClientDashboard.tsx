@@ -389,10 +389,31 @@ export function ClientDashboard() {
 
   const filteredProposals = proposals.filter((p: any) => {
     console.log('Filtering proposal:', p.id, 'status:', p.status, 'client_status:', p.client_status, 'tab:', proposalTab);
-    if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted';
-    if (proposalTab === 'accepted') return p.status === 'accepted' || p.client_status === 'accepted';
-    if (proposalTab === 'declined') return p.status === 'rejected';
-    if (proposalTab === 'expired') return p.status === 'expired';
+    
+    if (proposalTab === 'pending') {
+      const isPending = p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted';
+      console.log('  Pending check:', isPending);
+      return isPending;
+    }
+    
+    if (proposalTab === 'accepted') {
+      const isAccepted = p.status === 'accepted' || p.client_status === 'accepted';
+      console.log('  Accepted check:', isAccepted, '(status:', p.status, 'client_status:', p.client_status, ')');
+      return isAccepted;
+    }
+    
+    if (proposalTab === 'declined') {
+      const isDeclined = p.status === 'rejected';
+      console.log('  Declined check:', isDeclined);
+      return isDeclined;
+    }
+    
+    if (proposalTab === 'expired') {
+      const isExpired = p.status === 'expired';
+      console.log('  Expired check:', isExpired);
+      return isExpired;
+    }
+    
     return false;
   });
 
@@ -779,6 +800,17 @@ export function ClientDashboard() {
             {filteredProposals.length === 0 ? (
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-gray-400">No proposals found</p>
+                {/* Temporary debug section */}
+                {proposals.length > 0 && (
+                  <div className="mt-4 text-left">
+                    <p className="text-yellow-400 text-sm mb-2">Debug: All proposals ({proposals.length}):</p>
+                    {proposals.map((p: any) => (
+                      <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
+                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               filteredProposals.map((proposal: any) => (
