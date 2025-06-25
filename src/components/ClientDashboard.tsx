@@ -1008,6 +1008,30 @@ export function ClientDashboard() {
               <button
                 onClick={async () => {
                   try {
+                    console.log('Fixing payment status for accepted proposals...');
+                    
+                    // First, check what proposals need fixing
+                    const { data: pendingProposals, error: checkError } = await supabase
+                      .from('sync_proposals')
+                      .select('id, status, client_status, payment_status, sync_fee')
+                      .eq('client_id', user?.id)
+                      .eq('status', 'accepted')
+                      .eq('payment_status', 'pending')
+                      .neq('sync_fee', 0);
+
+                    if (checkError) {
+                      console.error('Error checking proposals:', checkError);
+                      alert('Failed to check proposals: ' + checkError.message);
+                      return;
+                    }
+
+                    console.log('Found proposals to fix:', pendingProposals);
+
+                    if (!pendingProposals || pendingProposals.length === 0) {
+                      alert('No accepted proposals found with pending payment status');
+                      return;
+                    }
+
                     // Manual payment status fix for accepted proposals
                     const { data, error } = await supabase
                       .from('sync_proposals')
@@ -1018,7 +1042,6 @@ export function ClientDashboard() {
                       })
                       .eq('client_id', user?.id)
                       .eq('status', 'accepted')
-                      .eq('client_status', 'accepted')
                       .eq('payment_status', 'pending')
                       .neq('sync_fee', 0);
 
@@ -1027,7 +1050,7 @@ export function ClientDashboard() {
                       alert('Failed to fix payment status: ' + error.message);
                     } else {
                       console.log('Payment status fix result:', data);
-                      alert('Payment status updated for accepted proposals');
+                      alert(`Successfully updated payment status for ${pendingProposals.length} proposal(s)`);
                       await fetchProposals(); // Refresh the data
                     }
                   } catch (err) {
