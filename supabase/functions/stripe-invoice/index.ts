@@ -26,8 +26,8 @@ serve(async (req) => {
     }
 
     console.log('Parsing request body...');
-    const { proposal_id, amount, client_user_id, payment_due_date, metadata = {} } = await req.json();
-    console.log('Received parameters:', { proposal_id, amount, client_user_id, payment_due_date: !!payment_due_date, metadata: !!metadata });
+    const { proposal_id, amount, client_user_id, metadata = {} } = await req.json();
+    console.log('Received parameters:', { proposal_id, amount, client_user_id, metadata: !!metadata });
     
     if (!proposal_id || !amount || !client_user_id) {
       console.log('Missing required parameters');
@@ -37,7 +37,7 @@ serve(async (req) => {
       });
     }
 
-    console.log('Creating Supabase client...');
+    console.log('Setting up clients...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY');
@@ -114,41 +114,12 @@ serve(async (req) => {
       console.log('Using existing customer:', customerId);
     }
 
-    console.log('Creating Stripe product...');
-    // Create a product/price for the proposal
-    const product = await stripe.products.create({
-      name: metadata.description || `Sync Proposal #${proposal_id}`,
-      metadata: { proposal_id },
-    });
-    
-    console.log('Creating Stripe price...');
-    const price = await stripe.prices.create({
-      product: product.id,
-      unit_amount: amount,
-      currency: 'usd',
-    });
-
     console.log('Creating Stripe checkout session...');
-    // Create Stripe Checkout session
-    const siteUrl = Deno.env.get('SITE_URL') ?? '';
-    console.log('SITE_URL from env:', siteUrl);
+    // Create Stripe Checkout session directly without product/price creation
+    const siteUrl = Deno.env.get('SITE_URL') ?? 'https://mybeatfi.io';
+    const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
     
-    // Ensure we have a valid base URL
-    let baseSiteUrl;
-    if (!siteUrl) {
-      baseSiteUrl = 'https://mybeatfi.io'; // Fallback to production URL
-      console.log('No SITE_URL found, using fallback:', baseSiteUrl);
-    } else if (siteUrl.startsWith('http')) {
-      baseSiteUrl = siteUrl;
-      console.log('Using SITE_URL as is:', baseSiteUrl);
-    } else {
-      baseSiteUrl = `https://${siteUrl}`;
-      console.log('Adding https:// to SITE_URL:', baseSiteUrl);
-    }
-    
-    console.log('Final baseSiteUrl:', baseSiteUrl);
-    console.log('Success URL will be:', `${baseSiteUrl}/dashboard?payment=success`);
-    console.log('Cancel URL will be:', `${baseSiteUrl}/dashboard?payment=cancel`);
+    console.log('Using baseSiteUrl:', baseSiteUrl);
     
     // Calculate expires_at - must be within 24 hours from now
     const now = Math.floor(Date.now() / 1000);
@@ -160,18 +131,24 @@ serve(async (req) => {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: price.id,
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: metadata.description || `Sync Proposal #${proposal_id}`,
+            },
+            unit_amount: amount,
+          },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      success_url: metadata.success_url || `${baseSiteUrl}/dashboard?payment=success`,
-      cancel_url: metadata.cancel_url || `${baseSiteUrl}/dashboard?payment=cancel`,
+      success_url: `${baseSiteUrl}/dashboard?payment=success`,
+      cancel_url: `${baseSiteUrl}/dashboard?payment=cancel`,
       metadata: {
         proposal_id,
         ...metadata,
       },
-      expires_at: expiresAt, // Use calculated timestamp within 24 hours
+      expires_at: expiresAt,
     });
 
     console.log('Stripe session created successfully:', session.id);
@@ -181,7 +158,11 @@ serve(async (req) => {
     
   } catch (error: any) {
     console.error('Stripe invoice function error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), { 
+    console.error('Error stack:', error.stack);
+    return new Response(JSON.stringify({ 
+      error: 'Failed to create Stripe invoice', 
+      details: error.message 
+    }), { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
       status: 500 
     });
