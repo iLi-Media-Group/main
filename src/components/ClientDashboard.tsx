@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -116,6 +116,8 @@ export function ClientDashboard() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [proposalTab, setProposalTab] = useState<'pending' | 'accepted' | 'declined' | 'expired'>('pending');
+  const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
+  const negotiationDialogOpenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -362,10 +364,28 @@ export function ClientDashboard() {
       `)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
-    if (!error && data) setProposals(data);
+    if (!error && data) {
+      setProposals(data);
+      // Check for unread negotiation messages for each proposal
+      const unread: string[] = [];
+      for (const proposal of data) {
+        const { data: messages } = await supabase
+          .from('proposal_negotiations')
+          .select('id, created_at, sender_id')
+          .eq('proposal_id', proposal.id)
+          .order('created_at', { ascending: true });
+        if (messages && messages.length > 0) {
+          const lastViewed = localStorage.getItem(`negotiation_last_viewed_${proposal.id}_${user.id}`);
+          const lastViewedTime = lastViewed ? new Date(lastViewed).getTime() : 0;
+          const hasUnread = messages.some((msg: any) => new Date(msg.created_at).getTime() > lastViewedTime && msg.sender_id !== user.id);
+          if (hasUnread) unread.push(proposal.id);
+        }
+      }
+      setUnreadProposals(unread);
+    }
   };
 
-  const filteredProposals = proposals.filter((p) => {
+  const filteredProposals = proposals.filter((p: any) => {
     if (proposalTab === 'pending') return p.status === 'pending' || p.status === 'active';
     if (proposalTab === 'accepted') return p.status === 'accepted';
     if (proposalTab === 'declined') return p.status === 'rejected';
@@ -375,6 +395,12 @@ export function ClientDashboard() {
 
   const handleProposalAction = (proposal: any, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
     setSelectedProposal(proposal);
+    if (action === 'negotiate') {
+      negotiationDialogOpenRef.current = proposal.id;
+      // Mark as viewed now
+      localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
+      setUnreadProposals((prev: string[]) => prev.filter((id: string) => id !== proposal.id));
+    }
     switch (action) {
       case 'negotiate': setShowNegotiationDialog(true); break;
       case 'history': setShowHistoryDialog(true); break;
@@ -523,8 +549,8 @@ export function ClientDashboard() {
   };
 
   const sortedAndFilteredLicenses = licenses
-    .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
-    .sort((a, b) => {
+    .filter((license: any) => !selectedGenre || license.track.genres.includes(selectedGenre))
+    .sort((a: any, b: any) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'renewal':
@@ -537,8 +563,8 @@ export function ClientDashboard() {
     });
 
   const sortedAndFilteredFavorites = favorites
-    .filter(track => !selectedGenre || track.genres.includes(selectedGenre))
-    .sort((a, b) => {
+    .filter((track: any) => !selectedGenre || track.genres.includes(selectedGenre))
+    .sort((a: any, b: any) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'title':
@@ -641,14 +667,22 @@ export function ClientDashboard() {
               <button onClick={() => setProposalTab('expired')} className={`px-3 py-1 rounded ${proposalTab==='expired'?'bg-yellow-600 text-white':'bg-white/10 text-gray-300'}`}>Expired</button>
             </div>
           </div>
+          {unreadProposals.length > 0 && (
+            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-700 font-semibold flex items-center">
+              <AlertTriangle className="w-4 h-4 mr-2" /> You have new negotiation messages waiting to be reviewed.
+            </div>
+          )}
           <div className="space-y-4">
             {filteredProposals.length === 0 ? (
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-gray-400">No proposals found</p>
               </div>
             ) : (
-              filteredProposals.map((proposal) => (
-                <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20">
+              filteredProposals.map((proposal: any) => (
+                <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20 relative">
+                  {unreadProposals.includes(proposal.id) && (
+                    <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">New Message</span>
+                  )}
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="text-white font-medium">{proposal.track?.title}</h4>
@@ -668,7 +702,7 @@ export function ClientDashboard() {
                     <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
                       <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
                       <div className="flex space-x-2 mt-2 md:mt-0">
-                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_accepted')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">Accept</button>
+                        <button onClick={() => handleClientAcceptDecline(proposal, 'client_accepted')} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink">Accept</button>
                         <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
                       </div>
                     </div>
