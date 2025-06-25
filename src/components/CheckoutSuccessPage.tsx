@@ -62,7 +62,42 @@ export function CheckoutSuccessPage() {
           // Handle Stripe payment
           // Get subscription details
           const subscription = await getUserSubscription();
+          console.log('Subscription data from getUserSubscription:', subscription);
           setSubscription(subscription);
+
+          // If subscription data is missing or has invalid dates, try to get it directly from the subscriptions table
+          if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
+            console.log('Subscription data incomplete, trying direct query...');
+            
+            // Get the customer ID first
+            const { data: customerData } = await supabase
+              .from('stripe_customers')
+              .select('customer_id')
+              .eq('user_id', user?.id)
+              .single();
+            
+            if (customerData?.customer_id) {
+              // Query the subscriptions table directly
+              const { data: directSubscription } = await supabase
+                .from('stripe_subscriptions')
+                .select('*')
+                .eq('customer_id', customerData.customer_id)
+                .single();
+              
+              console.log('Direct subscription data:', directSubscription);
+              
+              if (directSubscription && directSubscription.price_id && directSubscription.current_period_start) {
+                // Update the subscription state with the direct data
+                setSubscription({
+                  ...subscription,
+                  price_id: directSubscription.price_id,
+                  current_period_start: directSubscription.current_period_start,
+                  current_period_end: directSubscription.current_period_end,
+                  status: directSubscription.status
+                });
+              }
+            }
+          }
 
           // Get order details
           const orders = await getUserOrders();
