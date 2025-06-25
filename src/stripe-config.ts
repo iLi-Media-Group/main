@@ -35,7 +35,7 @@ export const PRODUCTS: StripeProduct[] = [
     id: 'prod_SYHDBYWlrQJsjI',
     name: 'Platinum Access',
     description: 'Unlimited track use',
-    priceId: 'price_1RdAfXR8RYA8TFzwFZyaSREP ',
+    priceId: 'price_1RdAfXR8RYA8TFzwFZyaSREP',
     mode: 'subscription',
     price: 59.99,
     interval: 'month',
