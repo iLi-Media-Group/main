@@ -41,7 +41,8 @@ serve(async (req) => {
             last_name,
             email
           )
-        )
+        ),
+        created_at
       `)
       .eq('id', proposal_id)
       .single();
@@ -65,20 +66,23 @@ serve(async (req) => {
     }
 
     // Calculate payment due date based on payment terms
-    let paymentDueDate = new Date();
+    const acceptanceDate = new Date(proposal.created_at || new Date().toISOString());
+    let paymentDueDate = new Date(acceptanceDate);
+    
     switch (proposal.payment_terms) {
       case 'net30':
-        paymentDueDate.setDate(paymentDueDate.getDate() + 30);
+        paymentDueDate.setDate(acceptanceDate.getDate() + 30);
         break;
       case 'net60':
-        paymentDueDate.setDate(paymentDueDate.getDate() + 60);
+        paymentDueDate.setDate(acceptanceDate.getDate() + 60);
         break;
       case 'net90':
-        paymentDueDate.setDate(paymentDueDate.getDate() + 90);
+        paymentDueDate.setDate(acceptanceDate.getDate() + 90);
         break;
       case 'immediate':
       default:
-        paymentDueDate.setDate(paymentDueDate.getDate() + 1); // Due tomorrow for immediate
+        // For immediate payment, due date is the same as acceptance date
+        paymentDueDate = new Date(acceptanceDate);
         break;
     }
 

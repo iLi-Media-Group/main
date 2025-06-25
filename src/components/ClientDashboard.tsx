@@ -76,6 +76,23 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
   return 'active';
 };
 
+const calculatePaymentDueDate = (acceptedDate: string, paymentTerms: string = 'immediate'): Date => {
+  const accepted = new Date(acceptedDate);
+  
+  switch (paymentTerms.toLowerCase()) {
+    case 'immediate':
+      return accepted; // Due immediately on acceptance
+    case 'net30':
+      return new Date(accepted.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+    case 'net60':
+      return new Date(accepted.getTime() + (60 * 24 * 60 * 60 * 1000)); // 60 days
+    case 'net90':
+      return new Date(accepted.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
+    default:
+      return accepted; // Default to immediate
+  }
+};
+
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -920,11 +937,15 @@ export function ClientDashboard() {
                               Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee.toFixed(2)}</span>
                             </p>
                           )}
-                          {proposal.payment_due_date && (
+                          {proposal.payment_due_date ? (
                             <p className="text-sm text-gray-300">
                               Payment Due: <span className="text-yellow-400 font-semibold">{new Date(proposal.payment_due_date).toLocaleDateString()}</span>
                             </p>
-                          )}
+                          ) : proposal.status === 'accepted' && proposal.created_at ? (
+                            <p className="text-sm text-gray-300">
+                              Payment Due: <span className="text-yellow-400 font-semibold">{calculatePaymentDueDate(proposal.created_at, 'immediate').toLocaleDateString()}</span>
+                            </p>
+                          ) : null}
                           {proposal.payment_status && (
                             <p className="text-sm text-gray-300">
                               Payment Status: <span className={`font-semibold ${
@@ -993,7 +1014,7 @@ export function ClientDashboard() {
                               className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
                             >
                               <DollarSign className="w-4 h-4 mr-2" />
-                              Set Up Payment
+                              Pay Now
                             </button>
                           </div>
                         )}
