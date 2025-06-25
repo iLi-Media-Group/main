@@ -167,6 +167,34 @@ export function ProducerDashboard() {
       const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + (count as number), 0);
       const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + (amount as number), 0);
 
+      // Fetch producer balance data
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('producer_balances')
+        .select('pending_balance, available_balance, lifetime_earnings')
+        .eq('producer_id', user.id)
+        .single();
+
+      if (balanceError && balanceError.code !== 'PGRST116') { // PGRST116 is "not found"
+        console.error('Error fetching producer balance:', balanceError);
+      }
+
+      // Fetch sync proposal revenue
+      const { data: syncRevenueData, error: syncRevenueError } = await supabase
+        .from('sync_proposals')
+        .select('sync_fee')
+        .in('track_id', trackIds)
+        .eq('payment_status', 'paid');
+
+      if (syncRevenueError) {
+        console.error('Error fetching sync proposal revenue:', syncRevenueError);
+      }
+
+      // Calculate total sync revenue
+      const syncRevenue = syncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
+
+      // Total revenue includes both sales and sync proposals
+      const totalRevenueWithSync = totalRevenue + syncRevenue;
+
       // Fetch all proposals
       const { data: allProposalsData, error: allProposalsError } = await supabase
         .from('sync_proposals')
@@ -262,7 +290,7 @@ export function ProducerDashboard() {
       setStats({
         totalTracks,
         totalSales,
-        totalRevenue,
+        totalRevenue: totalRevenueWithSync,
         pendingProposals: recentProposalsData?.length || 0
       });
 
@@ -500,6 +528,30 @@ export function ProducerDashboard() {
               <FileText className="w-12 h-12 text-yellow-500" />
             </div>
           </div>
+
+          {balanceData && (
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-green-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400">Pending Balance</p>
+                  <p className="text-3xl font-bold text-white">${balanceData.pending_balance?.toFixed(2) || '0.00'}</p>
+                </div>
+                <DollarSign className="w-12 h-12 text-green-500" />
+              </div>
+            </div>
+          )}
+
+          {balanceData && (
+            <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-purple-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-400">Lifetime Earnings</p>
+                  <p className="text-3xl font-bold text-white">${balanceData.lifetime_earnings?.toFixed(2) || '0.00'}</p>
+                </div>
+                <BarChart3 className="w-12 h-12 text-purple-500" />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -119,6 +119,8 @@ async function handleEvent(event: Stripe.Event) {
           return;
         }
         
+        console.info(`Successfully inserted order into stripe_orders table: ${checkout_session_id}`);
+        
         // Get the user_id associated with this customer
         const { data: customerData, error: customerError } = await supabase
           .from('stripe_customers')
@@ -133,6 +135,8 @@ async function handleEvent(event: Stripe.Event) {
         
         // Check if this is a sync proposal payment
         if (metadata?.proposal_id) {
+          console.info(`Processing sync proposal payment for proposal: ${metadata.proposal_id}`);
+          
           // Get proposal details
           const { data: proposalData, error: proposalError } = await supabase
             .from('sync_proposals')
@@ -140,6 +144,7 @@ async function handleEvent(event: Stripe.Event) {
               id, 
               track_id, 
               client_id,
+              sync_fee,
               track:tracks!inner (
                 producer_id,
                 title
@@ -152,6 +157,14 @@ async function handleEvent(event: Stripe.Event) {
             console.error('Error fetching proposal data:', proposalError);
             return;
           }
+          
+          console.info(`Proposal data:`, {
+            proposal_id: proposalData.id,
+            track_id: proposalData.track_id,
+            producer_id: proposalData.track.producer_id,
+            sync_fee: proposalData.sync_fee,
+            track_title: proposalData.track.title
+          });
           
           // Update proposal payment status
           const { error: updateError } = await supabase
@@ -167,6 +180,37 @@ async function handleEvent(event: Stripe.Event) {
             console.error('Error updating proposal payment status:', updateError);
             return;
           }
+          
+          console.info(`Successfully updated proposal payment status to 'paid'`);
+          
+          // Check if producer balance was updated
+          setTimeout(async () => {
+            const { data: balanceData, error: balanceError } = await supabase
+              .from('producer_balances')
+              .select('*')
+              .eq('producer_id', proposalData.track.producer_id)
+              .single();
+              
+            if (balanceError) {
+              console.error('Error checking producer balance:', balanceError);
+            } else {
+              console.info(`Producer balance after payment:`, balanceData);
+            }
+            
+            // Check if transaction was created
+            const { data: transactionData, error: transactionError } = await supabase
+              .from('producer_transactions')
+              .select('*')
+              .eq('reference_id', metadata.proposal_id)
+              .order('created_at', { ascending: false })
+              .limit(1);
+              
+            if (transactionError) {
+              console.error('Error checking producer transaction:', transactionError);
+            } else {
+              console.info(`Producer transaction after payment:`, transactionData);
+            }
+          }, 2000); // Wait 2 seconds for trigger to process
           
           // Get producer email for notification
           const { data: producerData, error: producerError } = await supabase
