@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, X, Building2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
@@ -24,7 +23,6 @@ export function SignupForm({ onClose }: SignupFormProps) {
   const [invitationCode, setInvitationCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
   const navigate = useNavigate();
   
   // Get redirect and product info from URL params
@@ -53,13 +51,11 @@ export function SignupForm({ onClose }: SignupFormProps) {
         throw new Error('Password does not meet requirements');
       }
 
-      // Check invitation code for producer accounts
       if (accountType === 'producer') {
         if (!invitationCode.trim()) {
           throw new Error('Producer invitation code is required');
         }
 
-        // Validate the invitation code
         const { data: isValid, error: validationError } = await supabase
           .rpc('validate_producer_invitation', {
             code: invitationCode,
@@ -71,16 +67,37 @@ export function SignupForm({ onClose }: SignupFormProps) {
         }
       }
 
-      // Create user account
-      await signUp(email, password);
+      // Fetch user's public IP address
+      let userIP = '';
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipRes.json();
+        userIP = ipData.ip;
+      } catch (ipErr) {
+        console.warn('Could not fetch user IP:', ipErr);
+      }
 
-      // Get the current user id from Supabase Auth
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) throw new Error('Failed to get user after signup');
+      // 1. Create user with metadata
+      await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            account_type: accountType,
+            signup_ip: userIP
+          }
+        }
+      });
 
-      // Update profile with additional details
-      const { error: profileError } = await supabase
+      // 2. Get session and user
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session?.user) {
+        throw new Error('Failed to retrieve session after signup');
+      }
+      const user = session.user;
+
+      // 3. Update the profile row (created by trigger)
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
@@ -91,12 +108,9 @@ export function SignupForm({ onClose }: SignupFormProps) {
           invitation_code: accountType === 'producer' ? invitationCode : null
         })
         .eq('id', user.id);
+      if (updateError) throw updateError;
 
-      if (profileError && profileError.code !== '409' && profileError.code !== '23505') {
-        throw profileError;
-      }
-
-      // Mark invitation as used if it's a producer
+      // 4. Mark producer invitation as used
       if (accountType === 'producer') {
         await supabase.rpc('use_producer_invitation', {
           code: invitationCode,
@@ -104,24 +118,23 @@ export function SignupForm({ onClose }: SignupFormProps) {
         });
       }
 
+      // 5. Redirect
       onClose();
-      
-      // For client accounts, always navigate to the welcome/pricing page first
+
       if (accountType === 'client') {
-        navigate('/welcome', { 
-          state: { 
+        navigate('/welcome', {
+          state: {
             newUser: true,
             email,
             firstName,
             redirectTo,
             productId
-          } 
+          }
         });
-        return;
+      } else {
+        navigate('/producer/dashboard');
       }
-      
-      // For producer accounts, go directly to dashboard
-      navigate('/producer/dashboard');
+
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
