@@ -6,11 +6,7 @@ import { supabase } from '../lib/supabase';
 import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
 import { Track, GENRES, MOODS } from '../types';
-import AIRecommendationWidget from './AIRecommendationWidget';
-
-// Inside your page component:
-<AIRecommendationWidget />
-
+import AISearchAssistant from './AISearchAssistant';
 
 const TRACKS_PER_PAGE = 20;
 
@@ -242,6 +238,10 @@ export function CatalogPage() {
     navigate(`/track/${track.id}`);
   };
 
+  const handleAISearchApply = (filters: any) => {
+    handleSearch(filters);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -254,6 +254,15 @@ export function CatalogPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-6">Music Catalog</h1>
+        
+        {/* AI Search Assistant */}
+        <div className="mb-8">
+          <AISearchAssistant 
+            onSearchApply={handleAISearchApply}
+            className="mb-6"
+          />
+        </div>
+        
         <SearchBox onSearch={handleSearch} />
       </div>
 

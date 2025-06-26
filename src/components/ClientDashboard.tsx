@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle, RefreshCw, Heart, CheckCircle, Search, TrendingUp, Zap } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
@@ -18,6 +18,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { InvoicePDF } from './InvoicePDF';
 import { pdf } from '@react-pdf/renderer';
+import AISearchAssistant from './AISearchAssistant';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -924,744 +925,128 @@ export function ClientDashboard() {
       }
     });
 
+  const handleAISearchApply = (filters: any) => {
+    // Navigate to catalog with AI-generated filters
+    const params = new URLSearchParams();
+    if (filters.query) params.set('q', filters.query);
+    if (filters.genres?.length) params.set('genres', filters.genres.join(','));
+    if (filters.moods?.length) params.set('moods', filters.moods.join(','));
+    if (filters.minBpm) params.set('minBpm', filters.minBpm.toString());
+    if (filters.maxBpm) params.set('maxBpm', filters.maxBpm.toString());
+
+    navigate(`/catalog?${params.toString()}`);
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+      <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
-            {profile && (
-              <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowProfileDialog(true)}
-              className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-            >
-              <UserCog className="w-5 h-5 mr-2" />
-              Edit Profile
-            </button>
-            <Link
-              to="/pricing"
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              Upgrade Membership
-            </Link>
-          </div>
-        </div>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-white mb-2">Welcome back, {user?.email?.split('@')[0]}!</h1>
+        <p className="text-gray-400">Here's what's happening with your music licensing</p>
+      </div>
 
-        {/* Payment Success Message */}
-        {showPaymentSuccess && (
-          <div className="mb-6 p-4 bg-green-500/20 border border-green-500/40 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Check className="w-5 h-5 mr-2 text-green-400" />
-                <span className="text-green-400 font-semibold">Payment Successful!</span>
-                <span className="text-green-300 ml-2">Your sync proposal payment has been processed successfully.</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button 
-                  onClick={async () => {
-                    await fetchProposals();
-                    setShowPaymentSuccess(false);
-                  }} 
-                  className="text-green-300 hover:text-green-100 text-sm underline"
-                >
-                  Refresh Data
-                </button>
-                <button 
-                  onClick={() => setShowPaymentSuccess(false)} 
-                  className="text-green-300 hover:text-green-100"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* AI Search Assistant */}
+      <div className="mb-8">
+        <AISearchAssistant 
+          onSearchApply={handleAISearchApply}
+          className="mb-6"
+        />
+      </div>
 
-        {/* Payment Cancel Message */}
-        {showPaymentCancel && (
-          <div className="mb-6 p-4 bg-yellow-500/20 border border-yellow-500/40 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-yellow-400" />
-                <span className="text-yellow-400 font-semibold">Payment Cancelled</span>
-                <span className="text-yellow-300 ml-2">Your payment was cancelled. You can try again anytime.</span>
-              </div>
-              <button 
-                onClick={() => setShowPaymentCancel(false)} 
-                className="text-yellow-300 hover:text-yellow-100"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="mb-8 p-6 glass-card rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white mb-2">License Usage</h2>
-              <p className="text-gray-300">
-                <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
-                <br />
-                {membershipPlan === 'Gold Access' ? (
-                  <>
-                    You have used {userStats.totalLicenses} of your 10 monthly licenses
-                    ({userStats.remainingLicenses} remaining)
-                  </>
-                ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
-                  'You have unlimited licenses available'
-                ) : (
-                  'Single track license'
-                )}
-              </p>
-              {subscription && subscription.current_period_start && subscription.current_period_end && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Plan Start: {new Date(subscription.current_period_start * 1000).toLocaleDateString()}<br />
-                  Plan End: {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
-                </p>
-              )}
-            </div>
-            {membershipPlan === 'Gold Access' && userStats.remainingLicenses < 3 && (
-              <div className="flex items-center text-yellow-400">
-                <AlertCircle className="w-5 h-5 mr-2" />
-                <span>Running low on licenses</span>
-              </div>
-            )}
-          </div>
-          {membershipPlan === 'Gold Access' && (
-            <div className="mt-4 w-full bg-gray-700 rounded-full h-2">
-              <div
-                className="bg-purple-600 rounded-full h-2 transition-all duration-300"
-                style={{ width: `${(userStats.totalLicenses / 10) * 100}%` }}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-white">Sync Proposals</h2>
-            <div className="flex items-center space-x-4">
-              {showDebug && (
-                <button
-                  onClick={fetchProposals}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Refresh
-                </button>
-              )}
-              {showDebug && (
-                <button
-                  onClick={async () => {
-                    try {
-                      console.log('Fixing payment status for accepted proposals...');
-                      
-                      // First, check what proposals need fixing
-                      const { data: pendingProposals, error: checkError } = await supabase
-                        .from('sync_proposals')
-                        .select('id, status, client_status, payment_status, sync_fee')
-                        .eq('client_id', user?.id)
-                        .eq('status', 'accepted')
-                        .eq('payment_status', 'pending')
-                        .neq('sync_fee', 0);
-
-                      if (checkError) {
-                        console.error('Error checking proposals:', checkError);
-                        alert('Failed to check proposals: ' + checkError.message);
-                        return;
-                      }
-
-                      console.log('Found proposals to fix:', pendingProposals);
-
-                      if (!pendingProposals || pendingProposals.length === 0) {
-                        alert('No accepted proposals found with pending payment status');
-                        return;
-                      }
-
-                      // Manual payment status fix for accepted proposals
-                      const { data, error } = await supabase
-                        .from('sync_proposals')
-                        .update({
-                          payment_status: 'paid',
-                          payment_date: new Date().toISOString(),
-                          updated_at: new Date().toISOString()
-                        })
-                        .eq('client_id', user?.id)
-                        .eq('status', 'accepted')
-                        .eq('payment_status', 'pending')
-                        .neq('sync_fee', 0);
-
-                      if (error) {
-                        console.error('Error fixing payment status:', error);
-                        alert('Failed to fix payment status: ' + error.message);
-                      } else {
-                        console.log('Payment status fix result:', data);
-                        alert(`Successfully updated payment status for ${pendingProposals.length} proposal(s)`);
-                        await fetchProposals(); // Refresh the data
-                      }
-                    } catch (err) {
-                      console.error('Error in payment status fix:', err);
-                      alert('Failed to fix payment status');
-                    }
-                  }}
-                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center"
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Fix Payment Status
-                </button>
-              )}
-              <div className="flex space-x-2">
-                <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
-                <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
-                <button onClick={() => setProposalTab('declined')} className={`px-3 py-1 rounded ${proposalTab==='declined'?'bg-red-600 text-white':'bg-white/10 text-gray-300'}`}>Declined</button>
-                <button onClick={() => setProposalTab('expired')} className={`px-3 py-1 rounded ${proposalTab==='expired'?'bg-yellow-600 text-white':'bg-white/10 text-gray-300'}`}>Expired</button>
-              </div>
-            </div>
-          </div>
-          {unreadProposals.length > 0 && (
-            <div className="mb-4 p-4 bg-yellow-400 border-2 border-green-500 rounded-lg text-green-900 font-bold flex items-center justify-between">
-              <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-green-700" />
-                You have {unreadProposals.length} new negotiation message{unreadProposals.length > 1 ? 's' : ''} waiting to be reviewed.
-              </div>
-              <button 
-                onClick={() => setUnreadProposals([])} 
-                className="text-green-700 hover:text-green-900 text-sm underline font-bold"
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-          <div className="space-y-4">
-            {showDebug && (
-              <div className="space-y-4">
-                {/* Debug info */}
-                <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-                  Debug: Tab={proposalTab} | All proposals={proposals.length} | Filtered={filteredProposals.length} | 
-                  Pending proposals={proposals.filter(p => p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted').length} |
-                  Accepted proposals={proposals.filter(p => p.status === 'accepted' || p.client_status === 'accepted').length}
-                </div>
-                {/* Payment Status Debug */}
-                <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400">
-                  Payment Debug: 
-                  {proposals.filter(p => p.payment_status).map((p: any) => (
-                    <div key={p.id} className="mt-1">
-                      Proposal {p.id.slice(0, 8)}... | Status: {p.status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
-                    </div>
-                  ))}
-                  {proposals.filter(p => !p.payment_status).length > 0 && (
-                    <div className="mt-1 text-yellow-400">
-                      {proposals.filter(p => !p.payment_status).length} proposals with no payment_status
-                    </div>
-                  )}
-                </div>
-                {/* NEW: Visible Database Debug */}
-                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-400">
-                  <h4 className="font-bold mb-2">Database Debug (Visible)</h4>
-                  {proposals.length > 0 ? (
-                    proposals.map((p: any) => (
-                      <div key={p.id} className="mb-1">
-                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
-                      </div>
-                    ))
-                  ) : (
-                    <div>No proposals found</div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {filteredProposals.length === 0 ? (
-              <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
-                <p className="text-gray-400">No proposals found</p>
-                {/* Temporary debug section */}
-                {showDebug && proposals.length > 0 && (
-                  <div className="mt-4 text-left">
-                    <p className="text-yellow-400 text-sm mb-2">Debug: All proposals ({proposals.length}) | Current tab: {proposalTab}</p>
-                    {proposals.map((p: any) => (
-                      <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
-                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
-                        <br />
-                        <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
-                        <br />
-                        <span className="text-green-400">Tab filters: Pending={p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted' ? 'YES' : 'NO'} | Accepted={p.status === 'accepted' || p.client_status === 'accepted' ? 'YES' : 'NO'} | Declined={p.status === 'rejected' ? 'YES' : 'NO'}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!showDebug && (
-                  <></>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Debug section for filtered proposals */}
-                {showDebug && (
-                  <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                    <p className="text-blue-400 text-sm mb-2">Debug: Filtered proposals ({filteredProposals.length}) | Current tab: {proposalTab}</p>
-                    {filteredProposals.map((p: any) => (
-                      <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
-                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
-                        <br />
-                        <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {filteredProposals.map((proposal: any) => (
-                  <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20 relative">
-                    {unreadProposals.includes(proposal.id) && (
-                      <div className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse flex items-center">
-                        <MessageSquare className="w-3 h-3 mr-1" />
-                        New Message
-                      </div>
-                    )}
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="text-white font-medium">
-                          {proposal.tracks?.title || `Track ${proposal.track_id?.slice(0, 8)}...`}
-                        </h4>
-                        <p className="text-sm text-gray-400">
-                          Sync Fee: <span className="text-green-400 font-semibold">
-                            ${proposal.sync_fee?.toFixed(2) || '0.00'}
-                          </span>
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          Expires: {proposal.expiration_date ? new Date(proposal.expiration_date).toLocaleDateString() : 'No expiry date'}
-                        </p>
-                        {proposal.is_urgent && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-500 text-xs font-semibold mt-1">
-                            <AlertTriangle className="w-3 h-3 mr-1" /> Urgent
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <span className={`px-2 py-1 rounded-full text-xs ${proposal.status==='pending'?'bg-purple-600/20 text-purple-400':proposal.status==='accepted'?'bg-green-600/20 text-green-400':proposal.status==='rejected'?'bg-red-600/20 text-red-400':proposal.status==='pending_client'?'bg-yellow-600/20 text-yellow-500':'bg-gray-600/20 text-gray-400'}`}>{proposal.status.charAt(0).toUpperCase()+proposal.status.slice(1).replace('_',' ')}</span>
-                      </div>
-                    </div>
-                    {proposal.status === 'producer_accepted' && (
-                      <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
-                        <span className="text-yellow-600 font-semibold flex items-center mb-2 md:mb-0"><AlertTriangle className="w-4 h-4 mr-2" />Producer accepted. Please accept or decline to finalize.</span>
-                        <div className="flex space-x-2 mt-2 md:mt-0">
-                          <button
-                            onClick={() => {
-                              console.log('Client Accept clicked', proposal);
-                              handleClientAcceptDecline(proposal, 'client_accepted');
-                            }}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
-                          >Accept</button>
-                          <button 
-                            onClick={() => {
-                              setSelectedProposal(proposal);
-                              setConfirmAction('reject');
-                              setShowConfirmDialog(true);
-                            }} 
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                          >Decline</button>
-                        </div>
-                      </div>
-                    )}
-                    {proposal.status === 'pending' && (
-                      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-2 flex flex-col md:flex-row md:items-center md:justify-between">
-                        <span className="text-blue-600 font-semibold flex items-center mb-2 md:mb-0"><Clock className="w-4 h-4 mr-2" />Proposal is pending producer review. You can decline at any time.</span>
-                        <div className="flex space-x-2 mt-2 md:mt-0">
-                          <button 
-                            onClick={() => {
-                              setSelectedProposal(proposal);
-                              setConfirmAction('reject');
-                              setShowConfirmDialog(true);
-                            }} 
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    {proposal.status === 'accepted' && (
-                      <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 mb-2">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                          <div className="mb-2 md:mb-0">
-                            <span className="text-green-600 font-semibold flex items-center mb-1">
-                              <Check className="w-4 h-4 mr-2" />
-                              Proposal Accepted
-                            </span>
-                            {proposal.sync_fee && (
-                              <p className="text-sm text-gray-300">
-                                Sync Fee: <span className="text-green-400 font-semibold">${proposal.sync_fee.toFixed(2)}</span>
-                              </p>
-                            )}
-                            {proposal.payment_due_date ? (
-                              <p className="text-sm text-gray-300">
-                                Payment Due: <span className="text-yellow-400 font-semibold">{new Date(proposal.payment_due_date).toLocaleDateString()}</span>
-                              </p>
-                            ) : proposal.status === 'accepted' && proposal.created_at ? (
-                              <p className="text-sm text-gray-300">
-                                Payment Due: <span className="text-yellow-400 font-semibold">{calculatePaymentDueDate(proposal.created_at, 'immediate').toLocaleDateString()}</span>
-                              </p>
-                            ) : null}
-                            {proposal.payment_status && (
-                              <p className="text-sm text-gray-300">
-                                Payment Status: <span className={`font-semibold ${
-                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                  'text-red-400'
-                                }`}>
-                                  {proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                          {proposal.payment_status === 'paid' && (
-                            <div className="flex items-center mt-2 md:mt-0">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    // Gather invoice data from proposal
-                                    const invoiceData = {
-                                      invoiceNumber: proposal.id.slice(0, 8).toUpperCase(),
-                                      clientName: proposal.client?.first_name && proposal.client?.last_name ? `${proposal.client.first_name} ${proposal.client.last_name}` : proposal.client_name || '',
-                                      clientEmail: proposal.client?.email || proposal.client_email || '',
-                                      clientCompany: proposal.client?.company_name || proposal.client_company || '',
-                                      producerName: proposal.track?.producer?.first_name && proposal.track?.producer?.last_name ? `${proposal.track.producer.first_name} ${proposal.track.producer.last_name}` : proposal.producer_name || '',
-                                      producerEmail: proposal.track?.producer?.email || proposal.producer_email || '',
-                                      producerCompany: proposal.track?.producer?.company_name || proposal.producer_company || '',
-                                      trackTitle: proposal.track?.title || proposal.track_title || '',
-                                      syncFee: proposal.sync_fee,
-                                      paymentDate: proposal.payment_date || proposal.updated_at || new Date().toISOString(),
-                                      dueDate: proposal.payment_due_date,
-                                      paymentTerms: proposal.payment_terms,
-                                      syncRequestDescription: proposal.project_description || proposal.sync_request_description || '',
-                                    };
-                                    // Generate PDF document
-                                    const pdfDoc = await pdf(<InvoicePDF invoice={invoiceData} logoUrl={logoUrl || undefined} />).toBlob();
-                                    // Download PDF
-                                    const url = window.URL.createObjectURL(pdfDoc);
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.setAttribute('download', `invoice-${invoiceData.invoiceNumber}.pdf`);
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    link.remove();
-                                    window.URL.revokeObjectURL(url);
-                                  } catch (error) {
-                                    console.error('Error generating invoice PDF:', error);
-                                    alert('Failed to generate invoice PDF. Please try again.');
-                                  }
-                                }}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-                              >
-                                <FileText className="w-4 h-4 mr-2" />
-                                Download Invoice
-                              </button>
-                            </div>
-                          )}
-                          {proposal.payment_status === 'pending' && (
-                            <div className="flex space-x-2 mt-2 md:mt-0">
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    console.log('Setting up payment for proposal:', proposal.id);
-                                    console.log('Making request to:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`);
-                                    
-                                    const requestBody = {
-                                      proposal_id: proposal.id
-                                    };
-                                    console.log('Request body:', requestBody);
-                                    
-                                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: JSON.stringify(requestBody)
-                                    });
-
-                                    console.log('Response received, status:', response.status);
-                                    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-                                    
-                                    const responseData = await response.json();
-                                    console.log('Payment setup response:', responseData);
-
-                                    if (!response.ok) {
-                                      if (responseData.error === 'Payment already processed for this proposal') {
-                                        // If payment was already processed but we don't see the session, refresh the data
-                                        alert('Payment session already exists. Refreshing data...');
-                                        await fetchProposals();
-                                      } else {
-                                        alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
-                                      }
-                                    } else if (responseData.url) {
-                                      console.log('Redirecting to payment URL:', responseData.url);
-                                      window.location.href = responseData.url;
-                                    } else {
-                                      alert('Invoice created successfully! You will receive payment instructions shortly.');
-                                      await fetchProposals(); // Refresh to show updated status
-                                    }
-                                  } catch (error) {
-                                    console.error('Error setting up payment:', error);
-                                    console.error('Error details:', {
-                                      name: error.name,
-                                      message: error.message,
-                                      stack: error.stack
-                                    });
-                                    if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-                                      alert('Network error. Please check your connection and try again.');
-                                    } else {
-                                      alert('Failed to set up payment. Please try again.');
-                                    }
-                                  }
-                                }}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-                              >
-                                <DollarSign className="w-4 h-4 mr-2" />
-                                Pay Now
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex space-x-2 mt-2">
-                      <button onClick={() => handleProposalAction(proposal, 'history')} className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"><Clock className="w-3 h-3 inline mr-1" />History</button>
-                      {/* Only show negotiate button if proposal is not fully accepted */}
-                      {proposal.status !== 'accepted' && proposal.status !== 'client_accepted' && proposal.status !== 'producer_accepted' && (
-                        <button onClick={() => handleProposalAction(proposal, 'negotiate')} className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"><MessageSquare className="w-3 h-3 inline mr-1" />Negotiate</button>
-                      )}
-                      {/* Show negotiation disabled message if proposal is accepted */}
-                      {proposal.status === 'accepted' && (
-                        <span className="px-2 py-1 bg-gray-600/20 text-gray-400 text-xs rounded flex items-center">
-                          <MessageSquare className="w-3 h-3 inline mr-1" />
-                          Negotiation Closed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
-            <Link
-              to="/custom-sync-request"
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Request
-            </Link>
-          </div>
-
-          {syncRequests.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-400">No sync requests yet</p>
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <h3 className="text-xl font-bold text-white mb-4">Your Licensed Tracks</h3>
+          {sortedAndFilteredLicenses.length === 0 ? (
+            <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/20">
+              <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No licensed tracks found</p>
               <Link
-                to="/custom-sync-request"
-                className="inline-block mt-4 text-purple-400 hover:text-purple-300"
+                to="/catalog"
+                className="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
               >
-                Create your first sync request
+                Browse Catalog
               </Link>
             </div>
           ) : (
-            <div className="space-y-4">
-              {syncRequests.map((request) => (
+            sortedAndFilteredLicenses.map((license) => {
+              const expiryStatus = getExpiryStatus(license.expiry_date);
+              
+              return (
                 <div
-                  key={request.id}
-                  className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
+                  key={license.id}
+                  className={`bg-white/5 backdrop-blur-sm rounded-lg p-4 border ${
+                    expiryStatus === 'expired' ? 'border-red-500/20' :
+                    expiryStatus === 'expiring-soon' ? 'border-yellow-500/20' :
+                    'border-purple-500/20'
+                  }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        {request.project_title}
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-2">
-                        {request.project_description}
-                      </p>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <span className="text-purple-400">${request.sync_fee.toFixed(2)}</span>
-                        <span className="text-gray-400">{request.genre}</span>
-                        <span className="text-gray-400">
-                          Due: {new Date(request.end_date).toLocaleDateString()}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                          request.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
-                          request.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
-                          'bg-purple-500/20 text-purple-400'
-                        }`}>
-                          {request.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setShowEditDialog(true);
-                        }}
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
-                        title="Edit request"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      {request.status !== 'completed' && (
-                        <button
-                          onClick={() => handleUpdateRequest(request.id, { status: 'completed' })}
-                          className="p-2 text-gray-400 hover:text-green-400 transition-colors"
-                          title="Mark as completed"
-                        >
-                          <Check className="w-4 h-4" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteRequest(request.id)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-white">Your Licensed Tracks</h2>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={() => handleSort('renewal')}
-                  className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleSort('title')}
-                  className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20"
-                >
-                  <span>A-Z</span>
-                  <ArrowUpDown className="w-4 h-4" />
-                </button>
-                <select
-                  value={selectedGenre}
-                  onChange={(e) => setSelectedGenre(e.target.value)}
-                  className="bg-white/10 border border-purple-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="">All Genres</option>
-                  {Array.from(new Set(licenses.flatMap(l => l.track.genres))).map(genre => (
-                    <option key={genre} value={genre}>{genre}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {sortedAndFilteredLicenses.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/20">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No licensed tracks found</p>
-                <Link
-                  to="/catalog"
-                  className="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Browse Catalog
-                </Link>
-              </div>
-            ) : (
-              sortedAndFilteredLicenses.map((license) => {
-                const expiryStatus = getExpiryStatus(license.expiry_date);
-                
-                return (
-                  <div
-                    key={license.id}
-                    className={`bg-white/5 backdrop-blur-sm rounded-lg p-4 border ${
-                      expiryStatus === 'expired' ? 'border-red-500/20' :
-                      expiryStatus === 'expiring-soon' ? 'border-yellow-500/20' :
-                      'border-purple-500/20'
-                    }`}
-                  >
-                    <div className="flex flex-col space-y-3">
-                      <div className="flex items-start space-x-4">
-                        <img
-                          src={license.track.image}
-                          alt={license.track.title}
-                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                          onClick={() => navigate(`/track/${license.track.id}`)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
+                  <div className="flex flex-col space-y-3">
+                    <div className="flex items-start space-x-4">
+                      <img
+                        src={license.track.image}
+                        alt={license.track.title}
+                        className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                        onClick={() => navigate(`/track/${license.track.id}`)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <button
+                            onClick={() => navigate(`/track/${license.track.id}`)}
+                            className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                          >
+                            {license.track.title}
+                          </button>
+                          <div className="flex items-center space-x-2 mt-2 md:mt-0">
                             <button
-                              onClick={() => navigate(`/track/${license.track.id}`)}
-                              className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                              onClick={() => handleViewLicenseAgreement(license.id)}
+                              className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                             >
-                              {license.track.title}
+                              <FileText className="w-4 h-4 mr-1" />
+                              View Agreement
                             </button>
-                            <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                              <button
-                                onClick={() => handleViewLicenseAgreement(license.id)}
-                                className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                              >
-                                <FileText className="w-4 h-4 mr-1" />
-                                View Agreement
-                              </button>
-                              <button
-                                onClick={() => setSelectedLicenseToDelete(license)}
-                                className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Delete
-                              </button>
-                            </div>
+                            <button
+                              onClick={() => setSelectedLicenseToDelete(license)}
+                              className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </button>
                           </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
-                            <span className="flex items-center">
-                              <Tag className="w-4 h-4 mr-1" />
-                              {license.track.genres.join(', ')}
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
+                          <span className="flex items-center">
+                            <Tag className="w-4 h-4 mr-1" />
+                            {license.track.genres.join(', ')}
+                          </span>
+                          <span className="flex items-center">
+                            <Hash className="w-4 h-4 mr-1" />
+                            {license.track.bpm} BPM
+                          </span>
+                          <span className="flex items-center">
+                            <Layers className="w-4 h-4 mr-1" />
+                            {license.license_type}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between mt-3">
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
+                              expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
+                              'bg-green-500/20 text-green-400'
+                            }`}>
+                              {expiryStatus === 'expired' ? 'Expired' :
+                               expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
+                               'Active'}
                             </span>
-                            <span className="flex items-center">
-                              <Hash className="w-4 h-4 mr-1" />
-                              {license.track.bpm} BPM
-                            </span>
-                            <span className="flex items-center">
-                              <Layers className="w-4 h-4 mr-1" />
-                              {license.license_type}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between mt-3">
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
-                                expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
-                                'bg-green-500/20 text-green-400'
-                              }`}>
-                                {expiryStatus === 'expired' ? 'Expired' :
-                                 expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
-                                 'Active'}
-                              </span>
-                              <span className="text-xs text-gray-400">
+                            <span className="text-xs text-gray-400">
                                 {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
                               </span>
                             </div>
