@@ -92,14 +92,8 @@ export function SignupForm({ onClose }: SignupFormProps) {
         })
         .eq('id', user.id);
 
-      if (profileError) {
-        if (profileError.code === '409' || profileError.code === '23505') {
-          setError('A profile with this email already exists. Please log in or use a different email.');
-          setLoading(false);
-          return;
-        } else {
-          throw profileError;
-        }
+      if (profileError && profileError.code !== '409' && profileError.code !== '23505') {
+        throw profileError;
       }
 
       // Mark invitation as used if it's a producer
