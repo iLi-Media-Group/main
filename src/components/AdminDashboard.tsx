@@ -12,6 +12,7 @@ import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
 import { FeatureManagement } from './FeatureManagement';
+import { DiscountManagement } from './DiscountManagement';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -54,7 +55,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label' | 'features'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label' | 'features' | 'discounts'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -396,6 +397,7 @@ export function AdminDashboard() {
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'features', label: 'Feature Management', icon: null },
+            { id: 'discounts', label: 'Discount Management', icon: null },
           ].map(tab => (
             <button
               key={tab.id}
@@ -598,6 +600,13 @@ export function AdminDashboard() {
         {activeTab === 'features' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <FeatureManagement />
+          </div>
+        )}
+
+        {/* Discount Management section */}
+        {activeTab === 'discounts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <DiscountManagement />
           </div>
         )}
       </div>
