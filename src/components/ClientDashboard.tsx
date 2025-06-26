@@ -1220,7 +1220,7 @@ export function ClientDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      
 
       {showProfileDialog && (
         <ClientProfile
