@@ -139,6 +139,37 @@ export function PricingCarousel() {
       return;
     }
 
+    // Special handling for Single Track (pay-as-you-go)
+    if (product.id === 'prod_SYHCZgM5UBmn3C') { // Single Track product ID
+      if (!user) {
+        // Not signed in - redirect to login with signup option
+        setSelectedProduct(product);
+        setShowEmailCheck(true);
+        return;
+      }
+
+      // User is signed in - check if they need to downgrade membership
+      if (currentSubscription?.subscription_id && currentSubscription?.status === 'active') {
+        // User has an active subscription - check if they want to downgrade to Single Track
+        const shouldDowngrade = window.confirm(
+          'You currently have an active subscription. To switch to Single Track (pay-as-you-go) licensing, your current subscription will be cancelled at the end of the current billing period. Would you like to proceed?'
+        );
+        
+        if (shouldDowngrade) {
+          // Navigate to dashboard where they can manage their subscription
+          navigate('/dashboard');
+          return;
+        } else {
+          return;
+        }
+      }
+
+      // User is signed in but has no active subscription - proceed with single track purchase
+      proceedWithSubscription(product);
+      return;
+    }
+
+    // Handle subscription plans (Gold, Platinum, Ultimate)
     if (user) {
       proceedWithSubscription(product);
     } else {

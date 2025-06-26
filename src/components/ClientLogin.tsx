@@ -176,6 +176,18 @@ export function ClientLogin() {
               <KeyRound className="w-4 h-4 mr-2" />
               Forgot Password?
             </button>
+            
+            <div className="text-center pt-4 border-t border-gray-700">
+              <p className="text-gray-400 text-sm mb-2">Don't have an account?</p>
+              <button
+                type="button"
+                onClick={() => navigate('/signup')}
+                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                disabled={loading}
+              >
+                Sign Up Here
+              </button>
+            </div>
           </form>
         </div>
       </div>
