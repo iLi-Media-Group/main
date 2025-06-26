@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [ipiNumber, setIpiNumber] = useState('');
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
   const [usdcAddress, setUsdcAddress] = useState('');
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -62,6 +64,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setIpiNumber(data.ipi_number || '');
         setPerformingRightsOrg(data.performing_rights_org || '');
         setUsdcAddress(data.usdc_address || '');
+        setAvatarPath(data.avatar_path || null);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -116,6 +119,10 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
     }
   };
 
+  const handlePhotoUpdate = (url: string) => {
+    setAvatarPath(url);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -148,6 +155,15 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                 <p className="text-green-400 text-center">Profile updated successfully!</p>
               </div>
             )}
+
+            <div className="flex justify-center mb-6">
+              <ProfilePhotoUpload
+                currentPhotoUrl={avatarPath}
+                onPhotoUpdate={handlePhotoUpdate}
+                userId={user?.id}
+                size="md"
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
