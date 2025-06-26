@@ -165,10 +165,10 @@ Deno.serve(async (req) => {
 
         if (!subscription) {
           // Create subscription record for existing customer if missing
-          const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').insert({
+          const { error: createSubscriptionError } = await supabase.from('stripe_subscriptions').upsert({
             customer_id: customerId,
             status: 'not_started',
-          });
+          }, { onConflict: 'customer_id' });
 
           if (createSubscriptionError) {
             console.error('Failed to create subscription record for existing customer', createSubscriptionError);
