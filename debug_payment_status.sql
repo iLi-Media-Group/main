@@ -1,5 +1,11 @@
 -- Debug script to check payment status and help troubleshoot frontend issues
 
+-- First, check what columns actually exist in the sync_proposals table
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns 
+WHERE table_name = 'sync_proposals'
+ORDER BY ordinal_position;
+
 -- Check the exact current state of the proposals
 SELECT 
   id, 
