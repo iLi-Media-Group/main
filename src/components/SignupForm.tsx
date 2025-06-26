@@ -72,6 +72,11 @@ export function SignupForm({ onClose }: SignupFormProps) {
       // Create user account
       await signUp(email, password);
 
+      // Get the current user id from Supabase Auth
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) throw new Error('Failed to get user after signup');
+
       // Update profile with additional details
       const { error: profileError } = await supabase
         .from('profiles')
@@ -83,7 +88,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
           age_verified: ageVerified,
           invitation_code: accountType === 'producer' ? invitationCode : null
         })
-        .eq('email', email);
+        .eq('id', user.id);
 
       if (profileError) throw profileError;
 
