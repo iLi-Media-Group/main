@@ -163,7 +163,7 @@ export function ProposalHistoryDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/5 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-blue-600 p-8 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Proposal History</h2>
           <button
