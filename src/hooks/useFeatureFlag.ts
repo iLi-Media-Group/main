@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-export type FeatureName = 'ai_recommendations' | 'producer_applications' | 'deep_media_search';
+export type FeatureName = 'ai_recommendations' | 'producer_applications' | 'deep_media_search' | 'discount_management';
 
 export function useFeatureFlag(featureName: FeatureName) {
   const { user } = useAuth();
@@ -33,19 +33,41 @@ export function useFeatureFlag(featureName: FeatureName) {
           return;
         }
 
-        // Check if user has the specific feature enabled
-        const { data: featureData, error } = await supabase
-          .from('white_label_features')
-          .select('is_enabled')
-          .eq('client_id', user.id)
-          .eq('feature_name', featureName)
-          .single();
+        // Special handling for discount_management feature
+        if (featureName === 'discount_management') {
+          // Check if user is a White Label customer with Pro or Enterprise plan
+          const { data: subscriptionData, error: subscriptionError } = await supabase
+            .from('stripe_subscriptions')
+            .select('white_label_plan, status')
+            .eq('customer_id', user.id)
+            .eq('status', 'active')
+            .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-          console.error('Error checking feature flag:', error);
-          setIsEnabled(false);
+          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+            console.error('Error checking white label subscription:', subscriptionError);
+            setIsEnabled(false);
+          } else if (subscriptionData?.white_label_plan) {
+            // Only Pro and Enterprise plans have access to discount management
+            const hasAccess = ['pro', 'enterprise'].includes(subscriptionData.white_label_plan);
+            setIsEnabled(hasAccess);
+          } else {
+            setIsEnabled(false);
+          }
         } else {
-          setIsEnabled(featureData?.is_enabled || false);
+          // Check if user has the specific feature enabled
+          const { data: featureData, error } = await supabase
+            .from('white_label_features')
+            .select('is_enabled')
+            .eq('client_id', user.id)
+            .eq('feature_name', featureName)
+            .single();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+            console.error('Error checking feature flag:', error);
+            setIsEnabled(false);
+          } else {
+            setIsEnabled(featureData?.is_enabled || false);
+          }
         }
       } catch (err) {
         console.error('Error checking feature flag:', err);

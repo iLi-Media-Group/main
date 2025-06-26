@@ -3,6 +3,7 @@ import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, M
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { ProposalAnalytics } from './ProposalAnalytics';
 import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
@@ -39,6 +40,7 @@ interface UserDetails {
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const { isEnabled: hasDiscountManagementAccess } = useFeatureFlag('discount_management');
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function AdminDashboard() {
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('total_revenue');
+  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('created_at');
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
@@ -62,6 +64,13 @@ export function AdminDashboard() {
       fetchData();
     }
   }, [user]);
+
+  // Redirect away from discounts tab if user doesn't have access
+  useEffect(() => {
+    if (activeTab === 'discounts' && !hasDiscountManagementAccess) {
+      setActiveTab('analytics');
+    }
+  }, [activeTab, hasDiscountManagementAccess]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -396,7 +405,8 @@ export function AdminDashboard() {
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'features', label: 'Feature Management', icon: null },
-            { id: 'discounts', label: 'Discount Management', icon: null },
+            // Only show Discount Management tab if user has access
+            ...(hasDiscountManagementAccess ? [{ id: 'discounts', label: 'Discount Management', icon: null }] : []),
           ].map(tab => (
             <button
               key={tab.id}
@@ -603,7 +613,7 @@ export function AdminDashboard() {
         )}
 
         {/* Discount Management section */}
-        {activeTab === 'discounts' && (
+        {activeTab === 'discounts' && hasDiscountManagementAccess && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
             <DiscountManagement />
           </div>

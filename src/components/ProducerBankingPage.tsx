@@ -18,14 +18,11 @@ interface Transaction {
 
 interface BankAccount {
   id: string;
-  account_type: 'bank' | 'paypal' | 'crypto';
+  account_type: 'bank';
   account_details: {
     bank_name?: string;
     account_number?: string;
     routing_number?: string;
-    paypal_email?: string;
-    crypto_address?: string;
-    crypto_type?: string;
   };
   is_primary: boolean;
   created_at: string;
@@ -288,12 +285,10 @@ export function ProducerBankingPage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">
-                          {account.account_type === 'bank' && account.account_details.bank_name}
-                          {account.account_type === 'crypto' && account.account_details.crypto_type}
+                          {account.account_details.bank_name}
                         </p>
                         <p className="text-sm text-gray-400">
-                          {account.account_type === 'bank' && `****${account.account_details.account_number?.slice(-4)}`}
-                          {account.account_type === 'crypto' && `${account.account_details.crypto_address?.slice(0, 6)}...${account.account_details.crypto_address?.slice(-4)}`}
+                          ****{account.account_details.account_number?.slice(-4)}
                         </p>
                       </div>
                       {account.is_primary && (

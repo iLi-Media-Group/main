@@ -124,7 +124,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
           <button
@@ -172,7 +172,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <input
                     type="text"
                     value={producerNumber}
-                    className="w-full pl-10 opacity-50"
+                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all opacity-50"
                     disabled
                   />
                 </div>
@@ -187,7 +187,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <input
                     type="email"
                     value={email}
-                    className="w-full pl-10 opacity-50"
+                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all opacity-50"
                     disabled
                   />
                 </div>
@@ -205,7 +205,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                     required
                   />
                 </div>
@@ -221,7 +221,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                     required
                   />
                 </div>
@@ -238,7 +238,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   placeholder="Your publishing company or label name"
                 />
               </div>
@@ -254,7 +254,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   placeholder="International format"
                 />
               </div>
@@ -273,7 +273,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={ipiNumber}
                     onChange={(e) => setIpiNumber(e.target.value)}
-                    className={`w-full pl-10 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
                     required
                   />
                 </div>
@@ -294,7 +294,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <select
                     value={performingRightsOrg}
                     onChange={(e) => setPerformingRightsOrg(e.target.value)}
-                    className={`w-full pl-10 ${!performingRightsOrg ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all ${!performingRightsOrg ? 'border-red-500' : ''}`}
                     required
                   >
                     <option value="">Select your PRO</option>
@@ -329,7 +329,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   />
                 </div>
               </div>
@@ -343,7 +343,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   />
                 </div>
 
@@ -355,7 +355,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   />
                 </div>
               </div>
@@ -369,7 +369,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   />
                 </div>
 
@@ -381,7 +381,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
                   />
                 </div>
               </div>

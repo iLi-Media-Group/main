@@ -293,7 +293,7 @@ export function DiscountManagement() {
 
       {/* Discount Form */}
       {showForm && (
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+        <div className="bg-blue-900 p-6 rounded-xl border border-blue-500/20">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-semibold text-white">
               {editingDiscount ? 'Edit Discount' : 'Create New Discount'}
@@ -458,7 +458,7 @@ export function DiscountManagement() {
         <h3 className="text-xl font-semibold text-white">Active Discounts</h3>
         
         {discounts.length === 0 ? (
-          <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20">
+          <div className="text-center py-12 bg-blue-900 rounded-xl border border-blue-500/20">
             <Percent className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-white mb-2">No Discounts</h3>
             <p className="text-gray-400">Create your first discount to start offering special pricing</p>
@@ -468,7 +468,7 @@ export function DiscountManagement() {
             {discounts.map((discount) => (
               <div
                 key={discount.id}
-                className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6"
+                className="bg-blue-900 rounded-xl border border-blue-500/20 p-6"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
