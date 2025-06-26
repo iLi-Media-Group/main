@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
 interface InvoicePDFProps {
   invoice: {
@@ -66,12 +66,21 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 12,
   },
+  label: {
+    fontWeight: 'bold',
+    color: '#666',
+  },
 });
+
+const LOGO_URL = '/logo192.png'; // Update this path if your logo is elsewhere
 
 export function InvoicePDF({ invoice }: InvoicePDFProps) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+          <Image src={LOGO_URL} style={{ width: 120, height: 40, objectFit: 'contain' }} />
+        </View>
         <Text style={styles.title}>INVOICE</Text>
         <View style={styles.section}>
           <Text>Invoice #: {invoice.invoiceNumber}</Text>
@@ -81,7 +90,7 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
         </View>
         <View style={styles.infoGrid}>
           <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>Bill To:</Text>
+            <Text style={styles.label}>Billed To:</Text>
             <Text>{invoice.clientName}</Text>
             {invoice.clientCompany && <Text>{invoice.clientCompany}</Text>}
             <Text>{invoice.clientEmail}</Text>
@@ -94,8 +103,8 @@ export function InvoicePDF({ invoice }: InvoicePDFProps) {
           </View>
         </View>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Track Details</Text>
-          <Text>Track Title: {invoice.trackTitle}</Text>
+          <Text style={styles.sectionTitle}>Track Name</Text>
+          <Text>{invoice.trackTitle}</Text>
         </View>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Sync Fee</Text>
