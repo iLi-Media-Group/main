@@ -94,23 +94,15 @@ export function SignupForm({ onClose }: SignupFormProps) {
         .eq('id', user.id);
       profileError = profileUpdate.error;
 
-      // If update fails with 409, insert a new profile row
-      if (profileError && profileError.code === '409') {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email,
-            first_name: firstName,
-            last_name: lastName,
-            company_name: companyName.trim() || null,
-            account_type: accountType,
-            age_verified: ageVerified,
-            invitation_code: accountType === 'producer' ? invitationCode : null
-          });
-        if (insertError) throw insertError;
-      } else if (profileError) {
-        throw profileError;
+      // If update fails with duplicate key, show a user-friendly error
+      if (profileError) {
+        if (profileError.code === '409' || profileError.code === '23505') {
+          setError('A profile with this email already exists. Please log in or use a different email.');
+          setLoading(false);
+          return;
+        } else {
+          throw profileError;
+        }
       }
 
       // Mark invitation as used if it's a producer
