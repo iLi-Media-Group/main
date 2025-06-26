@@ -15,6 +15,7 @@ interface InvoicePDFProps {
     paymentDate: string;
     dueDate?: string;
     paymentTerms?: string;
+    syncRequestDescription?: string;
   };
   logoUrl?: string;
 }
@@ -66,7 +67,7 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, logoUrl }) => (
         </View>
       )}
       <View style={styles.section}>
-        <Text style={styles.header}>Sync License Invoice</Text>
+        <Text style={styles.header}>MyBeatFi.io Sync License Invoice</Text>
         <Text>Invoice #: {invoice.invoiceNumber}</Text>
         <Text>Date: {new Date(invoice.paymentDate).toLocaleDateString()}</Text>
       </View>
@@ -74,18 +75,21 @@ export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, logoUrl }) => (
         <Text style={styles.label}>Billed To:</Text>
         <Text>{invoice.clientName}</Text>
         {invoice.clientCompany && <Text>{invoice.clientCompany}</Text>}
-        <Text>{invoice.clientEmail}</Text>
       </View>
       <View style={styles.section}>
         <Text style={styles.label}>Producer:</Text>
         <Text>{invoice.producerName}</Text>
-        {invoice.producerCompany && <Text>{invoice.producerCompany}</Text>}
-        <Text>{invoice.producerEmail}</Text>
       </View>
       <View style={styles.section}>
         <Text style={styles.label}>Track Name:</Text>
         <Text>{invoice.trackTitle}</Text>
       </View>
+      {invoice.syncRequestDescription && (
+        <View style={styles.section}>
+          <Text style={styles.label}>Sync Request Description:</Text>
+          <Text>{invoice.syncRequestDescription}</Text>
+        </View>
+      )}
       <View style={styles.divider} />
       <View style={styles.section}>
         <View style={styles.row}>

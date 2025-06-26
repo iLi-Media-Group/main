@@ -1340,6 +1340,7 @@ export function ClientDashboard() {
                                       paymentDate: proposal.payment_date || proposal.updated_at || new Date().toISOString(),
                                       dueDate: proposal.payment_due_date,
                                       paymentTerms: proposal.payment_terms,
+                                      syncRequestDescription: proposal.project_description || proposal.sync_request_description || '',
                                     };
                                     // Generate PDF document
                                     const pdfDoc = await pdf(<InvoicePDF invoice={invoiceData} logoUrl={logoUrl || undefined} />).toBlob();
