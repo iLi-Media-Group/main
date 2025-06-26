@@ -427,6 +427,49 @@ export function ClientDashboard() {
       
       console.log('Proposals fetch result (with payment):', { data, error });
       
+      // Add detailed debugging for payment status
+      if (data) {
+        console.log('=== PAYMENT STATUS DEBUG ===');
+        data.forEach((proposal: any) => {
+          console.log(`Proposal ${proposal.id.slice(0, 8)}...:`, {
+            id: proposal.id,
+            status: proposal.status,
+            client_status: proposal.client_status,
+            payment_status: proposal.payment_status,
+            sync_fee: proposal.sync_fee
+          });
+        });
+        console.log('=== END PAYMENT STATUS DEBUG ===');
+        
+        // Direct database check for the specific proposals
+        const specificProposals = data.filter((p: any) => 
+          p.id === '7af40356-66f3-45d7-87f3-710dff65b46a' || 
+          p.id === '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b'
+        );
+        
+        if (specificProposals.length > 0) {
+          console.log('=== DIRECT DATABASE CHECK ===');
+          for (const proposal of specificProposals) {
+            const { data: dbCheck, error: dbError } = await supabase
+              .from('sync_proposals')
+              .select('id, status, client_status, payment_status, sync_fee')
+              .eq('id', proposal.id)
+              .single();
+              
+            console.log(`Direct DB check for ${proposal.id.slice(0, 8)}...:`, {
+              frontend: {
+                status: proposal.status,
+                client_status: proposal.client_status,
+                payment_status: proposal.payment_status
+              },
+              database: dbCheck,
+              error: dbError
+            });
+          }
+          console.log('=== END DIRECT DATABASE CHECK ===');
+        }
+      }
+      
       if (error) {
         console.error('Error fetching proposals:', error);
         // If there's an error, try a simpler query without the payment columns
