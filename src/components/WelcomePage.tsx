@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Music, Star, Zap, Gift, PlayCircle, Video, Headphones, FileCheck, Loader2, Check, ArrowRight } from 'lucide-react';
+import { Music, Star, Zap, Gift, PlayCircle, Video, Headphones, FileCheck, Loader2, Check, ArrowRight, CreditCard, Coins } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { PRODUCTS } from '../stripe-config';
-import { createCheckoutSession } from '../lib/stripe';
+import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
+import { createCryptoInvoice } from '../utils/createCryptoInvoice';
 
 export function WelcomePage() {
   const location = useLocation();
@@ -12,6 +13,7 @@ export function WelcomePage() {
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   
   // Get user info from location state
   const state = location.state as {
@@ -43,28 +45,59 @@ export function WelcomePage() {
     handleInitialRedirect();
   }, [state, user]);
 
+  useEffect(() => {
+    if (user) {
+      fetchSubscription();
+    }
+  }, [user]);
+
+  const fetchSubscription = async () => {
+    try {
+      const subscription = await getUserSubscription();
+      setCurrentSubscription(subscription);
+    } catch (err) {
+      console.error('Error fetching subscription:', err);
+    }
+  };
+
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
     if (!user) {
       navigate('/login');
       return;
     }
-
     try {
       setLoading(true);
       setLoadingProductId(product.id);
       setError(null);
-      
-      // Create checkout session
-      const checkoutUrl = await createCheckoutSession(
-        product.priceId, 
-        product.mode
-      );
-      
-      // Redirect to checkout
+      if (currentSubscription?.subscription_id && product.mode === 'subscription') {
+        navigate('/dashboard');
+        return;
+      }
+      const checkoutUrl = await createCheckoutSession(product.priceId, product.mode);
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error('Error creating checkout session:', err);
       setError(err instanceof Error ? err.message : 'Failed to create checkout session');
+    } finally {
+      setLoading(false);
+      setLoadingProductId(null);
+    }
+  };
+
+  const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      setLoading(true);
+      setLoadingProductId(product.id);
+      setError(null);
+      const invoiceUrl = await createCryptoInvoice(product.id, user.id);
+      window.location.href = invoiceUrl;
+    } catch (err) {
+      console.error('Crypto subscription error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start crypto payment');
     } finally {
       setLoading(false);
       setLoadingProductId(null);
@@ -119,10 +152,10 @@ export function WelcomePage() {
                 <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
                 <div className="flex items-baseline mb-4">
                   <span className="text-2xl font-bold text-white">
-                    ${(product.price / 100).toFixed(2)}
+                    ${product.price.toFixed(2)}
                   </span>
                   <span className="text-gray-400 ml-2">
-                    {product.name === 'Ultimate Membership' ? '/year' : '/month'}
+                    /{product.interval}
                   </span>
                 </div>
                 
@@ -134,21 +167,41 @@ export function WelcomePage() {
                     </li>
                   ))}
                 </ul>
-                
-                <button
-                  onClick={() => handleSubscribe(product)}
-                  disabled={loading && loadingProductId === product.id}
-                  className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all flex items-center justify-center"
-                >
-                  {loading && loadingProductId === product.id ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <span>Choose {product.name}</span>
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </button>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => handleSubscribe(product)}
+                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId)}
+                    className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId ? (
+                      <span>Current Plan</span>
+                    ) : loading && loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5" />
+                        <span>Subscribe with Card</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleCryptoSubscribe(product)}
+                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId)}
+                    className="w-full py-2 px-4 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading && loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <>
+                        <Coins className="w-5 h-5" />
+                        <span>Subscribe with Crypto</span>
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center text-sm text-gray-400 mt-2">
+                    Accepts USDC, USDT, and Solana
+                  </p>
+                </div>
               </div>
             ))}
           </div>
