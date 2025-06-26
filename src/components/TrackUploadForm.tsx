@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
+import { Upload, Loader2, Music, Hash, Image, FileText } from 'lucide-react';
 import { GENRES, SUB_GENRES, MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -41,6 +41,8 @@ export function TrackUploadForm() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+  const [splitSheetPreview, setSplitSheetPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [bpm, setBpm] = useState(savedData?.bpm || '');
@@ -132,6 +134,25 @@ export function TrackUploadForm() {
     setError('');
   };
 
+  const handleSplitSheetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setError('Please upload a PDF file for the split sheet');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit for PDFs
+      setError('Split sheet PDF size must be less than 10MB');
+      return;
+    }
+
+    setSplitSheetFile(file);
+    setSplitSheetPreview(URL.createObjectURL(file));
+    setError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !audioFile) return;
@@ -169,6 +190,11 @@ export function TrackUploadForm() {
         imageUrl = await uploadFile(imageFile, 'track-images');
       }
 
+      let splitSheetUrl = null;
+      if (splitSheetFile) {
+        splitSheetUrl = await uploadFile(splitSheetFile, 'split-sheets');
+      }
+
       const { error: trackError } = await supabase
         .from('tracks')
         .insert({
@@ -184,6 +210,7 @@ export function TrackUploadForm() {
           is_one_stop: isOneStop,
           audio_url: audioUrl,
           image_url: imageUrl,
+          split_sheet_url: splitSheetUrl,
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsUrl || null,
           has_vocals: hasVocals,
@@ -722,6 +749,57 @@ export function TrackUploadForm() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Split Sheet Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Split Sheet (Optional)
+            </label>
+            <p className="text-sm text-gray-400 mb-4">
+              Upload a PDF showing all contributors and their percentages. This helps clients understand the complete production team.
+            </p>
+            <div className="flex items-center space-x-4">
+              <div className="w-32 h-32 rounded-lg overflow-hidden bg-white/10 border border-blue-500/20">
+                {splitSheetPreview ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FileText className="w-12 h-12 text-blue-400" />
+                    <span className="text-xs text-gray-400 mt-2">PDF Ready</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <FileText className="w-8 h-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <label className="block">
+                  <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors cursor-pointer">
+                    <div className="text-center">
+                      <Upload className="w-8 h-8 text-blue-500 mx-auto mb-2" />
+                      <span className="text-sm text-gray-400">
+                        Click to upload split sheet
+                      </span>
+                      <span className="block text-xs text-gray-500 mt-1">
+                        PDF only, max 10MB
+                      </span>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept=".pdf"
+                    onChange={handleSplitSheetChange}
+                    disabled={isSubmitting}
+                  />
+                </label>
+              </div>
+            </div>
+            {splitSheetFile && (
+              <p className="mt-2 text-sm text-gray-400">
+                Selected file: {splitSheetFile.name} ({(splitSheetFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+            )}
           </div>
 
           <div className="sticky bottom-8 pt-8 bg-gradient-to-b from-transparent via-gray-900 to-gray-900">

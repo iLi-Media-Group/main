@@ -9,12 +9,14 @@ export interface Track {
   moods: string[];
   duration: string;
   bpm: number;
+  key?: string;
   hasStingEnding: boolean;
   isOneStop: boolean;
   audioUrl: string;
   image: string;
   mp3Url?: string;
   trackoutsUrl?: string;
+  splitSheetUrl?: string;
   hasVocals?: boolean;
   vocalsUsageType?: 'normal' | 'sync_only';
   producerId: string; // Added explicit producerId field
@@ -23,6 +25,7 @@ export interface Track {
     firstName: string;
     lastName: string;
     email: string;
+    avatarPath?: string;
   };
   fileFormats: {
     stereoMp3: {

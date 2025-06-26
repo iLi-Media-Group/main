@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic } from 'lucide-react';
+import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic, FileText, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
@@ -17,7 +17,7 @@ interface UserStats {
 }
 
 export function TrackPage() {
-  const { trackId } = useParams();
+  const { trackId } = useParams<{ trackId: string }>();
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
   const [track, setTrack] = useState<Track | null>(null);
@@ -33,6 +33,7 @@ export function TrackPage() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSplitSheet, setShowSplitSheet] = useState(false);
 
   useEffect(() => {
     if (!trackId) {
@@ -98,6 +99,7 @@ export function TrackPage() {
           hasStingEnding: trackData.has_sting_ending || false,
           mp3Url: trackData.mp3_url,
           trackoutsUrl: trackData.trackouts_url,
+          splitSheetUrl: trackData.split_sheet_url,
           producerId: trackData.producer_id, // Add producer_id to the mapped track
           producer: trackData.producer ? {
             id: trackData.producer.id,
@@ -360,6 +362,23 @@ export function TrackPage() {
                 </div>
               )}
 
+              {/* Split Sheet Section */}
+              {track.splitSheetUrl && (
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold text-white mb-3">Split Sheet</h3>
+                  <p className="text-gray-400 mb-4">
+                    View the complete production team and their contributions to this track.
+                  </p>
+                  <button
+                    onClick={() => setShowSplitSheet(true)}
+                    className="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    View Split Sheet
+                  </button>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-4">
                 <button
                   onClick={handleActionClick}
@@ -420,6 +439,54 @@ export function TrackPage() {
             />
           )}
         </>
+      )}
+
+      {showProducerProfile && track.producer?.id && (
+        <ProducerProfileDialog
+          isOpen={showProducerProfile}
+          onClose={() => setShowProducerProfile(false)}
+          producerId={track.producer.id}
+        />
+      )}
+
+      {/* Split Sheet Modal */}
+      {showSplitSheet && track.splitSheetUrl && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-blue-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <FileText className="w-6 h-6 text-orange-400 mr-2" />
+                <h2 className="text-2xl font-bold text-white">Split Sheet: {track.title}</h2>
+              </div>
+              <button
+                onClick={() => setShowSplitSheet(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="bg-white rounded-lg overflow-hidden">
+              <iframe
+                src={track.splitSheetUrl}
+                className="w-full h-[70vh]"
+                title="Split Sheet PDF"
+              />
+            </div>
+            
+            <div className="mt-4 text-center">
+              <a
+                href={track.splitSheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Open in New Tab
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
