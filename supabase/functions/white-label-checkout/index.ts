@@ -250,6 +250,7 @@ Deno.serve(async (req) => {
     ];
 
     // Add monthly subscription if applicable
+    let couponId = null;
     if (monthlyCost > 0) {
       const monthlyPrice = await stripe.prices.create({
         product: product.id,
@@ -268,6 +269,18 @@ Deno.serve(async (req) => {
         price: monthlyPrice.id,
         quantity: 1,
       });
+
+      // If there is a discount, create a coupon for the subscription
+      if (appliedDiscount && appliedDiscount.percent > 0) {
+        // Only apply to the first year (12 months)
+        const coupon = await stripe.coupons.create({
+          percent_off: appliedDiscount.percent,
+          duration: 'repeating',
+          duration_in_months: 12,
+          name: appliedDiscount.name || 'White Label Discount',
+        });
+        couponId = coupon.id;
+      }
     }
 
     // Create checkout session
@@ -287,7 +300,8 @@ Deno.serve(async (req) => {
         setup_cost: finalSetupCost.toString(),
         monthly_cost: monthlyCost.toString(),
         applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',
-        bundle_discount: bundleDiscount.toString()
+        bundle_discount: bundleDiscount.toString(),
+        coupon_id: couponId || ''
       },
       payment_method_types: ['card'],
       allow_promotion_codes: true, // Allow Stripe promotion codes
@@ -295,7 +309,8 @@ Deno.serve(async (req) => {
       customer_update: {
         address: 'auto',
         name: 'auto'
-      }
+      },
+      discounts: couponId ? [{ coupon: couponId }] : undefined
     });
 
     console.log(`Created white label checkout session ${session.id} for customer ${customerId}`);

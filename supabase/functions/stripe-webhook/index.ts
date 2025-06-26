@@ -375,6 +375,17 @@ async function syncCustomerFromStripe(customerId: string) {
         planName = 'Unknown';
     }
 
+    // Extract coupon/discount and white label info
+    const couponId = subscription.discount?.coupon?.id || null;
+    const discountPercent = subscription.discount?.coupon?.percent_off || null;
+    const discountDuration = subscription.discount?.coupon?.duration || null;
+    const discountDurationMonths = subscription.discount?.coupon?.duration_in_months || null;
+    const metadata = subscription.metadata || {};
+    const whiteLabelPlan = metadata.plan || null;
+    const whiteLabelFeatures = metadata.features || null;
+    const whiteLabelDiscount = metadata.applied_discount || null;
+    const whiteLabelBundleDiscount = metadata.bundle_discount || null;
+
     // store subscription state
     const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
       {
@@ -392,6 +403,14 @@ async function syncCustomerFromStripe(customerId: string) {
             }
           : {}),
         status: subscription.status,
+        coupon_id: couponId,
+        discount_percent: discountPercent,
+        discount_duration: discountDuration,
+        discount_duration_months: discountDurationMonths,
+        white_label_plan: whiteLabelPlan,
+        white_label_features: whiteLabelFeatures,
+        white_label_discount: whiteLabelDiscount,
+        white_label_bundle_discount: whiteLabelBundleDiscount
       },
       {
         onConflict: 'customer_id',

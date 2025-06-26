@@ -1221,7 +1221,7 @@ export function ClientDashboard() {
           </div>
         </div>
       </div>
-
+  )
       {showProfileDialog && (
         <ClientProfile
           onClose={() => setShowProfileDialog(false)}
