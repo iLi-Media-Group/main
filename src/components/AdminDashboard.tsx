@@ -55,7 +55,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label' | 'features' | 'discounts'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'features' | 'discounts'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -395,7 +395,6 @@ export function AdminDashboard() {
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
-            { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'features', label: 'Feature Management', icon: null },
             { id: 'discounts', label: 'Discount Management', icon: null },
           ].map(tab => (
