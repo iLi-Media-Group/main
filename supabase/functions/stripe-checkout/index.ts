@@ -200,7 +200,6 @@ Deno.serve(async (req) => {
       // Create checkout session with the custom price
       session = await stripe.checkout.sessions.create({
         customer: customerId,
-        payment_method_types: ['card'],
         line_items: [
           {
             price: price.id,
@@ -216,7 +215,6 @@ Deno.serve(async (req) => {
       // Regular checkout session
       session = await stripe.checkout.sessions.create({
         customer: customerId,
-        payment_method_types: ['card'],
         line_items: [
           {
             price: price_id,
