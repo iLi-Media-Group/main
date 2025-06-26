@@ -16,6 +16,7 @@ interface InvoicePDFProps {
     dueDate?: string;
     paymentTerms?: string;
   };
+  logoUrl?: string;
 }
 
 const styles = StyleSheet.create({
@@ -23,98 +24,94 @@ const styles = StyleSheet.create({
     padding: 40,
     fontSize: 12,
     fontFamily: 'Helvetica',
-    color: '#333',
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-    textAlign: 'center',
-    fontFamily: 'Helvetica-Bold',
+    backgroundColor: '#fff',
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    borderBottom: 1,
-    paddingBottom: 4,
-  },
-  infoGrid: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  infoBlock: {
-    width: '48%',
-  },
-  infoLabel: {
-    fontWeight: 'bold',
-    color: '#666',
-  },
-  amount: {
+  header: {
     fontSize: 20,
     fontWeight: 'bold',
-    textAlign: 'right',
-    marginTop: 20,
-  },
-  footer: {
-    marginTop: 40,
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 12,
+    marginBottom: 12,
+    color: '#4F46E5',
   },
   label: {
     fontWeight: 'bold',
-    color: '#666',
+    color: '#4F46E5',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  divider: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginVertical: 12,
+  },
+  total: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#16A34A',
+    marginTop: 8,
   },
 });
 
-const LOGO_URL = '/logo192.png'; // Update this path if your logo is elsewhere
-
-export function InvoicePDF({ invoice }: InvoicePDFProps) {
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
+export const InvoicePDF: React.FC<InvoicePDFProps> = ({ invoice, logoUrl }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      {logoUrl && (
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
-          <Image src={LOGO_URL} style={{ width: 120, height: 40, objectFit: 'contain' }} />
+          <Image src={logoUrl} style={{ width: 120, height: 40, objectFit: 'contain' }} />
         </View>
-        <Text style={styles.title}>INVOICE</Text>
-        <View style={styles.section}>
-          <Text>Invoice #: {invoice.invoiceNumber}</Text>
-          <Text>Payment Date: {new Date(invoice.paymentDate).toLocaleDateString()}</Text>
-          {invoice.dueDate && <Text>Due Date: {new Date(invoice.dueDate).toLocaleDateString()}</Text>}
-          {invoice.paymentTerms && <Text>Payment Terms: {invoice.paymentTerms}</Text>}
+      )}
+      <View style={styles.section}>
+        <Text style={styles.header}>Sync License Invoice</Text>
+        <Text>Invoice #: {invoice.invoiceNumber}</Text>
+        <Text>Date: {new Date(invoice.paymentDate).toLocaleDateString()}</Text>
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.label}>Billed To:</Text>
+        <Text>{invoice.clientName}</Text>
+        {invoice.clientCompany && <Text>{invoice.clientCompany}</Text>}
+        <Text>{invoice.clientEmail}</Text>
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.label}>Producer:</Text>
+        <Text>{invoice.producerName}</Text>
+        {invoice.producerCompany && <Text>{invoice.producerCompany}</Text>}
+        <Text>{invoice.producerEmail}</Text>
+      </View>
+      <View style={styles.section}>
+        <Text style={styles.label}>Track Name:</Text>
+        <Text>{invoice.trackTitle}</Text>
+      </View>
+      <View style={styles.divider} />
+      <View style={styles.section}>
+        <View style={styles.row}>
+          <Text style={styles.label}>Sync Fee</Text>
+          <Text>${invoice.syncFee.toFixed(2)}</Text>
         </View>
-        <View style={styles.infoGrid}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.label}>Billed To:</Text>
-            <Text>{invoice.clientName}</Text>
-            {invoice.clientCompany && <Text>{invoice.clientCompany}</Text>}
-            <Text>{invoice.clientEmail}</Text>
+        {invoice.dueDate && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Due Date</Text>
+            <Text>{new Date(invoice.dueDate).toLocaleDateString()}</Text>
           </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>From:</Text>
-            <Text>{invoice.producerName}</Text>
-            {invoice.producerCompany && <Text>{invoice.producerCompany}</Text>}
-            <Text>{invoice.producerEmail}</Text>
+        )}
+        {invoice.paymentTerms && (
+          <View style={styles.row}>
+            <Text style={styles.label}>Payment Terms</Text>
+            <Text>{invoice.paymentTerms}</Text>
           </View>
-        </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Track Name</Text>
-          <Text>{invoice.trackTitle}</Text>
-        </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sync Fee</Text>
-          <Text style={styles.amount}>${invoice.syncFee.toFixed(2)}</Text>
-        </View>
-        <View style={styles.footer}>
-          <Text>This invoice was generated automatically by MyBeatFi</Text>
-          <Text>Generated on: {new Date().toLocaleDateString()}</Text>
-        </View>
-      </Page>
-    </Document>
-  );
-} 
+        )}
+      </View>
+      <View style={styles.divider} />
+      <View style={styles.section}>
+        <Text style={styles.total}>Total: ${invoice.syncFee.toFixed(2)}</Text>
+      </View>
+      <View style={styles.section}>
+        <Text>Thank you for your business!</Text>
+      </View>
+    </Page>
+  </Document>
+); 

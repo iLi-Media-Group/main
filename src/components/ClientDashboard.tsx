@@ -140,6 +140,7 @@ export function ClientDashboard() {
   const negotiationDialogOpenRef = useRef<string | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showPaymentCancel, setShowPaymentCancel] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   // Add a debug flag at the top of the component
   const showDebug = false;
 
@@ -183,6 +184,20 @@ export function ClientDashboard() {
       fetchProposals();
     }
   }, [proposalTab, user]);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'logo_url')
+        .single();
+      if (!error && data) {
+        setLogoUrl(data.value);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -1327,7 +1342,7 @@ export function ClientDashboard() {
                                       paymentTerms: proposal.payment_terms,
                                     };
                                     // Generate PDF document
-                                    const pdfDoc = await pdf(<InvoicePDF invoice={invoiceData} />).toBlob();
+                                    const pdfDoc = await pdf(<InvoicePDF invoice={invoiceData} logoUrl={logoUrl || undefined} />).toBlob();
                                     // Download PDF
                                     const url = window.URL.createObjectURL(pdfDoc);
                                     const link = document.createElement('a');
