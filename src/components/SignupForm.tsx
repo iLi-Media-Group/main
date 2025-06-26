@@ -78,7 +78,8 @@ export function SignupForm({ onClose }: SignupFormProps) {
       if (!user) throw new Error('Failed to get user after signup');
 
       // Update profile with additional details
-      const { error: profileError } = await supabase
+      let profileError = null;
+      const profileUpdate = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
@@ -89,8 +90,26 @@ export function SignupForm({ onClose }: SignupFormProps) {
           invitation_code: accountType === 'producer' ? invitationCode : null
         })
         .eq('id', user.id);
+      profileError = profileUpdate.error;
 
-      if (profileError) throw profileError;
+      // If update fails with 409, insert a new profile row
+      if (profileError && profileError.code === '409') {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email,
+            first_name: firstName,
+            last_name: lastName,
+            company_name: companyName.trim() || null,
+            account_type: accountType,
+            age_verified: ageVerified,
+            invitation_code: accountType === 'producer' ? invitationCode : null
+          });
+        if (insertError) throw insertError;
+      } else if (profileError) {
+        throw profileError;
+      }
 
       // Mark invitation as used if it's a producer
       if (accountType === 'producer') {
