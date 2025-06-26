@@ -197,7 +197,7 @@ export function LicenseDialog({
   if (membershipType === 'Gold Access' && remainingLicenses <= 0) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-blue-600 p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+        <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
           <h3 className="text-xl font-bold text-white mb-4">License Limit Reached</h3>
           <p className="text-gray-300 mb-6">
             You've used all your available licenses under the Gold Access plan.
@@ -250,7 +250,7 @@ export function LicenseDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-blue-600 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white">License Track</h3>
             <button

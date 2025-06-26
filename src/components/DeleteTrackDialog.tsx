@@ -30,7 +30,7 @@ export function DeleteTrackDialog({ isOpen, onClose, trackTitle, onConfirm }: De
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-600 p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
         <h3 className="text-xl font-bold text-white mb-4">Delete Track</h3>
         
         {error && (

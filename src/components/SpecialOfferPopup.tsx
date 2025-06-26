@@ -39,7 +39,7 @@ export function SpecialOfferPopup({ isOpen, onClose, purchaseAmount }: SpecialOf
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-600 rounded-xl border border-purple-500/20 w-full max-w-lg p-8 relative">
+      <div className="bg-blue-900 rounded-xl border border-purple-500/20 w-full max-w-lg p-8 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
