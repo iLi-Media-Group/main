@@ -86,7 +86,6 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           company_name: companyName.trim() || null,
-          company_name: companyName.trim() || null,
           phone_number: phoneNumber.trim() || null,
           street_address: streetAddress.trim() || null,
           city: city.trim() || null,
