@@ -33,6 +33,59 @@ function corsResponse(body: string | object | null, status = 200) {
   });
 }
 
+// Function to get applicable discounts
+async function getApplicableDiscounts(itemName: string, checkDate: string = new Date().toISOString().split('T')[0]) {
+  const { data, error } = await supabase
+    .rpc('get_applicable_discounts', {
+      item_name: itemName,
+      check_date: checkDate
+    });
+
+  if (error) {
+    console.error('Error getting applicable discounts:', error);
+    return null;
+  }
+
+  return data;
+}
+
+// Function to calculate discounted price
+async function calculateDiscountedPrice(originalPrice: number, itemName: string, checkDate: string = new Date().toISOString().split('T')[0]) {
+  const { data, error } = await supabase
+    .rpc('calculate_discounted_price', {
+      original_price: originalPrice,
+      item_name: itemName,
+      check_date: checkDate
+    });
+
+  if (error) {
+    console.error('Error calculating discounted price:', error);
+    return {
+      original_price: originalPrice,
+      discount_percent: 0,
+      discounted_price: originalPrice,
+      discount_name: null,
+      discount_description: null
+    };
+  }
+
+  return data?.[0] || {
+    original_price: originalPrice,
+    discount_percent: 0,
+    discounted_price: originalPrice,
+    discount_name: null,
+    discount_description: null
+  };
+}
+
+// Mapping of price IDs to product names for discount lookup
+const PRICE_TO_PRODUCT_MAPPING: Record<string, string> = {
+  'price_1RdAeZR8RYA8TFzwVH3MHECa': 'single_track',
+  'price_1RdAfER8RYA8TFzw7RrrNmtt': 'gold_access',
+  'price_1RdAfXR8RYA8TFzwFZyaSREP': 'platinum_access',
+  'price_1RdAfqR8RYA8TFzwKP7zrKsm': 'ultimate_access'
+};
+
 Deno.serve(async (req) => {
   try {
     if (req.method === 'OPTIONS') {
@@ -212,6 +265,40 @@ Deno.serve(async (req) => {
         metadata,
       });
     } else {
+      // Check for applicable discounts
+      const productName = PRICE_TO_PRODUCT_MAPPING[price_id];
+      let couponId = null;
+      let appliedDiscount: { name: string; description: string; percent: number } | null = null;
+
+      if (productName) {
+        // Get the original price from Stripe to calculate discount
+        const price = await stripe.prices.retrieve(price_id);
+        const originalAmount = price.unit_amount || 0;
+
+        // Calculate discounted price
+        const discountResult = await calculateDiscountedPrice(
+          originalAmount, 
+          productName, 
+          new Date().toISOString().split('T')[0]
+        );
+
+        if (discountResult && discountResult.discount_percent > 0) {
+          // Create a coupon for the discount
+          const coupon = await stripe.coupons.create({
+            percent_off: discountResult.discount_percent,
+            duration: mode === 'subscription' ? 'repeating' : 'once',
+            duration_in_months: mode === 'subscription' ? 12 : undefined,
+            name: discountResult.discount_name || `${productName} Discount`,
+          });
+          couponId = coupon.id;
+          appliedDiscount = {
+            name: discountResult.discount_name,
+            description: discountResult.discount_description,
+            percent: discountResult.discount_percent
+          };
+        }
+      }
+
       // Regular checkout session
       session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -224,7 +311,13 @@ Deno.serve(async (req) => {
         mode,
         success_url,
         cancel_url,
-        metadata,
+        metadata: {
+          ...metadata,
+          applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',
+          coupon_id: couponId || ''
+        },
+        discounts: couponId ? [{ coupon: couponId }] : undefined,
+        allow_promotion_codes: true, // Allow Stripe promotion codes
       });
     }
 

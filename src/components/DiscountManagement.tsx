@@ -26,14 +26,36 @@ interface DiscountFormData {
 }
 
 const APPLICABLE_ITEMS = [
-  { value: 'all', label: 'All Plans & Features' },
-  { value: 'starter', label: 'Starter Plan' },
-  { value: 'pro', label: 'Pro Plan' },
-  { value: 'enterprise', label: 'Enterprise Plan' },
+  { value: 'all', label: 'All Products & Plans' },
+  // White Label Plans
+  { value: 'starter', label: 'White Label Starter Plan' },
+  { value: 'pro', label: 'White Label Pro Plan' },
+  { value: 'enterprise', label: 'White Label Enterprise Plan' },
+  // White Label Features
   { value: 'producer_applications', label: 'Producer Applications' },
   { value: 'ai_recommendations', label: 'AI Recommendations' },
-  { value: 'deep_media_search', label: 'Deep Media Search' }
+  { value: 'deep_media_search', label: 'Deep Media Search' },
+  // Individual Track Licenses
+  { value: 'single_track', label: 'Single Track License' },
+  // Access Plans
+  { value: 'gold_access', label: 'Gold Access Plan' },
+  { value: 'platinum_access', label: 'Platinum Access Plan' },
+  { value: 'ultimate_access', label: 'Ultimate Access Plan' }
 ];
+
+// Mapping of product names to Stripe price IDs for discount application
+const PRODUCT_PRICE_MAPPING = {
+  'single_track': 'price_1RdAeZR8RYA8TFzwVH3MHECa',
+  'gold_access': 'price_1RdAfER8RYA8TFzw7RrrNmtt',
+  'platinum_access': 'price_1RdAfXR8RYA8TFzwFZyaSREP',
+  'ultimate_access': 'price_1RdAfqR8RYA8TFzwKP7zrKsm',
+  'starter': 'white_label_starter', // Custom pricing handled in white-label-checkout
+  'pro': 'white_label_pro', // Custom pricing handled in white-label-checkout
+  'enterprise': 'white_label_enterprise', // Custom pricing handled in white-label-checkout
+  'producer_applications': 'white_label_feature', // Custom pricing handled in white-label-checkout
+  'ai_recommendations': 'white_label_feature', // Custom pricing handled in white-label-checkout
+  'deep_media_search': 'white_label_feature' // Custom pricing handled in white-label-checkout
+};
 
 export function DiscountManagement() {
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -223,7 +245,7 @@ export function DiscountManagement() {
 
   const getApplicableItemsText = (appliesTo: string[]) => {
     if (appliesTo.includes('all')) {
-      return 'All Plans & Features';
+      return 'All Products & Plans';
     }
     return appliesTo.map(item => 
       APPLICABLE_ITEMS.find(option => option.value === item)?.label || item
