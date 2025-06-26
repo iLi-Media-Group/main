@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Music, Star, Zap, Gift, PlayCircle, Video, Headphones, FileCheck, Loader2, Check, ArrowRight, CreditCard, Coins } from 'lucide-react';
+import { Music, Star, Zap, Gift, PlayCircle, Video, Headphones, FileCheck, Loader2, Check, ArrowRight, CreditCard, Coins, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
@@ -9,7 +9,7 @@ import { createCryptoInvoice } from '../utils/createCryptoInvoice';
 export function WelcomePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,6 +65,13 @@ export function WelcomePage() {
       navigate('/login');
       return;
     }
+    
+    // Check if user is admin or producer
+    if (accountType === 'admin' || accountType === 'producer') {
+      setError('Admins and producers cannot subscribe to client plans. Please create a separate client account with a different email address.');
+      return;
+    }
+    
     try {
       setLoading(true);
       setLoadingProductId(product.id);
@@ -89,6 +96,13 @@ export function WelcomePage() {
       navigate('/login');
       return;
     }
+    
+    // Check if user is admin or producer
+    if (accountType === 'admin' || accountType === 'producer') {
+      setError('Admins and producers cannot subscribe to client plans. Please create a separate client account with a different email address.');
+      return;
+    }
+    
     try {
       setLoading(true);
       setLoadingProductId(product.id);
@@ -109,74 +123,75 @@ export function WelcomePage() {
     navigate('/dashboard');
   };
 
+  // Check if user is admin or producer
+  const isAdminOrProducer = accountType === 'admin' || accountType === 'producer';
+
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Welcome to MyBeatFi Sync{state?.firstName ? `, ${state.firstName}` : ''}!
-          </h1>
-          <p className="text-xl text-gray-300">
-            Your account has been created successfully. Now let's choose the perfect plan for your needs.
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-center">{error}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="mb-12">
+            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
+              Welcome to MyBeatFi Sync
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              Choose your membership plan to start licensing music for your projects
+            </p>
           </div>
-        )}
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-8 mb-12">
-          <div className="flex items-center justify-center mb-8">
-            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center">
-              <Check className="w-8 h-8 text-green-400" />
+          {error && (
+            <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+              <span className="text-red-400">{error}</span>
             </div>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-white text-center mb-6">Choose Your Membership Plan</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {PRODUCTS.filter(p => p.mode === 'subscription').map((product) => (
+          )}
+
+          {isAdminOrProducer && (
+            <div className="mb-8 p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <div className="flex items-center justify-center mb-4">
+                <AlertCircle className="w-6 h-6 text-yellow-400 mr-2" />
+                <h3 className="text-lg font-semibold text-yellow-400">Account Type Restriction</h3>
+              </div>
+              <p className="text-yellow-300 text-center">
+                As a {accountType === 'admin' ? 'administrator' : 'producer'}, you cannot subscribe to client plans with this account. 
+                To access client features, please create a separate client account using a different email address.
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            {PRODUCTS.map((product) => (
               <div
                 key={product.id}
-                className={`bg-white/5 backdrop-blur-sm rounded-xl border ${
-                  product.popular ? 'border-purple-500/40' : 'border-blue-500/20'
-                } p-6 hover:border-blue-500/40 transition-colors relative`}
+                className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 transition-all"
               >
-                {product.popular && (
-                  <div className="absolute top-0 right-0 bg-purple-600 text-white px-3 py-1 rounded-bl-lg rounded-tr-lg text-xs font-medium">
-                    Popular
+                <div className="text-center mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    {product.name === 'Single Track License' && <Music className="w-6 h-6 text-white" />}
+                    {product.name === 'Gold Access' && <Star className="w-6 h-6 text-white" />}
+                    {product.name === 'Platinum Access' && <Zap className="w-6 h-6 text-white" />}
+                    {product.name === 'Ultimate Access' && <Gift className="w-6 h-6 text-white" />}
                   </div>
-                )}
-                <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
-                <div className="flex items-baseline mb-4">
-                  <span className="text-2xl font-bold text-white">
-                    ${product.price.toFixed(2)}
-                  </span>
-                  <span className="text-gray-400 ml-2">
-                    /{product.interval}
-                  </span>
+                  <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+                  <div className="text-3xl font-bold text-white mb-2">
+                    ${product.price}
+                    {product.mode === 'subscription' && <span className="text-lg text-gray-400">/month</span>}
+                  </div>
+                  <p className="text-gray-400 text-sm mb-4">{product.description}</p>
                 </div>
-                
-                <ul className="space-y-2 mb-6">
-                  {product.features.slice(0, 3).map((feature, i) => (
-                    <li key={i} className="flex items-center text-gray-300 text-sm">
-                      <Check className="w-4 h-4 text-green-400 mr-2 flex-shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+
                 <div className="space-y-4">
                   <button
                     onClick={() => handleSubscribe(product)}
-                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId)}
+                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId) || isAdminOrProducer}
                     className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId ? (
                       <span>Current Plan</span>
                     ) : loading && loadingProductId === product.id ? (
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : isAdminOrProducer ? (
+                      <span>Not Available</span>
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5" />
@@ -186,11 +201,13 @@ export function WelcomePage() {
                   </button>
                   <button
                     onClick={() => handleCryptoSubscribe(product)}
-                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId)}
+                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId) || isAdminOrProducer}
                     className="w-full py-2 px-4 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading && loadingProductId === product.id ? (
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : isAdminOrProducer ? (
+                      <span>Not Available</span>
                     ) : (
                       <>
                         <Coins className="w-5 h-5" />
@@ -215,32 +232,6 @@ export function WelcomePage() {
             </button>
             <p className="mt-2 text-sm text-gray-400">
               You can upgrade anytime from your dashboard
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <Video className="w-8 h-8 text-purple-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">YouTube Series</h3>
-            <p className="text-gray-300">
-              Launch your channel with a signature sound that sets you apart.
-            </p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <PlayCircle className="w-8 h-8 text-purple-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Client Videos</h3>
-            <p className="text-gray-300">
-              Produce client content faster without licensing headaches.
-            </p>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <Headphones className="w-8 h-8 text-purple-500 mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">Podcasts & More</h3>
-            <p className="text-gray-300">
-              Create podcasts, trailers, and promos — cleared and stress-free.
             </p>
           </div>
         </div>
