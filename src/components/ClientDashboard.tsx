@@ -138,6 +138,8 @@ export function ClientDashboard() {
   const negotiationDialogOpenRef = useRef<string | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showPaymentCancel, setShowPaymentCancel] = useState(false);
+  // Add a debug flag at the top of the component
+  const showDebug = false;
 
   // Ensure proposalTab is always set to a valid value
   useEffect(() => {
@@ -1197,7 +1199,7 @@ export function ClientDashboard() {
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
                 <p className="text-gray-400">No proposals found</p>
                 {/* Temporary debug section */}
-                {proposals.length > 0 && (
+                {showDebug && proposals.length > 0 && (
                   <div className="mt-4 text-left">
                     <p className="text-yellow-400 text-sm mb-2">Debug: All proposals ({proposals.length}) | Current tab: {proposalTab}</p>
                     {proposals.map((p: any) => (
@@ -1211,20 +1213,25 @@ export function ClientDashboard() {
                     ))}
                   </div>
                 )}
+                {!showDebug && (
+                  <></>
+                )}
               </div>
             ) : (
               <>
                 {/* Debug section for filtered proposals */}
-                <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-blue-400 text-sm mb-2">Debug: Filtered proposals ({filteredProposals.length}) | Current tab: {proposalTab}</p>
-                  {filteredProposals.map((p: any) => (
-                    <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
-                      ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
-                      <br />
-                      <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
-                    </div>
-                  ))}
-                </div>
+                {showDebug && (
+                  <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-blue-400 text-sm mb-2">Debug: Filtered proposals ({filteredProposals.length}) | Current tab: {proposalTab}</p>
+                    {filteredProposals.map((p: any) => (
+                      <div key={p.id} className="text-xs text-gray-400 mb-1 p-2 bg-gray-800 rounded">
+                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Track: {p.tracks?.title}
+                        <br />
+                        <span className="text-blue-400">Should show Accept/Decline: {p.status === 'producer_accepted' ? 'YES' : 'NO'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {filteredProposals.map((proposal: any) => (
                   <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-purple-500/20 relative">
                     {unreadProposals.includes(proposal.id) && (
@@ -1267,7 +1274,14 @@ export function ClientDashboard() {
                             }}
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors animate-blink"
                           >Accept</button>
-                          <button onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">Decline</button>
+                          <button 
+                            onClick={() => {
+                              setSelectedProposal(proposal);
+                              setConfirmAction('reject');
+                              setShowConfirmDialog(true);
+                            }} 
+                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                          >Decline</button>
                         </div>
                       </div>
                     )}
@@ -1276,7 +1290,11 @@ export function ClientDashboard() {
                         <span className="text-blue-600 font-semibold flex items-center mb-2 md:mb-0"><Clock className="w-4 h-4 mr-2" />Proposal is pending producer review. You can decline at any time.</span>
                         <div className="flex space-x-2 mt-2 md:mt-0">
                           <button 
-                            onClick={() => handleClientAcceptDecline(proposal, 'client_rejected')} 
+                            onClick={() => {
+                              setSelectedProposal(proposal);
+                              setConfirmAction('reject');
+                              setShowConfirmDialog(true);
+                            }} 
                             className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
                           >
                             Decline
