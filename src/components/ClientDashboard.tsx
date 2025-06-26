@@ -16,6 +16,8 @@ import { getUserSubscription } from '../lib/stripe';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
+import { InvoicePDF } from './InvoicePDF';
+import { pdf } from '@react-pdf/renderer';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -1309,41 +1311,35 @@ export function ClientDashboard() {
                               <button
                                 onClick={async () => {
                                   try {
-                                    // Get the current user's access token
-                                    const { data: { session } } = await supabase.auth.getSession();
-                                    const accessToken = session?.access_token;
-                                    if (!accessToken) {
-                                      alert('You must be logged in to download the invoice.');
-                                      return;
-                                    }
-                                    // Generate invoice PDF
-                                    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-invoice-pdf`, {
-                                      method: 'POST',
-                                      headers: {
-                                        'Authorization': `Bearer ${accessToken}`,
-                                        'Content-Type': 'application/json'
-                                      },
-                                      body: JSON.stringify({
-                                        proposal_id: proposal.id
-                                      })
-                                    });
-
-                                    if (response.ok) {
-                                      const blob = await response.blob();
-                                      const url = window.URL.createObjectURL(blob);
-                                      const a = document.createElement('a');
-                                      a.href = url;
-                                      a.download = `invoice-${proposal.id.slice(0, 8)}.pdf`;
-                                      document.body.appendChild(a);
-                                      a.click();
-                                      window.URL.revokeObjectURL(url);
-                                      document.body.removeChild(a);
-                                    } else {
-                                      alert('Failed to generate invoice. Please try again.');
-                                    }
+                                    // Gather invoice data from proposal
+                                    const invoiceData = {
+                                      invoiceNumber: proposal.id.slice(0, 8).toUpperCase(),
+                                      clientName: proposal.client?.first_name && proposal.client?.last_name ? `${proposal.client.first_name} ${proposal.client.last_name}` : proposal.client_name || '',
+                                      clientEmail: proposal.client?.email || proposal.client_email || '',
+                                      clientCompany: proposal.client?.company_name || proposal.client_company || '',
+                                      producerName: proposal.track?.producer?.first_name && proposal.track?.producer?.last_name ? `${proposal.track.producer.first_name} ${proposal.track.producer.last_name}` : proposal.producer_name || '',
+                                      producerEmail: proposal.track?.producer?.email || proposal.producer_email || '',
+                                      producerCompany: proposal.track?.producer?.company_name || proposal.producer_company || '',
+                                      trackTitle: proposal.track?.title || proposal.track_title || '',
+                                      syncFee: proposal.sync_fee,
+                                      paymentDate: proposal.payment_date || proposal.updated_at || new Date().toISOString(),
+                                      dueDate: proposal.payment_due_date,
+                                      paymentTerms: proposal.payment_terms,
+                                    };
+                                    // Generate PDF document
+                                    const pdfDoc = await pdf(<InvoicePDF invoice={invoiceData} />).toBlob();
+                                    // Download PDF
+                                    const url = window.URL.createObjectURL(pdfDoc);
+                                    const link = document.createElement('a');
+                                    link.href = url;
+                                    link.setAttribute('download', `invoice-${invoiceData.invoiceNumber}.pdf`);
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                    window.URL.revokeObjectURL(url);
                                   } catch (error) {
-                                    console.error('Error generating invoice:', error);
-                                    alert('Failed to generate invoice. Please try again.');
+                                    console.error('Error generating invoice PDF:', error);
+                                    alert('Failed to generate invoice PDF. Please try again.');
                                   }
                                 }}
                                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
