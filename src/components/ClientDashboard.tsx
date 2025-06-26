@@ -173,7 +173,10 @@ export function ClientDashboard() {
       refreshMembership().then(() => {
         fetchDashboardData();
         getUserSubscription().then((sub) => setSubscription(sub));
-        fetchProposals();
+        fetchProposals().then(() => {
+          // Check for new negotiation messages after proposals are loaded
+          checkForNewNegotiationMessages();
+        });
       });
     }
   }, [user, membershipPlan]);
@@ -181,7 +184,10 @@ export function ClientDashboard() {
   // Force refresh proposals when proposalTab changes
   useEffect(() => {
     if (user) {
-      fetchProposals();
+      fetchProposals().then(() => {
+        // Check for new negotiation messages after proposals are loaded
+        checkForNewNegotiationMessages();
+      });
     }
   }, [proposalTab, user]);
 
