@@ -79,6 +79,7 @@ export function ProducerDashboard() {
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
   const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
   const negotiationDialogOpenRef = useRef<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
 
   useEffect(() => {
     if (user) {
@@ -446,6 +447,11 @@ export function ProducerDashboard() {
       }
     });
 
+  // Sort proposals newest to oldest
+  const sortedPending = [...pendingProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const sortedAccepted = [...acceptedProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const sortedDeclined = [...declinedProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -679,216 +685,195 @@ export function ProducerDashboard() {
           </div>
 
           <div className="space-y-8">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-yellow-400" />
-                  Pending Proposals
-                </h3>
-                <Link
-                  to="/producer/banking"
-                  className="text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
-                >
-                  <DollarSign className="w-4 h-4 mr-1" />
-                  View Earnings
-                </Link>
-              </div>
-              <div className="space-y-4">
-                {pendingProposals.length === 0 ? (
-                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                    <p className="text-gray-400">No pending proposals</p>
-                  </div>
-                ) : (
-                  pendingProposals.map((proposal: any) => (
-                    <div
-                      key={proposal.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
-                    >
-                      {unreadProposals.includes(proposal.id) && (
-                        <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">New Message</span>
-                      )}
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                          <p className="text-sm text-gray-400">
-                            From: {proposal.client.first_name} {proposal.client.last_name}
-                          </p>
-                          {proposal.payment_status && (
-                            <p className="text-sm text-gray-400">
-                              Payment: <span className={`font-semibold ${
-                                proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                'text-red-400'
-                              }`}>
-                                {proposal.payment_status === 'paid' ? 'Paid' : 
-                                 proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
-                              </span>
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
-                          <p className="text-xs text-gray-400">
-                            Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'history')}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                        >
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          History
-                        </button>
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'negotiate')}
-                          className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                        >
-                          <MessageSquare className="w-3 h-3 inline mr-1" />
-                          Negotiate
-                        </button>
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'accept')}
-                          className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                        >
-                          <Check className="w-3 h-3 inline mr-1" />
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'reject')}
-                          className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                        >
-                          <X className="w-3 h-3 inline mr-1" />
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+            <div className="mb-6 flex space-x-4">
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'pending' ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-400'}`}
+                onClick={() => setActiveTab('pending')}
+              >Pending</button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'accepted' ? 'bg-green-600 text-white' : 'bg-white/10 text-green-400'}`}
+                onClick={() => setActiveTab('accepted')}
+              >Accepted</button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'declined' ? 'bg-red-600 text-white' : 'bg-white/10 text-red-400'}`}
+                onClick={() => setActiveTab('declined')}
+              >Declined</button>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <Check className="w-5 h-5 mr-2 text-green-400" />
-                  Accepted Proposals
-                </h3>
-                <span className="text-sm text-gray-400">{acceptedProposals.length} total</span>
-              </div>
-              <div className="space-y-4">
-                {acceptedProposals.length === 0 ? (
-                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                    <p className="text-gray-400">No accepted proposals</p>
-                  </div>
-                ) : (
-                  acceptedProposals.slice(0, 3).map((proposal: any) => (
-                    <div
-                      key={proposal.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                          <p className="text-sm text-gray-400">
-                            From: {proposal.client.first_name} {proposal.client.last_name}
-                          </p>
-                          {proposal.payment_status && (
+            {/* Tab content */}
+            <div className="space-y-8">
+              {activeTab === 'pending' && (
+                <div className="max-h-96 overflow-y-auto space-y-4">
+                  {sortedPending.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No pending proposals</p>
+                    </div>
+                  ) : (
+                    sortedPending.slice(0, 3).map((proposal: any) => (
+                      <div key={proposal.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative">
+                        {unreadProposals.includes(proposal.id) && (
+                          <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">New Message</span>
+                        )}
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
                             <p className="text-sm text-gray-400">
-                              Payment: <span className={`font-semibold ${
-                                proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                'text-red-400'
-                              }`}>
-                                {proposal.payment_status === 'paid' ? 'Paid' : 
-                                 proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
-                              </span>
+                              From: {proposal.client.first_name} {proposal.client.last_name}
                             </p>
-                          )}
+                            {proposal.payment_status && (
+                              <p className="text-sm text-gray-400">
+                                Payment: <span className={`font-semibold ${
+                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                  'text-red-400'
+                                }`}>
+                                  {proposal.payment_status === 'paid' ? 'Paid' : 
+                                   proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">
+                              Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
-                          <p className="text-xs text-gray-400">
-                            Accepted: {new Date(proposal.created_at).toLocaleDateString()}
-                          </p>
+                        <div className="flex space-x-2 mt-2">
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'history')}
+                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                          >
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            History
+                          </button>
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'negotiate')}
+                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                          >
+                            <MessageSquare className="w-3 h-3 inline mr-1" />
+                            Negotiate
+                          </button>
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'accept')}
+                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                          >
+                            <Check className="w-3 h-3 inline mr-1" />
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'reject')}
+                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                          >
+                            <X className="w-3 h-3 inline mr-1" />
+                            Decline
+                          </button>
                         </div>
                       </div>
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'history')}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                        >
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          History
-                        </button>
-                      </div>
+                    ))
+                  )}
+                  {sortedPending.length > 3 && (
+                    <div className="text-center">
+                      <button className="text-blue-400 hover:text-blue-300 text-sm">View all {sortedPending.length} pending proposals</button>
                     </div>
-                  ))
-                )}
-                {acceptedProposals.length > 3 && (
-                  <div className="text-center">
-                    <button className="text-blue-400 hover:text-blue-300 text-sm">
-                      View all {acceptedProposals.length} accepted proposals
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white flex items-center">
-                  <X className="w-5 h-5 mr-2 text-red-400" />
-                  Declined Proposals
-                </h3>
-                <span className="text-sm text-gray-400">{declinedProposals.length} total</span>
-              </div>
-              <div className="space-y-4">
-                {declinedProposals.length === 0 ? (
-                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                    <p className="text-gray-400">No declined proposals</p>
-                  </div>
-                ) : (
-                  declinedProposals.slice(0, 3).map((proposal: any) => (
-                    <div
-                      key={proposal.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                          <p className="text-sm text-gray-400">
-                            From: {proposal.client.first_name} {proposal.client.last_name}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-red-400">${proposal.sync_fee.toFixed(2)}</p>
-                          <p className="text-xs text-gray-400">
-                            Declined: {new Date(proposal.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'history')}
-                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                        >
-                          <Clock className="w-3 h-3 inline mr-1" />
-                          History
-                        </button>
-                      </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'accepted' && (
+                <div className="max-h-96 overflow-y-auto space-y-4">
+                  {sortedAccepted.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-green-500/20">
+                      <p className="text-gray-400">No accepted proposals</p>
                     </div>
-                  ))
-                )}
-                {declinedProposals.length > 3 && (
-                  <div className="text-center">
-                    <button className="text-blue-400 hover:text-blue-300 text-sm">
-                      View all {declinedProposals.length} declined proposals
-                    </button>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    sortedAccepted.slice(0, 3).map((proposal: any) => (
+                      <div key={proposal.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                            <p className="text-sm text-gray-400">
+                              From: {proposal.client.first_name} {proposal.client.last_name}
+                            </p>
+                            {proposal.payment_status && (
+                              <p className="text-sm text-gray-400">
+                                Payment: <span className={`font-semibold ${
+                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
+                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
+                                  'text-red-400'
+                                }`}>
+                                  {proposal.payment_status === 'paid' ? 'Paid' : 
+                                   proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
+                                </span>
+                              </p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">
+                              Accepted: {new Date(proposal.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-2">
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'history')}
+                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                          >
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            History
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {sortedAccepted.length > 3 && (
+                    <div className="text-center">
+                      <button className="text-green-400 hover:text-green-300 text-sm">View all {sortedAccepted.length} accepted proposals</button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'declined' && (
+                <div className="max-h-96 overflow-y-auto space-y-4">
+                  {sortedDeclined.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-red-500/20">
+                      <p className="text-gray-400">No declined proposals</p>
+                    </div>
+                  ) : (
+                    sortedDeclined.slice(0, 3).map((proposal: any) => (
+                      <div key={proposal.id} className="bg-yellow-400 border-2 border-red-500 rounded-lg p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-red-700 font-bold">{proposal.track.title}</h4>
+                            <p className="text-sm text-gray-700 font-semibold">From: {proposal.client.first_name} {proposal.client.last_name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-red-700">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-xs text-gray-700">Declined: {new Date(proposal.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                        <div className="bg-red-700 text-yellow-200 font-bold rounded p-2 mt-2 text-center">
+                          The client canceled this request.
+                        </div>
+                        <div className="flex space-x-2 mt-2">
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'history')}
+                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-red-700 text-xs rounded transition-colors"
+                          >
+                            <Clock className="w-3 h-3 inline mr-1" />History
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {sortedDeclined.length > 3 && (
+                    <div className="text-center">
+                      <button className="text-red-400 hover:text-red-300 text-sm">View all {sortedDeclined.length} declined proposals</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>
