@@ -1311,6 +1311,6 @@ export function ClientDashboard() {
           proposal={selectedProposal}
         />
       )}
-    </div>
-  );
+    ;
 }
+
