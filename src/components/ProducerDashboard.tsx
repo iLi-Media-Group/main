@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, PieChart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioPlayer } from './AudioPlayer';
@@ -64,7 +64,9 @@ export function ProducerDashboard() {
     totalTracks: 0,
     totalSales: 0,
     totalRevenue: 0,
-    pendingProposals: 0
+    pendingProposals: 0,
+    monthlyEarnings: 0,
+    availableBalance: 0
   });
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
@@ -294,7 +296,9 @@ export function ProducerDashboard() {
         totalTracks,
         totalSales,
         totalRevenue: totalRevenueWithSync,
-        pendingProposals: recentProposalsData?.length || 0
+        pendingProposals: recentProposalsData?.length || 0,
+        monthlyEarnings: balanceData?.pending_balance || 0,
+        availableBalance: balanceData?.available_balance || 0
       });
 
     } catch (err) {
@@ -523,7 +527,35 @@ export function ProducerDashboard() {
                 <p className="text-gray-400">Total Revenue</p>
                 <p className="text-3xl font-bold text-white">${stats.totalRevenue.toFixed(2)}</p>
               </div>
-              <DollarSign className="w-12 h-12 text-green-500" />
+              <div 
+                className="relative cursor-pointer group" 
+                title="View revenue breakdown"
+              >
+                <DollarSign className="w-12 h-12 text-green-500" />
+                <PieChart className="w-5 h-5 text-blue-400 absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute -bottom-6 right-0 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Click for details
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-purple-500/20 cursor-pointer" onClick={() => navigate('/producer/banking')}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">Monthly Earnings</p>
+                <p className="text-3xl font-bold text-white">${stats.monthlyEarnings.toFixed(2)}</p>
+                <p className="text-sm text-purple-400">Available: ${stats.availableBalance.toFixed(2)}</p>
+              </div>
+              <div 
+                className="relative cursor-pointer group" 
+                title="View earnings breakdown"
+              >
+                <DollarSign className="w-12 h-12 text-purple-500" />
+                <div className="absolute -bottom-6 right-0 text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  View Earnings
+                </div>
+              </div>
             </div>
           </div>
 
