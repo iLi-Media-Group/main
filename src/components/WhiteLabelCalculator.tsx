@@ -1,13 +1,26 @@
-import React, { useState } from 'react';
-import { Calculator, Brain, Users, Search, DollarSign, Calendar, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calculator, Brain, Users, Search, DollarSign, Calendar, ArrowRight, Percent, Loader2, CheckCircle } from 'lucide-react';
+import { createWhiteLabelCheckout, calculateDiscountedPrice } from '../lib/whiteLabelCheckout';
 
 interface PricingCalculatorProps {
   onCalculate?: (total: number) => void;
 }
 
+interface DiscountInfo {
+  name: string;
+  description: string;
+  percent: number;
+}
+
 export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('starter');
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [discounts, setDiscounts] = useState<{
+    plan?: DiscountInfo;
+    features: { [key: string]: DiscountInfo };
+  }>({ features: {} });
 
   // Pricing structure
   const plans = {
@@ -55,6 +68,45 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
     }
   ];
 
+  // Fetch applicable discounts on component mount and when plan/features change
+  useEffect(() => {
+    fetchDiscounts();
+  }, [selectedPlan, selectedFeatures]);
+
+  const fetchDiscounts = async () => {
+    try {
+      // Get plan discount
+      const planDiscount = await calculateDiscountedPrice(plans[selectedPlan].setupFee, selectedPlan);
+      
+      // Get feature discounts
+      const featureDiscounts: { [key: string]: DiscountInfo } = {};
+      for (const feature of selectedFeatures) {
+        const featureInfo = features.find(f => f.id === feature);
+        if (featureInfo && !featureInfo.includedIn.includes(selectedPlan)) {
+          const discount = await calculateDiscountedPrice(featureInfo.price, feature);
+          if (discount.discount_percent > 0) {
+            featureDiscounts[feature] = {
+              name: discount.discount_name || 'Discount',
+              description: discount.discount_description || '',
+              percent: discount.discount_percent
+            };
+          }
+        }
+      }
+
+      setDiscounts({
+        plan: planDiscount.discount_percent > 0 ? {
+          name: planDiscount.discount_name || 'Plan Discount',
+          description: planDiscount.discount_description || '',
+          percent: planDiscount.discount_percent
+        } : undefined,
+        features: featureDiscounts
+      });
+    } catch (error) {
+      console.error('Error fetching discounts:', error);
+    }
+  };
+
   const handleFeatureToggle = (featureId: string) => {
     setSelectedFeatures(prev => 
       prev.includes(featureId) 
@@ -82,23 +134,70 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
     return plan.setupFee + selectedFeatureCosts;
   };
 
+  const calculateDiscountedStartupCost = () => {
+    const baseCost = calculateStartupCost();
+    let discountedCost = baseCost;
+
+    // Apply plan discount
+    if (discounts.plan) {
+      discountedCost = baseCost * (1 - discounts.plan.percent / 100);
+    }
+
+    // Apply feature discounts
+    Object.values(discounts.features).forEach(discount => {
+      // This is a simplified calculation - in reality, the Edge Function handles this more precisely
+      discountedCost = discountedCost * (1 - discount.percent / 100);
+    });
+
+    return Math.round(discountedCost);
+  };
+
   const calculateAnnualCost = () => {
     const plan = getSelectedPlan();
     return plan.monthlyFee * 12;
   };
 
   const calculateTotalFirstYear = () => {
-    return calculateStartupCost() + calculateAnnualCost();
+    return calculateDiscountedStartupCost() + calculateAnnualCost();
   };
 
   const getBundleDiscount = () => {
-    const selectedFeatureCount = selectedFeatures.length;
-    if (selectedFeatureCount === 2) return 49; // Save $49
-    if (selectedFeatureCount === 3) return 148; // Save $148
+    const additionalFeatures = selectedFeatures.filter(f => {
+      const feature = features.find(feat => feat.id === f);
+      return feature && !feature.includedIn.includes(selectedPlan);
+    });
+    
+    if (additionalFeatures.length === 2) return 49; // Save $49
+    if (additionalFeatures.length === 3) return 148; // Save $148
     return 0;
   };
 
-  const finalStartupCost = calculateStartupCost() - getBundleDiscount();
+  const finalStartupCost = calculateDiscountedStartupCost() - getBundleDiscount();
+
+  const handleCheckout = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // For demo purposes, we'll show a success message
+      // In a real implementation, you'd collect customer info and call the checkout
+      const checkoutData = await createWhiteLabelCheckout({
+        plan: selectedPlan,
+        features: selectedFeatures,
+        customerEmail: 'demo@example.com',
+        customerName: 'Demo Customer',
+        companyName: 'Demo Company'
+      });
+
+      // Redirect to checkout
+      window.location.href = checkoutData.url;
+    } catch (err) {
+      console.error('Checkout error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to start checkout');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8">
@@ -131,6 +230,14 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                 <p className="text-sm text-gray-400">
                   ${plan.setupFee} setup + ${plan.monthlyFee}/month
                 </p>
+                {discounts.plan && selectedPlan === key && (
+                  <div className="flex items-center mt-2 text-green-400">
+                    <Percent className="w-4 h-4 mr-1" />
+                    <span className="text-sm font-medium">
+                      {discounts.plan.percent}% off - {discounts.plan.name}
+                    </span>
+                  </div>
+                )}
               </div>
             </button>
           ))}
@@ -146,6 +253,7 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
             const isSelected = selectedFeatures.includes(feature.id);
             const isIncluded = feature.includedIn.includes(selectedPlan);
             const isDisabled = !feature.availableIn.includes(selectedPlan);
+            const hasDiscount = discounts.features[feature.id];
             
             return (
               <label
@@ -177,11 +285,26 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                         {isIncluded ? (
                           <span className="text-green-400 text-sm font-medium">Included</span>
                         ) : (
-                          <span className="text-blue-400 font-semibold">${feature.price}</span>
+                          <div className="flex items-center space-x-2">
+                            {hasDiscount && (
+                              <span className="text-red-400 text-sm line-through">${feature.price}</span>
+                            )}
+                            <span className="text-blue-400 font-semibold">
+                              ${hasDiscount ? Math.round(feature.price * (1 - hasDiscount.percent / 100)) : feature.price}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
                     <p className="text-sm text-gray-400">{feature.description}</p>
+                    {hasDiscount && !isIncluded && (
+                      <div className="flex items-center mt-1 text-green-400">
+                        <Percent className="w-3 h-3 mr-1" />
+                        <span className="text-xs">
+                          {hasDiscount.percent}% off - {hasDiscount.name}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </label>
@@ -214,6 +337,28 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                 </div>
               )}
             </>
+          )}
+
+          {/* Show applied discounts */}
+          {(discounts.plan || Object.keys(discounts.features).length > 0) && (
+            <div className="border-t border-gray-600 pt-3">
+              <div className="text-sm text-gray-400 mb-2">Applied Discounts:</div>
+              {discounts.plan && (
+                <div className="flex justify-between items-center text-green-400">
+                  <span className="text-sm">{discounts.plan.name}:</span>
+                  <span className="text-sm font-semibold">-{discounts.plan.percent}%</span>
+                </div>
+              )}
+              {Object.entries(discounts.features).map(([featureId, discount]) => {
+                const feature = features.find(f => f.id === featureId);
+                return (
+                  <div key={featureId} className="flex justify-between items-center text-green-400">
+                    <span className="text-sm">{feature?.name} - {discount.name}:</span>
+                    <span className="text-sm font-semibold">-{discount.percent}%</span>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           {/* Show included features */}
@@ -264,15 +409,32 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
         </div>
       )}
 
+      {/* Error Message */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* CTA */}
       <div className="mt-6">
-        <a
-          href="#contact"
-          className="block w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center"
+        <button
+          onClick={handleCheckout}
+          disabled={loading}
+          className="block w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center disabled:opacity-50"
         >
-          <span>Request Demo with This Configuration</span>
-          <ArrowRight className="w-5 h-5 ml-2" />
-        </a>
+          {loading ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin mr-2" />
+              Processing...
+            </>
+          ) : (
+            <>
+              <span>Start Checkout</span>
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
