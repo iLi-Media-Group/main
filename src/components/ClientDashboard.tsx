@@ -1033,71 +1033,75 @@ export function ClientDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-white">Sync Proposals</h2>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={fetchProposals}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center"
-              >
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Refresh
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    console.log('Fixing payment status for accepted proposals...');
-                    
-                    // First, check what proposals need fixing
-                    const { data: pendingProposals, error: checkError } = await supabase
-                      .from('sync_proposals')
-                      .select('id, status, client_status, payment_status, sync_fee')
-                      .eq('client_id', user?.id)
-                      .eq('status', 'accepted')
-                      .eq('payment_status', 'pending')
-                      .neq('sync_fee', 0);
+              {showDebug && (
+                <button
+                  onClick={fetchProposals}
+                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" />
+                  Refresh
+                </button>
+              )}
+              {showDebug && (
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('Fixing payment status for accepted proposals...');
+                      
+                      // First, check what proposals need fixing
+                      const { data: pendingProposals, error: checkError } = await supabase
+                        .from('sync_proposals')
+                        .select('id, status, client_status, payment_status, sync_fee')
+                        .eq('client_id', user?.id)
+                        .eq('status', 'accepted')
+                        .eq('payment_status', 'pending')
+                        .neq('sync_fee', 0);
 
-                    if (checkError) {
-                      console.error('Error checking proposals:', checkError);
-                      alert('Failed to check proposals: ' + checkError.message);
-                      return;
+                      if (checkError) {
+                        console.error('Error checking proposals:', checkError);
+                        alert('Failed to check proposals: ' + checkError.message);
+                        return;
+                      }
+
+                      console.log('Found proposals to fix:', pendingProposals);
+
+                      if (!pendingProposals || pendingProposals.length === 0) {
+                        alert('No accepted proposals found with pending payment status');
+                        return;
+                      }
+
+                      // Manual payment status fix for accepted proposals
+                      const { data, error } = await supabase
+                        .from('sync_proposals')
+                        .update({
+                          payment_status: 'paid',
+                          payment_date: new Date().toISOString(),
+                          updated_at: new Date().toISOString()
+                        })
+                        .eq('client_id', user?.id)
+                        .eq('status', 'accepted')
+                        .eq('payment_status', 'pending')
+                        .neq('sync_fee', 0);
+
+                      if (error) {
+                        console.error('Error fixing payment status:', error);
+                        alert('Failed to fix payment status: ' + error.message);
+                      } else {
+                        console.log('Payment status fix result:', data);
+                        alert(`Successfully updated payment status for ${pendingProposals.length} proposal(s)`);
+                        await fetchProposals(); // Refresh the data
+                      }
+                    } catch (err) {
+                      console.error('Error in payment status fix:', err);
+                      alert('Failed to fix payment status');
                     }
-
-                    console.log('Found proposals to fix:', pendingProposals);
-
-                    if (!pendingProposals || pendingProposals.length === 0) {
-                      alert('No accepted proposals found with pending payment status');
-                      return;
-                    }
-
-                    // Manual payment status fix for accepted proposals
-                    const { data, error } = await supabase
-                      .from('sync_proposals')
-                      .update({
-                        payment_status: 'paid',
-                        payment_date: new Date().toISOString(),
-                        updated_at: new Date().toISOString()
-                      })
-                      .eq('client_id', user?.id)
-                      .eq('status', 'accepted')
-                      .eq('payment_status', 'pending')
-                      .neq('sync_fee', 0);
-
-                    if (error) {
-                      console.error('Error fixing payment status:', error);
-                      alert('Failed to fix payment status: ' + error.message);
-                    } else {
-                      console.log('Payment status fix result:', data);
-                      alert(`Successfully updated payment status for ${pendingProposals.length} proposal(s)`);
-                      await fetchProposals(); // Refresh the data
-                    }
-                  } catch (err) {
-                    console.error('Error in payment status fix:', err);
-                    alert('Failed to fix payment status');
-                  }
-                }}
-                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center"
-              >
-                <Check className="w-4 h-4 mr-1" />
-                Fix Payment Status
-              </button>
+                  }}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors flex items-center"
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Fix Payment Status
+                </button>
+              )}
               <div className="flex space-x-2">
                 <button onClick={() => setProposalTab('pending')} className={`px-3 py-1 rounded ${proposalTab==='pending'?'bg-purple-600 text-white':'bg-white/10 text-gray-300'}`}>Pending/Active</button>
                 <button onClick={() => setProposalTab('accepted')} className={`px-3 py-1 rounded ${proposalTab==='accepted'?'bg-green-600 text-white':'bg-white/10 text-gray-300'}`}>Accepted</button>
@@ -1121,79 +1125,43 @@ export function ClientDashboard() {
             </div>
           )}
           <div className="space-y-4">
-            {/* Debug info */}
-            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
-              Debug: Tab={proposalTab} | All proposals={proposals.length} | Filtered={filteredProposals.length} | 
-              Pending proposals={proposals.filter(p => p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted').length} |
-              Accepted proposals={proposals.filter(p => p.status === 'accepted' || p.client_status === 'accepted').length}
-            </div>
-            
-            {/* Payment Status Debug */}
-            <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400">
-              Payment Debug: 
-              {proposals.filter(p => p.payment_status).map((p: any) => (
-                <div key={p.id} className="mt-1">
-                  Proposal {p.id.slice(0, 8)}... | Status: {p.status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
+            {showDebug && (
+              <div className="space-y-4">
+                {/* Debug info */}
+                <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-400">
+                  Debug: Tab={proposalTab} | All proposals={proposals.length} | Filtered={filteredProposals.length} | 
+                  Pending proposals={proposals.filter(p => p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted').length} |
+                  Accepted proposals={proposals.filter(p => p.status === 'accepted' || p.client_status === 'accepted').length}
                 </div>
-              ))}
-              {proposals.filter(p => !p.payment_status).length > 0 && (
-                <div className="mt-1 text-yellow-400">
-                  {proposals.filter(p => !p.payment_status).length} proposals with no payment_status
+                {/* Payment Status Debug */}
+                <div className="p-2 bg-blue-500/10 border border-blue-500/20 rounded text-xs text-blue-400">
+                  Payment Debug: 
+                  {proposals.filter(p => p.payment_status).map((p: any) => (
+                    <div key={p.id} className="mt-1">
+                      Proposal {p.id.slice(0, 8)}... | Status: {p.status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
+                    </div>
+                  ))}
+                  {proposals.filter(p => !p.payment_status).length > 0 && (
+                    <div className="mt-1 text-yellow-400">
+                      {proposals.filter(p => !p.payment_status).length} proposals with no payment_status
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            {/* NEW: Visible Database Debug */}
-            <div className="p-4 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-400">
-              <h4 className="font-bold mb-2">Database Debug (Visible)</h4>
-              {proposals.length > 0 ? (
-                proposals.map((p: any) => (
-                  <div key={p.id} className="mb-2 p-2 bg-green-500/20 rounded">
-                    <div><strong>Proposal ID:</strong> {p.id.slice(0, 8)}...</div>
-                    <div><strong>Frontend Status:</strong> {p.status}</div>
-                    <div><strong>Frontend Client Status:</strong> {p.client_status}</div>
-                    <div><strong>Frontend Payment Status:</strong> {p.payment_status || 'null'}</div>
-                    <div><strong>Sync Fee:</strong> ${p.sync_fee}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-yellow-400">
-                  No proposals found
+                {/* NEW: Visible Database Debug */}
+                <div className="p-4 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-400">
+                  <h4 className="font-bold mb-2">Database Debug (Visible)</h4>
+                  {proposals.length > 0 ? (
+                    proposals.map((p: any) => (
+                      <div key={p.id} className="mb-1">
+                        ID: {p.id.slice(0, 8)}... | Status: {p.status} | Client Status: {p.client_status} | Payment: {p.payment_status} | Fee: ${p.sync_fee}
+                      </div>
+                    ))
+                  ) : (
+                    <div>No proposals found</div>
+                  )}
                 </div>
-              )}
-              
-              {/* Direct Database Check Button */}
-              <div className="mt-4">
-                <button
-                  onClick={async () => {
-                    try {
-                      console.log('=== DIRECT DATABASE CHECK BUTTON ===');
-                      const { data, error } = await supabase
-                        .from('sync_proposals')
-                        .select('id, status, client_status, payment_status, sync_fee, updated_at')
-                        .eq('client_id', user?.id)
-                        .order('updated_at', { ascending: false });
-                      
-                      console.log('Direct DB check result:', { data, error });
-                      
-                      if (data) {
-                        alert(`Database Check Results:\n${data.map((p: any) => 
-                          `Proposal ${p.id.slice(0, 8)}...: Status=${p.status}, Payment=${p.payment_status}`
-                        ).join('\n')}`);
-                      } else {
-                        alert(`Database check error: ${error?.message}`);
-                      }
-                    } catch (err) {
-                      console.error('Error in direct DB check:', err);
-                      alert('Error checking database');
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                >
-                  Check Database Directly
-                </button>
               </div>
-            </div>
+            )}
             
             {filteredProposals.length === 0 ? (
               <div className="text-center py-6 bg-white/5 rounded-lg border border-purple-500/20">
