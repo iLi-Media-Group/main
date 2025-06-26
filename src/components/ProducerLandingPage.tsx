@@ -204,3 +204,5 @@ export function ProducerLandingPage() {
     </div>
   );
 }
+
+export default ProducerLandingPage;
