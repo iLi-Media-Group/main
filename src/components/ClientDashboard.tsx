@@ -1128,14 +1128,14 @@ export function ClientDashboard() {
             </div>
           </div>
           {unreadProposals.length > 0 && (
-            <div className="mb-4 p-4 bg-yellow-400/20 border border-yellow-400/40 rounded-lg text-yellow-900 font-semibold flex items-center justify-between">
+            <div className="mb-4 p-4 bg-yellow-400 border-2 border-green-500 rounded-lg text-green-900 font-bold flex items-center justify-between">
               <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-yellow-600" /> 
+                <AlertTriangle className="w-5 h-5 mr-2 text-green-700" />
                 You have {unreadProposals.length} new negotiation message{unreadProposals.length > 1 ? 's' : ''} waiting to be reviewed.
               </div>
               <button 
                 onClick={() => setUnreadProposals([])} 
-                className="text-yellow-700 hover:text-yellow-900 text-sm underline"
+                className="text-green-700 hover:text-green-900 text-sm underline font-bold"
               >
                 Dismiss
               </button>
