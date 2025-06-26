@@ -40,4 +40,19 @@ SELECT
 FROM sync_proposals 
 WHERE status = 'accepted' 
   AND payment_status = 'pending'
+ORDER BY updated_at DESC;
+
+-- Test direct query as the authenticated user (this simulates what the frontend sees)
+-- Run this as the authenticated user to see if RLS is blocking the payment_status
+SELECT 
+  id, 
+  status, 
+  client_status, 
+  payment_status, 
+  sync_fee,
+  created_at,
+  updated_at
+FROM sync_proposals 
+WHERE client_id = auth.uid()
+  AND id IN ('7af40356-66f3-45d7-87f3-710dff65b46a', '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b')
 ORDER BY updated_at DESC; 

@@ -1160,6 +1160,38 @@ export function ClientDashboard() {
                   No proposals found
                 </div>
               )}
+              
+              {/* Direct Database Check Button */}
+              <div className="mt-4">
+                <button
+                  onClick={async () => {
+                    try {
+                      console.log('=== DIRECT DATABASE CHECK BUTTON ===');
+                      const { data, error } = await supabase
+                        .from('sync_proposals')
+                        .select('id, status, client_status, payment_status, sync_fee, updated_at')
+                        .eq('client_id', user?.id)
+                        .order('updated_at', { ascending: false });
+                      
+                      console.log('Direct DB check result:', { data, error });
+                      
+                      if (data) {
+                        alert(`Database Check Results:\n${data.map((p: any) => 
+                          `Proposal ${p.id.slice(0, 8)}...: Status=${p.status}, Payment=${p.payment_status}`
+                        ).join('\n')}`);
+                      } else {
+                        alert(`Database check error: ${error?.message}`);
+                      }
+                    } catch (err) {
+                      console.error('Error in direct DB check:', err);
+                      alert('Error checking database');
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                >
+                  Check Database Directly
+                </button>
+              </div>
             </div>
             
             {filteredProposals.length === 0 ? (
