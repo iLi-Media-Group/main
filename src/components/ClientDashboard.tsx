@@ -418,6 +418,7 @@ export function ClientDashboard() {
           is_urgent, 
           created_at,
           payment_status,
+          payment_due_date,
           tracks!inner(id, title)
         `)
         .eq('client_id', user.id)
