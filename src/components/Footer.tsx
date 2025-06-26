@@ -1,8 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Music, ListMusic } from 'lucide-react';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 export function Footer() {
+  // Check if producer applications feature is enabled
+  const { isEnabled: producerApplicationsEnabled } = useFeatureFlag('producer_applications');
+
   return (
     <footer className="bg-black/40 border-t border-blue-500/20 py-12">
       <div className="container mx-auto px-4">
@@ -46,18 +50,21 @@ export function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4">For Producers</h3>
             <ul className="space-y-2">
+              {producerApplicationsEnabled ? (
+                <li>
+                  <Link to="/producer-application" className="text-gray-400 hover:text-white transition-colors">
+                    Become a Sync Producer
+                  </Link>
+                </li>
+              ) : (
+                <li className="text-gray-500">
+                  Applications Closed
+                </li>
+              )}
               <li>
-                <Link to="/producers" className="text-gray-400 hover:text-white transition-colors">
-                  Become a Sync Producer
+                <Link to="/producer/login" className="text-gray-400 hover:text-white transition-colors">
+                  Producer Login
                 </Link>
-              </li>
-              <li>
-                <a href="https://app.boombox.io/referral/rn1oVpnyzXBar" 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="text-gray-400 hover:text-white transition-colors">
-                  Get Boombox Account
-                </a>
               </li>
             </ul>
           </div>

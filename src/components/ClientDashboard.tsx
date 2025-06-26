@@ -19,6 +19,7 @@ import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { InvoicePDF } from './InvoicePDF';
 import { pdf } from '@react-pdf/renderer';
 import AISearchAssistant from './AISearchAssistant';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -144,6 +145,9 @@ export function ClientDashboard() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   // Add a debug flag at the top of the component
   const showDebug = false;
+
+  // Check if AI recommendations feature is enabled
+  const { isEnabled: aiRecommendationsEnabled, loading: aiLoading } = useFeatureFlag('ai_recommendations');
 
   // Ensure proposalTab is always set to a valid value
   useEffect(() => {
@@ -952,13 +956,15 @@ export function ClientDashboard() {
         <p className="text-gray-400">Here's what's happening with your music licensing</p>
       </div>
 
-      {/* AI Search Assistant */}
-      <div className="mb-8">
-        <AISearchAssistant 
-          onSearchApply={handleAISearchApply}
-          className="mb-6"
-        />
-      </div>
+      {/* AI Search Assistant - Only show if feature is enabled */}
+      {!aiLoading && aiRecommendationsEnabled && (
+        <div className="mb-8">
+          <AISearchAssistant 
+            onSearchApply={handleAISearchApply}
+            className="mb-6"
+          />
+        </div>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

@@ -11,6 +11,7 @@ import { ClientList } from './ClientList';
 import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
+import { FeatureManagement } from './FeatureManagement';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -53,7 +54,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label' | 'features'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -393,7 +394,8 @@ export function AdminDashboard() {
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
-			      { id: 'white_label', label: 'White Label Clients', icon: null },
+            { id: 'white_label', label: 'White Label Clients', icon: null },
+            { id: 'features', label: 'Feature Management', icon: null },
           ].map(tab => (
             <button
               key={tab.id}
@@ -591,18 +593,14 @@ export function AdminDashboard() {
         {activeTab === 'compensation' && (
           <CompensationSettings />
         )}
-      </div>
-			 {activeTab === 'white_label' && (
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-         <Link
-         to="/admin/white-label-clients"
-         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors inline-block"
-          >
-       Manage White Label Clients
-      </Link>
-  </div>
-)}
 
+        {/* Feature Management section */}
+        {activeTab === 'features' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <FeatureManagement />
+          </div>
+        )}
+      </div>
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (

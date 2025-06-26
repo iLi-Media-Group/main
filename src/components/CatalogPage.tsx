@@ -7,6 +7,7 @@ import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
 import { Track, GENRES, MOODS } from '../types';
 import AISearchAssistant from './AISearchAssistant';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 const TRACKS_PER_PAGE = 20;
 
@@ -21,6 +22,9 @@ export function CatalogPage() {
   const [page, setPage] = useState(1);
   const [membershipActive, setMembershipActive] = useState(true);
   const [currentFilters, setCurrentFilters] = useState<any>(null);
+
+  // Check if AI recommendations feature is enabled
+  const { isEnabled: aiRecommendationsEnabled, loading: aiLoading } = useFeatureFlag('ai_recommendations');
 
   useEffect(() => {
     // Get search params
@@ -255,13 +259,15 @@ export function CatalogPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-6">Music Catalog</h1>
         
-        {/* AI Search Assistant */}
-        <div className="mb-8">
-          <AISearchAssistant 
-            onSearchApply={handleAISearchApply}
-            className="mb-6"
-          />
-        </div>
+        {/* AI Search Assistant - Only show if feature is enabled */}
+        {!aiLoading && aiRecommendationsEnabled && (
+          <div className="mb-8">
+            <AISearchAssistant 
+              onSearchApply={handleAISearchApply}
+              className="mb-6"
+            />
+          </div>
+        )}
         
         <SearchBox onSearch={handleSearch} />
       </div>
