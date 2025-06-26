@@ -80,8 +80,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
       if (!user) throw new Error('Failed to get user after signup');
 
       // Update profile with additional details
-      let profileError = null;
-      const profileUpdate = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: firstName,
@@ -92,9 +91,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
           invitation_code: accountType === 'producer' ? invitationCode : null
         })
         .eq('id', user.id);
-      profileError = profileUpdate.error;
 
-      // If update fails with duplicate key, show a user-friendly error
       if (profileError) {
         if (profileError.code === '409' || profileError.code === '23505') {
           setError('A profile with this email already exists. Please log in or use a different email.');
