@@ -229,6 +229,10 @@ export function WhiteLabelPage() {
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Email support</span>
                   </li>
+                  <li className="flex items-start">
+                    <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-300">Add-on features available</span>
+                  </li>
                 </ul>
                 <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
                   Start Now
@@ -270,6 +274,10 @@ export function WhiteLabelPage() {
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Priority support</span>
                   </li>
+                  <li className="flex items-start">
+                    <Check className="w-5 h-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-green-300 font-medium">Producer Onboarding included!</span>
+                  </li>
                 </ul>
                 <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
                   Get Pro
@@ -307,6 +315,10 @@ export function WhiteLabelPage() {
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Licensing compliance tools</span>
+                  </li>
+                  <li className="flex items-start">
+                    <Check className="w-5 h-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
+                    <span className="text-green-300 font-medium">All 3 add-ons included!</span>
                   </li>
                 </ul>
                 <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
@@ -346,7 +358,10 @@ export function WhiteLabelPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
               {/* Producer Onboarding */}
               <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">Producer Onboarding Process</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl font-semibold text-white">Producer Onboarding Process</h3>
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Included in Pro+</span>
+                </div>
                 <p className="text-gray-300 mb-4">
                   Let producers apply to join your library. Applications are automatically ranked by genre to help you select the best fits.
                 </p>
@@ -356,7 +371,10 @@ export function WhiteLabelPage() {
 
               {/* AI Search Assistance */}
               <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">AI Search Assistance</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl font-semibold text-white">AI Search Assistance</h3>
+                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Pro Plan Only</span>
+                </div>
                 <p className="text-gray-300 mb-4">
                   Help clients discover music based on their previous searches, favorites, or licensed tracks. AI-driven suggestions in real time.
                 </p>
@@ -366,7 +384,10 @@ export function WhiteLabelPage() {
 
               {/* Deep Media Search Options */}
               <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">Deep Media Search Options</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xl font-semibold text-white">Deep Media Search Options</h3>
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Included in Enterprise</span>
+                </div>
                 <p className="text-gray-300 mb-4">
                   Let producers tag tracks with recommended media types (TV shows, films, commercials, podcasts, YouTube, etc.). Add media filters for your clients.
                 </p>
@@ -381,6 +402,8 @@ export function WhiteLabelPage() {
               <ul className="text-gray-300 space-y-2">
                 <li>✅ Any 2 Add-Ons for <span className="text-blue-400 font-bold">$449</span> (Save $49)</li>
                 <li>✅ All 3 Add-Ons for <span className="text-blue-400 font-bold">$599</span> (Save $148)</li>
+                <li>✅ <span className="text-purple-400 font-bold">Pro Plan</span> includes Producer Onboarding for free!</li>
+                <li>✅ <span className="text-green-400 font-bold">Enterprise Plan</span> includes all 3 add-ons for free!</li>
               </ul>
               <a href="#contact" className="mt-4 inline-block py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/25 transition-colors">
                 Request Bundle Pricing

@@ -32,7 +32,8 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
       description: 'Let producers apply to join your library',
       price: 249,
       icon: Users,
-      availableIn: ['starter', 'pro']
+      availableIn: ['starter', 'pro'],
+      includedIn: ['pro', 'enterprise']
     },
     {
       id: 'ai_recommendations',
@@ -40,7 +41,8 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
       description: 'AI-powered search and recommendations',
       price: 249,
       icon: Brain,
-      availableIn: ['pro']
+      availableIn: ['pro'],
+      includedIn: ['enterprise']
     },
     {
       id: 'deep_media_search',
@@ -48,7 +50,8 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
       description: 'Advanced media type tagging and filtering',
       price: 249,
       icon: Search,
-      availableIn: ['starter', 'pro']
+      availableIn: ['starter', 'pro'],
+      includedIn: ['enterprise']
     }
   ];
 
@@ -66,7 +69,14 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
   const calculateStartupCost = () => {
     const plan = getSelectedPlan();
     const selectedFeatureCosts = selectedFeatures
-      .map(featureId => features.find(f => f.id === featureId)?.price || 0)
+      .map(featureId => {
+        const feature = features.find(f => f.id === featureId);
+        // Don't charge for features included in the plan
+        if (feature && feature.includedIn.includes(selectedPlan)) {
+          return 0;
+        }
+        return feature?.price || 0;
+      })
       .reduce((sum, price) => sum + price, 0);
     
     return plan.setupFee + selectedFeatureCosts;
@@ -134,6 +144,7 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
           {getAvailableFeatures().map((feature) => {
             const Icon = feature.icon;
             const isSelected = selectedFeatures.includes(feature.id);
+            const isIncluded = feature.includedIn.includes(selectedPlan);
             const isDisabled = !feature.availableIn.includes(selectedPlan);
             
             return (
@@ -141,15 +152,20 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                 key={feature.id}
                 className={`flex items-center p-3 rounded-lg border transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-blue-500 bg-blue-500/10'
+                    ? isIncluded 
+                      ? 'border-green-500 bg-green-500/10'
+                      : 'border-blue-500 bg-blue-500/10'
                     : 'border-gray-600 bg-white/5 hover:border-gray-500'
                 } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <input
                   type="checkbox"
-                  checked={isSelected}
-                  onChange={() => handleFeatureToggle(feature.id)}
-                  disabled={isDisabled}
+                  checked={isSelected || isIncluded}
+                  onChange={() => {
+                    if (isIncluded) return; // Can't uncheck included features
+                    handleFeatureToggle(feature.id);
+                  }}
+                  disabled={isDisabled || isIncluded}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3"
                 />
                 <div className="flex items-center space-x-3 flex-1">
@@ -157,7 +173,13 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <h6 className="font-medium text-white">{feature.name}</h6>
-                      <span className="text-blue-400 font-semibold">${feature.price}</span>
+                      <div className="flex items-center space-x-2">
+                        {isIncluded ? (
+                          <span className="text-green-400 text-sm font-medium">Included</span>
+                        ) : (
+                          <span className="text-blue-400 font-semibold">${feature.price}</span>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-gray-400">{feature.description}</p>
                   </div>
@@ -192,6 +214,21 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
                 </div>
               )}
             </>
+          )}
+
+          {/* Show included features */}
+          {getAvailableFeatures().filter(f => f.includedIn.includes(selectedPlan)).length > 0 && (
+            <div className="border-t border-gray-600 pt-3">
+              <div className="text-sm text-gray-400 mb-2">Included Features:</div>
+              {getAvailableFeatures()
+                .filter(f => f.includedIn.includes(selectedPlan))
+                .map(feature => (
+                  <div key={feature.id} className="flex justify-between items-center text-green-400">
+                    <span className="text-sm">{feature.name}:</span>
+                    <span className="text-sm font-semibold">FREE (${feature.price} value)</span>
+                  </div>
+                ))}
+            </div>
           )}
           
           <div className="border-t border-gray-600 pt-3">
