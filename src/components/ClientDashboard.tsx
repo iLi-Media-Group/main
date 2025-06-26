@@ -364,9 +364,12 @@ export function ClientDashboard() {
             : track.artist || 'Unknown Artist',
           genres: track.genres.split(',').map((g: string) => g.trim()),
           moods: track.moods ? track.moods.split(',').map((m: string) => m.trim()) : [],
+          duration: '3:30', // Default duration
           bpm: track.bpm,
           audioUrl: track.audio_url,
           image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+          hasStingEnding: false, // Default value
+          isOneStop: false, // Default value
           hasVocals: track.has_vocals,
           vocalsUsageType: track.vocals_usage_type,
           subGenres: track.sub_genres || [],
@@ -1119,9 +1122,9 @@ export function ClientDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {track.audioUrl && (
+                          {track.audio_url && (
                             <AudioPlayer
-                              src={track.audioUrl}
+                              src={track.audio_url}
                               isPlaying={currentlyPlayingFavorite === track.id}
                               onToggle={() => togglePlayFavorite(track.id)}
                               size="sm"
@@ -1195,9 +1198,9 @@ export function ClientDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {track.audioUrl && (
+                          {track.audio_url && (
                             <AudioPlayer
-                              src={track.audioUrl}
+                              src={track.audio_url}
                               isPlaying={currentlyPlayingNew === track.id}
                               onToggle={() => togglePlayNew(track.id)}
                               size="sm"
@@ -1218,7 +1221,7 @@ export function ClientDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      
 
       {showProfileDialog && (
         <ClientProfile
