@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS white_label_features (
 -- Insert default features
 INSERT INTO white_label_features (client_id, feature_name, is_enabled) VALUES
   (NULL, 'ai_recommendations', false),
-  (NULL, 'producer_applications', false)
+  (NULL, 'producer_applications', false),
+  (NULL, 'advanced_analytics', false)
 ON CONFLICT DO NOTHING;
 
 -- Create RLS policies

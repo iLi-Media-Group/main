@@ -2,7 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-export type FeatureName = 'ai_recommendations' | 'producer_applications' | 'deep_media_search' | 'discount_management';
+export type FeatureName = 
+  | 'ai_recommendations' 
+  | 'producer_applications' 
+  | 'deep_media_search'
+  | 'discount_management'
+  | 'advanced_analytics';
 
 export function useFeatureFlag(featureName: FeatureName) {
   const { user } = useAuth();
@@ -49,6 +54,25 @@ export function useFeatureFlag(featureName: FeatureName) {
           } else if (subscriptionData?.white_label_plan) {
             // Only Pro and Enterprise plans have access to discount management
             const hasAccess = ['pro', 'enterprise'].includes(subscriptionData.white_label_plan);
+            setIsEnabled(hasAccess);
+          } else {
+            setIsEnabled(false);
+          }
+        } else if (featureName === 'advanced_analytics') {
+          // Advanced analytics is only available for Enterprise White Label clients
+          const { data: subscriptionData, error: subscriptionError } = await supabase
+            .from('stripe_subscriptions')
+            .select('white_label_plan, status')
+            .eq('customer_id', user.id)
+            .eq('status', 'active')
+            .single();
+
+          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
+            console.error('Error checking white label subscription:', subscriptionError);
+            setIsEnabled(false);
+          } else if (subscriptionData?.white_label_plan) {
+            // Only Enterprise plans have access to advanced analytics
+            const hasAccess = subscriptionData.white_label_plan === 'enterprise';
             setIsEnabled(hasAccess);
           } else {
             setIsEnabled(false);

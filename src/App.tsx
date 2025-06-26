@@ -44,6 +44,7 @@ import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
+import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
 
 
 const App = () => {
@@ -310,6 +311,8 @@ const App = () => {
            </LayoutWrapper>
           </ProtectedRoute>
 } />
+
+        <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
 
         <Route path="*" element={
           <LayoutWrapper>

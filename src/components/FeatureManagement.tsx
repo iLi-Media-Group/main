@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Users, ToggleLeft, ToggleRight, Save, Loader2, CheckCircle, AlertCircle, DollarSign, Crown } from 'lucide-react';
+import { Brain, Users, ToggleLeft, ToggleRight, Save, Loader2, CheckCircle, AlertCircle, DollarSign, Crown, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +16,7 @@ interface FeatureStatus {
   ai_recommendations: boolean;
   producer_applications: boolean;
   deep_media_search: boolean;
+  advanced_analytics: boolean;
 }
 
 export function FeatureManagement() {
@@ -66,7 +67,8 @@ export function FeatureManagement() {
         statuses[client.id] = {
           ai_recommendations: featureData?.find(f => f.feature_name === 'ai_recommendations')?.is_enabled || false,
           producer_applications: featureData?.find(f => f.feature_name === 'producer_applications')?.is_enabled || false,
-          deep_media_search: featureData?.find(f => f.feature_name === 'deep_media_search')?.is_enabled || false
+          deep_media_search: featureData?.find(f => f.feature_name === 'deep_media_search')?.is_enabled || false,
+          advanced_analytics: featureData?.find(f => f.feature_name === 'advanced_analytics')?.is_enabled || false
         };
       }
 
@@ -80,105 +82,110 @@ export function FeatureManagement() {
     }
   };
 
-  const updateFeatureStatus = async (clientId: string, featureName: keyof FeatureStatus, isEnabled: boolean) => {
+  const formatFeatureName = (featureName: keyof FeatureStatus) => {
+    return featureName.replace(/_/g, ' ');
+  };
+
+  const toggleFeature = async (clientId: string, featureName: keyof FeatureStatus) => {
     try {
       setSaving(prev => ({ ...prev, [clientId]: true }));
       setError(null);
       setSuccess(null);
 
-      // Update the feature status using the database function
-      const { error } = await supabase.rpc('update_feature_status', {
-        target_client_id: clientId,
-        feature_name: featureName,
-        is_enabled: isEnabled
-      });
-
-      if (error) throw error;
-
-      // Update local state
+      const newStatus = !featureStatuses[clientId]?.[featureName];
+      
+      // Update the local state immediately for better UX
       setFeatureStatuses(prev => ({
         ...prev,
         [clientId]: {
           ...prev[clientId],
-          [featureName]: isEnabled
+          [featureName]: newStatus
         }
       }));
 
-      setSuccess(`Feature ${featureName} ${isEnabled ? 'enabled' : 'disabled'} successfully`);
+      // Call the database function to update the feature status
+      const { error } = await supabase.rpc('update_feature_status', {
+        target_client_id: clientId,
+        feature_name: featureName,
+        is_enabled: newStatus
+      });
 
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
+      if (error) throw error;
+
+      setSuccess(`Feature ${formatFeatureName(featureName)} ${newStatus ? 'enabled' : 'disabled'} successfully`);
 
     } catch (err) {
-      console.error('Error updating feature status:', err);
-      setError(`Failed to update ${featureName} feature`);
+      console.error('Error toggling feature:', err);
+      setError('Failed to update feature status');
+      
+      // Revert the local state change on error
+      setFeatureStatuses(prev => ({
+        ...prev,
+        [clientId]: {
+          ...prev[clientId],
+          [featureName]: !prev[clientId]?.[featureName]
+        }
+      }));
     } finally {
       setSaving(prev => ({ ...prev, [clientId]: false }));
     }
   };
 
-  const getFeatureDescription = (featureName: string) => {
+  const getFeatureIcon = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
       case 'ai_recommendations':
-        return 'AI-powered search assistant with natural language processing and smart recommendations';
+        return Brain;
       case 'producer_applications':
-        return 'Allow producers to apply to join the platform through the "Become a Sync Producer" form';
+        return Users;
       case 'deep_media_search':
-        return 'Advanced media search capabilities';
+        return DollarSign;
+      case 'advanced_analytics':
+        return BarChart3;
       default:
-        return '';
+        return Crown;
     }
   };
 
-  const getFeatureIcon = (featureName: string) => {
+  const getFeatureDisplayName = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
       case 'ai_recommendations':
-        return <Brain className="w-5 h-5" />;
+        return 'AI Recommendations';
       case 'producer_applications':
-        return <Users className="w-5 h-5" />;
+        return 'Producer Applications';
       case 'deep_media_search':
-        return <ToggleLeft className="w-5 h-5" />;
-      default:
-        return null;
+        return 'Deep Media Search';
+      case 'advanced_analytics':
+        return 'Advanced Analytics';
     }
   };
 
-  const getFeaturePrice = (featureName: string) => {
+  const getFeatureDescription = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
       case 'ai_recommendations':
-        return '$249 setup fee';
+        return 'AI-powered search and recommendation system';
       case 'producer_applications':
-        return '$249 setup fee';
+        return 'Let producers apply to join your library';
       case 'deep_media_search':
-        return '$249 setup fee';
+        return 'Advanced media type tagging and filtering';
+      case 'advanced_analytics':
+        return 'Comprehensive analytics and reporting dashboard';
       default:
-        return '';
+        return 'Premium feature for white label clients';
     }
   };
 
-  const getFeatureSetupFee = (featureName: string) => {
+  const getFeaturePlan = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
       case 'ai_recommendations':
-        return '$249';
+        return 'Pro Plan';
       case 'producer_applications':
-        return '$249';
+        return 'Pro Plan';
       case 'deep_media_search':
-        return '$249';
+        return 'Enterprise Plan';
+      case 'advanced_analytics':
+        return 'Enterprise Plan';
       default:
-        return '';
-    }
-  };
-
-  const getFeatureMonthlyFee = (featureName: string) => {
-    switch (featureName) {
-      case 'ai_recommendations':
-        return 'White Label Pro ($299/month)';
-      case 'producer_applications':
-        return 'White Label Starter ($49/month)';
-      case 'deep_media_search':
-        return 'White Label Starter ($49/month)';
-      default:
-        return '';
+        return 'Custom';
     }
   };
 
@@ -219,72 +226,28 @@ export function FeatureManagement() {
       )}
 
       {/* Feature Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-500/20 rounded-lg">
-              <Brain className="w-6 h-6 text-blue-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">AI Recommendations</h3>
-              <div className="text-sm text-gray-400">
-                <div>Setup: {getFeatureSetupFee('ai_recommendations')}</div>
-                <div>Requires: {getFeatureMonthlyFee('ai_recommendations')}</div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {(['ai_recommendations', 'producer_applications', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
+          const Icon = getFeatureIcon(feature);
+          const enabledCount = Object.values(featureStatuses).filter(status => status?.[feature]).length;
+          const totalCount = Object.keys(featureStatuses).length;
+          
+          return (
+            <div key={feature} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <Icon className="w-6 h-6 text-blue-400" />
+                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                  {getFeaturePlan(feature)}
+                </span>
+              </div>
+              <h3 className="font-semibold text-white mb-1">{getFeatureDisplayName(feature)}</h3>
+              <p className="text-sm text-gray-400 mb-3">{getFeatureDescription(feature)}</p>
+              <div className="text-sm text-gray-300">
+                {enabledCount} of {totalCount} clients enabled
               </div>
             </div>
-          </div>
-          <p className="text-gray-300 text-sm mb-4">
-            {getFeatureDescription('ai_recommendations')}
-          </p>
-          <div className="flex items-center space-x-2 text-xs text-blue-400">
-            <DollarSign className="w-3 h-3" />
-            <span>Premium Feature</span>
-          </div>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-purple-500/20 rounded-lg">
-              <Users className="w-6 h-6 text-purple-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Producer Applications</h3>
-              <div className="text-sm text-gray-400">
-                <div>Setup: {getFeatureSetupFee('producer_applications')}</div>
-                <div>Requires: {getFeatureMonthlyFee('producer_applications')}</div>
-              </div>
-            </div>
-          </div>
-          <p className="text-gray-300 text-sm mb-4">
-            {getFeatureDescription('producer_applications')}
-          </p>
-          <div className="flex items-center space-x-2 text-xs text-purple-400">
-            <DollarSign className="w-3 h-3" />
-            <span>Premium Feature</span>
-          </div>
-        </div>
-
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-green-500/20 p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <ToggleLeft className="w-6 h-6 text-green-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-white">Deep Media Search</h3>
-              <div className="text-sm text-gray-400">
-                <div>Setup: {getFeatureSetupFee('deep_media_search')}</div>
-                <div>Requires: {getFeatureMonthlyFee('deep_media_search')}</div>
-              </div>
-            </div>
-          </div>
-          <p className="text-gray-300 text-sm mb-4">
-            {getFeatureDescription('deep_media_search')}
-          </p>
-          <div className="flex items-center space-x-2 text-xs text-green-400">
-            <DollarSign className="w-3 h-3" />
-            <span>Premium Feature</span>
-          </div>
-        </div>
+          );
+        })}
       </div>
 
       {/* Client List */}
@@ -318,117 +281,36 @@ export function FeatureManagement() {
                 )}
               </div>
 
-              <div className="space-y-4">
-                {/* AI Recommendations Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-blue-500/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Brain className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-white">AI Recommendations</h5>
-                      <div className="text-xs text-gray-400">
-                        <div>Setup: {getFeatureSetupFee('ai_recommendations')}</div>
-                        <div>Requires: {getFeatureMonthlyFee('ai_recommendations')}</div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {(['ai_recommendations', 'producer_applications', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
+                  const Icon = getFeatureIcon(feature);
+                  const isEnabled = featureStatuses[client.id]?.[feature] || false;
+                  
+                  return (
+                    <div key={feature} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <Icon className="w-5 h-5 text-blue-400" />
+                        <div>
+                          <div className="text-sm font-medium text-white">{getFeatureDisplayName(feature)}</div>
+                          <div className="text-xs text-gray-400">{getFeaturePlan(feature)}</div>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => toggleFeature(client.id, feature)}
+                        disabled={saving[client.id]}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                          isEnabled ? 'bg-blue-600' : 'bg-gray-600'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            isEnabled ? 'translate-x-6' : 'translate-x-1'
+                          }`}
+                        />
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => updateFeatureStatus(
-                      client.id,
-                      'ai_recommendations',
-                      !featureStatuses[client.id]?.ai_recommendations
-                    )}
-                    disabled={saving[client.id]}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                      featureStatuses[client.id]?.ai_recommendations
-                        ? 'bg-blue-600'
-                        : 'bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        featureStatuses[client.id]?.ai_recommendations
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Producer Applications Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-purple-500/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-500/20 rounded-lg">
-                      <Users className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-white">Producer Applications</h5>
-                      <div className="text-xs text-gray-400">
-                        <div>Setup: {getFeatureSetupFee('producer_applications')}</div>
-                        <div>Requires: {getFeatureMonthlyFee('producer_applications')}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => updateFeatureStatus(
-                      client.id,
-                      'producer_applications',
-                      !featureStatuses[client.id]?.producer_applications
-                    )}
-                    disabled={saving[client.id]}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                      featureStatuses[client.id]?.producer_applications
-                        ? 'bg-purple-600'
-                        : 'bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        featureStatuses[client.id]?.producer_applications
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Deep Media Search Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-green-500/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-500/20 rounded-lg">
-                      <ToggleLeft className="w-4 h-4 text-green-400" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-white">Deep Media Search</h5>
-                      <div className="text-xs text-gray-400">
-                        <div>Setup: {getFeatureSetupFee('deep_media_search')}</div>
-                        <div>Requires: {getFeatureMonthlyFee('deep_media_search')}</div>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => updateFeatureStatus(
-                      client.id,
-                      'deep_media_search',
-                      !featureStatuses[client.id]?.deep_media_search
-                    )}
-                    disabled={saving[client.id]}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                      featureStatuses[client.id]?.deep_media_search
-                        ? 'bg-green-600'
-                        : 'bg-gray-600'
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        featureStatuses[client.id]?.deep_media_search
-                          ? 'translate-x-6'
-                          : 'translate-x-1'
-                      }`}
-                    />
-                  </button>
-                </div>
+                  );
+                })}
               </div>
             </div>
           ))}
