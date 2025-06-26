@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2 } from 'lucide-react';
+import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({
@@ -65,7 +65,7 @@ export function WhiteLabelPage() {
               Launch Your Own <span className="text-blue-400">Music Licensing</span> Platform
             </h1>
             <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Fully branded. Crypto-ready. AI-powered. Automated payouts. 
+              Fully branded. Crypto payments accepted. AI-powered. Automated USD payouts. 
               Get your own white-label sync licensing business up and running in days, not months.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -103,7 +103,8 @@ export function WhiteLabelPage() {
                 <Wallet className="w-12 h-12 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xl font-semibold text-white mb-3">Automated Payouts</h3>
                 <p className="text-gray-300">
-                  Automatically calculate and distribute payments to your producers via Stripe or USDC on Solana/Polygon networks.
+                  Automatically calculate and distribute payments to your producers via Stripe. 
+                  Accept crypto payments from customers, automatically converted to USD payouts.
                 </p>
               </div>
               
@@ -250,7 +251,7 @@ export function WhiteLabelPage() {
                   </li>
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">USDC payments on Solana</span>
+                    <span className="text-gray-300">Crypto payment acceptance (converted to USD)</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
@@ -563,7 +564,8 @@ export function WhiteLabelPage() {
               <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
                 <h3 className="text-xl font-semibold text-white mb-3">How do producer payments work?</h3>
                 <p className="text-gray-300">
-                  You can set custom commission rates for each producer or track. Payments can be processed automatically via Stripe or USDC on Solana/Polygon networks, with detailed reporting and transaction history.
+                  You can set custom commission rates for each producer or track. Payments are processed automatically via Stripe. 
+                  Your platform can accept crypto payments from customers, which are automatically converted to USD and paid out to producers' bank accounts.
                 </p>
               </div>
               

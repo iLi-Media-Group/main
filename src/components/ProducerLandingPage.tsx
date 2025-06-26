@@ -35,7 +35,7 @@ const ProducerLandingPage = () => {
             <h3 className="text-xl font-semibold mb-2">Why Join MyBeatFi Sync?</h3>
             <ul className="list-disc pl-5 text-gray-600 space-y-2">
               <li>✅ Get paid for every sync license sold</li>
-              <li>✅ Automated payouts (Stripe + USDC Crypto)</li>
+              <li>✅ Automated payouts (Stripe USD)</li>
               <li>✅ Detailed monthly reporting</li>
               <li>✅ AI-driven metadata boosts your discoverability</li>
               <li>✅ Exposure to global brands, agencies, and creators</li>

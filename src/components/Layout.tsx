@@ -201,9 +201,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       <Link to="/producer/banking" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <DollarSign className="w-4 h-4 mr-2" />Earnings & Payments
                       </Link>
-                      <Link to="/producer/payouts" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <Wallet className="w-4 h-4 mr-2" />USDC Payouts
-                      </Link>
                       <Link to="/producer/upload" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Upload className="w-4 h-4 mr-2" />Upload Track
                       </Link>
