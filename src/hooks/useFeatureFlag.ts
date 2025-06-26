@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-export function useFeatureFlag(featureName: string) {
+export type FeatureName = 'ai_recommendations' | 'producer_applications' | 'deep_media_search';
+
+export function useFeatureFlag(featureName: FeatureName) {
   const { user } = useAuth();
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -14,31 +16,47 @@ export function useFeatureFlag(featureName: string) {
       return;
     }
 
-    checkFeatureStatus();
-  }, [user, featureName]);
+    const checkFeatureFlag = async () => {
+      try {
+        setLoading(true);
+        
+        // Check if user is admin (admins have access to all features)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('id', user.id)
+          .single();
 
-  const checkFeatureStatus = async () => {
-    try {
-      setLoading(true);
+        if (profile?.account_type === 'admin') {
+          setIsEnabled(true);
+          setLoading(false);
+          return;
+        }
 
-      // Use the database function to check feature status
-      const { data, error } = await supabase.rpc('get_feature_status', {
-        feature_name: featureName
-      });
+        // Check if user has the specific feature enabled
+        const { data: featureData, error } = await supabase
+          .from('white_label_features')
+          .select('is_enabled')
+          .eq('client_id', user.id)
+          .eq('feature_name', featureName)
+          .single();
 
-      if (error) {
-        console.error('Error checking feature status:', error);
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+          console.error('Error checking feature flag:', error);
+          setIsEnabled(false);
+        } else {
+          setIsEnabled(featureData?.is_enabled || false);
+        }
+      } catch (err) {
+        console.error('Error checking feature flag:', err);
         setIsEnabled(false);
-      } else {
-        setIsEnabled(data || false);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error checking feature status:', err);
-      setIsEnabled(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    checkFeatureFlag();
+  }, [user, featureName]);
 
   return { isEnabled, loading };
 } 

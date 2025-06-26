@@ -18,10 +18,12 @@ interface FormData {
   selectedGenres: string[];
   selectedSubGenres: string[];
   selectedMoods: string[];
+  selectedMediaTypes: string[];
   mp3Url: string;
   trackoutsUrl: string;
   hasVocals: boolean;
   vocalsUsageType: 'normal' | 'sync_only';
+  isSyncOnly: boolean;
 }
 
 export function TrackUploadForm() {
@@ -48,6 +50,7 @@ export function TrackUploadForm() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>(savedData?.selectedGenres || []);
   const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>(savedData?.selectedSubGenres || []);
   const [selectedMoods, setSelectedMoods] = useState<string[]>(savedData?.selectedMoods || []);
+  const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(savedData?.selectedMediaTypes || []);
   const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
   const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
   const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
@@ -66,6 +69,7 @@ export function TrackUploadForm() {
       selectedGenres,
       selectedSubGenres,
       selectedMoods,
+      selectedMediaTypes,
       mp3Url,
       trackoutsUrl,
       hasVocals,
@@ -82,6 +86,7 @@ export function TrackUploadForm() {
     selectedGenres,
     selectedSubGenres,
     selectedMoods,
+    selectedMediaTypes,
     mp3Url,
     trackoutsUrl,
     hasVocals,
@@ -189,6 +194,44 @@ export function TrackUploadForm() {
 
       if (trackError) throw trackError;
 
+      // Get the inserted track ID
+      const { data: trackData, error: trackFetchError } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('producer_id', user.id)
+        .eq('title', title)
+        .eq('audio_url', audioUrl)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (trackFetchError) throw trackFetchError;
+
+      // Save media types if any are selected
+      if (selectedMediaTypes.length > 0 && trackData?.id) {
+        // Get media type IDs
+        const { data: mediaTypesData, error: mediaTypesError } = await supabase
+          .from('media_types')
+          .select('id, name')
+          .in('name', selectedMediaTypes);
+
+        if (mediaTypesError) throw mediaTypesError;
+
+        if (mediaTypesData && mediaTypesData.length > 0) {
+          // Insert track media type associations
+          const mediaTypeAssociations = mediaTypesData.map(mt => ({
+            track_id: trackData.id,
+            media_type_id: mt.id
+          }));
+
+          const { error: mediaAssocError } = await supabase
+            .from('track_media_types')
+            .insert(mediaTypeAssociations);
+
+          if (mediaAssocError) throw mediaAssocError;
+        }
+      }
+
       clearSavedFormData();
       navigate('/producer/dashboard');
     } catch (err) {
@@ -253,7 +296,7 @@ export function TrackUploadForm() {
               )}
               {uploadedUrl && (
                 <div className="mt-4">
-                  <AudioPlayer url={uploadedUrl} title={audioFile.name} />
+                  <AudioPlayer src={uploadedUrl} title={audioFile?.name || 'Track Preview'} />
                 </div>
               )}
             </div>
@@ -547,6 +590,137 @@ export function TrackUploadForm() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Media Types Section */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-4">
+              Recommended Media Types (Optional)
+            </label>
+            <p className="text-sm text-gray-400 mb-4">
+              Select the media types where this track would work well. This helps clients find the perfect music for their projects.
+            </p>
+            <div className="space-y-6">
+              {/* Video Media */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h3 className="text-white font-medium mb-3">Video Media</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['TV Shows', 'Films', 'Commercials', 'Documentaries', 'Music Videos', 'YouTube', 'TikTok', 'Instagram', 'Social Media'].map((mediaType) => (
+                    <label
+                      key={mediaType}
+                      className="flex items-center space-x-2 text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMediaTypes.includes(mediaType)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
+                          } else {
+                            setSelectedMediaTypes(
+                              selectedMediaTypes.filter((mt) => mt !== mediaType)
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>{mediaType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Audio Media */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h3 className="text-white font-medium mb-3">Audio Media</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['Podcasts', 'Radio', 'Audiobooks', 'Voice-overs', 'Background Music'].map((mediaType) => (
+                    <label
+                      key={mediaType}
+                      className="flex items-center space-x-2 text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMediaTypes.includes(mediaType)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
+                          } else {
+                            setSelectedMediaTypes(
+                              selectedMediaTypes.filter((mt) => mt !== mediaType)
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>{mediaType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Digital Media */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h3 className="text-white font-medium mb-3">Digital Media</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['Video Games', 'Apps', 'Websites', 'Presentations'].map((mediaType) => (
+                    <label
+                      key={mediaType}
+                      className="flex items-center space-x-2 text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMediaTypes.includes(mediaType)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
+                          } else {
+                            setSelectedMediaTypes(
+                              selectedMediaTypes.filter((mt) => mt !== mediaType)
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>{mediaType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Other Media */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h3 className="text-white font-medium mb-3">Other Media</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['Live Events', 'Corporate', 'Educational', 'Sports', 'News'].map((mediaType) => (
+                    <label
+                      key={mediaType}
+                      className="flex items-center space-x-2 text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMediaTypes.includes(mediaType)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
+                          } else {
+                            setSelectedMediaTypes(
+                              selectedMediaTypes.filter((mt) => mt !== mediaType)
+                            );
+                          }
+                        }}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>{mediaType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

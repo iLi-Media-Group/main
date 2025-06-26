@@ -25,12 +25,20 @@ export function CatalogPage() {
 
   // Check if AI recommendations feature is enabled
   const { isEnabled: aiRecommendationsEnabled, loading: aiLoading } = useFeatureFlag('ai_recommendations');
+  
+  // Check if deep media search feature is enabled
+  const { isEnabled: deepMediaSearchEnabled, loading: deepMediaLoading } = useFeatureFlag('deep_media_search');
+  
+  // Media types for filtering
+  const [mediaTypes, setMediaTypes] = useState<string[]>([]);
+  const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>([]);
 
   useEffect(() => {
     // Get search params
     const query = searchParams.get('q')?.toLowerCase().trim() || '';
     const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
     const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
+    const mediaTypes = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
     const minBpm = searchParams.get('minBpm');
     const maxBpm = searchParams.get('maxBpm');
     const trackId = searchParams.get('track');
@@ -40,6 +48,7 @@ export function CatalogPage() {
       query,
       genres,
       moods,
+      mediaTypes,
       minBpm: minBpm ? parseInt(minBpm) : undefined,
       maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
       trackId
@@ -50,10 +59,32 @@ export function CatalogPage() {
     setTracks([]);
     setHasMore(true);
     setCurrentFilters(filters);
+    setSelectedMediaTypes(mediaTypes);
 
     // Fetch tracks with filters
     fetchTracks(filters, 1);
   }, [searchParams]);
+
+  // Fetch media types if deep media search is enabled
+  useEffect(() => {
+    if (deepMediaSearchEnabled && !deepMediaLoading) {
+      fetchMediaTypes();
+    }
+  }, [deepMediaSearchEnabled, deepMediaLoading]);
+
+  const fetchMediaTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('media_types')
+        .select('name')
+        .order('name');
+
+      if (error) throw error;
+      setMediaTypes(data?.map(mt => mt.name) || []);
+    } catch (err) {
+      console.error('Error fetching media types:', err);
+    }
+  };
 
   const fetchTracks = async (filters?: any, currentPage: number = 1) => {
     try {
