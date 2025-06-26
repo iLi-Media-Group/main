@@ -1145,24 +1145,19 @@ export function ClientDashboard() {
             {/* NEW: Visible Database Debug */}
             <div className="p-4 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-400">
               <h4 className="font-bold mb-2">Database Debug (Visible)</h4>
-              {proposals.filter(p => 
-                p.id === '7af40356-66f3-45d7-87f3-710dff65b46a' || 
-                p.id === '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b'
-              ).map((p: any) => (
-                <div key={p.id} className="mb-2 p-2 bg-green-500/20 rounded">
-                  <div><strong>Proposal ID:</strong> {p.id.slice(0, 8)}...</div>
-                  <div><strong>Frontend Status:</strong> {p.status}</div>
-                  <div><strong>Frontend Client Status:</strong> {p.client_status}</div>
-                  <div><strong>Frontend Payment Status:</strong> {p.payment_status}</div>
-                  <div><strong>Sync Fee:</strong> ${p.sync_fee}</div>
-                </div>
-              ))}
-              {proposals.filter(p => 
-                p.id === '7af40356-66f3-45d7-87f3-710dff65b46a' || 
-                p.id === '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b'
-              ).length === 0 && (
+              {proposals.length > 0 ? (
+                proposals.map((p: any) => (
+                  <div key={p.id} className="mb-2 p-2 bg-green-500/20 rounded">
+                    <div><strong>Proposal ID:</strong> {p.id.slice(0, 8)}...</div>
+                    <div><strong>Frontend Status:</strong> {p.status}</div>
+                    <div><strong>Frontend Client Status:</strong> {p.client_status}</div>
+                    <div><strong>Frontend Payment Status:</strong> {p.payment_status || 'null'}</div>
+                    <div><strong>Sync Fee:</strong> ${p.sync_fee}</div>
+                  </div>
+                ))
+              ) : (
                 <div className="text-yellow-400">
-                  No specific proposals found for debugging
+                  No proposals found
                 </div>
               )}
             </div>
