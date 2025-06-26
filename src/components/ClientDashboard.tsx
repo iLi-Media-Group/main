@@ -635,7 +635,9 @@ export function ClientDashboard() {
     if (action === 'negotiate') {
       negotiationDialogOpenRef.current = proposal.id;
       // Mark as viewed now
-      localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
+      if (user) {
+        localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
+      }
       setUnreadProposals((prev: string[]) => prev.filter((id: string) => id !== proposal.id));
     }
     switch (action) {
@@ -767,11 +769,11 @@ export function ClientDashboard() {
       } catch (error) {
         console.error('Error setting up payment:', error);
         console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
         });
-        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+        if (error instanceof Error && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
           alert('Network error. Please check your connection and try again.');
         } else {
           alert('Failed to set up payment. Please try again.');
@@ -1057,9 +1059,10 @@ export function ClientDashboard() {
                                 {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
                               </span>
                             </div>
-                            {license.track.audio_url && (
+                            {license.track.audioUrl && (
                               <AudioPlayer
-                                src={license.track.audio_url}
+                                src={license.track.audioUrl}
+                                title={license.track.title}
                                 isPlaying={currentlyPlaying === license.track.id}
                                 onToggle={() => {
                                   if (currentlyPlaying === license.track.id) {
@@ -1122,9 +1125,10 @@ export function ClientDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {track.audio_url && (
+                          {track.audioUrl && (
                             <AudioPlayer
-                              src={track.audio_url}
+                              src={track.audioUrl}
+                              title={track.title}
                               isPlaying={currentlyPlayingFavorite === track.id}
                               onToggle={() => togglePlayFavorite(track.id)}
                               size="sm"
@@ -1198,9 +1202,10 @@ export function ClientDashboard() {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          {track.audio_url && (
+                          {track.audioUrl && (
                             <AudioPlayer
-                              src={track.audio_url}
+                              src={track.audioUrl}
+                              title={track.title}
                               isPlaying={currentlyPlayingNew === track.id}
                               onToggle={() => togglePlayNew(track.id)}
                               size="sm"
@@ -1237,7 +1242,7 @@ export function ClientDashboard() {
             setShowEditDialog(false);
             setSelectedRequest(null);
           }}
-          onUpdate={handleUpdateRequest}
+          onUpdate={(updatedRequest) => handleUpdateRequest(selectedRequest.id, updatedRequest)}
         />
       )}
 
@@ -1256,11 +1261,6 @@ export function ClientDashboard() {
             setShowLicenseDialog(false);
             setSelectedTrackToLicense(null);
           }}
-          onSuccess={() => {
-            setShowLicenseDialog(false);
-            setSelectedTrackToLicense(null);
-            fetchDashboardData();
-          }}
         />
       )}
 
@@ -1268,10 +1268,6 @@ export function ClientDashboard() {
         <SyncProposalDialog
           track={selectedTrackToLicense}
           onClose={() => {
-            setShowProposalDialog(false);
-            setSelectedTrackToLicense(null);
-          }}
-          onSuccess={() => {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
           }}
