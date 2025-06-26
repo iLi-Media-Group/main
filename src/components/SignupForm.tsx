@@ -1,1 +1,1 @@
-You can upload your Welcome PDF (e.g. welcome.pdf) to Supabase Storage and use a public URL:
+// You can upload your Welcome PDF (e.g. welcome.pdf) to Supabase Storage and use a public URL:
