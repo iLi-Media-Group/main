@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
-import { sendResendEmail } from '../lib/email';
+import { sendLicenseEmail } from '../lib/email';
 
 // ... EmailCheckDialog and ConfirmModal unchanged ...
 
@@ -83,7 +83,7 @@ export function PricingCarousel() {
       setError(null);
 
       if (user) {
-        await sendResendEmail({
+        await sendLicenseEmail({
           to: user.email,
           subject: 'Subscription Change Confirmed',
           html: `<p>Hello,</p><p>This email is to confirm you have changed your plan to <strong>${product.name}</strong>.</p><p>Thank you,<br/>The MyBeatFi Team</p>`
