@@ -39,7 +39,9 @@ export function PricingCarousel() {
     }
 
     if (product.id === 'prod_SYHCZgM5UBmn3C') {
+    if (product.id === 'prod_SYHCZgM5UBmn3C') {
       if (!user) {
+        navigate('/login');
         navigate('/login');
         return;
       }
@@ -59,15 +61,46 @@ export function PricingCarousel() {
           } else {
             return;
           }
+        if (currentSubscription.product_id === 'prod_SYHCZgM5UBmn3C') {
+          alert('You are already on the Single Track plan.');
+          return;
+        } else {
+          const shouldDowngrade = window.confirm(
+            'You currently have an active subscription. To switch to Single Track (pay-as-you-go) licensing, your current subscription will be cancelled at the end of the current billing period. Would you like to proceed?'
+          );
+
+          if (shouldDowngrade) {
+            navigate('/dashboard');
+            return;
+          } else {
+            return;
+          }
         }
       }
 
+      navigate('/dashboard');
       navigate('/dashboard');
       return;
     }
 
     if (!user) {
       navigate('/login');
+      return;
+    }
+
+    proceedWithSubscription(product);
+    if (!user) {
+      const isSubscription = product.mode === 'subscription';
+      if (isSubscription) {
+        navigate(`/signup?product=${product.id}&redirect=pricing`);
+      } else {
+        navigate('/login');
+      }
+      return;
+    }
+
+    if (accountType !== 'client') {
+      setError('Only client accounts can subscribe. Please create a new account with a different email to subscribe.');
       return;
     }
 
@@ -98,7 +131,14 @@ export function PricingCarousel() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {PRODUCTS.map((product) => (
           <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+          <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+            <p className="text-white text-2xl mb-4">${product.price.toFixed(2)} / {product.interval}</p>
+            <ul className="text-sm text-gray-300 mb-6 space-y-2">
+              {product.features.map((feature, index) => (
+                <li key={index} className="flex items-center">
+                  <Check className="w-4 h-4 mr-2 text-green-400" />
+                  {feature}
             <p className="text-white text-2xl mb-4">${product.price.toFixed(2)} / {product.interval}</p>
             <ul className="text-sm text-gray-300 mb-6 space-y-2">
               {product.features.map((feature, index) => (
@@ -108,6 +148,19 @@ export function PricingCarousel() {
                 </li>
               ))}
             </ul>
+            <button
+              onClick={() => handleSubscribe(product)}
+              disabled={loading && loadingProductId === product.id}
+              className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2"
+            >
+              {loadingProductId === product.id ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  {product.id === 'prod_SYHCZgM5UBmn3C' ? 'Get Started' : 'Subscribe'}
+                </>
+              )}
+            </button>
             <button
               onClick={() => handleSubscribe(product)}
               disabled={loading && loadingProductId === product.id}
