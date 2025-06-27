@@ -285,8 +285,7 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
                           {currentSubscription?.subscription_id && currentSubscription?.status === 'active'
                             ? 'Current Plan'
                             : 'Subscribe with Card'}
-                            : 'Subscribe'}
-                        </span>
+                         </span>
                       </>
                     )}
                   </button>
