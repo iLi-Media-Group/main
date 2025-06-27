@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 
-export default function WhiteLabelPage() {
+export function WhiteLabelPage() {
   // Form state & handlers for contact form (you should already have these)
   const [formData, setFormData] = useState({
     name: '',
