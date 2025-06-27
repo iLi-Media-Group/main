@@ -5,9 +5,31 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
-import { sendLicenseEmail } from '../lib/email';
+import { sendResendEmail } from '../lib/email';
 
-// ... EmailCheckDialog and ConfirmModal unchanged ...
+function ConfirmModal({ isOpen, onConfirm, onCancel }: { isOpen: boolean; onConfirm: () => void; onCancel: () => void }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-sm">
+        <h3 className="text-white text-lg font-semibold mb-4">Confirm Plan Change</h3>
+        <p className="text-gray-300 mb-6">
+          You are currently subscribed to a higher tier. Do you want to downgrade to the Single Track plan?
+        </p>
+        <div className="flex justify-end space-x-3">
+          <button onClick={onCancel} className="px-4 py-2 text-gray-300 hover:text-white">Cancel</button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+          >
+            Confirm Downgrade
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function PricingCarousel() {
   const navigate = useNavigate();
@@ -83,7 +105,7 @@ export function PricingCarousel() {
       setError(null);
 
       if (user) {
-        await sendLicenseEmail({
+        await sendResendEmail({
           to: user.email,
           subject: 'Subscription Change Confirmed',
           html: `<p>Hello,</p><p>This email is to confirm you have changed your plan to <strong>${product.name}</strong>.</p><p>Thank you,<br/>The MyBeatFi Team</p>`
