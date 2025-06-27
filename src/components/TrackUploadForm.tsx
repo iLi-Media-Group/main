@@ -21,6 +21,7 @@ interface FormData {
   selectedMediaTypes: string[];
   mp3Url: string;
   trackoutsUrl: string;
+  stems_url: string;
   hasVocals: boolean;
   vocalsUsageType: 'normal' | 'sync_only';
   isSyncOnly: boolean;
@@ -55,7 +56,8 @@ export function TrackUploadForm() {
   const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(savedData?.selectedMediaTypes || []);
   const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
   const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
-  const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
+  const [stemsUrl, setStemsUrl] = useState(savedData?.stems_url || '');
+  const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false);
   const [vocalsUsageType, setVocalsUsageType] = useState<'normal' | 'sync_only'>(savedData?.vocalsUsageType || 'normal');
   const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,6 +76,7 @@ export function TrackUploadForm() {
       selectedMediaTypes,
       mp3Url,
       trackoutsUrl,
+      stems_url: stemsUrl,
       hasVocals,
       vocalsUsageType,
       isSyncOnly
@@ -91,6 +94,7 @@ export function TrackUploadForm() {
     selectedMediaTypes,
     mp3Url,
     trackoutsUrl,
+    stemsUrl,
     hasVocals,
     vocalsUsageType,
     isSyncOnly
@@ -213,6 +217,7 @@ export function TrackUploadForm() {
           split_sheet_url: splitSheetUrl,
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsUrl || null,
+          stems_url: stemsUrl || null,
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? (isSyncOnly ? 'sync_only' : vocalsUsageType) : null,
           created_at: new Date().toISOString(),
@@ -441,6 +446,19 @@ export function TrackUploadForm() {
                 placeholder="https://boombox.io/..."
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Stems (Optional)
+            </label>
+            <input
+              type="url"
+              value={stemsUrl}
+              onChange={(e) => setStemsUrl(e.target.value)}
+              className="block w-full"
+              placeholder="https://your-stems-link.com/..."
+            />
           </div>
 
           <div className="text-center">
