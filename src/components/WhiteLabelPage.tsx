@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 
@@ -51,13 +51,6 @@ export function WhiteLabelPage() {
       setError('Failed to send message. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-  // Scroll to Calculator ref and handler
-  const calculatorRef = useRef<HTMLDivElement>(null);
-  const scrollToCalculator = () => {
-    if (calculatorRef.current) {
-      calculatorRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -241,12 +234,9 @@ export function WhiteLabelPage() {
                     <span className="text-gray-300">Add-on features available</span>
                   </li>
                 </ul>
-                <button
-                  onClick={scrollToCalculator}
-                  className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors"
-                >
+                <a href="#calculator" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
                   Start Now
-                </button>
+                </a>
               </div>
               
               <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border-2 border-purple-500/40 hover:border-purple-500/60 transition-all transform scale-105 shadow-xl shadow-purple-500/10 relative z-10">
@@ -289,12 +279,9 @@ export function WhiteLabelPage() {
                     <span className="text-green-300 font-medium">Producer Onboarding included!</span>
                   </li>
                 </ul>
-                <button
-                  onClick={scrollToCalculator}
-                  className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25"
-                >
+                <a href="#calculator" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
                   Get Pro
-                </button>
+                </a>
               </div>
               
               <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-all">
@@ -343,7 +330,7 @@ export function WhiteLabelPage() {
         </section>
         
         {/* Pricing Calculator */}
-        <section className="py-20 bg-black/30">
+        <section id="calculator" className="py-20 bg-black/30">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Calculate Your Costs</h2>
@@ -643,4 +630,4 @@ export function WhiteLabelPage() {
       
     </div>
   );
-} 
+}
