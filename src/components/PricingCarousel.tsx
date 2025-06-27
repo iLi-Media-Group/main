@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, CreditCard, Coins, Loader2, Mail, ArrowRight, X } from 'lucide-react';
+import { Check, CreditCard, Coins, Loader2, Mail, ArrowRight, X, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -23,90 +23,80 @@ function EmailCheckDialog({ isOpen, onClose, onContinue, product }: EmailCheckDi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email.trim() || !email.includes('@')) {
-      setError('Please enter a valid email address');
-      return;
-    }
+    if (!email.trim()) return;
 
     try {
       setLoading(true);
       setError('');
 
-      const { data, error: lookupError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', email.toLowerCase().trim())
-        .maybeSingle();
+      // Check if email exists
+      const { data: existingUser } = await supabase.auth.admin.listUsers();
+      const exists = existingUser.users.some(user => user.email === email.toLowerCase());
 
-      if (lookupError) throw lookupError;
-
-      onContinue(email, !!data);
+      onContinue(email, exists);
     } catch (err) {
-      console.error('Error checking email:', err);
-      setError('An error occurred. Please try again.');
+      setError('Failed to check email. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-bold text-white">Subscribe to {product.name}</h3>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-white">Continue with Email</h3>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-center">{error}</p>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Your Email Address
+            <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              Email Address
             </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10"
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-400">
-              We'll check if you already have an account
-            </p>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="Enter your email"
+              required
+            />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Checking...
-              </>
-            ) : (
-              <>
-                <ArrowRight className="w-5 h-5 mr-2" />
-                Continue
-              </>
-            )}
-          </button>
+          {error && (
+            <p className="text-red-400 text-sm">{error}</p>
+          )}
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !email.trim()}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Continue
+                </>
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -115,7 +105,7 @@ function EmailCheckDialog({ isOpen, onClose, onContinue, product }: EmailCheckDi
 
 export function PricingCarousel() {
   const navigate = useNavigate();
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership, accountType } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +133,43 @@ export function PricingCarousel() {
   };
 
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
+    // Check if user is admin or producer
+    if (user && (accountType === 'admin' || accountType === 'producer')) {
+      setError('Admins and producers cannot subscribe to client plans. Please create a separate client account with a different email address.');
+      return;
+    }
+
+    // Special handling for Single Track (pay-as-you-go)
+    if (product.id === 'prod_SYHCZgM5UBmn3C') { // Single Track product ID
+      if (!user) {
+        // Not signed in - redirect to login with signup option
+        setSelectedProduct(product);
+        setShowEmailCheck(true);
+        return;
+      }
+
+      // User is signed in - check if they need to downgrade membership
+      if (currentSubscription?.subscription_id && currentSubscription?.status === 'active') {
+        // User has an active subscription - check if they want to downgrade to Single Track
+        const shouldDowngrade = window.confirm(
+          'You currently have an active subscription. To switch to Single Track (pay-as-you-go) licensing, your current subscription will be cancelled at the end of the current billing period. Would you like to proceed?'
+        );
+        
+        if (shouldDowngrade) {
+          // Navigate to dashboard where they can manage their subscription
+          navigate('/dashboard');
+          return;
+        } else {
+          return;
+        }
+      }
+
+      // User is signed in but has no active subscription - proceed with single track purchase
+      proceedWithSubscription(product);
+      return;
+    }
+
+    // Handle subscription plans (Gold, Platinum, Ultimate)
     if (user) {
       proceedWithSubscription(product);
     } else {
@@ -161,31 +188,6 @@ export function PricingCarousel() {
 
     }
   };
-const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
-  if (!user) {
-    setSelectedProduct(product);
-    setShowEmailCheck(true);
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setLoadingProductId(product.id);
-    setError(null);
-
-    const invoiceUrl = await createCryptoInvoice(product.id, user.id);
-    window.location.href = invoiceUrl; // Redirect user to Helio payment page
-
-  } catch (err) {
-    console.error('Crypto subscription error:', err);
-    setError(err instanceof Error ? err.message : 'Failed to start crypto payment');
-  } finally {
-    setLoading(false);
-    setLoadingProductId(null);
-  }
-};
-
-
 
   const proceedWithSubscription = async (product: typeof PRODUCTS[0]) => {
     try {
@@ -209,46 +211,59 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
     }
   };
 
+  // Check if user is admin or producer
+  const isAdminOrProducer = accountType === 'admin' || accountType === 'producer';
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {error && (
-          <div className="col-span-full mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-center">{error}</p>
+          <div className="col-span-full mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+            <span className="text-red-400">{error}</span>
+          </div>
+        )}
+
+        {isAdminOrProducer && (
+          <div className="col-span-full mb-4 p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <div className="flex items-center justify-center mb-4">
+              <AlertCircle className="w-6 h-6 text-yellow-400 mr-2" />
+              <h3 className="text-lg font-semibold text-yellow-400">Account Type Restriction</h3>
+            </div>
+            <p className="text-yellow-300 text-center">
+              As a {accountType === 'admin' ? 'administrator' : 'producer'}, you cannot subscribe to client plans with this account. 
+              To access client features, please create a separate client account using a different email address.
+            </p>
           </div>
         )}
 
         {PRODUCTS.map((product) => (
           <div
             key={product.id}
-            className={`bg-white/5 backdrop-blur-sm rounded-2xl border ${
-  product.popular ? 'border-purple-500/40' : 'border-blue-500/20'
-} p-8 h-full hover:border-blue-500/40 transition-colors relative flex flex-col`}
-
+            className={`bg-white/5 backdrop-blur-sm rounded-xl border ${
+              product.popular ? 'border-purple-500/40' : 'border-blue-500/20'
+            } p-6 hover:border-blue-500/40 transition-colors relative`}
           >
             {product.popular && (
-              <div className="absolute top-0 right-0 bg-purple-600 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+              <div className="absolute top-0 right-0 bg-purple-600 text-white px-3 py-1 rounded-bl-lg rounded-tr-lg text-xs font-medium">
                 Popular
               </div>
             )}
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
-              <p className="text-gray-400 mb-4">{product.description}</p>
-              <div className="flex items-baseline justify-center">
-                <span className="text-4xl font-bold text-white">
-                  ${(product.price).toFixed(2)}
-                </span>
-                <span className="text-gray-400 ml-2">
-                  {product.name === 'Ultimate Access' ? '/year' : 
-                  product.mode === 'subscription' ? '/month' : ''}
-                </span>
-              </div>
-            </div>
 
-            <ul className="space-y-4 mb-8">
-              {product.features.map((feature, i) => (
-                <li key={i} className="flex items-center text-gray-300">
-                  <Check className="w-5 h-5 text-white mr-2 flex-shrink-0" />
+            <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+            <div className="flex items-baseline mb-4">
+              <span className="text-2xl font-bold text-white">
+                ${product.price.toFixed(2)}
+              </span>
+              <span className="text-gray-400 ml-2">
+                /{product.interval}
+              </span>
+            </div>
+            
+            <ul className="space-y-2 mb-6">
+              {product.features.slice(0, 3).map((feature, i) => (
+                <li key={i} className="flex items-center text-gray-300 text-sm">
+                  <Check className="w-4 h-4 text-green-400 mr-2 flex-shrink-0" />
                   <span>{feature}</span>
                 </li>
               ))}
@@ -258,11 +273,13 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
               {!product.mode.includes('subscription') && (
                 <button
                   onClick={() => handleSubscribe(product)}
-                  disabled={loading}
-                  className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center"
+                  disabled={loading || isAdminOrProducer}
+                  className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loadingProductId === product.id ? (
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : isAdminOrProducer ? (
+                    <span>Not Available</span>
                   ) : (
                     <>Get Started</>
                   )}
@@ -273,41 +290,44 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
                 <div className="space-y-4">
                   <button
                     onClick={() => handleSubscribe(product)}
-                    disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
+                    disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active') || isAdminOrProducer}
                     className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loadingProductId === product.id ? (
                       <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : isAdminOrProducer ? (
+                      <span>Not Available</span>
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5" />
                         <span>
                           {currentSubscription?.subscription_id && currentSubscription?.status === 'active'
                             ? 'Current Plan'
-                            : 'Subscribe with Card'}
-                         </span>
+                            : 'Subscribe'}
+                        </span>
                       </>
                     )}
                   </button>
                   
                   <button
-  onClick={() => handleCryptoSubscribe(product)}
-  disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
-  className="w-full py-3 px-6 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {loadingProductId === product.id ? (
-    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-  ) : (
-    <>
-      <Coins className="w-5 h-5" />
-      <span>Subscribe with Crypto</span>
-    </>
-  )}
-</button>
-
-                  <p className="text-center text-sm text-gray-400 mt-4">
+                    onClick={() => handleSubscribe(product)}
+                    disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active') || isAdminOrProducer}
+                    className="w-full py-3 px-6 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : isAdminOrProducer ? (
+                      <span>Not Available</span>
+                    ) : (
+                      <>
+                        <Coins className="w-5 h-5" />
+                        <span>Subscribe with Crypto</span>
+                      </>
+                    )}
+                  </button>
+                  
+                  <p className="text-center text-sm text-gray-400">
                     Accepts USDC, USDT, and Solana
-                    Accepts credit/debit cards and crypto (USDC)
                   </p>
                 </div>
               )}
@@ -316,14 +336,12 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
         ))}
       </div>
 
-      {selectedProduct && (
-        <EmailCheckDialog
-          isOpen={showEmailCheck}
-          onClose={() => setShowEmailCheck(false)}
-          onContinue={handleEmailContinue}
-          product={selectedProduct}
-        />
-      )}
+      <EmailCheckDialog
+        isOpen={showEmailCheck}
+        onClose={() => setShowEmailCheck(false)}
+        onContinue={handleEmailContinue}
+        product={selectedProduct!}
+      />
     </>
   );
 }
