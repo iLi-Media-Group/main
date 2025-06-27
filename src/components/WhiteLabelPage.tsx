@@ -234,7 +234,7 @@ export function WhiteLabelPage() {
                     <span className="text-gray-300">Add-on features available</span>
                   </li>
                 </ul>
-                <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
+                <a href="#calculator" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
                   Start Now
                 </a>
               </div>
@@ -279,7 +279,7 @@ export function WhiteLabelPage() {
                     <span className="text-green-300 font-medium">Producer Onboarding included!</span>
                   </li>
                 </ul>
-                <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
+                <a href="#calculator" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
                   Get Pro
                 </a>
               </div>
@@ -330,7 +330,7 @@ export function WhiteLabelPage() {
         </section>
         
         {/* Pricing Calculator */}
-        <section className="py-20 bg-black/30">
+        <section id="calculator" className="py-20 bg-black/30">
           <div className="max-w-7xl mx-auto px-4">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Calculate Your Costs</h2>
