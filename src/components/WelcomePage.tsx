@@ -127,7 +127,7 @@ export function WelcomePage() {
   const isAdminOrProducer = accountType === 'admin' || accountType === 'producer';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-900 to-blue-600">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-12">
