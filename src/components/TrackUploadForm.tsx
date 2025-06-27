@@ -823,7 +823,7 @@ export function TrackUploadForm() {
           <div className="sticky bottom-8 pt-8 bg-gradient-to-b from-transparent via-gray-900 to-gray-900">
             <button
               type="submit"
-              className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-3 px-6 bg-green-600 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
               disabled={isSubmitting || !audioFile}
             >
               {isSubmitting ? (
