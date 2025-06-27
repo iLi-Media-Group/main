@@ -149,8 +149,12 @@ export function PricingCarousel() {
   };
 
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
+    console.log('Account Type:', accountType);
+    console.log('User:', user);
+
     if (product.id === 'prod_SYHCZgM5UBmn3C') {
       if (!user) {
+        console.log('Redirecting unauthenticated user to login');
         navigate('/login');
         return;
       }
@@ -188,6 +192,11 @@ export function PricingCarousel() {
 
   const proceedWithSubscription = async (product: typeof PRODUCTS[0]) => {
     try {
+      if (!product) {
+        console.error('No selected product to proceed with.');
+        return;
+      }
+
       setLoading(true);
       setLoadingProductId(product.id);
       setError(null);
@@ -248,7 +257,13 @@ export function PricingCarousel() {
 
       <ConfirmModal
         isOpen={showConfirmModal}
-        onConfirm={() => proceedWithSubscription(selectedProduct!)}
+        onConfirm={() => {
+          if (selectedProduct) {
+            proceedWithSubscription(selectedProduct);
+          } else {
+            console.error('No selected product found');
+          }
+        }}
         onCancel={() => setShowConfirmModal(false)}
       />
 
