@@ -127,7 +127,7 @@ export function WelcomePage() {
   const isAdminOrProducer = accountType === 'admin' || accountType === 'producer';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-900 to-blue-600">
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-4xl mx-auto text-center">
           <div className="mb-12">
@@ -160,14 +160,13 @@ export function WelcomePage() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {PRODUCTS.map((product) => (
+            {PRODUCTS.filter(p => p.mode === 'subscription').map((product) => (
               <div
                 key={product.id}
-                className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 transition-all"
+                className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 transition-all flex flex-col"
               >
-                <div className="text-center mb-6">
+                <div className="flex-grow text-center mb-6">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-                    {product.name === 'Single Track License' && <Music className="w-6 h-6 text-white" />}
                     {product.name === 'Gold Access' && <Star className="w-6 h-6 text-white" />}
                     {product.name === 'Platinum Access' && <Zap className="w-6 h-6 text-white" />}
                     {product.name === 'Ultimate Access' && <Gift className="w-6 h-6 text-white" />}
@@ -175,49 +174,30 @@ export function WelcomePage() {
                   <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
                   <div className="text-3xl font-bold text-white mb-2">
                     ${product.price}
-                    {product.mode === 'subscription' && <span className="text-lg text-gray-400">/month</span>}
+                    <span className="text-lg text-gray-400">/{product.interval}</span>
                   </div>
                   <p className="text-gray-400 text-sm mb-4">{product.description}</p>
                 </div>
 
-                <div className="space-y-4">
+                <div className="mt-auto">
                   <button
                     onClick={() => handleSubscribe(product)}
                     disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId) || isAdminOrProducer}
-                    className="w-full py-2 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId ? (
                       <span>Current Plan</span>
                     ) : loading && loadingProductId === product.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                     ) : isAdminOrProducer ? (
                       <span>Not Available</span>
                     ) : (
                       <>
                         <CreditCard className="w-5 h-5" />
-                        <span>Subscribe with Card</span>
+                        <span>Subscribe</span>
                       </>
                     )}
                   </button>
-                  <button
-                    onClick={() => handleCryptoSubscribe(product)}
-                    disabled={loading && loadingProductId === product.id || (currentSubscription?.subscription_id && currentSubscription?.status === 'active' && currentSubscription?.price_id === product.priceId) || isAdminOrProducer}
-                    className="w-full py-2 px-4 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-medium transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading && loadingProductId === product.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : isAdminOrProducer ? (
-                      <span>Not Available</span>
-                    ) : (
-                      <>
-                        <Coins className="w-5 h-5" />
-                        <span>Subscribe with Crypto</span>
-                      </>
-                    )}
-                  </button>
-                  <p className="text-center text-sm text-gray-400 mt-2">
-                    Accepts USDC, USDT, and Solana
-                  </p>
                 </div>
               </div>
             ))}

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Check, CreditCard, Coins, Loader2, Mail, ArrowRight, X, AlertCircle } from 'lucide-react';
+import { Check, Loader2, X, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
 
@@ -33,6 +32,8 @@ export function PricingCarousel() {
   };
 
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
+    setError(null);
+
     if (user && (accountType === 'admin' || accountType === 'producer')) {
       setError('Admins and producers cannot subscribe to client plans. Please create a separate client account with a different email address.');
       return;
@@ -67,12 +68,7 @@ export function PricingCarousel() {
     }
 
     if (!user) {
-      const isSubscription = product.mode === 'subscription';
-      if (isSubscription) {
-        navigate(`/signup?product=${product.id}&redirect=pricing`);
-      } else {
-        navigate('/login');
-      }
+      navigate(`/signup?product=${product.id}&redirect=pricing`);
       return;
     }
 
@@ -101,27 +97,38 @@ export function PricingCarousel() {
     }
   };
 
-  const isAdminOrProducer = accountType === 'admin' || accountType === 'producer';
-
   return (
     <>
+      {error && (
+        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-7xl mx-auto">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-400 mr-3" />
+            <span className="text-red-400 text-sm">{error}</span>
+            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-200">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
         {PRODUCTS.map((product) => (
-          <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
-            <p className="text-white text-2xl mb-4">${product.price.toFixed(2)} / {product.interval}</p>
-            <ul className="text-sm text-gray-300 mb-6 space-y-2">
-              {product.features.map((feature, index) => (
-                <li key={index} className="flex items-center">
-                  <Check className="w-4 h-4 mr-2 text-green-400" />
-                  {feature}
-                </li>
-              ))}
-            </ul>
+          <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 flex flex-col">
+            <div className="flex-grow">
+                <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
+                <p className="text-white text-2xl mb-4">${product.price.toFixed(2)} / {product.interval}</p>
+                <ul className="text-sm text-gray-300 mb-6 space-y-2">
+                {product.features.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    {feature}
+                    </li>
+                ))}
+                </ul>
+            </div>
             <button
               onClick={() => handleSubscribe(product)}
               disabled={loading && loadingProductId === product.id}
-              className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2"
+              className="w-full mt-auto py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingProductId === product.id ? (
                 <Loader2 className="w-5 h-5 animate-spin" />

@@ -1,3 +1,8 @@
+BEGIN;
+
+-- Drop the table if it exists to ensure a clean slate
+DROP TABLE IF EXISTS discounts CASCADE;
+
 -- Create discounts table for managing service and plan discounts
 CREATE TABLE IF NOT EXISTS discounts (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -15,9 +20,9 @@ CREATE TABLE IF NOT EXISTS discounts (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_discounts_active ON discounts(is_active);
-CREATE INDEX idx_discounts_date_range ON discounts(start_date, end_date);
-CREATE INDEX idx_discounts_applies_to ON discounts USING GIN(applies_to);
+CREATE INDEX IF NOT EXISTS idx_discounts_active ON discounts(is_active);
+CREATE INDEX IF NOT EXISTS idx_discounts_date_range ON discounts(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_discounts_applies_to ON discounts USING GIN(applies_to);
 
 -- Add RLS policies for discounts
 ALTER TABLE discounts ENABLE ROW LEVEL SECURITY;
@@ -68,7 +73,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to calculate discounted price
 CREATE OR REPLACE FUNCTION calculate_discounted_price(
-    original_price DECIMAL(10,2),
+    p_original_price DECIMAL(10,2),
     item_name TEXT,
     check_date DATE DEFAULT CURRENT_DATE
 )
@@ -89,18 +94,18 @@ BEGIN
     
     IF best_discount.id IS NULL THEN
         -- No discount available
-        RETURN QUERY SELECT 
-            original_price,
+        RETURN QUERY SELECT
+            p_original_price,
             0::DECIMAL(5,2),
-            original_price,
+            p_original_price,
             NULL::TEXT,
             NULL::TEXT;
     ELSE
         -- Apply discount
-        RETURN QUERY SELECT 
-            original_price,
+        RETURN QUERY SELECT
+            p_original_price,
             best_discount.discount_percent,
-            original_price * (1 - best_discount.discount_percent / 100),
+            p_original_price * (1 - best_discount.discount_percent / 100),
             best_discount.name,
             best_discount.description;
     END IF;
@@ -126,4 +131,6 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER update_discounts_updated_at
     BEFORE UPDATE ON discounts
     FOR EACH ROW
-    EXECUTE FUNCTION update_discounts_updated_at(); 
+    EXECUTE FUNCTION update_discounts_updated_at();
+
+COMMIT;

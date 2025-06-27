@@ -14,6 +14,7 @@ interface ProducerStats {
   totalSales: number;
   totalRevenue: number;
   syncRevenue: number;
+  customSyncRevenue: number;
   avgSyncFee: number;
   acceptanceRate: number;
   monthlyData: {
@@ -104,6 +105,17 @@ export function ProducerAnalyticsModal({
 
       if (proposalsError) throw proposalsError;
 
+      // Fetch custom sync requests
+      const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
+        .from('custom_sync_requests')
+        .select('sync_fee, status')
+        .eq('producer_id', producerId)
+        .eq('status', 'completed')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (customSyncRequestsError) throw customSyncRequestsError;
+
       // Calculate stats
       const totalTracks = tracks?.length || 0;
       const totalSales = sales?.length || 0;
@@ -120,8 +132,11 @@ export function ProducerAnalyticsModal({
         ?.filter(p => p.status === 'accepted' && p.payment_status === 'paid')
         .reduce((sum, p) => sum + p.sync_fee, 0) || 0;
 
-      // Total revenue includes both sales and sync proposals
-      const totalRevenueWithSync = totalRevenue + syncRevenue;
+      // Calculate custom sync request revenue
+      const customSyncRevenue = customSyncRequests?.reduce((sum, req) => sum + req.sync_fee, 0) || 0;
+
+      // Total revenue includes sales, sync proposals, and custom sync requests
+      const totalRevenueWithSync = totalRevenue + syncRevenue + customSyncRevenue;
 
       // Calculate monthly data
       const monthlyData = sales?.reduce((acc, sale) => {
@@ -135,7 +150,7 @@ export function ProducerAnalyticsModal({
       }, {} as Record<string, { sales: number; revenue: number }>);
 
       // Calculate top tracks
-      const trackStats = sales?.reduce((acc, sale) => {
+      const trackStats: Record<string, { title: string; sales: number; revenue: number }> = sales?.reduce((acc, sale) => {
         if (!acc[sale.track_id]) {
           acc[sale.track_id] = {
             title: sale.track.title,
@@ -157,11 +172,12 @@ export function ProducerAnalyticsModal({
         totalSales,
         totalRevenue: totalRevenueWithSync,
         syncRevenue,
+        customSyncRevenue,
         avgSyncFee,
         acceptanceRate,
         monthlyData: Object.entries(monthlyData || {}).map(([month, data]) => ({
           month,
-          ...data
+          ...(data as { sales: number; revenue: number })
         })),
         topTracks
       });
@@ -275,6 +291,17 @@ export function ProducerAnalyticsModal({
                     </p>
                   </div>
                   <Clock className="w-8 h-8 text-yellow-500" />
+                </div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400">Custom Sync Revenue</p>
+                    <p className="text-2xl font-bold text-white">
+                      ${stats.customSyncRevenue.toFixed(2)}
+                    </p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-teal-500" />
                 </div>
               </div>
             </div>

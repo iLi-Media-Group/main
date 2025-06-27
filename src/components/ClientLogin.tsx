@@ -26,7 +26,7 @@ export function ClientLogin() {
       setLoading(true);
 
       // Check if user is an admin
-      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
+      const isAdmin = ['knockriobeats@gmail.com', '1314@13145.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
       
       if (!isAdmin) {
         const { data: profileData, error: profileError } = await supabase
