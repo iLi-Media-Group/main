@@ -25,17 +25,17 @@ export function WhiteLabelPage() {
     
     try {
       // Send the message to the edge function
-      const response = await fetch(${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-contact-form); {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-contact-form`, {
         method: 'POST',
         headers: {
-          'Authorization': Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY},
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          subject: White Label Inquiry from ${formData.company || formData.name},
-          message: Company: ${formData.company || 'Not provided'}\n\n${formData.message}
+          subject: `White Label Inquiry from ${formData.company || formData.name}`,
+          message: `Company: ${formData.company || 'Not provided'}\n\n${formData.message}`
         })
       });
 
@@ -295,7 +295,7 @@ export function WhiteLabelPage() {
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">All Pro features</span>
-                    </li>
+                  </li>
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Custom SLAs & support</span>
@@ -630,5 +630,4 @@ export function WhiteLabelPage() {
       
     </div>
   );
-}
-          
+} 
