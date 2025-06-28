@@ -70,12 +70,13 @@ SELECT
   p.email,
   p.account_type,
   COUNT(DISTINCT t.id) as total_tracks,
-  COUNT(DISTINCT s.id) as total_sales,
-  COALESCE(SUM(s.amount), 0) + COALESCE(SUM(sp.sync_fee), 0) as total_revenue
+  COUNT(DISTINCT s.id) + COUNT(DISTINCT sp.id) + COUNT(DISTINCT csr.id) as total_sales,
+  COALESCE(SUM(s.amount), 0) + COALESCE(SUM(sp.sync_fee), 0) + COALESCE(SUM(csr.sync_fee), 0) as total_revenue
 FROM profiles p
 LEFT JOIN tracks t ON p.id = t.producer_id
 LEFT JOIN sales s ON t.id = s.track_id
 LEFT JOIN sync_proposals sp ON t.id = sp.track_id AND sp.payment_status = 'paid' AND sp.status = 'accepted'
+LEFT JOIN custom_sync_requests csr ON p.id = csr.preferred_producer_id AND csr.status = 'completed'
 WHERE p.account_type = 'producer' 
    OR p.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com')
 GROUP BY p.id, p.email, p.account_type
@@ -95,4 +96,25 @@ SELECT
   COUNT(*) as total_paid_proposals,
   COALESCE(SUM(sync_fee), 0) as total_sync_revenue
 FROM sync_proposals 
-WHERE payment_status = 'paid' AND status = 'accepted'; 
+WHERE payment_status = 'paid' AND status = 'accepted';
+
+-- 11. Check if there are any completed custom sync requests
+SELECT 
+  COUNT(*) as total_completed_custom_syncs,
+  COALESCE(SUM(sync_fee), 0) as total_custom_sync_revenue
+FROM custom_sync_requests 
+WHERE status = 'completed';
+
+-- 12. Check custom sync requests with preferred producers
+SELECT 
+  csr.id,
+  csr.sync_fee,
+  csr.status,
+  csr.created_at,
+  p.email as preferred_producer_email,
+  p.account_type as producer_account_type
+FROM custom_sync_requests csr
+LEFT JOIN profiles p ON csr.preferred_producer_id = p.id
+WHERE csr.status = 'completed'
+ORDER BY csr.created_at DESC
+LIMIT 10; 

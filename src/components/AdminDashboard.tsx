@@ -276,19 +276,38 @@ export function AdminDashboard() {
           }
         }
 
+        // Fetch custom sync requests for these producers (where they are the preferred producer)
+        let customSyncRequestsData: any[] = [];
+        const producerIds = producersNotInAnalytics.map(p => p.id);
+        if (producerIds.length > 0) {
+          const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
+            .from('custom_sync_requests')
+            .select('id, preferred_producer_id, sync_fee, status')
+            .in('preferred_producer_id', producerIds)
+            .eq('status', 'completed');
+
+          if (customSyncRequestsError) {
+            console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
+          } else {
+            customSyncRequestsData = customSyncRequests || [];
+          }
+        }
+
         // Calculate analytics for producers not in the function
         producersNotInAnalytics.forEach(producer => {
           const producerTracks = tracksData?.filter(t => t.producer_id === producer.id) || [];
           const producerTrackIds = producerTracks.map(t => t.id);
           const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
           const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
+          const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
 
           producerAnalyticsMap[producer.id] = {
             total_tracks: producerTracks.length,
-            total_sales: producerSales.length,
+            total_sales: producerSales.length + producerSyncProposals.length + producerCustomSyncRequests.length,
             total_revenue: 
               producerSales.reduce((sum, sale) => sum + (sale.amount || 0), 0) +
-              producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0)
+              producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) +
+              producerCustomSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0)
           };
         });
       }
