@@ -34,6 +34,7 @@ interface UserDetails {
   total_tracks?: number;
   total_sales?: number;
   total_revenue?: number;
+  monthly_sales?: number;
   total_proposals?: number;
   acceptance_rate?: number;
 }
@@ -141,40 +142,104 @@ export function AdminDashboard() {
 
       const { data: allSyncData, error: allSyncError } = await supabase
         .from('sync_proposals')
-        .select('sync_fee, track_id')
+        .select('sync_fee, track_id, payment_date, producer_id')
         .eq('payment_status', 'paid')
         .eq('status', 'accepted');
       if (allSyncError) throw allSyncError;
 
-      const producerRevenueMap = new Map<string, { sales: number, revenue: number, tracks: Set<string> }>();
+      const { data: allCustomSyncData, error: allCustomSyncError } = await supabase
+        .from('custom_sync_proposals')
+        .select('total_fee, created_at, producer_id')
+        .eq('payment_status', 'paid');
+      if (allCustomSyncError) throw allCustomSyncError;
+
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+      const monthlySales = allSalesData.filter(s => new Date(s.created_at) >= firstDayOfMonth);
+      const monthlySync = allSyncData.filter(s => s.payment_date && new Date(s.payment_date) >= firstDayOfMonth);
+      const monthlyCustomSync = allCustomSyncData.filter(s => new Date(s.created_at) >= firstDayOfMonth);
+
+      let totalMonthSales = monthlySales.length + monthlySync.length + monthlyCustomSync.length;
+      let totalMonthRevenue = monthlySales.reduce((sum, sale) => sum + sale.amount, 0);
+      totalMonthRevenue += monthlySync.reduce((sum, prop) => sum + prop.sync_fee, 0);
+      totalMonthRevenue += monthlyCustomSync.reduce((sum, prop) => sum + prop.total_fee, 0);
+
+      setStats(prev => ({
+        ...prev,
+        total_sales: totalMonthSales,
+        total_revenue: totalMonthRevenue,
+      }));
+
+      const producerAnalyticsMap = new Map<string, {
+        total_sales: number,
+        total_revenue: number,
+        total_tracks: number,
+        monthly_sales: number
+      }>();
+
+      producerUsers.forEach(p => {
+        producerAnalyticsMap.set(p.id, {
+          total_sales: 0,
+          total_revenue: 0,
+          total_tracks: 0,
+          monthly_sales: 0
+        });
+      });
+
+      tracksData.forEach(track => {
+        if (track.producer_id && producerAnalyticsMap.has(track.producer_id)) {
+          producerAnalyticsMap.get(track.producer_id)!.total_tracks += 1;
+        }
+      });
 
       allSalesData.forEach(sale => {
         const producerId = trackProducerMap.get(sale.track_id);
-        if (producerId) {
-          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
-          current.sales += 1;
-          current.revenue += sale.amount;
-          current.tracks.add(sale.track_id);
-          producerRevenueMap.set(producerId, current);
+        if (producerId && producerAnalyticsMap.has(producerId)) {
+          const stats = producerAnalyticsMap.get(producerId)!;
+          stats.total_sales += 1;
+          stats.total_revenue += sale.amount;
+          if (new Date(sale.created_at) >= firstDayOfMonth) {
+            stats.monthly_sales += 1;
+          }
         }
       });
 
       allSyncData.forEach(proposal => {
-        const producerId = trackProducerMap.get(proposal.track_id);
-        if (producerId) {
-          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
-          current.revenue += proposal.sync_fee;
-          producerRevenueMap.set(producerId, current);
+        if (proposal.producer_id && producerAnalyticsMap.has(proposal.producer_id)) {
+          const stats = producerAnalyticsMap.get(proposal.producer_id)!;
+          stats.total_sales += 1; // Counting as a sale
+          stats.total_revenue += proposal.sync_fee;
+          if (proposal.payment_date && new Date(proposal.payment_date) >= firstDayOfMonth) {
+            stats.monthly_sales += 1;
+          }
+        }
+      });
+
+      allCustomSyncData.forEach(proposal => {
+        if (proposal.producer_id && producerAnalyticsMap.has(proposal.producer_id)) {
+          const stats = producerAnalyticsMap.get(proposal.producer_id)!;
+          stats.total_sales += 1; // Counting as a sale
+          stats.total_revenue += proposal.total_fee;
+          if (new Date(proposal.created_at) >= firstDayOfMonth) {
+            stats.monthly_sales += 1;
+          }
         }
       });
 
       const transformedProducers = producerUsers.map(producer => {
-        const analytics = producerRevenueMap.get(producer.id) || { sales: 0, revenue: 0, tracks: new Set() };
+        const analytics = producerAnalyticsMap.get(producer.id) || {
+          total_sales: 0,
+          total_revenue: 0,
+          total_tracks: 0,
+          monthly_sales: 0
+        };
         return {
           ...producer,
-          total_tracks: analytics.tracks.size,
-          total_sales: analytics.sales,
-          total_revenue: analytics.revenue,
+          total_tracks: analytics.total_tracks,
+          total_sales: analytics.total_sales,
+          total_revenue: analytics.total_revenue,
+          monthly_sales: analytics.monthly_sales,
         };
       });
 
@@ -429,8 +494,8 @@ export function AdminDashboard() {
                         className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
                       >
                         <BarChart3 className="w-4 h-4 mr-2" />
-                        Sales
-                        {producerSortField === 'total_sales' && (
+                        Sales (This Month)
+                        {producerSortField === 'monthly_sales' && (
                           <span className="ml-1">{producerSortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </button>
@@ -482,7 +547,7 @@ export function AdminDashboard() {
                         {producer.producer_number || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-gray-300">{producer.total_tracks || 0}</td>
-                      <td className="px-6 py-4 text-gray-300">{producer.total_sales || 0}</td>
+                      <td className="px-6 py-4 text-gray-300">{producer.monthly_sales || 0}</td>
                       <td className="px-6 py-4 text-gray-300">
                         ${(producer.total_revenue || 0).toFixed(2)}
                       </td>
