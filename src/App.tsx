@@ -275,18 +275,18 @@ const App = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/admin/login" element={
+          <LayoutWrapper>
+            <AdminLogin />
+          </LayoutWrapper>
+        } />
+
         <Route path="/admin" element={
-          user ? (
-            <ProtectedRoute requiresAdmin>
-              <LayoutWrapper>
-                <AdminDashboard />
-              </LayoutWrapper>
-            </ProtectedRoute>
-          ) : (
+          <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
-              <AdminLogin />
+              <AdminDashboard />
             </LayoutWrapper>
-          )
+          </ProtectedRoute>
         } />
 
         <Route path="/admin/invite-producer" element={
