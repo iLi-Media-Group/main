@@ -98,6 +98,12 @@ export function AdvancedAnalyticsDashboard() {
           startDate.setDate(now.getDate() - 30);
       }
 
+      console.log('Analytics Debug - Date Range:', {
+        startDate: startDate.toISOString(),
+        endDate: now.toISOString(),
+        selectedRange
+      });
+
       // Fetch track license sales
       const { data: trackSales, error: trackError } = await supabase
         .from('sales')
@@ -109,6 +115,12 @@ export function AdvancedAnalyticsDashboard() {
         .gte('created_at', startDate.toISOString())
         .lte('created_at', now.toISOString())
         .is('deleted_at', null);
+
+      console.log('Analytics Debug - Track Sales:', {
+        count: trackSales?.length || 0,
+        data: trackSales?.slice(0, 3), // First 3 for debugging
+        error: trackError
+      });
 
       if (trackError) throw trackError;
 
@@ -125,6 +137,12 @@ export function AdvancedAnalyticsDashboard() {
         .eq('payment_status', 'paid')
         .eq('status', 'accepted');
 
+      console.log('Analytics Debug - Sync Proposals:', {
+        count: syncProposals?.length || 0,
+        data: syncProposals?.slice(0, 3), // First 3 for debugging
+        error: syncError
+      });
+
       if (syncError) throw syncError;
 
       // Fetch custom sync request sales
@@ -138,7 +156,48 @@ export function AdvancedAnalyticsDashboard() {
         .lte('created_at', now.toISOString())
         .eq('status', 'completed');
 
+      console.log('Analytics Debug - Custom Sync Requests:', {
+        count: customSyncRequests?.length || 0,
+        data: customSyncRequests?.slice(0, 3), // First 3 for debugging
+        error: customError
+      });
+
       if (customError) throw customError;
+
+      // Check if we have any data at all
+      const totalData = (trackSales?.length || 0) + (syncProposals?.length || 0) + (customSyncRequests?.length || 0);
+      console.log('Analytics Debug - Total Data Found:', totalData);
+
+      if (totalData === 0) {
+        // Try fetching ALL data without date filters to see if there's any data at all
+        console.log('Analytics Debug - No data found with date filters, checking for any data...');
+        
+        const { data: allTrackSales } = await supabase
+          .from('sales')
+          .select('id, created_at')
+          .limit(5);
+        
+        const { data: allSyncProposals } = await supabase
+          .from('sync_proposals')
+          .select('id, created_at')
+          .limit(5);
+        
+        const { data: allCustomSyncRequests } = await supabase
+          .from('custom_sync_requests')
+          .select('id, created_at')
+          .limit(5);
+
+        console.log('Analytics Debug - All Data Check:', {
+          allTrackSales: allTrackSales?.length || 0,
+          allSyncProposals: allSyncProposals?.length || 0,
+          allCustomSyncRequests: allCustomSyncRequests?.length || 0,
+          sampleDates: {
+            trackSales: allTrackSales?.map(s => s.created_at),
+            syncProposals: allSyncProposals?.map(s => s.created_at),
+            customSyncRequests: allCustomSyncRequests?.map(s => s.created_at)
+          }
+        });
+      }
 
       // Process the data
       const processedData = processAnalyticsData(trackSales || [], syncProposals || [], customSyncRequests || []);
