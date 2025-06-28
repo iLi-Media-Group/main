@@ -113,7 +113,7 @@ export function RevenueBreakdownDialog({
       // 3. Fetch custom sync requests completed
       let customSyncQuery = supabase
         .from('custom_sync_requests')
-        .select('*')
+        .select('id, sync_fee, created_at, status')
         .eq('status', 'completed')
         .gte('created_at', startDate.toISOString());
 
@@ -123,7 +123,7 @@ export function RevenueBreakdownDialog({
       if (customSyncError) throw customSyncError;
 
       // Process track leases by license type
-      const salesByLicenseType = salesData.reduce((acc, sale) => {
+      const salesByLicenseType = salesData.reduce((acc: Record<string, { count: number; amount: number }>, sale) => {
         const licenseType = sale.license_type || 'Unknown';
         if (!acc[licenseType]) {
           acc[licenseType] = {
@@ -134,7 +134,7 @@ export function RevenueBreakdownDialog({
         acc[licenseType].count += 1;
         acc[licenseType].amount += sale.amount || 0;
         return acc;
-      }, {} as Record<string, { count: number; amount: number }>);
+      }, {});
 
       // Process sync proposals paid
       const syncProposalsRevenue = {

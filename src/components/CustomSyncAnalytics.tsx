@@ -45,7 +45,7 @@ export function CustomSyncAnalytics() {
 
       const { data, error } = await supabase
         .from('custom_sync_requests')
-        .select('*')
+        .select('status, sync_fee, genre, created_at')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -59,17 +59,17 @@ export function CustomSyncAnalytics() {
         const completedRequests = data.filter(req => req.status === 'completed').length;
 
         // Group by genre
-        const genreCounts = data.reduce((acc, req) => {
+        const genreCounts = data.reduce((acc: Record<string, number>, req) => {
           acc[req.genre] = (acc[req.genre] || 0) + 1;
           return acc;
-        }, {} as Record<string, number>);
+        }, {});
 
         const requestsByGenre = Object.entries(genreCounts)
           .map(([genre, count]) => ({ genre, count }))
           .sort((a, b) => b.count - a.count);
 
         // Calculate monthly trends
-        const monthlyData = data.reduce((acc, req) => {
+        const monthlyData = data.reduce((acc: Record<string, { requests: number; totalFee: number }>, req) => {
           const month = new Date(req.created_at).toLocaleString('default', { month: 'short', year: 'numeric' });
           if (!acc[month]) {
             acc[month] = { requests: 0, totalFee: 0 };
@@ -77,7 +77,7 @@ export function CustomSyncAnalytics() {
           acc[month].requests++;
           acc[month].totalFee += req.sync_fee;
           return acc;
-        }, {} as Record<string, { requests: number; totalFee: number }>);
+        }, {});
 
         const monthlyTrends = Object.entries(monthlyData)
           .map(([month, data]) => ({
