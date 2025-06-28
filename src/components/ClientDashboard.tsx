@@ -144,6 +144,8 @@ export function ClientDashboard() {
   const negotiationDialogOpenRef = useRef<string | null>(null);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [showPaymentCancel, setShowPaymentCancel] = useState(false);
+  // Add missing activeTab state for main dashboard tabs
+  const [activeTab, setActiveTab] = useState<'licenses' | 'favorites' | 'new' | 'proposals' | 'requests'>('licenses');
   // Add a debug flag at the top of the component
   const showDebug = false;
 
@@ -364,14 +366,37 @@ export function ClientDashboard() {
         setNewTracks(formattedNewTracks);
       }
 
-      const { data: syncRequestsData } = await supabase
-        .from('custom_sync_requests')
-        .select('id, status, genre, sync_fee, end_date, project_title, project_description, created_at, negotiation_status, negotiated_amount, negotiated_payment_terms')
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
+      // Try to fetch custom sync requests with error handling
+      try {
+        const { data: syncRequestsData, error: syncRequestsError } = await supabase
+          .from('custom_sync_requests')
+          .select('id, status, genre, sync_fee, end_date, project_title, project_description, created_at, negotiation_status, negotiated_amount, negotiated_payment_terms')
+          .eq('client_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (syncRequestsData) {
-        setSyncRequests(syncRequestsData);
+        if (syncRequestsError) {
+          console.warn('Custom sync requests query failed:', syncRequestsError);
+        } else if (syncRequestsData) {
+          setSyncRequests(syncRequestsData);
+        }
+      } catch (error) {
+        console.warn('Error fetching custom sync requests:', error);
+      }
+
+      // Try to fetch white label features with error handling
+      try {
+        const { data: whiteLabelData, error: whiteLabelError } = await supabase
+          .from('white_label_features')
+          .select('is_enabled')
+          .eq('client_id', user.id)
+          .eq('feature_name', 'producer_applications')
+          .maybeSingle();
+
+        if (whiteLabelError && whiteLabelError.code !== 'PGRST116') {
+          console.warn('White label features query failed:', whiteLabelError);
+        }
+      } catch (error) {
+        console.warn('Error fetching white label features:', error);
       }
 
       // Calculate remaining licenses for Gold Access
