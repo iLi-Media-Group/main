@@ -150,6 +150,40 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
     }
   };
 
+  const handleCounterResponse = async (action: 'accept' | 'decline', negotiationId: string) => {
+    if (!user) return;
+
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          negotiationId: negotiationId,
+          action: action,
+          userId: user.id,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Failed to ${action} counter offer.`);
+      }
+
+      onNegotiationSent(); // This will close the dialog and refresh data
+    } catch (err) {
+      console.error(`Error ${action}ing counter:`, err);
+      setError(err instanceof Error ? err.message : `An unknown error occurred.`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -177,36 +211,61 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         )}
 
         <div className="flex-1 overflow-y-auto mb-6 space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`p-4 rounded-lg ${
-                msg.sender.email === user?.email
-                  ? 'bg-purple-900/20 ml-8'
-                  : 'bg-white/5 mr-8'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm text-gray-400">
-                  {msg.sender.first_name} {msg.sender.last_name}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(msg.created_at).toLocaleString()}
-                </span>
+          {messages.map((msg, index) => {
+            const isLastMessage = index === messages.length - 1;
+            const isCounterOffer = !!(msg.counter_offer || msg.counter_terms);
+            const isFromOtherParty = msg.sender.email !== user?.email;
+
+            return (
+              <div
+                key={msg.id}
+                className={`p-4 rounded-lg ${
+                  msg.sender.email === user?.email
+                    ? 'bg-purple-900/20 ml-8'
+                    : 'bg-white/5 mr-8'
+                }`}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-sm text-gray-400">
+                    {msg.sender.first_name} {msg.sender.last_name}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(msg.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-white mb-2">{msg.message}</p>
+                {msg.counter_offer && (
+                  <p className="text-green-400 font-semibold">
+                    Counter Offer: ${msg.counter_offer.toFixed(2)}
+                  </p>
+                )}
+                {msg.counter_terms && (
+                  <p className="text-blue-400">
+                    Proposed Terms: {msg.counter_terms}
+                  </p>
+                )}
+
+                {isLastMessage && isCounterOffer && isFromOtherParty && (
+                  <div className="mt-4 flex items-center space-x-4 border-t border-white/10 pt-3">
+                    <button
+                      onClick={() => handleCounterResponse('accept', msg.id)}
+                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors font-semibold"
+                      disabled={loading}
+                    >
+                      Accept Counter
+                    </button>
+                    <button
+                      onClick={() => handleCounterResponse('decline', msg.id)}
+                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors font-semibold"
+                      disabled={loading}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                )}
               </div>
-              <p className="text-white mb-2">{msg.message}</p>
-              {msg.counter_offer && (
-                <p className="text-green-400 font-semibold">
-                  Counter Offer: ${msg.counter_offer.toFixed(2)}
-                </p>
-              )}
-              {msg.counter_terms && (
-                <p className="text-blue-400">
-                  Proposed Terms: {msg.counter_terms}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

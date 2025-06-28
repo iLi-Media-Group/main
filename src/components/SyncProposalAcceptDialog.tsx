@@ -42,19 +42,29 @@ export function SyncProposalAcceptDialog({
       let newStatus = 'client_accepted';
       let newClientStatus = 'accepted';
 
-      // If producer has already accepted, set status to 'accepted'
+      const updateData: {
+        status: string;
+        client_status: string;
+        producer_status?: string;
+        updated_at: string;
+      } = {
+        status: newStatus,
+        client_status: newClientStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      // If producer has already accepted, the deal is made.
+      // Update status for producer as well.
       if (currentProposal?.status === 'producer_accepted') {
         newStatus = 'accepted';
+        updateData.status = 'accepted';
+        updateData.producer_status = 'accepted';
       }
 
-      // Update both proposal status and client_status
+      // Update proposal status and client_status
       const { error: updateError } = await supabase
         .from('sync_proposals')
-        .update({ 
-          status: newStatus,
-          client_status: newClientStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', proposal.id);
 
       if (updateError) throw updateError;

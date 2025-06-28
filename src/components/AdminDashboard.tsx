@@ -79,107 +79,97 @@ export function AdminDashboard() {
       setLoading(true);
       setError(null);
 
-      // Fetch admin profile
+      // --- Admin Profile ---
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, email')
         .eq('id', user.id)
         .maybeSingle();
           
-      if (profileError) {
-        // If profile doesn't exist yet, create it
-        if (profileError.code === 'PGRST116') {
-          // Create a profile for the admin user
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              account_type: 'admin',
-              first_name: user.email?.split('@')[0] || 'Admin'
-            });
-            
-          if (insertError) {
-            console.error('Error creating admin profile:', insertError);
-            throw insertError;
-          }
-          
-          // Set profile data manually since we just created it
-          setProfile({
-            email: user.email || '',
-            first_name: user.email?.split('@')[0] || 'Admin'
-          });
-        } else {
-          console.error('Error fetching admin profile:', profileError);
-          throw profileError;
-        }
-      } else if (profileData) {
+      if (profileError && profileError.code !== 'PGRST116') {
+        throw profileError;
+      }
+      if (profileData) {
         setProfile(profileData);
       }
 
-      // Fetch all users with their details
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('*');
+      // --- Monthly Stats ---
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
 
+      const { data: monthlySalesData, error: monthlySalesError } = await supabase
+        .from('sales')
+        .select('amount')
+        .gte('created_at', firstDayOfMonth)
+        .lte('created_at', lastDayOfMonth);
+      if (monthlySalesError) throw monthlySalesError;
+
+      const { data: monthlySyncData, error: monthlySyncError } = await supabase
+        .from('sync_proposals')
+        .select('sync_fee')
+        .eq('payment_status', 'paid')
+        .eq('status', 'accepted')
+        .gte('created_at', firstDayOfMonth)
+        .lte('created_at', lastDayOfMonth);
+      if (monthlySyncError) throw monthlySyncError;
+
+      const { data: monthlyCustomSyncData, error: monthlyCustomSyncError } = await supabase
+        .from('custom_sync_requests')
+        .select('sync_fee')
+        .eq('status', 'completed')
+        .gte('created_at', firstDayOfMonth)
+        .lte('created_at', lastDayOfMonth);
+      if (monthlyCustomSyncError) throw monthlyCustomSyncError;
+
+      const monthlySalesRevenue = monthlySalesData?.reduce((sum, sale) => sum + sale.amount, 0) || 0;
+      const monthlySyncRevenue = monthlySyncData?.reduce((sum, p) => sum + p.sync_fee, 0) || 0;
+      const monthlyCustomSyncRevenue = monthlyCustomSyncData?.reduce((sum, r) => sum + r.sync_fee, 0) || 0;
+      
+      setStats(prev => ({
+        ...prev,
+        total_sales: monthlySalesData?.length || 0,
+        total_revenue: monthlySalesRevenue + monthlySyncRevenue + monthlyCustomSyncRevenue,
+      }));
+
+      // --- All-Time Producer Analytics ---
+      const { data: userData, error: userError } = await supabase.from('profiles').select('*');
       if (userError) throw userError;
 
-      // Process user data
       const clients = userData.filter(u => u.account_type === 'client');
-      const producerUsers = userData.filter(u => 
-        u.account_type === 'producer' || 
-        ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(u.email)
-      );
-
-      // Update stats with user counts
+      const producerUsers = userData.filter(u => u.account_type === 'producer');
+      
       setStats(prev => ({
         ...prev,
         total_clients: clients.length,
-        total_producers: producerUsers.length
+        total_producers: producerUsers.length,
       }));
 
-      // Fetch all sales data
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('amount, track_id, tracks(producer_id)');
+      const { data: tracksData, error: tracksError } = await supabase.from('tracks').select('id, producer_id');
+      if (tracksError) throw tracksError;
+      const trackProducerMap = new Map(tracksData.map(t => [t.id, t.producer_id]));
 
-      if (salesError) throw salesError;
+      const { data: allSalesData, error: allSalesError } = await supabase.from('sales').select('amount, track_id');
+      if (allSalesError) throw allSalesError;
 
-      // Fetch all sync proposals
-      const { data: syncProposalsData, error: syncProposalsError } = await supabase
+      const { data: allSyncData, error: allSyncError } = await supabase
         .from('sync_proposals')
-        .select('sync_fee, producer_id, payment_status, status')
+        .select('sync_fee, track_id')
         .eq('payment_status', 'paid')
         .eq('status', 'accepted');
+      if (allSyncError) throw allSyncError;
 
-      if (syncProposalsError) throw syncProposalsError;
-
-      // Fetch all custom sync requests
-      const { data: customSyncRequestsData, error: customSyncRequestsError } = await supabase
+      const { data: allCustomSyncData, error: allCustomSyncError } = await supabase
         .from('custom_sync_requests')
-        .select('sync_fee, producer_id, status')
+        .select('sync_fee, producer_id')
         .eq('status', 'completed');
+      if (allCustomSyncError) throw allCustomSyncError;
 
-      if (customSyncRequestsError) throw customSyncRequestsError;
-
-      // Calculate total revenue
-      const totalSalesRevenue = salesData.reduce((sum, sale) => sum + sale.amount, 0);
-      const totalSyncRevenue = syncProposalsData.reduce((sum, proposal) => sum + proposal.sync_fee, 0);
-      const totalCustomSyncRevenue = customSyncRequestsData.reduce((sum, request) => sum + request.sync_fee, 0);
-      const totalRevenue = totalSalesRevenue + totalSyncRevenue + totalCustomSyncRevenue;
-
-      setStats(prev => ({
-        ...prev,
-        total_sales: salesData.length,
-        total_revenue: totalRevenue
-      }));
-
-      // Calculate revenue per producer
       const producerRevenueMap = new Map<string, { sales: number, revenue: number, tracks: Set<string> }>();
 
-      salesData.forEach(sale => {
-        if (sale.tracks?.producer_id) {
-          const producerId = sale.tracks.producer_id;
+      allSalesData.forEach(sale => {
+        const producerId = trackProducerMap.get(sale.track_id);
+        if (producerId) {
           const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
           current.sales += 1;
           current.revenue += sale.amount;
@@ -188,16 +178,16 @@ export function AdminDashboard() {
         }
       });
 
-      syncProposalsData.forEach(proposal => {
-        if (proposal.producer_id) {
-          const producerId = proposal.producer_id;
+      allSyncData.forEach(proposal => {
+        const producerId = trackProducerMap.get(proposal.track_id);
+        if (producerId) {
           const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
           current.revenue += proposal.sync_fee;
           producerRevenueMap.set(producerId, current);
         }
       });
 
-      customSyncRequestsData.forEach(request => {
+      allCustomSyncData.forEach(request => {
         if (request.producer_id) {
           const producerId = request.producer_id;
           const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
@@ -209,20 +199,14 @@ export function AdminDashboard() {
       const transformedProducers = producerUsers.map(producer => {
         const analytics = producerRevenueMap.get(producer.id) || { sales: 0, revenue: 0, tracks: new Set() };
         return {
-          id: producer.id,
-          email: producer.email,
-          first_name: producer.first_name,
-          last_name: producer.last_name,
-          account_type: 'producer' as const,
-          created_at: producer.created_at,
-          producer_number: producer.producer_number,
+          ...producer,
           total_tracks: analytics.tracks.size,
           total_sales: analytics.sales,
-          total_revenue: analytics.revenue
+          total_revenue: analytics.revenue,
         };
       });
 
-      setProducers(transformedProducers);
+      setProducers(transformedProducers as UserDetails[]);
 
     } catch (err) {
       console.error('Error fetching admin data:', err);

@@ -210,6 +210,7 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
+          producer_status,
           payment_status,
           created_at,
           client:profiles!client_id (
@@ -239,6 +240,7 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
+          producer_status,
           payment_status,
           created_at,
           client:profiles!client_id (
@@ -262,13 +264,9 @@ export function ProducerDashboard() {
       setPendingProposals(recentProposalsData || []);
 
       // Categorize proposals by status
-      const pending = allProposalsData?.filter((p: any) => 
-        p.status === 'pending' || p.status === 'producer_accepted' || p.status === 'client_accepted'
-      ) || [];
-      const accepted = allProposalsData?.filter((p: any) => p.status === 'accepted') || [];
-      const declined = allProposalsData?.filter((p: any) => 
-        p.status === 'rejected' || p.status === 'client_rejected'
-      ) || [];
+      const pending = allProposalsData?.filter((p: any) => p.producer_status === 'pending' || p.producer_status === 'producer_accepted') || [];
+      const accepted = allProposalsData?.filter((p: any) => p.producer_status === 'accepted') || [];
+      const declined = allProposalsData?.filter((p: any) => p.producer_status === 'rejected') || [];
 
       setPendingProposals(pending);
       setAcceptedProposals(accepted);
@@ -343,6 +341,7 @@ export function ProducerDashboard() {
   };
 
   const handleProposalAction = (proposal: Proposal, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
+    if (!user) return;
     setSelectedProposal(proposal);
     if (action === 'negotiate') {
       negotiationDialogOpenRef.current = proposal.id;
@@ -363,6 +362,7 @@ export function ProducerDashboard() {
     
     try {
       let newStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
+      let newProducerStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
 
       if (confirmAction === 'accept') {
         // Check if client has already accepted
@@ -374,16 +374,32 @@ export function ProducerDashboard() {
 
         if (currentProposal?.client_status === 'accepted') {
           newStatus = 'accepted';
+          newProducerStatus = 'accepted';
         }
+      } else {
+        newStatus = 'rejected';
+        newProducerStatus = 'rejected';
+      }
+
+      const updateData: {
+        status: string;
+        producer_status: string;
+        client_status?: string;
+        updated_at: string;
+      } = {
+        status: newStatus,
+        producer_status: newProducerStatus,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (newStatus === 'rejected') {
+        updateData.client_status = 'rejected';
       }
 
       // Update proposal status
       const { error } = await supabase
         .from('sync_proposals')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', selectedProposal.id);
 
       if (error) throw error;

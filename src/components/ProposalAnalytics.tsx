@@ -45,7 +45,14 @@ export function ProposalAnalytics() {
 
       const { data: proposals, error: proposalsError } = await supabase
         .from('sync_proposals')
-        .select('*')
+        .select(`
+          id,
+          status,
+          sync_fee,
+          is_exclusive,
+          created_at,
+          track:tracks(producer_id)
+        `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -61,7 +68,7 @@ export function ProposalAnalytics() {
         const exclusive = proposals.filter(p => p.is_exclusive).length;
 
         // Calculate monthly data
-        const monthlyStats = proposals.reduce((acc, proposal) => {
+        const monthlyStats = proposals.reduce((acc: Record<string, { total: number; accepted: number; rejected: number; totalFee: number }>, proposal) => {
           const month = new Date(proposal.created_at).toLocaleString('default', { month: 'short', year: 'numeric' });
           if (!acc[month]) {
             acc[month] = { total: 0, accepted: 0, rejected: 0, totalFee: 0 };
@@ -71,7 +78,7 @@ export function ProposalAnalytics() {
           if (proposal.status === 'rejected') acc[month].rejected++;
           acc[month].totalFee += proposal.sync_fee;
           return acc;
-        }, {} as Record<string, { total: number; accepted: number; rejected: number; totalFee: number }>);
+        }, {});
 
         const monthlyData = Object.entries(monthlyStats)
           .map(([month, stats]) => ({
