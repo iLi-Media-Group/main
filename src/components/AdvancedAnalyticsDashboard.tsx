@@ -110,7 +110,7 @@ export function AdvancedAnalyticsDashboard() {
         .select(`
           id, amount, created_at,
           track:tracks!inner(id, title, genres, producer_id),
-          client:profiles!sales_client_id_fkey(id, first_name, last_name, email)
+          buyer:profiles!sales_buyer_id_fkey(id, first_name, last_name, email)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', now.toISOString())
@@ -228,7 +228,7 @@ export function AdvancedAnalyticsDashboard() {
       const monthData = monthlyData.get(month);
       monthData.total += sale.revenue || 0;
       monthData.licenses += 1;
-      monthData.clients.add(sale.client?.id || sale.preferred_producer?.id);
+      monthData.clients.add(sale.buyer?.id || sale.preferred_producer?.id);
     });
 
     const revenueData = Array.from(monthlyData.values()).map(data => ({
@@ -241,9 +241,9 @@ export function AdvancedAnalyticsDashboard() {
     // License data per client
     const clientMap = new Map();
     allSales.forEach(sale => {
-      const clientId = sale.client?.id || sale.preferred_producer?.id;
-      const clientName = sale.client ? 
-        `${sale.client.first_name} ${sale.client.last_name}` : 
+      const clientId = sale.buyer?.id || sale.preferred_producer?.id;
+      const clientName = sale.buyer ? 
+        `${sale.buyer.first_name} ${sale.buyer.last_name}` : 
         `${sale.preferred_producer.first_name} ${sale.preferred_producer.last_name}`;
       
       if (!clientMap.has(clientId)) {
