@@ -113,7 +113,7 @@ export function RevenueBreakdownDialog({
       // 3. Fetch custom sync requests completed
       let customSyncQuery = supabase
         .from('custom_sync_requests')
-        .select('id, sync_fee, created_at, status')
+        .select('id, sync_fee, created_at')
         .eq('status', 'completed')
         .gte('created_at', startDate.toISOString());
 
