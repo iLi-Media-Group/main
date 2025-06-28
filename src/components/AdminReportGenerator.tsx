@@ -111,7 +111,7 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
         .from('custom_sync_requests')
         .select(`
           id, sync_fee, created_at, status,
-          preferred_producer:profiles!inner(id, first_name, last_name, email)
+          preferred_producer:profiles!custom_sync_requests_preferred_producer_id_fkey(id, first_name, last_name, email)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
