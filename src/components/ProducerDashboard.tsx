@@ -89,6 +89,73 @@ export function ProducerDashboard() {
     }
   }, [user]);
 
+  // Add real-time subscription for negotiation messages
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to real-time changes on proposal_negotiations
+    const channel = supabase
+      .channel('producer_negotiation_messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'proposal_negotiations',
+          filter: `sender_id=neq.${user.id}` // Only listen for messages from others
+        },
+        async (payload) => {
+          console.log('New negotiation message received:', payload);
+          
+          // Check if this message is for one of our tracks
+          const proposalId = payload.new.proposal_id;
+          const hasTrack = tracks.some(t => t.id === proposalId);
+          
+          if (hasTrack) {
+            // Find the track to get its title
+            const track = tracks.find(t => t.id === proposalId);
+            const trackTitle = track?.title || `Track ${proposalId.slice(0, 8)}`;
+            
+            // Show a toast notification
+            showNotification(`New negotiation message received for "${trackTitle}"`);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, tracks]);
+
+  // Function to show notification
+  const showNotification = (message: string) => {
+    // Create a simple toast notification
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 5000);
+
+    // Also show browser notification if permission is granted
+    if (Notification.permission === 'granted') {
+      new Notification('New Negotiation Message', {
+        body: message,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico'
+      });
+    } else if (Notification.permission === 'default') {
+      // Request permission for future notifications
+      Notification.requestPermission();
+    }
+  };
+
   const fetchDashboardData = async () => {
     if (!user) return;
     

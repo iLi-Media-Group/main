@@ -1949,3 +1949,78 @@ export function ClientDashboard() {
     </div>
   );
 }
+
+// Add real-time subscription for negotiation messages
+useEffect(() => {
+  if (!user) return;
+
+  // Subscribe to real-time changes on proposal_negotiations
+  const channel = supabase
+    .channel('negotiation_messages')
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'proposal_negotiations',
+        filter: `sender_id=neq.${user.id}` // Only listen for messages from others
+      },
+      async (payload) => {
+        console.log('New negotiation message received:', payload);
+        
+        // Check if this message is for one of our proposals
+        const proposalId = payload.new.proposal_id;
+        const hasProposal = proposals.some(p => p.id === proposalId);
+        
+        if (hasProposal) {
+          // Add to unread proposals if not already there
+          setUnreadProposals(prev => {
+            if (!prev.includes(proposalId)) {
+              return [...prev, proposalId];
+            }
+            return prev;
+          });
+          
+          // Find the proposal to get its title
+          const proposal = proposals.find(p => p.id === proposalId);
+          const proposalTitle = proposal?.track?.title || `Proposal ${proposalId.slice(0, 8)}`;
+          
+          // Show a toast notification
+          showNotification(`New negotiation message received for "${proposalTitle}"`);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [user, proposals]);
+
+// Function to show notification
+const showNotification = (message: string) => {
+  // Create a simple toast notification
+  const notification = document.createElement('div');
+  notification.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+  notification.textContent = message;
+  document.body.appendChild(notification);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+    }
+  }, 5000);
+
+  // Also show browser notification if permission is granted
+  if (Notification.permission === 'granted') {
+    new Notification('New Negotiation Message', {
+      body: message,
+      icon: '/favicon.ico',
+      badge: '/favicon.ico'
+    });
+  } else if (Notification.permission === 'default') {
+    // Request permission for future notifications
+    Notification.requestPermission();
+  }
+};
