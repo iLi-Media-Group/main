@@ -161,7 +161,7 @@ export function AdminDashboard() {
 
       const { data: allCustomSyncData, error: allCustomSyncError } = await supabase
         .from('custom_sync_requests')
-        .select('sync_fee, producer_id')
+        .select('sync_fee')
         .eq('status', 'completed');
       if (allCustomSyncError) throw allCustomSyncError;
 
@@ -187,14 +187,8 @@ export function AdminDashboard() {
         }
       });
 
-      allCustomSyncData.forEach(request => {
-        if (request.producer_id) {
-          const producerId = request.producer_id;
-          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
-          current.revenue += request.sync_fee;
-          producerRevenueMap.set(producerId, current);
-        }
-      });
+      // Custom sync revenue is not attributed to individual producers in this view
+      // It is included in the overall monthly revenue stat, but not in the producer analytics table.
 
       const transformedProducers = producerUsers.map(producer => {
         const analytics = producerRevenueMap.get(producer.id) || { sales: 0, revenue: 0, tracks: new Set() };
