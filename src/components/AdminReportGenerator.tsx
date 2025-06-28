@@ -123,9 +123,25 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       const processedData = processReportData(trackSales || [], syncProposals || [], customSyncRequests || []);
       setReportData(processedData);
 
-    } catch (err) {
-      console.error('Error generating report:', err);
-      setError('Failed to generate report. Please try again.');
+    } catch (err: any) {
+      // Log detailed error information for debugging
+      console.error('Error generating report - Message:', err?.message);
+      console.error('Error generating report - Stack:', err?.stack);
+      console.error('Error generating report - Full error:', err);
+      
+      // Set a more specific error message based on the error type
+      let errorMessage = 'Failed to generate report. Please try again.';
+      if (err?.message) {
+        if (err.message.includes('permission')) {
+          errorMessage = 'Permission denied. Please check your access rights.';
+        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else if (err.message.includes('column') || err.message.includes('relation')) {
+          errorMessage = 'Database schema error. Please contact support.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
