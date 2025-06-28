@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet, Settings, Tag, BarChart } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet, Settings, Tag, BarChart, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,7 @@ import { CompensationSettings } from './CompensationSettings';
 import { FeatureManagement } from './FeatureManagement';
 import { DiscountManagement } from './DiscountManagement';
 import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
+import { AdminReportGenerator } from './AdminReportGenerator';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -55,6 +56,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
+  const [showReportGenerator, setShowReportGenerator] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'feature_management' | 'discount_management' | 'advanced_analytics'>('analytics');
 
   useEffect(() => {
@@ -404,13 +406,22 @@ export function AdminDashboard() {
               </p>
             )}
           </div>
-          <button
-            onClick={() => setShowLogoUpload(!showLogoUpload)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Change Logo
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setShowReportGenerator(true)}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Generate Reports
+            </button>
+            <button
+              onClick={() => setShowLogoUpload(!showLogoUpload)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Change Logo
+            </button>
+          </div>
         </div>
 
         {showLogoUpload && <LogoUpload />}
@@ -718,6 +729,12 @@ export function AdminDashboard() {
       <RevenueBreakdownDialog
         isOpen={showRevenueBreakdown}
         onClose={() => setShowRevenueBreakdown(false)}
+      />
+
+      {/* Admin Report Generator */}
+      <AdminReportGenerator
+        isOpen={showReportGenerator}
+        onClose={() => setShowReportGenerator(false)}
       />
     </div>
   );
