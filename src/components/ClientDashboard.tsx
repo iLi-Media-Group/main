@@ -1543,6 +1543,126 @@ export function ClientDashboard() {
           </div>
         )}
       </div>
+
+      {/* Client Profile Dialog */}
+      {showProfileDialog && (
+        <ClientProfile
+          isOpen={showProfileDialog}
+          onClose={() => setShowProfileDialog(false)}
+        />
+      )}
+
+      {/* Delete License Dialog */}
+      {selectedLicenseToDelete && (
+        <DeleteLicenseDialog
+          isOpen={!!selectedLicenseToDelete}
+          onClose={() => setSelectedLicenseToDelete(null)}
+          licenseId={selectedLicenseToDelete.id}
+          trackTitle={selectedLicenseToDelete.track.title}
+          onConfirm={handleDeleteLicense}
+        />
+      )}
+
+      {/* Edit Request Dialog */}
+      {selectedRequest && showEditDialog && (
+        <EditRequestDialog
+          isOpen={showEditDialog}
+          onClose={() => {
+            setShowEditDialog(false);
+            setSelectedRequest(null);
+          }}
+          request={selectedRequest}
+          onUpdate={handleUpdateRequest}
+          onDelete={handleDeleteRequest}
+        />
+      )}
+
+      {/* License Dialog */}
+      {showLicenseDialog && selectedTrackToLicense && (
+        <LicenseDialog
+          isOpen={showLicenseDialog}
+          onClose={() => {
+            setShowLicenseDialog(false);
+            setSelectedTrackToLicense(null);
+          }}
+          track={selectedTrackToLicense}
+          onSuccess={() => {
+            setShowLicenseDialog(false);
+            setSelectedTrackToLicense(null);
+            fetchDashboardData();
+          }}
+        />
+      )}
+
+      {/* Sync Proposal Dialog */}
+      {showProposalDialog && selectedTrackToLicense && (
+        <SyncProposalDialog
+          isOpen={showProposalDialog}
+          onClose={() => {
+            setShowProposalDialog(false);
+            setSelectedTrackToLicense(null);
+          }}
+          track={selectedTrackToLicense}
+          onSuccess={() => {
+            setShowProposalDialog(false);
+            setSelectedTrackToLicense(null);
+            fetchProposals();
+          }}
+        />
+      )}
+
+      {/* Negotiation Dialog */}
+      {showNegotiationDialog && selectedProposal && (
+        <ProposalNegotiationDialog
+          isOpen={showNegotiationDialog}
+          onClose={() => {
+            setShowNegotiationDialog(false);
+            setSelectedProposal(null);
+            negotiationDialogOpenRef.current = null;
+          }}
+          proposal={selectedProposal}
+          onMessageSent={() => {
+            fetchProposals();
+          }}
+        />
+      )}
+
+      {/* History Dialog */}
+      {showHistoryDialog && selectedProposal && (
+        <ProposalHistoryDialog
+          isOpen={showHistoryDialog}
+          onClose={() => {
+            setShowHistoryDialog(false);
+            setSelectedProposal(null);
+          }}
+          proposal={selectedProposal}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {showConfirmDialog && selectedProposal && (
+        <ProposalConfirmDialog
+          isOpen={showConfirmDialog}
+          onClose={() => {
+            setShowConfirmDialog(false);
+            setSelectedProposal(null);
+          }}
+          proposal={selectedProposal}
+          action={confirmAction}
+          onConfirm={handleClientAcceptDecline}
+        />
+      )}
+
+      {/* Negotiation Acceptance Dialog */}
+      {selectedProposal && selectedProposal.negotiation_status === 'negotiated' && (
+        <NegotiationAcceptanceDialog
+          isOpen={false}
+          onClose={() => {}}
+          proposal={selectedProposal}
+          onAccept={handleClientAcceptDecline}
+          onDecline={handleClientAcceptDecline}
+        />
+      )}
     </div>
   );
 }
