@@ -43,13 +43,28 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First try to fetch with business fields
+      let { data, error } = await supabase
         .from('profiles')
         .select('first_name, last_name, email, company_name, business_type, ein, business_name, street_address, city, state, postal_code, country, avatar_path')
         .eq('id', user?.id)
         .single();
 
-      if (error) throw error;
+      // If that fails (business fields don't exist yet), fall back to original fields
+      if (error && error.code === '42703') { // Column doesn't exist error
+        console.log('Business fields not available yet, using original fields');
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path')
+          .eq('id', user?.id)
+          .single();
+        
+        if (fallbackError) throw fallbackError;
+        data = fallbackData;
+      } else if (error) {
+        throw error;
+      }
 
       if (data) {
         setFirstName(data.first_name || '');
