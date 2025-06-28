@@ -49,7 +49,7 @@ SELECT
   'stripe' as payment_method,
   'txn_sample_001' as transaction_id,
   NOW() - INTERVAL '2 days' as created_at,
-  json_build_object('name', p1.first_name || ' ' || p1.last_name, 'email', p1.email) as licensee_info,
+  json_build_object('name', SPLIT_PART(p1.email, '@', 1), 'email', p1.email) as licensee_info,
   p2.id as producer_id
 FROM temp_profiles p1, temp_profiles p2 
 WHERE p1.id != p2.id 
@@ -74,7 +74,7 @@ SELECT
   'stripe' as payment_method,
   'txn_sample_002' as transaction_id,
   NOW() - INTERVAL '5 days' as created_at,
-  json_build_object('name', p1.first_name || ' ' || p1.last_name, 'email', p1.email) as licensee_info,
+  json_build_object('name', SPLIT_PART(p1.email, '@', 1), 'email', p1.email) as licensee_info,
   p2.id as producer_id
 FROM temp_profiles p1, temp_profiles p2 
 WHERE p1.id != p2.id 
@@ -99,7 +99,7 @@ SELECT
   'stripe' as payment_method,
   'txn_sample_003' as transaction_id,
   NOW() - INTERVAL '10 days' as created_at,
-  json_build_object('name', p1.first_name || ' ' || p1.last_name, 'email', p1.email) as licensee_info,
+  json_build_object('name', SPLIT_PART(p1.email, '@', 1), 'email', p1.email) as licensee_info,
   p2.id as producer_id
 FROM temp_profiles p1, temp_profiles p2 
 WHERE p1.id != p2.id 
