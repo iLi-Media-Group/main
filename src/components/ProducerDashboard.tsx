@@ -181,22 +181,53 @@ export function ProducerDashboard() {
         console.error('Error fetching producer balance:', balanceError);
       }
 
-      // Fetch sync proposal revenue
+      // Fetch sync proposal revenue and count
       const { data: syncRevenueData, error: syncRevenueError } = await supabase
         .from('sync_proposals')
-        .select('sync_fee')
+        .select('sync_fee, payment_status, status')
         .in('track_id', trackIds)
-        .eq('payment_status', 'paid');
+        .eq('payment_status', 'paid')
+        .eq('status', 'accepted');
 
       if (syncRevenueError) {
         console.error('Error fetching sync proposal revenue:', syncRevenueError);
       }
 
-      // Calculate total sync revenue
-      const syncRevenue = syncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
+      // Fetch custom sync request revenue and count
+      const { data: customSyncData, error: customSyncError } = await supabase
+        .from('custom_sync_requests')
+        .select('sync_fee, status')
+        .eq('preferred_producer_id', user.id)
+        .eq('status', 'completed');
 
-      // Total revenue includes both sales and sync proposals
-      const totalRevenueWithSync = totalRevenue + syncRevenue;
+      if (customSyncError) {
+        console.error('Error fetching custom sync requests:', customSyncError);
+      }
+
+      // Calculate total sync revenue and sales count
+      const syncRevenue = syncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
+      const syncSalesCount = syncRevenueData?.length || 0;
+      const customSyncRevenue = customSyncData?.reduce((sum: number, request: any) => sum + (request.sync_fee || 0), 0) || 0;
+      const customSyncSalesCount = customSyncData?.length || 0;
+
+      // Total revenue includes sales, sync proposals, and custom sync requests
+      const totalRevenueWithSync = totalRevenue + syncRevenue + customSyncRevenue;
+      
+      // Total sales includes track sales, sync proposals, and custom sync requests
+      const totalSalesWithAll = totalSales + syncSalesCount + customSyncSalesCount;
+
+      // Debug logging
+      console.log('Producer Dashboard Analytics Debug Info:', {
+        producerId: user.id,
+        trackSales: totalSales,
+        syncProposals: syncSalesCount,
+        customSyncRequests: customSyncSalesCount,
+        totalSales: totalSalesWithAll,
+        trackRevenue: totalRevenue,
+        syncRevenue,
+        customSyncRevenue,
+        totalRevenue: totalRevenueWithSync
+      });
 
       // Fetch all proposals
       const { data: allProposalsData, error: allProposalsError } = await supabase
@@ -292,7 +323,7 @@ export function ProducerDashboard() {
       // Update stats
       setStats({
         totalTracks,
-        totalSales,
+        totalSales: totalSalesWithAll,
         totalRevenue: totalRevenueWithSync,
         pendingProposals: recentProposalsData?.length || 0,
         monthlyEarnings: balanceData?.pending_balance || 0,
@@ -532,6 +563,9 @@ export function ProducerDashboard() {
               <div>
                 <p className="text-gray-400">Total Sales</p>
                 <p className="text-3xl font-bold text-white">{stats.totalSales}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Includes: Track Licenses, Sync Proposals, Custom Syncs
+                </p>
               </div>
               <BarChart3 className="w-12 h-12 text-blue-500" />
             </div>
@@ -542,6 +576,9 @@ export function ProducerDashboard() {
               <div>
                 <p className="text-gray-400">Total Revenue</p>
                 <p className="text-3xl font-bold text-white">${stats.totalRevenue.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Includes: Track Licenses, Sync Proposals, Custom Syncs
+                </p>
               </div>
               <div 
                 className="relative cursor-pointer group" 
