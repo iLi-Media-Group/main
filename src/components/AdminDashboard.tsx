@@ -3,6 +3,7 @@ import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, M
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { ProposalAnalytics } from './ProposalAnalytics';
 import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
@@ -11,6 +12,8 @@ import { ClientList } from './ClientList';
 import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
+import { FeatureManagement } from './FeatureManagement';
+import { DiscountManagement } from './DiscountManagement';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -37,6 +40,7 @@ interface UserDetails {
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const { isEnabled: hasDiscountManagementAccess } = useFeatureFlag('discount_management');
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +57,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'payouts' | 'features' | 'discounts' | 'advanced-analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'features' | 'discounts' | 'advanced-analytics'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -127,69 +131,23 @@ export function AdminDashboard() {
         total_producers: producerUsers.length
       }));
 
-      // Fetch sales analytics
-      const { data: analyticsData, error: analyticsError } = await supabase
-        .from('sales_analytics')
-        .select('*')
-        .order('month', { ascending: false });
+      // --- All-Time Producer Analytics ---
+      const { data: producerAnalytics, error: analyticsError } = await supabase.rpc('get_producer_analytics');
+      if (analyticsError) throw analyticsError;
 
-      if (analyticsError) {
-        console.error('Analytics error:', analyticsError);
-      } else {
-        // Get the most recent analytics data or use default values
-        const latestAnalytics = analyticsData && analyticsData.length > 0 ? analyticsData[0] : {
-          monthly_sales_count: 0,
-          monthly_revenue: 0,
-          track_count: 0,
-          producer_sales_count: 0,
-          producer_revenue: 0
+      const analyticsMap = new Map(producerAnalytics.map((p: any) => [p.producer_id, p]));
+
+      const transformedProducers = producerUsers.map(producer => {
+        const analytics = analyticsMap.get(producer.id);
+        return {
+          ...producer,
+          total_tracks: analytics?.total_tracks || 0,
+          total_sales: analytics?.total_sales || 0,
+          total_revenue: analytics?.total_revenue || 0,
         };
+      });
 
-        // Update stats with sales data
-        setStats(prev => ({
-          ...prev,
-          total_sales: latestAnalytics.monthly_sales_count || 0,
-          total_revenue: latestAnalytics.monthly_revenue || 0
-        }));
-
-        // Transform producer data - create a map of producer analytics by producer_id
-        const producerAnalyticsMap = analyticsData.reduce((map, item) => {
-          if (item.producer_id) {
-            if (!map[item.producer_id]) {
-              map[item.producer_id] = {
-                producer_sales_count: item.producer_sales_count || 0,
-                producer_revenue: item.producer_revenue || 0,
-                track_count: item.track_count || 0
-              };
-            }
-          }
-          return map;
-        }, {});
-
-        // Map producer users to include their analytics
-        const transformedProducers = producerUsers.map(producer => {
-          const analytics = producerAnalyticsMap[producer.id] || {
-            producer_sales_count: 0,
-            producer_revenue: 0,
-            track_count: 0
-          };
-          
-          return {
-            id: producer.id,
-            email: producer.email,
-            first_name: producer.first_name,
-            last_name: producer.last_name,
-            account_type: 'producer' as const,
-            created_at: producer.created_at,
-            producer_number: producer.producer_number,
-            total_tracks: analytics.track_count,
-            total_sales: analytics.producer_sales_count,
-            total_revenue: analytics.producer_revenue
-          };
-        });
-
-        setProducers(transformedProducers);
-      }
+      setProducers(transformedProducers as UserDetails[]);
 
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -331,7 +289,6 @@ export function AdminDashboard() {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
-            { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'features', label: 'Feature Management', icon: null },
@@ -516,12 +473,6 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {/* USDC Payouts */}
-        {activeTab === 'payouts' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <ProducerPayoutsPage />
-          </div>
-        )}
 
         {/* Announcements Management */}
         {activeTab === 'announcements' && (
