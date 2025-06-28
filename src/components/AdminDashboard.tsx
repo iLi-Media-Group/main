@@ -229,6 +229,70 @@ export function AdminDashboard() {
         });
       }
 
+      // For producers not in the analytics (like admin emails), fetch their data manually
+      const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
+      
+      if (producersNotInAnalytics.length > 0) {
+        // Fetch tracks for these producers
+        const { data: tracksData, error: tracksError } = await supabase
+          .from('tracks')
+          .select('id, producer_id, title')
+          .in('producer_id', producersNotInAnalytics.map(p => p.id));
+
+        if (tracksError) {
+          console.error('Error fetching tracks for producers:', tracksError);
+        }
+
+        // Fetch sales for these producers' tracks
+        const trackIds = tracksData?.map(t => t.id) || [];
+        let salesData: any[] = [];
+        if (trackIds.length > 0) {
+          const { data: sales, error: salesError } = await supabase
+            .from('sales')
+            .select('id, track_id, amount')
+            .in('track_id', trackIds);
+
+          if (salesError) {
+            console.error('Error fetching sales for producers:', salesError);
+          } else {
+            salesData = sales || [];
+          }
+        }
+
+        // Fetch sync proposals for these producers' tracks
+        let syncProposalsData: any[] = [];
+        if (trackIds.length > 0) {
+          const { data: syncProposals, error: syncProposalsError } = await supabase
+            .from('sync_proposals')
+            .select('id, track_id, sync_fee, payment_status, status')
+            .in('track_id', trackIds)
+            .eq('payment_status', 'paid')
+            .eq('status', 'accepted');
+
+          if (syncProposalsError) {
+            console.error('Error fetching sync proposals for producers:', syncProposalsError);
+          } else {
+            syncProposalsData = syncProposals || [];
+          }
+        }
+
+        // Calculate analytics for producers not in the function
+        producersNotInAnalytics.forEach(producer => {
+          const producerTracks = tracksData?.filter(t => t.producer_id === producer.id) || [];
+          const producerTrackIds = producerTracks.map(t => t.id);
+          const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
+          const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
+
+          producerAnalyticsMap[producer.id] = {
+            total_tracks: producerTracks.length,
+            total_sales: producerSales.length,
+            total_revenue: 
+              producerSales.reduce((sum, sale) => sum + (sale.amount || 0), 0) +
+              producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0)
+          };
+        });
+      }
+
       // Map producer users to include their analytics
       const transformedProducers = producerUsers.map(producer => {
         const analytics = producerAnalyticsMap[producer.id] || {
