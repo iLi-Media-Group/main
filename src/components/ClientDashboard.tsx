@@ -18,6 +18,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { InvoicePDF } from './InvoicePDF';
 import { pdf } from '@react-pdf/renderer';
+import { NegotiationAcceptanceDialog } from './NegotiationAcceptanceDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -51,6 +52,9 @@ interface CustomSyncRequest {
   sub_genres: string[];
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
+  negotiation_status?: string;
+  negotiated_amount?: number;
+  negotiated_payment_terms?: string;
 }
 
 const calculateExpiryDate = (purchaseDate: string, membershipType: string): string => {
@@ -362,7 +366,7 @@ export function ClientDashboard() {
 
       const { data: syncRequestsData } = await supabase
         .from('custom_sync_requests')
-        .select('id, status, genre, budget, deadline, description, created_at')
+        .select('id, status, genre, sync_fee, end_date, project_title, project_description, created_at, negotiation_status, negotiated_amount, negotiated_payment_terms')
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -1930,6 +1934,16 @@ export function ClientDashboard() {
           }}
           action={confirmAction}
           proposal={selectedProposal}
+        />
+      )}
+
+      {selectedRequest && selectedRequest.negotiation_status === 'client_acceptance_required' && (selectedRequest.negotiated_amount || selectedRequest.negotiated_payment_terms) && (
+        <NegotiationAcceptanceDialog
+          isOpen={true}
+          onClose={() => setSelectedRequest(null)}
+          proposal={selectedRequest}
+          isSyncProposal={false}
+          onAccept={() => { setSelectedRequest(null); fetchDashboardData(); }}
         />
       )}
     </div>
