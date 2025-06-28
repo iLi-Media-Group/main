@@ -53,7 +53,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'payouts'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'payouts' | 'features' | 'discounts' | 'advanced-analytics'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -333,7 +333,10 @@ export function AdminDashboard() {
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
-            { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> }
+            { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
+            { id: 'features', label: 'Feature Management', icon: null },
+            { id: 'discounts', label: 'Discount Management', icon: null },
+            { id: 'advanced-analytics', label: 'Advanced Analytics', icon: null }
           ].map(tab => (
             <button
               key={tab.id}
@@ -530,6 +533,41 @@ export function AdminDashboard() {
         {/* Compensation Settings */}
         {activeTab === 'compensation' && (
           <CompensationSettings />
+        )}
+
+        {/* Feature Management section */}
+        {activeTab === 'features' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <FeatureManagement />
+          </div>
+        )}
+
+        {/* Discount Management section */}
+        {activeTab === 'discounts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <DiscountManagement />
+          </div>
+        )}
+
+        {/* Advanced Analytics section */}
+        {activeTab === 'advanced-analytics' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="text-center py-12">
+              <BarChart3 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-4">Advanced Analytics Dashboard</h2>
+              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                Access comprehensive analytics and reporting features including revenue forecasting,
+                client churn analysis, genre distribution insights, and AI-powered business recommendations.
+              </p>
+              <Link
+                to="/advanced-analytics"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
+              >
+                <BarChart3 className="w-5 h-5 mr-2" />
+                Open Advanced Analytics
+              </Link>
+            </div>
+          </div>
         )}
       </div>
 
