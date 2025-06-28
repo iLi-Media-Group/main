@@ -362,7 +362,7 @@ export function ClientDashboard() {
 
       const { data: syncRequestsData } = await supabase
         .from('custom_sync_requests')
-        .select('*')
+        .select('id, status, genre, budget, deadline, description, created_at')
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
 

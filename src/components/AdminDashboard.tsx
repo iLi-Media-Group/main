@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet, RefreshCw } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
-import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { ProposalAnalytics } from './ProposalAnalytics';
 import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
@@ -12,8 +11,6 @@ import { ClientList } from './ClientList';
 import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
-import { FeatureManagement } from './FeatureManagement';
-import { DiscountManagement } from './DiscountManagement';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -40,7 +37,6 @@ interface UserDetails {
 
 export function AdminDashboard() {
   const { user } = useAuth();
-  const { isEnabled: hasDiscountManagementAccess } = useFeatureFlag('discount_management');
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,24 +49,17 @@ export function AdminDashboard() {
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('created_at');
+  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('total_revenue');
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'features' | 'discounts' | 'advanced-analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'payouts'>('analytics');
 
   useEffect(() => {
     if (user) {
       fetchData();
     }
   }, [user]);
-
-  // Redirect away from discounts tab if user doesn't have access
-  useEffect(() => {
-    if (activeTab === 'discounts' && !hasDiscountManagementAccess) {
-      setActiveTab('analytics');
-    }
-  }, [activeTab, hasDiscountManagementAccess]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -79,128 +68,128 @@ export function AdminDashboard() {
       setLoading(true);
       setError(null);
 
-      // --- Admin Profile ---
+      // Fetch admin profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('first_name, email')
         .eq('id', user.id)
         .maybeSingle();
           
-      if (profileError && profileError.code !== 'PGRST116') {
-        throw profileError;
-      }
-      if (profileData) {
+      if (profileError) {
+        // If profile doesn't exist yet, create it
+        if (profileError.code === 'PGRST116') {
+          // Create a profile for the admin user
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              email: user.email,
+              account_type: 'admin',
+              first_name: user.email?.split('@')[0] || 'Admin'
+            });
+            
+          if (insertError) {
+            console.error('Error creating admin profile:', insertError);
+            throw insertError;
+          }
+          
+          // Set profile data manually since we just created it
+          setProfile({
+            email: user.email || '',
+            first_name: user.email?.split('@')[0] || 'Admin'
+          });
+        } else {
+          console.error('Error fetching admin profile:', profileError);
+          throw profileError;
+        }
+      } else if (profileData) {
         setProfile(profileData);
       }
 
-      // --- Monthly Stats ---
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
+      // Fetch all users with their details
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('*');
 
-      const { data: monthlySalesData, error: monthlySalesError } = await supabase
-        .from('sales')
-        .select('amount')
-        .gte('created_at', firstDayOfMonth)
-        .lte('created_at', lastDayOfMonth);
-      if (monthlySalesError) throw monthlySalesError;
-
-      const { data: monthlySyncData, error: monthlySyncError } = await supabase
-        .from('sync_proposals')
-        .select('sync_fee')
-        .eq('payment_status', 'paid')
-        .eq('status', 'accepted')
-        .gte('created_at', firstDayOfMonth)
-        .lte('created_at', lastDayOfMonth);
-      if (monthlySyncError) throw monthlySyncError;
-
-      const { data: monthlyCustomSyncData, error: monthlyCustomSyncError } = await supabase
-        .from('custom_sync_requests')
-        .select('sync_fee')
-        .eq('status', 'completed')
-        .gte('created_at', firstDayOfMonth)
-        .lte('created_at', lastDayOfMonth);
-      if (monthlyCustomSyncError) throw monthlyCustomSyncError;
-
-      const monthlySalesRevenue = monthlySalesData?.reduce((sum, sale) => sum + sale.amount, 0) || 0;
-      const monthlySyncRevenue = monthlySyncData?.reduce((sum, p) => sum + p.sync_fee, 0) || 0;
-      const monthlyCustomSyncRevenue = monthlyCustomSyncData?.reduce((sum, r) => sum + r.sync_fee, 0) || 0;
-      
-      setStats(prev => ({
-        ...prev,
-        total_sales: monthlySalesData?.length || 0,
-        total_revenue: monthlySalesRevenue + monthlySyncRevenue + monthlyCustomSyncRevenue,
-      }));
-
-      // --- All-Time Producer Analytics ---
-      const { data: userData, error: userError } = await supabase.from('profiles').select('*');
       if (userError) throw userError;
 
+      // Process user data
       const clients = userData.filter(u => u.account_type === 'client');
-      const producerUsers = userData.filter(u => u.account_type === 'producer');
-      
+      const producerUsers = userData.filter(u => 
+        u.account_type === 'producer' || 
+        ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(u.email)
+      );
+
+      // Update stats with user counts
       setStats(prev => ({
         ...prev,
         total_clients: clients.length,
-        total_producers: producerUsers.length,
+        total_producers: producerUsers.length
       }));
 
-      const { data: tracksData, error: tracksError } = await supabase.from('tracks').select('id, producer_id');
-      if (tracksError) throw tracksError;
-      const trackProducerMap = new Map(tracksData.map(t => [t.id, t.producer_id]));
+      // Fetch sales analytics
+      const { data: analyticsData, error: analyticsError } = await supabase
+        .from('sales_analytics')
+        .select('*')
+        .order('month', { ascending: false });
 
-      const { data: allSalesData, error: allSalesError } = await supabase.from('sales').select('amount, track_id');
-      if (allSalesError) throw allSalesError;
-
-      const { data: allSyncData, error: allSyncError } = await supabase
-        .from('sync_proposals')
-        .select('sync_fee, track_id')
-        .eq('payment_status', 'paid')
-        .eq('status', 'accepted');
-      if (allSyncError) throw allSyncError;
-
-      const { data: allCustomSyncData, error: allCustomSyncError } = await supabase
-        .from('custom_sync_requests')
-        .select('sync_fee')
-        .eq('status', 'completed');
-      if (allCustomSyncError) throw allCustomSyncError;
-
-      const producerRevenueMap = new Map<string, { sales: number, revenue: number, tracks: Set<string> }>();
-
-      allSalesData.forEach(sale => {
-        const producerId = trackProducerMap.get(sale.track_id);
-        if (producerId) {
-          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
-          current.sales += 1;
-          current.revenue += sale.amount;
-          current.tracks.add(sale.track_id);
-          producerRevenueMap.set(producerId, current);
-        }
-      });
-
-      allSyncData.forEach(proposal => {
-        const producerId = trackProducerMap.get(proposal.track_id);
-        if (producerId) {
-          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
-          current.revenue += proposal.sync_fee;
-          producerRevenueMap.set(producerId, current);
-        }
-      });
-
-      // Custom sync revenue is not attributed to individual producers in this view
-      // It is included in the overall monthly revenue stat, but not in the producer analytics table.
-
-      const transformedProducers = producerUsers.map(producer => {
-        const analytics = producerRevenueMap.get(producer.id) || { sales: 0, revenue: 0, tracks: new Set() };
-        return {
-          ...producer,
-          total_tracks: analytics.tracks.size,
-          total_sales: analytics.sales,
-          total_revenue: analytics.revenue,
+      if (analyticsError) {
+        console.error('Analytics error:', analyticsError);
+      } else {
+        // Get the most recent analytics data or use default values
+        const latestAnalytics = analyticsData && analyticsData.length > 0 ? analyticsData[0] : {
+          monthly_sales_count: 0,
+          monthly_revenue: 0,
+          track_count: 0,
+          producer_sales_count: 0,
+          producer_revenue: 0
         };
-      });
 
-      setProducers(transformedProducers as UserDetails[]);
+        // Update stats with sales data
+        setStats(prev => ({
+          ...prev,
+          total_sales: latestAnalytics.monthly_sales_count || 0,
+          total_revenue: latestAnalytics.monthly_revenue || 0
+        }));
+
+        // Transform producer data - create a map of producer analytics by producer_id
+        const producerAnalyticsMap = analyticsData.reduce((map, item) => {
+          if (item.producer_id) {
+            if (!map[item.producer_id]) {
+              map[item.producer_id] = {
+                producer_sales_count: item.producer_sales_count || 0,
+                producer_revenue: item.producer_revenue || 0,
+                track_count: item.track_count || 0
+              };
+            }
+          }
+          return map;
+        }, {});
+
+        // Map producer users to include their analytics
+        const transformedProducers = producerUsers.map(producer => {
+          const analytics = producerAnalyticsMap[producer.id] || {
+            producer_sales_count: 0,
+            producer_revenue: 0,
+            track_count: 0
+          };
+          
+          return {
+            id: producer.id,
+            email: producer.email,
+            first_name: producer.first_name,
+            last_name: producer.last_name,
+            account_type: 'producer' as const,
+            created_at: producer.created_at,
+            producer_number: producer.producer_number,
+            total_tracks: analytics.track_count,
+            total_sales: analytics.producer_sales_count,
+            total_revenue: analytics.producer_revenue
+          };
+        });
+
+        setProducers(transformedProducers);
+      }
 
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -342,12 +331,9 @@ export function AdminDashboard() {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
+            { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
-            { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
-            { id: 'features', label: 'Feature Management', icon: null },
-            // Only show Discount Management tab if user has access
-            ...(hasDiscountManagementAccess ? [{ id: 'discounts', label: 'Discount Management', icon: null }] : []),
-            { id: 'advanced-analytics', label: 'Advanced Analytics', icon: null },
+            { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> }
           ].map(tab => (
             <button
               key={tab.id}
@@ -387,13 +373,6 @@ export function AdminDashboard() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">Producer Analytics</h2>
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={fetchData}
-                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors flex items-center"
-                >
-                  <RefreshCw className="w-4 h-4 mr-1" />
-                  Refresh Data
-                </button>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -534,6 +513,13 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {/* USDC Payouts */}
+        {activeTab === 'payouts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <ProducerPayoutsPage />
+          </div>
+        )}
+
         {/* Announcements Management */}
         {activeTab === 'announcements' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -544,41 +530,6 @@ export function AdminDashboard() {
         {/* Compensation Settings */}
         {activeTab === 'compensation' && (
           <CompensationSettings />
-        )}
-
-        {/* Feature Management section */}
-        {activeTab === 'features' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <FeatureManagement />
-          </div>
-        )}
-
-        {/* Discount Management section */}
-        {activeTab === 'discounts' && hasDiscountManagementAccess && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <DiscountManagement />
-          </div>
-        )}
-
-        {/* Advanced Analytics section */}
-        {activeTab === 'advanced-analytics' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <div className="text-center py-12">
-              <BarChart3 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-4">Advanced Analytics Dashboard</h2>
-              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                Access comprehensive analytics and reporting features including revenue forecasting, 
-                client churn analysis, genre distribution insights, and AI-powered business recommendations.
-              </p>
-              <Link
-                to="/advanced-analytics"
-                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl"
-              >
-                <BarChart3 className="w-5 h-5 mr-2" />
-                Open Advanced Analytics
-              </Link>
-            </div>
-          </div>
         )}
       </div>
 

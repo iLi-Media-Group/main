@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS get_producer_analytics();

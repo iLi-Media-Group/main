@@ -109,7 +109,6 @@ export function ProducerAnalyticsModal({
       const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
         .from('custom_sync_requests')
         .select('sync_fee, status')
-        .eq('producer_id', producerId)
         .eq('status', 'completed')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
