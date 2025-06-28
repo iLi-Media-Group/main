@@ -132,18 +132,49 @@ export function AdminDashboard() {
       }));
 
       // --- All-Time Producer Analytics ---
-      const { data: producerAnalytics, error: analyticsError } = await supabase.rpc('get_producer_analytics');
-      if (analyticsError) throw analyticsError;
+      const { data: tracksData, error: tracksError } = await supabase.from('tracks').select('id, producer_id');
+      if (tracksError) throw tracksError;
+      const trackProducerMap = new Map(tracksData.map(t => [t.id, t.producer_id]));
 
-      const analyticsMap = new Map(producerAnalytics.map((p: any) => [p.producer_id, p]));
+      const { data: allSalesData, error: allSalesError } = await supabase.from('sales').select('amount, track_id');
+      if (allSalesError) throw allSalesError;
+
+      const { data: allSyncData, error: allSyncError } = await supabase
+        .from('sync_proposals')
+        .select('sync_fee, track_id')
+        .eq('payment_status', 'paid')
+        .eq('status', 'accepted');
+      if (allSyncError) throw allSyncError;
+
+      const producerRevenueMap = new Map<string, { sales: number, revenue: number, tracks: Set<string> }>();
+
+      allSalesData.forEach(sale => {
+        const producerId = trackProducerMap.get(sale.track_id);
+        if (producerId) {
+          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
+          current.sales += 1;
+          current.revenue += sale.amount;
+          current.tracks.add(sale.track_id);
+          producerRevenueMap.set(producerId, current);
+        }
+      });
+
+      allSyncData.forEach(proposal => {
+        const producerId = trackProducerMap.get(proposal.track_id);
+        if (producerId) {
+          const current = producerRevenueMap.get(producerId) || { sales: 0, revenue: 0, tracks: new Set() };
+          current.revenue += proposal.sync_fee;
+          producerRevenueMap.set(producerId, current);
+        }
+      });
 
       const transformedProducers = producerUsers.map(producer => {
-        const analytics = analyticsMap.get(producer.id);
+        const analytics = producerRevenueMap.get(producer.id) || { sales: 0, revenue: 0, tracks: new Set() };
         return {
           ...producer,
-          total_tracks: analytics?.total_tracks || 0,
-          total_sales: analytics?.total_sales || 0,
-          total_revenue: analytics?.total_revenue || 0,
+          total_tracks: analytics.tracks.size,
+          total_sales: analytics.sales,
+          total_revenue: analytics.revenue,
         };
       });
 
