@@ -143,23 +143,30 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
         newAvatarPath = filePath;
       }
 
+      // Prepare update data
+      const updateData: any = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        company_name: companyName.trim() || null,
+        street_address: streetAddress.trim() || null,
+        city: city.trim() || null,
+        state: state.trim() || null,
+        postal_code: postalCode.trim() || null,
+        country: country.trim() || null,
+        avatar_path: newAvatarPath,
+        updated_at: new Date().toISOString()
+      };
+
+      // Only include business fields if they exist (migration applied)
+      if (businessType || ein || businessName) {
+        updateData.business_type = businessType || null;
+        updateData.ein = ein.trim() || null;
+        updateData.business_name = businessName.trim() || null;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          company_name: companyName.trim() || null,
-          business_type: businessType || null,
-          ein: ein.trim() || null,
-          business_name: businessName.trim() || null,
-          street_address: streetAddress.trim() || null,
-          city: city.trim() || null,
-          state: state.trim() || null,
-          postal_code: postalCode.trim() || null,
-          country: country.trim() || null,
-          avatar_path: newAvatarPath,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id);
 
       if (error) throw error;
