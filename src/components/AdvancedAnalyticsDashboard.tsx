@@ -409,10 +409,40 @@ export function AdvancedAnalyticsDashboard() {
   if (!analyticsData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
-        <div className="text-center">
-          <AlertTriangle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">No Data Available</h1>
-          <p className="text-gray-300">No analytics data found for the selected time period.</p>
+        <div className="text-center max-w-2xl mx-auto px-4">
+          <BarChart3 className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-white mb-4">Analytics Dashboard Ready</h1>
+          <p className="text-gray-300 mb-6">
+            Your analytics dashboard is set up and ready to display comprehensive insights once you have sales activity.
+          </p>
+          
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 text-left">
+            <h3 className="text-lg font-semibold text-white mb-4">What will appear here:</h3>
+            <div className="space-y-3 text-sm text-gray-300">
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0"></div>
+                <div>
+                  <span className="font-medium text-white">Track License Sales</span> - When users purchase track licenses
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0"></div>
+                <div>
+                  <span className="font-medium text-white">Sync Proposals</span> - When sync proposals are paid and accepted
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
+                <div>
+                  <span className="font-medium text-white">Custom Sync Requests</span> - When custom sync requests are completed
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-gray-400 text-sm mt-6">
+            The dashboard will automatically populate with charts, metrics, and insights as your business grows.
+          </p>
         </div>
       </div>
     );

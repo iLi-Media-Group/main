@@ -1,5 +1,5 @@
--- Debug script to check what data exists for analytics
--- Run this in Supabase SQL editor to see what data is available
+-- Debug script to check analytics data availability
+-- Run this in Supabase SQL editor to see what data exists
 
 -- Check if sales table has any data
 SELECT 'SALES TABLE' as table_name, COUNT(*) as record_count FROM sales;
@@ -108,23 +108,23 @@ SELECT
 FROM sales 
 WHERE deleted_at IS NULL;
 
--- Check if there are any test or sample records we should clean up
-SELECT 'POTENTIAL TEST DATA' as info;
+-- Show what data will appear in analytics when real transactions occur
+SELECT 'EXPECTED ANALYTICS DATA FLOW' as info;
 
 SELECT 
-  'SALES WITH ZERO AMOUNT' as type,
-  COUNT(*) as count
-FROM sales 
-WHERE amount = 0 OR amount IS NULL;
+  'When a track license is purchased:' as event,
+  '1. Record appears in sales table' as step1,
+  '2. Shows in Track License Sales analytics' as step2,
+  '3. Contributes to total revenue' as step3;
 
 SELECT 
-  'SYNC PROPOSALS WITH ZERO FEE' as type,
-  COUNT(*) as count
-FROM sync_proposals 
-WHERE sync_fee = 0 OR sync_fee IS NULL;
+  'When a sync proposal is paid and accepted:' as event,
+  '1. Record appears in sync_proposals table' as step1,
+  '2. Shows in Sync Proposal analytics' as step2,
+  '3. Contributes to total revenue' as step3;
 
 SELECT 
-  'CUSTOM SYNC REQUESTS WITH ZERO FEE' as type,
-  COUNT(*) as count
-FROM custom_sync_requests 
-WHERE sync_fee = 0 OR sync_fee IS NULL; 
+  'When a custom sync request is completed:' as event,
+  '1. Record appears in custom_sync_requests table' as step1,
+  '2. Shows in Custom Sync analytics' as step2,
+  '3. Contributes to total revenue' as step3; 
