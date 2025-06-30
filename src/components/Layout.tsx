@@ -145,15 +145,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     </Link>
                   )}
                   
-                  {/* Admin-specific menu items */}
+                  {/* Admin-specific menu items (remove Admin Dashboard from here) */}
                   {isAdmin && (
                     <>
-                      <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <Shield className="w-4 h-4 mr-2" />Admin Dashboard
-                      </Link>
-                      <Link to="/admin/white-label" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <Shield className="w-4 h-4 mr-2" />White Label Admin
-                      </Link>
                       <Link to="/open-sync-briefs" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Briefcase className="w-4 h-4 mr-2" />Open Sync Briefs
                       </Link>
@@ -213,8 +207,19 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     </>
                   )}
                   
-                  {/* Dashboard links */}
-                  {user && (
+                  {/* Dashboard links (move Admin Dashboard and White Label Admin here for admins) */}
+                  {user && isAdmin && (
+                    <>
+                      <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Shield className="w-4 h-4 mr-2" />Admin Dashboard
+                      </Link>
+                      <Link to="/admin/white-label" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Shield className="w-4 h-4 mr-2" />White Label Admin
+                      </Link>
+                    </>
+                  )}
+                  {/* Dashboard links for non-admins */}
+                  {user && !isAdmin && (
                     <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       {getDashboardIcon()}
                       {getDashboardLabel()}
