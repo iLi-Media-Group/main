@@ -217,6 +217,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Shield className="w-4 h-4 mr-2" />Admin Dashboard
                       </Link>
+                      <Link to="/admin/services" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Briefcase className="w-4 h-4 mr-2" />Manage Services
+                      </Link>
                       <Link to="/admin/white-label" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Shield className="w-4 h-4 mr-2" />White Label Admin
                       </Link>

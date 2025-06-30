@@ -46,6 +46,7 @@ import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
 import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
+import AdminServicesPage from './components/AdminServicesPage';
 
 
 const App = () => {
@@ -318,6 +319,14 @@ const App = () => {
         <Route path="/admin/white-label" element={
           user?.role === 'admin' ? (
             <WhiteLabelAdminPage />
+          ) : (
+            <Navigate to="/" />
+          )
+        } />
+
+        <Route path="/admin/services" element={
+          user?.role === 'admin' ? (
+            <AdminServicesPage />
           ) : (
             <Navigate to="/" />
           )

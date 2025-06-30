@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 
 const SERVICE_TYPES = [
   { key: 'studios', label: 'Recording Studios' },
@@ -6,42 +7,34 @@ const SERVICE_TYPES = [
   { key: 'artists', label: 'Graphic Artists' },
 ];
 
-const SERVICES = [
-  {
-    id: 1,
-    type: 'studios',
-    name: 'Blue Note Studios',
-    description: 'State-of-the-art recording studio with analog and digital equipment.',
-    contact: 'info@bluenotestudios.com',
-    website: 'https://bluenotestudios.com',
-    image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 2,
-    type: 'engineers',
-    name: 'Jane Doe - Mixing Engineer',
-    description: 'Grammy-nominated engineer specializing in hip hop and pop.',
-    contact: 'jane@mixbyjane.com',
-    website: 'https://mixbyjane.com',
-    image: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=400&q=80',
-  },
-  {
-    id: 3,
-    type: 'artists',
-    name: 'Art by Alex',
-    description: 'Album cover and promo graphics for musicians and labels.',
-    contact: 'alex@artbyalex.com',
-    website: 'https://artbyalex.com',
-    image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
-  },
-  // Add more sample services as needed
-];
+interface Service {
+  id: string;
+  type: string;
+  name: string;
+  description: string;
+  contact: string;
+  website: string;
+  image: string;
+}
 
 export default function ServicesPage() {
   const [activeTab, setActiveTab] = useState('studios');
   const [search, setSearch] = useState('');
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredServices = SERVICES.filter(
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('services').select('*').order('name');
+    if (data) setServices(data);
+    setLoading(false);
+  };
+
+  const filteredServices = services.filter(
     (service) =>
       service.type === activeTab &&
       (service.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -77,7 +70,9 @@ export default function ServicesPage() {
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-        {filteredServices.length === 0 ? (
+        {loading ? (
+          <p className="col-span-full text-center text-gray-400">Loading...</p>
+        ) : filteredServices.length === 0 ? (
           <p className="col-span-full text-center text-gray-400">No services found.</p>
         ) : (
           filteredServices.map((service) => (
