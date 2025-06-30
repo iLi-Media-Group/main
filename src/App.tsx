@@ -40,6 +40,7 @@ import { ProducerPayoutsPage } from './components/ProducerPayoutsPage';
 import { TrackPage } from './components/TrackPage';
 import { WelcomePage } from './components/WelcomePage';
 import { WhiteLabelPage } from './components/WhiteLabelPage';
+import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
@@ -202,6 +203,7 @@ const App = () => {
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
+        <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
         <Route path="/producers" element={<LayoutWrapper><ProducerLandingPage /></LayoutWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
