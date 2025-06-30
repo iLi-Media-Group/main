@@ -53,7 +53,7 @@ import ServicesPage from './components/ServicesPage';
 const App = () => {
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const navigate = useNavigate();
   
   // Check if we have email and redirect params that should trigger opening the signup dialog
@@ -82,6 +82,14 @@ const App = () => {
 
     navigate(`/catalog?${params.toString()}`);
   };
+
+  const adminEmails = [
+    'knockriobeats@gmail.com',
+    'info@mybeatfi.io',
+    'derykbanks@yahoo.com',
+    'knockriobeats2@gmail.com',
+  ];
+  const isAdmin = (user && (adminEmails.includes(user.email as string) || accountType === 'admin'));
 
   return (
     <>
@@ -318,7 +326,7 @@ const App = () => {
         <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
 
         <Route path="/admin/white-label" element={
-          user?.role?.includes('admin') ? (
+          isAdmin ? (
             <WhiteLabelAdminPage />
           ) : (
             <Navigate to="/" />
@@ -326,7 +334,7 @@ const App = () => {
         } />
 
         <Route path="/admin/services" element={
-          user?.role?.includes('admin') ? (
+          isAdmin ? (
             <AdminServicesPage />
           ) : (
             <Navigate to="/" />
