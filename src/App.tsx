@@ -318,7 +318,7 @@ const App = () => {
         <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
 
         <Route path="/admin/white-label" element={
-          user?.role === 'admin' ? (
+          user?.role?.includes('admin') ? (
             <WhiteLabelAdminPage />
           ) : (
             <Navigate to="/" />
@@ -326,7 +326,7 @@ const App = () => {
         } />
 
         <Route path="/admin/services" element={
-          user?.role === 'admin' ? (
+          user?.role?.includes('admin') ? (
             <AdminServicesPage />
           ) : (
             <Navigate to="/" />
