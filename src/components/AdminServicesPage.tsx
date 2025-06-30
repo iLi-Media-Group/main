@@ -188,8 +188,18 @@ export default function AdminServicesPage() {
       if (error) throw error;
       const link = `${window.location.origin}/service-onboarding/${token}`;
       setOnboardingLink(link);
-      // TODO: Send email via backend API or serverless function using Resend
-      // Example: await fetch('/api/send-onboarding-email', { method: 'POST', body: JSON.stringify({ to: onboardingEmail, link }) })
+  
+      // Call your Supabase Edge Function to send the email
+      const functionUrl = `${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/send-service-onboarding-email`;
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: onboardingEmail, link })
+      });
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to send onboarding email');
+      }
     } catch (err: any) {
       setOnboardingError(err.message || 'Failed to send onboarding link');
     } finally {
