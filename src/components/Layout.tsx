@@ -162,6 +162,10 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
                   </Link>
                   
+                  <Link to="/services" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                    <Briefcase className="w-4 h-4 mr-2" />Services
+                  </Link>
+                  
                   <div className="border-t border-blue-500/20 my-1"></div>
                   
                   <Link to="/about" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
