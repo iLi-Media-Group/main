@@ -491,71 +491,61 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
   };
 
   return (
-    <div className={`bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 ${className}`}>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <Brain className="w-6 h-6 text-blue-400" />
-          <h2 className="text-xl font-bold text-white">AI Search Assistant</h2>
+    <div className={`bg-white/10 backdrop-blur-xl shadow-xl rounded-2xl border border-blue-400/30 p-8 max-w-xl mx-auto ${className}`}>
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center space-x-3">
+          <span className="inline-flex items-center justify-center bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 rounded-full p-2 animate-pulse">
+            <Sparkles className="w-7 h-7 text-white" />
+          </span>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            AI Search Assistant
+          </h2>
         </div>
-        <Sparkles className="w-5 h-5 text-purple-400" />
       </div>
 
       {/* Natural Language Search */}
-      <div className="mb-6">
+      <div className="mb-8">
         <div className="relative">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Describe what you're looking for... (e.g., 'energetic hip hop for workout')"
-            className="w-full pl-4 pr-12 py-3 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+            className="w-full pl-6 pr-16 py-4 bg-white/20 border border-blue-400/30 rounded-full text-white placeholder-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-400/30 text-lg shadow-inner transition-all"
             onKeyPress={(e) => e.key === 'Enter' && processNaturalLanguageQuery(query)}
           />
           <button
             onClick={() => processNaturalLanguageQuery(query)}
             disabled={loading || !query.trim()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
+            className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 text-white rounded-full p-2 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 mb-4">
-        <button
-          onClick={() => setActiveTab('recommendations')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'recommendations' 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          <TrendingUp className="w-4 h-4 inline mr-1" />
-          For You
-        </button>
-        <button
-          onClick={() => setActiveTab('suggestions')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'suggestions' 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          <Lightbulb className="w-4 h-4 inline mr-1" />
-          Suggestions
-        </button>
-        <button
-          onClick={() => setActiveTab('trending')}
-          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-            activeTab === 'trending' 
-              ? 'bg-blue-600 text-white' 
-              : 'text-gray-400 hover:text-white'
-          }`}
-        >
-          <Zap className="w-4 h-4 inline mr-1" />
-          Trending
-        </button>
+      <div className="flex space-x-2 mb-6">
+        {[
+          { key: 'recommendations', label: 'For You', icon: <TrendingUp className="w-4 h-4 inline mr-1" /> },
+          { key: 'suggestions', label: 'Suggestions', icon: <Lightbulb className="w-4 h-4 inline mr-1" /> },
+          { key: 'trending', label: 'Trending', icon: <Zap className="w-4 h-4 inline mr-1" /> },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key as typeof activeTab)}
+            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all relative
+              ${activeTab === tab.key
+                ? 'bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 text-white shadow-md'
+                : 'text-gray-300 hover:text-white hover:bg-white/10'}
+            `}
+          >
+            {tab.icon}{tab.label}
+            {activeTab === tab.key && (
+              <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-2/3 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 rounded-full animate-fade-in"></span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Error */}
@@ -567,33 +557,35 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
 
       {/* Content */}
       {activeTab === 'recommendations' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-white mb-3">Recommended for You</h3>
+        <div className="space-y-5">
+          <h3 className="text-lg font-semibold text-white mb-2">Recommended for You</h3>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+              <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
             </div>
           ) : recommendations.length > 0 ? (
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {recommendations.slice(0, 4).map((track) => (
                 <div
                   key={track.id}
                   onClick={() => handleTrackClick(track)}
-                  className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
+                  className="flex items-center space-x-4 p-4 bg-white/10 rounded-xl cursor-pointer hover:scale-[1.03] hover:bg-white/20 transition-all shadow-md group"
                 >
                   <img
                     src={track.image}
                     alt={track.title}
-                    className="w-12 h-12 object-cover rounded-lg"
+                    className="w-16 h-16 object-cover rounded-lg shadow group-hover:shadow-lg transition-all"
                   />
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-medium truncate">{track.title}</h4>
-                    <p className="text-sm text-gray-400 truncate">{track.artist}</p>
+                    <h4 className="text-white font-semibold truncate text-lg">{track.title}</h4>
+                    <p className="text-sm text-blue-200 truncate">{track.artist}</p>
                     {track.reason && (
-                      <p className="text-xs text-blue-400">{track.reason}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-400 text-xs text-white rounded-full shadow">
+                        {track.reason}
+                      </span>
                     )}
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-400" />
+                  <ArrowRight className="w-5 h-5 text-blue-300 group-hover:text-white transition-all" />
                 </div>
               ))}
             </div>
@@ -604,35 +596,31 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
       )}
 
       {activeTab === 'suggestions' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-white mb-3">Search Suggestions</h3>
+        <div className="space-y-5">
+          <h3 className="text-lg font-semibold text-white mb-2">Search Suggestions</h3>
           {searchSuggestions.length > 0 ? (
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               {searchSuggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="w-full text-left p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-white text-sm flex items-center gap-2 shadow"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-medium">{suggestion.description}</p>
-                      <p className="text-sm text-gray-400">Confidence: {(suggestion.confidence * 100).toFixed(0)}%</p>
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                  </div>
+                  <Lightbulb className="w-4 h-4 text-yellow-300" />
+                  {suggestion.description}
+                  <span className="ml-2 text-xs text-blue-200">{(suggestion.confidence * 100).toFixed(0)}%</span>
                 </button>
               ))}
             </div>
           ) : (
-            <div className="space-y-3">
-              <p className="text-gray-400 text-sm">Try these popular searches:</p>
+            <div className="flex flex-wrap gap-2">
               {popularSearches.map((search, index) => (
                 <button
                   key={index}
                   onClick={() => setQuery(search)}
-                  className="w-full text-left p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-300"
+                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-blue-200 text-sm shadow"
                 >
+                  <TrendingUp className="w-4 h-4 mr-1 inline" />
                   {search}
                 </button>
               ))}
@@ -642,18 +630,18 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
       )}
 
       {activeTab === 'trending' && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-white mb-3">Recent Searches</h3>
+        <div className="space-y-5">
+          <h3 className="text-lg font-semibold text-white mb-2">Recent Searches</h3>
           {recentSearches.length > 0 ? (
-            <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
               {recentSearches.map((search, index) => (
                 <button
                   key={index}
                   onClick={() => setQuery(search)}
-                  className="w-full text-left p-2 bg-white/5 rounded-lg hover:bg-white/10 transition-colors text-sm text-gray-300 flex items-center justify-between"
+                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-blue-200 text-sm flex items-center gap-2 shadow"
                 >
-                  <span>{search}</span>
-                  <Clock className="w-3 h-3 text-gray-500" />
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  {search}
                 </button>
               ))}
             </div>

@@ -104,4 +104,31 @@
   .gradient-text {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-400;
   }
+
+  /* Subtle Animated Border */
+  .animated-border {
+    position: relative;
+    z-index: 0;
+  }
+  .animated-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    z-index: -1;
+    border-radius: inherit;
+    padding: 0;
+    background: conic-gradient(
+      from 0deg,
+      #60a5fa 0%,   /* blue-400 */
+      #a78bfa 30%,  /* purple-400 */
+      #818cf8 60%,  /* indigo-400 */
+      #60a5fa 100%  /* blue-400 */
+    );
+    filter: blur(2px) brightness(1.2);
+    animation: border-rotate 3s linear infinite;
+  }
+  @keyframes border-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 }
