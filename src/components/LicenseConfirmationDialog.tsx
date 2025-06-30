@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, Download, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent } from './ui/dialog';
 
 interface LicenseConfirmationDialogProps {
   isOpen: boolean;
@@ -17,11 +18,9 @@ export function LicenseConfirmationDialog({
   licenseType,
   licenseId
 }: LicenseConfirmationDialogProps) {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 p-6 rounded-xl border border-green-500/20 w-full max-w-md">
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-h-[80vh] overflow-y-auto bg-gray-900 p-6 rounded-xl border border-green-500/20 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
@@ -57,7 +56,7 @@ export function LicenseConfirmationDialog({
             Return to Dashboard
           </button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

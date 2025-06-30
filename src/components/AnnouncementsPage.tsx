@@ -72,7 +72,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
           <img
             src={announcement.image_url}
             alt={announcement.title}
-            className="w-full max-h-96 object-cover rounded-lg mb-6"
+            className="w-full max-h-[60vh] object-contain rounded-lg mb-6"
           />
         )}
 
