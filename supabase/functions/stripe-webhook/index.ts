@@ -77,7 +77,41 @@ async function handleEvent(event: Stripe.Event) {
     let isSubscription = true;
 
     if (event.type === 'checkout.session.completed') {
-      const { mode } = stripeData as Stripe.Checkout.Session;
+      const { mode, payment_status, metadata } = stripeData as Stripe.Checkout.Session;
+      if (metadata?.type === 'white_label_setup' && payment_status === 'paid') {
+        // Insert new white label client into profiles if not already present
+        const email = metadata.customer_email || metadata.email;
+        const company_name = metadata.company_name || null;
+        const customer_name = metadata.customer_name || null;
+        let first_name = null;
+        let last_name = null;
+        if (customer_name) {
+          const parts = customer_name.split(' ');
+          first_name = parts[0] || null;
+          last_name = parts.slice(1).join(' ') || null;
+        }
+        if (email) {
+          // Check if profile already exists
+          const { data: existing, error: existingError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+          if (!existing && !existingError) {
+            await supabase.from('profiles').insert({
+              email,
+              company_name,
+              first_name,
+              last_name,
+              account_type: 'white_label',
+              created_at: new Date().toISOString()
+            });
+            console.info(`Inserted new white label client profile for ${email}`);
+          } else if (existingError) {
+            console.error('Error checking for existing profile:', existingError);
+          }
+        }
+      }
 
       isSubscription = mode === 'subscription';
 

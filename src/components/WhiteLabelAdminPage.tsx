@@ -18,7 +18,7 @@ export default function WhiteLabelAdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<WhiteLabelClient | null>(null);
-  const [form, setForm] = useState({ company_name: '', domain: '', owner_id: '' });
+  const [form, setForm] = useState({ email: '', company_name: '', first_name: '', last_name: '' });
   const [deletingClient, setDeletingClient] = useState<WhiteLabelClient | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiToken, setApiToken] = useState<string | null>(null);
@@ -41,16 +41,17 @@ export default function WhiteLabelAdminPage() {
   const handleEdit = (client: WhiteLabelClient) => {
     setEditingClient(client);
     setForm({
+      email: client.email || '',
       company_name: client.company_name,
-      domain: client.domain,
-      owner_id: client.owner_id,
+      first_name: '',
+      last_name: '',
     });
     setShowForm(true);
   };
 
   const handleAdd = () => {
     setEditingClient(null);
-    setForm({ company_name: '', domain: '', owner_id: '' });
+    setForm({ email: '', company_name: '', first_name: '', last_name: '' });
     setShowForm(true);
   };
 
@@ -73,14 +74,14 @@ export default function WhiteLabelAdminPage() {
     e.preventDefault();
     if (editingClient) {
       // Update
-      await supabase.from('white_label_clients').update(form).eq('id', editingClient.id);
+      await supabase.from('profiles').update(form).eq('id', editingClient.id);
     } else {
       // Add
-      await supabase.from('white_label_clients').insert([form]);
+      await supabase.from('profiles').insert([{ ...form, account_type: 'white_label' }]);
     }
     setShowForm(false);
     setEditingClient(null);
-    fetchClients();
+    // No need to fetch clients here; FeatureManagement will refresh its own list
   };
 
   // Feature toggle (e.g., AI Recommendation)
@@ -171,6 +172,17 @@ export default function WhiteLabelAdminPage() {
             <h2 className="text-xl font-bold mb-4">{editingClient ? 'Edit Client' : 'Add Client'}</h2>
             <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
+                <label className="block text-sm font-medium mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleFormChange}
+                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                  required
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium mb-1">Company Name</label>
                 <input
                   type="text"
@@ -182,25 +194,23 @@ export default function WhiteLabelAdminPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Domain</label>
+                <label className="block text-sm font-medium mb-1">First Name</label>
                 <input
                   type="text"
-                  name="domain"
-                  value={form.domain}
+                  name="first_name"
+                  value={form.first_name}
                   onChange={handleFormChange}
                   className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                  required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Owner ID</label>
+                <label className="block text-sm font-medium mb-1">Last Name</label>
                 <input
                   type="text"
-                  name="owner_id"
-                  value={form.owner_id}
+                  name="last_name"
+                  value={form.last_name}
                   onChange={handleFormChange}
                   className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                  required
                 />
               </div>
               <div className="flex justify-end space-x-2">
