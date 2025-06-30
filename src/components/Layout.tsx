@@ -82,7 +82,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
               {logoUrl ? (
-                <div className="h-12 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
+                <div className="h-16 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
                   <img 
                     src={logoUrl} 
                     alt="Logo" 
@@ -90,7 +90,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   />
                 </div>
               ) : (
-                <div className="h-12 w-12 flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
+                <div className="h-16 w-16 flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
                   <Music className="w-8 h-8 text-blue-400" />
                 </div>
               )}
