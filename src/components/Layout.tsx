@@ -16,8 +16,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   const { user, accountType, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const isAdmin = user?.account_type === 'admin' || user?.account_type?.includes('admin');
-
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -60,21 +58,21 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   };
 
   const getDashboardLink = () => {
-    if (isAdmin) {
+    if (accountType === 'admin') {
       return location.pathname === '/admin' ? '/producer/dashboard' : '/admin';
     }
     return accountType === 'producer' ? '/producer/dashboard' : '/dashboard';
   };
 
   const getDashboardIcon = () => {
-    if (isAdmin) {
+    if (accountType === 'admin') {
       return location.pathname === '/admin' ? <Music className="w-4 h-4 mr-2" /> : <Shield className="w-4 h-4 mr-2" />;
     }
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
 
   const getDashboardLabel = () => {
-    if (isAdmin) {
+    if (accountType === 'admin') {
       return location.pathname === '/admin' ? 'Producer Dashboard' : 'Admin Dashboard';
     }
     return accountType === 'producer' ? 'Producer Dashboard' : 'Dashboard';
@@ -151,7 +149,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   )}
                   
                   {/* Admin-specific menu items (remove Admin Dashboard from here) */}
-                  {isAdmin && (
+                  {accountType === 'admin' && (
                     <>
                       <Link to="/open-sync-briefs" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Briefcase className="w-4 h-4 mr-2" />Open Sync Briefs
@@ -186,14 +184,14 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   </Link>
                   
                   {/* Producer and Admin specific items */}
-                  {(accountType === 'producer' || isAdmin) && (
+                  {(accountType === 'producer' || accountType === 'admin') && (
                     <Link to="/chat" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <MessageSquare className="w-4 h-4 mr-2" />Internal Chat
                     </Link>
                   )}
                   
                   {/* Admin specific items */}
-                  {isAdmin && (
+                  {accountType === 'admin' && (
                     <>
                       <Link to="/admin/invite-producer" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <UserCog className="w-4 h-4 mr-2" />Invite Producer
@@ -217,7 +215,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   )}
                   
                   {/* Dashboard links (move Admin Dashboard and White Label Admin here for admins) */}
-                  {user && isAdmin && (
+                  {user && accountType === 'admin' && (
                     <>
                       <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => { console.log('Clicked Admin Dashboard link'); setIsMenuOpen(false); }}>
                         <Shield className="w-4 h-4 mr-2" />Admin Dashboard
@@ -231,7 +229,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     </>
                   )}
                   {/* Dashboard links for non-admins */}
-                  {user && !isAdmin && (
+                  {user && accountType !== 'admin' && (
                     <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       {getDashboardIcon()}
                       {getDashboardLabel()}

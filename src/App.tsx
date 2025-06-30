@@ -83,14 +83,6 @@ const App = () => {
     navigate(`/catalog?${params.toString()}`);
   };
 
-  const adminEmails = [
-    'knockriobeats@gmail.com',
-    'info@mybeatfi.io',
-    'derykbanks@yahoo.com',
-    'knockriobeats2@gmail.com',
-  ];
-  const isAdmin = (user && (adminEmails.includes(user.email as string) || accountType === 'admin'));
-
   return (
     <>
 			<ScrollToTop />
@@ -326,7 +318,7 @@ const App = () => {
         <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
 
         <Route path="/admin/white-label" element={
-          isAdmin ? (
+          accountType === 'admin' ? (
             <WhiteLabelAdminPage />
           ) : (
             <Navigate to="/" />
@@ -334,7 +326,7 @@ const App = () => {
         } />
 
         <Route path="/admin/services" element={
-          isAdmin ? (
+          accountType === 'admin' ? (
             <AdminServicesPage />
           ) : (
             <Navigate to="/" />
