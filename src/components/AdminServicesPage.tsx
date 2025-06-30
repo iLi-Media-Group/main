@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Layout } from './Layout';
+import { v4 as uuidv4 } from 'uuid';
 
 const SERVICE_TYPES = [
   { key: 'studios', label: 'Recording Studios' },
@@ -96,6 +97,12 @@ export default function AdminServicesPage() {
   const [form, setForm] = useState<ServiceForm>({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', subgenres: [], tier: '', style_tags: [] });
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [onboardingEmail, setOnboardingEmail] = useState('');
+  const [onboardingType, setOnboardingType] = useState('studios');
+  const [onboardingLink, setOnboardingLink] = useState('');
+  const [sendingOnboarding, setSendingOnboarding] = useState(false);
+  const [onboardingError, setOnboardingError] = useState('');
 
   useEffect(() => {
     if (activeTab === 'services') fetchServices();
@@ -163,6 +170,31 @@ export default function AdminServicesPage() {
     setShowForm(false);
     setEditingService(null);
     fetchServices();
+  };
+
+  const handleSendOnboardingLink = async () => {
+    setSendingOnboarding(true);
+    setOnboardingError('');
+    setOnboardingLink('');
+    try {
+      const token = uuidv4();
+      const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24 * 3).toISOString(); // 3 days
+      const { error } = await supabase.from('service_onboarding_tokens').insert({
+        email: onboardingEmail,
+        token,
+        service_type: onboardingType,
+        expires_at: expiresAt
+      });
+      if (error) throw error;
+      const link = `${window.location.origin}/service-onboarding/${token}`;
+      setOnboardingLink(link);
+      // TODO: Send email via backend API or serverless function using Resend
+      // Example: await fetch('/api/send-onboarding-email', { method: 'POST', body: JSON.stringify({ to: onboardingEmail, link }) })
+    } catch (err: any) {
+      setOnboardingError(err.message || 'Failed to send onboarding link');
+    } finally {
+      setSendingOnboarding(false);
+    }
   };
 
   const filteredServices = services.filter(
@@ -257,10 +289,18 @@ export default function AdminServicesPage() {
                 ))
               )}
             </div>
+            <div className="mb-8">
+              <button
+                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+                onClick={() => setShowOnboardingModal(true)}
+              >
+                Invite Service Provider
+              </button>
+            </div>
             {/* Add/Edit Modal */}
             {showForm && (
               <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+                <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-2xl max-h-screen overflow-y-auto">
                   <h2 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add Service'}</h2>
                   <form onSubmit={handleFormSubmit} className="space-y-4">
                     <div>
@@ -386,6 +426,53 @@ export default function AdminServicesPage() {
                       <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingService ? 'Update' : 'Add'}</button>
                     </div>
                   </form>
+                </div>
+              </div>
+            )}
+            {/* Onboarding Modal */}
+            {showOnboardingModal && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+                  <h2 className="text-xl font-bold mb-4">Invite Service Provider</h2>
+                  <label className="block text-sm font-medium mb-1">Provider Email</label>
+                  <input
+                    type="email"
+                    value={onboardingEmail}
+                    onChange={e => setOnboardingEmail(e.target.value)}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mb-4"
+                    required
+                  />
+                  <label className="block text-sm font-medium mb-1">Service Type</label>
+                  <select
+                    value={onboardingType}
+                    onChange={e => setOnboardingType(e.target.value)}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mb-4"
+                  >
+                    {SERVICE_TYPES.map((t) => (
+                      <option key={t.key} value={t.key}>{t.label}</option>
+                    ))}
+                  </select>
+                  {onboardingError && <div className="text-red-400 mb-2">{onboardingError}</div>}
+                  {onboardingLink && (
+                    <div className="text-green-400 mb-2 break-all">
+                      Link sent! <a href={onboardingLink} className="underline" target="_blank" rel="noopener noreferrer">{onboardingLink}</a>
+                    </div>
+                  )}
+                  <div className="flex justify-end space-x-2 mt-4">
+                    <button
+                      className="px-4 py-2 bg-gray-700 rounded"
+                      onClick={() => setShowOnboardingModal(false)}
+                    >
+                      Close
+                    </button>
+                    <button
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white"
+                      onClick={handleSendOnboardingLink}
+                      disabled={sendingOnboarding || !onboardingEmail}
+                    >
+                      {sendingOnboarding ? 'Sending...' : 'Send Link'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
