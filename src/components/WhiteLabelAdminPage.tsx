@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AdminPasswordPrompt } from './AdminPasswordPrompt';
+import { FeatureManagement } from './FeatureManagement';
 
 interface WhiteLabelClient {
   id: string;
@@ -144,7 +145,6 @@ export default function WhiteLabelAdminPage() {
               <th className="border border-gray-600 px-4 py-2">Company</th>
               <th className="border border-gray-600 px-4 py-2">Domain</th>
               <th className="border border-gray-600 px-4 py-2">Owner ID</th>
-              <th className="border border-gray-600 px-4 py-2">AI Recommendation</th>
               <th className="border border-gray-600 px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -154,23 +154,6 @@ export default function WhiteLabelAdminPage() {
                 <td className="border border-gray-600 px-4 py-2">{client.company_name}</td>
                 <td className="border border-gray-600 px-4 py-2">{client.domain}</td>
                 <td className="border border-gray-600 px-4 py-2">{client.owner_id}</td>
-                <td className="border border-gray-600 px-4 py-2">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={!!client.ai_recommendation_enabled}
-                      onChange={(e) => toggleAIRecommendation(client.id, e.target.checked)}
-                      disabled={savingFeature === client.id}
-                    />
-                    <span>
-                      {savingFeature === client.id
-                        ? 'Saving...'
-                        : client.ai_recommendation_enabled
-                        ? 'Enabled'
-                        : 'Disabled'}
-                    </span>
-                  </label>
-                </td>
                 <td className="border border-gray-600 px-4 py-2 space-x-2">
                   <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
                   <button className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
@@ -242,6 +225,10 @@ export default function WhiteLabelAdminPage() {
           </div>
         </div>
       )}
+
+      <h2 className="text-xl font-bold mt-10 mb-4">Feature Management</h2>
+      <FeatureManagement />
+
       <button
         onClick={() => {
           localStorage.removeItem('adminApiToken');
