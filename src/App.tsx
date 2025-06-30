@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom';
+import { Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SearchBox } from './components/SearchBox';
 import { ProducerLogin } from './components/ProducerLogin';
@@ -45,6 +45,7 @@ import ProducerApplicationForm from './components/ProducerApplicationForm';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
+import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
 
 
 const App = () => {
@@ -313,6 +314,14 @@ const App = () => {
 } />
 
         <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
+
+        <Route path="/admin/white-label" element={
+          user?.role === 'admin' ? (
+            <WhiteLabelAdminPage />
+          ) : (
+            <Navigate to="/" />
+          )
+        } />
 
         <Route path="*" element={
           <LayoutWrapper>
