@@ -78,7 +78,19 @@ async function handleEvent(event: Stripe.Event) {
 
     if (event.type === 'checkout.session.completed') {
       const { mode, payment_status, metadata } = stripeData as Stripe.Checkout.Session;
+      
+      console.info(`Processing checkout.session.completed event:`, {
+        mode,
+        payment_status,
+        metadata_type: metadata?.type,
+        customer_email: metadata?.customer_email,
+        customer_name: metadata?.customer_name,
+        company_name: metadata?.company_name
+      });
+      
       if (metadata?.type === 'white_label_setup' && payment_status === 'paid') {
+        console.info(`Processing white label setup payment for customer: ${customerId}`);
+        
         // Insert new white label client into profiles if not already present
         const email = metadata.customer_email || metadata.email;
         const company_name = metadata.company_name || null;
@@ -90,6 +102,15 @@ async function handleEvent(event: Stripe.Event) {
           first_name = parts[0] || null;
           last_name = parts.slice(1).join(' ') || null;
         }
+        
+        console.info(`White label client details:`, {
+          email,
+          company_name,
+          customer_name,
+          first_name,
+          last_name
+        });
+        
         if (email) {
           // Check if profile already exists
           const { data: existing, error: existingError } = await supabase
@@ -197,6 +218,12 @@ async function handleEvent(event: Stripe.Event) {
           }
           
           console.info(`Successfully inserted order into stripe_orders table: ${checkout_session_id}`);
+          
+          // Skip user_id lookup for white label customers since they don't have user accounts initially
+          if (metadata?.type === 'white_label_setup') {
+            console.info(`Skipping user_id lookup for white label customer: ${customerId}`);
+            return;
+          }
           
           // Get the user_id associated with this customer
           const { data: customerData, error: customerError } = await supabase
