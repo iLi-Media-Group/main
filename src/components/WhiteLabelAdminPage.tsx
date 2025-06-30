@@ -1,12 +1,15 @@
 // WhiteLabelAdminPage.tsx
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase'; // adjust if path is different
+import { supabase } from '../lib/supabase';
+import { AdminPasswordPrompt } from './AdminPasswordPrompt';
 
 interface WhiteLabelClient {
   id: string;
   company_name: string;
   domain: string;
   owner_id: string;
+  email?: string;
+  ai_recommendation_enabled?: boolean;
 }
 
 export default function WhiteLabelAdminPage() {
@@ -17,13 +20,17 @@ export default function WhiteLabelAdminPage() {
   const [form, setForm] = useState({ company_name: '', domain: '', owner_id: '' });
   const [deletingClient, setDeletingClient] = useState<WhiteLabelClient | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [apiToken, setApiToken] = useState<string | null>(null);
+  const [savingFeature, setSavingFeature] = useState<string | null>(null); // clientId currently saving feature
 
   useEffect(() => {
+    if (!apiToken) return;
     fetchClients();
-  }, []);
+  }, [apiToken]);
 
   const fetchClients = async () => {
     setLoading(true);
+    setError(null);
     const { data, error } = await supabase.from('white_label_clients').select('*');
     if (error) setError(error.message);
     else setClients(data);
@@ -75,9 +82,52 @@ export default function WhiteLabelAdminPage() {
     fetchClients();
   };
 
+  // Feature toggle (e.g., AI Recommendation)
+  const toggleAIRecommendation = async (clientId: string, enabled: boolean) => {
+    if (!apiToken) return;
+    setSavingFeature(clientId);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/update_white_label_feature`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiToken}`,
+          },
+          body: JSON.stringify({
+            clientId,
+            field: 'ai_recommendation_enabled',
+            value: enabled,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setClients((prev) =>
+          prev.map((client) =>
+            client.id === clientId
+              ? { ...client, ai_recommendation_enabled: enabled }
+              : client
+          )
+        );
+      } else {
+        setError(data.error || 'Unknown error');
+      }
+    } catch (error) {
+      setError('Fetch error: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setSavingFeature(null);
+    }
+  };
+
+  if (!apiToken) {
+    return <AdminPasswordPrompt onPasswordSet={setApiToken} />;
+  }
+
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-2xl font-bold mb-4">Manage White Label Clients</h1>
+    <div className="p-6 text-white max-w-5xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Manage White Label Clients & Features</h1>
       <button
         className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
         onClick={handleAdd}
@@ -94,6 +144,7 @@ export default function WhiteLabelAdminPage() {
               <th className="border border-gray-600 px-4 py-2">Company</th>
               <th className="border border-gray-600 px-4 py-2">Domain</th>
               <th className="border border-gray-600 px-4 py-2">Owner ID</th>
+              <th className="border border-gray-600 px-4 py-2">AI Recommendation</th>
               <th className="border border-gray-600 px-4 py-2">Actions</th>
             </tr>
           </thead>
@@ -103,6 +154,23 @@ export default function WhiteLabelAdminPage() {
                 <td className="border border-gray-600 px-4 py-2">{client.company_name}</td>
                 <td className="border border-gray-600 px-4 py-2">{client.domain}</td>
                 <td className="border border-gray-600 px-4 py-2">{client.owner_id}</td>
+                <td className="border border-gray-600 px-4 py-2">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={!!client.ai_recommendation_enabled}
+                      onChange={(e) => toggleAIRecommendation(client.id, e.target.checked)}
+                      disabled={savingFeature === client.id}
+                    />
+                    <span>
+                      {savingFeature === client.id
+                        ? 'Saving...'
+                        : client.ai_recommendation_enabled
+                        ? 'Enabled'
+                        : 'Disabled'}
+                    </span>
+                  </label>
+                </td>
                 <td className="border border-gray-600 px-4 py-2 space-x-2">
                   <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
                   <button className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
@@ -174,6 +242,15 @@ export default function WhiteLabelAdminPage() {
           </div>
         </div>
       )}
+      <button
+        onClick={() => {
+          localStorage.removeItem('adminApiToken');
+          setApiToken(null);
+        }}
+        className="mt-6 text-sm text-blue-400 underline"
+      >
+        Clear Admin Password
+      </button>
     </div>
   );
 } 

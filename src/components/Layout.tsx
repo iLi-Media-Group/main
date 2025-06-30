@@ -154,6 +154,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       <Link to="/custom-sync-request" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <FileText className="w-4 h-4 mr-2" />Custom Sync Request
                       </Link>
+                      <Link to="/admin/white-label" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Shield className="w-4 h-4 mr-2" />White Label Admin
+                      </Link>
                     </>
                   )}
                   
