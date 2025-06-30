@@ -135,7 +135,7 @@ export function AboutPagePhotoUpload({
         .upsert({
           key: `about_photo_${photoId}`,
           value: fileName
-        });
+        }, { onConflict: 'key' });
 
       if (settingsError) throw settingsError;
 
