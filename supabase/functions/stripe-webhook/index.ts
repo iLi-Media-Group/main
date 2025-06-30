@@ -91,95 +91,116 @@ async function handleEvent(event: Stripe.Event) {
       if (metadata?.type === 'white_label_setup' && payment_status === 'paid') {
         console.info(`Processing white label setup payment for customer: ${customerId}`);
         
-        // Insert new white label client into profiles if not already present
-        const email = metadata.customer_email || metadata.email;
-        const company_name = metadata.company_name || null;
-        const customer_name = metadata.customer_name || null;
-        let first_name = null;
-        let last_name = null;
-        if (customer_name) {
-          const parts = customer_name.split(' ');
-          first_name = parts[0] || null;
-          last_name = parts.slice(1).join(' ') || null;
-        }
-        
-        console.info(`White label client details:`, {
-          email,
-          company_name,
-          customer_name,
-          first_name,
-          last_name
-        });
-        
-        if (email) {
+        try {
+          // Insert new white label client into profiles if not already present
+          const email = metadata.customer_email || metadata.email;
+          const company_name = metadata.company_name || null;
+          const customer_name = metadata.customer_name || null;
+          let first_name = null;
+          let last_name = null;
+          if (customer_name) {
+            const parts = customer_name.split(' ');
+            first_name = parts[0] || null;
+            last_name = parts.slice(1).join(' ') || null;
+          }
+          
+          console.info(`White label client details:`, {
+            email,
+            company_name,
+            customer_name,
+            first_name,
+            last_name
+          });
+          
+          if (!email) {
+            console.error('No email found in metadata for white label setup');
+            return;
+          }
+
           // Check if profile already exists
           const { data: existing, error: existingError } = await supabase
             .from('profiles')
             .select('id')
             .eq('email', email)
             .maybeSingle();
-          if (!existing && !existingError) {
-            await supabase.from('profiles').insert({
-              email,
-              company_name,
-              first_name,
-              last_name,
-              account_type: 'white_label',
-              created_at: new Date().toISOString()
-            });
-            console.info(`Inserted new white label client profile for ${email}`);
-          } else if (existingError) {
+
+          if (existingError) {
             console.error('Error checking for existing profile:', existingError);
+            return;
           }
 
-          // Create white_label_clients entry
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
+          let profileId = existing?.id;
 
-          if (profileError) {
-            console.error('Error fetching profile for white label client creation:', profileError);
-          } else {
-            // Check if white_label_clients entry already exists
-            const { data: existingWhiteLabel, error: whiteLabelError } = await supabase
-              .from('white_label_clients')
+          if (!existing) {
+            // Create new profile
+            const { data: newProfile, error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                email,
+                company_name,
+                first_name,
+                last_name,
+                account_type: 'white_label',
+                created_at: new Date().toISOString()
+              })
               .select('id')
-              .eq('owner_id', profileData.id)
-              .maybeSingle();
+              .single();
 
-            if (whiteLabelError) {
-              console.error('Error checking for existing white label client:', whiteLabelError);
-            } else if (!existingWhiteLabel) {
-              // Create white label client entry
-              const { error: insertError } = await supabase
-                .from('white_label_clients')
-                .insert({
-                  owner_id: profileData.id,
-                  display_name: company_name || customer_name || 'White Label Client',
-                  company_name: company_name || '',
-                  email: email,
-                  primary_color: '#1a73e8', // Default blue
-                  secondary_color: '#ffffff', // Default white
-                  logo_url: null,
-                  created_at: new Date().toISOString()
-                });
-
-              if (insertError) {
-                console.error('Error creating white label client entry:', insertError);
-              } else {
-                console.info(`Created white label client entry for ${email}`);
-              }
-            } else {
-              console.info(`White label client entry already exists for ${email}`);
+            if (insertError) {
+              console.error('Error creating profile:', insertError);
+              return;
             }
+
+            profileId = newProfile.id;
+            console.info(`Created new profile for ${email} with ID: ${profileId}`);
+          } else {
+            console.info(`Profile already exists for ${email} with ID: ${profileId}`);
           }
+
+          // Check if white_label_clients entry already exists
+          const { data: existingWhiteLabel, error: whiteLabelError } = await supabase
+            .from('white_label_clients')
+            .select('id')
+            .eq('owner_id', profileId)
+            .maybeSingle();
+
+          if (whiteLabelError) {
+            console.error('Error checking for existing white label client:', whiteLabelError);
+            return;
+          }
+
+          if (!existingWhiteLabel) {
+            // Create white label client entry
+            const { error: insertError } = await supabase
+              .from('white_label_clients')
+              .insert({
+                owner_id: profileId,
+                display_name: company_name || customer_name || 'White Label Client',
+                company_name: company_name || '',
+                email: email,
+                primary_color: '#1a73e8', // Default blue
+                secondary_color: '#ffffff', // Default white
+                logo_url: null,
+                created_at: new Date().toISOString()
+              });
+
+            if (insertError) {
+              console.error('Error creating white label client entry:', insertError);
+              return;
+            }
+
+            console.info(`Successfully created white label client entry for ${email}`);
+          } else {
+            console.info(`White label client entry already exists for ${email}`);
+          }
+
+          console.info(`White label setup completed successfully for ${email}`);
+        } catch (error) {
+          console.error('Error processing white label setup:', error);
         }
 
-        isSubscription = mode === 'subscription';
-
-        console.info(`Processing ${isSubscription ? 'subscription' : 'one-time payment'} checkout session`);
+        // Return early to avoid processing other payment logic
+        return;
       }
 
       const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
