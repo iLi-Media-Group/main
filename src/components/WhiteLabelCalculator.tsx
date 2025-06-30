@@ -17,6 +17,12 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCheckoutForm, setShowCheckoutForm] = useState(false);
+  const [customerData, setCustomerData] = useState({
+    email: '',
+    name: '',
+    company: ''
+  });
   const [discounts, setDiscounts] = useState<{
     plan?: DiscountInfo;
     features: { [key: string]: DiscountInfo };
@@ -175,18 +181,22 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
   const finalStartupCost = calculateDiscountedStartupCost() - getBundleDiscount();
 
   const handleCheckout = async () => {
+    // Validate customer data
+    if (!customerData.email || !customerData.name) {
+      setError('Please provide your email and name to continue.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // For demo purposes, we'll show a success message
-      // In a real implementation, you'd collect customer info and call the checkout
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
-        customerEmail: 'demo@example.com',
-        customerName: 'Demo Customer',
-        companyName: 'Demo Company'
+        customerEmail: customerData.email,
+        customerName: customerData.name,
+        companyName: customerData.company
       });
 
       // Redirect to checkout
@@ -197,6 +207,15 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleStartCheckout = () => {
+    setShowCheckoutForm(true);
+  };
+
+  const handleCustomerDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCustomerData(prev => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -416,25 +435,108 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
         </div>
       )}
 
+      {/* Checkout Form */}
+      {showCheckoutForm && (
+        <div className="mt-6 bg-black/20 rounded-lg p-6 border border-gray-600">
+          <h4 className="text-lg font-semibold text-white mb-4">Complete Your Order</h4>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={customerData.name}
+                onChange={handleCustomerDataChange}
+                required
+                className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Enter your full name"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                Email Address *
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={customerData.email}
+                onChange={handleCustomerDataChange}
+                required
+                className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Enter your email address"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-1">
+                Company Name
+              </label>
+              <input
+                type="text"
+                id="company"
+                name="company"
+                value={customerData.company}
+                onChange={handleCustomerDataChange}
+                className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Enter your company name (optional)"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* CTA */}
       <div className="mt-6">
-        <button
-          onClick={handleCheckout}
-          disabled={loading}
-          className="block w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center disabled:opacity-50"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              Processing...
-            </>
-          ) : (
-            <>
-              <span>Start Checkout</span>
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </>
-          )}
-        </button>
+        {showCheckoutForm ? (
+          <div className="space-y-3">
+            <button
+              onClick={handleCheckout}
+              disabled={loading}
+              className="block w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <span>Proceed to Payment</span>
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowCheckoutForm(false)}
+              className="block w-full py-2 px-6 bg-white/10 hover:bg-white/20 text-white text-center font-medium rounded-lg transition-colors border border-gray-600"
+            >
+              Back to Calculator
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleStartCheckout}
+            disabled={loading}
+            className="block w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center justify-center disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <span>Start Checkout</span>
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </>
+            )}
+          </button>
+        )}
       </div>
     </div>
   );
