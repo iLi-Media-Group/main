@@ -77,7 +77,7 @@ async function handleEvent(event: Stripe.Event) {
     let isSubscription = true;
 
     if (event.type === 'checkout.session.completed') {
-      const { mode, payment_status, metadata } = stripeData as Stripe.Checkout.Session;
+      const { mode, payment_status, metadata } = stripeData;
       
       console.info(`Processing checkout.session.completed event:`, {
         mode,
@@ -202,8 +202,6 @@ async function handleEvent(event: Stripe.Event) {
         // Return early to avoid processing other payment logic
         return;
       }
-
-      const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
 
       if (isSubscription) {
         console.info(`Starting subscription sync for customer: ${customerId}`);
