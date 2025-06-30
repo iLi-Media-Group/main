@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SearchBox } from './components/SearchBox';
 import { ProducerLogin } from './components/ProducerLogin';
@@ -49,6 +49,9 @@ import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
 import AdminServicesPage from './components/AdminServicesPage';
 import ServicesPage from './components/ServicesPage';
 import ServiceOnboardingPage from './components/ServiceOnboardingPage';
+import ClientBrandingSettings from './components/ClientBrandingSettings';
+import { supabase } from './lib/supabase';
+import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
 
 
 const App = () => {
@@ -84,277 +87,305 @@ const App = () => {
     navigate(`/catalog?${params.toString()}`);
   };
 
+  function BrandingRouteWrapper() {
+    const { user } = useAuth();
+    const [allowed, setAllowed] = useState<'loading' | 'yes' | 'no'>('loading');
+
+    useEffect(() => {
+      if (!user) {
+        setAllowed('no');
+        return;
+      }
+      supabase
+        .from('white_label_clients')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+        .then(({ data }) => {
+          setAllowed(data ? 'yes' : 'no');
+        });
+    }, [user]);
+
+    if (allowed === 'loading') return <div className="p-8 text-center text-gray-400">Loading...</div>;
+    if (allowed === 'no') return <Navigate to="/" />;
+    return <ClientBrandingSettings />;
+  }
+
   return (
-    <>
-			<ScrollToTop />
-      <Routes>
-        <Route path="/" element={
-          <LayoutWrapper>
-            <section className="py-20 text-center">
-              <div className="container mx-auto px-4">
-                <h1 className="text-5xl font-bold mb-6">License Music for Your Media Productions</h1>
-                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                  One-Stop Licensing. Simple, Clear Rights. No Hidden Fees.
-                </p>
-              </div>
-            </section>
+    <SiteBrandingProvider>
+      <Router>
+        <ScrollToTop />
+        <Routes>
+          <Route path="/" element={
+            <LayoutWrapper>
+              <section className="py-20 text-center">
+                <div className="container mx-auto px-4">
+                  <h1 className="text-5xl font-bold mb-6">License Music for Your Media Productions</h1>
+                  <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+                    One-Stop Licensing. Simple, Clear Rights. No Hidden Fees.
+                  </p>
+                </div>
+              </section>
 
-            <section className="py-12 bg-black/20">
-              <div className="container mx-auto px-4">
-                <SearchBox onSearch={handleSearch} />
-              </div>
-            </section>
+              <section className="py-12 bg-black/20">
+                <div className="container mx-auto px-4">
+                  <SearchBox onSearch={handleSearch} />
+                </div>
+              </section>
 
-            <section className="py-20">
-              <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12">Perfect for Your Media</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1579165466741-7f35e4755660?auto=format&fit=crop&w=800&q=80"
-                      alt="Television Production"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">Television Shows</h3>
+              <section className="py-20">
+                <div className="container mx-auto px-4">
+                  <h2 className="text-3xl font-bold text-center mb-12">Perfect for Your Media</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="relative group">
+                      <img
+                        src="https://images.unsplash.com/photo-1579165466741-7f35e4755660?auto=format&fit=crop&w=800&q=80"
+                        alt="Television Production"
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
+                        <h3 className="text-xl font-bold text-white">Television Shows</h3>
+                      </div>
                     </div>
-                  </div>
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80"
-                      alt="Podcast Recording"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">Podcasts</h3>
+                    <div className="relative group">
+                      <img
+                        src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80"
+                        alt="Podcast Recording"
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
+                        <h3 className="text-xl font-bold text-white">Podcasts</h3>
+                      </div>
                     </div>
-                  </div>
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=800&q=80"
-                      alt="YouTube Content Creation"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">YouTube Videos</h3>
+                    <div className="relative group">
+                      <img
+                        src="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=800&q=80"
+                        alt="YouTube Content Creation"
+                        className="w-full h-64 object-cover rounded-lg"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
+                        <h3 className="text-xl font-bold text-white">YouTube Videos</h3>
+                      </div>
                     </div>
                   </div>
                 </div>
+              </section>
+
+              <section className="py-20 bg-black/40">
+                <div className="container mx-auto px-4">
+                  <h2 className="text-3xl font-bold text-center mb-12">Choose Your Plan</h2>
+                  <PricingCarousel />
+                </div>
+              </section>
+
+              <section className="py-20">
+                <div className="container mx-auto px-4">
+                  <h2 className="text-3xl font-bold text-center mb-12">Where Our Music is Featured</h2>
+                  <ClientsCarousel />
+                </div>
+              </section>
+            </LayoutWrapper>
+          } />
+
+          <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
+          <Route path="/vocals" element={<LayoutWrapper><VocalsPage /></LayoutWrapper>} />
+          <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
+          <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
+          <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
+          <Route path="/upgrade" element={<LayoutWrapper><GoldAccessPage /></LayoutWrapper>} />
+          <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
+          <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
+          <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
+          <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
+          <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
+          <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
+          <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
+          <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
+          <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+          <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
+          <Route path="/producers" element={<LayoutWrapper><ProducerLandingPage /></LayoutWrapper>} />
+          <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
+          <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
+          <Route path="/admin/white-label-clients" element={<AdminWhiteLabelClientsPage />} />
+          
+
+          <Route path="/chat" element={
+            <ProtectedRoute>
+              <LayoutWrapper>
+                <ChatSystem />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/custom-sync-request" element={
+            <ProtectedRoute requiresClient>
+              <LayoutWrapper>
+                <CustomSyncRequest />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/open-sync-briefs" element={
+            <ProtectedRoute>
+              <LayoutWrapper>
+                <OpenSyncBriefs />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/license/:trackId" element={
+            <ProtectedRoute requiresClient>
+              <LayoutWrapper>
+                <LicensePage />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/license-agreement/:licenseId" element={
+            <ProtectedRoute>
+              <LayoutWrapper>
+                <LicenseAgreement />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/login" element={
+            <LayoutWrapper>
+              <ClientLogin />
+            </LayoutWrapper>
+          } />
+
+          <Route path="/signup" element={
+            <LayoutWrapper>
+              <ClientSignupDialog isOpen={true} onClose={() => navigate('/')} />
+            </LayoutWrapper>
+          } />
+          
+          <Route path="/producer/login" element={
+            <LayoutWrapper>
+              <ProducerLogin />
+            </LayoutWrapper>
+          } />
+          
+          <Route path="/producer/dashboard" element={
+            <ProtectedRoute requiresProducer>
+              <LayoutWrapper>
+                <ProducerDashboard />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/producer/upload" element={
+            <ProtectedRoute requiresProducer>
+              <LayoutWrapper>
+                <TrackUploadForm />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/producer/banking" element={
+            <ProtectedRoute requiresProducer>
+              <LayoutWrapper>
+                <ProducerBankingPage />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/producer/payouts" element={
+            <ProtectedRoute requiresProducer>
+              <LayoutWrapper>
+                <ProducerPayoutsPage />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/dashboard" element={
+            <ProtectedRoute requiresClient>
+              <LayoutWrapper>
+                <ClientDashboard />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/login" element={
+            <LayoutWrapper>
+              <AdminLogin />
+            </LayoutWrapper>
+          } />
+
+          <Route path="/admin" element={
+            <ProtectedRoute requiresAdmin>
+              <LayoutWrapper>
+                <AdminDashboard />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/invite-producer" element={
+            <ProtectedRoute requiresAdmin>
+              <LayoutWrapper>
+                <ProducerInvitation />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/banking" element={
+            <ProtectedRoute requiresAdmin>
+              <LayoutWrapper>
+                <AdminBankingPage />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/producer-applications" element={
+            <ProtectedRoute requiresAdmin>
+              <LayoutWrapper>
+                <ProducerApplicationsAdmin />
+              </LayoutWrapper>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
+
+          <Route path="/admin/white-label" element={
+            accountType === 'admin' ? (
+              <WhiteLabelAdminPage />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
+
+          <Route path="/admin/services" element={
+            accountType === 'admin' ? (
+              <AdminServicesPage />
+            ) : (
+              <Navigate to="/" />
+            )
+          } />
+
+          <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
+
+          <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
+
+          <Route path="/branding" element={<BrandingRouteWrapper />} />
+
+          <Route path="*" element={
+            <LayoutWrapper>
+              <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                  <h1 className="text-4xl font-bold text-white mb-4">404</h1>
+                  <p className="text-gray-400">Page not found</p>
+                </div>
               </div>
-            </section>
-
-            <section className="py-20 bg-black/40">
-              <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12">Choose Your Plan</h2>
-                <PricingCarousel />
-              </div>
-            </section>
-
-            <section className="py-20">
-              <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12">Where Our Music is Featured</h2>
-                <ClientsCarousel />
-              </div>
-            </section>
-          </LayoutWrapper>
-        } />
-
-        <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
-        <Route path="/vocals" element={<LayoutWrapper><VocalsPage /></LayoutWrapper>} />
-        <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
-        <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
-        <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
-        <Route path="/upgrade" element={<LayoutWrapper><GoldAccessPage /></LayoutWrapper>} />
-        <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
-        <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
-        <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
-        <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
-        <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
-        <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
-        <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
-        <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
-        <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
-        <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
-        <Route path="/producers" element={<LayoutWrapper><ProducerLandingPage /></LayoutWrapper>} />
-				<Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
-        <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
-				<Route path="/admin/white-label-clients" element={<AdminWhiteLabelClientsPage />} />
-        
-
-        <Route path="/chat" element={
-          <ProtectedRoute>
-            <LayoutWrapper>
-              <ChatSystem />
             </LayoutWrapper>
-          </ProtectedRoute>
-        } />
+          } />
+        </Routes>
 
-        <Route path="/custom-sync-request" element={
-          <ProtectedRoute requiresClient>
-            <LayoutWrapper>
-              <CustomSyncRequest />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/open-sync-briefs" element={
-          <ProtectedRoute>
-            <LayoutWrapper>
-              <OpenSyncBriefs />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/license/:trackId" element={
-          <ProtectedRoute requiresClient>
-            <LayoutWrapper>
-              <LicensePage />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/license-agreement/:licenseId" element={
-          <ProtectedRoute>
-            <LayoutWrapper>
-              <LicenseAgreement />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/login" element={
-          <LayoutWrapper>
-            <ClientLogin />
-          </LayoutWrapper>
-        } />
-
-        <Route path="/signup" element={
-          <LayoutWrapper>
-            <ClientSignupDialog isOpen={true} onClose={() => navigate('/')} />
-          </LayoutWrapper>
-        } />
-        
-        <Route path="/producer/login" element={
-          <LayoutWrapper>
-            <ProducerLogin />
-          </LayoutWrapper>
-        } />
-        
-        <Route path="/producer/dashboard" element={
-          <ProtectedRoute requiresProducer>
-            <LayoutWrapper>
-              <ProducerDashboard />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/producer/upload" element={
-          <ProtectedRoute requiresProducer>
-            <LayoutWrapper>
-              <TrackUploadForm />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/producer/banking" element={
-          <ProtectedRoute requiresProducer>
-            <LayoutWrapper>
-              <ProducerBankingPage />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/producer/payouts" element={
-          <ProtectedRoute requiresProducer>
-            <LayoutWrapper>
-              <ProducerPayoutsPage />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/dashboard" element={
-          <ProtectedRoute requiresClient>
-            <LayoutWrapper>
-              <ClientDashboard />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin/login" element={
-          <LayoutWrapper>
-            <AdminLogin />
-          </LayoutWrapper>
-        } />
-
-        <Route path="/admin" element={
-          <ProtectedRoute requiresAdmin>
-            <LayoutWrapper>
-              <AdminDashboard />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin/invite-producer" element={
-          <ProtectedRoute requiresAdmin>
-            <LayoutWrapper>
-              <ProducerInvitation />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin/banking" element={
-          <ProtectedRoute requiresAdmin>
-            <LayoutWrapper>
-              <AdminBankingPage />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
-			<Route path="/admin/producer-applications" element={
-        <ProtectedRoute requiresAdmin>
-           <LayoutWrapper>
-              <ProducerApplicationsAdmin />
-           </LayoutWrapper>
-          </ProtectedRoute>
-} />
-
-        <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
-
-        <Route path="/admin/white-label" element={
-          accountType === 'admin' ? (
-            <WhiteLabelAdminPage />
-          ) : (
-            <Navigate to="/" />
-          )
-        } />
-
-        <Route path="/admin/services" element={
-          accountType === 'admin' ? (
-            <AdminServicesPage />
-          ) : (
-            <Navigate to="/" />
-          )
-        } />
-
-        <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
-
-        <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
-
-        <Route path="*" element={
-          <LayoutWrapper>
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-white mb-4">404</h1>
-                <p className="text-gray-400">Page not found</p>
-              </div>
-            </div>
-          </LayoutWrapper>
-        } />
-      </Routes>
-
-      <ClientSignupDialog
-        isOpen={isSignupOpen}
-        onClose={() => setIsSignupOpen(false)}
-      />
-    </>
+        <ClientSignupDialog
+          isOpen={isSignupOpen}
+          onClose={() => setIsSignupOpen(false)}
+        />
+      </Router>
+    </SiteBrandingProvider>
   );
 };
 

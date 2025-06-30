@@ -4,6 +4,7 @@ import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Libra
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
+import { useSiteBranding } from '../contexts/SiteBrandingContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,8 +15,10 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { user, accountType, signOut } = useAuth();
+  const { siteName } = useSiteBranding();
   const navigate = useNavigate();
   const location = useLocation();
+  const [hasWhiteLabel, setHasWhiteLabel] = useState(false);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -32,6 +35,21 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
     fetchLogo();
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setHasWhiteLabel(false);
+      return;
+    }
+    supabase
+      .from('white_label_clients')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single()
+      .then(({ data }) => {
+        setHasWhiteLabel(!!data);
+      });
+  }, [user]);
 
   // Debug: log user.role on render
   useEffect(() => {
@@ -102,7 +120,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
           <div className="flex-1 flex justify-center">
             <h1 className="text-2xl font-bold text-white">
-              MYBEATFI <span className="text-blue-400">SYNC</span>
+              {siteName || (<span>MYBEATFI <span className="text-blue-400">SYNC</span></span>)}
             </h1>
           </div>
           
@@ -227,6 +245,12 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                         <Shield className="w-4 h-4 mr-2" />White Label Admin
                       </Link>
                     </>
+                  )}
+                  {/* White Label Branding Settings link for white label clients */}
+                  {user && hasWhiteLabel && (
+                    <Link to="/branding" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                      <span className="w-4 h-4 mr-2 inline-block bg-gradient-to-tr from-blue-400 to-purple-400 rounded-full" />Branding Settings
+                    </Link>
                   )}
                   {/* Dashboard links for non-admins */}
                   {user && accountType !== 'admin' && (
