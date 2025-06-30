@@ -7,6 +7,60 @@ const SERVICE_TYPES = [
   { key: 'artists', label: 'Graphic Artists' },
 ];
 
+// Subgenre and tier options for each service type
+const SUBGENRE_OPTIONS: Record<string, string[]> = {
+  studios: [
+    'Vocal Tracking (Hip-Hop, R&B, Pop, etc.)',
+    'Full Band Tracking (Rock, Jazz, Indie)',
+    'Podcast Recording',
+    'Voiceover/ADR',
+    'Mixing Suite Access',
+    'Mastering Room Rental',
+    'Production Rooms',
+    'Dolby Atmos or Spatial Audio'
+  ],
+  engineers: [
+    'Vocal Engineer',
+    'Mixing Engineer',
+    'Mastering Engineer',
+    'Live Recording Engineer',
+    'Post-Production Engineer',
+    'Podcast Engineer',
+    'Audio Restoration / Cleanup',
+    'Sound Design / FX Engineer'
+  ],
+  artists: [
+    'Cover Art Design',
+    'Logo Design',
+    'Branding Packages',
+    'YouTube Thumbnails',
+    'Instagram Promo Design',
+    'Album Packaging Design',
+    'Motion Graphics / Lyric Videos',
+    'Web & App UI Mockups',
+    'Merch Design'
+  ]
+};
+const TIER_OPTIONS: Record<string, string[]> = {
+  studios: [
+    'Premium Studio',
+    'Project Studio',
+    'Mobile Studio'
+  ],
+  engineers: [],
+  artists: []
+};
+const STYLE_TAGS = [
+  'Minimalist',
+  'Retro',
+  'Hand-Drawn',
+  '3D',
+  'Modern',
+  'Cartoon',
+  'Photorealistic',
+  'Abstract'
+];
+
 interface Service {
   id: string;
   type: string;
@@ -15,6 +69,9 @@ interface Service {
   contact: string;
   website: string;
   image: string;
+  subgenres?: string[];
+  tier?: string;
+  style_tags?: string[];
 }
 
 export default function ServicesPage() {
@@ -22,6 +79,9 @@ export default function ServicesPage() {
   const [search, setSearch] = useState('');
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subgenreFilter, setSubgenreFilter] = useState('');
+  const [tierFilter, setTierFilter] = useState('');
+  const [styleTagFilter, setStyleTagFilter] = useState('');
 
   useEffect(() => {
     fetchServices();
@@ -39,7 +99,10 @@ export default function ServicesPage() {
       service.type === activeTab &&
       (service.name.toLowerCase().includes(search.toLowerCase()) ||
         service.description.toLowerCase().includes(search.toLowerCase()) ||
-        service.contact.toLowerCase().includes(search.toLowerCase()))
+        service.contact.toLowerCase().includes(search.toLowerCase())) &&
+      (subgenreFilter === '' || (service.subgenres && service.subgenres.includes(subgenreFilter))) &&
+      (tierFilter === '' || service.tier === tierFilter) &&
+      (styleTagFilter === '' || (service.style_tags && service.style_tags.includes(styleTagFilter)))
   );
 
   return (
@@ -68,6 +131,47 @@ export default function ServicesPage() {
           placeholder="Search services..."
           className="w-full md:w-64 px-4 py-2 rounded-full bg-white/10 border border-blue-500/20 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-400/30 text-base shadow-inner transition-all"
         />
+      </div>
+      <div className="flex flex-wrap gap-4 mb-6">
+        {/* Subgenre Filter */}
+        {SUBGENRE_OPTIONS[activeTab] && (
+          <select
+            value={subgenreFilter}
+            onChange={e => setSubgenreFilter(e.target.value)}
+            className="px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+          >
+            <option value="">All Subgenres</option>
+            {SUBGENRE_OPTIONS[activeTab].map((sub) => (
+              <option key={sub} value={sub}>{sub}</option>
+            ))}
+          </select>
+        )}
+        {/* Tier Filter */}
+        {TIER_OPTIONS[activeTab] && TIER_OPTIONS[activeTab].length > 0 && (
+          <select
+            value={tierFilter}
+            onChange={e => setTierFilter(e.target.value)}
+            className="px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+          >
+            <option value="">All Tiers</option>
+            {TIER_OPTIONS[activeTab].map((tier) => (
+              <option key={tier} value={tier}>{tier}</option>
+            ))}
+          </select>
+        )}
+        {/* Style Tag Filter (only for artists) */}
+        {activeTab === 'artists' && (
+          <select
+            value={styleTagFilter}
+            onChange={e => setStyleTagFilter(e.target.value)}
+            className="px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+          >
+            <option value="">All Styles</option>
+            {STYLE_TAGS.map((tag) => (
+              <option key={tag} value={tag}>{tag}</option>
+            ))}
+          </select>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
         {loading ? (
@@ -98,6 +202,23 @@ export default function ServicesPage() {
               >
                 {service.website.replace(/^https?:\/\//, '')}
               </a>
+              {service.subgenres && service.subgenres.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {service.subgenres.map((sub) => (
+                    <span key={sub} className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 rounded-full">{sub}</span>
+                  ))}
+                </div>
+              )}
+              {service.tier && (
+                <div className="mt-1 text-xs text-purple-300 font-semibold">{service.tier}</div>
+              )}
+              {service.style_tags && service.style_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {service.style_tags.map((tag) => (
+                    <span key={tag} className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              )}
             </div>
           ))
         )}

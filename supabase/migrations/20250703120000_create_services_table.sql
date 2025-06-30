@@ -7,6 +7,9 @@ CREATE TABLE IF NOT EXISTS services (
   contact text,
   website text,
   image text,
+  subgenres text[],
+  tier text,
+  style_tags text[],
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );

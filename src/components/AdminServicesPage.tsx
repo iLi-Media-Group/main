@@ -8,6 +8,60 @@ const SERVICE_TYPES = [
   { key: 'artists', label: 'Graphic Artists' },
 ];
 
+// Subgenre and tier options for each service type
+const SUBGENRE_OPTIONS: Record<string, string[]> = {
+  studios: [
+    'Vocal Tracking (Hip-Hop, R&B, Pop, etc.)',
+    'Full Band Tracking (Rock, Jazz, Indie)',
+    'Podcast Recording',
+    'Voiceover/ADR',
+    'Mixing Suite Access',
+    'Mastering Room Rental',
+    'Production Rooms',
+    'Dolby Atmos or Spatial Audio'
+  ],
+  engineers: [
+    'Vocal Engineer',
+    'Mixing Engineer',
+    'Mastering Engineer',
+    'Live Recording Engineer',
+    'Post-Production Engineer',
+    'Podcast Engineer',
+    'Audio Restoration / Cleanup',
+    'Sound Design / FX Engineer'
+  ],
+  artists: [
+    'Cover Art Design',
+    'Logo Design',
+    'Branding Packages',
+    'YouTube Thumbnails',
+    'Instagram Promo Design',
+    'Album Packaging Design',
+    'Motion Graphics / Lyric Videos',
+    'Web & App UI Mockups',
+    'Merch Design'
+  ]
+};
+const TIER_OPTIONS: Record<string, string[]> = {
+  studios: [
+    'Premium Studio',
+    'Project Studio',
+    'Mobile Studio'
+  ],
+  engineers: [],
+  artists: []
+};
+const STYLE_TAGS = [
+  'Minimalist',
+  'Retro',
+  'Hand-Drawn',
+  '3D',
+  'Modern',
+  'Cartoon',
+  'Photorealistic',
+  'Abstract'
+];
+
 interface Service {
   id: string;
   type: string;
@@ -16,6 +70,21 @@ interface Service {
   contact: string;
   website: string;
   image: string;
+  subgenres: string[];
+  tier: string;
+  style_tags: string[];
+}
+
+interface ServiceForm {
+  type: string;
+  name: string;
+  description: string;
+  contact: string;
+  website: string;
+  image: string;
+  subgenres: string[];
+  tier: string;
+  style_tags: string[];
 }
 
 export default function AdminServicesPage() {
@@ -24,7 +93,7 @@ export default function AdminServicesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [form, setForm] = useState({ type: 'studios', name: '', description: '', contact: '', website: '', image: '' });
+  const [form, setForm] = useState<ServiceForm>({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', subgenres: [], tier: '', style_tags: [] });
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
@@ -49,13 +118,16 @@ export default function AdminServicesPage() {
       contact: service.contact,
       website: service.website,
       image: service.image,
+      subgenres: service.subgenres,
+      tier: service.tier,
+      style_tags: service.style_tags
     });
     setShowForm(true);
   };
 
   const handleAdd = () => {
     setEditingService(null);
-    setForm({ type: 'studios', name: '', description: '', contact: '', website: '', image: '' });
+    setForm({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', subgenres: [], tier: '', style_tags: [] });
     setShowForm(true);
   };
 
@@ -65,15 +137,28 @@ export default function AdminServicesPage() {
   };
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    if ((name === 'subgenres' || name === 'style_tags') && type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      let arr = Array.isArray(form[name as keyof ServiceForm]) ? [...(form[name as keyof ServiceForm] as string[])] : [];
+      if (checked) {
+        arr.push(value);
+      } else {
+        arr = arr.filter((v: string) => v !== value);
+      }
+      setForm({ ...form, [name]: arr });
+    } else {
+      setForm({ ...form, [name]: value });
+    }
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = { ...form };
     if (editingService) {
-      await supabase.from('services').update(form).eq('id', editingService.id);
+      await supabase.from('services').update(payload).eq('id', editingService.id);
     } else {
-      await supabase.from('services').insert([form]);
+      await supabase.from('services').insert([payload]);
     }
     setShowForm(false);
     setEditingService(null);
@@ -147,6 +232,23 @@ export default function AdminServicesPage() {
                     >
                       {service.website.replace(/^https?:\/\//, '')}
                     </a>
+                    {service.subgenres && service.subgenres.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {service.subgenres.map((sub) => (
+                          <span key={sub} className="bg-blue-500/20 text-blue-300 text-xs px-2 py-1 rounded-full">{sub}</span>
+                        ))}
+                      </div>
+                    )}
+                    {service.tier && (
+                      <div className="mt-1 text-xs text-purple-300 font-semibold">{service.tier}</div>
+                    )}
+                    {service.style_tags && service.style_tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {service.style_tags.map((tag) => (
+                          <span key={tag} className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">{tag}</span>
+                        ))}
+                      </div>
+                    )}
                     <div className="flex space-x-2 mt-4">
                       <button className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm" onClick={() => handleEdit(service)}>Edit</button>
                       <button className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm" onClick={() => handleDelete(service)}>Delete</button>
@@ -227,6 +329,58 @@ export default function AdminServicesPage() {
                         className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Subgenres</label>
+                      <div className="flex flex-wrap gap-2">
+                        {SUBGENRE_OPTIONS[form.type]?.map((sub: string) => (
+                          <label key={sub} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
+                            <input
+                              type="checkbox"
+                              name="subgenres"
+                              value={sub}
+                              checked={form.subgenres.includes(sub)}
+                              onChange={handleFormChange}
+                            />
+                            <span>{sub}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    {TIER_OPTIONS[form.type] && TIER_OPTIONS[form.type].length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Tier</label>
+                        <select
+                          name="tier"
+                          value={form.tier}
+                          onChange={handleFormChange}
+                          className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        >
+                          <option value="">Select Tier</option>
+                          {TIER_OPTIONS[form.type]?.map((tier: string) => (
+                            <option key={tier} value={tier}>{tier}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {form.type === 'artists' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Style Tags</label>
+                        <div className="flex flex-wrap gap-2">
+                          {STYLE_TAGS.map((tag: string) => (
+                            <label key={tag} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
+                              <input
+                                type="checkbox"
+                                name="style_tags"
+                                value={tag}
+                                checked={form.style_tags.includes(tag)}
+                                onChange={handleFormChange}
+                              />
+                              <span>{tag}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex justify-end space-x-2">
                       <button type="button" className="px-4 py-2 bg-gray-700 rounded" onClick={() => setShowForm(false)}>Cancel</button>
                       <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingService ? 'Update' : 'Add'}</button>
