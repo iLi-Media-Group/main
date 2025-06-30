@@ -25,6 +25,8 @@ interface ProducerProfile {
     totalSales: number;
     avgRating: number;
   };
+  performing_rights_org?: string | null;
+  ipi_number?: string | null;
 }
 
 export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerProfileDialogProps) {
@@ -57,7 +59,9 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
           city,
           state,
           company_name,
-          producer_number
+          producer_number,
+          performing_rights_org,
+          ipi_number
         `)
         .eq('id', producerId)
         .single();
@@ -164,6 +168,21 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
                 {profile.bio && profile.bio.trim().length > 0 ? profile.bio : 'No bio provided yet.'}
               </p>
             </div>
+
+            {(profile.performing_rights_org || profile.ipi_number) && (
+              <div className="bg-white/5 rounded-lg p-4 space-y-2">
+                {profile.performing_rights_org && (
+                  <p className="text-gray-300">
+                    <span className="font-semibold">Performing Rights Organization:</span> {profile.performing_rights_org}
+                  </p>
+                )}
+                {profile.ipi_number && (
+                  <p className="text-gray-300">
+                    <span className="font-semibold">IPI Number:</span> {profile.ipi_number}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
