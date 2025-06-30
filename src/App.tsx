@@ -47,6 +47,7 @@ import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage'
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
 import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
 import AdminServicesPage from './components/AdminServicesPage';
+import ServicesPage from './components/ServicesPage';
 
 
 const App = () => {
@@ -331,6 +332,8 @@ const App = () => {
             <Navigate to="/" />
           )
         } />
+
+        <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
 
         <Route path="*" element={
           <LayoutWrapper>
