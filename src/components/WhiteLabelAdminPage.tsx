@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { AdminPasswordPrompt } from './AdminPasswordPrompt';
 import { FeatureManagement } from './FeatureManagement';
+import { Layout } from './Layout';
 
 interface WhiteLabelClient {
   id: string;
@@ -128,126 +129,128 @@ export default function WhiteLabelAdminPage() {
   }
 
   return (
-    <div className="p-6 text-white max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Manage White Label Clients & Features</h1>
-      <button
-        className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
-        onClick={handleAdd}
-      >
-        Add Client
-      </button>
-      {error && <div className="mb-4 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400">{error}</div>}
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <table className="table-auto w-full border-collapse border border-gray-600">
-          <thead>
-            <tr>
-              <th className="border border-gray-600 px-4 py-2">Company</th>
-              <th className="border border-gray-600 px-4 py-2">Domain</th>
-              <th className="border border-gray-600 px-4 py-2">Owner ID</th>
-              <th className="border border-gray-600 px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map((client) => (
-              <tr key={client.id}>
-                <td className="border border-gray-600 px-4 py-2">{client.company_name}</td>
-                <td className="border border-gray-600 px-4 py-2">{client.domain}</td>
-                <td className="border border-gray-600 px-4 py-2">{client.owner_id}</td>
-                <td className="border border-gray-600 px-4 py-2 space-x-2">
-                  <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
-                  <button className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
-                </td>
+    <Layout>
+      <div className="p-6 text-white max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">Manage White Label Clients & Features</h1>
+        <button
+          className="mb-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+          onClick={handleAdd}
+        >
+          Add Client
+        </button>
+        {error && <div className="mb-4 p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400">{error}</div>}
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <table className="table-auto w-full border-collapse border border-gray-600">
+            <thead>
+              <tr>
+                <th className="border border-gray-600 px-4 py-2">Company</th>
+                <th className="border border-gray-600 px-4 py-2">Domain</th>
+                <th className="border border-gray-600 px-4 py-2">Owner ID</th>
+                <th className="border border-gray-600 px-4 py-2">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {clients.map((client) => (
+                <tr key={client.id}>
+                  <td className="border border-gray-600 px-4 py-2">{client.company_name}</td>
+                  <td className="border border-gray-600 px-4 py-2">{client.domain}</td>
+                  <td className="border border-gray-600 px-4 py-2">{client.owner_id}</td>
+                  <td className="border border-gray-600 px-4 py-2 space-x-2">
+                    <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
+                    <button className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
 
-      {/* Add/Edit Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">{editingClient ? 'Edit Client' : 'Add Client'}</h2>
-            <form onSubmit={handleFormSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleFormChange}
-                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Company Name</label>
-                <input
-                  type="text"
-                  name="company_name"
-                  value={form.company_name}
-                  onChange={handleFormChange}
-                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">First Name</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={handleFormChange}
-                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Last Name</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={handleFormChange}
-                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button type="button" className="px-4 py-2 bg-gray-700 rounded" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingClient ? 'Update' : 'Add'}</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deletingClient && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-xl border border-red-500/20 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-red-400">Delete Client</h2>
-            <p className="mb-4">Are you sure you want to delete <span className="font-semibold">{deletingClient.company_name}</span>?</p>
-            <div className="flex justify-end space-x-2">
-              <button className="px-4 py-2 bg-gray-700 rounded" onClick={() => setDeletingClient(null)}>Cancel</button>
-              <button className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white" onClick={confirmDelete}>Delete</button>
+        {/* Add/Edit Modal */}
+        {showForm && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">{editingClient ? 'Edit Client' : 'Add Client'}</h2>
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    name="company_name"
+                    value={form.company_name}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">First Name</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={form.first_name}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={form.last_name}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button type="button" className="px-4 py-2 bg-gray-700 rounded" onClick={() => setShowForm(false)}>Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingClient ? 'Update' : 'Add'}</button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <h2 className="text-xl font-bold mt-10 mb-4">Feature Management</h2>
-      <FeatureManagement />
+        {/* Delete Confirmation Modal */}
+        {deletingClient && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-gray-900 p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4 text-red-400">Delete Client</h2>
+              <p className="mb-4">Are you sure you want to delete <span className="font-semibold">{deletingClient.company_name}</span>?</p>
+              <div className="flex justify-end space-x-2">
+                <button className="px-4 py-2 bg-gray-700 rounded" onClick={() => setDeletingClient(null)}>Cancel</button>
+                <button className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white" onClick={confirmDelete}>Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <button
-        onClick={() => {
-          localStorage.removeItem('adminApiToken');
-          setApiToken(null);
-        }}
-        className="mt-6 text-sm text-blue-400 underline"
-      >
-        Clear Admin Password
-      </button>
-    </div>
+        <h2 className="text-xl font-bold mt-10 mb-4">Feature Management</h2>
+        <FeatureManagement />
+
+        <button
+          onClick={() => {
+            localStorage.removeItem('adminApiToken');
+            setApiToken(null);
+          }}
+          className="mt-6 text-sm text-blue-400 underline"
+        >
+          Clear Admin Password
+        </button>
+      </div>
+    </Layout>
   );
 } 
