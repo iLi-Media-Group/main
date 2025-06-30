@@ -3,6 +3,7 @@ import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } fr
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
+import { ProfileBioSection } from './ProfileBioSection';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [bio, setBio] = useState('');
+  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -63,6 +66,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setIpiNumber(data.ipi_number || '');
         setPerformingRightsOrg(data.performing_rights_org || '');
         setAvatarPath(data.avatar_path || null);
+        setBio(data.bio || '');
+        setShowLocation(!!data.show_location);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -95,6 +100,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           country: country.trim() || null,
           ipi_number: ipiNumber.trim() || null,
           performing_rights_org: performingRightsOrg.trim() || null,
+          bio: bio.trim(),
+          show_location: showLocation,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -385,6 +392,18 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-6">
+              <ProfileBioSection
+                bio={bio}
+                showLocation={showLocation}
+                city={city}
+                state={state}
+                onBioChange={setBio}
+                onShowLocationChange={setShowLocation}
+                disabled={saving}
+              />
             </div>
 
             <button
