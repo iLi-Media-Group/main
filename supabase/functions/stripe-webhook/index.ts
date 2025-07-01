@@ -114,6 +114,10 @@ async function handleSyncProposalPayment(session, metadata, customerId) {
     const licenseeInfo = metadata.client_name || '';
     const trackTitle = proposalData.track.title;
     const licenseType = 'sync_proposal';
+    console.log('Calling handle-license-agreement with headers:', {
+      Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json'
+    });
     const pdfRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/handle-license-agreement`, {
       method: 'POST',
       headers: {
@@ -231,6 +235,10 @@ async function handleTrackLicensePayment(session, metadata, customerId) {
       const licenseeInfo = `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim();
       const trackTitle = trackData.title;
       const licenseType = 'single_track';
+      console.log('Calling handle-license-agreement with headers:', {
+        Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        'Content-Type': 'application/json'
+      });
       const pdfRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/handle-license-agreement`, {
         method: 'POST',
         headers: {
