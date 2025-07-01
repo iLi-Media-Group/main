@@ -27,38 +27,12 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Send email with license agreement
-    const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-      email: licenseeEmail,
-      subject: `Your License Agreement for "${trackTitle}"`,
-      template: `
-        <p>Thank you for licensing "${trackTitle}" through MyBeatFi Sync!</p>
-        
-        <p>Your ${licenseType} license agreement is attached. Please keep this for your records.</p>
-        
-        <p>You can also download your agreement here:</p>
-        <p><a href="${pdfUrl}">Download License Agreement</a></p>
-        
-        <p>Important Next Steps:</p>
-        <ol>
-          <li>Download and save your license agreement</li>
-          <li>Review the terms and usage rights</li>
-          <li>Access your licensed track in your dashboard</li>
-        </ol>
-        
-        <p>If you have any questions, please don't hesitate to contact us.</p>
-        
-        <p>Best regards,<br>MyBeatFi Sync Team</p>
-      `
-    });
-
-    if (emailError) throw emailError;
-
     // Store license agreement in database
     const { error: dbError } = await supabaseClient
       .from('license_agreements')
       .insert({
         license_id: licenseId,
+        type: licenseType,
         pdf_url: pdfUrl,
         licensee_info: licenseeInfo,
         sent_at: new Date().toISOString()
@@ -66,11 +40,17 @@ serve(async (req) => {
 
     if (dbError) throw dbError;
 
+    console.log(`License agreement stored for ${licenseType} license: ${licenseId}`);
+
     return new Response(
-      JSON.stringify({ message: 'License agreement processed successfully' }),
+      JSON.stringify({ 
+        message: 'License agreement processed successfully',
+        pdfUrl: pdfUrl 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('Error in handle-license-agreement:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
