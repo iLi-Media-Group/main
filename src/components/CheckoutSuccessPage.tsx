@@ -101,7 +101,10 @@ export function CheckoutSuccessPage() {
 
           // Get order details
           const orders = await getUserOrders();
+          console.log('sessionId from URL:', sessionId);
+          console.log('Orders returned from getUserOrders:', orders);
           const matchingOrder = orders.find(o => o.checkout_session_id === sessionId);
+          console.log('Matching order:', matchingOrder);
           
           if (matchingOrder) {
             setOrder(matchingOrder);
