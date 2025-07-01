@@ -86,7 +86,12 @@ export function LicenseDialog({
         await refreshMembership();
       }
     } catch (err) {
-      console.error('Error fetching profile:', err);
+      console.error('Error fetching profile:', {
+        message: err?.message,
+        details: err?.details,
+        hint: err?.hint,
+        error: err
+      });
       setError('Failed to load profile');
     }
   };

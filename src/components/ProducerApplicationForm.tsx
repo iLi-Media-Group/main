@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { 
   User, 
   Mail, 
@@ -19,10 +19,6 @@ import {
   Briefcase,
   Globe
 } from 'lucide-react';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const ProducerApplicationForm: React.FC = () => {
   const [formData, setFormData] = useState({

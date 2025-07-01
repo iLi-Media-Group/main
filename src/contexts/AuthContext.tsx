@@ -49,7 +49,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             });
             
           if (insertError) {
-            console.error('Error creating profile:', insertError);
+            console.error('Error creating profile:', {
+              message: (insertError as any)?.message,
+              details: (insertError as any)?.details,
+              hint: (insertError as any)?.hint,
+              error: insertError
+            });
             setAccountType('client');
             return;
           }
@@ -58,7 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setMembershipPlan('Single Track');
           return;
         } else {
-          console.error('Error fetching account type:', error);
+          console.error('Error fetching account type:', {
+            message: (error as any)?.message,
+            details: (error as any)?.details,
+            hint: (error as any)?.hint,
+            error
+          });
           // Default to client if there's an error
           setAccountType('client');
           return;
@@ -88,14 +98,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               }
             }
           } catch (subError) {
-            console.error('Error checking subscription:', subError);
+            console.error('Error checking subscription:', {
+              message: (subError as any)?.message,
+              details: (subError as any)?.details,
+              hint: (subError as any)?.hint,
+              error: subError
+            });
           }
         }
       } else {
         setAccountType('client'); // Default to client if no profile found
       }
     } catch (error) {
-      console.error('Error fetching account type:', error);
+      console.error('Error fetching account type:', {
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error
+      });
       setAccountType(null);
     }
   };
@@ -143,7 +163,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAccountType(profileData.account_type as 'client' | 'producer');
       }
     } catch (error) {
-      console.error('Error refreshing membership:', error);
+      console.error('Error refreshing membership:', {
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error
+      });
     }
   };
 
@@ -175,14 +200,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      console.error('Sign in error:', error);
+      console.error('Sign in error:', {
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error
+      });
       return { error };
     }
     if (data.user) {
       try {
         await fetchAccountType(data.user.id, data.user.email || '');
       } catch (err) {
-        console.error('Error fetching account type after sign in:', err);
+        console.error('Error fetching account type after sign in:', {
+          message: (err as any)?.message,
+          details: (err as any)?.details,
+          hint: (err as any)?.hint,
+          error: err
+        });
         // Default to client if there's an error
         setAccountType('client');
       }
@@ -243,10 +278,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Only attempt to sign out if we have a valid session
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.warn('Error during sign out:', error.message);
+        console.warn('Error during sign out:', {
+          message: (error as any)?.message,
+          details: (error as any)?.details,
+          hint: (error as any)?.hint,
+          error
+        });
       }
     } catch (error) {
-      console.warn('Unexpected error during sign out:', error);
+      console.warn('Unexpected error during sign out:', {
+        message: (error as any)?.message,
+        details: (error as any)?.details,
+        hint: (error as any)?.hint,
+        error
+      });
     } finally {
       // Always clear the local state
       setUser(null);

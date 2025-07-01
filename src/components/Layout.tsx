@@ -53,7 +53,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
   // Debug: log user.role on render
   useEffect(() => {
-    console.log('Current user.role:', user?.role);
+    if (user && user.role) {
+      console.log('Current user.role:', user.role);
+    }
   }, [user]);
 
   const handleSignOut = async (e: React.MouseEvent) => {
