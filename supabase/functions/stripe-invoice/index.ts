@@ -148,6 +148,8 @@ serve(async (req) => {
       cancel_url: `${baseSiteUrl}/dashboard?payment=cancel`,
       metadata: {
         proposal_id,
+        client_user_id,
+        ...(metadata.track_id ? { track_id: metadata.track_id } : {}),
         ...metadata,
       },
       expires_at: expiresAt,
