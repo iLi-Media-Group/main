@@ -99,7 +99,7 @@ async function handleEvent(event: Stripe.Event) {
           amount_total,
           currency,
           metadata
-          metadata
+          
         } = stripeData as Stripe.Checkout.Session;
 
         // Insert the order into the stripe_orders table
@@ -111,7 +111,6 @@ async function handleEvent(event: Stripe.Event) {
           amount_total,
           currency,
           payment_status,
-          status: 'completed', // assuming we want to mark it as completed since payment is successful
           status: 'completed', // assuming we want to mark it as completed since payment is successful
           metadata
         });
