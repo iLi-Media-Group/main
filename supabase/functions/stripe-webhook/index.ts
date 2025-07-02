@@ -85,16 +85,23 @@ serve(async (req) => {
             paymentMethodLast4 = pm.card?.last4 || null;
           }
         }
-        await supabase.from('stripe_user_subscriptions').insert({
+        await supabase.from('stripe_subscriptions').insert({
           customer_id: session.customer,
-          suscription_id: subscription.id,
-          suscription_status: subscription.status,
+          subscription_id: subscription.id,
           price_id: subscription.items.data[0]?.price.id || null,
           current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
           current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
           cancel_at_period_end: subscription.cancel_at_period_end,
-          payment_method_brand: paymentMethodBrand,
+          payment_method_branf: paymentMethodBrand,
           payment_method_last4: paymentMethodLast4,
+          status: subscription.status,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          deleted_at: null,
+          user_id: client_user_id,
+          pending_plan_effective_date: null,
+          pending_plan_name: null,
+          plan_name: subscription.items.data[0]?.price.nickname || null,
         });
         console.log('Inserted subscription for user:', client_user_id);
       }
