@@ -100,8 +100,14 @@ async function handleEvent(event: Stripe.Event) {
           return;
         }
 
+        // Sanitize metadata to avoid column conflicts
+        const safeMetadata = { ...metadata };
+        delete safeMetadata.producer_id;
+        delete safeMetadata.id;
+        delete safeMetadata.status;
+
         // === Track Purchase ===
-        const trackId = metadata?.track_id;
+        const trackId = safeMetadata?.track_id;
 
         if (trackId && customerData?.user_id) {
           const { data: trackData, error: trackError } = await supabase
@@ -134,6 +140,7 @@ async function handleEvent(event: Stripe.Event) {
               name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
               email: profileData.email,
             },
+            metadata: safeMetadata,
           });
 
           if (saleError) {
