@@ -86,33 +86,9 @@ async function handleEvent(event: Stripe.Event) {
           id: checkout_session_id,
           payment_intent,
           amount_total,
-<<<<<<< HEAD
           metadata,
         } = stripeData as Stripe.Checkout.Session;
 
-=======
-          currency,
-          metadata,
-        } = stripeData as Stripe.Checkout.Session;
-
-        const { error: orderError } = await supabase.from('stripe_orders').insert({
-          checkout_session_id,
-          payment_intent_id: payment_intent,
-          customer_id: customerId,
-          amount_subtotal,
-          amount_total,
-          currency,
-          payment_status,
-          status: 'completed',
-          metadata,
-        });
-
-        if (orderError) {
-          console.error('Error inserting stripe_order:', orderError);
-          return;
-        }
-
->>>>>>> c2868b28753bfd6cb792eef8f74ff67924b9661e
         const { data: customerData, error: customerError } = await supabase
           .from('stripe_customers')
           .select('user_id')
@@ -124,75 +100,6 @@ async function handleEvent(event: Stripe.Event) {
           return;
         }
 
-<<<<<<< HEAD
-=======
-        // === Proposal Payment ===
-        if (metadata?.proposal_id) {
-          const { data: proposalData, error: proposalError } = await supabase
-            .from('sync_proposals')
-            .select(`
-              id, 
-              track_id, 
-              client_id,
-              track:tracks!inner (
-                producer_id,
-                title
-              )
-            `)
-            .eq('id', metadata.proposal_id)
-            .single();
-
-          if (proposalError) {
-            console.error('Error fetching proposal:', proposalError);
-            return;
-          }
-
-          const { error: updateError } = await supabase
-            .from('sync_proposals')
-            .update({
-              payment_status: 'paid',
-              payment_date: new Date().toISOString(),
-              invoice_id: payment_intent,
-            })
-            .eq('id', metadata.proposal_id);
-
-          if (updateError) {
-            console.error('Error updating proposal:', updateError);
-            return;
-          }
-
-          const { data: producerData } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', proposalData.track.producer_id)
-            .single();
-
-          const { data: clientData } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('id', proposalData.client_id)
-            .single();
-
-          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-proposal-update`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              proposalId: metadata.proposal_id,
-              action: 'payment_complete',
-              trackTitle: proposalData.track.title,
-              producerEmail: producerData?.email,
-              clientEmail: clientData?.email,
-            }),
-          });
-
-          console.info(`Processed sync proposal ${metadata.proposal_id}`);
-          return;
-        }
-
->>>>>>> c2868b28753bfd6cb792eef8f74ff67924b9661e
         // === Track Purchase ===
         const trackId = metadata?.track_id;
 
