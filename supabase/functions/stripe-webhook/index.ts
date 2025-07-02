@@ -202,19 +202,24 @@ async function handleEvent(event: Stripe.Event) {
         email: profileData.email,
       };
 
+      const saleData = {
+        license_type: 'Single Track',
+        amount: amount_total / 100,
+        payment_method: 'stripe',
+        transaction_id: payment_intent,
+        created_at: new Date().toISOString(),
+        licensee_info: licenseeInfo,
+        deleted_at: null,
+        producer_id: trackData.producer_id,
+        expiry_date: null,
+        track_id: trackData.id,
+      };
+
+      console.log('Preparing to insert into sales:', saleData);
+
       const { error: saleError } = await supabase
         .from('sales')
-        .insert({
-          track_id: trackData.id,
-          producer_id: trackData.producer_id,
-          buyer_id: userId,
-          license_type: 'Single Track',
-          amount: amount_total / 100,
-          payment_method: 'stripe',
-          transaction_id: payment_intent,
-          created_at: new Date().toISOString(),
-          licensee_info: licenseeInfo,
-        });
+        .insert(saleData);
 
       if (saleError) {
         console.error('Error creating license record:', saleError);
