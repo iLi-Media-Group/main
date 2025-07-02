@@ -30,11 +30,11 @@ serve(async (req) => {
       .from('producer_withdrawals')
       .select(`
         id,
-        producer_id,
+        withdrawal_producer_id,
         amount,
         status,
         payment_method_id,
-        producer:profiles!producer_id (
+        producer:profiles!withdrawal_producer_id (
           email,
           first_name,
           last_name
@@ -75,7 +75,7 @@ serve(async (req) => {
       const { error: transactionError } = await supabaseClient
         .from('producer_transactions')
         .update({ status: 'completed' })
-        .eq('producer_id', withdrawal.producer_id)
+        .eq('transaction_producer_id', withdrawal.withdrawal_producer_id)
         .eq('type', 'withdrawal')
         .eq('amount', -withdrawal.amount)
         .eq('status', 'pending');
@@ -114,7 +114,7 @@ serve(async (req) => {
           status: 'rejected',
           description: `${withdrawal.description} (Rejected: ${notes || 'No reason provided'})`
         })
-        .eq('producer_id', withdrawal.producer_id)
+        .eq('transaction_producer_id', withdrawal.withdrawal_producer_id)
         .eq('type', 'withdrawal')
         .eq('amount', -withdrawal.amount)
         .eq('status', 'pending');
@@ -125,7 +125,7 @@ serve(async (req) => {
       const { data: balanceData, error: balanceError } = await supabaseClient
         .from('producer_balances')
         .select('available_balance')
-        .eq('producer_id', withdrawal.producer_id)
+        .eq('balance_producer_id', withdrawal.withdrawal_producer_id)
         .single();
 
       if (balanceError) throw balanceError;
@@ -135,7 +135,7 @@ serve(async (req) => {
         .update({
           available_balance: balanceData.available_balance + withdrawal.amount
         })
-        .eq('producer_id', withdrawal.producer_id);
+        .eq('balance_producer_id', withdrawal.withdrawal_producer_id);
 
       if (updateBalanceError) throw updateBalanceError;
 

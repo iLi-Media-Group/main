@@ -1,16 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'npm:stripe@17.7.0';
-import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
+import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 
-const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
-const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+const stripeSecret = process.env.STRIPE_SECRET_KEY!;
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 const stripe = new Stripe(stripeSecret, {
+  apiVersion: '2022-11-15',
   appInfo: { name: 'Bolt Integration', version: '1.0.0' },
 });
 
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL')!,
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 const corsHeaders = {
@@ -112,7 +113,7 @@ async function handleEvent(event: Stripe.Event) {
         if (trackId && customerData?.user_id) {
           const { data: trackData, error: trackError } = await supabase
             .from('tracks')
-            .select('id, producer_id')
+            .select('id, track_producer_id')
             .eq('id', trackId)
             .single();
 
@@ -129,7 +130,7 @@ async function handleEvent(event: Stripe.Event) {
 
           const { error: saleError } = await supabase.from('sales').insert({
             track_id: trackData.id,
-            producer_id: trackData.producer_id,
+            sale_producer_id: trackData.track_producer_id,
             buyer_id: customerData.user_id,
             license_type: 'Single Track',
             amount: amount_total / 100,
@@ -140,7 +141,7 @@ async function handleEvent(event: Stripe.Event) {
               name: `${profileData.first_name || ''} ${profileData.last_name || ''}`.trim(),
               email: profileData.email,
             },
-            metadata: safeMetadata,
+            ...safeMetadata,
           });
 
           if (saleError) {

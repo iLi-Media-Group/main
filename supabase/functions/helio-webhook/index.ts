@@ -72,7 +72,7 @@ serve(async (req) => {
         // Get track details to get producer_id
         const { data: trackData, error: trackError } = await supabaseClient
           .from('tracks')
-          .select('id, producer_id')
+          .select('id, track_producer_id')
           .eq('id', track_id)
           .single();
         
@@ -96,7 +96,7 @@ serve(async (req) => {
           .from('sales')
           .insert({
             track_id: trackData.id,
-            producer_id: trackData.producer_id,
+            sale_producer_id: trackData.track_producer_id,
             buyer_id: user_id,
             license_type,
             amount: parseFloat(amount.amount),
@@ -138,7 +138,7 @@ serve(async (req) => {
             track_id, 
             client_id,
             track:tracks!inner (
-              producer_id,
+              proposal_producer_id,
               title
             )
           `)
@@ -153,7 +153,7 @@ serve(async (req) => {
         const { data: producerData, error: producerError } = await supabaseClient
           .from('profiles')
           .select('email')
-          .eq('id', proposalData.track.producer_id)
+          .eq('id', proposalData.track.proposal_producer_id)
           .single();
           
         if (producerError) {

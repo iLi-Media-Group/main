@@ -36,12 +36,12 @@ serve(async (req) => {
       .from('producer_payouts')
       .select(`
         id,
-        producer_id,
+        withdrawal_producer_id,
         amount_usdc,
         month,
         status,
         retry_count,
-        producer:profiles!producer_id (
+        producer:profiles!withdrawal_producer_id (
           first_name,
           last_name,
           email,
@@ -103,7 +103,7 @@ serve(async (req) => {
         destination: payout.producer.usdc_address,
         metadata: {
           payout_id: payout.id,
-          producer_id: payout.producer_id,
+          withdrawal_producer_id: payout.withdrawal_producer_id,
           month: payout.month,
           description: `MyBeatFi Sync payout for ${payout.month}`
         }
@@ -154,7 +154,7 @@ serve(async (req) => {
         success: true,
         payout: {
           id: payout.id,
-          producerId: payout.producer_id,
+          producerId: payout.withdrawal_producer_id,
           producerName: `${payout.producer.first_name || ''} ${payout.producer.last_name || ''}`.trim(),
           amount: payout.amount_usdc,
           month: payout.month,

@@ -63,11 +63,11 @@ serve(async (req) => {
       .from('producer_payouts')
       .select(`
         id,
-        producer_id,
+        withdrawal_producer_id,
         amount_usdc,
         month,
         status,
-        producer:profiles!producer_id (
+        producer:profiles!withdrawal_producer_id (
           first_name,
           last_name,
           email,
@@ -99,7 +99,7 @@ serve(async (req) => {
         if (!payout.producer?.usdc_address) {
           results.push({
             payoutId: payout.id,
-            producerId: payout.producer_id,
+            producerId: payout.withdrawal_producer_id,
             producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
             amount: payout.amount_usdc,
             status: 'skipped',
@@ -124,7 +124,7 @@ serve(async (req) => {
         if (dryRun) {
           results.push({
             payoutId: payout.id,
-            producerId: payout.producer_id,
+            producerId: payout.withdrawal_producer_id,
             producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
             amount: payout.amount_usdc,
             walletAddress: payout.producer.usdc_address,
@@ -149,7 +149,7 @@ serve(async (req) => {
             destination: payout.producer.usdc_address,
             metadata: {
               payout_id: payout.id,
-              producer_id: payout.producer_id,
+              withdrawal_producer_id: payout.withdrawal_producer_id,
               month: payout.month,
               description: `MyBeatFi Sync payout for ${payout.month}`
             }
@@ -177,7 +177,7 @@ serve(async (req) => {
         // Add to successful payouts
         successfulPayouts.push({
           payoutId: payout.id,
-          producerId: payout.producer_id,
+          producerId: payout.withdrawal_producer_id,
           producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
           amount: payout.amount_usdc,
           walletAddress: payout.producer.usdc_address,
@@ -205,7 +205,7 @@ serve(async (req) => {
 
         results.push({
           payoutId: payout.id,
-          producerId: payout.producer_id,
+          producerId: payout.withdrawal_producer_id,
           producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
           amount: payout.amount_usdc,
           walletAddress: payout.producer.usdc_address,
@@ -218,7 +218,7 @@ serve(async (req) => {
         // Add to failed payouts
         failedPayouts.push({
           payoutId: payout.id,
-          producerId: payout.producer_id,
+          producerId: payout.withdrawal_producer_id,
           producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
           amount: payout.amount_usdc,
           status: 'failed',
@@ -227,7 +227,7 @@ serve(async (req) => {
 
         results.push({
           payoutId: payout.id,
-          producerId: payout.producer_id,
+          producerId: payout.withdrawal_producer_id,
           producerName: `${payout.producer?.first_name || ''} ${payout.producer?.last_name || ''}`.trim(),
           amount: payout.amount_usdc,
           status: 'failed',

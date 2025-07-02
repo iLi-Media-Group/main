@@ -41,14 +41,14 @@ serve(async (req) => {
     // 2. Fetch the proposal to get participant details
     const { data: proposalData, error: proposalError } = await supabaseClient
       .from('sync_proposals')
-      .select('client_id, track:tracks(producer_id)')
+      .select('client_id, track:tracks(track_producer_id)')
       .eq('id', proposalId)
       .single();
 
     if (proposalError) throw new Error('Failed to fetch proposal details.');
     if (!proposalData) throw new Error('Proposal not found.');
 
-    const producerId = proposalData.track.producer_id;
+    const producerId = proposalData.track.track_producer_id;
     const clientId = proposalData.client_id;
     const otherPartyId = userId === producerId ? clientId : producerId;
 
@@ -69,7 +69,7 @@ serve(async (req) => {
           sync_fee: negotiationData.counter_offer,
           payment_terms: negotiationData.counter_terms,
           status: 'pending', // Reset status to pending for final confirmation
-          producer_status: 'pending',
+          proposal_producer_status: 'pending',
           client_status: 'pending',
           updated_at: new Date().toISOString(),
         })
