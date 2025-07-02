@@ -69,33 +69,38 @@ export function CheckoutSuccessPage() {
           if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
             console.log('Subscription data incomplete, trying direct query...');
             
-            // Get the customer ID first
-            const { data: customerData } = await supabase
-              .from('stripe_customers')
-              .select('customer_id')
-              .eq('user_id', user?.id)
-              .single();
-            
-            if (customerData?.customer_id) {
-              // Query the subscriptions table directly
-              const { data: directSubscription } = await supabase
-                .from('stripe_subscriptions')
-                .select('*')
-                .eq('customer_id', customerData.customer_id)
+            // Only query if user and user.id are defined
+            if (user?.id) {
+              // Get the customer ID first
+              const { data: customerData } = await supabase
+                .from('stripe_customers')
+                .select('customer_id')
+                .eq('user_id', user.id)
                 .single();
               
-              console.log('Direct subscription data:', directSubscription);
-              
-              if (directSubscription && directSubscription.price_id && directSubscription.current_period_start) {
-                // Update the subscription state with the direct data
-                setSubscription({
-                  ...subscription,
-                  price_id: directSubscription.price_id,
-                  current_period_start: directSubscription.current_period_start,
-                  current_period_end: directSubscription.current_period_end,
-                  status: directSubscription.status
-                });
+              if (customerData?.customer_id) {
+                // Query the subscriptions table directly
+                const { data: directSubscription } = await supabase
+                  .from('stripe_subscriptions')
+                  .select('*')
+                  .eq('customer_id', customerData.customer_id)
+                  .single();
+                
+                console.log('Direct subscription data:', directSubscription);
+                
+                if (directSubscription && directSubscription.price_id && directSubscription.current_period_start) {
+                  // Update the subscription state with the direct data
+                  setSubscription({
+                    ...subscription,
+                    price_id: directSubscription.price_id,
+                    current_period_start: directSubscription.current_period_start,
+                    current_period_end: directSubscription.current_period_end,
+                    status: directSubscription.status
+                  });
+                }
               }
+            } else {
+              console.warn('User or user.id is undefined, skipping direct subscription query.');
             }
           }
 
