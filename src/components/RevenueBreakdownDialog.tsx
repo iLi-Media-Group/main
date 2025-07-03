@@ -71,7 +71,7 @@ export function RevenueBreakdownDialog({
           created_at,
           track:tracks!inner (
             title,
-            producer_id
+            track_producer_id
           )
         `)
         .gte('created_at', startDate.toISOString())
@@ -79,7 +79,7 @@ export function RevenueBreakdownDialog({
 
       // Filter by producer if specified
       if (producerId) {
-        salesQuery = salesQuery.eq('track.producer_id', producerId);
+        salesQuery = salesQuery.eq('track.track_producer_id', producerId);
       }
 
       const { data: salesData, error: salesError } = await salesQuery;
@@ -95,7 +95,7 @@ export function RevenueBreakdownDialog({
           payment_date,
           track:tracks!inner (
             title,
-            producer_id
+            proposal_producer_id
           )
         `)
         .eq('status', 'accepted')
@@ -104,7 +104,7 @@ export function RevenueBreakdownDialog({
 
       // Filter by producer if specified
       if (producerId) {
-        syncProposalsQuery = syncProposalsQuery.eq('track.producer_id', producerId);
+        syncProposalsQuery = syncProposalsQuery.eq('track.proposal_producer_id', producerId);
       }
 
       const { data: syncProposalsData, error: syncProposalsError } = await syncProposalsQuery;
