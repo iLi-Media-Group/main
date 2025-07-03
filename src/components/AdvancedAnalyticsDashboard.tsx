@@ -109,7 +109,7 @@ export function AdvancedAnalyticsDashboard() {
         .from('sales')
         .select(`
           id, amount, created_at,
-          track:tracks!inner(id, title, genres, producer_id),
+          track:tracks!inner(id, title, genres, track_producer_id),
           buyer:profiles!sales_buyer_id_fkey(id, first_name, last_name, email)
         `)
         .gte('created_at', startDate.toISOString())
@@ -129,7 +129,7 @@ export function AdvancedAnalyticsDashboard() {
         .from('sync_proposals')
         .select(`
           id, sync_fee, created_at, payment_status, status,
-          track:tracks!inner(id, title, genres, producer_id),
+          track:tracks!inner(id, title, genres, track_producer_id),
           client:profiles!sync_proposals_client_id_fkey(id, first_name, last_name, email)
         `)
         .gte('created_at', startDate.toISOString())

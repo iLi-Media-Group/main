@@ -218,12 +218,12 @@ export function AdminDashboard() {
       }> = {};
       if (producerAnalyticsData) {
         producerAnalyticsData.forEach((item: {
-          producer_id: string;
+          proposal_producer_id: string;
           total_tracks: number;
           total_sales: number;
           total_revenue: number;
         }) => {
-          producerAnalyticsMap[item.producer_id] = {
+          producerAnalyticsMap[item.proposal_producer_id] = {
             total_tracks: item.total_tracks || 0,
             total_sales: item.total_sales || 0,
             total_revenue: item.total_revenue || 0
@@ -238,8 +238,8 @@ export function AdminDashboard() {
         // Fetch tracks for these producers
         const { data: tracksData, error: tracksError } = await supabase
           .from('tracks')
-          .select('id, producer_id, title')
-          .in('producer_id', producersNotInAnalytics.map(p => p.id));
+          .select('id, track_producer_id, title')
+          .in('track_producer_id', producersNotInAnalytics.map(p => p.id));
 
         if (tracksError) {
           console.error('Error fetching tracks for producers:', tracksError);
@@ -297,7 +297,7 @@ export function AdminDashboard() {
 
         // Calculate analytics for producers not in the function
         producersNotInAnalytics.forEach(producer => {
-          const producerTracks = tracksData?.filter(t => t.producer_id === producer.id) || [];
+          const producerTracks = tracksData?.filter(t => t.track_producer_id === producer.id) || [];
           const producerTrackIds = producerTracks.map(t => t.id);
           const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
           const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));

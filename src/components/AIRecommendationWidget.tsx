@@ -152,7 +152,7 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
           bpm,
           audio_url,
           image_url,
-          producer:profiles!producer_id (
+          track_producer:profiles!track_producer_id (
             first_name,
             last_name,
             email
@@ -236,7 +236,7 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
           bpm,
           audio_url,
           image_url,
-          producer:profiles!producer_id (
+          track_producer:profiles!track_producer_id (
             first_name,
             last_name,
             email
@@ -277,7 +277,7 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
       return data?.map(track => ({
         id: track.id,
         title: track.title || 'Untitled',
-        artist: track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
+        artist: track.track_producer?.first_name || track.track_producer?.email?.split('@')[0] || 'Unknown Artist',
         genres: Array.isArray(track.genres) ? track.genres : track.genres?.split(',').map((g: string) => g.trim()) || [],
         moods: Array.isArray(track.moods) ? track.moods : track.moods?.split(',').map((m: string) => m.trim()) || [],
         bpm: track.bpm,
@@ -303,7 +303,7 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
           bpm,
           audio_url,
           image_url,
-          producer:profiles!producer_id (
+          track_producer:profiles!track_producer_id (
             first_name,
             last_name,
             email
@@ -316,7 +316,7 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
       return data?.map(track => ({
         id: track.id,
         title: track.title || 'Untitled',
-        artist: track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
+        artist: track.track_producer?.first_name || track.track_producer?.email?.split('@')[0] || 'Unknown Artist',
         genres: Array.isArray(track.genres) ? track.genres : track.genres?.split(',').map(g => g.trim()) || [],
         moods: Array.isArray(track.moods) ? track.moods : track.moods?.split(',').map(m => m.trim()) || [],
         bpm: track.bpm,
