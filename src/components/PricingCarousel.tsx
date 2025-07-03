@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Check, CreditCard, Coins, Loader2, Mail, ArrowRight, X } from 'lucide-react';
+import { Check, CreditCard, Loader2, Mail, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
-import { createCryptoInvoice } from "../utils/createCryptoInvoice";
 
 interface EmailCheckDialogProps {
   isOpen: boolean;
@@ -188,29 +187,7 @@ export function PricingCarousel() {
       navigate(`/signup?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
     }
   };
-const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
-  if (!user) {
-    setSelectedProduct(product);
-    setShowEmailCheck(true);
-    return;
-  }
 
-  try {
-    setLoading(true);
-    setLoadingProductId(product.id);
-    setError(null);
-
-    const invoiceUrl = await createCryptoInvoice(product.id, user.id);
-    window.location.href = invoiceUrl; // Redirect user to Helio payment page
-
-  } catch (err) {
-    console.error('Crypto subscription error:', err);
-    setError(err instanceof Error ? err.message : 'Failed to start crypto payment');
-  } finally {
-    setLoading(false);
-    setLoadingProductId(null);
-  }
-};
 
 
 
@@ -297,45 +274,24 @@ const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
               )}
 
               {product.mode.includes('subscription') && (
-                <div className="space-y-4">
-                  <button
-                    onClick={() => handleSubscribe(product)}
-                    disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
-                    className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loadingProductId === product.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    ) : (
-                      <>
-                        <CreditCard className="w-5 h-5" />
-                        <span>
-                          {currentSubscription?.subscription_id && currentSubscription?.status === 'active'
-                            ? 'Current Plan'
-                            : 'Subscribe with Card'}
-                        </span>
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-  onClick={() => handleCryptoSubscribe(product)}
-  disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
-  className="w-full py-3 px-6 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
->
-  {loadingProductId === product.id ? (
-    <Loader2 className="w-5 h-5 animate-spin mr-2" />
-  ) : (
-    <>
-      <Coins className="w-5 h-5" />
-      <span>Subscribe with Crypto</span>
-    </>
-  )}
-</button>
-
-                  <p className="text-center text-sm text-gray-400 mt-4">
-                    Accepts USDC, USDT, and Solana
-                  </p>
-                </div>
+                <button
+                  onClick={() => handleSubscribe(product)}
+                  disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
+                  className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loadingProductId === product.id ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5" />
+                      <span>
+                        {currentSubscription?.subscription_id && currentSubscription?.status === 'active'
+                          ? 'Current Plan'
+                          : 'Subscribe'}
+                      </span>
+                    </>
+                  )}
+                </button>
               )}
             </div>
           </div>
