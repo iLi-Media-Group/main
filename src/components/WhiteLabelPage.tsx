@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2 } from 'lucide-react';
+import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
+import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ export function WhiteLabelPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('starter');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -228,9 +231,15 @@ export function WhiteLabelPage() {
                     <span className="text-gray-300">Email support</span>
                   </li>
                 </ul>
-                <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
+                <button 
+                  onClick={() => {
+                    setSelectedPlan('starter');
+                    setShowCalculator(true);
+                  }}
+                  className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors"
+                >
                   Start Now
-                </a>
+                </button>
               </div>
               
               <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border-2 border-purple-500/40 hover:border-purple-500/60 transition-all transform scale-105 shadow-xl shadow-purple-500/10 relative z-10">
@@ -269,9 +278,15 @@ export function WhiteLabelPage() {
                     <span className="text-gray-300">Priority support</span>
                   </li>
                 </ul>
-                <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
+                <button 
+                  onClick={() => {
+                    setSelectedPlan('pro');
+                    setShowCalculator(true);
+                  }}
+                  className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25"
+                >
                   Get Pro
-                </a>
+                </button>
               </div>
               
               <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-all">
@@ -585,6 +600,29 @@ export function WhiteLabelPage() {
         </section>
       </main>
 
+      {/* White Label Calculator Modal */}
+      {showCalculator && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-700 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-white">White Label Pricing Calculator</h2>
+              <button
+                onClick={() => setShowCalculator(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-6">
+              <WhiteLabelCalculator 
+                onCalculate={(total) => {
+                  console.log('Total calculated:', total);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       
     </div>
   );
