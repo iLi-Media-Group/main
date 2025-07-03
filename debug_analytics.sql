@@ -88,7 +88,7 @@ SELECT
   p.email as producer_email
 FROM sales s
 JOIN tracks t ON s.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE s.created_at >= now() - interval '30 days'
 ORDER BY s.created_at DESC
 LIMIT 10;
@@ -104,7 +104,7 @@ SELECT
   p.email as producer_email
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE sp.created_at >= now() - interval '30 days'
 ORDER BY sp.created_at DESC
 LIMIT 10; 

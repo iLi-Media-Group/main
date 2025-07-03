@@ -52,7 +52,7 @@ SELECT
   SUM(s.amount) as track_revenue
 FROM sales s
 JOIN tracks t ON s.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE s.created_at >= CURRENT_DATE - INTERVAL '30 days'
   AND s.deleted_at IS NULL
 GROUP BY p.id, p.first_name, p.last_name, p.email
@@ -67,7 +67,7 @@ SELECT
   SUM(sp.sync_fee) as sync_revenue
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE sp.created_at >= CURRENT_DATE - INTERVAL '30 days'
   AND sp.payment_status = 'paid'
   AND sp.status = 'accepted'
@@ -92,20 +92,20 @@ ORDER BY custom_sync_revenue DESC;
 WITH producer_sales AS (
   -- Track licenses
   SELECT 
-    t.producer_id,
+    t.track_producer_id,
     COUNT(s.id) as track_licenses,
     SUM(s.amount) as track_revenue
   FROM sales s
   JOIN tracks t ON s.track_id = t.id
   WHERE s.created_at >= CURRENT_DATE - INTERVAL '30 days'
     AND s.deleted_at IS NULL
-  GROUP BY t.producer_id
+  GROUP BY t.track_producer_id
   
   UNION ALL
   
   -- Sync proposals
   SELECT 
-    t.producer_id,
+    t.track_producer_id,
     COUNT(sp.id) as sync_proposals,
     SUM(sp.sync_fee) as sync_revenue
   FROM sync_proposals sp
@@ -113,7 +113,7 @@ WITH producer_sales AS (
   WHERE sp.created_at >= CURRENT_DATE - INTERVAL '30 days'
     AND sp.payment_status = 'paid'
     AND sp.status = 'accepted'
-  GROUP BY t.producer_id
+  GROUP BY t.track_producer_id
   
   UNION ALL
   

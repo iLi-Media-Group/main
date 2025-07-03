@@ -19,12 +19,12 @@ ORDER BY created_at;
 SELECT 
   t.id as track_id,
   t.title as track_title,
-  t.producer_id,
+  t.track_producer_id,
   p.email as producer_email,
   p.account_type,
   t.created_at as track_created_at
 FROM tracks t
-LEFT JOIN profiles p ON t.producer_id = p.id
+LEFT JOIN profiles p ON t.track_producer_id = p.id
 ORDER BY t.created_at DESC
 LIMIT 20;
 
@@ -36,11 +36,11 @@ SELECT
   s.created_at as sale_created_at,
   t.id as track_id,
   t.title as track_title,
-  t.producer_id,
+  t.track_producer_id,
   p.email as producer_email
 FROM sales s
 LEFT JOIN tracks t ON s.track_id = t.id
-LEFT JOIN profiles p ON t.producer_id = p.id
+LEFT JOIN profiles p ON t.track_producer_id = p.id
 ORDER BY s.created_at DESC
 LIMIT 20;
 
@@ -53,11 +53,11 @@ SELECT
   sp.created_at as proposal_created_at,
   t.id as track_id,
   t.title as track_title,
-  t.producer_id,
+  t.track_producer_id,
   p.email as producer_email
 FROM sync_proposals sp
 LEFT JOIN tracks t ON sp.track_id = t.id
-LEFT JOIN profiles p ON t.producer_id = p.id
+LEFT JOIN profiles p ON t.track_producer_id = p.id
 ORDER BY sp.created_at DESC
 LIMIT 20;
 
@@ -73,7 +73,7 @@ SELECT
   COUNT(DISTINCT s.id) + COUNT(DISTINCT sp.id) + COUNT(DISTINCT csr.id) as total_sales,
   COALESCE(SUM(s.amount), 0) + COALESCE(SUM(sp.sync_fee), 0) + COALESCE(SUM(csr.sync_fee), 0) as total_revenue
 FROM profiles p
-LEFT JOIN tracks t ON p.id = t.producer_id
+LEFT JOIN tracks t ON p.id = t.track_producer_id
 LEFT JOIN sales s ON t.id = s.track_id
 LEFT JOIN sync_proposals sp ON t.id = sp.track_id AND sp.payment_status = 'paid' AND sp.status = 'accepted'
 LEFT JOIN custom_sync_requests csr ON p.id = csr.preferred_producer_id AND csr.status = 'completed'
