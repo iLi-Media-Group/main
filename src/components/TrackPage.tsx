@@ -100,7 +100,7 @@ export function TrackPage() {
           mp3Url: trackData.mp3_url,
           trackoutsUrl: trackData.trackouts_url,
           splitSheetUrl: trackData.split_sheet_url,
-          producerId: trackData.producer_id, // Add producer_id to the mapped track
+          producerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
           producer: trackData.producer ? {
             id: trackData.producer.id,
             firstName: trackData.producer.first_name || '',

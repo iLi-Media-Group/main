@@ -202,7 +202,7 @@ export function TrackUploadForm() {
       const { error: trackError } = await supabase
         .from('tracks')
         .insert({
-          producer_id: user.id,
+          track_producer_id: user.id,
           title,
           artist: user.email?.split('@')[0] || 'Unknown Artist',
           genres: formattedGenres,
@@ -230,7 +230,7 @@ export function TrackUploadForm() {
       const { data: trackData, error: trackFetchError } = await supabase
         .from('tracks')
         .select('id')
-        .eq('producer_id', user.id)
+        .eq('track_producer_id', user.id)
         .eq('title', title)
         .eq('audio_url', audioUrl)
         .order('created_at', { ascending: false })
