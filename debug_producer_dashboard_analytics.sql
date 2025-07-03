@@ -22,7 +22,7 @@ SELECT
     COALESCE(SUM(amount), 0) as total_revenue
 FROM sales s
 JOIN tracks t ON s.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE p.email = 'PRODUCER_EMAIL_HERE'
 AND s.deleted_at IS NULL
 AND t.deleted_at IS NULL;
@@ -34,7 +34,7 @@ SELECT
     COALESCE(SUM(sync_fee), 0) as total_revenue
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE p.email = 'PRODUCER_EMAIL_HERE'
 AND sp.payment_status = 'paid'
 AND sp.status = 'accepted';
@@ -56,7 +56,7 @@ WITH track_sales AS (
         COALESCE(SUM(amount), 0) as total_revenue
     FROM sales s
     JOIN tracks t ON s.track_id = t.id
-    JOIN profiles p ON t.producer_id = p.id
+    JOIN profiles p ON t.track_producer_id = p.id
     WHERE p.email = 'PRODUCER_EMAIL_HERE'
     AND s.deleted_at IS NULL
     AND t.deleted_at IS NULL
@@ -67,7 +67,7 @@ sync_proposals AS (
         COALESCE(SUM(sync_fee), 0) as total_revenue
     FROM sync_proposals sp
     JOIN tracks t ON sp.track_id = t.id
-    JOIN profiles p ON t.producer_id = p.id
+    JOIN profiles p ON t.track_producer_id = p.id
     WHERE p.email = 'PRODUCER_EMAIL_HERE'
     AND sp.payment_status = 'paid'
     AND sp.status = 'accepted'
@@ -91,7 +91,7 @@ FROM track_sales ts, sync_proposals sp, custom_sync cs;
 SELECT 
     COUNT(*) as total_tracks
 FROM tracks t
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE p.email = 'PRODUCER_EMAIL_HERE'
 AND t.deleted_at IS NULL;
 
@@ -100,7 +100,7 @@ SELECT
     COUNT(*) as pending_proposals
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
-JOIN profiles p ON t.producer_id = p.id
+JOIN profiles p ON t.track_producer_id = p.id
 WHERE p.email = 'PRODUCER_EMAIL_HERE'
 AND (sp.producer_status = 'pending' OR sp.producer_status = 'producer_accepted');
 
@@ -110,5 +110,5 @@ SELECT
     available_balance,
     lifetime_earnings
 FROM producer_balances pb
-JOIN profiles p ON pb.producer_id = p.id
+JOIN profiles p ON pb.balance_producer_id = p.id
 WHERE p.email = 'PRODUCER_EMAIL_HERE'; 
