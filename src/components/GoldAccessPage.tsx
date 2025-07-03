@@ -270,7 +270,7 @@ export function GoldAccessPage() {
                   disabled={loading}
                   metadata={{
                     product_type: 'subscription',
-                    price_id: 'price_1RVXu9Ikn3xpidKHqxoSb6bC'
+                    price_id: 'price_1RdAfER8RYA8TFzw7RrrNmtt'
                   }}
                 />
               </div>

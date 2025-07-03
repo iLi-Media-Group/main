@@ -134,15 +134,15 @@ export function RevenueBreakdownDialog({
 
         // Map price IDs to amounts and names
         switch (sub.price_id) {
-          case 'price_1RVXvoIkn3xpidKHRzHgSFn1': // Ultimate Access
+          case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
             amount = 499.00;
             name = 'Ultimate Access';
             break;
-          case 'price_1RVXurIkn3xpidKH18dW0FYC': // Platinum Access
+          case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
             amount = 59.99;
             name = 'Platinum Access';
             break;
-          case 'price_1RVXu9Ikn3xpidKHqxoSb6bC': // Gold Access
+          case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
             amount = 34.99;
             name = 'Gold Access';
             break;
@@ -231,13 +231,13 @@ export function RevenueBreakdownDialog({
         if (months[currentMonth] !== undefined) {
           let amount = 0;
           switch (sub.price_id) {
-            case 'price_1RVXvoIkn3xpidKHRzHgSFn1': // Ultimate Access
+            case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
               amount = 499.00 / 12; // Divide annual by 12 for monthly equivalent
               break;
-            case 'price_1RVXurIkn3xpidKH18dW0FYC': // Platinum Access
+            case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
               amount = 59.99;
               break;
-            case 'price_1RVXu9Ikn3xpidKHqxoSb6bC': // Gold Access
+            case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
               amount = 34.99;
               break;
           }
