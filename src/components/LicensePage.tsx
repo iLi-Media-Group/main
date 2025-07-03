@@ -50,7 +50,7 @@ export function LicensePage() {
         .from('tracks')
         .select(`
           *,
-          producer:producer_id (
+          producer:track_producer_id (
             first_name,
             last_name
           )
@@ -83,7 +83,7 @@ export function LicensePage() {
           vocalsUsageType: trackData.vocals_usage_type || 'normal',
           isOneStop: trackData.is_one_stop || false,
           hasSting: trackData.has_sting_ending || false,
-          producerId: trackData.producer_id, // Add producer_id to the mapped track
+          trackProducerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
           fileFormats: [], // Default empty array for file formats
           pricing: [], // Default empty array for pricing
           leaseAgreementUrl: '', // Default empty string for lease agreement URL
