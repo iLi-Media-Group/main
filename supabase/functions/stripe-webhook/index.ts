@@ -134,8 +134,8 @@ async function handleEvent(event: any) {
         currency,
         metadata
       } = stripeData;
-      // Insert the order into the stripe_orders table
-      const { error: orderError } = await supabase.from('stripe_orders').insert({
+      // Prepare safe order object for stripe_orders
+      const safeOrder = {
         checkout_session_id,
         payment_intent_id: payment_intent,
         customer_id: customerId,
@@ -143,9 +143,14 @@ async function handleEvent(event: any) {
         amount_total,
         currency,
         payment_status,
-        status: 'completed',
-        metadata
-      });
+        status: 'completed'
+      };
+      if (metadata && typeof metadata === 'object') {
+        // Only add metadata if the column exists and is JSONB
+        safeOrder.metadata = { ...metadata };
+        delete safeOrder.metadata.producer_id;
+      }
+      const { error: orderError } = await supabase.from('stripe_orders').insert(safeOrder);
       if (orderError) {
         console.error('Error inserting order:', orderError);
         return;
@@ -247,7 +252,7 @@ async function handleEvent(event: any) {
           .from('sales')
           .insert({
             track_id: trackData.id,
-            sale_producer_id: trackData.track_producer_id,
+            sales_producer_id: trackData.track_producer_id,
             buyer_id: customerData.user_id,
             license_type: 'Single Track',
             amount: amount_total / 100,
