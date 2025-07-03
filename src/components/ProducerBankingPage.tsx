@@ -98,7 +98,7 @@ export function ProducerBankingPage() {
       const { data: accountsData, error: accountsError } = await supabase
         .from('producer_payment_methods')
         .select('*')
-        .eq('producer_id', user?.id)
+        .eq('payment_method_producer_id', user?.id)
         .order('is_primary', { ascending: false });
 
       if (accountsError) throw accountsError;

@@ -189,7 +189,7 @@ export function ProducerDashboard() {
           has_vocals,
           vocals_usage_type
         `)
-        .eq('producer_id', user.id)
+        .eq('track_producer_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 

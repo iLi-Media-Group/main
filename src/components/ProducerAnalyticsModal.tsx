@@ -65,7 +65,7 @@ export function ProducerAnalyticsModal({
       const { data: tracks, error: tracksError } = await supabase
         .from('tracks')
         .select('id, title')
-        .eq('producer_id', producerId);
+        .eq('track_producer_id', producerId);
 
       if (tracksError) throw tracksError;
 
@@ -80,7 +80,7 @@ export function ProducerAnalyticsModal({
             title
           )
         `)
-        .eq('tracks.producer_id', producerId)
+        .eq('tracks.track_producer_id', producerId)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -96,10 +96,10 @@ export function ProducerAnalyticsModal({
           created_at,
           track:tracks!inner (
             id,
-            producer_id
+            track_producer_id
           )
         `)
-        .eq('tracks.producer_id', producerId)
+        .eq('tracks.track_producer_id', producerId)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
