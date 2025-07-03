@@ -31,7 +31,7 @@ BEGIN
             SUM(s.amount) as revenue
         FROM sales s
         JOIN tracks t ON t.id = s.track_id
-        JOIN profiles p ON p.id = t.producer_id
+        JOIN profiles p ON p.id = t.track_producer_id
         GROUP BY p.id, p.first_name, p.email
         ORDER BY revenue DESC
         LIMIT 5
@@ -62,7 +62,7 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_sales_created_at ON sales (created_at);
 CREATE INDEX IF NOT EXISTS idx_sales_license_type ON sales (license_type);
 CREATE INDEX IF NOT EXISTS idx_sales_track_id ON sales (track_id);
-CREATE INDEX IF NOT EXISTS idx_tracks_producer_id ON tracks (producer_id);
+CREATE INDEX IF NOT EXISTS idx_tracks_producer_id ON tracks (track_producer_id);
 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION get_sales_analytics() TO authenticated;
