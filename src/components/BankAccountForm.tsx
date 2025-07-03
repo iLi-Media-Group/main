@@ -47,7 +47,7 @@ export function BankAccountForm({ isOpen, onClose, onSave, existingAccounts }: B
         const { error: updateError } = await supabase
           .from('producer_payment_methods')
           .update({ is_primary: false })
-          .eq('producer_id', user.id);
+          .eq('payment_method_producer_id', user.id);
 
         if (updateError) throw updateError;
       }
@@ -56,7 +56,7 @@ export function BankAccountForm({ isOpen, onClose, onSave, existingAccounts }: B
       const { error: insertError } = await supabase
         .from('producer_payment_methods')
         .insert({
-          producer_id: user.id,
+          payment_method_producer_id: user.id,
           account_type: 'bank',
           account_details: accountDetails,
           is_primary: isPrimary
