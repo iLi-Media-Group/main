@@ -218,7 +218,7 @@ export function AdminDashboard() {
           console.error('Error fetching producer analytics:', producerAnalyticsError);
         }
 
-        // Create a map of producer analytics by producer_id
+        // Create a map of producer analytics by producer_id - fixed duplicate declaration
         const producerAnalyticsMap: Record<string, {
           total_tracks: number;
           total_sales: number;
