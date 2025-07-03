@@ -51,7 +51,7 @@ export function ProposalAnalytics() {
           sync_fee,
           is_exclusive,
           created_at,
-          track:tracks(producer_id)
+          track:tracks(track_producer_id)
         `)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());

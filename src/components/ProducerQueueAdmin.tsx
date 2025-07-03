@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 type QueueEntry = {
   id: string;
-  producer_id: string;
+  track_producer_id: string;
   status: 'Queued' | 'Notified' | 'Onboarded' | 'Skipped';
   submission_date: string;
   genre: string;
@@ -48,7 +48,7 @@ export default function ProducerQueueAdmin() {
   const handleExportCSV = () => {
     const csvRows = [
       ['ID', 'Producer ID', 'Status', 'Submission Date', 'Genre', 'Notes'],
-      ...queue.map(q => [q.id, q.producer_id, q.status, q.submission_date, q.genre, q.notes ?? ''])
+      ...queue.map(q => [q.id, q.track_producer_id, q.status, q.submission_date, q.genre, q.notes ?? ''])
     ];
 
     const csvContent = 'data:text/csv;charset=utf-8,' + csvRows.map(e => e.join(',')).join('\n');
@@ -80,7 +80,7 @@ export default function ProducerQueueAdmin() {
         queue.map(entry => (
           <div key={entry.id} className="border p-4 mb-3 rounded shadow-sm">
             <p><strong>ID:</strong> {entry.id}</p>
-            <p><strong>Producer ID:</strong> {entry.producer_id}</p>
+            <p><strong>Producer ID:</strong> {entry.track_producer_id}</p>
             <p><strong>Status:</strong> {entry.status}</p>
             <p><strong>Genre:</strong> {entry.genre}</p>
             <p><strong>Submitted:</strong> {new Date(entry.submission_date).toLocaleString()}</p>
