@@ -1,17 +1,17 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'https://esm.sh/stripe@12.15.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
-const stripeSecret = process.env.STRIPE_SECRET_KEY!;
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-const stripe = new Stripe(stripeSecret, {
-  apiVersion: '2022-11-15',
-  appInfo: { name: 'Bolt Integration', version: '1.0.0' },
-});
+// Stripe secret keys from environment
+const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
+const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
 
+// Stripe API base URL
+const STRIPE_API_BASE = 'https://api.stripe.com/v1';
+
+// Supabase client
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
 const corsHeaders = {
@@ -19,6 +19,50 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'stripe-signature, content-type',
 };
+
+// Helper: Convert ArrayBuffer to string
+function ab2str(buf: ArrayBuffer) {
+  return new TextDecoder().decode(buf);
+}
+
+// Helper: Timing-safe compare
+function safeCompare(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+// Helper: Verify Stripe signature (Deno-compatible)
+async function verifyStripeSignature(
+  rawBody: ArrayBuffer,
+  sigHeader: string | null,
+  secret: string
+): Promise<boolean> {
+  if (!sigHeader) return false;
+  const [timestampPart, signaturePart] = sigHeader.split(',').map((s) => s.trim());
+  const timestamp = timestampPart.split('=')[1];
+  const signature = signaturePart.split('=')[1];
+  const signedPayload = `${timestamp}.${ab2str(rawBody)}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+  const sigBuffer = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(signedPayload)
+  );
+  const expectedSignature = Array.from(new Uint8Array(sigBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return safeCompare(signature, expectedSignature);
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -29,31 +73,40 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
+  // 1. Get raw body and signature
+  const rawBody = await req.arrayBuffer();
+  const sigHeader = req.headers.get('stripe-signature');
+
+  // 2. Verify signature
+  let isValid = false;
   try {
-    const signature = req.headers.get('stripe-signature');
-    if (!signature) {
-      return new Response('No signature found', { status: 400, headers: corsHeaders });
-    }
+    isValid = await verifyStripeSignature(rawBody, sigHeader, stripeWebhookSecret);
+  } catch (err) {
+    console.error('Signature verification error:', err);
+    return new Response('Webhook signature verification failed', { status: 400, headers: corsHeaders });
+  }
+  if (!isValid) {
+    console.error('Webhook signature verification failed: Invalid signature');
+    return new Response('Webhook signature verification failed', { status: 400, headers: corsHeaders });
+  }
 
-    const body = await req.text();
-    let event: Stripe.Event;
+  // 3. Parse event
+  let event;
+  try {
+    event = JSON.parse(ab2str(rawBody));
+  } catch (err) {
+    console.error('Invalid JSON:', err);
+    return new Response('Invalid JSON', { status: 400, headers: corsHeaders });
+  }
 
-    try {
-      event = await stripe.webhooks.constructEventAsync(body, signature, stripeWebhookSecret);
-    } catch (err: any) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      return new Response(`Webhook signature verification failed: ${err.message}`, {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
-
+  // 4. Handle event
+  try {
     await handleEvent(event);
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: corsHeaders,
     });
-  } catch (err: any) {
+  } catch (err) {
     console.error('Error processing webhook:', err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
@@ -62,7 +115,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function handleEvent(event: Stripe.Event) {
+async function handleEvent(event: any) {
   const stripeData = event?.data?.object ?? {};
   if (!stripeData || !('customer' in stripeData)) return;
 
@@ -72,7 +125,7 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
-  const { mode, payment_status } = stripeData as Stripe.Checkout.Session;
+  const { mode, payment_status } = stripeData;
 
   if (event.type === 'checkout.session.completed') {
     const isSubscription = mode === 'subscription';
@@ -88,7 +141,7 @@ async function handleEvent(event: Stripe.Event) {
           payment_intent,
           amount_total,
           metadata,
-        } = stripeData as Stripe.Checkout.Session;
+        } = stripeData;
 
         const { data: customerData, error: customerError } = await supabase
           .from('stripe_customers')
@@ -163,54 +216,45 @@ async function handleEvent(event: Stripe.Event) {
 }
 
 async function syncCustomerFromStripe(customerId: string) {
-  try {
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      limit: 1,
-      status: 'all',
-      expand: ['data.default_payment_method'],
-    });
+  // Use Stripe HTTP API directly for subscriptions
+  const res = await fetch(`${STRIPE_API_BASE}/subscriptions?customer=${customerId}&limit=1&status=all&expand[]=data.default_payment_method`, {
+    headers: {
+      Authorization: `Bearer ${stripeSecret}`,
+    },
+  });
+  const subscriptions = await res.json();
 
-    if (subscriptions.data.length === 0) {
-      const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
-        {
-          customer_id: customerId,
-          subscription_status: 'not_started',
-        },
-        { onConflict: 'customer_id' }
-      );
-
-      if (noSubError) throw new Error('No active subscriptions and failed to upsert status');
-      console.info(`No active subscriptions for customer ${customerId}`);
-      return;
-    }
-
-    const subscription = subscriptions.data[0];
-
-    const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
+  if (!subscriptions.data || subscriptions.data.length === 0) {
+    const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
-        subscription_id: subscription.id,
-        price_id: subscription.items.data[0].price.id,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        ...(subscription.default_payment_method && typeof subscription.default_payment_method !== 'string'
-          ? {
-              payment_method_brand: subscription.default_payment_method.card?.brand ?? null,
-              payment_method_last4: subscription.default_payment_method.card?.last4 ?? null,
-            }
-          : {}),
-        status: subscription.status,
+        subscription_status: 'not_started',
       },
       { onConflict: 'customer_id' }
     );
 
-    if (subError) throw new Error('Failed to sync subscription data');
-
-    console.info(`Subscription synced for customer ${customerId}`);
-  } catch (error) {
-    console.error(`Error syncing subscription for ${customerId}:`, error);
-    throw error;
+    if (noSubError) throw new Error('No active subscriptions and failed to upsert status');
+    console.info(`No active subscriptions for customer ${customerId}`);
+    return;
   }
+
+  const subscription = subscriptions.data[0];
+
+  const { error: subError } = await supabase.from('stripe_subscriptions').upsert(
+    {
+      customer_id: customerId,
+      subscription_id: subscription.id,
+      price_id: subscription.items.data[0].price.id,
+      current_period_start: subscription.current_period_start,
+      current_period_end: subscription.current_period_end,
+      cancel_at_period_end: subscription.cancel_at_period_end,
+      payment_method_brand: subscription.default_payment_method?.card?.brand ?? null,
+      payment_method_last4: subscription.default_payment_method?.card?.last4 ?? null,
+      subscription_status: subscription.status,
+    },
+    { onConflict: 'customer_id' }
+  );
+
+  if (subError) throw new Error('Failed to upsert subscription');
+  console.info(`Subscription synced for customer ${customerId}`);
 }
