@@ -62,9 +62,9 @@ export function CheckoutSuccessPage() {
           // Handle Stripe payment
           // Get subscription details
           const subscription = await getUserSubscription();
-          console.log('Subscription data from getUserSubscription:', subscription);
           setSubscription(subscription);
 
+<<<<<<< HEAD
           // If subscription data is missing or has invalid dates, try to get it directly from the subscriptions table
           if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
             console.log('Subscription data incomplete, trying direct query...');
@@ -104,12 +104,11 @@ export function CheckoutSuccessPage() {
             }
           }
 
+=======
+>>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
           // Get order details
           const orders = await getUserOrders();
-          console.log('sessionId from URL:', sessionId);
-          console.log('Orders returned from getUserOrders:', orders);
           const matchingOrder = orders.find(o => o.checkout_session_id === sessionId);
-          console.log('Matching order:', matchingOrder);
           
           if (matchingOrder) {
             setOrder(matchingOrder);
@@ -154,17 +153,18 @@ export function CheckoutSuccessPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-4">
-            {subscription && subscription.price_id ? 'Subscription Activated!' : 'Payment Successful!'}
+            {subscription ? 'Subscription Activated!' : 'Payment Successful!'}
           </h1>
           
           <p className="text-xl text-gray-300 mb-8">
-            {subscription && subscription.price_id
+            {subscription 
               ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
               : `Your payment has been processed successfully. ${licenseCreated ? 'Your license has been created and is ready to use.' : ''}`}
           </p>
 
           <div className="bg-white/5 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Order Summary</h2>
+            
             {paymentMethod === 'crypto' ? (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -195,7 +195,7 @@ export function CheckoutSuccessPage() {
                   </div>
                 )}
               </div>
-            ) : subscription && subscription.price_id ? (
+            ) : subscription && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
@@ -210,19 +210,10 @@ export function CheckoutSuccessPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Plan Start:</span>
+                    <span className="text-white">Current Period:</span>
                   </div>
                   <span className="text-white font-medium">
-                    {formatDate(subscription.current_period_start)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Plan End:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    {formatDate(subscription.current_period_end)}
+                    {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
                   </span>
                 </div>
                 
@@ -240,7 +231,9 @@ export function CheckoutSuccessPage() {
                   </span>
                 </div>
               </div>
-            ) : order ? (
+            )}
+
+            {order && (
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
@@ -251,6 +244,7 @@ export function CheckoutSuccessPage() {
                     Single Track License
                   </span>
                 </div>
+                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
@@ -260,26 +254,17 @@ export function CheckoutSuccessPage() {
                     {formatCurrency(order.amount_total, order.currency)}
                   </span>
                 </div>
+                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Purchase Date:</span>
+                    <span className="text-white">Date:</span>
                   </div>
                   <span className="text-white font-medium">
-                    {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
+                    {new Date(order.order_date).toLocaleDateString()}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Payment Method:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    {order.payment_method_brand
-                      ? `${order.payment_method_brand.toUpperCase()} •••• ${order.payment_method_last4}`
-                      : 'One-time card payment'}
-                  </span>
-                </div>
+                
                 {licenseCreated && (
                   <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                     <p className="text-green-400 text-sm">
@@ -288,8 +273,6 @@ export function CheckoutSuccessPage() {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-white">No order or subscription information found.</div>
             )}
           </div>
 

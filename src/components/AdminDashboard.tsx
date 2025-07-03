@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet, Settings, Tag, BarChart, FileText } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,12 +8,9 @@ import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { ClientList } from './ClientList';
+import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
-import { FeatureManagement } from './FeatureManagement';
-import { DiscountManagement } from './DiscountManagement';
-import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
-import { AdminReportGenerator } from './AdminReportGenerator';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -56,8 +53,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [showReportGenerator, setShowReportGenerator] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'feature_management' | 'discount_management' | 'advanced_analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -131,33 +127,46 @@ export function AdminDashboard() {
         total_producers: producerUsers.length
       }));
 
-      // Fetch comprehensive sales data including all revenue sources
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-      
-      // 1. Track license sales (from sales table)
-      const { data: trackSalesData, error: trackSalesError } = await supabase
-        .from('sales')
-        .select('amount, created_at')
-        .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
+      // Fetch sales analytics
+      const { data: analyticsData, error: analyticsError } = await supabase
+        .from('sales_analytics')
+        .select('*')
+        .order('month', { ascending: false });
 
-      if (trackSalesError) {
-        console.error('Error fetching track sales:', trackSalesError);
-      }
+      if (analyticsError) {
+        console.error('Analytics error:', analyticsError);
+      } else {
+        // Get the most recent analytics data or use default values
+        const latestAnalytics = analyticsData && analyticsData.length > 0 ? analyticsData[0] : {
+          monthly_sales_count: 0,
+          monthly_revenue: 0,
+          track_count: 0,
+          producer_sales_count: 0,
+          producer_revenue: 0
+        };
 
-      // 2. Sync proposal sales (from sync_proposals table)
-      const { data: syncProposalsData, error: syncProposalsError } = await supabase
-        .from('sync_proposals')
-        .select('sync_fee, created_at, payment_status, status')
-        .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
-        .eq('payment_status', 'paid')
-        .eq('status', 'accepted');
+        // Update stats with sales data
+        setStats(prev => ({
+          ...prev,
+          total_sales: latestAnalytics.monthly_sales_count || 0,
+          total_revenue: latestAnalytics.monthly_revenue || 0
+        }));
 
-      if (syncProposalsError) {
-        console.error('Error fetching sync proposals:', syncProposalsError);
-      }
+        // Transform producer data - create a map of producer analytics by producer_id
+        const producerAnalyticsMap = analyticsData.reduce((map, item) => {
+          if (item.producer_id) {
+            if (!map[item.producer_id]) {
+              map[item.producer_id] = {
+                producer_sales_count: item.producer_sales_count || 0,
+                producer_revenue: item.producer_revenue || 0,
+                track_count: item.track_count || 0
+              };
+            }
+          }
+          return map;
+        }, {});
 
+<<<<<<< HEAD
       // 3. Custom sync request sales (from custom_sync_requests table)
       const { data: customSyncData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
@@ -227,10 +236,34 @@ export function AdminDashboard() {
             total_tracks: item.total_tracks || 0,
             total_sales: item.total_sales || 0,
             total_revenue: item.total_revenue || 0
+=======
+        // Map producer users to include their analytics
+        const transformedProducers = producerUsers.map(producer => {
+          const analytics = producerAnalyticsMap[producer.id] || {
+            producer_sales_count: 0,
+            producer_revenue: 0,
+            track_count: 0
+          };
+          
+          return {
+            id: producer.id,
+            email: producer.email,
+            first_name: producer.first_name,
+            last_name: producer.last_name,
+            account_type: 'producer' as const,
+            created_at: producer.created_at,
+            producer_number: producer.producer_number,
+            total_tracks: analytics.track_count,
+            total_sales: analytics.producer_sales_count,
+            total_revenue: analytics.producer_revenue
+>>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
           };
         });
+
+        setProducers(transformedProducers);
       }
 
+<<<<<<< HEAD
       // For producers not in the analytics (like admin emails), fetch their data manually
       const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
       
@@ -338,6 +371,8 @@ export function AdminDashboard() {
 
       setProducers(transformedProducers);
 
+=======
+>>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
     } catch (err) {
       console.error('Error fetching admin data:', err);
       setError('Failed to load dashboard data. Please try refreshing the page.');
@@ -406,22 +441,13 @@ export function AdminDashboard() {
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowReportGenerator(true)}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Generate Reports
-            </button>
-            <button
-              onClick={() => setShowLogoUpload(!showLogoUpload)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Change Logo
-            </button>
-          </div>
+          <button
+            onClick={() => setShowLogoUpload(!showLogoUpload)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Change Logo
+          </button>
         </div>
 
         {showLogoUpload && <LogoUpload />}
@@ -451,11 +477,8 @@ export function AdminDashboard() {
           <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400">Total Sales (Current Month)</p>
+                <p className="text-gray-400">Total Sales</p>
                 <p className="text-3xl font-bold text-white">{stats.total_sales}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
-                </p>
               </div>
               <BarChart3 className="w-12 h-12 text-blue-500" />
             </div>
@@ -467,9 +490,6 @@ export function AdminDashboard() {
                 <p className="text-gray-400">Total Revenue (Current Month)</p>
                 <p className="text-3xl font-bold text-white">
                   ${stats.total_revenue.toFixed(2)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
                 </p>
               </div>
               <div 
@@ -493,11 +513,10 @@ export function AdminDashboard() {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
+            { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
-            { id: 'feature_management', label: 'Feature Management', icon: <Settings className="w-4 h-4 mr-2" /> },
-            { id: 'discount_management', label: 'Discount Management', icon: <Tag className="w-4 h-4 mr-2" /> },
-            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart className="w-4 h-4 mr-2" /> }
+			      { id: 'white_label', label: 'White Label Clients', icon: null },
           ].map(tab => (
             <button
               key={tab.id}
@@ -677,6 +696,13 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {/* USDC Payouts */}
+        {activeTab === 'payouts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <ProducerPayoutsPage />
+          </div>
+        )}
+
         {/* Announcements Management */}
         {activeTab === 'announcements' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -688,28 +714,18 @@ export function AdminDashboard() {
         {activeTab === 'compensation' && (
           <CompensationSettings />
         )}
-
-        {/* Feature Management */}
-        {activeTab === 'feature_management' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <FeatureManagement />
-          </div>
-        )}
-
-        {/* Discount Management */}
-        {activeTab === 'discount_management' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <DiscountManagement />
-          </div>
-        )}
-
-        {/* Advanced Analytics */}
-        {activeTab === 'advanced_analytics' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <AdvancedAnalyticsDashboard />
-          </div>
-        )}
       </div>
+			 {activeTab === 'white_label' && (
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+         <Link
+         to="/admin/white-label-clients"
+         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors inline-block"
+          >
+       Manage White Label Clients
+      </Link>
+  </div>
+)}
+
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (
@@ -729,12 +745,6 @@ export function AdminDashboard() {
       <RevenueBreakdownDialog
         isOpen={showRevenueBreakdown}
         onClose={() => setShowRevenueBreakdown(false)}
-      />
-
-      {/* Admin Report Generator */}
-      <AdminReportGenerator
-        isOpen={showReportGenerator}
-        onClose={() => setShowReportGenerator(false)}
       />
     </div>
   );

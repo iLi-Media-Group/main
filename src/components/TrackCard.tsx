@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AudioPlayer } from './AudioPlayer';
 import { Track } from '../types';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic, FileText, X } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +20,6 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
-  const [showSplitSheet, setShowSplitSheet] = useState(false);
   const isSyncOnly = track.hasVocals && track.vocalsUsageType === 'sync_only';
 
   useEffect(() => {
@@ -208,20 +207,6 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
                 <span>Stems</span>
               </div>
             )}
-            {track.splitSheetUrl && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowSplitSheet(true);
-                }}
-                className="flex items-center text-orange-400 hover:text-orange-300 transition-colors"
-                title="View Split Sheet"
-              >
-                <FileText className="w-3 h-3 mr-0.5" />
-                <span>Split Sheet</span>
-              </button>
-            )}
           </div>
 
           {/* Action Buttons */}
@@ -250,46 +235,6 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
           onClose={() => setShowProducerProfile(false)}
           producerId={track.producer.id}
         />
-      )}
-
-      {/* Split Sheet Modal */}
-      {showSplitSheet && track.splitSheetUrl && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-blue-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center">
-                <FileText className="w-6 h-6 text-orange-400 mr-2" />
-                <h2 className="text-2xl font-bold text-white">Split Sheet: {track.title}</h2>
-              </div>
-              <button
-                onClick={() => setShowSplitSheet(false)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="bg-white rounded-lg overflow-hidden">
-              <iframe
-                src={track.splitSheetUrl}
-                className="w-full h-[70vh]"
-                title="Split Sheet PDF"
-              />
-            </div>
-            
-            <div className="mt-4 text-center">
-              <a
-                href={track.splitSheetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Open in New Tab
-              </a>
-            </div>
-          </div>
-        </div>
       )}
     </>
   );

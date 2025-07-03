@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
-import { WhiteLabelCalculator } from './WhiteLabelCalculator';
+import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2 } from 'lucide-react';
 
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({
@@ -66,7 +65,7 @@ export function WhiteLabelPage() {
               Launch Your Own <span className="text-blue-400">Music Licensing</span> Platform
             </h1>
             <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Fully branded. Crypto payments accepted. AI-powered. Automated USD payouts. 
+              Fully branded. Crypto-ready. AI-powered. Automated payouts. 
               Get your own white-label sync licensing business up and running in days, not months.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -104,8 +103,7 @@ export function WhiteLabelPage() {
                 <Wallet className="w-12 h-12 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
                 <h3 className="text-xl font-semibold text-white mb-3">Automated Payouts</h3>
                 <p className="text-gray-300">
-                  Automatically calculate and distribute payments to your producers via Stripe. 
-                  Accept crypto payments from customers, automatically converted to USD payouts.
+                  Automatically calculate and distribute payments to your producers via Stripe or USDC on Solana/Polygon networks.
                 </p>
               </div>
               
@@ -229,12 +227,8 @@ export function WhiteLabelPage() {
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Email support</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">Add-on features available</span>
-                  </li>
                 </ul>
-                <a href="#calculator" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
+                <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
                   Start Now
                 </a>
               </div>
@@ -256,7 +250,7 @@ export function WhiteLabelPage() {
                   </li>
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">Crypto payment acceptance (converted to USD)</span>
+                    <span className="text-gray-300">USDC payments on Solana</span>
                   </li>
                   <li className="flex items-start">
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
@@ -274,12 +268,8 @@ export function WhiteLabelPage() {
                     <Check className="w-5 h-5 text-purple-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Priority support</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-green-300 font-medium">Producer Onboarding included!</span>
-                  </li>
                 </ul>
-                <a href="#calculator" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
+                <a href="#contact" className="block w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white text-center font-semibold rounded-lg transition-colors shadow-lg shadow-purple-500/25">
                   Get Pro
                 </a>
               </div>
@@ -316,10 +306,6 @@ export function WhiteLabelPage() {
                     <Check className="w-5 h-5 text-blue-400 mr-2 flex-shrink-0 mt-0.5" />
                     <span className="text-gray-300">Licensing compliance tools</span>
                   </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-green-400 mr-2 flex-shrink-0 mt-0.5" />
-                    <span className="text-green-300 font-medium">All 3 add-ons included!</span>
-                  </li>
                 </ul>
                 <a href="#contact" className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold rounded-lg transition-colors">
                   Contact Us
@@ -328,89 +314,62 @@ export function WhiteLabelPage() {
             </div>
           </div>
         </section>
-        
-        {/* Pricing Calculator */}
-        <section id="calculator" className="py-20 bg-black/30">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Calculate Your Costs</h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                Use our interactive calculator to see exactly what your white-label platform will cost, including setup fees and annual service costs.
-              </p>
-            </div>
-            
-            <div className="max-w-4xl mx-auto">
-              <WhiteLabelCalculator />
-            </div>
-          </div>
-        </section>
-        
         {/* Optional Feature Add-Ons */}
-        <section id="addons" className="py-20 bg-black/30">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Optional Feature Add-Ons</h2>
-              <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-                Customize your white-label platform even further with these powerful feature modules.
-              </p>
-            </div>
+<section id="addons" className="py-20 bg-black/30">
+  <div className="max-w-7xl mx-auto px-4">
+    <div className="text-center mb-16">
+      <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Optional Feature Add-Ons</h2>
+      <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+        Customize your white-label platform even further with these powerful feature modules.
+      </p>
+    </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* Producer Onboarding */}
-              <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xl font-semibold text-white">Producer Onboarding Process</h3>
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Included in Pro+</span>
-                </div>
-                <p className="text-gray-300 mb-4">
-                  Let producers apply to join your library. Applications are automatically ranked by genre to help you select the best fits.
-                </p>
-                <p className="text-blue-400 font-bold mb-4">$249</p>
-                <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
-              </div>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+      {/* Producer Onboarding */}
+      <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
+        <h3 className="text-xl font-semibold text-white mb-3">Producer Onboarding Process</h3>
+        <p className="text-gray-300 mb-4">
+          Let producers apply to join your library. Applications are automatically ranked by genre to help you select the best fits.
+        </p>
+        <p className="text-blue-400 font-bold mb-4">$249</p>
+        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+      </div>
 
-              {/* AI Search Assistance */}
-              <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xl font-semibold text-white">AI Search Assistance</h3>
-                  <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Pro Plan Only</span>
-                </div>
-                <p className="text-gray-300 mb-4">
-                  Help clients discover music based on their previous searches, favorites, or licensed tracks. AI-driven suggestions in real time.
-                </p>
-                <p className="text-blue-400 font-bold mb-4">$249</p>
-                <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
-              </div>
+      {/* AI Search Assistance */}
+      <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
+        <h3 className="text-xl font-semibold text-white mb-3">AI Search Assistance</h3>
+        <p className="text-gray-300 mb-4">
+          Help clients discover music based on their previous searches, favorites, or licensed tracks. AI-driven suggestions in real time.
+        </p>
+        <p className="text-blue-400 font-bold mb-4">$249</p>
+        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+      </div>
 
-              {/* Deep Media Search Options */}
-              <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xl font-semibold text-white">Deep Media Search Options</h3>
-                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded">Included in Enterprise</span>
-                </div>
-                <p className="text-gray-300 mb-4">
-                  Let producers tag tracks with recommended media types (TV shows, films, commercials, podcasts, YouTube, etc.). Add media filters for your clients.
-                </p>
-                <p className="text-blue-400 font-bold mb-4">$249</p>
-                <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
-              </div>
-            </div>
+      {/* Deep Media Search Options */}
+      <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20">
+        <h3 className="text-xl font-semibold text-white mb-3">Deep Media Search Options</h3>
+        <p className="text-gray-300 mb-4">
+          Let producers tag tracks with recommended media types (TV shows, films, commercials, podcasts, YouTube, etc.). Add media filters for your clients.
+        </p>
+        <p className="text-blue-400 font-bold mb-4">$249</p>
+        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+      </div>
+    </div>
 
-            {/* Bundle Discounts */}
-            <div className="mt-16 text-center">
-              <h3 className="text-2xl font-bold text-white mb-4">Bundle and Save</h3>
-              <ul className="text-gray-300 space-y-2">
-                <li>✅ Any 2 Add-Ons for <span className="text-blue-400 font-bold">$449</span> (Save $49)</li>
-                <li>✅ All 3 Add-Ons for <span className="text-blue-400 font-bold">$599</span> (Save $148)</li>
-                <li>✅ <span className="text-purple-400 font-bold">Pro Plan</span> includes Producer Onboarding for free!</li>
-                <li>✅ <span className="text-green-400 font-bold">Enterprise Plan</span> includes all 3 add-ons for free!</li>
-              </ul>
-              <a href="#contact" className="mt-4 inline-block py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/25 transition-colors">
-                Request Bundle Pricing
-              </a>
-            </div>
-          </div>
-        </section>
+    {/* Bundle Discounts */}
+    <div className="mt-16 text-center">
+      <h3 className="text-2xl font-bold text-white mb-4">Bundle and Save</h3>
+      <ul className="text-gray-300 space-y-2">
+        <li>✅ Any 2 Add-Ons for <span className="text-blue-400 font-bold">$449</span> (Save $49)</li>
+        <li>✅ All 3 Add-Ons for <span className="text-blue-400 font-bold">$599</span> (Save $148)</li>
+      </ul>
+      <a href="#contact" className="mt-4 inline-block py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/25 transition-colors">
+        Request Bundle Pricing
+      </a>
+    </div>
+  </div>
+</section>
+
 
         {/* Testimonials */}
         <section className="py-20 bg-black/30">
@@ -604,8 +563,7 @@ export function WhiteLabelPage() {
               <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
                 <h3 className="text-xl font-semibold text-white mb-3">How do producer payments work?</h3>
                 <p className="text-gray-300">
-                  You can set custom commission rates for each producer or track. Payments are processed automatically via Stripe. 
-                  Your platform can accept crypto payments from customers, which are automatically converted to USD and paid out to producers' bank accounts.
+                  You can set custom commission rates for each producer or track. Payments can be processed automatically via Stripe or USDC on Solana/Polygon networks, with detailed reporting and transaction history.
                 </p>
               </div>
               

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { PricingCarousel } from './PricingCarousel';
-import { PaymentFAQ } from './PaymentFAQ';
 import { getUserSubscription, getMembershipPlanFromPriceId, formatDate } from '../lib/stripe';
 import { useAuth } from '../contexts/AuthContext';
 import { CreditCard, Calendar, CheckCircle, ArrowRight } from 'lucide-react';
@@ -112,11 +111,6 @@ export function PricingPage() {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Payment FAQ Section */}
-      <div className="mt-16 max-w-4xl mx-auto">
-        <PaymentFAQ />
       </div>
     </div>
   );

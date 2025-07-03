@@ -4,7 +4,6 @@ import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Libra
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
-import { useSiteBranding } from '../contexts/SiteBrandingContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,10 +14,10 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { user, accountType, signOut } = useAuth();
-  const { siteName } = useSiteBranding();
   const navigate = useNavigate();
   const location = useLocation();
-  const [hasWhiteLabel, setHasWhiteLabel] = useState(false);
+  const isAdmin = user?.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email);
+
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -35,28 +34,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
     fetchLogo();
   }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setHasWhiteLabel(false);
-      return;
-    }
-    supabase
-      .from('white_label_clients')
-      .select('id')
-      .eq('owner_id', user.id)
-      .single()
-      .then(({ data }) => {
-        setHasWhiteLabel(!!data);
-      });
-  }, [user]);
-
-  // Debug: log user.role on render
-  useEffect(() => {
-    if (user && user.role) {
-      console.log('Current user.role:', user.role);
-    }
-  }, [user]);
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -78,21 +55,21 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   };
 
   const getDashboardLink = () => {
-    if (accountType === 'admin') {
+    if (isAdmin) {
       return location.pathname === '/admin' ? '/producer/dashboard' : '/admin';
     }
     return accountType === 'producer' ? '/producer/dashboard' : '/dashboard';
   };
 
   const getDashboardIcon = () => {
-    if (accountType === 'admin') {
+    if (isAdmin) {
       return location.pathname === '/admin' ? <Music className="w-4 h-4 mr-2" /> : <Shield className="w-4 h-4 mr-2" />;
     }
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
 
   const getDashboardLabel = () => {
-    if (accountType === 'admin') {
+    if (isAdmin) {
       return location.pathname === '/admin' ? 'Producer Dashboard' : 'Admin Dashboard';
     }
     return accountType === 'producer' ? 'Producer Dashboard' : 'Dashboard';
@@ -105,7 +82,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
               {logoUrl ? (
-                <div className="h-16 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
+                <div className="h-12 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
                   <img 
                     src={logoUrl} 
                     alt="Logo" 
@@ -113,7 +90,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   />
                 </div>
               ) : (
-                <div className="h-16 w-16 flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
+                <div className="h-12 w-12 flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
                   <Music className="w-8 h-8 text-blue-400" />
                 </div>
               )}
@@ -122,7 +99,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
           <div className="flex-1 flex justify-center">
             <h1 className="text-2xl font-bold text-white">
-              {siteName || (<span>MYBEATFI <span className="text-blue-400">SYNC</span></span>)}
+              MYBEATFI <span className="text-blue-400">SYNC</span>
             </h1>
           </div>
           
@@ -168,8 +145,8 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     </Link>
                   )}
                   
-                  {/* Admin-specific menu items (remove Admin Dashboard from here) */}
-                  {accountType === 'admin' && (
+                  {/* Admin-specific menu items */}
+                  {isAdmin && (
                     <>
                       <Link to="/open-sync-briefs" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Briefcase className="w-4 h-4 mr-2" />Open Sync Briefs
@@ -183,10 +160,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   {/* Common menu items continued */}
                   <Link to="/pricing" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
-                  </Link>
-                  
-                  <Link to="/services" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                    <Briefcase className="w-4 h-4 mr-2" />Services
                   </Link>
                   
                   <div className="border-t border-blue-500/20 my-1"></div>
@@ -204,14 +177,14 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   </Link>
                   
                   {/* Producer and Admin specific items */}
-                  {(accountType === 'producer' || accountType === 'admin') && (
+                  {(accountType === 'producer' || isAdmin) && (
                     <Link to="/chat" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <MessageSquare className="w-4 h-4 mr-2" />Internal Chat
                     </Link>
                   )}
                   
                   {/* Admin specific items */}
-                  {accountType === 'admin' && (
+                  {isAdmin && (
                     <>
                       <Link to="/admin/invite-producer" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <UserCog className="w-4 h-4 mr-2" />Invite Producer
@@ -228,34 +201,17 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       <Link to="/producer/banking" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <DollarSign className="w-4 h-4 mr-2" />Earnings & Payments
                       </Link>
+                      <Link to="/producer/payouts" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Wallet className="w-4 h-4 mr-2" />USDC Payouts
+                      </Link>
                       <Link to="/producer/upload" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <Upload className="w-4 h-4 mr-2" />Upload Track
                       </Link>
                     </>
                   )}
                   
-                  {/* Dashboard links (move Admin Dashboard and White Label Admin here for admins) */}
-                  {user && accountType === 'admin' && (
-                    <>
-                      <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => { console.log('Clicked Admin Dashboard link'); setIsMenuOpen(false); }}>
-                        <Shield className="w-4 h-4 mr-2" />Admin Dashboard
-                      </Link>
-                      <Link to="/admin/services" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => { console.log('Clicked Manage Services link'); setIsMenuOpen(false); }}>
-                        <Briefcase className="w-4 h-4 mr-2" />Manage Services
-                      </Link>
-                      <Link to="/admin/white-label" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => { console.log('Clicked White Label Admin link'); setIsMenuOpen(false); }}>
-                        <Shield className="w-4 h-4 mr-2" />White Label Admin
-                      </Link>
-                    </>
-                  )}
-                  {/* White Label Branding Settings link for white label clients */}
-                  {user && hasWhiteLabel && (
-                    <Link to="/branding" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                      <span className="w-4 h-4 mr-2 inline-block bg-gradient-to-tr from-blue-400 to-purple-400 rounded-full" />Branding Settings
-                    </Link>
-                  )}
-                  {/* Dashboard links for non-admins */}
-                  {user && accountType !== 'admin' && (
+                  {/* Dashboard links */}
+                  {user && (
                     <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       {getDashboardIcon()}
                       {getDashboardLabel()}

@@ -1,50 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Sparkles, Search, TrendingUp, Clock, Heart, Zap, Lightbulb, ArrowRight, X, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import React, { useState } from 'react';
 
-interface Track {
+type Track = {
   id: string;
   title: string;
-  artist: string;
-  genres: string[];
-  moods: string[];
-  bpm: number;
-  image: string;
-  audioUrl: string;
-  score?: number;
-  reason?: string;
-}
-
-interface SearchSuggestion {
-  type: 'genre' | 'mood' | 'bpm' | 'style' | 'use_case';
-  value: string;
-  confidence: number;
   description: string;
-}
+  score: number;
+};
 
-interface AIRecommendationWidgetProps {
-  onTrackSelect?: (track: Track) => void;
-  onSearchApply?: (filters: any) => void;
-  className?: string;
-}
-
-const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({ 
-  onTrackSelect, 
-  onSearchApply,
-  className = "" 
-}) => {
-  const { user } = useAuth();
+const AIRecommendationWidget: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [recommendations, setRecommendations] = useState<Track[]>([]);
-  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([]);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [popularSearches, setPopularSearches] = useState<string[]>([]);
+  const [results, setResults] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'suggestions' | 'trending'>('recommendations');
 
+<<<<<<< HEAD
   // Popular search examples
   const popularExamples = [
     'energetic hip hop for workout',
@@ -360,296 +329,64 @@ const AIRecommendationWidget: React.FC<AIRecommendationWidgetProps> = ({
   };
 
   const processNaturalLanguageQuery = async (query: string) => {
+=======
+  const fetchRecommendations = async () => {
+>>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
     if (!query.trim()) return;
 
     setLoading(true);
     setError(null);
-    saveRecentSearch(query);
 
     try {
-      // Parse natural language query
-      const suggestions = await parseQuery(query);
-      setSearchSuggestions(suggestions);
-      setShowSuggestions(true);
-      setActiveTab('suggestions');
+      const res = await fetch('http://localhost:4000/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      });
 
-      // Apply the search if we have good suggestions
-      if (suggestions.length > 0 && onSearchApply) {
-        const filters = convertSuggestionsToFilters(suggestions);
-        onSearchApply(filters);
-      }
+      if (!res.ok) throw new Error('Failed to fetch recommendations');
 
-    } catch (err) {
-      setError('Failed to process query. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const parseQuery = async (query: string): Promise<SearchSuggestion[]> => {
-    const suggestions: SearchSuggestion[] = [];
-    const lowerQuery = query.toLowerCase();
-
-    // Genre detection
-    const genres = ['hip hop', 'electronic', 'pop', 'rock', 'jazz', 'classical', 'country', 'r&b', 'folk', 'reggae', 'blues', 'metal', 'punk', 'indie', 'ambient', 'techno', 'house', 'trance', 'dubstep', 'trap'];
-    genres.forEach(genre => {
-      if (lowerQuery.includes(genre)) {
-        suggestions.push({
-          type: 'genre',
-          value: genre,
-          confidence: 0.9,
-          description: `Genre: ${genre}`
-        });
-      }
-    });
-
-    // Mood detection
-    const moods = ['energetic', 'peaceful', 'uplifting', 'dramatic', 'romantic', 'mysterious', 'funky', 'aggressive', 'melancholic', 'happy', 'sad', 'excited', 'calm', 'intense', 'relaxed', 'powerful', 'gentle', 'dark', 'bright', 'emotional'];
-    moods.forEach(mood => {
-      if (lowerQuery.includes(mood)) {
-        suggestions.push({
-          type: 'mood',
-          value: mood,
-          confidence: 0.8,
-          description: `Mood: ${mood}`
-        });
-      }
-    });
-
-    // BPM detection
-    const bpmMatch = lowerQuery.match(/(\d+)\s*(?:bpm|tempo|speed)/);
-    if (bpmMatch) {
-      const bpm = parseInt(bpmMatch[1]);
-      if (bpm >= 60 && bpm <= 200) {
-        suggestions.push({
-          type: 'bpm',
-          value: bpm.toString(),
-          confidence: 0.95,
-          description: `Tempo: ${bpm} BPM`
-        });
-      }
+      const data = await res.json();
+      setResults(data.results || []);
+    } catch (err: any) {
+      setError(err.message || 'Unknown error');
     }
 
-    // Use case detection
-    const useCases = ['workout', 'meditation', 'commercial', 'trailer', 'restaurant', 'club', 'party', 'background', 'foreground', 'intro', 'outro', 'transition'];
-    useCases.forEach(useCase => {
-      if (lowerQuery.includes(useCase)) {
-        suggestions.push({
-          type: 'use_case',
-          value: useCase,
-          confidence: 0.7,
-          description: `Use case: ${useCase}`
-        });
-      }
-    });
-
-    return suggestions;
-  };
-
-  const convertSuggestionsToFilters = (suggestions: SearchSuggestion[]) => {
-    const filters: any = {
-      query: '',
-      genres: [],
-      moods: [],
-      minBpm: 0,
-      maxBpm: 300
-    };
-
-    suggestions.forEach(suggestion => {
-      switch (suggestion.type) {
-        case 'genre':
-          filters.genres.push(suggestion.value);
-          break;
-        case 'mood':
-          filters.moods.push(suggestion.value);
-          break;
-        case 'bpm':
-          const bpm = parseInt(suggestion.value);
-          filters.minBpm = Math.max(0, bpm - 10);
-          filters.maxBpm = Math.min(300, bpm + 10);
-          break;
-        case 'use_case':
-          filters.query = suggestion.value;
-          break;
-      }
-    });
-
-    return filters;
-  };
-
-  const handleTrackClick = (track: Track) => {
-    if (onTrackSelect) {
-      onTrackSelect(track);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: SearchSuggestion) => {
-    if (onSearchApply) {
-      const filters = convertSuggestionsToFilters([suggestion]);
-      onSearchApply(filters);
-    }
+    setLoading(false);
   };
 
   return (
-    <div className={`bg-white/10 backdrop-blur-xl shadow-xl rounded-2xl border border-blue-400/30 p-8 max-w-xl mx-auto ${className}`}>
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-3">
-          <span className="inline-flex items-center justify-center bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 rounded-full p-2 animate-pulse">
-            <Sparkles className="w-7 h-7 text-white" />
-          </span>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
-            AI Search Assistant
-          </h2>
-        </div>
-      </div>
+    <div className="max-w-lg mx-auto p-4 border rounded shadow">
+      <h2 className="text-xl font-semibold mb-3">AI Music Recommendations</h2>
 
-      {/* Natural Language Search */}
-      <div className="mb-8">
-        <div className="relative">
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Describe what you're looking for... (e.g., 'energetic hip hop for workout')"
-            className="w-full pl-6 pr-16 py-4 bg-white/20 border border-blue-400/30 rounded-full text-white placeholder-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-400/30 text-lg shadow-inner transition-all"
-            onKeyPress={(e) => e.key === 'Enter' && processNaturalLanguageQuery(query)}
-          />
-          <button
-            onClick={() => processNaturalLanguageQuery(query)}
-            disabled={loading || !query.trim()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 text-white rounded-full p-2 shadow-lg hover:scale-105 transition-all disabled:opacity-50"
-          >
-            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Search className="w-6 h-6" />}
-          </button>
-        </div>
-      </div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search for mood, genre, etc."
+        className="w-full border p-2 rounded mb-3"
+      />
 
-      {/* Tabs */}
-      <div className="flex space-x-2 mb-6">
-        {[
-          { key: 'recommendations', label: 'For You', icon: <TrendingUp className="w-4 h-4 inline mr-1" /> },
-          { key: 'suggestions', label: 'Suggestions', icon: <Lightbulb className="w-4 h-4 inline mr-1" /> },
-          { key: 'trending', label: 'Trending', icon: <Zap className="w-4 h-4 inline mr-1" /> },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key as typeof activeTab)}
-            className={`px-5 py-2 rounded-full text-sm font-semibold transition-all relative
-              ${activeTab === tab.key
-                ? 'bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 text-white shadow-md'
-                : 'text-gray-300 hover:text-white hover:bg-white/10'}
-            `}
-          >
-            {tab.icon}{tab.label}
-            {activeTab === tab.key && (
-              <span className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-2/3 h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 rounded-full animate-fade-in"></span>
-            )}
-          </button>
+      <button
+        onClick={fetchRecommendations}
+        disabled={loading || !query.trim()}
+        className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+      >
+        {loading ? 'Loading...' : 'Get Recommendations'}
+      </button>
+
+      {error && <p className="text-red-600 mt-3">{error}</p>}
+
+      <ul className="mt-4 space-y-2">
+        {results.length === 0 && !loading && <li>No recommendations yet.</li>}
+        {results.map(track => (
+          <li key={track.id} className="border p-3 rounded hover:bg-gray-100">
+            <h3 className="font-semibold">{track.title}</h3>
+            <p className="text-sm text-gray-600">{track.description}</p>
+            <p className="text-xs text-gray-400">Score: {track.score.toFixed(2)}</p>
+          </li>
         ))}
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-          <p className="text-red-400 text-sm">{error}</p>
-        </div>
-      )}
-
-      {/* Content */}
-      {activeTab === 'recommendations' && (
-        <div className="space-y-5">
-          <h3 className="text-lg font-semibold text-white mb-2">Recommended for You</h3>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
-            </div>
-          ) : recommendations.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {recommendations.slice(0, 4).map((track) => (
-                <div
-                  key={track.id}
-                  onClick={() => handleTrackClick(track)}
-                  className="flex items-center space-x-4 p-4 bg-white/10 rounded-xl cursor-pointer hover:scale-[1.03] hover:bg-white/20 transition-all shadow-md group"
-                >
-                  <img
-                    src={track.image}
-                    alt={track.title}
-                    className="w-16 h-16 object-cover rounded-lg shadow group-hover:shadow-lg transition-all"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-white font-semibold truncate text-lg">{track.title}</h4>
-                    <p className="text-sm text-blue-200 truncate">{track.artist}</p>
-                    {track.reason && (
-                      <span className="inline-block mt-1 px-2 py-0.5 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-400 text-xs text-white rounded-full shadow">
-                        {track.reason}
-                      </span>
-                    )}
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-blue-300 group-hover:text-white transition-all" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center py-4">No recommendations yet. Try searching for some tracks!</p>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'suggestions' && (
-        <div className="space-y-5">
-          <h3 className="text-lg font-semibold text-white mb-2">Search Suggestions</h3>
-          {searchSuggestions.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {searchSuggestions.map((suggestion, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-white text-sm flex items-center gap-2 shadow"
-                >
-                  <Lightbulb className="w-4 h-4 text-yellow-300" />
-                  {suggestion.description}
-                  <span className="ml-2 text-xs text-blue-200">{(suggestion.confidence * 100).toFixed(0)}%</span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {popularSearches.map((search, index) => (
-                <button
-                  key={index}
-                  onClick={() => setQuery(search)}
-                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-blue-200 text-sm shadow"
-                >
-                  <TrendingUp className="w-4 h-4 mr-1 inline" />
-                  {search}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === 'trending' && (
-        <div className="space-y-5">
-          <h3 className="text-lg font-semibold text-white mb-2">Recent Searches</h3>
-          {recentSearches.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {recentSearches.map((search, index) => (
-                <button
-                  key={index}
-                  onClick={() => setQuery(search)}
-                  className="px-4 py-2 bg-white/10 rounded-full hover:bg-white/20 transition-all text-blue-200 text-sm flex items-center gap-2 shadow"
-                >
-                  <Clock className="w-4 h-4 text-gray-400" />
-                  {search}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-400 text-center py-4">No recent searches</p>
-          )}
-        </div>
-      )}
+      </ul>
     </div>
   );
 };

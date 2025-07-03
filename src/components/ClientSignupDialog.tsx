@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SignupForm } from './SignupForm';
 import { useSearchParams } from 'react-router-dom';
-import { Dialog, DialogContent } from './ui/dialog';
 
 interface ClientSignupDialogProps {
   isOpen: boolean;
@@ -23,12 +22,7 @@ export function ClientSignupDialog({ isOpen, onClose }: ClientSignupDialogProps)
       setShouldOpen(isOpen);
     }
   }, [searchParams, isOpen]);
-
-  return (
-    <Dialog open={shouldOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-h-[100dvh] overflow-y-auto flex flex-col justify-center">
-        <SignupForm onClose={onClose} />
-      </DialogContent>
-    </Dialog>
-  );
+  
+  if (!shouldOpen) return null;
+  return <SignupForm onClose={onClose} />;
 }

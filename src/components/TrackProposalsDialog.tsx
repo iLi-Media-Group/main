@@ -116,26 +116,11 @@ export function TrackProposalsDialog({
     if (!selectedProposal || !user) return;
     
     try {
-      let newStatus = action === 'accept' ? 'producer_accepted' : 'rejected';
-
-      if (action === 'accept') {
-        // Check if client has already accepted
-        const { data: currentProposal } = await supabase
-          .from('sync_proposals')
-          .select('client_status')
-          .eq('id', selectedProposal.id)
-          .single();
-
-        if (currentProposal?.client_status === 'accepted') {
-          newStatus = 'accepted';
-        }
-      }
-
       // Update proposal status
       const { error } = await supabase
         .from('sync_proposals')
         .update({ 
-          status: newStatus,
+          status: action === 'accept' ? 'accepted' : 'rejected',
           updated_at: new Date().toISOString()
         })
         .eq('id', selectedProposal.id);
@@ -147,8 +132,8 @@ export function TrackProposalsDialog({
         .from('proposal_history')
         .insert({
           proposal_id: selectedProposal.id,
-          previous_status: selectedProposal.status,
-          new_status: newStatus,
+          previous_status: 'pending',
+          new_status: action === 'accept' ? 'accepted' : 'rejected',
           changed_by: user.id
         });
 
@@ -172,7 +157,7 @@ export function TrackProposalsDialog({
       // Update local state
       setProposals(proposals.map(p => 
         p.id === selectedProposal.id 
-          ? { ...p, status: newStatus } 
+          ? { ...p, status: action === 'accept' ? 'accepted' : 'rejected' } 
           : p
       ));
       
@@ -204,7 +189,7 @@ export function TrackProposalsDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold text-white">Proposals for "{trackTitle}"</h2>

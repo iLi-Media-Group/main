@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Loader2, Music, Hash, Image, FileText } from 'lucide-react';
+import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
 import { GENRES, SUB_GENRES, MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,13 +18,10 @@ interface FormData {
   selectedGenres: string[];
   selectedSubGenres: string[];
   selectedMoods: string[];
-  selectedMediaTypes: string[];
   mp3Url: string;
   trackoutsUrl: string;
-  stems_url: string;
   hasVocals: boolean;
   vocalsUsageType: 'normal' | 'sync_only';
-  isSyncOnly: boolean;
 }
 
 export function TrackUploadForm() {
@@ -42,8 +39,6 @@ export function TrackUploadForm() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
-  const [splitSheetPreview, setSplitSheetPreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [bpm, setBpm] = useState(savedData?.bpm || '');
@@ -53,11 +48,9 @@ export function TrackUploadForm() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>(savedData?.selectedGenres || []);
   const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>(savedData?.selectedSubGenres || []);
   const [selectedMoods, setSelectedMoods] = useState<string[]>(savedData?.selectedMoods || []);
-  const [selectedMediaTypes, setSelectedMediaTypes] = useState<string[]>(savedData?.selectedMediaTypes || []);
   const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
   const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
-  const [stemsUrl, setStemsUrl] = useState(savedData?.stems_url || '');
-  const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false);
+  const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
   const [vocalsUsageType, setVocalsUsageType] = useState<'normal' | 'sync_only'>(savedData?.vocalsUsageType || 'normal');
   const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,10 +66,8 @@ export function TrackUploadForm() {
       selectedGenres,
       selectedSubGenres,
       selectedMoods,
-      selectedMediaTypes,
       mp3Url,
       trackoutsUrl,
-      stems_url: stemsUrl,
       hasVocals,
       vocalsUsageType,
       isSyncOnly
@@ -91,10 +82,8 @@ export function TrackUploadForm() {
     selectedGenres,
     selectedSubGenres,
     selectedMoods,
-    selectedMediaTypes,
     mp3Url,
     trackoutsUrl,
-    stemsUrl,
     hasVocals,
     vocalsUsageType,
     isSyncOnly
@@ -138,25 +127,6 @@ export function TrackUploadForm() {
     setError('');
   };
 
-  const handleSplitSheetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      setError('Please upload a PDF file for the split sheet');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit for PDFs
-      setError('Split sheet PDF size must be less than 10MB');
-      return;
-    }
-
-    setSplitSheetFile(file);
-    setSplitSheetPreview(URL.createObjectURL(file));
-    setError('');
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !audioFile) return;
@@ -194,11 +164,6 @@ export function TrackUploadForm() {
         imageUrl = await uploadFile(imageFile, 'track-images');
       }
 
-      let splitSheetUrl = null;
-      if (splitSheetFile) {
-        splitSheetUrl = await uploadFile(splitSheetFile, 'split-sheets');
-      }
-
       const { error: trackError } = await supabase
         .from('tracks')
         .insert({
@@ -214,10 +179,8 @@ export function TrackUploadForm() {
           is_one_stop: isOneStop,
           audio_url: audioUrl,
           image_url: imageUrl,
-          split_sheet_url: splitSheetUrl,
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsUrl || null,
-          stems_url: stemsUrl || null,
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? (isSyncOnly ? 'sync_only' : vocalsUsageType) : null,
           created_at: new Date().toISOString(),
@@ -226,6 +189,7 @@ export function TrackUploadForm() {
 
       if (trackError) throw trackError;
 
+<<<<<<< HEAD
       // Get the inserted track ID
       const { data: trackData, error: trackFetchError } = await supabase
         .from('tracks')
@@ -264,6 +228,8 @@ export function TrackUploadForm() {
         }
       }
 
+=======
+>>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
       clearSavedFormData();
       navigate('/producer/dashboard');
     } catch (err) {
@@ -328,7 +294,7 @@ export function TrackUploadForm() {
               )}
               {uploadedUrl && (
                 <div className="mt-4">
-                  <AudioPlayer src={uploadedUrl} title={audioFile?.name || 'Track Preview'} />
+                  <AudioPlayer url={uploadedUrl} title={audioFile.name} />
                 </div>
               )}
             </div>
@@ -446,19 +412,6 @@ export function TrackUploadForm() {
                 placeholder="https://boombox.io/..."
               />
             </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stems (Optional)
-            </label>
-            <input
-              type="url"
-              value={stemsUrl}
-              onChange={(e) => setStemsUrl(e.target.value)}
-              className="block w-full"
-              placeholder="https://your-stems-link.com/..."
-            />
           </div>
 
           <div className="text-center">
@@ -638,192 +591,10 @@ export function TrackUploadForm() {
             </div>
           </div>
 
-          {/* Media Types Section */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              Recommended Media Types (Optional)
-            </label>
-            <p className="text-sm text-gray-400 mb-4">
-              Select the media types where this track would work well. This helps clients find the perfect music for their projects.
-            </p>
-            <div className="space-y-6">
-              {/* Video Media */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Video Media</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['TV Shows', 'Films', 'Commercials', 'Documentaries', 'Music Videos', 'YouTube', 'TikTok', 'Instagram', 'Social Media'].map((mediaType) => (
-                    <label
-                      key={mediaType}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMediaTypes.includes(mediaType)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
-                          } else {
-                            setSelectedMediaTypes(
-                              selectedMediaTypes.filter((mt) => mt !== mediaType)
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>{mediaType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Audio Media */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Audio Media</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Podcasts', 'Radio', 'Audiobooks', 'Voice-overs', 'Background Music'].map((mediaType) => (
-                    <label
-                      key={mediaType}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMediaTypes.includes(mediaType)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
-                          } else {
-                            setSelectedMediaTypes(
-                              selectedMediaTypes.filter((mt) => mt !== mediaType)
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>{mediaType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Digital Media */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Digital Media</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Video Games', 'Apps', 'Websites', 'Presentations'].map((mediaType) => (
-                    <label
-                      key={mediaType}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMediaTypes.includes(mediaType)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
-                          } else {
-                            setSelectedMediaTypes(
-                              selectedMediaTypes.filter((mt) => mt !== mediaType)
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>{mediaType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Other Media */}
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="text-white font-medium mb-3">Other Media</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {['Live Events', 'Corporate', 'Educational', 'Sports', 'News'].map((mediaType) => (
-                    <label
-                      key={mediaType}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMediaTypes.includes(mediaType)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedMediaTypes([...selectedMediaTypes, mediaType]);
-                          } else {
-                            setSelectedMediaTypes(
-                              selectedMediaTypes.filter((mt) => mt !== mediaType)
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>{mediaType}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Split Sheet Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Split Sheet (Optional)
-            </label>
-            <p className="text-sm text-gray-400 mb-4">
-              Upload a PDF showing all contributors and their percentages. This helps clients understand the complete production team.
-            </p>
-            <div className="flex items-center space-x-4">
-              <div className="w-32 h-32 rounded-lg overflow-hidden bg-white/10 border border-blue-500/20">
-                {splitSheetPreview ? (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <FileText className="w-12 h-12 text-blue-400" />
-                    <span className="text-xs text-gray-400 mt-2">PDF Ready</span>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <FileText className="w-8 h-8 text-gray-400" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1">
-                <label className="block">
-                  <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors cursor-pointer">
-                    <div className="text-center">
-                      <Upload className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                      <span className="text-sm text-gray-400">
-                        Click to upload split sheet
-                      </span>
-                      <span className="block text-xs text-gray-500 mt-1">
-                        PDF only, max 10MB
-                      </span>
-                    </div>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf"
-                    onChange={handleSplitSheetChange}
-                    disabled={isSubmitting}
-                  />
-                </label>
-              </div>
-            </div>
-            {splitSheetFile && (
-              <p className="mt-2 text-sm text-gray-400">
-                Selected file: {splitSheetFile.name} ({(splitSheetFile.size / 1024 / 1024).toFixed(2)} MB)
-              </p>
-            )}
-          </div>
-
-          <div className="sticky bottom-8 pt-8 bg-gradient-to-b from-transparent via-white-900 to-gray-900">
+          <div className="sticky bottom-8 pt-8 bg-gradient-to-b from-transparent via-gray-900 to-gray-900">
             <button
               type="submit"
-              className="w-full py-3 px-6 bg-indigo-600 hover:bg-green-600 text-white font-bold rounded-lg transition-colors flex items-center justify-center space-x-2 disabled:opacity-95"
+              className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
               disabled={isSubmitting || !audioFile}
             >
               {isSubmitting ? (
