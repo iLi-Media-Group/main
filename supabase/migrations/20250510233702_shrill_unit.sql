@@ -29,14 +29,14 @@ WITH monthly_stats AS (
     COUNT(*) as monthly_sales_count,
     SUM(s.amount) as monthly_revenue,
     COUNT(DISTINCT s.buyer_id) as unique_buyers,
-    COUNT(DISTINCT t.producer_id) as active_producers
+    COUNT(DISTINCT t.track_producer_id) as active_producers
   FROM sales s
   JOIN tracks t ON s.track_id = t.id
   GROUP BY date_trunc('month', s.created_at)
 ),
 producer_stats AS (
   SELECT
-    t.producer_id,
+    t.track_producer_id,
     p.email as producer_email,
     p.first_name,
     p.last_name,
@@ -48,8 +48,8 @@ producer_stats AS (
     COUNT(DISTINCT s.buyer_id) as customer_count
   FROM tracks t
   LEFT JOIN sales s ON t.id = s.track_id
-  JOIN profiles p ON t.producer_id = p.id
-  GROUP BY t.producer_id, p.email, p.first_name, p.last_name
+  JOIN profiles p ON t.track_producer_id = p.id
+  GROUP BY t.track_producer_id, p.email, p.first_name, p.last_name
 )
 SELECT
   ms.month,
@@ -57,7 +57,7 @@ SELECT
   ms.monthly_revenue,
   ms.unique_buyers,
   ms.active_producers,
-  ps.producer_id,
+  ps.track_producer_id,
   ps.producer_email,
   ps.first_name,
   ps.last_name,
@@ -93,7 +93,7 @@ CREATE TRIGGER refresh_sales_analytics_on_track
   EXECUTE FUNCTION refresh_sales_analytics();
 
 -- Create indexes
-CREATE UNIQUE INDEX idx_sales_analytics_month_producer ON sales_analytics (month, producer_id);
+CREATE UNIQUE INDEX idx_sales_analytics_month_producer ON sales_analytics (month, track_producer_id);
 CREATE INDEX idx_sales_analytics_producer_email ON sales_analytics (producer_email);
 CREATE INDEX idx_sales_analytics_revenue ON sales_analytics (monthly_revenue DESC);
 CREATE INDEX idx_sales_analytics_sales ON sales_analytics (monthly_sales_count DESC);
