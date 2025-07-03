@@ -96,7 +96,7 @@ serve(async (req) => {
           .from('sales')
           .insert({
             track_id: trackData.id,
-            sale_producer_id: trackData.track_producer_id,
+            track_producer_id: trackData.track_producer_id,
             buyer_id: user_id,
             license_type,
             amount: parseFloat(amount.amount),

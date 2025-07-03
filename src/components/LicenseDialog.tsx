@@ -157,7 +157,7 @@ export function LicenseDialog({
         .insert([
           {
             track_id: track.id,
-            sale_producer_id: track.track_producer_id, // Add explicit sale_producer_id reference
+            track_producer_id: track.track_producer_id, // Add explicit sale_producer_id reference
             buyer_id: user.id,
             license_type: membershipType,
             amount: 0,

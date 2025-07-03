@@ -225,7 +225,7 @@ export function ClientDashboard() {
             bpm,
             audio_url,
             image_url,
-            sale_producer_id,
+            track_producer_id,
             producer:profiles!track_producer_id (
               first_name,
               last_name,
@@ -271,7 +271,7 @@ export function ClientDashboard() {
             has_vocals,
             vocals_usage_type,
             sub_genres,
-            sale_producer_id,
+            track_producer_id,
             producer:profiles!track_producer_id (
               id,
               first_name,
@@ -300,7 +300,7 @@ export function ClientDashboard() {
           hasVocals: f.tracks.has_vocals,
           vocalsUsageType: f.tracks.vocals_usage_type,
           subGenres: f.tracks.sub_genres || [],
-          producerId: f.tracks.sale_producer_id,
+          producerId: f.tracks.track_producer_id,
           producer: f.tracks.producer ? {
             id: f.tracks.producer.id,
             firstName: f.tracks.producer.first_name || '',
@@ -326,7 +326,7 @@ export function ClientDashboard() {
           has_vocals,
           vocals_usage_type,
           sub_genres,
-          sale_producer_id,
+          track_producer_id,
           producer:profiles!track_producer_id (
             id,
             first_name,
@@ -352,7 +352,7 @@ export function ClientDashboard() {
           hasVocals: track.has_vocals,
           vocalsUsageType: track.vocals_usage_type,
           subGenres: track.sub_genres || [],
-          producerId: track.sale_producer_id,
+          producerId: track.track_producer_id,
           producer: track.producer ? {
             id: track.producer.id,
             firstName: track.producer.first_name || '',
