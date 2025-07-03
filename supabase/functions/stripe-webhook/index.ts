@@ -289,7 +289,7 @@ async function syncCustomerFromStripe(customerId: string) {
     const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
       {
         customer_id: customerId,
-        subscription_status: 'not_started',
+        status: 'not_started',
       },
       { onConflict: 'customer_id' }
     );
@@ -310,7 +310,7 @@ async function syncCustomerFromStripe(customerId: string) {
       cancel_at_period_end: subscription.cancel_at_period_end,
       payment_method_brand: subscription.default_payment_method?.card?.brand ?? null,
       payment_method_last4: subscription.default_payment_method?.card?.last4 ?? null,
-      subscription_status: subscription.status,
+      status: subscription.status,
     },
     { onConflict: 'customer_id' }
   );
