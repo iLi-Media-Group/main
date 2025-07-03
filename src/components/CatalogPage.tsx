@@ -113,7 +113,7 @@ export function CatalogPage() {
           trackouts_url,
           has_vocals,
           vocals_usage_type,
-          producer:profiles!producer_id (
+          track_producer_id:profiles!track_producer_id (
             id,
             first_name,
             last_name,
@@ -187,8 +187,8 @@ export function CatalogPage() {
             id: track.id,
             title: track.title || 'Untitled',
             artist:
-              track.producer?.first_name ||
-              track.producer?.email?.split('@')[0] ||
+              track.track_producer_id?.first_name ||
+              track.track_producer_id?.email?.split('@')[0] ||
               'Unknown Artist',
             genres: Array.isArray(track.genres) 
               ? track.genres 
@@ -211,11 +211,11 @@ export function CatalogPage() {
             trackoutsUrl: track.trackouts_url,
             hasVocals: track.has_vocals,
             vocalsUsageType: track.vocals_usage_type,
-            producer: track.producer ? {
-              id: track.producer.id,
-              firstName: track.producer.first_name || '',
-              lastName: track.producer.last_name || '',
-              email: track.producer.email
+            producer: track.track_producer_id ? {
+              id: track.track_producer_id.id,
+              firstName: track.track_producer_id.first_name || '',
+              lastName: track.track_producer_id.last_name || '',
+              email: track.track_producer_id.email
             } : undefined
           }));
 
