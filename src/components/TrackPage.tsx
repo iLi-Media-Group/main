@@ -98,12 +98,8 @@ export function TrackPage() {
           hasStingEnding: trackData.has_sting_ending || false,
           mp3Url: trackData.mp3_url,
           trackoutsUrl: trackData.trackouts_url,
-<<<<<<< HEAD
           splitSheetUrl: trackData.split_sheet_url,
           producerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
-=======
-          producerId: trackData.producer_id, // Add producer_id to the mapped track
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
           producer: trackData.producer ? {
             id: trackData.producer.id,
             firstName: trackData.producer.first_name || '',

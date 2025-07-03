@@ -45,7 +45,6 @@ export function ProposalAnalytics() {
 
       const { data: proposals, error: proposalsError } = await supabase
         .from('sync_proposals')
-<<<<<<< HEAD
         .select(`
           id,
           status,
@@ -54,9 +53,6 @@ export function ProposalAnalytics() {
           created_at,
           track:tracks(track_producer_id)
         `)
-=======
-        .select('*')
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 

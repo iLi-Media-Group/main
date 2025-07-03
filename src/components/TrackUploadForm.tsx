@@ -189,7 +189,6 @@ export function TrackUploadForm() {
 
       if (trackError) throw trackError;
 
-<<<<<<< HEAD
       // Get the inserted track ID
       const { data: trackData, error: trackFetchError } = await supabase
         .from('tracks')
@@ -204,12 +203,12 @@ export function TrackUploadForm() {
       if (trackFetchError) throw trackFetchError;
 
       // Save media types if any are selected
-      if (selectedMediaTypes.length > 0 && trackData?.id) {
+      if (selectedGenres.length > 0 && trackData?.id) {
         // Get media type IDs
         const { data: mediaTypesData, error: mediaTypesError } = await supabase
           .from('media_types')
           .select('id, name')
-          .in('name', selectedMediaTypes);
+          .in('name', selectedGenres);
 
         if (mediaTypesError) throw mediaTypesError;
 
@@ -228,8 +227,6 @@ export function TrackUploadForm() {
         }
       }
 
-=======
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
       clearSavedFormData();
       navigate('/producer/dashboard');
     } catch (err) {

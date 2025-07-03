@@ -79,11 +79,7 @@ export function RevenueBreakdownDialog({
 
       // Filter by producer if specified
       if (producerId) {
-<<<<<<< HEAD
-        salesQuery = salesQuery.eq('track.track_producer_id', producerId);
-=======
-        query = query.eq('track.producer_id', producerId);
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
+        query = query.eq('track.track_producer_id', producerId);
       }
 
       const { data: salesData, error: salesError } = await query;
@@ -94,7 +90,6 @@ export function RevenueBreakdownDialog({
       const { data: subscriptionsData, error: subscriptionsError } = await supabase
         .from('stripe_subscriptions')
         .select(`
-<<<<<<< HEAD
           id,
           sync_fee,
           created_at,
@@ -103,24 +98,10 @@ export function RevenueBreakdownDialog({
             title,
             proposal_producer_id
           )
-=======
-          subscription_id,
-          price_id,
-          status,
-          current_period_start,
-          current_period_end
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
         `)
         .eq('status', 'active');
 
-<<<<<<< HEAD
-      // Filter by producer if specified
-      if (producerId) {
-        syncProposalsQuery = syncProposalsQuery.eq('track.proposal_producer_id', producerId);
-      }
-=======
       if (subscriptionsError) throw subscriptionsError;
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
 
       // Fetch custom sync requests
       const { data: syncRequestsData, error: syncRequestsError } = await supabase

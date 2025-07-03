@@ -64,7 +64,6 @@ export function CheckoutSuccessPage() {
           const subscription = await getUserSubscription();
           setSubscription(subscription);
 
-<<<<<<< HEAD
           // If subscription data is missing or has invalid dates, try to get it directly from the subscriptions table
           if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
             console.log('Subscription data incomplete, trying direct query...');
@@ -104,8 +103,6 @@ export function CheckoutSuccessPage() {
             }
           }
 
-=======
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
           // Get order details
           const orders = await getUserOrders();
           const matchingOrder = orders.find(o => o.checkout_session_id === sessionId);

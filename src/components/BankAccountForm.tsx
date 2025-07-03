@@ -70,13 +70,8 @@ export function BankAccountForm({ isOpen, onClose, onSave, existingAccounts }: B
       const { error: insertError } = await supabase
         .from('producer_payment_methods')
         .insert({
-<<<<<<< HEAD
           payment_method_producer_id: user.id,
           account_type: 'bank',
-=======
-          producer_id: user.id,
-          account_type: accountType,
->>>>>>> 135be3a40cdbfaf3865278285725f99c9d9343fc
           account_details: accountDetails,
           is_primary: isPrimary
         });
