@@ -7,7 +7,7 @@ import autoTable from 'jspdf-autotable';
 
 interface Payout {
   id: string;
-  producer_id: string;
+  withdrawal_producer_id: string;
   amount: number;
   status: 'pending' | 'paid' | 'failed';
   month: string;
@@ -37,10 +37,10 @@ export function PayoutReports() {
       setError('');
 
       let query = supabase
-        .from('producer_payouts')
+        .from('producer_withdrawals')
         .select(`
           *,
-          producer:profiles!producer_id (
+          producer:profiles!withdrawal_producer_id (
             first_name,
             last_name,
             email
@@ -50,7 +50,7 @@ export function PayoutReports() {
       // Apply filters
       if (filters.month) query = query.eq('month', filters.month);
       if (filters.status) query = query.eq('status', filters.status);
-      if (filters.producerId) query = query.eq('producer_id', filters.producerId);
+      if (filters.producerId) query = query.eq('withdrawal_producer_id', filters.producerId);
 
       const { data, error } = await query;
 
@@ -80,7 +80,7 @@ export function PayoutReports() {
     if (filters.month) doc.text(`Month: ${filters.month}`, 14, yPos);
     if (filters.status) doc.text(`Status: ${filters.status}`, 14, yPos + 10);
     if (filters.producerId) {
-      const producer = payouts.find(p => p.producer_id === filters.producerId)?.producer;
+      const producer = payouts.find(p => p.withdrawal_producer_id === filters.producerId)?.producer;
       if (producer) {
         doc.text(`Producer: ${producer.first_name} ${producer.last_name}`, 14, yPos + 20);
       }
@@ -192,8 +192,8 @@ export function PayoutReports() {
             className="pl-10 pr-4 py-2 w-full border rounded-lg"
           >
             <option value="">All Producers</option>
-            {Array.from(new Set(payouts.map(p => p.producer_id))).map(id => {
-              const producer = payouts.find(p => p.producer_id === id)?.producer;
+            {Array.from(new Set(payouts.map(p => p.withdrawal_producer_id))).map(id => {
+              const producer = payouts.find(p => p.withdrawal_producer_id === id)?.producer;
               return (
                 <option key={id} value={id}>
                   {producer?.first_name} {producer?.last_name}
