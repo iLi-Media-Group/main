@@ -143,6 +143,21 @@ export function PricingCarousel() {
   };
 
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
+    // Special logic for Single Track - check if user is logged in first
+    if (product.name === 'Single Track') {
+      if (user) {
+        // User is logged in, go directly to catalog
+        navigate('/catalog');
+        return;
+      } else {
+        // User not logged in, show email check
+        setSelectedProduct(product);
+        setShowEmailCheck(true);
+        return;
+      }
+    }
+
+    // For subscription products, use existing logic
     if (user) {
       proceedWithSubscription(product);
     } else {
@@ -154,11 +169,23 @@ export function PricingCarousel() {
   const handleEmailContinue = (email: string, exists: boolean) => {
     setShowEmailCheck(false);
     
+    // Special logic for Single Track
+    if (selectedProduct?.name === 'Single Track') {
+      if (exists) {
+        // Account exists, go to catalog
+        navigate(`/login?email=${encodeURIComponent(email)}&redirect=catalog`);
+      } else {
+        // No account, go to create account
+        navigate(`/signup?email=${encodeURIComponent(email)}&redirect=catalog`);
+      }
+      return;
+    }
+    
+    // For subscription products, use existing logic
     if (exists) {
       navigate(`/login?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
     } else {
-     navigate(`/signup?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
-
+      navigate(`/signup?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
     }
   };
 const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
