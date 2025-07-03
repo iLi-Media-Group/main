@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface Withdrawal {
   id: string;
-  producer_id: string;
+  withdrawal_producer_id: string;
   amount: number;
   status: 'pending' | 'completed' | 'rejected';
   created_at: string;
@@ -294,7 +294,7 @@ export function AdminBankingPage() {
       const { error: transactionError } = await supabase
         .from('producer_transactions')
         .update({ status: 'completed' })
-        .eq('producer_id', selectedWithdrawal.producer_id)
+        .eq('transaction_producer_id', selectedWithdrawal.withdrawal_producer_id)
         .eq('type', 'withdrawal')
         .eq('amount', -selectedWithdrawal.amount)
         .eq('status', 'pending');
@@ -325,7 +325,7 @@ export function AdminBankingPage() {
       const { error: transactionError } = await supabase
         .from('producer_transactions')
         .update({ status: 'rejected' })
-        .eq('producer_id', selectedWithdrawal.producer_id)
+        .eq('transaction_producer_id', selectedWithdrawal.withdrawal_producer_id)
         .eq('type', 'withdrawal')
         .eq('amount', -selectedWithdrawal.amount)
         .eq('status', 'pending');
@@ -336,7 +336,7 @@ export function AdminBankingPage() {
       const { data: balanceData, error: balanceError } = await supabase
         .from('producer_balances')
         .select('available_balance')
-        .eq('producer_id', selectedWithdrawal.producer_id)
+        .eq('balance_producer_id', selectedWithdrawal.withdrawal_producer_id)
         .single();
 
       if (balanceError) throw balanceError;
@@ -346,7 +346,7 @@ export function AdminBankingPage() {
         .update({
           available_balance: balanceData.available_balance + selectedWithdrawal.amount
         })
-        .eq('producer_id', selectedWithdrawal.producer_id);
+        .eq('balance_producer_id', selectedWithdrawal.withdrawal_producer_id);
 
       if (updateBalanceError) throw updateBalanceError;
 
