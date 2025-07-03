@@ -72,7 +72,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
       const { data: tracks, count: trackCount, error: tracksError } = await supabase
         .from('tracks')
         .select('id', { count: 'exact' })
-        .eq('producer_id', producerId)
+        .eq('track_producer_id', producerId)
         .is('deleted_at', null);
 
       if (tracksError) throw tracksError;
