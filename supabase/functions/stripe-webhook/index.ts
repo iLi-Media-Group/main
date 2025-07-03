@@ -247,7 +247,7 @@ async function handleEvent(event: any) {
           .from('sales')
           .insert({
             track_id: trackData.id,
-            producer_id: trackData.track_producer_id,
+            sales_producer_id: trackData.track_producer_id,
             buyer_id: customerData.user_id,
             license_type: 'Single Track',
             amount: amount_total / 100,
