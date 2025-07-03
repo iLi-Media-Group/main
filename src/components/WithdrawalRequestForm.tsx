@@ -74,7 +74,7 @@ export function WithdrawalRequestForm({
       const { error: withdrawalError } = await supabase
         .from('producer_withdrawals')
         .insert({
-          producer_id: user.id,
+          withdrawal_producer_id: user.id,
           amount: withdrawalAmount,
           payment_method_id: selectedPaymentMethod,
           status: 'pending'
@@ -86,7 +86,7 @@ export function WithdrawalRequestForm({
       const { error: transactionError } = await supabase
         .from('producer_transactions')
         .insert({
-          producer_id: user.id,
+          withdrawal_producer_id: user.id,
           amount: -withdrawalAmount, // Negative amount for withdrawals
           type: 'withdrawal',
           status: 'pending',
