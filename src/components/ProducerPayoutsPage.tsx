@@ -201,7 +201,7 @@ export function ProducerPayoutsPage() {
         .from('producer_payouts')
         .select(`
           *,
-          producer:profiles!producer_id (
+          producer:profiles!withdrawal_producer_id (
             first_name,
             last_name,
             email,

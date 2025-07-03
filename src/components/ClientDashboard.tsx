@@ -226,7 +226,7 @@ export function ClientDashboard() {
             audio_url,
             image_url,
             sale_producer_id,
-            producer:profiles!tracks_producer_id_fkey (
+            producer:profiles!track_producer_id (
               first_name,
               last_name,
               email
@@ -272,7 +272,7 @@ export function ClientDashboard() {
             vocals_usage_type,
             sub_genres,
             sale_producer_id,
-            producer:profiles!tracks_producer_id_fkey (
+            producer:profiles!track_producer_id (
               id,
               first_name,
               last_name,
@@ -327,7 +327,7 @@ export function ClientDashboard() {
           vocals_usage_type,
           sub_genres,
           sale_producer_id,
-          producer:profiles!producer_id (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,

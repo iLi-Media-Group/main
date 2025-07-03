@@ -43,7 +43,7 @@ export function VocalsPage() {
           trackouts_url,
           has_vocals,
           vocals_usage_type,
-          producer:profiles!producer_id (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,

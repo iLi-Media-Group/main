@@ -61,7 +61,7 @@ export function TrackPage() {
         .from('tracks')
         .select(`
           *,
-          producer:profiles!producer_id (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
