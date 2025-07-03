@@ -153,7 +153,7 @@ export function AdminDashboard() {
         }));
 
         // Transform producer data - create a map of producer analytics by producer_id
-        const producerAnalyticsMap = analyticsData.reduce((map, item) => {
+        const initialProducerAnalyticsMap = analyticsData.reduce((map, item) => {
           if (item.producer_id) {
             if (!map[item.producer_id]) {
               map[item.producer_id] = {
@@ -224,6 +224,17 @@ export function AdminDashboard() {
           total_sales: number;
           total_revenue: number;
         }> = {};
+
+        // Initialize with data from initial map if available
+        Object.keys(initialProducerAnalyticsMap).forEach(producerId => {
+          const initialData = initialProducerAnalyticsMap[producerId];
+          producerAnalyticsMap[producerId] = {
+            total_tracks: initialData.track_count || 0,
+            total_sales: initialData.producer_sales_count || 0,
+            total_revenue: initialData.producer_revenue || 0
+          };
+        });
+
         if (producerAnalyticsData) {
           producerAnalyticsData.forEach((item: {
             proposal_producer_id: string;
