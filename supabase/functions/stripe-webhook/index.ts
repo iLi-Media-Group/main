@@ -1,6 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import Stripe from 'https://esm.sh/stripe@12.15.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY!;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
