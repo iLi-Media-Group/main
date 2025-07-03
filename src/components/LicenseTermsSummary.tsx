@@ -29,7 +29,7 @@ export function LicenseTermsSummary({ licenseType, onAccept, trackId }: LicenseT
         setError(null);
         
         // Find the Single Track product
-        const singleTrackProduct = PRODUCTS.find(p => p.name === 'Single Track');
+        const singleTrackProduct = PRODUCTS.find(p => p.name === 'Single Track License');
         
         if (!singleTrackProduct) {
           throw new Error('Single Track product not found');

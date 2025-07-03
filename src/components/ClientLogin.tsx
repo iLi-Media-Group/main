@@ -26,7 +26,7 @@ export function ClientLogin() {
       setLoading(true);
 
       // Check if user is an admin
-      const isAdmin = ['knockriobeats@gmail.com', '1314@13145.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
+      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
       
       if (!isAdmin) {
         const { data: profileData, error: profileError } = await supabase
@@ -176,18 +176,6 @@ export function ClientLogin() {
               <KeyRound className="w-4 h-4 mr-2" />
               Forgot Password?
             </button>
-            
-            <div className="text-center pt-4 border-t border-gray-700">
-              <p className="text-gray-400 text-sm mb-2">Don't have an account?</p>
-              <button
-                type="button"
-                onClick={() => navigate('/signup')}
-                className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
-                disabled={loading}
-              >
-                Sign Up Here
-              </button>
-            </div>
           </form>
         </div>
       </div>

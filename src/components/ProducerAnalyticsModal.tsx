@@ -13,8 +13,6 @@ interface ProducerStats {
   totalTracks: number;
   totalSales: number;
   totalRevenue: number;
-  syncRevenue: number;
-  customSyncRevenue: number;
   avgSyncFee: number;
   acceptanceRate: number;
   monthlyData: {
@@ -92,7 +90,6 @@ export function ProducerAnalyticsModal({
         .select(`
           sync_fee,
           status,
-          payment_status,
           created_at,
           track:tracks!inner (
             id,
@@ -105,16 +102,6 @@ export function ProducerAnalyticsModal({
 
       if (proposalsError) throw proposalsError;
 
-      // Fetch custom sync requests
-      const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
-        .from('custom_sync_requests')
-        .select('sync_fee, status')
-        .eq('status', 'completed')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
-      if (customSyncRequestsError) throw customSyncRequestsError;
-
       // Calculate stats
       const totalTracks = tracks?.length || 0;
       const totalSales = sales?.length || 0;
@@ -122,20 +109,8 @@ export function ProducerAnalyticsModal({
       
       const totalProposals = proposals?.length || 0;
       const acceptedProposals = proposals?.filter(p => p.status === 'accepted').length || 0;
-      const paidProposals = proposals?.filter(p => p.status === 'accepted' && p.payment_status === 'paid').length || 0;
       const avgSyncFee = proposals?.reduce((sum, p) => sum + p.sync_fee, 0) / totalProposals || 0;
       const acceptanceRate = totalProposals > 0 ? (acceptedProposals / totalProposals) * 100 : 0;
-
-      // Calculate sync proposal revenue
-      const syncRevenue = proposals
-        ?.filter(p => p.status === 'accepted' && p.payment_status === 'paid')
-        .reduce((sum, p) => sum + p.sync_fee, 0) || 0;
-
-      // Calculate custom sync request revenue
-      const customSyncRevenue = customSyncRequests?.reduce((sum, req) => sum + req.sync_fee, 0) || 0;
-
-      // Total revenue includes sales, sync proposals, and custom sync requests
-      const totalRevenueWithSync = totalRevenue + syncRevenue + customSyncRevenue;
 
       // Calculate monthly data
       const monthlyData = sales?.reduce((acc, sale) => {
@@ -149,7 +124,7 @@ export function ProducerAnalyticsModal({
       }, {} as Record<string, { sales: number; revenue: number }>);
 
       // Calculate top tracks
-      const trackStats: Record<string, { title: string; sales: number; revenue: number }> = sales?.reduce((acc, sale) => {
+      const trackStats = sales?.reduce((acc, sale) => {
         if (!acc[sale.track_id]) {
           acc[sale.track_id] = {
             title: sale.track.title,
@@ -169,14 +144,12 @@ export function ProducerAnalyticsModal({
       setStats({
         totalTracks,
         totalSales,
-        totalRevenue: totalRevenueWithSync,
-        syncRevenue,
-        customSyncRevenue,
+        totalRevenue,
         avgSyncFee,
         acceptanceRate,
         monthlyData: Object.entries(monthlyData || {}).map(([month, data]) => ({
           month,
-          ...(data as { sales: number; revenue: number })
+          ...data
         })),
         topTracks
       });
@@ -192,7 +165,7 @@ export function ProducerAnalyticsModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/5 backdrop-blur-md rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
         <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-white">{producerName}'s Analytics</h2>
@@ -236,7 +209,7 @@ export function ProducerAnalyticsModal({
         ) : stats && (
           <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
             {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
                 <div className="flex items-center justify-between">
                   <div>
@@ -272,35 +245,12 @@ export function ProducerAnalyticsModal({
               <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-gray-400">Sync Revenue</p>
-                    <p className="text-2xl font-bold text-white">
-                      ${stats.syncRevenue.toFixed(2)}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-yellow-500" />
-                </div>
-              </div>
-
-              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
-                <div className="flex items-center justify-between">
-                  <div>
                     <p className="text-gray-400">Acceptance Rate</p>
                     <p className="text-2xl font-bold text-white">
                       {stats.acceptanceRate.toFixed(1)}%
                     </p>
                   </div>
                   <Clock className="w-8 h-8 text-yellow-500" />
-                </div>
-              </div>
-              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-purple-500/20">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-gray-400">Custom Sync Revenue</p>
-                    <p className="text-2xl font-bold text-white">
-                      ${stats.customSyncRevenue.toFixed(2)}
-                    </p>
-                  </div>
-                  <DollarSign className="w-8 h-8 text-teal-500" />
                 </div>
               </div>
             </div>

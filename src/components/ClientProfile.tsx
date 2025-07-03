@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, X, MapPin, Upload, Loader2, Building2, FileText, Hash } from 'lucide-react';
+import { User, Mail, X, MapPin, Upload, Loader2, Building2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,9 +14,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [businessType, setBusinessType] = useState<'sole-proprietor' | 'llc' | 'corporation' | 'partnership' | ''>('');
-  const [ein, setEin] = useState('');
-  const [businessName, setBusinessName] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
@@ -30,10 +27,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  // Check if business fields should be shown
-  const showBusinessFields = companyName.trim().length > 0;
-  const requiresEin = businessType === 'llc' || businessType === 'corporation' || businessType === 'partnership';
-
   useEffect(() => {
     if (user) {
       fetchProfile();
@@ -43,37 +36,19 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
-      
-      // First try to fetch with business fields
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email, company_name, business_type, ein, business_name, street_address, city, state, postal_code, country, avatar_path')
+        .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path')
         .eq('id', user?.id)
         .single();
 
-      // If that fails (business fields don't exist yet), fall back to original fields
-      if (error && error.code === '42703') { // Column doesn't exist error
-        console.log('Business fields not available yet, using original fields');
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path')
-          .eq('id', user?.id)
-          .single();
-        
-        if (fallbackError) throw fallbackError;
-        data = fallbackData;
-      } else if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
         setEmail(data.email || '');
         setCompanyName(data.company_name || '');
-        setBusinessType(data.business_type || '');
-        setEin(data.ein || '');
-        setBusinessName(data.business_name || '');
         setStreetAddress(data.street_address || '');
         setCity(data.city || '');
         setState(data.state || '');
@@ -143,30 +118,20 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
         newAvatarPath = filePath;
       }
 
-      // Prepare update data
-      const updateData: any = {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        company_name: companyName.trim() || null,
-        street_address: streetAddress.trim() || null,
-        city: city.trim() || null,
-        state: state.trim() || null,
-        postal_code: postalCode.trim() || null,
-        country: country.trim() || null,
-        avatar_path: newAvatarPath,
-        updated_at: new Date().toISOString()
-      };
-
-      // Only include business fields if they exist (migration applied)
-      if (businessType || ein || businessName) {
-        updateData.business_type = businessType || null;
-        updateData.ein = ein.trim() || null;
-        updateData.business_name = businessName.trim() || null;
-      }
-
       const { error } = await supabase
         .from('profiles')
-        .update(updateData)
+        .update({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          company_name: companyName.trim() || null,
+          street_address: streetAddress.trim() || null,
+          city: city.trim() || null,
+          state: state.trim() || null,
+          postal_code: postalCode.trim() || null,
+          country: country.trim() || null,
+          avatar_path: newAvatarPath,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', user.id);
 
       if (error) throw error;
@@ -188,7 +153,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
           <button
@@ -310,69 +275,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
                 />
               </div>
             </div>
-
-            {/* Business Information - Only show if company name is entered */}
-            {showBusinessFields && (
-              <div className="space-y-6 p-4 bg-white/5 rounded-lg border border-blue-500/20">
-                <h3 className="text-lg font-medium text-white flex items-center">
-                  <FileText className="w-5 h-5 mr-2 text-blue-400" />
-                  Business Information
-                </h3>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Business Type <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={businessType}
-                    onChange={(e) => setBusinessType(e.target.value as any)}
-                    className="w-full bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-                    required={showBusinessFields}
-                  >
-                    <option value="">Select business type</option>
-                    <option value="sole-proprietor">Sole Proprietor</option>
-                    <option value="llc">LLC (Limited Liability Company)</option>
-                    <option value="corporation">Corporation</option>
-                    <option value="partnership">Partnership</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-400">
-                    Required for tax and legal purposes
-                  </p>
-                </div>
-
-                {requiresEin && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      EIN (Employer Identification Number) <span className="text-red-400">*</span>
-                    </label>
-                    <div className="relative">
-                      <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        value={ein}
-                        onChange={(e) => setEin(e.target.value)}
-                        className="w-full pl-10"
-                        placeholder="XX-XXXXXXX"
-                        required={requiresEin}
-                        pattern="[0-9]{2}-[0-9]{7}"
-                        title="EIN format: XX-XXXXXXX"
-                      />
-                    </div>
-                    <p className="mt-1 text-xs text-gray-400">
-                      Required for LLC, Corporation, and Partnership entities
-                    </p>
-                  </div>
-                )}
-
-                {businessType === 'sole-proprietor' && (
-                  <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-                    <p className="text-sm text-blue-300">
-                      <strong>Note:</strong> Sole proprietors typically use their Social Security Number (SSN) for tax purposes instead of an EIN.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
 
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-white">Address Information (Optional)</h3>

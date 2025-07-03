@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText, MessageSquare, AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
@@ -12,13 +12,6 @@ import { EditRequestDialog } from './EditRequestDialog';
 import { LicenseDialog } from './LicenseDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
-import { getUserSubscription } from '../lib/stripe';
-import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
-import { ProposalHistoryDialog } from './ProposalHistoryDialog';
-import { ProposalConfirmDialog } from './ProposalConfirmDialog';
-import { InvoicePDF } from './InvoicePDF';
-import { pdf } from '@react-pdf/renderer';
-import { NegotiationAcceptanceDialog } from './NegotiationAcceptanceDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -52,9 +45,6 @@ interface CustomSyncRequest {
   sub_genres: string[];
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
-  negotiation_status?: string;
-  negotiated_amount?: number;
-  negotiated_payment_terms?: string;
 }
 
 const calculateExpiryDate = (purchaseDate: string, membershipType: string): string => {
@@ -82,27 +72,9 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
   return 'active';
 };
 
-const calculatePaymentDueDate = (acceptedDate: string, paymentTerms: string = 'immediate'): Date => {
-  const accepted = new Date(acceptedDate);
-  
-  switch (paymentTerms.toLowerCase()) {
-    case 'immediate':
-      return accepted; // Due immediately on acceptance
-    case 'net30':
-      return new Date(accepted.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-    case 'net60':
-      return new Date(accepted.getTime() + (60 * 24 * 60 * 60 * 1000)); // 60 days
-    case 'net90':
-      return new Date(accepted.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
-    default:
-      return accepted; // Default to immediate
-  }
-};
-
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [newTracks, setNewTracks] = useState<Track[]>([]);
@@ -132,63 +104,15 @@ export function ClientDashboard() {
   const [showLicenseDialog, setShowLicenseDialog] = useState(false);
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
-  const [subscription, setSubscription] = useState<any>(null);
-  const [proposals, setProposals] = useState<any[]>([]);
-  const [selectedProposal, setSelectedProposal] = useState<any>(null);
-  const [showNegotiationDialog, setShowNegotiationDialog] = useState(false);
-  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
-  const [proposalTab, setProposalTab] = useState<'pending' | 'accepted' | 'declined' | 'expired'>('pending');
-  const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
-  const negotiationDialogOpenRef = useRef<string | null>(null);
-  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
-  const [showPaymentCancel, setShowPaymentCancel] = useState(false);
-  // Add missing activeTab state for main dashboard tabs
-  const [activeTab, setActiveTab] = useState<'licenses' | 'favorites' | 'new' | 'proposals' | 'requests'>('licenses');
-  // Add a debug flag at the top of the component
-  const showDebug = false;
-
-  // Ensure proposalTab is always set to a valid value
-  useEffect(() => {
-    if (!proposalTab || !['pending', 'accepted', 'declined', 'expired'].includes(proposalTab)) {
-      setProposalTab('pending');
-    }
-  }, [proposalTab]);
-
-  // Check for payment status in URL parameters
-  useEffect(() => {
-    const paymentStatus = searchParams.get('payment');
-    if (paymentStatus === 'success') {
-      setShowPaymentSuccess(true);
-      // Remove the payment parameter from URL
-      navigate('/dashboard', { replace: true });
-      // Refresh proposals to get updated payment status
-      fetchProposals();
-    } else if (paymentStatus === 'cancel') {
-      setShowPaymentCancel(true);
-      // Remove the payment parameter from URL
-      navigate('/dashboard', { replace: true });
-    }
-  }, [searchParams, navigate]);
 
   useEffect(() => {
     if (user) {
       // Refresh membership info first to ensure we have the latest data
       refreshMembership().then(() => {
         fetchDashboardData();
-        getUserSubscription().then((sub) => setSubscription(sub));
-        fetchProposals();
       });
     }
   }, [user, membershipPlan]);
-
-  // Force refresh proposals when proposalTab changes
-  useEffect(() => {
-    if (user) {
-      fetchProposals();
-    }
-  }, [proposalTab, user]);
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -205,7 +129,7 @@ export function ClientDashboard() {
 
       if (profileData) {
         setProfile(profileData);
-        setUserStats((prev: UserStats) => ({
+        setUserStats(prev => ({
           ...prev,
           membershipType: profileData.membership_plan as UserStats['membershipType']
         }));
@@ -238,7 +162,7 @@ export function ClientDashboard() {
         .order('created_at', { ascending: false });
 
       if (licensesData) {
-        const formattedLicenses = licensesData.map((license: any) => ({
+        const formattedLicenses = licensesData.map(license => ({
           ...license,
           expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData.membership_plan),
           track: {
@@ -366,37 +290,14 @@ export function ClientDashboard() {
         setNewTracks(formattedNewTracks);
       }
 
-      // Try to fetch custom sync requests with error handling
-      try {
-        const { data: syncRequestsData, error: syncRequestsError } = await supabase
-          .from('custom_sync_requests')
-          .select('id, status, genre, sync_fee, end_date, project_title, project_description, created_at, negotiation_status, negotiated_amount, negotiated_payment_terms')
-          .eq('client_id', user.id)
-          .order('created_at', { ascending: false });
+      const { data: syncRequestsData } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
 
-        if (syncRequestsError) {
-          console.warn('Custom sync requests query failed:', syncRequestsError);
-        } else if (syncRequestsData) {
-          setSyncRequests(syncRequestsData);
-        }
-      } catch (error) {
-        console.warn('Error fetching custom sync requests:', error);
-      }
-
-      // Try to fetch white label features with error handling
-      try {
-        const { data: whiteLabelData, error: whiteLabelError } = await supabase
-          .from('white_label_features')
-          .select('is_enabled')
-          .eq('client_id', user.id)
-          .eq('feature_name', 'producer_applications')
-          .maybeSingle();
-
-        if (whiteLabelError && whiteLabelError.code !== 'PGRST116') {
-          console.warn('White label features query failed:', whiteLabelError);
-        }
-      } catch (error) {
-        console.warn('Error fetching white label features:', error);
+      if (syncRequestsData) {
+        setSyncRequests(syncRequestsData);
       }
 
       // Calculate remaining licenses for Gold Access
@@ -432,356 +333,6 @@ export function ClientDashboard() {
     }
   };
 
-  const fetchProposals = async () => {
-    if (!user) return;
-    console.log('Fetching proposals for user:', user.id);
-    
-    try {
-      // First try with the full query including payment columns (excluding non-existent columns)
-      const { data, error } = await supabase
-        .from('sync_proposals')
-        .select(`
-          id, 
-          status, 
-          track_id, 
-          client_id,
-          client_status,
-          sync_fee, 
-          expiration_date, 
-          is_urgent, 
-          created_at,
-          payment_status,
-          payment_due_date,
-          tracks!inner(id, title)
-        `)
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      console.log('Proposals fetch result (with payment):', { data, error });
-      
-      // Add detailed debugging for payment status
-      if (data) {
-        console.log('=== PAYMENT STATUS DEBUG ===');
-        data.forEach((proposal: any) => {
-          console.log(`Proposal ${proposal.id.slice(0, 8)}...:`, {
-            id: proposal.id,
-            status: proposal.status,
-            client_status: proposal.client_status,
-            payment_status: proposal.payment_status,
-            sync_fee: proposal.sync_fee
-          });
-        });
-        console.log('=== END PAYMENT STATUS DEBUG ===');
-        
-        // Direct database check for the specific proposals
-        const specificProposals = data.filter((p: any) => 
-          p.id === '7af40356-66f3-45d7-87f3-710dff65b46a' || 
-          p.id === '6b2c0641-bae3-4fdb-a43a-e3b0de12b71b'
-        );
-        
-        if (specificProposals.length > 0) {
-          console.log('=== DIRECT DATABASE CHECK ===');
-          for (const proposal of specificProposals) {
-            const { data: dbCheck, error: dbError } = await supabase
-              .from('sync_proposals')
-              .select('id, status, client_status, payment_status, sync_fee')
-              .eq('id', proposal.id)
-              .single();
-              
-            console.log(`Direct DB check for ${proposal.id.slice(0, 8)}...:`, {
-              frontend: {
-                status: proposal.status,
-                client_status: proposal.client_status,
-                payment_status: proposal.payment_status
-              },
-              database: dbCheck,
-              error: dbError
-            });
-          }
-          console.log('=== END DIRECT DATABASE CHECK ===');
-        }
-      }
-      
-      if (error) {
-        console.error('Error fetching proposals:', error);
-        // If there's an error, try a simpler query without the payment columns
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('sync_proposals')
-          .select(`
-            id, 
-            status, 
-            track_id, 
-            client_id,
-            sync_fee, 
-            expiration_date, 
-            is_urgent, 
-            created_at,
-            tracks!inner(id, title)
-          `)
-          .eq('client_id', user.id)
-          .order('created_at', { ascending: false });
-        
-        console.log('Simple proposals fetch result:', { data: simpleData, error: simpleError });
-        
-        if (simpleError) {
-          console.error('Error with simple query:', simpleError);
-          setProposals([]);
-          return;
-        }
-        
-        // Add default values for missing columns
-        const proposalsWithDefaults = (simpleData || []).map((proposal: any) => ({
-          ...proposal,
-          client_status: proposal.client_status || 'pending',
-          payment_status: proposal.payment_status || 'pending',
-          payment_due_date: proposal.payment_due_date || null,
-          accepted_at: proposal.accepted_at || null
-        }));
-        
-        setProposals(proposalsWithDefaults);
-      } else {
-        // Use the data as-is since we're now fetching all the payment columns that exist
-        setProposals(data || []);
-      }
-      
-      // Check for new negotiation messages
-      await checkForNewNegotiationMessages();
-    } catch (err) {
-      console.error('Unexpected error fetching proposals:', err);
-      setProposals([]);
-    }
-  };
-
-  const checkForNewNegotiationMessages = async () => {
-    if (!user) return;
-    
-    try {
-      const newUnreadProposals: string[] = [];
-      
-      for (const proposal of proposals) {
-        // Get the last viewed timestamp for this proposal
-        const lastViewed = localStorage.getItem(`negotiation_last_viewed_${proposal.id}_${user.id}`);
-        
-        if (lastViewed) {
-          // Check if there are any new messages since last viewed
-          const { data: newMessages } = await supabase
-            .from('proposal_negotiations')
-            .select('created_at')
-            .eq('proposal_id', proposal.id)
-            .gt('created_at', lastViewed)
-            .neq('sender_id', user.id); // Only count messages from others
-          
-          if (newMessages && newMessages.length > 0) {
-            newUnreadProposals.push(proposal.id);
-          }
-        } else {
-          // If no last viewed timestamp, check if there are any messages from others
-          const { data: messages } = await supabase
-            .from('proposal_negotiations')
-            .select('created_at')
-            .eq('proposal_id', proposal.id)
-            .neq('sender_id', user.id);
-          
-          if (messages && messages.length > 0) {
-            newUnreadProposals.push(proposal.id);
-          }
-        }
-      }
-      
-      setUnreadProposals(newUnreadProposals);
-    } catch (error) {
-      console.error('Error checking for new negotiation messages:', error);
-    }
-  };
-
-  const filteredProposals = proposals.filter((p: any) => {
-    console.log('Filtering proposal:', p.id, 'status:', p.status, 'client_status:', p.client_status, 'tab:', proposalTab);
-    
-    if (proposalTab === 'pending') {
-      const isPending = p.status === 'pending' || p.status === 'active' || p.status === 'producer_accepted';
-      console.log('  Pending check:', isPending);
-      return isPending;
-    }
-    
-    if (proposalTab === 'accepted') {
-      const isAccepted = p.status === 'accepted' || p.client_status === 'accepted';
-      console.log('  Accepted check:', isAccepted, '(status:', p.status, 'client_status:', p.client_status, ')');
-      return isAccepted;
-    }
-    
-    if (proposalTab === 'declined') {
-      const isDeclined = p.status === 'rejected';
-      console.log('  Declined check:', isDeclined);
-      return isDeclined;
-    }
-    
-    if (proposalTab === 'expired') {
-      const isExpired = p.status === 'expired';
-      console.log('  Expired check:', isExpired);
-      return isExpired;
-    }
-    
-    console.log('  No tab match, returning false');
-    return false;
-  });
-
-  console.log('=== FILTERING DEBUG ===');
-  console.log('Current tab:', proposalTab);
-  console.log('All proposals:', proposals);
-  console.log('Filtered proposals for tab', proposalTab, ':', filteredProposals);
-  console.log('Filtered proposals length:', filteredProposals.length);
-  console.log('=== END FILTERING DEBUG ===');
-
-  const handleProposalAction = (proposal: any, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
-    setSelectedProposal(proposal);
-    if (action === 'negotiate') {
-      negotiationDialogOpenRef.current = proposal.id;
-      // Mark as viewed now
-      localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
-      setUnreadProposals((prev: string[]) => prev.filter((id: string) => id !== proposal.id));
-    }
-    switch (action) {
-      case 'negotiate': setShowNegotiationDialog(true); break;
-      case 'history': setShowHistoryDialog(true); break;
-      case 'accept': setConfirmAction('accept'); setShowConfirmDialog(true); break;
-      case 'reject': setConfirmAction('reject'); setShowConfirmDialog(true); break;
-    }
-  };
-
-  const handleClientAcceptDecline = async (
-    proposal: any,
-    action: 'client_accepted' | 'client_rejected' | 'accepted' | 'rejected'
-  ) => {
-    console.log('handleClientAcceptDecline called', { proposal, action });
-    if (!user) return;
-
-    let newStatus = action;
-    let newClientStatus = action;
-    
-    if (action === 'client_accepted') {
-      // Only allow if current status is producer_accepted
-      const { data: latestProposal } = await supabase
-        .from('sync_proposals')
-        .select('status')
-        .eq('id', proposal.id)
-        .single();
-
-      if (latestProposal?.status === 'producer_accepted') {
-        newStatus = 'accepted';
-        newClientStatus = 'accepted';
-      } else {
-        // Do not proceed if not allowed
-        alert('You can only accept after the producer has accepted.');
-        return;
-      }
-    } else if (action === 'client_rejected') {
-      newStatus = 'rejected';
-      newClientStatus = 'rejected';
-    }
-
-    console.log('Updating proposal status to:', newStatus, 'client_status to:', newClientStatus);
-
-    // Update both the proposal status and client_status
-    const { error: updateError } = await supabase
-      .from('sync_proposals')
-      .update({ 
-        status: newStatus, 
-        client_status: newClientStatus,
-        updated_at: new Date().toISOString() 
-      })
-      .eq('id', proposal.id);
-
-    if (updateError) {
-      console.error('Error updating proposal status:', updateError);
-      return;
-    }
-
-    console.log('Proposal status updated successfully');
-
-    // Update the local state immediately for instant UI feedback
-    setProposals(prevProposals => 
-      prevProposals.map(p => 
-        p.id === proposal.id 
-          ? { ...p, status: newStatus, client_status: newClientStatus }
-          : p
-      )
-    );
-
-    // Log to history
-    await supabase
-      .from('proposal_history')
-      .insert({
-        proposal_id: proposal.id,
-        previous_status: proposal.status,
-        new_status: newStatus,
-        changed_by: user.id
-      });
-
-    console.log('Proposal history logged, refreshing proposals...');
-
-    // Refresh proposals to show updated status
-    await fetchProposals();
-
-    console.log('Proposals refreshed, checking if status is accepted...');
-
-    // If accepted, trigger invoice creation
-    if (newStatus === 'accepted') {
-      console.log('Triggering payment for accepted proposal...');
-      try {
-        console.log('Setting up payment for proposal:', proposal.id);
-        console.log('Making request to:', `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`);
-        
-        const requestBody = {
-          proposal_id: proposal.id
-        };
-        console.log('Request body:', requestBody);
-        
-        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trigger-proposal-payment`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-
-        console.log('Response received, status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-        
-        const responseData = await response.json();
-        console.log('Payment setup response:', responseData);
-
-        if (!response.ok) {
-          if (responseData.error === 'Payment already processed for this proposal') {
-            // If payment was already processed but we don't see the session, refresh the data
-            alert('Payment session already exists. Refreshing data...');
-            await fetchProposals();
-          } else {
-            alert(`Payment setup failed: ${responseData.error || 'Unknown error'}`);
-          }
-        } else if (responseData.url) {
-          console.log('Redirecting to payment URL:', responseData.url);
-          window.location.href = responseData.url;
-        } else {
-          alert('Invoice created successfully! You will receive payment instructions shortly.');
-          await fetchProposals(); // Refresh to show updated status
-        }
-      } catch (error) {
-        console.error('Error setting up payment:', error);
-        console.error('Error details:', {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-        if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
-          alert('Network error. Please check your connection and try again.');
-        } else {
-          alert('Failed to set up payment. Please try again.');
-        }
-      }
-    }
-  };
-
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -805,7 +356,7 @@ export function ClientDashboard() {
 
       if (error) throw error;
 
-      setFavorites(favorites.filter((track: Track) => track.id !== trackId));
+      setFavorites(favorites.filter(track => track.id !== trackId));
     } catch (error) {
       console.error('Error removing favorite:', error);
     } finally {
@@ -855,8 +406,8 @@ export function ClientDashboard() {
 
       if (error) throw error;
 
-      setSyncRequests((requests: CustomSyncRequest[]) =>
-        requests.map((req: CustomSyncRequest) =>
+      setSyncRequests(requests =>
+        requests.map(req =>
           req.id === requestId ? { ...req, ...updates } : req
         )
       );
@@ -903,8 +454,8 @@ export function ClientDashboard() {
   };
 
   const sortedAndFilteredLicenses = licenses
-    .filter((license: License) => !selectedGenre || license.track.genres.includes(selectedGenre))
-    .sort((a: License, b: License) => {
+    .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
+    .sort((a, b) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'renewal':
@@ -917,8 +468,8 @@ export function ClientDashboard() {
     });
 
   const sortedAndFilteredFavorites = favorites
-    .filter((track: Track) => !selectedGenre || track.genres.includes(selectedGenre))
-    .sort((a: Track, b: Track) => {
+    .filter(track => !selectedGenre || track.genres.includes(selectedGenre))
+    .sort((a, b) => {
       const modifier = sortOrder === 'asc' ? 1 : -1;
       switch (sortField) {
         case 'title':
@@ -932,136 +483,20 @@ export function ClientDashboard() {
       }
     });
 
-  // Function to show notification
-  const showNotification = (message: string) => {
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 5000);
-    if (Notification.permission === 'granted') {
-      new Notification('New Negotiation Message', {
-        body: message,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico'
-      });
-    } else if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  };
-
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel('negotiation_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'proposal_negotiations',
-          filter: `sender_id=neq.${user.id}`
-        },
-        async (payload) => {
-          console.log('New negotiation message received:', payload);
-          const proposalId = payload.new.proposal_id;
-          const hasProposal = proposals.some(p => p.id === proposalId);
-          if (hasProposal) {
-            setUnreadProposals(prev => {
-              if (!prev.includes(proposalId)) {
-                return [...prev, proposalId];
-              }
-              return prev;
-            });
-            const proposal = proposals.find(p => p.id === proposalId);
-            const proposalTitle = proposal?.track?.title || `Proposal ${proposalId.slice(0, 8)}`;
-            showNotification(`New negotiation message received for "${proposalTitle}"`);
-          }
-        }
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, proposals]);
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardData}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-      {/* Payment Success Modal */}
-      {showPaymentSuccess && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-green-900 p-6 rounded-xl border border-green-500/20 max-w-md mx-4">
-            <div className="text-center">
-              <Check className="w-16 h-16 text-green-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Payment Successful!</h2>
-              <p className="text-gray-300 mb-6">
-                Your payment has been processed successfully. The proposal has been accepted and you will receive further details shortly.
-              </p>
-              <button
-                onClick={() => setShowPaymentSuccess(false)}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Cancel Modal */}
-      {showPaymentCancel && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-yellow-900 p-6 rounded-xl border border-yellow-500/20 max-w-md mx-4">
-            <div className="text-center">
-              <AlertTriangle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Payment Cancelled</h2>
-              <p className="text-gray-300 mb-6">
-                Your payment was cancelled. You can try again later or contact support if you need assistance.
-              </p>
-              <button
-                onClick={() => setShowPaymentCancel(false)}
-                className="px-6 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors"
-              >
-                Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Client Dashboard</h1>
+            <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
                 Welcome {profile.first_name || profile.email.split('@')[0]}
@@ -1071,349 +506,421 @@ export function ClientDashboard() {
           <div className="flex items-center space-x-4">
             <button
               onClick={() => setShowProfileDialog(true)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
             >
-              <UserCog className="w-4 h-4 mr-2" />
-              Profile
+              <UserCog className="w-5 h-5 mr-2" />
+              Edit Profile
             </button>
+            <Link
+              to="/pricing"
+              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              Upgrade Membership
+            </Link>
           </div>
         </div>
 
-        {/* Membership Status */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-8">
+        <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white mb-2">Membership Status</h2>
+              <h2 className="text-xl font-bold text-white mb-2">License Usage</h2>
               <p className="text-gray-300">
-                {userStats.membershipType || 'No active membership'}
+                <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
+                <br />
+                {membershipPlan === 'Gold Access' ? (
+                  <>
+                    You have used {userStats.totalLicenses} of your 10 monthly licenses
+                    ({userStats.remainingLicenses} remaining)
+                  </>
+                ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
+                  'You have unlimited licenses available'
+                ) : (
+                  'Single track license'
+                )}
               </p>
               {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
-                <p className="text-sm text-gray-400 mt-1">
-                  Period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
+                <p className="text-sm text-gray-400 mt-2">
+                  Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
+                  {userStats.daysUntilReset !== null && (
+                    <span className="ml-2">
+                      ({userStats.daysUntilReset} days until reset)
+                    </span>
+                  )}
                 </p>
               )}
             </div>
-            <div className="text-right">
-              <p className="text-2xl font-bold text-white">{userStats.remainingLicenses}</p>
-              <p className="text-gray-300">Licenses Remaining</p>
-              {userStats.daysUntilReset !== null && userStats.daysUntilReset > 0 && (
-                <p className="text-sm text-blue-400 mt-1">
-                  Resets in {userStats.daysUntilReset} days
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex flex-wrap border-b border-blue-500/20 mb-8">
-          {[
-            { id: 'licenses', label: 'My Licenses', count: licenses.length },
-            { id: 'favorites', label: 'Favorites', count: favorites.length },
-            { id: 'new', label: 'New Tracks', count: newTracks.length },
-            { id: 'proposals', label: 'Sync Proposals', count: proposals.length, unread: unreadProposals.length },
-            { id: 'requests', label: 'Custom Sync Requests', count: syncRequests.length }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-6 py-3 font-medium transition-colors relative ${
-                activeTab === tab.id 
-                  ? 'text-white border-b-2 border-blue-500' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-              {tab.count > 0 && (
-                <span className="ml-2 px-2 py-1 text-xs bg-blue-600 text-white rounded-full">
-                  {tab.count}
-                </span>
-              )}
-              {tab.unread && tab.unread > 0 && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'licenses' && (
-          <div className="space-y-6">
-            {/* Licenses List */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">My Licenses</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => setSelectedGenre(e.target.value)}
-                    className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="">All Genres</option>
-                    {Array.from(new Set(licenses.map(l => l.track.genres).flat())).map(genre => (
-                      <option key={genre} value={genre}>{genre}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => handleSort(sortField === 'renewal' ? 'title' : 'renewal')}
-                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    <ArrowUpDown className="w-4 h-4 mr-2" />
-                    {sortField === 'renewal' ? 'Sort by Title' : 'Sort by Renewal'}
-                  </button>
-                </div>
+            {membershipPlan === 'Gold Access' && userStats.remainingLicenses < 3 && (
+              <div className="flex items-center text-yellow-400">
+                <AlertCircle className="w-5 h-5 mr-2" />
+                <span>Running low on licenses</span>
               </div>
+            )}
+          </div>
+          {membershipPlan === 'Gold Access' && (
+            <div className="mt-4 w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-purple-600 rounded-full h-2 transition-all duration-300"
+                style={{ width: `${(userStats.totalLicenses / 10) * 100}%` }}
+              />
+            </div>
+          )}
+        </div>
 
-              {licenses.length === 0 ? (
-                <div className="text-center py-12">
-                  <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No licenses yet</p>
-                  <p className="text-gray-500 mt-2">Browse our catalog to license your first track</p>
-                  <Link
-                    to="/catalog"
-                    className="inline-block mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Browse Catalog
-                  </Link>
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Your Sync Requests</h2>
+            <Link
+              to="/custom-sync-request"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Request
+            </Link>
+          </div>
+
+          {syncRequests.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No sync requests yet</p>
+              <Link
+                to="/custom-sync-request"
+                className="inline-block mt-4 text-purple-400 hover:text-purple-300"
+              >
+                Create your first sync request
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {syncRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {request.project_title}
+                      </h3>
+                      <p className="text-gray-400 text-sm mb-2">
+                        {request.project_description}
+                      </p>
+                      <div className="flex items-center space-x-4 text-sm">
+                        <span className="text-purple-400">${request.sync_fee.toFixed(2)}</span>
+                        <span className="text-gray-400">{request.genre}</span>
+                        <span className="text-gray-400">
+                          Due: {new Date(request.end_date).toLocaleDateString()}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                          request.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
+                          request.status === 'cancelled' ? 'bg-red-500/20 text-red-400' :
+                          'bg-purple-500/20 text-purple-400'
+                        }`}>
+                          {request.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => {
+                          setSelectedRequest(request);
+                          setShowEditDialog(true);
+                        }}
+                        className="p-2 text-gray-400 hover:text-white transition-colors"
+                        title="Edit request"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      {request.status !== 'completed' && (
+                        <button
+                          onClick={() => handleUpdateRequest(request.id, { status: 'completed' })}
+                          className="p-2 text-gray-400 hover:text-green-400 transition-colors"
+                          title="Mark as completed"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteRequest(request.id)}
+                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                        title="Delete request"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {licenses
-                    .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
-                    .sort((a, b) => {
-                      if (sortField === 'renewal') {
-                        return sortOrder === 'asc' 
-                          ? new Date(a.expiry_date).getTime() - new Date(b.expiry_date).getTime()
-                          : new Date(b.expiry_date).getTime() - new Date(a.expiry_date).getTime();
-                      } else {
-                        return sortOrder === 'asc' 
-                          ? a.track.title.localeCompare(b.track.title)
-                          : b.track.title.localeCompare(a.track.title);
-                      }
-                    })
-                    .map(license => (
-                      <div key={license.id} className="bg-white/5 rounded-lg p-4 border border-blue-500/20">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1">{license.track.title}</h3>
-                            <p className="text-gray-400 text-sm">{license.track.artist}</p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-white">Your Licensed Tracks</h2>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => handleSort('renewal')}
+                  className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <ArrowUpDown className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleSort('title')}
+                  className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20"
+                >
+                  <span>A-Z</span>
+                  <ArrowUpDown className="w-4 h-4" />
+                </button>
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  className="bg-white/10 border border-purple-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">All Genres</option>
+                  {Array.from(new Set(licenses.flatMap(l => l.track.genres))).map(genre => (
+                    <option key={genre} value={genre}>{genre}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {sortedAndFilteredLicenses.length === 0 ? (
+              <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/20">
+                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No licensed tracks found</p>
+                <Link
+                  to="/catalog"
+                  className="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Browse Catalog
+                </Link>
+              </div>
+            ) : (
+              sortedAndFilteredLicenses.map((license) => {
+                const expiryStatus = getExpiryStatus(license.expiry_date);
+                
+                return (
+                  <div
+                    key={license.id}
+                    className={`bg-white/5 backdrop-blur-sm rounded-lg p-4 border ${
+                      expiryStatus === 'expired' ? 'border-red-500/20' :
+                      expiryStatus === 'expiring-soon' ? 'border-yellow-500/20' :
+                      'border-purple-500/20'
+                    }`}
+                  >
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex items-start space-x-4">
+                        <img
+                          src={license.track.image}
+                          alt={license.track.title}
+                          className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/track/${license.track.id}`)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => navigate(`/track/${license.track.id}`)}
+                              className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                            >
+                              {license.track.title}
+                            </button>
+                            <div className="flex items-center space-x-2 mt-2 md:mt-0">
+                              <button
+                                onClick={() => handleViewLicenseAgreement(license.id)}
+                                className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                              >
+                                <FileText className="w-4 h-4 mr-1" />
+                                View Agreement
+                              </button>
+                              <button
+                                onClick={() => setSelectedLicenseToDelete(license)}
+                                className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              getExpiryStatus(license.expiry_date) === 'expired' 
-                                ? 'bg-red-500/20 text-red-400' 
-                                : getExpiryStatus(license.expiry_date) === 'expiring-soon'
-                                ? 'bg-yellow-500/20 text-yellow-400'
-                                : 'bg-green-500/20 text-green-400'
-                            }`}>
-                              {getExpiryStatus(license.expiry_date) === 'expired' ? 'Expired' :
-                               getExpiryStatus(license.expiry_date) === 'expiring-soon' ? 'Expiring Soon' : 'Active'}
+                          <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
+                            <span className="flex items-center">
+                              <Tag className="w-4 h-4 mr-1" />
+                              {license.track.genres.join(', ')}
+                            </span>
+                            <span className="flex items-center">
+                              <Hash className="w-4 h-4 mr-1" />
+                              {license.track.bpm} BPM
+                            </span>
+                            <span className="flex items-center">
+                              <Layers className="w-4 h-4 mr-1" />
+                              {license.license_type}
                             </span>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <span className="flex items-center">
-                            <Tag className="w-4 h-4 mr-1" />
-                            {license.track.genres.join(', ')}
-                          </span>
-                          <span className="flex items-center">
-                            <Hash className="w-4 h-4 mr-1" />
-                            {license.track.bpm} BPM
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
-                          <span className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1" />
-                            Expires: {new Date(license.expiry_date).toLocaleDateString()}
-                          </span>
-                          <span className="flex items-center">
-                            <FileMusic className="w-4 h-4 mr-1" />
-                            {license.license_type}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <AudioPlayer
-                            audioUrl={license.track.audioUrl}
-                            isPlaying={currentlyPlaying === license.track.id}
-                            onToggle={() => togglePlayFavorite(license.track.id)}
-                            size="sm"
-                          />
-                          <button
-                            onClick={() => handleViewLicenseAgreement(license.id)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                          >
-                            View Agreement
-                          </button>
-                          <button
-                            onClick={() => setSelectedLicenseToDelete(license)}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                          >
-                            Delete
-                          </button>
+                          <div className="flex items-center justify-between mt-3">
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs ${
+                                expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
+                                expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {expiryStatus === 'expired' ? 'Expired' :
+                                 expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
+                                 'Active'}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {license.track.audio_url && (
+                              <AudioPlayer
+                                src={license.track.audio_url}
+                                isPlaying={currentlyPlaying === license.track.id}
+                                onToggle={() => {
+                                  if (currentlyPlaying === license.track.id) {
+                                    setCurrentlyPlaying(null);
+                                  } else {
+                                    setCurrentlyPlaying(license.track.id);
+                                  }
+                                }}
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
-                    ))}
-                </div>
-              )}
-            </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
-        )}
 
-        {activeTab === 'favorites' && (
           <div className="space-y-6">
-            {/* Favorites List */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">My Favorites</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => setSelectedGenre(e.target.value)}
-                    className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="">All Genres</option>
-                    {Array.from(new Set(favorites.map(t => t.genres).flat())).map(genre => (
-                      <option key={genre} value={genre}>{genre}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <h3 className="text-xl font-bold text-white mb-4">Your Favorites</h3>
               {favorites.length === 0 ? (
-                <div className="text-center py-12">
-                  <Star className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No favorites yet</p>
-                  <p className="text-gray-500 mt-2">Browse our catalog and add tracks to your favorites</p>
+                <div className="text-center py-8">
+                  <Star className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No favorites yet</p>
                   <Link
                     to="/catalog"
-                    className="inline-block mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    className="inline-block mt-4 text-purple-400 hover:text-purple-300"
                   >
-                    Browse Catalog
+                    Browse tracks to add favorites
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {favorites
-                    .filter(track => !selectedGenre || track.genres.includes(selectedGenre))
-                    .map(track => (
-                      <div key={track.id} className="bg-white/5 rounded-lg p-4 border border-blue-500/20">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                            <p className="text-gray-400 text-sm">{track.artist}</p>
+                <div className="space-y-4">
+                  {sortedAndFilteredFavorites.slice(0, 5).map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-purple-500/20"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={track.image}
+                          alt={track.title}
+                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/track/${track.id}`)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="text-sm font-semibold text-white hover:text-blue-400 transition-colors text-left block truncate"
+                          >
+                            {track.title}
+                          </button>
+                          <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs text-purple-400">{track.genres[0]}</span>
+                            <span className="text-xs text-gray-400">{track.bpm} BPM</span>
                           </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {track.audioUrl && (
+                            <AudioPlayer
+                              src={track.audioUrl}
+                              isPlaying={currentlyPlayingFavorite === track.id}
+                              onToggle={() => togglePlayFavorite(track.id)}
+                              size="sm"
+                            />
+                          )}
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                          >
+                            View Track
+                          </button>
                           <button
                             onClick={() => handleRemoveFavorite(track.id)}
                             disabled={removingFavorite === track.id}
-                            className="text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                            className="p-1 text-gray-400 hover:text-red-400 transition-colors disabled:opacity-50"
                           >
                             {removingFavorite === track.id ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
+                              <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
-                              <X className="w-5 h-5" />
+                              <X className="w-4 h-4" />
                             )}
                           </button>
                         </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <span className="flex items-center">
-                            <Tag className="w-4 h-4 mr-1" />
-                            {track.genres.join(', ')}
-                          </span>
-                          <span className="flex items-center">
-                            <Hash className="w-4 h-4 mr-1" />
-                            {track.bpm} BPM
-                          </span>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <AudioPlayer
-                            audioUrl={track.audioUrl}
-                            isPlaying={currentlyPlayingFavorite === track.id}
-                            onToggle={() => togglePlayFavorite(track.id)}
-                            size="sm"
-                          />
-                          <button
-                            onClick={() => handleLicenseClick(track)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                          >
-                            License
-                          </button>
-                          <button
-                            onClick={() => setSelectedTrackToLicense({ ...track, showProposalDialog: true })}
-                            className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            Sync Proposal
-                          </button>
-                        </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                  {favorites.length > 5 && (
+                    <Link
+                      to="/catalog?favorites=true"
+                      className="block text-center text-purple-400 hover:text-purple-300 text-sm mt-4"
+                    >
+                      View all favorites ({favorites.length})
+                    </Link>
+                  )}
                 </div>
               )}
             </div>
-          </div>
-        )}
 
-        {activeTab === 'new' && (
-          <div className="space-y-6">
-            {/* New Tracks List */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">New Tracks</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={selectedGenre}
-                    onChange={(e) => setSelectedGenre(e.target.value)}
-                    className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="">All Genres</option>
-                    {Array.from(new Set(newTracks.map(t => t.genres).flat())).map(genre => (
-                      <option key={genre} value={genre}>{genre}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+              <h3 className="text-xl font-bold text-white mb-4">New Tracks</h3>
               {newTracks.length === 0 ? (
-                <div className="text-center py-12">
-                  <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No new tracks available</p>
-                  <p className="text-gray-500 mt-2">Check back later for fresh content</p>
+                <div className="text-center py-8">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No new tracks available</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {newTracks
-                    .filter(track => !selectedGenre || track.genres.includes(selectedGenre))
-                    .map(track => (
-                      <div key={track.id} className="bg-white/5 rounded-lg p-4 border border-blue-500/20">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                            <p className="text-gray-400 text-sm">{track.artist}</p>
+                <div className="space-y-4">
+                  {newTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-purple-500/20"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <img
+                          src={track.image}
+                          alt={track.title}
+                          className="w-12 h-12 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                          onClick={() => navigate(`/track/${track.id}`)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="text-sm font-semibold text-white hover:text-blue-400 transition-colors text-left block truncate"
+                          >
+                            {track.title}
+                          </button>
+                          <p className="text-xs text-gray-400 truncate">{track.artist}</p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <span className="text-xs text-purple-400">{track.genres[0]}</span>
+                            <span className="text-xs text-gray-400">{track.bpm} BPM</span>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <span className="flex items-center">
-                            <Tag className="w-4 h-4 mr-1" />
-                            {track.genres.join(', ')}
-                          </span>
-                          <span className="flex items-center">
-                            <Hash className="w-4 h-4 mr-1" />
-                            {track.bpm} BPM
-                          </span>
-                        </div>
-
                         <div className="flex items-center space-x-2">
-                          <AudioPlayer
-                            audioUrl={track.audioUrl}
-                            isPlaying={currentlyPlayingNew === track.id}
-                            onToggle={() => togglePlayNew(track.id)}
-                            size="sm"
-                          />
+                          {track.audioUrl && (
+                            <AudioPlayer
+                              src={track.audioUrl}
+                              isPlaying={currentlyPlayingNew === track.id}
+                              onToggle={() => togglePlayNew(track.id)}
+                              size="sm"
+                            />
+                          )}
                           <button
                             onClick={() => navigate(`/track/${track.id}`)}
                             className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
@@ -1422,170 +929,48 @@ export function ClientDashboard() {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           </div>
-        )}
-
-        {activeTab === 'proposals' && (
-          <div className="space-y-6">
-            {/* Proposals List */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-white">Sync Proposals</h2>
-                <div className="flex items-center space-x-4">
-                  <select
-                    value={proposalTab}
-                    onChange={(e) => setProposalTab(e.target.value as any)}
-                    className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="declined">Declined</option>
-                    <option value="expired">Expired</option>
-                  </select>
-                  <button
-                    onClick={fetchProposals}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh
-                  </button>
-                </div>
-              </div>
-
-              {proposals.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No proposals yet</p>
-                  <p className="text-gray-500 mt-2">Sync proposals will appear here when producers submit them</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {proposals
-                    .filter(proposal => {
-                      if (proposalTab === 'pending') return proposal.status === 'pending';
-                      if (proposalTab === 'accepted') return proposal.status === 'accepted';
-                      if (proposalTab === 'declined') return proposal.status === 'declined';
-                      if (proposalTab === 'expired') return proposal.status === 'expired';
-                      return true;
-                    })
-                    .map(proposal => (
-                      <div key={proposal.id} className="bg-white/5 rounded-lg p-4 border border-blue-500/20">
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex-1">
-                            <h3 className="text-lg font-semibold text-white mb-1">
-                              {proposal.track?.title || `Proposal ${proposal.id.slice(0, 8)}`}
-                            </h3>
-                            <p className="text-gray-400 text-sm">
-                              Producer: {proposal.track?.producer?.firstName} {proposal.track?.producer?.lastName}
-                            </p>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              proposal.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
-                              proposal.status === 'declined' ? 'bg-red-500/20 text-red-400' :
-                              proposal.status === 'expired' ? 'bg-gray-500/20 text-gray-400' :
-                              'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                              {proposal.status.charAt(0).toUpperCase() + proposal.status.slice(1)}
-                            </span>
-                            {unreadProposals.includes(proposal.id) && (
-                              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 text-sm text-gray-400 mb-3">
-                          <span className="flex items-center">
-                            <DollarSign className="w-4 h-4 mr-1" />
-                            ${proposal.sync_fee}
-                          </span>
-                          <span className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            {new Date(proposal.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'negotiate')}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                          >
-                            Negotiate
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'history')}
-                            className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            History
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'accept')}
-                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'reject')}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Client Profile Dialog */}
       {showProfileDialog && (
         <ClientProfile
-          isOpen={showProfileDialog}
           onClose={() => setShowProfileDialog(false)}
+          onUpdate={fetchDashboardData}
         />
       )}
 
-      {/* Delete License Dialog */}
-      {selectedLicenseToDelete && (
-        <DeleteLicenseDialog
-          isOpen={!!selectedLicenseToDelete}
-          onClose={() => setSelectedLicenseToDelete(null)}
-          licenseId={selectedLicenseToDelete.id}
-          trackTitle={selectedLicenseToDelete.track.title}
-          onConfirm={handleDeleteLicense}
-        />
-      )}
-
-      {/* Edit Request Dialog */}
       {selectedRequest && showEditDialog && (
         <EditRequestDialog
-          isOpen={showEditDialog}
+          request={selectedRequest}
           onClose={() => {
             setShowEditDialog(false);
             setSelectedRequest(null);
           }}
-          request={selectedRequest}
           onUpdate={handleUpdateRequest}
-          onDelete={handleDeleteRequest}
         />
       )}
 
-      {/* License Dialog */}
+      {selectedLicenseToDelete && (
+        <DeleteLicenseDialog
+          license={selectedLicenseToDelete}
+          onClose={() => setSelectedLicenseToDelete(null)}
+          onConfirm={handleDeleteLicense}
+        />
+      )}
+
       {showLicenseDialog && selectedTrackToLicense && (
         <LicenseDialog
-          isOpen={showLicenseDialog}
+          track={selectedTrackToLicense}
           onClose={() => {
             setShowLicenseDialog(false);
             setSelectedTrackToLicense(null);
           }}
-          track={selectedTrackToLicense}
           onSuccess={() => {
             setShowLicenseDialog(false);
             setSelectedTrackToLicense(null);
@@ -1594,73 +979,17 @@ export function ClientDashboard() {
         />
       )}
 
-      {/* Sync Proposal Dialog */}
       {showProposalDialog && selectedTrackToLicense && (
         <SyncProposalDialog
-          isOpen={showProposalDialog}
+          track={selectedTrackToLicense}
           onClose={() => {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
           }}
-          track={selectedTrackToLicense}
           onSuccess={() => {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
-            fetchProposals();
           }}
-        />
-      )}
-
-      {/* Negotiation Dialog */}
-      {showNegotiationDialog && selectedProposal && (
-        <ProposalNegotiationDialog
-          isOpen={showNegotiationDialog}
-          onClose={() => {
-            setShowNegotiationDialog(false);
-            setSelectedProposal(null);
-            negotiationDialogOpenRef.current = null;
-          }}
-          proposal={selectedProposal}
-          onMessageSent={() => {
-            fetchProposals();
-          }}
-        />
-      )}
-
-      {/* History Dialog */}
-      {showHistoryDialog && selectedProposal && (
-        <ProposalHistoryDialog
-          isOpen={showHistoryDialog}
-          onClose={() => {
-            setShowHistoryDialog(false);
-            setSelectedProposal(null);
-          }}
-          proposal={selectedProposal}
-        />
-      )}
-
-      {/* Confirm Dialog */}
-      {showConfirmDialog && selectedProposal && (
-        <ProposalConfirmDialog
-          isOpen={showConfirmDialog}
-          onClose={() => {
-            setShowConfirmDialog(false);
-            setSelectedProposal(null);
-          }}
-          proposal={selectedProposal}
-          action={confirmAction}
-          onConfirm={handleClientAcceptDecline}
-        />
-      )}
-
-      {/* Negotiation Acceptance Dialog */}
-      {selectedProposal && selectedProposal.negotiation_status === 'negotiated' && (
-        <NegotiationAcceptanceDialog
-          isOpen={false}
-          onClose={() => {}}
-          proposal={selectedProposal}
-          onAccept={handleClientAcceptDecline}
-          onDecline={handleClientAcceptDecline}
         />
       )}
     </div>

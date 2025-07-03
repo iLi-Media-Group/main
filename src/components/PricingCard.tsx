@@ -10,7 +10,7 @@ interface PricingCardProps {
 
 export function PricingCard({ tier, price, onSelect }: PricingCardProps) {
   return (
-    <div className="animated-border flex flex-col p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors">
+    <div className="flex flex-col p-6 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors">
       <h3 className="text-xl font-bold text-white">{tier.name}</h3>
       <p className="mt-2 text-gray-400">{tier.description}</p>
       <div className="mt-4 text-3xl font-bold text-white">

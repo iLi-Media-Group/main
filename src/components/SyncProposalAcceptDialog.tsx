@@ -30,41 +30,13 @@ export function SyncProposalAcceptDialog({
       setLoading(true);
       setError('');
 
-      // Check current proposal status to determine the new status
-      const { data: currentProposal, error: fetchError } = await supabase
-        .from('sync_proposals')
-        .select('status')
-        .eq('id', proposal.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      let newStatus = 'client_accepted';
-      let newClientStatus = 'accepted';
-
-      const updateData: {
-        status: string;
-        client_status: string;
-        producer_status?: string;
-        updated_at: string;
-      } = {
-        status: newStatus,
-        client_status: newClientStatus,
-        updated_at: new Date().toISOString(),
-      };
-
-      // If producer has already accepted, the deal is made.
-      // Update status for producer as well.
-      if (currentProposal?.status === 'producer_accepted') {
-        newStatus = 'accepted';
-        updateData.status = 'accepted';
-        updateData.producer_status = 'accepted';
-      }
-
-      // Update proposal status and client_status
+      // Update proposal status to client_accepted
       const { error: updateError } = await supabase
         .from('sync_proposals')
-        .update(updateData)
+        .update({ 
+          client_status: 'accepted',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', proposal.id);
 
       if (updateError) throw updateError;
@@ -74,8 +46,8 @@ export function SyncProposalAcceptDialog({
         .from('proposal_history')
         .insert({
           proposal_id: proposal.id,
-          previous_status: currentProposal?.status || 'pending',
-          new_status: newStatus,
+          previous_status: 'pending_client',
+          new_status: 'client_accepted',
           changed_by: user.id
         });
 
@@ -137,20 +109,10 @@ export function SyncProposalAcceptDialog({
       setLoading(true);
       setError('');
 
-      // Check current proposal status
-      const { data: currentProposal, error: fetchError } = await supabase
-        .from('sync_proposals')
-        .select('status')
-        .eq('id', proposal.id)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Update both proposal status and client_status
+      // Update proposal status to client_rejected
       const { error: updateError } = await supabase
         .from('sync_proposals')
         .update({ 
-          status: 'rejected',
           client_status: 'rejected',
           updated_at: new Date().toISOString()
         })
@@ -163,8 +125,8 @@ export function SyncProposalAcceptDialog({
         .from('proposal_history')
         .insert({
           proposal_id: proposal.id,
-          previous_status: currentProposal?.status || 'pending',
-          new_status: 'rejected',
+          previous_status: 'pending_client',
+          new_status: 'client_rejected',
           changed_by: user.id
         });
 
@@ -215,7 +177,7 @@ export function SyncProposalAcceptDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Accept Proposal</h2>
           <button

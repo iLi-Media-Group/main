@@ -45,15 +45,6 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
     }
   };
 
-  // Helper to extract YouTube video ID from a URL
-  const getYouTubeVideoId = (url: string | null) => {
-    if (!url) return null;
-    const match = url.match(/(?:youtube\.com\/(?:.*v=|(?:v|e(?:mbed)?|shorts)\/)|youtu\.be\/)([\w-]{11})/);
-    return match ? match[1] : null;
-  };
-
-  const youtubeId = announcement.type === 'youtube' ? getYouTubeVideoId(announcement.external_url) : null;
-
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -77,18 +68,11 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
           </span>
         </div>
         
-        {youtubeId && (
-          <img
-            src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
-            alt="YouTube Video Thumbnail"
-            className="w-full max-h-[60vh] object-contain rounded-lg mb-6"
-          />
-        )}
         {announcement.image_url && (
           <img
             src={announcement.image_url}
             alt={announcement.title}
-            className="w-full max-h-[60vh] object-contain rounded-lg mb-6"
+            className="w-full max-h-96 object-cover rounded-lg mb-6"
           />
         )}
 

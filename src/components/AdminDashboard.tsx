@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet, Settings, Tag, BarChart, FileText } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,12 +8,9 @@ import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { ClientList } from './ClientList';
+import { ProducerPayoutsPage } from './ProducerPayoutsPage';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
-import { FeatureManagement } from './FeatureManagement';
-import { DiscountManagement } from './DiscountManagement';
-import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
-import { AdminReportGenerator } from './AdminReportGenerator';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -56,8 +53,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [showReportGenerator, setShowReportGenerator] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'feature_management' | 'discount_management' | 'advanced_analytics'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -131,212 +127,69 @@ export function AdminDashboard() {
         total_producers: producerUsers.length
       }));
 
-      // Fetch comprehensive sales data including all revenue sources
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-      
-      // 1. Track license sales (from sales table)
-      const { data: trackSalesData, error: trackSalesError } = await supabase
-        .from('sales')
-        .select('amount, created_at')
-        .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
+      // Fetch sales analytics
+      const { data: analyticsData, error: analyticsError } = await supabase
+        .from('sales_analytics')
+        .select('*')
+        .order('month', { ascending: false });
 
-      if (trackSalesError) {
-        console.error('Error fetching track sales:', trackSalesError);
-      }
+      if (analyticsError) {
+        console.error('Analytics error:', analyticsError);
+      } else {
+        // Get the most recent analytics data or use default values
+        const latestAnalytics = analyticsData && analyticsData.length > 0 ? analyticsData[0] : {
+          monthly_sales_count: 0,
+          monthly_revenue: 0,
+          track_count: 0,
+          producer_sales_count: 0,
+          producer_revenue: 0
+        };
 
-      // 2. Sync proposal sales (from sync_proposals table)
-      const { data: syncProposalsData, error: syncProposalsError } = await supabase
-        .from('sync_proposals')
-        .select('sync_fee, created_at, payment_status, status')
-        .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
-        .eq('payment_status', 'paid')
-        .eq('status', 'accepted');
+        // Update stats with sales data
+        setStats(prev => ({
+          ...prev,
+          total_sales: latestAnalytics.monthly_sales_count || 0,
+          total_revenue: latestAnalytics.monthly_revenue || 0
+        }));
 
-      if (syncProposalsError) {
-        console.error('Error fetching sync proposals:', syncProposalsError);
-      }
+        // Transform producer data - create a map of producer analytics by producer_id
+        const producerAnalyticsMap = analyticsData.reduce((map, item) => {
+          if (item.producer_id) {
+            if (!map[item.producer_id]) {
+              map[item.producer_id] = {
+                producer_sales_count: item.producer_sales_count || 0,
+                producer_revenue: item.producer_revenue || 0,
+                track_count: item.track_count || 0
+              };
+            }
+          }
+          return map;
+        }, {});
 
-      // 3. Custom sync request sales (from custom_sync_requests table)
-      const { data: customSyncData, error: customSyncError } = await supabase
-        .from('custom_sync_requests')
-        .select('sync_fee, created_at, status')
-        .gte('created_at', `${currentMonth}-01`)
-        .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
-        .eq('status', 'completed');
-
-      if (customSyncError) {
-        console.error('Error fetching custom sync requests:', customSyncError);
-      }
-
-      // Calculate total sales and revenue
-      const trackSales = trackSalesData || [];
-      const syncProposals = syncProposalsData || [];
-      const customSyncRequests = customSyncData || [];
-
-      const totalSales = trackSales.length + syncProposals.length + customSyncRequests.length;
-      const totalRevenue = 
-        (trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0)) +
-        (syncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0)) +
-        (customSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0));
-
-      // Debug logging
-      console.log('Analytics Debug Info:', {
-        currentMonth,
-        producerUsers: producerUsers.length,
-        trackSales: trackSales.length,
-        syncProposals: syncProposals.length,
-        customSyncRequests: customSyncRequests.length,
-        totalSales,
-        totalRevenue,
-        trackSalesData: trackSales.slice(0, 3), // First 3 for debugging
-        syncProposalsData: syncProposals.slice(0, 3), // First 3 for debugging
-        customSyncData: customSyncRequests.slice(0, 3) // First 3 for debugging
-      });
-
-      // Update stats with comprehensive sales data
-      setStats(prev => ({
-        ...prev,
-        total_sales: totalSales,
-        total_revenue: totalRevenue
-      }));
-
-      // Fetch producer analytics using the existing function
-      const { data: producerAnalyticsData, error: producerAnalyticsError } = await supabase
-        .rpc('get_producer_analytics');
-
-      if (producerAnalyticsError) {
-        console.error('Error fetching producer analytics:', producerAnalyticsError);
-      }
-
-      // Create a map of producer analytics by producer_id
-      const producerAnalyticsMap: Record<string, {
-        total_tracks: number;
-        total_sales: number;
-        total_revenue: number;
-      }> = {};
-      if (producerAnalyticsData) {
-        producerAnalyticsData.forEach((item: {
-          producer_id: string;
-          total_tracks: number;
-          total_sales: number;
-          total_revenue: number;
-        }) => {
-          producerAnalyticsMap[item.producer_id] = {
-            total_tracks: item.total_tracks || 0,
-            total_sales: item.total_sales || 0,
-            total_revenue: item.total_revenue || 0
+        // Map producer users to include their analytics
+        const transformedProducers = producerUsers.map(producer => {
+          const analytics = producerAnalyticsMap[producer.id] || {
+            producer_sales_count: 0,
+            producer_revenue: 0,
+            track_count: 0
+          };
+          
+          return {
+            id: producer.id,
+            email: producer.email,
+            first_name: producer.first_name,
+            last_name: producer.last_name,
+            account_type: 'producer' as const,
+            created_at: producer.created_at,
+            producer_number: producer.producer_number,
+            total_tracks: analytics.track_count,
+            total_sales: analytics.producer_sales_count,
+            total_revenue: analytics.producer_revenue
           };
         });
+
+        setProducers(transformedProducers);
       }
-
-      // For producers not in the analytics (like admin emails), fetch their data manually
-      const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
-      
-      if (producersNotInAnalytics.length > 0) {
-        // Fetch tracks for these producers
-        const { data: tracksData, error: tracksError } = await supabase
-          .from('tracks')
-          .select('id, producer_id, title')
-          .in('producer_id', producersNotInAnalytics.map(p => p.id));
-
-        if (tracksError) {
-          console.error('Error fetching tracks for producers:', tracksError);
-        }
-
-        // Fetch sales for these producers' tracks
-        const trackIds = tracksData?.map(t => t.id) || [];
-        let salesData: any[] = [];
-        if (trackIds.length > 0) {
-          const { data: sales, error: salesError } = await supabase
-            .from('sales')
-            .select('id, track_id, amount')
-            .in('track_id', trackIds);
-
-          if (salesError) {
-            console.error('Error fetching sales for producers:', salesError);
-          } else {
-            salesData = sales || [];
-          }
-        }
-
-        // Fetch sync proposals for these producers' tracks
-        let syncProposalsData: any[] = [];
-        if (trackIds.length > 0) {
-          const { data: syncProposals, error: syncProposalsError } = await supabase
-            .from('sync_proposals')
-            .select('id, track_id, sync_fee, payment_status, status')
-            .in('track_id', trackIds)
-            .eq('payment_status', 'paid')
-            .eq('status', 'accepted');
-
-          if (syncProposalsError) {
-            console.error('Error fetching sync proposals for producers:', syncProposalsError);
-          } else {
-            syncProposalsData = syncProposals || [];
-          }
-        }
-
-        // Fetch custom sync requests for these producers (where they are the preferred producer)
-        let customSyncRequestsData: any[] = [];
-        const producerIds = producersNotInAnalytics.map(p => p.id);
-        if (producerIds.length > 0) {
-          const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
-            .from('custom_sync_requests')
-            .select('id, preferred_producer_id, sync_fee, status')
-            .in('preferred_producer_id', producerIds)
-            .eq('status', 'completed');
-
-          if (customSyncRequestsError) {
-            console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
-          } else {
-            customSyncRequestsData = customSyncRequests || [];
-          }
-        }
-
-        // Calculate analytics for producers not in the function
-        producersNotInAnalytics.forEach(producer => {
-          const producerTracks = tracksData?.filter(t => t.producer_id === producer.id) || [];
-          const producerTrackIds = producerTracks.map(t => t.id);
-          const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
-          const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
-          const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
-
-          producerAnalyticsMap[producer.id] = {
-            total_tracks: producerTracks.length,
-            total_sales: producerSales.length + producerSyncProposals.length + producerCustomSyncRequests.length,
-            total_revenue: 
-              producerSales.reduce((sum, sale) => sum + (sale.amount || 0), 0) +
-              producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) +
-              producerCustomSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0)
-          };
-        });
-      }
-
-      // Map producer users to include their analytics
-      const transformedProducers = producerUsers.map(producer => {
-        const analytics = producerAnalyticsMap[producer.id] || {
-          total_tracks: 0,
-          total_sales: 0,
-          total_revenue: 0
-        };
-        
-        return {
-          id: producer.id,
-          email: producer.email,
-          first_name: producer.first_name,
-          last_name: producer.last_name,
-          account_type: 'producer' as const,
-          created_at: producer.created_at,
-          producer_number: producer.producer_number,
-          total_tracks: analytics.total_tracks,
-          total_sales: analytics.total_sales,
-          total_revenue: analytics.total_revenue
-        };
-      });
-
-      setProducers(transformedProducers);
 
     } catch (err) {
       console.error('Error fetching admin data:', err);
@@ -406,22 +259,13 @@ export function AdminDashboard() {
               </p>
             )}
           </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowReportGenerator(true)}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Generate Reports
-            </button>
-            <button
-              onClick={() => setShowLogoUpload(!showLogoUpload)}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Change Logo
-            </button>
-          </div>
+          <button
+            onClick={() => setShowLogoUpload(!showLogoUpload)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Change Logo
+          </button>
         </div>
 
         {showLogoUpload && <LogoUpload />}
@@ -451,11 +295,8 @@ export function AdminDashboard() {
           <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-400">Total Sales (Current Month)</p>
+                <p className="text-gray-400">Total Sales</p>
                 <p className="text-3xl font-bold text-white">{stats.total_sales}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
-                </p>
               </div>
               <BarChart3 className="w-12 h-12 text-blue-500" />
             </div>
@@ -467,9 +308,6 @@ export function AdminDashboard() {
                 <p className="text-gray-400">Total Revenue (Current Month)</p>
                 <p className="text-3xl font-bold text-white">
                   ${stats.total_revenue.toFixed(2)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
                 </p>
               </div>
               <div 
@@ -493,11 +331,10 @@ export function AdminDashboard() {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
+            { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
-            { id: 'feature_management', label: 'Feature Management', icon: <Settings className="w-4 h-4 mr-2" /> },
-            { id: 'discount_management', label: 'Discount Management', icon: <Tag className="w-4 h-4 mr-2" /> },
-            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart className="w-4 h-4 mr-2" /> }
+			      { id: 'white_label', label: 'White Label Clients', icon: null },
           ].map(tab => (
             <button
               key={tab.id}
@@ -677,6 +514,13 @@ export function AdminDashboard() {
           </div>
         )}
 
+        {/* USDC Payouts */}
+        {activeTab === 'payouts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <ProducerPayoutsPage />
+          </div>
+        )}
+
         {/* Announcements Management */}
         {activeTab === 'announcements' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -688,28 +532,18 @@ export function AdminDashboard() {
         {activeTab === 'compensation' && (
           <CompensationSettings />
         )}
-
-        {/* Feature Management */}
-        {activeTab === 'feature_management' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <FeatureManagement />
-          </div>
-        )}
-
-        {/* Discount Management */}
-        {activeTab === 'discount_management' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <DiscountManagement />
-          </div>
-        )}
-
-        {/* Advanced Analytics */}
-        {activeTab === 'advanced_analytics' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <AdvancedAnalyticsDashboard />
-          </div>
-        )}
       </div>
+			 {activeTab === 'white_label' && (
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+         <Link
+         to="/admin/white-label-clients"
+         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors inline-block"
+          >
+       Manage White Label Clients
+      </Link>
+  </div>
+)}
+
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (
@@ -729,12 +563,6 @@ export function AdminDashboard() {
       <RevenueBreakdownDialog
         isOpen={showRevenueBreakdown}
         onClose={() => setShowRevenueBreakdown(false)}
-      />
-
-      {/* Admin Report Generator */}
-      <AdminReportGenerator
-        isOpen={showReportGenerator}
-        onClose={() => setShowReportGenerator(false)}
       />
     </div>
   );

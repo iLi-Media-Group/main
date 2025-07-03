@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { ProfilePhotoUpload } from './ProfilePhotoUpload';
-import { ProfileBioSection } from './ProfileBioSection';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -26,13 +24,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [country, setCountry] = useState('');
   const [ipiNumber, setIpiNumber] = useState('');
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
-  const [avatarPath, setAvatarPath] = useState<string | null>(null);
+  const [usdcAddress, setUsdcAddress] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [bio, setBio] = useState('');
-  const [showLocation, setShowLocation] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -45,7 +41,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, ipi_number, performing_rights_org, company_name')
+        .select('*, ipi_number, performing_rights_org, usdc_address, company_name')
         .eq('id', user?.id)
         .single();
 
@@ -65,9 +61,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setCountry(data.country || '');
         setIpiNumber(data.ipi_number || '');
         setPerformingRightsOrg(data.performing_rights_org || '');
-        setAvatarPath(data.avatar_path || null);
-        setBio(data.bio || '');
-        setShowLocation(!!data.show_location);
+        setUsdcAddress(data.usdc_address || '');
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -92,6 +86,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           company_name: companyName.trim() || null,
+          company_name: companyName.trim() || null,
           phone_number: phoneNumber.trim() || null,
           street_address: streetAddress.trim() || null,
           city: city.trim() || null,
@@ -100,8 +95,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           country: country.trim() || null,
           ipi_number: ipiNumber.trim() || null,
           performing_rights_org: performingRightsOrg.trim() || null,
-          bio: bio.trim(),
-          show_location: showLocation,
+          usdc_address: usdcAddress.trim() || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -123,15 +117,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
     }
   };
 
-  const handlePhotoUpdate = (url: string) => {
-    setAvatarPath(url);
-  };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
           <button
@@ -160,15 +150,6 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               </div>
             )}
 
-            <div className="flex justify-center mb-6">
-              <ProfilePhotoUpload
-                currentPhotoUrl={avatarPath}
-                onPhotoUpdate={handlePhotoUpdate}
-                userId={user?.id}
-                size="md"
-              />
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -179,7 +160,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <input
                     type="text"
                     value={producerNumber}
-                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all opacity-50"
+                    className="w-full pl-10 opacity-50"
                     disabled
                   />
                 </div>
@@ -194,7 +175,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <input
                     type="email"
                     value={email}
-                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all opacity-50"
+                    className="w-full pl-10 opacity-50"
                     disabled
                   />
                 </div>
@@ -212,7 +193,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full pl-10"
                     required
                   />
                 </div>
@@ -228,7 +209,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full pl-10"
                     required
                   />
                 </div>
@@ -245,7 +226,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                  className="w-full pl-10"
                   placeholder="Your publishing company or label name"
                 />
               </div>
@@ -261,7 +242,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                  className="w-full pl-10"
                   placeholder="International format"
                 />
               </div>
@@ -280,7 +261,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={ipiNumber}
                     onChange={(e) => setIpiNumber(e.target.value)}
-                    className={`w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
                     required
                   />
                 </div>
@@ -301,7 +282,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <select
                     value={performingRightsOrg}
                     onChange={(e) => setPerformingRightsOrg(e.target.value)}
-                    className={`w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all ${!performingRightsOrg ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 ${!performingRightsOrg ? 'border-red-500' : ''}`}
                     required
                   >
                     <option value="">Select your PRO</option>
@@ -323,6 +304,25 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               </div>
             </div>
 
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                USDC Wallet Address
+              </label>
+              <div className="relative">
+                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={usdcAddress}
+                  onChange={(e) => setUsdcAddress(e.target.value)}
+                  className="w-full pl-10"
+                  placeholder="Enter your USDC wallet address (Solana or Polygon)"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                This address will be used for USDC payouts. We support both Solana and Polygon networks.
+              </p>
+            </div>
+
             <div className="space-y-6">
               <h3 className="text-lg font-medium text-white">Address Information</h3>
               
@@ -336,7 +336,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full pl-10 bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full pl-10"
                   />
                 </div>
               </div>
@@ -350,7 +350,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full"
                   />
                 </div>
 
@@ -362,7 +362,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full"
                   />
                 </div>
               </div>
@@ -376,7 +376,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full"
                   />
                 </div>
 
@@ -388,22 +388,10 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full bg-white/5 border border-blue-500/20 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-transparent placeholder-gray-400 text-white transition-all"
+                    className="w-full"
                   />
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-6">
-              <ProfileBioSection
-                bio={bio}
-                showLocation={showLocation}
-                city={city}
-                state={state}
-                onBioChange={setBio}
-                onShowLocationChange={setShowLocation}
-                disabled={saving}
-              />
             </div>
 
             <button

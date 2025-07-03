@@ -25,8 +25,6 @@ interface ProducerProfile {
     totalSales: number;
     avgRating: number;
   };
-  performing_rights_org?: string | null;
-  ipi_number?: string | null;
 }
 
 export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerProfileDialogProps) {
@@ -59,9 +57,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
           city,
           state,
           company_name,
-          producer_number,
-          performing_rights_org,
-          ipi_number
+          producer_number
         `)
         .eq('id', producerId)
         .single();
@@ -111,7 +107,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
           <button
@@ -163,26 +159,31 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               </div>
             </div>
 
-            <div className="bg-white/5 rounded-lg p-4">
-              <p className="text-gray-300 whitespace-pre-wrap">
-                {profile.bio && profile.bio.trim().length > 0 ? profile.bio : 'No bio provided yet.'}
-              </p>
-            </div>
-
-            {(profile.performing_rights_org || profile.ipi_number) && (
-              <div className="bg-white/5 rounded-lg p-4 space-y-2">
-                {profile.performing_rights_org && (
-                  <p className="text-gray-300">
-                    <span className="font-semibold">Performing Rights Organization:</span> {profile.performing_rights_org}
-                  </p>
-                )}
-                {profile.ipi_number && (
-                  <p className="text-gray-300">
-                    <span className="font-semibold">IPI Number:</span> {profile.ipi_number}
-                  </p>
-                )}
+            {profile.bio && (
+              <div className="bg-white/5 rounded-lg p-4">
+                <p className="text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
               </div>
             )}
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-white/5 rounded-lg p-4 text-center">
+                <Music className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">{profile.stats?.totalTracks}</p>
+                <p className="text-sm text-gray-400">Tracks</p>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 text-center">
+                <DollarSign className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">{profile.stats?.totalSales}</p>
+                <p className="text-sm text-gray-400">Sales (30d)</p>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4 text-center">
+                <Star className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-white">{profile.stats?.avgRating}</p>
+                <p className="text-sm text-gray-400">Rating</p>
+              </div>
+            </div>
           </div>
         )}
       </div>

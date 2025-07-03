@@ -1,17 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Loader2, X, AlertCircle } from 'lucide-react';
+import { Check, CreditCard, Coins, Loader2, Mail, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
+import { createCryptoInvoice } from "../utils/createCryptoInvoice";
+
+interface EmailCheckDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onContinue: (email: string, exists: boolean) => void;
+  product: typeof PRODUCTS[0];
+}
+
+function EmailCheckDialog({ isOpen, onClose, onContinue, product }: EmailCheckDialogProps) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim() || !email.includes('@')) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const { data, error: lookupError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+
+      onContinue(email, !!data);
+    } catch (err) {
+      console.error('Error checking email:', err);
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white">Subscribe to {product.name}</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400 text-center">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Your Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full pl-10"
+                placeholder="Enter your email"
+                required
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-400">
+              We'll check if you already have an account
+            </p>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-lg transition-all shadow-lg shadow-purple-500/25 flex items-center justify-center"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Checking...
+              </>
+            ) : (
+              <>
+                <ArrowRight className="w-5 h-5 mr-2" />
+                Continue
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export function PricingCarousel() {
   const navigate = useNavigate();
-  const { user, refreshMembership, accountType } = useAuth();
+  const { user, refreshMembership } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
+  const [showEmailCheck, setShowEmailCheck] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<typeof PRODUCTS[0] | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -23,6 +133,7 @@ export function PricingCarousel() {
     try {
       const subscription = await getUserSubscription();
       setCurrentSubscription(subscription);
+      
       if (subscription?.subscription_id && subscription?.status === 'active') {
         await refreshMembership();
       }
@@ -32,59 +143,60 @@ export function PricingCarousel() {
   };
 
   const handleSubscribe = async (product: typeof PRODUCTS[0]) => {
+    if (user) {
+      proceedWithSubscription(product);
+    } else {
+      setSelectedProduct(product);
+      setShowEmailCheck(true);
+    }
+  };
+
+  const handleEmailContinue = (email: string, exists: boolean) => {
+    setShowEmailCheck(false);
+    
+    if (exists) {
+      navigate(`/login?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
+    } else {
+     navigate(`/signup?email=${encodeURIComponent(email)}&redirect=pricing&product=${selectedProduct?.id}`);
+
+    }
+  };
+const handleCryptoSubscribe = async (product: typeof PRODUCTS[0]) => {
+  if (!user) {
+    setSelectedProduct(product);
+    setShowEmailCheck(true);
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setLoadingProductId(product.id);
     setError(null);
 
-    if (user && (accountType === 'admin' || accountType === 'producer')) {
-      setError('Admins and producers cannot subscribe to client plans. Please create a separate client account with a different email address.');
-      return;
-    }
+    const invoiceUrl = await createCryptoInvoice(product.id, user.id);
+    window.location.href = invoiceUrl; // Redirect user to Helio payment page
 
-    if (product.id === 'prod_SYHCZgM5UBmn3C') {
-      if (!user) {
-        navigate('/login');
-        return;
-      }
+  } catch (err) {
+    console.error('Crypto subscription error:', err);
+    setError(err instanceof Error ? err.message : 'Failed to start crypto payment');
+  } finally {
+    setLoading(false);
+    setLoadingProductId(null);
+  }
+};
 
-      if (currentSubscription?.subscription_id && currentSubscription?.status === 'active') {
-        if (currentSubscription.product_id === 'prod_SYHCZgM5UBmn3C') {
-          alert('You are already on the Single Track plan.');
-          return;
-        } else {
-          const shouldDowngrade = window.confirm(
-            'You currently have an active subscription. To switch to Single Track (pay-as-you-go) licensing, your current subscription will be cancelled at the end of the current billing period. Would you like to proceed?'
-          );
 
-          if (shouldDowngrade) {
-            navigate('/dashboard');
-            return;
-          } else {
-            return;
-          }
-        }
-      }
-
-      navigate('/dashboard');
-      return;
-    }
-
-    if (!user) {
-      navigate(`/signup?product=${product.id}&redirect=pricing`);
-      return;
-    }
-
-    if (accountType !== 'client') {
-      setError('Only client accounts can subscribe. Please create a new account with a different email to subscribe.');
-      return;
-    }
-
-    proceedWithSubscription(product);
-  };
 
   const proceedWithSubscription = async (product: typeof PRODUCTS[0]) => {
     try {
       setLoading(true);
       setLoadingProductId(product.id);
       setError(null);
+
+      if (currentSubscription?.subscription_id && product.mode === 'subscription') {
+        navigate('/dashboard');
+        return;
+      }
 
       const checkoutUrl = await createCheckoutSession(product.priceId, product.mode);
       window.location.href = checkoutUrl;
@@ -99,49 +211,118 @@ export function PricingCarousel() {
 
   return (
     <>
-      {error && (
-        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-7xl mx-auto">
-          <div className="flex items-center">
-            <AlertCircle className="w-5 h-5 text-red-400 mr-3" />
-            <span className="text-red-400 text-sm">{error}</span>
-            <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-200">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+        {error && (
+          <div className="col-span-full mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400 text-center">{error}</p>
+          </div>
+        )}
+
         {PRODUCTS.map((product) => (
-          <div key={product.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 flex flex-col">
-            <div className="flex-grow">
-                <h3 className="text-xl font-bold text-white mb-2">{product.name}</h3>
-                <p className="text-white text-2xl mb-4">${product.price.toFixed(2)} / {product.interval}</p>
-                <ul className="text-sm text-gray-300 mb-6 space-y-2">
-                {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                    <Check className="w-4 h-4 mr-2 text-green-400" />
-                    {feature}
-                    </li>
-                ))}
-                </ul>
+          <div
+            key={product.id}
+            className={`bg-white/5 backdrop-blur-sm rounded-2xl border ${
+  product.popular ? 'border-purple-500/40' : 'border-blue-500/20'
+} p-8 h-full hover:border-blue-500/40 transition-colors relative flex flex-col`}
+
+          >
+            {product.popular && (
+              <div className="absolute top-0 right-0 bg-purple-600 text-white px-4 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                Popular
+              </div>
+            )}
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
+              <p className="text-gray-400 mb-4">{product.description}</p>
+              <div className="flex items-baseline justify-center">
+                <span className="text-4xl font-bold text-white">
+                  ${(product.price).toFixed(2)}
+                </span>
+                <span className="text-gray-400 ml-2">
+                  {product.name === 'Ultimate Access' ? '/year' : 
+                  product.mode === 'subscription' ? '/month' : ''}
+                </span>
+              </div>
             </div>
-            <button
-              onClick={() => handleSubscribe(product)}
-              disabled={loading && loadingProductId === product.id}
-              className="w-full mt-auto py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingProductId === product.id ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  {product.id === 'prod_SYHCZgM5UBmn3C' ? 'Get Started' : 'Subscribe'}
-                </>
+
+            <ul className="space-y-4 mb-8">
+              {product.features.map((feature, i) => (
+                <li key={i} className="flex items-center text-gray-300">
+                  <Check className="w-5 h-5 text-white mr-2 flex-shrink-0" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-auto pt-8">
+              {!product.mode.includes('subscription') && (
+                <button
+                  onClick={() => handleSubscribe(product)}
+                  disabled={loading}
+                  className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center"
+                >
+                  {loadingProductId === product.id ? (
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  ) : (
+                    <>Get Started</>
+                  )}
+                </button>
               )}
-            </button>
+
+              {product.mode.includes('subscription') && (
+                <div className="space-y-4">
+                  <button
+                    onClick={() => handleSubscribe(product)}
+                    disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
+                    className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <>
+                        <CreditCard className="w-5 h-5" />
+                        <span>
+                          {currentSubscription?.subscription_id && currentSubscription?.status === 'active'
+                            ? 'Current Plan'
+                            : 'Subscribe with Card'}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+  onClick={() => handleCryptoSubscribe(product)}
+  disabled={loading || (currentSubscription?.subscription_id && currentSubscription?.status === 'active')}
+  className="w-full py-3 px-6 rounded-lg bg-blue-900/40 hover:bg-green-600/60 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {loadingProductId === product.id ? (
+    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+  ) : (
+    <>
+      <Coins className="w-5 h-5" />
+      <span>Subscribe with Crypto</span>
+    </>
+  )}
+</button>
+
+                  <p className="text-center text-sm text-gray-400 mt-4">
+                    Accepts USDC, USDT, and Solana
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
+
+      {selectedProduct && (
+        <EmailCheckDialog
+          isOpen={showEmailCheck}
+          onClose={() => setShowEmailCheck(false)}
+          onContinue={handleEmailContinue}
+          product={selectedProduct}
+        />
+      )}
     </>
   );
 }
-

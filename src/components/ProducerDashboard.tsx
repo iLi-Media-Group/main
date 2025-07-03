@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, PieChart } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioPlayer } from './AudioPlayer';
@@ -52,8 +52,6 @@ export function ProducerDashboard() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [pendingProposals, setPendingProposals] = useState<Proposal[]>([]);
-  const [acceptedProposals, setAcceptedProposals] = useState<Proposal[]>([]);
-  const [declinedProposals, setDeclinedProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [sortField, setSortField] = useState<'created_at' | 'title' | 'bpm'>('created_at');
@@ -64,9 +62,7 @@ export function ProducerDashboard() {
     totalTracks: 0,
     totalSales: 0,
     totalRevenue: 0,
-    pendingProposals: 0,
-    monthlyEarnings: 0,
-    availableBalance: 0
+    pendingProposals: 0
   });
   const [selectedTrack, setSelectedTrack] = useState<any>(null);
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
@@ -79,82 +75,12 @@ export function ProducerDashboard() {
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
-  const [unreadProposals, setUnreadProposals] = useState<string[]>([]);
-  const negotiationDialogOpenRef = useRef<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
 
   useEffect(() => {
     if (user) {
       fetchDashboardData();
     }
   }, [user]);
-
-  // Add real-time subscription for negotiation messages
-  useEffect(() => {
-    if (!user) return;
-
-    // Subscribe to real-time changes on proposal_negotiations
-    const channel = supabase
-      .channel('producer_negotiation_messages')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'proposal_negotiations',
-          filter: `sender_id=neq.${user.id}` // Only listen for messages from others
-        },
-        async (payload) => {
-          console.log('New negotiation message received:', payload);
-          
-          // Check if this message is for one of our tracks
-          const proposalId = payload.new.proposal_id;
-          const hasTrack = tracks.some(t => t.id === proposalId);
-          
-          if (hasTrack) {
-            // Find the track to get its title
-            const track = tracks.find(t => t.id === proposalId);
-            const trackTitle = track?.title || `Track ${proposalId.slice(0, 8)}`;
-            
-            // Show a toast notification
-            showNotification(`New negotiation message received for "${trackTitle}"`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, tracks]);
-
-  // Function to show notification
-  const showNotification = (message: string) => {
-    // Create a simple toast notification
-    const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 5000);
-
-    // Also show browser notification if permission is granted
-    if (Notification.permission === 'granted') {
-      new Notification('New Negotiation Message', {
-        body: message,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico'
-      });
-    } else if (Notification.permission === 'default') {
-      // Request permission for future notifications
-      Notification.requestPermission();
-    }
-  };
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -196,7 +122,7 @@ export function ProducerDashboard() {
       if (tracksError) throw tracksError;
 
       // Fetch sales data for each track
-      const trackIds = tracksData?.map((track: any) => track.id) || [];
+      const trackIds = tracksData?.map(track => track.id) || [];
       
       // Get sales data for all tracks at once
       const { data: salesData, error: salesError } = await supabase
@@ -208,11 +134,11 @@ export function ProducerDashboard() {
       if (salesError) throw salesError;
 
       // Process sales data by track
-      const trackSalesMap: { [key: string]: number } = {};
-      const trackRevenueMap: { [key: string]: number } = {};
+      const trackSalesMap = {};
+      const trackRevenueMap = {};
       
       if (salesData) {
-        salesData.forEach((sale: any) => {
+        salesData.forEach(sale => {
           if (!trackSalesMap[sale.track_id]) {
             trackSalesMap[sale.track_id] = 0;
             trackRevenueMap[sale.track_id] = 0;
@@ -223,7 +149,7 @@ export function ProducerDashboard() {
       }
 
       // Add sales data to tracks
-      const tracksWithSales = tracksData?.map((track: any) => ({
+      const tracksWithSales = tracksData?.map(track => ({
         ...track,
         genres: typeof track.genres === 'string' ? track.genres.split(',') : track.genres,
         sales_count: trackSalesMap[track.id] || 0,
@@ -234,67 +160,8 @@ export function ProducerDashboard() {
 
       // Calculate total stats
       const totalTracks = tracksWithSales.length;
-      const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + (count as number), 0);
-      const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + (amount as number), 0);
-
-      // Fetch producer balance data
-      const { data: balanceData, error: balanceError } = await supabase
-        .from('producer_balances')
-        .select('pending_balance, available_balance, lifetime_earnings')
-        .eq('producer_id', user.id)
-        .single();
-
-      if (balanceError && balanceError.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('Error fetching producer balance:', balanceError);
-      }
-
-      // Fetch sync proposal revenue and count
-      const { data: syncRevenueData, error: syncRevenueError } = await supabase
-        .from('sync_proposals')
-        .select('sync_fee, payment_status, status')
-        .in('track_id', trackIds)
-        .eq('payment_status', 'paid')
-        .eq('status', 'accepted');
-
-      if (syncRevenueError) {
-        console.error('Error fetching sync proposal revenue:', syncRevenueError);
-      }
-
-      // Fetch custom sync request revenue and count
-      const { data: customSyncData, error: customSyncError } = await supabase
-        .from('custom_sync_requests')
-        .select('sync_fee, status')
-        .eq('preferred_producer_id', user.id)
-        .eq('status', 'completed');
-
-      if (customSyncError) {
-        console.error('Error fetching custom sync requests:', customSyncError);
-      }
-
-      // Calculate total sync revenue and sales count
-      const syncRevenue = syncRevenueData?.reduce((sum: number, proposal: any) => sum + (proposal.sync_fee || 0), 0) || 0;
-      const syncSalesCount = syncRevenueData?.length || 0;
-      const customSyncRevenue = customSyncData?.reduce((sum: number, request: any) => sum + (request.sync_fee || 0), 0) || 0;
-      const customSyncSalesCount = customSyncData?.length || 0;
-
-      // Total revenue includes sales, sync proposals, and custom sync requests
-      const totalRevenueWithSync = totalRevenue + syncRevenue + customSyncRevenue;
-      
-      // Total sales includes track sales, sync proposals, and custom sync requests
-      const totalSalesWithAll = totalSales + syncSalesCount + customSyncSalesCount;
-
-      // Debug logging
-      console.log('Producer Dashboard Analytics Debug Info:', {
-        producerId: user.id,
-        trackSales: totalSales,
-        syncProposals: syncSalesCount,
-        customSyncRequests: customSyncSalesCount,
-        totalSales: totalSalesWithAll,
-        trackRevenue: totalRevenue,
-        syncRevenue,
-        customSyncRevenue,
-        totalRevenue: totalRevenueWithSync
-      });
+      const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + count, 0);
+      const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + amount, 0);
 
       // Fetch all proposals
       const { data: allProposalsData, error: allProposalsError } = await supabase
@@ -308,8 +175,6 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
-          producer_status,
-          payment_status,
           created_at,
           client:profiles!client_id (
             first_name,
@@ -338,8 +203,6 @@ export function ProducerDashboard() {
           expiration_date,
           is_urgent,
           status,
-          producer_status,
-          payment_status,
           created_at,
           client:profiles!client_id (
             first_name,
@@ -361,40 +224,12 @@ export function ProducerDashboard() {
       setProposals(allProposalsData || []);
       setPendingProposals(recentProposalsData || []);
 
-      // Categorize proposals by status
-      const pending = allProposalsData?.filter((p: any) => p.producer_status === 'pending' || p.producer_status === 'producer_accepted') || [];
-      const accepted = allProposalsData?.filter((p: any) => p.producer_status === 'accepted') || [];
-      const declined = allProposalsData?.filter((p: any) => p.producer_status === 'rejected') || [];
-
-      setPendingProposals(pending);
-      setAcceptedProposals(accepted);
-      setDeclinedProposals(declined);
-
-      // Check for unread negotiation messages for each proposal
-      const unread: string[] = [];
-      for (const proposal of allProposalsData || []) {
-        const { data: messages } = await supabase
-          .from('proposal_negotiations')
-          .select('id, created_at, sender_id')
-          .eq('proposal_id', proposal.id)
-          .order('created_at', { ascending: true });
-        if (messages && messages.length > 0) {
-          const lastViewed = localStorage.getItem(`negotiation_last_viewed_${proposal.id}_${user.id}`);
-          const lastViewedTime = lastViewed ? new Date(lastViewed).getTime() : 0;
-          const hasUnread = messages.some((msg: any) => new Date(msg.created_at).getTime() > lastViewedTime && msg.sender_id !== user.id);
-          if (hasUnread) unread.push(proposal.id);
-        }
-      }
-      setUnreadProposals(unread);
-
       // Update stats
       setStats({
         totalTracks,
-        totalSales: totalSalesWithAll,
-        totalRevenue: totalRevenueWithSync,
-        pendingProposals: recentProposalsData?.length || 0,
-        monthlyEarnings: balanceData?.pending_balance || 0,
-        availableBalance: balanceData?.available_balance || 0
+        totalSales,
+        totalRevenue,
+        pendingProposals: recentProposalsData?.length || 0
       });
 
     } catch (err) {
@@ -439,19 +274,23 @@ export function ProducerDashboard() {
   };
 
   const handleProposalAction = (proposal: Proposal, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
-    if (!user) return;
     setSelectedProposal(proposal);
-    if (action === 'negotiate') {
-      negotiationDialogOpenRef.current = proposal.id;
-      // Mark as viewed now
-      localStorage.setItem(`negotiation_last_viewed_${proposal.id}_${user.id}`, new Date().toISOString());
-      setUnreadProposals((prev: string[]) => prev.filter((id: string) => id !== proposal.id));
-    }
+    
     switch (action) {
-      case 'negotiate': setShowNegotiationDialog(true); break;
-      case 'history': setShowHistoryDialog(true); break;
-      case 'accept': setConfirmAction('accept'); setShowConfirmDialog(true); break;
-      case 'reject': setConfirmAction('reject'); setShowConfirmDialog(true); break;
+      case 'negotiate':
+        setShowNegotiationDialog(true);
+        break;
+      case 'history':
+        setShowHistoryDialog(true);
+        break;
+      case 'accept':
+        setConfirmAction('accept');
+        setShowConfirmDialog(true);
+        break;
+      case 'reject':
+        setConfirmAction('reject');
+        setShowConfirmDialog(true);
+        break;
     }
   };
 
@@ -459,45 +298,13 @@ export function ProducerDashboard() {
     if (!selectedProposal || !user) return;
     
     try {
-      let newStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
-      let newProducerStatus = confirmAction === 'accept' ? 'producer_accepted' : 'rejected';
-
-      if (confirmAction === 'accept') {
-        // Check if client has already accepted
-        const { data: currentProposal } = await supabase
-          .from('sync_proposals')
-          .select('client_status')
-          .eq('id', selectedProposal.id)
-          .single();
-
-        if (currentProposal?.client_status === 'accepted') {
-          newStatus = 'accepted';
-          newProducerStatus = 'accepted';
-        }
-      } else {
-        newStatus = 'rejected';
-        newProducerStatus = 'rejected';
-      }
-
-      const updateData: {
-        status: string;
-        producer_status: string;
-        client_status?: string;
-        updated_at: string;
-      } = {
-        status: newStatus,
-        producer_status: newProducerStatus,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (newStatus === 'rejected') {
-        updateData.client_status = 'rejected';
-      }
-
       // Update proposal status
       const { error } = await supabase
         .from('sync_proposals')
-        .update(updateData)
+        .update({ 
+          status: confirmAction === 'accept' ? 'accepted' : 'rejected',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', selectedProposal.id);
 
       if (error) throw error;
@@ -507,8 +314,8 @@ export function ProducerDashboard() {
         .from('proposal_history')
         .insert({
           proposal_id: selectedProposal.id,
-          previous_status: selectedProposal.status,
-          new_status: newStatus,
+          previous_status: 'pending',
+          new_status: confirmAction === 'accept' ? 'accepted' : 'rejected',
           changed_by: user.id
         });
 
@@ -530,13 +337,13 @@ export function ProducerDashboard() {
       });
 
       // Update local state
-      setProposals(proposals.map((p: any) => 
+      setProposals(proposals.map(p => 
         p.id === selectedProposal.id 
-          ? { ...p, status: newStatus } 
+          ? { ...p, status: confirmAction === 'accept' ? 'accepted' : 'rejected' } 
           : p
       ));
       
-      setPendingProposals(pendingProposals.filter((p: any) => p.id !== selectedProposal.id));
+      setPendingProposals(pendingProposals.filter(p => p.id !== selectedProposal.id));
       
       setShowConfirmDialog(false);
       setSelectedProposal(null);
@@ -564,11 +371,6 @@ export function ProducerDashboard() {
           return 0;
       }
     });
-
-  // Sort proposals newest to oldest
-  const sortedPending = [...pendingProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const sortedAccepted = [...acceptedProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const sortedDeclined = [...declinedProposals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (loading) {
     return (
@@ -630,9 +432,6 @@ export function ProducerDashboard() {
               <div>
                 <p className="text-gray-400">Total Sales</p>
                 <p className="text-3xl font-bold text-white">{stats.totalSales}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
-                </p>
               </div>
               <BarChart3 className="w-12 h-12 text-blue-500" />
             </div>
@@ -643,39 +442,8 @@ export function ProducerDashboard() {
               <div>
                 <p className="text-gray-400">Total Revenue</p>
                 <p className="text-3xl font-bold text-white">${stats.totalRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Includes: Track Licenses, Sync Proposals, Custom Syncs
-                </p>
               </div>
-              <div 
-                className="relative cursor-pointer group" 
-                title="View revenue breakdown"
-              >
-                <DollarSign className="w-12 h-12 text-green-500" />
-                <PieChart className="w-5 h-5 text-blue-400 absolute -bottom-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="absolute -bottom-6 right-0 text-xs text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  Click for details
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-purple-500/20 cursor-pointer" onClick={() => navigate('/producer/banking')}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Monthly Earnings</p>
-                <p className="text-3xl font-bold text-white">${stats.monthlyEarnings.toFixed(2)}</p>
-                <p className="text-sm text-purple-400">Available: ${stats.availableBalance.toFixed(2)}</p>
-              </div>
-              <div 
-                className="relative cursor-pointer group" 
-                title="View earnings breakdown"
-              >
-                <DollarSign className="w-12 h-12 text-purple-500" />
-                <div className="absolute -bottom-6 right-0 text-xs text-purple-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                  View Earnings
-                </div>
-              </div>
+              <DollarSign className="w-12 h-12 text-green-500" />
             </div>
           </div>
 
@@ -715,7 +483,7 @@ export function ProducerDashboard() {
                   className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">All Genres</option>
-                  {Array.from(new Set(tracks.flatMap((track: any) => track.genres))).map((genre: string) => (
+                  {Array.from(new Set(tracks.flatMap(track => track.genres))).map(genre => (
                     <option key={genre} value={genre}>{genre}</option>
                   ))}
                 </select>
@@ -734,7 +502,7 @@ export function ProducerDashboard() {
                 </Link>
               </div>
             ) : (
-              sortedTracks.map((track: any) => (
+              sortedTracks.map((track) => (
                 <div
                   key={track.id}
                   className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
@@ -801,9 +569,7 @@ export function ProducerDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div className="w-64 flex-shrink-0">
-                      <AudioPlayer src={track.audio_url} title={track.title} className="w-full" />
-                    </div>
+                    <AudioPlayer src={track.audio_url} title={track.title} />
                   </div>
                 </div>
               ))
@@ -811,195 +577,79 @@ export function ProducerDashboard() {
           </div>
 
           <div className="space-y-8">
-            <div className="mb-6 flex space-x-4">
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'pending' ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-400'}`}
-                onClick={() => setActiveTab('pending')}
-              >Pending</button>
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'accepted' ? 'bg-green-600 text-white' : 'bg-white/10 text-green-400'}`}
-                onClick={() => setActiveTab('accepted')}
-              >Accepted</button>
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'declined' ? 'bg-red-600 text-white' : 'bg-white/10 text-red-400'}`}
-                onClick={() => setActiveTab('declined')}
-              >Declined</button>
-            </div>
-
-            {/* Tab content */}
-            <div className="space-y-8">
-              {activeTab === 'pending' && (
-                <div className="max-h-96 overflow-y-auto space-y-4">
-                  {sortedPending.length === 0 ? (
-                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                      <p className="text-gray-400">No pending proposals</p>
-                    </div>
-                  ) : (
-                    sortedPending.slice(0, 3).map((proposal: any) => (
-                      <div key={proposal.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative">
-                        {unreadProposals.includes(proposal.id) && (
-                          <span className="absolute top-2 right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">New Message</span>
-                        )}
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                            <p className="text-sm text-gray-400">
-                              From: {proposal.client.first_name} {proposal.client.last_name}
-                            </p>
-                            {proposal.payment_status && (
-                              <p className="text-sm text-gray-400">
-                                Payment: <span className={`font-semibold ${
-                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                  'text-red-400'
-                                }`}>
-                                  {proposal.payment_status === 'paid' ? 'Paid' : 
-                                   proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">
-                              Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
-                            </p>
-                          </div>
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-white flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-yellow-400" />
+                  Pending Proposals
+                </h3>
+                <Link
+                  to="/producer/banking"
+                  className="text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
+                >
+                  <DollarSign className="w-4 h-4 mr-1" />
+                  View Earnings
+                </Link>
+              </div>
+              <div className="space-y-4">
+                {pendingProposals.length === 0 ? (
+                  <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                    <p className="text-gray-400">No pending proposals</p>
+                  </div>
+                ) : (
+                  pendingProposals.map((proposal) => (
+                    <div
+                      key={proposal.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                          <p className="text-sm text-gray-400">
+                            From: {proposal.client.first_name} {proposal.client.last_name}
+                          </p>
                         </div>
-                        <div className="flex space-x-2 mt-2">
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'history')}
-                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                          >
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            History
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'negotiate')}
-                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                          >
-                            <MessageSquare className="w-3 h-3 inline mr-1" />
-                            Negotiate
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'accept')}
-                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                          >
-                            <Check className="w-3 h-3 inline mr-1" />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'reject')}
-                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                          >
-                            <X className="w-3 h-3 inline mr-1" />
-                            Decline
-                          </button>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">
+                            Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
+                          </p>
                         </div>
                       </div>
-                    ))
-                  )}
-                  {sortedPending.length > 3 && (
-                    <div className="text-center">
-                      <button className="text-blue-400 hover:text-blue-300 text-sm">View all {sortedPending.length} pending proposals</button>
-                    </div>
-                  )}
-                </div>
-              )}
-              {activeTab === 'accepted' && (
-                <div className="max-h-96 overflow-y-auto space-y-4">
-                  {sortedAccepted.length === 0 ? (
-                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-green-500/20">
-                      <p className="text-gray-400">No accepted proposals</p>
-                    </div>
-                  ) : (
-                    sortedAccepted.slice(0, 3).map((proposal: any) => (
-                      <div key={proposal.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                            <p className="text-sm text-gray-400">
-                              From: {proposal.client.first_name} {proposal.client.last_name}
-                            </p>
-                            {proposal.payment_status && (
-                              <p className="text-sm text-gray-400">
-                                Payment: <span className={`font-semibold ${
-                                  proposal.payment_status === 'paid' ? 'text-green-400' : 
-                                  proposal.payment_status === 'pending' ? 'text-yellow-400' : 
-                                  'text-red-400'
-                                }`}>
-                                  {proposal.payment_status === 'paid' ? 'Paid' : 
-                                   proposal.payment_status.charAt(0).toUpperCase() + proposal.payment_status.slice(1)}
-                                </span>
-                              </p>
-                            )}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">
-                              Accepted: {new Date(proposal.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex space-x-2 mt-2">
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'history')}
-                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                          >
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            History
-                          </button>
-                        </div>
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'history')}
+                          className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                        >
+                          <Clock className="w-3 h-3 inline mr-1" />
+                          History
+                        </button>
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'negotiate')}
+                          className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                        >
+                          <MessageSquare className="w-3 h-3 inline mr-1" />
+                          Negotiate
+                        </button>
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'accept')}
+                          className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                        >
+                          <Check className="w-3 h-3 inline mr-1" />
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleProposalAction(proposal, 'reject')}
+                          className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                        >
+                          <X className="w-3 h-3 inline mr-1" />
+                          Decline
+                        </button>
                       </div>
-                    ))
-                  )}
-                  {sortedAccepted.length > 3 && (
-                    <div className="text-center">
-                      <button className="text-green-400 hover:text-green-300 text-sm">View all {sortedAccepted.length} accepted proposals</button>
                     </div>
-                  )}
-                </div>
-              )}
-              {activeTab === 'declined' && (
-                <div className="max-h-96 overflow-y-auto space-y-4">
-                  {sortedDeclined.length === 0 ? (
-                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-red-500/20">
-                      <p className="text-gray-400">No declined proposals</p>
-                    </div>
-                  ) : (
-                    sortedDeclined.slice(0, 3).map((proposal: any) => (
-                      <div key={proposal.id} className="bg-yellow-400 border-2 border-red-500 rounded-lg p-4">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="text-red-700 font-bold">{proposal.track.title}</h4>
-                            <p className="text-sm text-gray-700 font-semibold">From: {proposal.client.first_name} {proposal.client.last_name}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-red-700">${proposal.sync_fee.toFixed(2)}</p>
-                            <p className="text-xs text-gray-700">Declined: {new Date(proposal.created_at).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <div className="bg-red-700 text-yellow-200 font-bold rounded p-2 mt-2 text-center">
-                          The client canceled this request.
-                        </div>
-                        <div className="flex space-x-2 mt-2">
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'history')}
-                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-red-700 text-xs rounded transition-colors"
-                          >
-                            <Clock className="w-3 h-3 inline mr-1" />History
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                  {sortedDeclined.length > 3 && (
-                    <div className="text-center">
-                      <button className="text-red-400 hover:text-red-300 text-sm">View all {sortedDeclined.length} declined proposals</button>
-                    </div>
-                  )}
-                </div>
-              )}
+                  ))
+                )}
+              </div>
             </div>
 
             <div>

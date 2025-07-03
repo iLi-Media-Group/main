@@ -61,8 +61,8 @@ export function RevenueBreakdownDialog({
         startDate.setFullYear(2020);
       }
 
-      // 1. Fetch track leases (sales data)
-      let salesQuery = supabase
+      // Fetch sales data
+      let query = supabase
         .from('sales')
         .select(`
           id,
@@ -79,51 +79,38 @@ export function RevenueBreakdownDialog({
 
       // Filter by producer if specified
       if (producerId) {
-        salesQuery = salesQuery.eq('track.producer_id', producerId);
+        query = query.eq('track.producer_id', producerId);
       }
 
-      const { data: salesData, error: salesError } = await salesQuery;
+      const { data: salesData, error: salesError } = await query;
+
       if (salesError) throw salesError;
 
-      // 2. Fetch sync proposals paid
-      let syncProposalsQuery = supabase
-        .from('sync_proposals')
+      // Fetch subscription data
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
+        .from('stripe_subscriptions')
         .select(`
-          id,
-          sync_fee,
-          created_at,
-          payment_date,
-          track:tracks!inner (
-            title,
-            producer_id
-          )
+          subscription_id,
+          price_id,
+          status,
+          current_period_start,
+          current_period_end
         `)
-        .eq('status', 'accepted')
-        .eq('payment_status', 'paid')
-        .gte('payment_date', startDate.toISOString());
+        .eq('status', 'active');
 
-      // Filter by producer if specified
-      if (producerId) {
-        syncProposalsQuery = syncProposalsQuery.eq('track.producer_id', producerId);
-      }
+      if (subscriptionsError) throw subscriptionsError;
 
-      const { data: syncProposalsData, error: syncProposalsError } = await syncProposalsQuery;
-      if (syncProposalsError) throw syncProposalsError;
-
-      // 3. Fetch custom sync requests completed
-      let customSyncQuery = supabase
+      // Fetch custom sync requests
+      const { data: syncRequestsData, error: syncRequestsError } = await supabase
         .from('custom_sync_requests')
-        .select('id, sync_fee, created_at')
+        .select('*')
         .eq('status', 'completed')
         .gte('created_at', startDate.toISOString());
 
-      // Note: custom_sync_requests don't have producer_id, so we can't filter by producer
-      // This would show all completed custom syncs in the system
-      const { data: customSyncData, error: customSyncError } = await customSyncQuery;
-      if (customSyncError) throw customSyncError;
+      if (syncRequestsError) throw syncRequestsError;
 
-      // Process track leases by license type
-      const salesByLicenseType = salesData.reduce((acc: Record<string, { count: number; amount: number }>, sale) => {
+      // Process sales by license type
+      const salesByLicenseType = salesData.reduce((acc, sale) => {
         const licenseType = sale.license_type || 'Unknown';
         if (!acc[licenseType]) {
           acc[licenseType] = {
@@ -134,18 +121,47 @@ export function RevenueBreakdownDialog({
         acc[licenseType].count += 1;
         acc[licenseType].amount += sale.amount || 0;
         return acc;
-      }, {});
+      }, {} as Record<string, { count: number; amount: number }>);
 
-      // Process sync proposals paid
-      const syncProposalsRevenue = {
-        count: syncProposalsData.length,
-        amount: syncProposalsData.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0)
-      };
+      // Process subscription revenue
+      // For simplicity, we'll estimate subscription revenue based on price IDs
+      const subscriptionRevenue = subscriptionsData.reduce((acc, sub) => {
+        let amount = 0;
+        let name = 'Unknown Subscription';
 
-      // Process custom sync requests completed
-      const customSyncRevenue = {
-        count: customSyncData.length,
-        amount: customSyncData.reduce((sum, req) => sum + (req.sync_fee || 0), 0)
+        // Map price IDs to amounts and names
+        switch (sub.price_id) {
+          case 'price_1RVXvoIkn3xpidKHRzHgSFn1': // Ultimate Access
+            amount = 499.00;
+            name = 'Ultimate Access';
+            break;
+          case 'price_1RVXurIkn3xpidKH18dW0FYC': // Platinum Access
+            amount = 59.99;
+            name = 'Platinum Access';
+            break;
+          case 'price_1RVXu9Ikn3xpidKHqxoSb6bC': // Gold Access
+            amount = 34.99;
+            name = 'Gold Access';
+            break;
+          default:
+            amount = 0;
+        }
+
+        if (!acc[name]) {
+          acc[name] = {
+            count: 0,
+            amount: 0
+          };
+        }
+        acc[name].count += 1;
+        acc[name].amount += amount;
+        return acc;
+      }, {} as Record<string, { count: number; amount: number }>);
+
+      // Process custom sync requests
+      const syncRequestsRevenue = {
+        count: syncRequestsData.length,
+        amount: syncRequestsData.reduce((sum, req) => sum + req.sync_fee, 0)
       };
 
       // Combine all revenue sources
@@ -154,24 +170,19 @@ export function RevenueBreakdownDialog({
           source: `${source} License`,
           amount: data.amount,
           count: data.count
+        })),
+        ...Object.entries(subscriptionRevenue).map(([source, data]) => ({
+          source: `${source} Subscription`,
+          amount: data.amount,
+          count: data.count
         }))
       ];
 
-      // Add sync proposals if there are any
-      if (syncProposalsRevenue.count > 0) {
+      if (syncRequestsRevenue.count > 0) {
         allSources.push({
-          source: 'Sync Proposals Paid',
-          amount: syncProposalsRevenue.amount,
-          count: syncProposalsRevenue.count
-        });
-      }
-
-      // Add custom sync requests if there are any
-      if (customSyncRevenue.count > 0) {
-        allSources.push({
-          source: 'Custom Syncs Completed',
-          amount: customSyncRevenue.amount,
-          count: customSyncRevenue.count
+          source: 'Custom Sync Requests',
+          amount: syncRequestsRevenue.amount,
+          count: syncRequestsRevenue.count
         });
       }
 
@@ -202,7 +213,7 @@ export function RevenueBreakdownDialog({
         months[monthKey] = 0;
       }
       
-      // Add track leases to months
+      // Add sales to months
       salesData.forEach(sale => {
         const date = new Date(sale.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
@@ -211,17 +222,28 @@ export function RevenueBreakdownDialog({
         }
       });
       
-      // Add sync proposals to months (use payment_date if available, otherwise created_at)
-      syncProposalsData.forEach(proposal => {
-        const date = new Date(proposal.payment_date || proposal.created_at);
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-        if (months[monthKey] !== undefined) {
-          months[monthKey] += proposal.sync_fee || 0;
+      // Add subscriptions to months (simplified - just count current month)
+      subscriptionsData.forEach(sub => {
+        const currentMonth = new Date().toLocaleString('default', { month: 'short', year: 'numeric' });
+        if (months[currentMonth] !== undefined) {
+          let amount = 0;
+          switch (sub.price_id) {
+            case 'price_1RVXvoIkn3xpidKHRzHgSFn1': // Ultimate Access
+              amount = 499.00 / 12; // Divide annual by 12 for monthly equivalent
+              break;
+            case 'price_1RVXurIkn3xpidKH18dW0FYC': // Platinum Access
+              amount = 59.99;
+              break;
+            case 'price_1RVXu9Ikn3xpidKHqxoSb6bC': // Gold Access
+              amount = 34.99;
+              break;
+          }
+          months[currentMonth] += amount;
         }
       });
       
-      // Add custom sync requests to months
-      customSyncData.forEach(req => {
+      // Add sync requests to months
+      syncRequestsData.forEach(req => {
         const date = new Date(req.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
         if (months[monthKey] !== undefined) {
@@ -337,7 +359,7 @@ export function RevenueBreakdownDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900 p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <DollarSign className="w-6 h-6 text-green-500 mr-2" />

@@ -38,7 +38,7 @@ export function ProtectedRoute({
 
   // Route-specific checks for non-admin users
   if (requiresAdmin) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (requiresProducer && accountType !== 'producer') {

@@ -96,28 +96,53 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         throw new Error('Please enter a valid counter offer amount');
       }
 
-      // Ensure we have the client email
-      let clientEmail = proposal?.client?.email;
-      if (!clientEmail && proposal?.client_id) {
-        // Fetch client email from Supabase
-        const { data: clientProfile, error: clientError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', proposal.client_id)
-          .single();
-        if (clientProfile && clientProfile.email) {
-          clientEmail = clientProfile.email;
-        } else {
-          throw new Error('Could not determine client email for notification.');
-        }
-      }
+      // Create negotiation message
+      const { data: negotiation, error: negotiationError } = await supabase
+        .from('proposal_negotiations')
+        .insert({
+          proposal_id: proposal.id,
+          sender_id: user.id,
+          message,
+          counter_offer: counterOffer ? parseFloat(counterOffer) : null,
+          counter_terms: counterTerms.trim() || null
+        })
+        .select()
+        .single();
+
+      if (negotiationError) throw negotiationError;
 
       // Upload reference file if provided
-      if (selectedFile) {
-        // ... (keep file upload logic if needed, or move to edge function if possible)
+      if (selectedFile && negotiation) {
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${negotiation.id}-${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('proposal-files')
+          .upload(filePath, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('proposal-files')
+          .getPublicUrl(filePath);
+
+        // Record file in database
+        const { error: fileError } = await supabase
+          .from('proposal_files')
+          .insert({
+            proposal_id: proposalId,
+            uploader_id: user.id,
+            file_name: selectedFile.name,
+            file_url: publicUrl,
+            file_type: selectedFile.type,
+            file_size: selectedFile.size
+          });
+
+        if (fileError) throw fileError;
       }
 
-      // Send negotiation and notification through edge function
+      // Send notification through edge function
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
         method: 'POST',
         headers: {
@@ -129,8 +154,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           senderId: user.id,
           message,
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
-          counterTerms: counterTerms.trim() || null,
-          recipientEmail: clientEmail
+          recipientEmail: proposal.client.email
         })
       });
 
@@ -150,45 +174,11 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
     }
   };
 
-  const handleCounterResponse = async (action: 'accept' | 'decline', negotiationId: string) => {
-    if (!user) return;
-
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          proposalId: proposal.id,
-          negotiationId: negotiationId,
-          action: action,
-          userId: user.id,
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Failed to ${action} counter offer.`);
-      }
-
-      onNegotiationSent(); // This will close the dialog and refresh data
-    } catch (err) {
-      console.error(`Error ${action}ing counter:`, err);
-      setError(err instanceof Error ? err.message : `An unknown error occurred.`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900 p-8 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white/5 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">Negotiate Proposal for "{proposal?.track?.title}"</h2>
@@ -211,61 +201,36 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         )}
 
         <div className="flex-1 overflow-y-auto mb-6 space-y-4">
-          {messages.map((msg, index) => {
-            const isLastMessage = index === messages.length - 1;
-            const isCounterOffer = !!(msg.counter_offer || msg.counter_terms);
-            const isFromOtherParty = msg.sender.email !== user?.email;
-
-            return (
-              <div
-                key={msg.id}
-                className={`p-4 rounded-lg ${
-                  msg.sender.email === user?.email
-                    ? 'bg-purple-900/20 ml-8'
-                    : 'bg-white/5 mr-8'
-                }`}
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="text-sm text-gray-400">
-                    {msg.sender.first_name} {msg.sender.last_name}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(msg.created_at).toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-white mb-2">{msg.message}</p>
-                {msg.counter_offer && (
-                  <p className="text-green-400 font-semibold">
-                    Counter Offer: ${msg.counter_offer.toFixed(2)}
-                  </p>
-                )}
-                {msg.counter_terms && (
-                  <p className="text-blue-400">
-                    Proposed Terms: {msg.counter_terms}
-                  </p>
-                )}
-
-                {isLastMessage && isCounterOffer && isFromOtherParty && (
-                  <div className="mt-4 flex items-center space-x-4 border-t border-white/10 pt-3">
-                    <button
-                      onClick={() => handleCounterResponse('accept', msg.id)}
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg transition-colors font-semibold"
-                      disabled={loading}
-                    >
-                      Accept Counter
-                    </button>
-                    <button
-                      onClick={() => handleCounterResponse('decline', msg.id)}
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded-lg transition-colors font-semibold"
-                      disabled={loading}
-                    >
-                      Decline
-                    </button>
-                  </div>
-                )}
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`p-4 rounded-lg ${
+                msg.sender.email === user?.email
+                  ? 'bg-purple-900/20 ml-8'
+                  : 'bg-white/5 mr-8'
+              }`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm text-gray-400">
+                  {msg.sender.first_name} {msg.sender.last_name}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(msg.created_at).toLocaleString()}
+                </span>
               </div>
-            );
-          })}
+              <p className="text-white mb-2">{msg.message}</p>
+              {msg.counter_offer && (
+                <p className="text-green-400 font-semibold">
+                  Counter Offer: ${msg.counter_offer.toFixed(2)}
+                </p>
+              )}
+              {msg.counter_terms && (
+                <p className="text-blue-400">
+                  Proposed Terms: {msg.counter_terms}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
