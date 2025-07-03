@@ -130,7 +130,7 @@ async function handleEvent(event: Stripe.Event) {
 
           const { error: saleError } = await supabase.from('sales').insert({
             track_id: trackData.id,
-            track_producer_id: trackData.track_producer_id,
+            sale_producer_id: trackData.track_producer_id,
             buyer_id: customerData.user_id,
             license_type: 'Single Track',
             amount: amount_total / 100,
