@@ -44,7 +44,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, ipi_number, performing_rights_org, usdc_address, company_name, ein, business_structure, bio')
+        .select('*')
         .eq('id', user?.id)
         .single();
 
@@ -201,7 +201,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                     required
                   />
                 </div>
@@ -217,7 +217,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                     required
                   />
                 </div>
@@ -234,41 +234,43 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="text"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Your publishing company or label name"
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                EIN (Tax ID)
-              </label>
-              <input
-                type="text"
-                value={ein}
-                onChange={e => setEin(e.target.value)}
-                className="w-full"
-                placeholder="Employer Identification Number"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Business Structure
-              </label>
-              <select
-                value={businessStructure}
-                onChange={e => setBusinessStructure(e.target.value)}
-                className="w-full"
-              >
-                <option value="">Select...</option>
-                <option value="Corporation">Corporation</option>
-                <option value="LLC">LLC</option>
-                <option value="Partnership">Partnership</option>
-                <option value="Sole Proprietor">Sole Proprietor</option>
-                <option value="Nonprofit">Nonprofit</option>
-                <option value="Other">Other</option>
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  EIN (Tax ID)
+                </label>
+                <input
+                  type="text"
+                  value={ein}
+                  onChange={e => setEin(e.target.value)}
+                  className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
+                  placeholder="Employer Identification Number"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Business Structure
+                </label>
+                <select
+                  value={businessStructure}
+                  onChange={e => setBusinessStructure(e.target.value)}
+                  className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
+                >
+                  <option value="">Select...</option>
+                  <option value="Corporation">Corporation</option>
+                  <option value="LLC">LLC</option>
+                  <option value="Partnership">Partnership</option>
+                  <option value="Sole Proprietor">Sole Proprietor</option>
+                  <option value="Nonprofit">Nonprofit</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
             </div>
 
             <div>
@@ -281,7 +283,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="tel"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="International format"
                 />
               </div>
@@ -300,7 +302,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={ipiNumber}
                     onChange={(e) => setIpiNumber(e.target.value)}
-                    className={`w-full pl-10 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
                     required
                   />
                 </div>
@@ -321,7 +323,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   <select
                     value={performingRightsOrg}
                     onChange={(e) => setPerformingRightsOrg(e.target.value)}
-                    className={`w-full pl-10 ${!performingRightsOrg ? 'border-red-500' : ''}`}
+                    className={`w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 ${!performingRightsOrg ? 'border-red-500' : ''}`}
                     required
                   >
                     <option value="">Select your PRO</option>
@@ -353,7 +355,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   type="text"
                   value={usdcAddress}
                   onChange={(e) => setUsdcAddress(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Enter your USDC wallet address (Solana or Polygon)"
                 />
               </div>
@@ -362,7 +364,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               </p>
             </div>
 
-            <div className="space-y-6">
+            <div>
               <h3 className="text-lg font-medium text-white">Address Information</h3>
               
               <div>
@@ -375,7 +377,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full pl-10"
+                    className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
                 </div>
               </div>
@@ -389,7 +391,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
                   />
                 </div>
 
@@ -401,7 +403,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
                   />
                 </div>
               </div>
@@ -415,7 +417,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
                   />
                 </div>
 
@@ -427,7 +429,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                     type="text"
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full"
+                    className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
                   />
                 </div>
               </div>
