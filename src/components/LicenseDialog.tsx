@@ -146,13 +146,13 @@ export function LicenseDialog({
 
       const purchaseDate = new Date().toISOString();
 
-      // Create license record without explicit sale_producer_id (it's handled by the database)
+      // Create license record with correct sale_producer_id
       const { data: license, error: licenseError } = await supabase
         .from('sales')
         .insert([
           {
             track_id: track.id,
-            track_producer_id: track.track_producer_id, // Add explicit sale_producer_id reference
+            sale_producer_id: track.producerId, // Use correct column name
             buyer_id: user.id,
             license_type: membershipType,
             amount: 0,
@@ -217,28 +217,7 @@ export function LicenseDialog({
               Upgrade Now
             </a>
             
-            {/* Add crypto payment option for Single Track licenses */}
-            {membershipType === 'Single Track' && (
-              <div className="mt-4">
-                <div className="relative flex items-center py-2">
-                  <div className="flex-grow border-t border-gray-600"></div>
-                  <span className="flex-shrink mx-4 text-gray-400">or</span>
-                  <div className="flex-grow border-t border-gray-600"></div>
-                </div>
-                
-                <CryptoPaymentButton
-                  productId={track.id}
-                  productName={`License for ${track.title}`}
-                  productDescription={`Single Track License for ${track.title}`}
-                  price={9.99}
-                  disabled={loading}
-                  metadata={{
-                    track_id: track.id,
-                    license_type: 'Single Track'
-                  }}
-                />
-              </div>
-            )}
+
           </div>
         </div>
       </div>
