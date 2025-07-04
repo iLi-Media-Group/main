@@ -12,6 +12,7 @@ import { EditRequestDialog } from './EditRequestDialog';
 import { LicenseDialog } from './LicenseDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
+import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -104,12 +105,17 @@ export function ClientDashboard() {
   const [showLicenseDialog, setShowLicenseDialog] = useState(false);
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [syncProposals, setSyncProposals] = useState<any[]>([]);
+  const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
+  const [showAcceptDialog, setShowAcceptDialog] = useState(false);
+  const [syncProposalsTab, setSyncProposalsTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
 
   useEffect(() => {
     if (user) {
       // Refresh membership info first to ensure we have the latest data
       refreshMembership().then(() => {
         fetchDashboardData();
+        fetchSyncProposals();
       });
     }
   }, [user, membershipPlan]);
@@ -333,6 +339,16 @@ export function ClientDashboard() {
     }
   };
 
+  const fetchSyncProposals = async () => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from('sync_proposals')
+      .select(`*, track:tracks(*, producer:profiles(*))`)
+      .eq('client_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) setSyncProposals(data);
+  };
+
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -483,6 +499,11 @@ export function ClientDashboard() {
       }
     });
 
+  // Tab filter logic
+  const pendingProposals = syncProposals.filter(p => p.status === 'pending' || (p.client_status !== 'accepted' && p.producer_status !== 'accepted'));
+  const acceptedProposals = syncProposals.filter(p => p.client_status === 'accepted' && p.producer_status === 'accepted');
+  const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -566,9 +587,82 @@ export function ClientDashboard() {
           )}
         </div>
 
+        {/* Sync Proposals Section */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-bold text-white mb-4">Sync Proposals</h2>
+          <div className="flex space-x-2 mb-4">
+            <button onClick={() => setSyncProposalsTab('pending')} className={`px-4 py-2 rounded-lg ${syncProposalsTab === 'pending' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}>Pending/Active</button>
+            <button onClick={() => setSyncProposalsTab('accepted')} className={`px-4 py-2 rounded-lg ${syncProposalsTab === 'accepted' ? 'bg-green-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}>Accepted</button>
+            <button onClick={() => setSyncProposalsTab('declined')} className={`px-4 py-2 rounded-lg ${syncProposalsTab === 'declined' ? 'bg-red-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-white/20'}`}>Declined</button>
+          </div>
+          {syncProposalsTab === 'pending' && (
+            pendingProposals.length === 0 ? (
+              <p className="text-gray-400">You have no pending or active sync proposals.</p>
+            ) : (
+              <div className="space-y-4">
+                {pendingProposals.map((proposal) => (
+                  <div key={proposal.id} className="bg-white/5 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-semibold text-white">{proposal.track?.title || 'Untitled Track'}</div>
+                      <div className="text-gray-400 text-sm">Status: {proposal.status}</div>
+                      <div className="text-gray-400 text-sm">Sync Fee: ${proposal.sync_fee}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => {/* Show history logic here */}}>History</button>
+                      <button className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700" onClick={() => {/* Negotiation logic here */}}>Negotiate</button>
+                      <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700" onClick={() => { setSelectedProposal(proposal); setShowAcceptDialog(true); }}>Accept</button>
+                      <button className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700" onClick={async () => { /* Decline logic here, similar to SyncProposalAcceptDialog */ }}>Decline</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+          {syncProposalsTab === 'accepted' && (
+            acceptedProposals.length === 0 ? (
+              <p className="text-gray-400">You have no accepted sync proposals.</p>
+            ) : (
+              <div className="space-y-4">
+                {acceptedProposals.map((proposal) => (
+                  <div key={proposal.id} className="bg-green-500/10 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-semibold text-white">{proposal.track?.title || 'Untitled Track'}</div>
+                      <div className="text-gray-400 text-sm">Status: Accepted</div>
+                      <div className="text-gray-400 text-sm">Sync Fee: ${proposal.sync_fee}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => {/* Show history logic here */}}>History</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+          {syncProposalsTab === 'declined' && (
+            declinedProposals.length === 0 ? (
+              <p className="text-gray-400">You have no declined sync proposals.</p>
+            ) : (
+              <div className="space-y-4">
+                {declinedProposals.map((proposal) => (
+                  <div key={proposal.id} className="bg-red-500/10 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-semibold text-white">{proposal.track?.title || 'Untitled Track'}</div>
+                      <div className="text-gray-400 text-sm">Status: Declined</div>
+                      <div className="text-gray-400 text-sm">Sync Fee: ${proposal.sync_fee}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => {/* Show history logic here */}}>History</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+        </section>
+        {/* Custom Sync Requests Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Your Sync Requests</h2>
+            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
             <Link
               to="/custom-sync-request"
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
@@ -974,7 +1068,6 @@ export function ClientDashboard() {
           onSuccess={() => {
             setShowLicenseDialog(false);
             setSelectedTrackToLicense(null);
-            fetchDashboardData();
           }}
         />
       )}
@@ -992,6 +1085,13 @@ export function ClientDashboard() {
           }}
         />
       )}
+
+      <SyncProposalAcceptDialog
+        isOpen={showAcceptDialog}
+        onClose={() => setShowAcceptDialog(false)}
+        proposal={selectedProposal}
+        onAccept={() => { setShowAcceptDialog(false); fetchSyncProposals(); }}
+      />
     </div>
   );
 }
