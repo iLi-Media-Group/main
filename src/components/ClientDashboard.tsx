@@ -205,8 +205,10 @@ export function ClientDashboard() {
           )
         `)
         .eq('buyer_id', user.id)
-        .is('deleted_at', null)
         .order('created_at', { ascending: false });
+
+      console.log('Sales query result:', licensesData);
+      console.log('User ID:', user.id);
 
       if (licensesData) {
         const formattedLicenses = licensesData.map(license => ({
