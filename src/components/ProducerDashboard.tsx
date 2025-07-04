@@ -591,7 +591,9 @@ export function ProducerDashboard() {
                         </div>
                       </div>
                     </div>
-                    <AudioPlayer src={track.audio_url} title={track.title} />
+                    <div className="w-64 flex-shrink-0">
+                      <AudioPlayer src={track.audio_url} title={track.title} />
+                    </div>
                   </div>
                 </div>
               ))
