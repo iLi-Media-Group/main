@@ -111,7 +111,7 @@ export function CheckoutSuccessPage() {
             setOrder(matchingOrder);
 
             // Check if a license was created for this order
-            if (user && matchingOrder.amount_total === 999) { // $9.99 single track price
+            if (user) {
               const result = await supabase
                 .from('sales')
                 .select('*', { count: 'exact', head: true })
@@ -150,26 +150,26 @@ export function CheckoutSuccessPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-4">
-            {subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
-              ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+            {licenseCreated
+              ? 'License Purchased!'
+              : subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
+                ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+                    ? 'Subscription Activated!'
+                    : 'Subscription Updated!')
+                : subscription
                   ? 'Subscription Activated!'
-                  : 'Subscription Updated!')
-              : subscription
-                ? 'Subscription Activated!'
-                : order && order.amount_total === 999
-                  ? 'License Purchased!'
                   : 'Payment Successful!'}
           </h1>
           
           <p className="text-xl text-gray-300 mb-8">
-            {subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
-              ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+            {licenseCreated
+              ? `Your license has been purchased and is ready to use. You can view it in your dashboard.`
+              : subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
+                ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+                    ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
+                    : 'Your subscription has been updated. Your new plan period is shown below.')
+                : subscription
                   ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
-                  : 'Your subscription has been updated. Your new plan period is shown below.')
-              : subscription
-                ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
-                : order && order.amount_total === 999
-                  ? `Your license has been purchased and is ready to use. ${licenseCreated ? 'You can view it in your dashboard.' : ''}`
                   : `Your payment has been processed successfully.`}
           </p>
 
@@ -206,7 +206,47 @@ export function CheckoutSuccessPage() {
                   </div>
                 )}
               </div>
+            ) : licenseCreated && order ? (
+              // Single Track License Order
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Music className="w-5 h-5 text-purple-400 mr-2" />
+                    <span className="text-white">Product:</span>
+                  </div>
+                  <span className="text-white font-medium">
+                    Single Track License
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
+                    <span className="text-white">Amount:</span>
+                  </div>
+                  <span className="text-white font-medium">
+                    {formatCurrency(order.amount_total, order.currency)}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
+                    <span className="text-white">Date:</span>
+                  </div>
+                  <span className="text-white font-medium">
+                    {new Date(order.order_date).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                  <p className="text-green-400 text-sm">
+                    Your license has been created successfully. You can view it in your dashboard.
+                  </p>
+                </div>
+              </div>
             ) : subscription && (
+              // Subscription Order
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
@@ -241,48 +281,6 @@ export function CheckoutSuccessPage() {
                     )}
                   </span>
                 </div>
-              </div>
-            )}
-
-            {order && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Music className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Product:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    Single Track License
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Amount:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    {formatCurrency(order.amount_total, order.currency)}
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Date:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    {new Date(order.order_date).toLocaleDateString()}
-                  </span>
-                </div>
-                
-                {licenseCreated && (
-                  <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <p className="text-green-400 text-sm">
-                      Your license has been created successfully. You can view it in your dashboard.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </div>

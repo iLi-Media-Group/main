@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, Music, Star, DollarSign } from 'lucide-react';
+import { X, MapPin, Music } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
@@ -22,8 +22,6 @@ interface ProducerProfile {
   producer_number: string | null;
   stats?: {
     totalTracks: number;
-    totalSales: number;
-    avgRating: number;
   };
 }
 
@@ -64,8 +62,8 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
 
       if (profileError) throw profileError;
 
-      // Fetch track count and track IDs
-      const { data: tracks, count: trackCount, error: tracksError } = await supabase
+      // Fetch track count
+      const { count: trackCount, error: tracksError } = await supabase
         .from('tracks')
         .select('id', { count: 'exact' })
         .eq('track_producer_id', producerId)
@@ -73,26 +71,11 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
 
       if (tracksError) throw tracksError;
 
-      // Get track IDs for sales query
-      const trackIds = tracks?.map(track => track.id) || [];
-
-      // Fetch recent sales using track IDs
-      const { count: salesCount, error: salesError } = await supabase
-        .from('sales')
-        .select('id', { count: 'exact', head: true })
-        .in('track_id', trackIds)
-        .is('deleted_at', null)
-        .gt('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-      if (salesError) throw salesError;
-
       // Set profile with stats
       setProfile({
         ...profileData,
         stats: {
-          totalTracks: trackCount || 0,
-          totalSales: salesCount || 0,
-          avgRating: 4.8 // Placeholder for future rating system
+          totalTracks: trackCount || 0
         }
       });
     } catch (err) {
@@ -165,24 +148,10 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-white/5 rounded-lg p-4 text-center">
-                <Music className="w-6 h-6 text-purple-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white">{profile.stats?.totalTracks}</p>
-                <p className="text-sm text-gray-400">Tracks</p>
-              </div>
-
-              <div className="bg-white/5 rounded-lg p-4 text-center">
-                <DollarSign className="w-6 h-6 text-green-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white">{profile.stats?.totalSales}</p>
-                <p className="text-sm text-gray-400">Sales (30d)</p>
-              </div>
-
-              <div className="bg-white/5 rounded-lg p-4 text-center">
-                <Star className="w-6 h-6 text-yellow-400 mx-auto mb-2" />
-                <p className="text-2xl font-bold text-white">{profile.stats?.avgRating}</p>
-                <p className="text-sm text-gray-400">Rating</p>
-              </div>
+            <div className="bg-white/5 rounded-lg p-4 text-center max-w-xs mx-auto">
+              <Music className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-white">{profile.stats?.totalTracks}</p>
+              <p className="text-sm text-gray-400">Tracks</p>
             </div>
           </div>
         )}
