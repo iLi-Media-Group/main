@@ -342,9 +342,9 @@ export function WhiteLabelPage() {
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
       {/* Bundle Discounts - Left Side */}
       <div className="lg:col-span-1">
-        <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-6 rounded-xl border border-blue-500/20 sticky top-8">
+        <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-6 rounded-xl border border-blue-500/20 sticky top-8 h-full flex flex-col">
           <h3 className="text-2xl font-bold text-white mb-4">Bundle and Save</h3>
-          <ul className="text-gray-300 space-y-3">
+          <ul className="text-gray-300 space-y-3 flex-grow">
             <li className="flex items-center">
               <span className="text-green-400 mr-2">✅</span>
               <span>Any 2 Add-Ons for <span className="text-blue-400 font-bold">$449</span></span>
@@ -366,53 +366,59 @@ export function WhiteLabelPage() {
 
       {/* Feature Add-Ons - Right Side */}
       <div className="lg:col-span-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
           {/* Producer Onboarding */}
-          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors">
+          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors flex flex-col">
             <h3 className="text-xl font-semibold text-white mb-3">Producer Onboarding Process</h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 flex-grow">
               Let producers apply to join your library. Applications are automatically ranked by genre to help you select the best fits.
             </p>
-            <p className="text-blue-400 font-bold mb-4">$249</p>
-            <a 
-              href="#" 
-              className="text-blue-400 hover:underline"
-              onClick={e => { e.preventDefault(); setShowCalculator(true); }}
-            >
-              Calculate My Cost
-            </a>
+            <div className="mt-auto">
+              <p className="text-blue-400 font-bold mb-4">$249</p>
+              <a 
+                href="#" 
+                className="text-blue-400 hover:underline"
+                onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+              >
+                Calculate My Cost
+              </a>
+            </div>
           </div>
 
           {/* AI Search Assistance */}
-          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors">
+          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors flex flex-col">
             <h3 className="text-xl font-semibold text-white mb-3">AI Search Assistance</h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 flex-grow">
               Help clients discover music based on their previous searches, favorites, or licensed tracks. AI-driven suggestions in real time.
             </p>
-            <p className="text-blue-400 font-bold mb-4">$249</p>
-            <a 
-              href="#" 
-              className="text-blue-400 hover:underline"
-              onClick={e => { e.preventDefault(); setShowCalculator(true); }}
-            >
-              Calculate My Cost
-            </a>
+            <div className="mt-auto">
+              <p className="text-blue-400 font-bold mb-4">$249</p>
+              <a 
+                href="#" 
+                className="text-blue-400 hover:underline"
+                onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+              >
+                Calculate My Cost
+              </a>
+            </div>
           </div>
 
           {/* Deep Media Search Options */}
-          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors">
+          <div className="bg-white/5 p-6 rounded-xl border border-blue-500/20 hover:bg-white/10 transition-colors flex flex-col">
             <h3 className="text-xl font-semibold text-white mb-3">Deep Media Search Options</h3>
-            <p className="text-gray-300 mb-4">
+            <p className="text-gray-300 mb-4 flex-grow">
               Let producers tag tracks with recommended media types (TV shows, films, commercials, podcasts, YouTube, etc.). Add media filters for your clients.
             </p>
-            <p className="text-blue-400 font-bold mb-4">$249</p>
-            <a 
-              href="#" 
-              className="text-blue-400 hover:underline"
-              onClick={e => { e.preventDefault(); setShowCalculator(true); }}
-            >
-              Calculate My Cost
+            <div className="mt-auto">
+              <p className="text-blue-400 font-bold mb-4">$249</p>
+              <a 
+                href="#" 
+                className="text-blue-400 hover:underline"
+                onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+              >
+                Calculate My Cost
             </a>
+            </div>
           </div>
         </div>
       </div>
