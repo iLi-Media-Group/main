@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Brain, Sparkles, Search, TrendingUp, Clock, Zap, Lightbulb, ArrowRight, Loader2, X, MessageSquare, Mic, Filter, Star, Play, Pause } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
@@ -22,6 +22,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'suggestions' | 'history'>('search');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -54,6 +55,15 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   useEffect(() => {
     loadRecentSearches();
   }, [user]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'search') {
+      // Focus the input when modal opens
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen, activeTab]);
 
   const loadRecentSearches = async () => {
     if (!user) return;
@@ -272,12 +282,18 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                   <h3 className="text-lg font-semibold text-white mb-3">Describe Your Music</h3>
                   <div className="relative">
                     <input
+                      ref={inputRef}
                       type="text"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="e.g., 'energetic hip hop for workout videos' or 'peaceful ambient for meditation'"
                       className="w-full pl-4 pr-20 py-4 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20 text-lg"
-                      onKeyPress={(e) => e.key === 'Enter' && processNaturalLanguageQuery(query)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          processNaturalLanguageQuery(query);
+                        }
+                      }}
                     />
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex space-x-2">
                       <button

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Music } from 'lucide-react';
 
 const ProducerLandingPage = () => {
   return (
@@ -14,10 +15,33 @@ const ProducerLandingPage = () => {
         {/* Header */}
         <header className="absolute top-0 left-0 right-0 z-10">
           <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-white">Become a Sync Producer</h1>
+            {/* Logo Container - fills header height and flexes with screen size */}
+            <div className="flex items-center">
+              <Link to="/" className="flex items-center">
+                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
+                  {/* You can replace this with an actual logo image */}
+                  <div className="h-full w-auto flex items-center justify-center">
+                    <Music className="w-full h-full text-blue-400" />
+                  </div>
+                  {/* Alternative: Use an actual logo image
+                  <img 
+                    src="/path-to-your-logo.png" 
+                    alt="MyBeatFi Sync" 
+                    className="h-full w-auto object-contain"
+                  />
+                  */}
+                </div>
+                <div className="ml-3 hidden sm:block">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                    MyBeatFi <span className="text-blue-400">Sync</span>
+                  </h1>
+                </div>
+              </Link>
+            </div>
+            
             <Link
               to="/producer-application"
-              className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+              className="bg-blue-600 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
             >
               Apply Now
             </Link>
