@@ -10,6 +10,7 @@ import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
+import { DiscountManagement } from './DiscountManagement';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -68,7 +69,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -671,6 +672,7 @@ export function AdminDashboard() {
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
+            { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
 			      { id: 'white_label', label: 'White Label Clients', icon: null },
           ].map(tab => (
             <button
@@ -863,6 +865,13 @@ export function AdminDashboard() {
         {/* Compensation Settings */}
         {activeTab === 'compensation' && (
           <CompensationSettings />
+        )}
+
+        {/* Discount Management */}
+        {activeTab === 'discounts' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <DiscountManagement />
+          </div>
         )}
       </div>
         {/* White Label Admin Panel */}
