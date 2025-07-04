@@ -122,21 +122,16 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_proposal_last_message()
 RETURNS TRIGGER AS $$
 BEGIN
-  -- Update last message info on sync_proposals
+  -- Update last message info on sync_proposals only
   UPDATE sync_proposals 
   SET 
     last_message_sender_id = NEW.sender_id,
     last_message_at = NEW.created_at
   WHERE id = NEW.proposal_id;
   
-  -- Also add to sync_proposal_history for consistency
-  INSERT INTO sync_proposal_history (
-    proposal_id, sender_id, sender_name, message, message_type
-  ) VALUES (
-    NEW.proposal_id, NEW.sender_id, 
-    (SELECT CONCAT(first_name, ' ', last_name) FROM profiles WHERE id = NEW.sender_id),
-    NEW.message, 'negotiation'
-  );
+  -- Don't duplicate messages in sync_proposal_history
+  -- Messages should only be in proposal_negotiations table
+  -- sync_proposal_history is for status changes and term responses only
   
   RETURN NEW;
 END;

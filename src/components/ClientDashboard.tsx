@@ -196,7 +196,8 @@ export function ClientDashboard() {
             audio_url,
             image_url,
             track_producer_id,
-            producer:profiles!track_producer_id (
+            producer:profiles!tracks_track_producer_id_fkey (
+              id,
               first_name,
               last_name,
               email
@@ -216,6 +217,27 @@ export function ClientDashboard() {
             genres: license.track.genres.split(',').map((g: string) => g.trim()),
             audioUrl: license.track.audio_url || '',
             image: license.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            producerId: license.track.track_producer_id,
+            duration: license.track.duration || '3:30',
+            hasStingEnding: license.track.has_sting_ending || false,
+            isOneStop: license.track.is_one_stop || false,
+            mp3Url: license.track.mp3_url || '',
+            trackoutsUrl: license.track.trackouts_url || '',
+            splitSheetUrl: license.track.split_sheet_url || '',
+            hasVocals: license.track.has_vocals,
+            vocalsUsageType: license.track.vocals_usage_type,
+            subGenres: license.track.sub_genres ? license.track.sub_genres.split(',').map((g: string) => g.trim()) : [],
+            moods: license.track.moods ? license.track.moods.split(',').map((m: string) => m.trim()) : [],
+            artist: license.track.artist || '',
+            producer: license.track.producer ? {
+              id: license.track.producer.id,
+              firstName: license.track.producer.first_name || '',
+              lastName: license.track.producer.last_name || '',
+              email: license.track.producer.email,
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: ''
           }
         }));
         setLicenses(formattedLicenses);
@@ -243,7 +265,7 @@ export function ClientDashboard() {
             vocals_usage_type,
             sub_genres,
             track_producer_id,
-            producer:profiles!track_producer_id (
+            producer:profiles!tracks_track_producer_id_fkey (
               id,
               first_name,
               last_name,
@@ -270,7 +292,7 @@ export function ClientDashboard() {
           trackoutsUrl: f.tracks.trackouts_url,
           hasVocals: f.tracks.has_vocals,
           vocalsUsageType: f.tracks.vocals_usage_type,
-          subGenres: f.tracks.sub_genres || [],
+          subGenres: f.tracks.sub_genres ? f.tracks.sub_genres.split(',').map((g: string) => g.trim()) : [],
           producerId: f.tracks.track_producer_id,
           producer: f.tracks.producer ? {
             id: f.tracks.producer.id,
@@ -297,8 +319,16 @@ export function ClientDashboard() {
           has_vocals,
           vocals_usage_type,
           sub_genres,
+          moods,
+          duration,
+          artist,
+          has_sting_ending,
+          is_one_stop,
+          mp3_url,
+          trackouts_url,
+          split_sheet_url,
           track_producer_id,
-          producer:profiles!track_producer_id (
+          producer:profiles!tracks_track_producer_id_fkey (
             id,
             first_name,
             last_name,
@@ -322,7 +352,13 @@ export function ClientDashboard() {
           image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
           hasVocals: track.has_vocals,
           vocalsUsageType: track.vocals_usage_type,
-          subGenres: track.sub_genres || [],
+          subGenres: track.sub_genres ? track.sub_genres.split(',').map((g: string) => g.trim()) : [],
+          duration: track.duration || '3:30',
+          hasStingEnding: track.has_sting_ending || false,
+          isOneStop: track.is_one_stop || false,
+          mp3Url: track.mp3_url || '',
+          trackoutsUrl: track.trackouts_url || '',
+          splitSheetUrl: track.split_sheet_url || '',
           producerId: track.track_producer_id,
           producer: track.producer ? {
             id: track.producer.id,
@@ -951,9 +987,10 @@ export function ClientDashboard() {
                                 {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
                               </span>
                             </div>
-                            {license.track.audio_url && (
+                            {license.track.audioUrl && (
                               <AudioPlayer
-                                src={license.track.audio_url}
+                                src={license.track.audioUrl}
+                                title={license.track.title}
                                 isPlaying={currentlyPlaying === license.track.id}
                                 onToggle={() => {
                                   if (currentlyPlaying === license.track.id) {
@@ -1019,6 +1056,7 @@ export function ClientDashboard() {
                           {track.audioUrl && (
                             <AudioPlayer
                               src={track.audioUrl}
+                              title={track.title}
                               isPlaying={currentlyPlayingFavorite === track.id}
                               onToggle={() => togglePlayFavorite(track.id)}
                               size="sm"
@@ -1095,6 +1133,7 @@ export function ClientDashboard() {
                           {track.audioUrl && (
                             <AudioPlayer
                               src={track.audioUrl}
+                              title={track.title}
                               isPlaying={currentlyPlayingNew === track.id}
                               onToggle={() => togglePlayNew(track.id)}
                               size="sm"
