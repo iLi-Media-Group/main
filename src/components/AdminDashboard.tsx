@@ -68,6 +68,9 @@ export function AdminDashboard() {
       setLoading(true);
       setError(null);
 
+      // Define currentMonth for analytics queries
+      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
       // Fetch admin profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -176,6 +179,29 @@ export function AdminDashboard() {
 
         if (customSyncError) {
           console.error('Error fetching custom sync requests:', customSyncError);
+        }
+
+        // Fetch track sales data
+        const { data: trackSalesData, error: trackSalesError } = await supabase
+          .from('sales')
+          .select('id, amount, created_at')
+          .gte('created_at', `${currentMonth}-01`)
+          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
+
+        if (trackSalesError) {
+          console.error('Error fetching track sales:', trackSalesError);
+        }
+
+        // Fetch sync proposals data
+        const { data: syncProposalsData, error: syncProposalsError } = await supabase
+          .from('sync_proposals')
+          .select('id, sync_fee, created_at, status')
+          .gte('created_at', `${currentMonth}-01`)
+          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
+          .eq('status', 'accepted');
+
+        if (syncProposalsError) {
+          console.error('Error fetching sync proposals:', syncProposalsError);
         }
 
         // Calculate total sales and revenue
