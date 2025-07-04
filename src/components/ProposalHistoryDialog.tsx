@@ -163,14 +163,14 @@ export function ProposalHistoryDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[95vh] flex flex-col">
         {/* Track Name Header */}
-        <div className="mb-6 p-4 bg-white/10 rounded-lg">
+        <div className="mb-4 p-4 bg-white/10 rounded-lg flex-shrink-0">
           <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
         </div>
         {/* End Track Name Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Proposal History</h2>
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold text-white">Proposal History</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -180,17 +180,17 @@ export function ProposalHistoryDialog({
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex-shrink-0">
             <p className="text-red-400 text-center font-medium">{error}</p>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12 flex-1">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
           </div>
         ) : (
-          <div className="space-y-8 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="space-y-8 overflow-y-auto flex-1 min-h-0">
             {/* Status Timeline */}
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">Status Changes</h3>
@@ -225,38 +225,40 @@ export function ProposalHistoryDialog({
             </div>
 
             {/* Negotiations */}
-            <div>
-              <h3 className="text-lg font-semibold text-white mb-4">Negotiations</h3>
-              <div className="space-y-4">
-                {negotiations.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className="p-4 bg-white/5 rounded-lg"
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm text-gray-400">
-                        {msg.sender.first_name} {msg.sender.last_name}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(msg.created_at).toLocaleString()}
-                      </span>
+            {negotiations.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-white mb-4">Negotiations</h3>
+                <div className="space-y-4">
+                  {negotiations.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className="p-4 bg-white/5 rounded-lg"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm text-gray-400">
+                          {msg.sender.first_name} {msg.sender.last_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(msg.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-white mb-2">{msg.message}</p>
+                      {msg.counter_offer && (
+                        <p className="text-green-400 font-semibold flex items-center">
+                          <DollarSign className="w-4 h-4 mr-1" />
+                          Counter Offer: ${msg.counter_offer.toFixed(2)}
+                        </p>
+                      )}
+                      {msg.counter_terms && (
+                        <p className="text-blue-400">
+                          Proposed Terms: {msg.counter_terms}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-white mb-2">{msg.message}</p>
-                    {msg.counter_offer && (
-                      <p className="text-green-400 font-semibold flex items-center">
-                        <DollarSign className="w-4 h-4 mr-1" />
-                        Counter Offer: ${msg.counter_offer.toFixed(2)}
-                      </p>
-                    )}
-                    {msg.counter_terms && (
-                      <p className="text-blue-400">
-                        Proposed Terms: {msg.counter_terms}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Shared Files */}
             {files.length > 0 && (
@@ -266,28 +268,27 @@ export function ProposalHistoryDialog({
                   {files.map((file) => (
                     <div
                       key={file.id}
-                      className="flex items-center justify-between p-4 bg-white/5 rounded-lg"
+                      className="p-4 bg-white/5 rounded-lg"
                     >
-                      <div className="flex items-center space-x-4">
-                        <FileText className="w-5 h-5 text-purple-400" />
-                        <div>
-                          <a
-                            href={file.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-white hover:text-purple-400 transition-colors"
-                          >
-                            {file.file_name}
-                          </a>
-                          <div className="text-sm text-gray-400">
-                            {formatFileSize(file.file_size)} • Uploaded by{' '}
-                            {file.uploader.first_name} {file.uploader.last_name}
-                          </div>
-                        </div>
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm text-gray-400">
+                          {file.uploader.first_name} {file.uploader.last_name}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(file.created_at).toLocaleString()}
+                        </span>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(file.created_at).toLocaleString()}
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <FileText className="w-4 h-4 text-blue-400" />
+                        <a
+                          href={file.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300 underline"
+                        >
+                          {file.file_name}
+                        </a>
+                      </div>
                     </div>
                   ))}
                 </div>

@@ -178,9 +178,9 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-hidden">
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[95vh] flex flex-col">
         {/* Track and Terms Header */}
-        <div className="mb-6 p-4 bg-white/10 rounded-lg">
+        <div className="mb-4 p-4 bg-white/10 rounded-lg flex-shrink-0">
           <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200 text-sm">
             <div><span className="font-medium">Sync Fee:</span> ${proposal?.sync_fee ?? 'N/A'}</div>
@@ -190,10 +190,10 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         </div>
         {/* End Track and Terms Header */}
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold text-white">Negotiate Proposal for "{proposal?.track?.title}"</h2>
-            <p className="text-gray-400">
+            <h2 className="text-xl font-bold text-white">Negotiate Proposal</h2>
+            <p className="text-gray-400 text-sm">
               Client: {proposal?.client?.first_name} {proposal?.client?.last_name}
             </p>
           </div>
@@ -206,12 +206,13 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex-shrink-0">
             <p className="text-red-400 text-center font-medium">{error}</p>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto mb-6 space-y-4">
+        {/* Scrollable Messages Area */}
+        <div className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-0">
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -244,7 +245,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Form Area - Fixed at bottom */}
+        <form onSubmit={handleSubmit} className="space-y-4 flex-shrink-0">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Your Message
@@ -253,7 +255,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={3}
-              className="w-full"
+              className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
               placeholder="Enter your message..."
               required
             />
@@ -270,7 +272,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
                   type="number"
                   value={counterOffer}
                   onChange={(e) => setCounterOffer(e.target.value)}
-                  className="w-full pl-10"
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="0.00"
                   step="0.01"
                   defaultValue={proposal?.sync_fee?.toString()}
@@ -286,7 +288,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
                 type="text"
                 value={counterTerms}
                 onChange={(e) => setCounterTerms(e.target.value)}
-                className="w-full"
+                className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
                 placeholder="e.g., Net 30, 2-year license"
               />
             </div>

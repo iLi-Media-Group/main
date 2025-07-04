@@ -189,11 +189,11 @@ export function TrackProposalsDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between mb-6">
+        <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[95vh] flex flex-col">
+          <div className="flex items-center justify-between mb-4 flex-shrink-0">
             <div>
-              <h2 className="text-2xl font-bold text-white">Proposals for "{trackTitle}"</h2>
-              <p className="text-gray-400">View and manage all sync proposals for this track</p>
+              <h2 className="text-xl font-bold text-white">Proposals for "{trackTitle}"</h2>
+              <p className="text-gray-400 text-sm">View and manage all sync proposals for this track</p>
             </div>
             <button
               onClick={onClose}
@@ -203,154 +203,124 @@ export function TrackProposalsDialog({
             </button>
           </div>
 
-          <div className="mb-4 flex space-x-2">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                filter === 'all'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilter('pending')}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                filter === 'pending'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              Pending
-            </button>
-            <button
-              onClick={() => setFilter('accepted')}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                filter === 'accepted'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              Accepted
-            </button>
-            <button
-              onClick={() => setFilter('rejected')}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                filter === 'rejected'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              Rejected
-            </button>
-            <button
-              onClick={() => setFilter('expired')}
-              className={`px-3 py-1 rounded-lg transition-colors ${
-                filter === 'expired'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10'
-              }`}
-            >
-              Expired
-            </button>
-          </div>
-
           {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex-shrink-0">
+              <p className="text-red-400 text-center font-medium">{error}</p>
             </div>
           )}
 
-          <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
-              </div>
-            ) : proposals.length === 0 ? (
-              <div className="text-center py-12">
-                <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No proposals found</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {proposals.map((proposal) => {
-                  const isExpired = new Date(proposal.expiration_date) < new Date();
-                  const isPending = proposal.status === 'pending';
-                  
-                  return (
-                    <div
-                      key={proposal.id}
-                      className="p-4 bg-white/5 rounded-lg border border-purple-500/10"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <div className="flex items-center space-x-2">
-                            <p className="text-white font-medium">
-                              {proposal.client.first_name} {proposal.client.last_name}
+          {loading ? (
+            <div className="flex items-center justify-center py-12 flex-1">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+          ) : (
+            <div className="overflow-y-auto flex-1 min-h-0">
+              {proposals.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-400">No proposals found for this track</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {proposals.map((proposal) => {
+                    const getStatusBadge = (status: string) => {
+                      switch (status) {
+                        case 'accepted':
+                          return <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">Accepted</span>;
+                        case 'rejected':
+                          return <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-sm">Rejected</span>;
+                        case 'expired':
+                          return <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-sm">Expired</span>;
+                        case 'pending':
+                          return <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-sm">Pending</span>;
+                        default:
+                          return <span className="px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-sm">{status}</span>;
+                      }
+                    };
+
+                    return (
+                      <div key={proposal.id} className="bg-white/5 rounded-lg p-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h3 className="text-lg font-semibold text-white">
+                                {proposal.project_type}
+                              </h3>
+                              {getStatusBadge(proposal.status)}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-gray-400">Client:</span>
+                                <p className="text-white">
+                                  {proposal.client.first_name} {proposal.client.last_name}
+                                </p>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Sync Fee:</span>
+                                <p className="text-white font-semibold">${proposal.sync_fee.toFixed(2)}</p>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Submitted:</span>
+                                <p className="text-white">
+                                  {new Date(proposal.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <p className="text-gray-300 mt-2 text-sm">
+                              {proposal.project_type}
                             </p>
-                            {getStatusBadge(proposal.status)}
-                            {proposal.is_urgent && (
-                              <span className="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs">Urgent</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button 
+                              className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                              onClick={() => {
+                                setSelectedProposal(proposal);
+                                setShowHistoryDialog(true);
+                              }}
+                            >
+                              History
+                            </button>
+                            {proposal.status === 'pending' && (
+                              <>
+                                <button 
+                                  className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                                  onClick={() => {
+                                    setSelectedProposal(proposal);
+                                    setShowNegotiationDialog(true);
+                                  }}
+                                >
+                                  Negotiate
+                                </button>
+                                <button 
+                                  className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                                  onClick={() => {
+                                    setSelectedProposal(proposal);
+                                    setConfirmAction('accept');
+                                    setShowConfirmDialog(true);
+                                  }}
+                                >
+                                  Accept
+                                </button>
+                                <button 
+                                  className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                                  onClick={() => {
+                                    setSelectedProposal(proposal);
+                                    setConfirmAction('reject');
+                                    setShowConfirmDialog(true);
+                                  }}
+                                >
+                                  Decline
+                                </button>
+                              </>
                             )}
                           </div>
-                          <p className="text-sm text-gray-400 mt-1">
-                            Submitted: {new Date(proposal.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
-                          <p className="text-xs text-gray-400">
-                            Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
-                          </p>
                         </div>
                       </div>
-                      
-                      <div className="bg-black/20 rounded-lg p-3 mb-3">
-                        <p className="text-gray-300 whitespace-pre-wrap">{proposal.project_type}</p>
-                      </div>
-                      
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => handleProposalAction(proposal, 'history')}
-                          className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors flex items-center"
-                        >
-                          <Clock className="w-3 h-3 mr-1" />
-                          View History
-                        </button>
-                        
-                        {isPending && !isExpired && (
-                          <>
-                            <button
-                              onClick={() => handleProposalAction(proposal, 'negotiate')}
-                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors flex items-center"
-                            >
-                              <MessageSquare className="w-3 h-3 mr-1" />
-                              Negotiate
-                            </button>
-                            <button
-                              onClick={() => handleProposalAction(proposal, 'accept')}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors flex items-center"
-                            >
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Accept
-                            </button>
-                            <button
-                              onClick={() => handleProposalAction(proposal, 'reject')}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors flex items-center"
-                            >
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Decline
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -363,10 +333,12 @@ export function TrackProposalsDialog({
             setSelectedProposal(null);
             fetchProposals(); // Refresh proposals after negotiation
           }}
-          proposalId={selectedProposal.id}
-          currentOffer={selectedProposal.sync_fee}
-          clientName={`${selectedProposal.client.first_name} ${selectedProposal.client.last_name}`}
-          trackTitle={trackTitle}
+          proposal={selectedProposal}
+          onNegotiationSent={() => {
+            setShowNegotiationDialog(false);
+            setSelectedProposal(null);
+            fetchProposals();
+          }}
         />
       )}
 
@@ -377,7 +349,7 @@ export function TrackProposalsDialog({
             setShowHistoryDialog(false);
             setSelectedProposal(null);
           }}
-          proposalId={selectedProposal.id}
+          proposal={selectedProposal}
         />
       )}
 
@@ -390,8 +362,7 @@ export function TrackProposalsDialog({
           }}
           onConfirm={() => handleProposalStatusChange(confirmAction)}
           action={confirmAction}
-          trackTitle={trackTitle}
-          clientName={`${selectedProposal.client.first_name} ${selectedProposal.client.last_name}`}
+          proposal={selectedProposal}
         />
       )}
     </>

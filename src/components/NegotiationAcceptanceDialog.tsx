@@ -198,9 +198,9 @@ export function NegotiationAcceptanceDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-xl max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Review Negotiated Terms</h2>
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-xl max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold text-white">Review Negotiated Terms</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -210,12 +210,12 @@ export function NegotiationAcceptanceDialog({
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex-shrink-0">
             <p className="text-red-400 text-center">{error}</p>
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
           {/* Project Details */}
           <div className="bg-white/5 rounded-lg p-4">
             <h3 className="text-lg font-semibold text-white mb-2">Project Details</h3>
@@ -247,7 +247,7 @@ export function NegotiationAcceptanceDialog({
           </div>
 
           {/* Original vs Negotiated Terms */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             {/* Original Terms */}
             <div className="bg-white/5 rounded-lg p-4">
               <h4 className="text-md font-semibold text-gray-300 mb-3">Original Offer</h4>
@@ -319,44 +319,44 @@ export function NegotiationAcceptanceDialog({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={handleDecline}
-              className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-colors flex items-center"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-5 h-5 mr-2" />
-                  Decline
-                </>
-              )}
-            </button>
-            <button
-              onClick={handleAccept}
-              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Check className="w-5 h-5 mr-2" />
-                  Accept Terms
-                </>
-              )}
-            </button>
-          </div>
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4 mt-4 flex-shrink-0">
+          <button
+            onClick={handleDecline}
+            className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 text-red-400 hover:text-red-300 rounded-lg transition-colors flex items-center"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <XCircle className="w-5 h-5 mr-2" />
+                Decline
+              </>
+            )}
+          </button>
+          <button
+            onClick={handleAccept}
+            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Check className="w-5 h-5 mr-2" />
+                Accept Terms
+              </>
+            )}
+          </button>
         </div>
       </div>
     </div>

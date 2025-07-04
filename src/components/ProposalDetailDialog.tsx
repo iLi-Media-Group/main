@@ -118,9 +118,9 @@ export function ProposalDetailDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Proposal Details</h2>
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[95vh] flex flex-col">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
+          <h2 className="text-xl font-bold text-white">Proposal Details</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -130,73 +130,113 @@ export function ProposalDetailDialog({
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg flex-shrink-0">
             <p className="text-red-400 text-center">{error}</p>
           </div>
         )}
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
-          </div>
-        ) : proposal ? (
-          <div className="space-y-6">
-            <div className="bg-white/5 rounded-lg p-6">
-              <div className="flex justify-between items-start mb-4">
+        {proposal ? (
+          <div className="space-y-6 overflow-y-auto flex-1 min-h-0">
+            {/* Track Information */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-white mb-3">Track Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-xl font-semibold text-white">{proposal.track.title}</h3>
-                  <p className="text-gray-400">
-                    Producer: {proposal.track.producer.first_name} {proposal.track.producer.last_name}
+                  <span className="text-gray-400">Title:</span>
+                  <p className="text-white font-medium">{proposal.track?.title}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Producer:</span>
+                  <p className="text-white font-medium">
+                    {proposal.track?.producer.first_name} {proposal.track?.producer.last_name}
                   </p>
                 </div>
-                {getStatusBadge(proposal.status, proposal.client_status || 'pending', proposal.payment_status || 'pending')}
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm">Sync Fee</p>
-                  <p className="text-2xl font-bold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                  <span className="text-gray-400">Genre:</span>
+                  <p className="text-white">{proposal.track?.genre}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Payment Terms</p>
-                  <p className="text-white">{formatPaymentTerms(proposal.payment_terms || 'immediate')}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Submitted</p>
-                  <p className="text-white">{new Date(proposal.created_at).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-gray-400 text-sm">Expires</p>
-                  <p className="text-white">{new Date(proposal.expiration_date).toLocaleDateString()}</p>
+                  <span className="text-gray-400">BPM:</span>
+                  <p className="text-white">{proposal.track?.bpm}</p>
                 </div>
               </div>
-              
-              <div className="bg-white/5 rounded-lg p-4">
-                <h4 className="text-white font-medium mb-2">Project Description</h4>
-                <p className="text-gray-300 whitespace-pre-wrap">{proposal.project_type}</p>
-              </div>
-              
-              {canAccept && (
-                <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                  <div className="flex items-start space-x-2">
-                    <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-yellow-400">
-                        The producer has accepted your proposal. Please review and accept to proceed with payment.
-                      </p>
-                      <button
-                        onClick={() => onAccept(proposal.id)}
-                        className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center text-sm"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Accept & Proceed to Payment
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
+            {/* Project Details */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-white mb-3">Project Details</h3>
+              <div className="space-y-3">
+                <div>
+                  <span className="text-gray-400">Project Title:</span>
+                  <p className="text-white font-medium">{proposal.project_title}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Description:</span>
+                  <p className="text-white">{proposal.project_description}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Usage:</span>
+                  <p className="text-white">{proposal.usage_description}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Terms and Pricing */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-white mb-3">Terms & Pricing</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-400">Sync Fee:</span>
+                  <p className="text-white font-semibold text-lg">${proposal.sync_fee.toFixed(2)}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Payment Terms:</span>
+                  <p className="text-white">{proposal.payment_terms}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Exclusivity:</span>
+                  <p className="text-white">{proposal.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">License Duration:</span>
+                  <p className="text-white">{proposal.license_duration}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Client Information */}
+            <div className="bg-white/5 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-white mb-3">Client Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-400">Name:</span>
+                  <p className="text-white font-medium">
+                    {proposal.client.first_name} {proposal.client.last_name}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Email:</span>
+                  <p className="text-white">{proposal.client.email}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Company:</span>
+                  <p className="text-white">{proposal.client.company || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Status:</span>
+                  <span className={`px-2 py-1 rounded text-sm font-medium ${
+                    proposal.status === 'accepted' ? 'bg-green-500/20 text-green-400' :
+                    proposal.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                    proposal.status === 'expired' ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-blue-500/20 text-blue-400'
+                  }`}>
+                    {proposal.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Negotiation History */}
             {messages.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4">Negotiation History</h3>
@@ -236,7 +276,7 @@ export function ProposalDetailDialog({
             )}
           </div>
         ) : (
-          <div className="text-center py-8">
+          <div className="text-center py-8 flex-1">
             <p className="text-gray-400">Proposal not found</p>
           </div>
         )}
