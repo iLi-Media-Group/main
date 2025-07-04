@@ -83,7 +83,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
               {logoUrl ? (
-                <div className="h-12 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
+                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
                   <img 
                     src={logoUrl} 
                     alt="Logo" 
@@ -91,17 +91,20 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   />
                 </div>
               ) : (
-                <div className="h-12 w-12 flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/5 p-2 transition-all hover:bg-white/10">
-                  <Music className="w-8 h-8 text-blue-400" />
+                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
+                  <Music className="w-full h-full text-blue-400" />
                 </div>
               )}
+              <div className="ml-3 hidden sm:block">
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+                  MYBEATFI <span className="text-blue-400">SYNC</span>
+                </h1>
+              </div>
             </Link>
           </div>
 
           <div className="flex-1 flex justify-center">
-            <h1 className="text-2xl font-bold text-white">
-              MYBEATFI <span className="text-blue-400">SYNC</span>
-            </h1>
+            {/* Title moved to logo area for better responsive design */}
           </div>
           
           <div className="flex items-center justify-end w-1/3">
