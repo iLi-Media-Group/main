@@ -38,9 +38,14 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const fetchProfile = async () => {
     try {
       setLoading(true);
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+      
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path, ein, business_structure')
+        .select('*')
         .eq('id', user?.id)
         .single();
 
@@ -69,6 +74,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
+      console.error('User ID:', user?.id);
       setError('Failed to load profile');
     } finally {
       setLoading(false);
