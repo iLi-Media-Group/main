@@ -4,6 +4,7 @@ import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Libra
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
+import AISearchAssistant from './AISearchAssistant';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -246,6 +247,17 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
       <main className="flex-1">
         {children}
       </main>
+
+      <AISearchAssistant onSearchApply={(filters) => {
+        const params = new URLSearchParams();
+        if (filters.query) params.set('q', filters.query);
+        if (filters.genres?.length) params.set('genres', filters.genres.join(','));
+        if (filters.moods?.length) params.set('moods', filters.moods.join(','));
+        if (filters.minBpm) params.set('minBpm', filters.minBpm.toString());
+        if (filters.maxBpm) params.set('maxBpm', filters.maxBpm.toString());
+
+        navigate(`/catalog?${params.toString()}`);
+      }} />
 
       <Footer />
     </div>
