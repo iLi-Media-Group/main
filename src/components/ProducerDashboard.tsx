@@ -960,7 +960,7 @@ export function ProducerDashboard() {
             setShowHistoryDialog(false);
             setSelectedProposal(null);
           }}
-          proposalId={selectedProposal.id}
+          proposal={selectedProposal}
         />
       )}
 

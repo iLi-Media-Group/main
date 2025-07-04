@@ -148,7 +148,6 @@ export function ClientDashboard() {
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyProposal, setHistoryProposal] = useState<SyncProposal | null>(null);
-  const [historyMessages, setHistoryMessages] = useState<SyncProposalHistoryMessage[]>([]);
   const [showNegotiationModal, setShowNegotiationModal] = useState(false);
   const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
 
@@ -613,94 +612,7 @@ export function ClientDashboard() {
 
   const handleShowHistory = async (proposal: SyncProposal) => {
     setHistoryProposal(proposal);
-    
-    try {
-      // Fetch negotiation messages from proposal_negotiations table
-      const { data: negotiationsData, error: negotiationsError } = await supabase
-        .from('proposal_negotiations')
-        .select(`
-          id,
-          message,
-          counter_offer,
-          counter_terms,
-          created_at,
-          sender:profiles!proposal_negotiations_sender_id_fkey(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .eq('proposal_id', proposal.id)
-        .order('created_at', { ascending: true });
-        
-      if (negotiationsError) {
-        console.error('Error fetching negotiations:', negotiationsError);
-        return;
-      }
-      
-      // Fetch status history from proposal_history table
-      const { data: historyData, error: historyError } = await supabase
-        .from('proposal_history')
-        .select(`
-          id,
-          previous_status,
-          new_status,
-          changed_at,
-          changed_by:profiles!proposal_history_changed_by_fkey(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .eq('proposal_id', proposal.id)
-        .order('changed_at', { ascending: true });
-        
-      if (historyError) {
-        console.error('Error fetching history:', historyError);
-        return;
-      }
-      
-      // Combine and format the data
-      const combinedHistory: SyncProposalHistoryMessage[] = [];
-      
-      // Add status changes
-      if (historyData) {
-        historyData.forEach(entry => {
-          combinedHistory.push({
-            id: entry.id,
-            sender_id: entry.changed_by.id,
-            sender_name: `${entry.changed_by.first_name} ${entry.changed_by.last_name}`.trim(),
-            message: `Status changed from ${entry.previous_status || 'none'} to ${entry.new_status}`,
-            created_at: entry.changed_at,
-            type: 'status_change'
-          });
-        });
-      }
-      
-      // Add negotiation messages
-      if (negotiationsData) {
-        negotiationsData.forEach(entry => {
-          combinedHistory.push({
-            id: entry.id,
-            sender_id: entry.sender.id,
-            sender_name: `${entry.sender.first_name} ${entry.sender.last_name}`.trim(),
-            message: entry.message,
-            created_at: entry.created_at,
-            type: 'negotiation'
-          });
-        });
-      }
-      
-      // Sort by creation date
-      combinedHistory.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      
-      setHistoryMessages(combinedHistory);
-      setShowHistoryModal(true);
-    } catch (err) {
-      console.error('Error in handleShowHistory:', err);
-    }
+    setShowHistoryModal(true);
   };
 
   const sortedAndFilteredLicenses = licenses
