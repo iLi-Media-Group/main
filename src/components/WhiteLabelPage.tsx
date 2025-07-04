@@ -571,43 +571,50 @@ export function WhiteLabelPage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="py-20 bg-black/30">
-          <div className="max-w-5xl mx-auto px-4">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">Frequently Asked Questions</h2>
+        <section className="py-16 bg-black/30">
+          <div className="max-w-6xl mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-8 text-center">Frequently Asked Questions</h2>
             
-            <div className="space-y-6">
-              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">How long does it take to launch?</h3>
-                <p className="text-gray-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">How long does it take to launch?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
                   Most white-label platforms can be set up and launched within 2-4 weeks, depending on the level of customization required. Our Pro and Enterprise plans include expedited setup.
                 </p>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">Can I migrate my existing catalog?</h3>
-                <p className="text-gray-300">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">Can I migrate my existing catalog?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
                   Yes, we offer data migration services to import your existing music catalog, user accounts, and licensing history. This is included in Pro and Enterprise plans.
                 </p>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">How do producer payments work?</h3>
-                <p className="text-gray-300">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">How do producer payments work?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
                   You can set custom commission rates for each producer or track. Payments can be processed automatically via Stripe or USDC on Solana/Polygon networks, with detailed reporting and transaction history.
                 </p>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">What kind of support is included?</h3>
-                <p className="text-gray-300">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">What kind of support is included?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
                   All plans include technical support. Starter plans include email support with 48-hour response time. Pro plans include priority email and chat support. Enterprise plans include dedicated account managers and 24/7 emergency support.
                 </p>
               </div>
               
-              <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-                <h3 className="text-xl font-semibold text-white mb-3">Can I customize the licensing terms?</h3>
-                <p className="text-gray-300">
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">Can I customize the licensing terms?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
                   Absolutely. We'll work with you to create custom license agreements that match your business model and legal requirements. This includes territory restrictions, usage rights, and duration terms.
+                </p>
+              </div>
+              
+              <div className="bg-white/5 backdrop-blur-sm p-4 rounded-lg border border-blue-500/20 hover:bg-white/10 transition-colors">
+                <h3 className="text-base font-semibold text-white mb-2">What payment methods are supported?</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  We support traditional payment processing via Stripe and cryptocurrency payments using USDC on Solana and Polygon networks. You can choose which payment methods to enable for your platform.
                 </p>
               </div>
             </div>

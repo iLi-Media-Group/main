@@ -37,6 +37,7 @@ import { ProducerBankingPage } from './components/ProducerBankingPage';
 import { AdminBankingPage } from './components/AdminBankingPage';
 import { CheckoutSuccessPage } from './components/CheckoutSuccessPage';
 import { ProducerPayoutsPage } from './components/ProducerPayoutsPage';
+import { ProducerWithdrawalsPage } from './components/ProducerWithdrawalsPage';
 import { TrackPage } from './components/TrackPage';
 import { WelcomePage } from './components/WelcomePage';
 import { WhiteLabelPage } from './components/WhiteLabelPage';
@@ -296,6 +297,14 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerPayoutsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/withdrawals" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerWithdrawalsPage />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

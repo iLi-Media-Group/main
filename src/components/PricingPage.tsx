@@ -86,28 +86,35 @@ export function PricingPage() {
 
       <PricingCarousel />
 
-      <div className="mt-16 max-w-3xl mx-auto">
-        <h2 className="text-2xl font-bold text-white mb-6">Frequently Asked Questions</h2>
-        <div className="space-y-6">
-          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-purple-500/20">
-            <h3 className="text-lg font-semibold text-white mb-2">What are the usage limits?</h3>
-            <p className="text-gray-300">
+      <div className="mt-12 max-w-4xl mx-auto">
+        <h2 className="text-2xl font-bold text-white mb-4 text-center">Frequently Asked Questions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:bg-white/10 transition-colors">
+            <h3 className="text-base font-semibold text-white mb-2">What are the usage limits?</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
               Single Track and Gold Access plans have a 1-year usage limit, Platinum Access has a 3-year limit, 
               and Ultimate Access has no time limit. You can renew your license after 24 hours from purchase.
             </p>
           </div>
-          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-purple-500/20">
-            <h3 className="text-lg font-semibold text-white mb-2">Can I use the tracks commercially?</h3>
-            <p className="text-gray-300">
+          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:bg-white/10 transition-colors">
+            <h3 className="text-base font-semibold text-white mb-2">Can I use the tracks commercially?</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
               Yes, all plans include commercial usage rights. You can use the tracks in your videos, 
               podcasts, advertisements, and other media productions.
             </p>
           </div>
-          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-purple-500/20">
-            <h3 className="text-lg font-semibold text-white mb-2">What happens when my license expires?</h3>
-            <p className="text-gray-300">
+          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:bg-white/10 transition-colors">
+            <h3 className="text-base font-semibold text-white mb-2">What happens when my license expires?</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
               You'll need to renew your license to continue using the tracks. The renewal option becomes 
               available 24 hours after your initial purchase. Ultimate Access licenses never expire.
+            </p>
+          </div>
+          <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:bg-white/10 transition-colors">
+            <h3 className="text-base font-semibold text-white mb-2">Do I get access to stems?</h3>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Yes, all plans include access to individual stems (drums, bass, melody, etc.) for maximum 
+              flexibility in your productions and mixing.
             </p>
           </div>
         </div>
