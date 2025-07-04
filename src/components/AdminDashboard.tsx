@@ -11,6 +11,7 @@ import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
 import { DiscountManagement } from './DiscountManagement';
+import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
 import { Link } from 'react-router-dom';
 
 interface UserStats {
@@ -69,7 +70,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -668,6 +669,7 @@ export function AdminDashboard() {
         <div className="flex flex-wrap border-b border-blue-500/20 mb-8">
           {[
             { id: 'analytics', label: 'Analytics', icon: null },
+            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" /> },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
@@ -704,6 +706,14 @@ export function AdminDashboard() {
               <h2 className="text-2xl font-bold text-white mb-6">Custom Sync Analytics</h2>
               <CustomSyncAnalytics />
             </div>
+          </div>
+        )}
+
+        {/* Advanced Analytics Section */}
+        {activeTab === 'advanced_analytics' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">Advanced Analytics Dashboard</h2>
+            <AdvancedAnalyticsDashboard />
           </div>
         )}
 
