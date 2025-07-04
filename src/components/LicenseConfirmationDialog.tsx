@@ -20,16 +20,17 @@ export function LicenseConfirmationDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 p-6 rounded-xl border border-green-500/20 w-full max-w-md">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+      <div className="bg-blue-900/90 p-6 rounded-xl border border-green-500/20 w-full max-w-md shadow-xl relative">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
-            <CheckCircle className="w-6 h-6 text-green-500 mr-2" />
+            <CheckCircle className="w-6 h-6 text-green-500 mr-2 animate-bounce" />
             <h3 className="text-xl font-bold text-white">License Created!</h3>
           </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
+            aria-label="Close"
           >
             <X className="w-6 h-6" />
           </button>
@@ -58,6 +59,12 @@ export function LicenseConfirmationDialog({
           </button>
         </div>
       </div>
+      {/* Prevent click outside from closing modal by not attaching any onClick to the overlay */}
     </div>
   );
 }
+
+// Add fade-in animation
+// In your global CSS (e.g., index.css or tailwind config):
+// .animate-fade-in { animation: fadeIn 0.4s ease; }
+// @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }

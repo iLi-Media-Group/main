@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FileText, Download, Check, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { PDFDocument, pdf } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
 import { LicensePDF } from './LicensePDF';
 
 interface LicenseDetails {
@@ -42,32 +42,57 @@ export function LicenseAgreement() {
             license_type,
             amount,
             created_at,
-            track:tracks (
-              title,
-              producer:profiles!tracks_producer_id_fkey (
-                first_name,
-                last_name,
-                email
-              )
-            ),
-            buyer:profiles!sales_buyer_id_fkey (
-              first_name,
-              last_name,
-              email
-            )
+            track_id,
+            buyer_id,
+            licensee_info
           `)
           .eq('id', licenseId)
           .single();
 
         if (error) throw error;
 
-        if (data) {
+        // Fetch track and producer info manually
+        let trackData = null;
+        let producerData = null;
+        if (data && data.track_id) {
+          const { data: track, error: trackError } = await supabase
+            .from('tracks')
+            .select('title, track_producer_id')
+            .eq('id', data.track_id)
+            .single();
+          if (trackError) throw trackError;
+          trackData = track;
+
+          if (track && track.track_producer_id) {
+            const { data: producer, error: producerError } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, email')
+              .eq('id', track.track_producer_id)
+              .single();
+            if (producerError) throw producerError;
+            producerData = producer;
+          }
+        }
+
+        // Fetch buyer info manually
+        let buyerData = null;
+        if (data && data.buyer_id) {
+          const { data: buyer, error: buyerError } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', data.buyer_id)
+            .single();
+          if (buyerError) throw buyerError;
+          buyerData = buyer;
+        }
+
+        if (data && trackData && producerData && buyerData) {
           setLicense({
-            trackTitle: data.track.title,
-            producerName: `${data.track.producer.first_name} ${data.track.producer.last_name}`,
+            trackTitle: trackData.title,
+            producerName: `${producerData.first_name} ${producerData.last_name}`,
             licenseeInfo: {
-              name: `${data.buyer.first_name} ${data.buyer.last_name}`,
-              email: data.buyer.email
+              name: `${buyerData.first_name} ${buyerData.last_name}`,
+              email: buyerData.email
             },
             licenseType: data.license_type,
             purchaseDate: data.created_at,

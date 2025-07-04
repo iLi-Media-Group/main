@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Music, ShoppingCart, User, Plus } from 'lucide-react';
+import { Home, Music, ShoppingCart, User, Plus, Settings } from 'lucide-react';
 
 export function NavigationMenu() {
   return (
@@ -28,6 +28,14 @@ export function NavigationMenu() {
         >
           <Plus className="w-5 h-5" />
           <span>Custom Sync Request</span>
+        </Link>
+
+        <Link 
+          to="/services" 
+          className="flex items-center space-x-3 text-gray-300 hover:text-white transition-colors"
+        >
+          <Settings className="w-5 h-5" />
+          <span>Services</span>
         </Link>
 
         <Link 
