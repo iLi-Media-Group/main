@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Sparkles, Search, TrendingUp, Clock, Zap, Lightbulb, ArrowRight, Loader2, X, MessageSquare, Mic, Filter, Star, Play, Pause } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface AISearchAssistantProps {
   onSearchApply?: (filters: any) => void;
@@ -12,6 +13,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   className = "" 
 }) => {
   const { user } = useAuth();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -20,6 +22,14 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'suggestions' | 'history'>('search');
+
+  // Hide AI Search Assistant on login pages and other pages where it might interfere
+  const shouldHide = [
+    '/login',
+    '/producer/login',
+    '/admin/login',
+    '/reset-password'
+  ].some(path => location.pathname.includes(path));
 
   // Popular search examples
   const popularExamples = [
@@ -412,6 +422,11 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       </div>
     );
   };
+
+  // Don't render anything if we should hide the AI Search Assistant
+  if (shouldHide) {
+    return null;
+  }
 
   return (
     <>
