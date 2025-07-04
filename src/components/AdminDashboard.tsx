@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Edit, Globe, Palette, Settings } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,6 @@ import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { ClientList } from './ClientList';
-
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
 import { Link } from 'react-router-dom';
@@ -35,6 +34,22 @@ interface UserDetails {
   acceptance_rate?: number;
 }
 
+interface WhiteLabelClient {
+  id: string;
+  display_name: string;
+  owner_id: string;
+  domain?: string;
+  logo_url?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  created_at: string;
+  owner?: {
+    email: string;
+    first_name?: string;
+    last_name?: string;
+  };
+}
+
 export function AdminDashboard() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
@@ -54,10 +69,25 @@ export function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label'>('analytics');
+  
+  // White Label Admin State
+  const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
+  const [whiteLabelLoading, setWhiteLabelLoading] = useState(false);
+  const [whiteLabelError, setWhiteLabelError] = useState<string | null>(null);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<WhiteLabelClient | null>(null);
+  const [newClient, setNewClient] = useState({
+    display_name: '',
+    owner_email: '',
+    domain: '',
+    primary_color: '#6366f1',
+    secondary_color: '#8b5cf6'
+  });
 
   useEffect(() => {
     if (user) {
       fetchData();
+      fetchWhiteLabelClients();
     }
   }, [user]);
 
@@ -392,6 +422,121 @@ export function AdminDashboard() {
     }
   };
 
+  // White Label Admin Functions
+  const fetchWhiteLabelClients = async () => {
+    setWhiteLabelLoading(true);
+    setWhiteLabelError(null);
+    try {
+      const { data, error } = await supabase
+        .from('white_label_clients')
+        .select(`
+          *,
+          owner:profiles!white_label_clients_owner_id_fkey(
+            email,
+            first_name,
+            last_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setWhiteLabelClients(data || []);
+    } catch (error) {
+      console.error('Error fetching white label clients:', error);
+      setWhiteLabelError('Failed to fetch white label clients');
+    } finally {
+      setWhiteLabelLoading(false);
+    }
+  };
+
+  const createWhiteLabelClient = async () => {
+    if (!newClient.display_name || !newClient.owner_email) {
+      setWhiteLabelError('Display name and owner email are required');
+      return;
+    }
+
+    try {
+      // First, find the user by email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', newClient.owner_email)
+        .single();
+
+      if (userError || !userData) {
+        setWhiteLabelError('User not found with that email');
+        return;
+      }
+
+      // Create the white label client
+      const { error } = await supabase
+        .from('white_label_clients')
+        .insert({
+          display_name: newClient.display_name,
+          owner_id: userData.id,
+          domain: newClient.domain || null,
+          primary_color: newClient.primary_color,
+          secondary_color: newClient.secondary_color
+        });
+
+      if (error) throw error;
+
+      // Reset form and refresh data
+      setNewClient({
+        display_name: '',
+        owner_email: '',
+        domain: '',
+        primary_color: '#6366f1',
+        secondary_color: '#8b5cf6'
+      });
+      setShowAddClientModal(false);
+      fetchWhiteLabelClients();
+    } catch (error) {
+      console.error('Error creating white label client:', error);
+      setWhiteLabelError('Failed to create white label client');
+    }
+  };
+
+  const updateWhiteLabelClient = async (client: WhiteLabelClient) => {
+    try {
+      const { error } = await supabase
+        .from('white_label_clients')
+        .update({
+          display_name: client.display_name,
+          domain: client.domain,
+          primary_color: client.primary_color,
+          secondary_color: client.secondary_color
+        })
+        .eq('id', client.id);
+
+      if (error) throw error;
+      setEditingClient(null);
+      fetchWhiteLabelClients();
+    } catch (error) {
+      console.error('Error updating white label client:', error);
+      setWhiteLabelError('Failed to update white label client');
+    }
+  };
+
+  const deleteWhiteLabelClient = async (clientId: string) => {
+    if (!confirm('Are you sure you want to delete this white label client? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('white_label_clients')
+        .delete()
+        .eq('id', clientId);
+
+      if (error) throw error;
+      fetchWhiteLabelClients();
+    } catch (error) {
+      console.error('Error deleting white label client:', error);
+      setWhiteLabelError('Failed to delete white label client');
+    }
+  };
+
   const handleProducerSort = (field: keyof UserDetails) => {
     if (producerSortField === field) {
       setProducerSortOrder(producerSortOrder === 'asc' ? 'desc' : 'asc');
@@ -720,16 +865,136 @@ export function AdminDashboard() {
           <CompensationSettings />
         )}
       </div>
-			 {activeTab === 'white_label' && (
-        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-         <Link
-         to="/admin/white-label-clients"
-         className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors inline-block"
-          >
-       Manage White Label Clients
-      </Link>
-  </div>
-)}
+        {/* White Label Admin Panel */}
+        {activeTab === 'white_label' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">White Label Clients</h2>
+              <button
+                onClick={() => setShowAddClientModal(true)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add New Client
+              </button>
+            </div>
+
+            {whiteLabelError && (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-center font-medium">{whiteLabelError}</p>
+              </div>
+            )}
+
+            {whiteLabelLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-black/20">
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Client Name</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Owner</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Domain</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Colors</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Created</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-purple-500/10">
+                    {whiteLabelClients.map((client) => (
+                      <tr key={client.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            {client.logo_url && (
+                              <img 
+                                src={client.logo_url} 
+                                alt={client.display_name}
+                                className="w-8 h-8 rounded-full mr-3 object-cover"
+                              />
+                            )}
+                            <div>
+                              <p className="text-white font-medium">{client.display_name}</p>
+                              <p className="text-sm text-gray-400">ID: {client.id.slice(0, 8)}...</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="text-white">
+                              {client.owner?.first_name && client.owner?.last_name
+                                ? `${client.owner.first_name} ${client.owner.last_name}`
+                                : client.owner?.email || 'Unknown'}
+                            </p>
+                            <p className="text-sm text-gray-400">{client.owner?.email}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          {client.domain ? (
+                            <a 
+                              href={`https://${client.domain}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:text-blue-300 flex items-center"
+                            >
+                              <Globe className="w-4 h-4 mr-1" />
+                              {client.domain}
+                            </a>
+                          ) : (
+                            <span className="text-gray-500">No domain</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className="w-6 h-6 rounded border border-white/20"
+                              style={{ backgroundColor: client.primary_color }}
+                              title={`Primary: ${client.primary_color}`}
+                            />
+                            <div 
+                              className="w-6 h-6 rounded border border-white/20"
+                              style={{ backgroundColor: client.secondary_color }}
+                              title={`Secondary: ${client.secondary_color}`}
+                            />
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          {new Date(client.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setEditingClient(client)}
+                              className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                              title="Edit client"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteWhiteLabelClient(client.id)}
+                              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                              title="Delete client"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {whiteLabelClients.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No white label clients found</p>
+                    <p className="text-sm">Click "Add New Client" to create your first white label client</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
 
       {/* Producer Analytics Modal */}
@@ -751,6 +1016,223 @@ export function AdminDashboard() {
         isOpen={showRevenueBreakdown}
         onClose={() => setShowRevenueBreakdown(false)}
       />
+
+      {/* Add White Label Client Modal */}
+      {showAddClientModal && (
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-purple-500/20 p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Add White Label Client</h3>
+              <button
+                onClick={() => setShowAddClientModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Display Name *
+                </label>
+                <input
+                  type="text"
+                  value={newClient.display_name}
+                  onChange={(e) => setNewClient({ ...newClient, display_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  placeholder="Enter client display name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Owner Email *
+                </label>
+                <input
+                  type="email"
+                  value={newClient.owner_email}
+                  onChange={(e) => setNewClient({ ...newClient, owner_email: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  placeholder="Enter owner email address"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Domain (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newClient.domain}
+                  onChange={(e) => setNewClient({ ...newClient, domain: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  placeholder="example.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Color
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={newClient.primary_color}
+                      onChange={(e) => setNewClient({ ...newClient, primary_color: e.target.value })}
+                      className="w-12 h-10 rounded border border-purple-500/20"
+                    />
+                    <input
+                      type="text"
+                      value={newClient.primary_color}
+                      onChange={(e) => setNewClient({ ...newClient, primary_color: e.target.value })}
+                      className="flex-1 px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Secondary Color
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={newClient.secondary_color}
+                      onChange={(e) => setNewClient({ ...newClient, secondary_color: e.target.value })}
+                      className="w-12 h-10 rounded border border-purple-500/20"
+                    />
+                    <input
+                      type="text"
+                      value={newClient.secondary_color}
+                      onChange={(e) => setNewClient({ ...newClient, secondary_color: e.target.value })}
+                      className="flex-1 px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => setShowAddClientModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={createWhiteLabelClient}
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Create Client
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit White Label Client Modal */}
+      {editingClient && (
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-purple-500/20 p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Edit White Label Client</h3>
+              <button
+                onClick={() => setEditingClient(null)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Display Name *
+                </label>
+                <input
+                  type="text"
+                  value={editingClient.display_name}
+                  onChange={(e) => setEditingClient({ ...editingClient, display_name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  placeholder="Enter client display name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Domain (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={editingClient.domain || ''}
+                  onChange={(e) => setEditingClient({ ...editingClient, domain: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  placeholder="example.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Color
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={editingClient.primary_color || '#6366f1'}
+                      onChange={(e) => setEditingClient({ ...editingClient, primary_color: e.target.value })}
+                      className="w-12 h-10 rounded border border-purple-500/20"
+                    />
+                    <input
+                      type="text"
+                      value={editingClient.primary_color || '#6366f1'}
+                      onChange={(e) => setEditingClient({ ...editingClient, primary_color: e.target.value })}
+                      className="flex-1 px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Secondary Color
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={editingClient.secondary_color || '#8b5cf6'}
+                      onChange={(e) => setEditingClient({ ...editingClient, secondary_color: e.target.value })}
+                      className="w-12 h-10 rounded border border-purple-500/20"
+                    />
+                    <input
+                      type="text"
+                      value={editingClient.secondary_color || '#8b5cf6'}
+                      onChange={(e) => setEditingClient({ ...editingClient, secondary_color: e.target.value })}
+                      className="flex-1 px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => setEditingClient(null)}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => updateWhiteLabelClient(editingClient)}
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Update Client
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
