@@ -50,38 +50,38 @@ const ProducerLandingPage = () => {
       </div>
 
       {/* Main Content */}
-      <main className="bg-gray-50">
+      <main className="bg-blue-900">
         <div className="max-w-7xl mx-auto px-4 py-20">
           {/* Features Grid */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-20">
-            <div className="bg-white p-8 shadow-lg rounded-xl border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">Why Join MyBeatFi Sync?</h3>
-              <ul className="space-y-3 text-gray-600">
+            <div className="bg-blue-950/80 p-8 shadow-lg rounded-xl border border-blue-800 hover:shadow-xl transition-shadow duration-300 text-blue-100">
+              <h3 className="text-2xl font-bold mb-4 text-white">Why Join MyBeatFi Sync?</h3>
+              <ul className="space-y-3">
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-xl">✅</span>
+                  <span className="text-green-400 mr-3 text-xl">✅</span>
                   Get paid for every sync license sold
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-xl">✅</span>
+                  <span className="text-green-400 mr-3 text-xl">✅</span>
                   Automated payouts (Stripe + USDC Crypto)
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-xl">✅</span>
+                  <span className="text-green-400 mr-3 text-xl">✅</span>
                   Detailed monthly reporting
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-xl">✅</span>
+                  <span className="text-green-400 mr-3 text-xl">✅</span>
                   AI-driven metadata boosts your discoverability
                 </li>
                 <li className="flex items-center">
-                  <span className="text-green-500 mr-3 text-xl">✅</span>
+                  <span className="text-green-400 mr-3 text-xl">✅</span>
                   Exposure to global brands, agencies, and creators
                 </li>
               </ul>
             </div>
-            <div className="bg-white p-8 shadow-lg rounded-xl border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-2xl font-bold mb-4 text-gray-800">How It Works</h3>
-              <ol className="space-y-3 text-gray-600">
+            <div className="bg-blue-950/80 p-8 shadow-lg rounded-xl border border-blue-800 hover:shadow-xl transition-shadow duration-300 text-blue-100">
+              <h3 className="text-2xl font-bold mb-4 text-white">How It Works</h3>
+              <ol className="space-y-3">
                 <li className="flex items-start">
                   <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-0.5">1</span>
                   Submit your producer application
@@ -103,8 +103,8 @@ const ProducerLandingPage = () => {
           </section>
 
           {/* Requirements Section */}
-          <section className="bg-gradient-to-r from-blue-600 to-blue-800 p-12 rounded-2xl mb-20 text-white">
-            <h3 className="text-3xl font-bold mb-8 text-center">Requirements</h3>
+          <section className="bg-gradient-to-r from-blue-800 to-blue-900 p-12 rounded-2xl mb-20 text-blue-100">
+            <h3 className="text-3xl font-bold mb-8 text-center text-white">Requirements</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ul className="space-y-3">
                 <li className="flex items-center">
@@ -138,9 +138,9 @@ const ProducerLandingPage = () => {
           </section>
 
           {/* CTA Section */}
-          <section className="text-center bg-white p-12 rounded-2xl shadow-lg border border-gray-100">
-            <h3 className="text-3xl font-bold mb-4 text-gray-800">Ready to Apply?</h3>
-            <p className="mb-8 text-gray-600 text-lg max-w-2xl mx-auto">
+          <section className="text-center bg-blue-950/80 p-12 rounded-2xl shadow-lg border border-blue-800">
+            <h3 className="text-3xl font-bold mb-4 text-white">Ready to Apply?</h3>
+            <p className="mb-8 text-blue-100 text-lg max-w-2xl mx-auto">
               Click below to start your application and join our growing sync roster. 
               Turn your passion for music into a sustainable income stream.
             </p>
@@ -154,9 +154,9 @@ const ProducerLandingPage = () => {
         </div>
       </main>
 
-      <footer className="bg-gray-800 text-white text-center py-8">
+      <footer className="bg-blue-950 text-white text-center py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <p className="text-gray-300">
+          <p className="text-blue-200">
             &copy; {new Date().getFullYear()} MyBeatFi Sync. All rights reserved.
           </p>
         </div>
