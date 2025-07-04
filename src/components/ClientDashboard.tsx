@@ -99,7 +99,7 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
 // Add a helper to determine if a proposal has a pending action
 function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
   // Show badge if proposal has a recent message from someone else
-  return (
+  return !!(
     proposal.status === 'pending' && 
     proposal.last_message_sender_id && 
     proposal.last_message_sender_id !== userId &&
@@ -553,7 +553,7 @@ export function ClientDashboard() {
     navigate(`/license-agreement/${licenseId}`);
   };
 
-  const handleDeclineProposal = async (proposal) => {
+  const handleDeclineProposal = async (proposal: SyncProposal) => {
     // Update proposal status to declined, disable negotiation, notify other party
     await supabase
       .from('sync_proposals')
@@ -867,6 +867,204 @@ export function ClientDashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Sync Proposals Section */}
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white flex items-center">
+              <FileText className="w-5 h-5 mr-2 text-yellow-400" />
+              Sync Proposals
+            </h2>
+          </div>
+          
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 mb-4 bg-white/5 rounded-lg p-1">
+            <button
+              onClick={() => setSyncProposalsTab('pending')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                syncProposalsTab === 'pending'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Pending/Active ({pendingProposals.length})
+            </button>
+            <button
+              onClick={() => setSyncProposalsTab('accepted')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                syncProposalsTab === 'accepted'
+                  ? 'bg-green-600 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Accepted ({acceptedProposals.length})
+            </button>
+            <button
+              onClick={() => setSyncProposalsTab('declined')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                syncProposalsTab === 'declined'
+                  ? 'bg-red-600 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Declined ({declinedProposals.length})
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          <div className="space-y-4">
+            {syncProposalsTab === 'pending' && (
+              pendingProposals.length === 0 ? (
+                <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <p className="text-gray-400">No pending or active proposals</p>
+                </div>
+              ) : (
+                pendingProposals.map((proposal) => (
+                  <div
+                    key={proposal.id}
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
+                  >
+                    {/* Notification Badge */}
+                    {user && hasPendingAction(proposal, user.id) && (
+                      <span className="absolute top-2 right-2 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                      </span>
+                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
+                        <p className="text-sm text-gray-400">
+                          Producer: {proposal.track?.producer?.first_name} {proposal.track?.producer?.last_name}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Status: {proposal.status} {proposal.producer_status && `(${proposal.producer_status})`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">
+                          Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <button
+                        onClick={() => handleShowHistory(proposal)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        History
+                      </button>
+                      <button
+                        onClick={() => { setSelectedProposal(proposal); setShowNegotiationModal(true); }}
+                        className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                      >
+                        Negotiate
+                      </button>
+                      <button
+                        onClick={() => { setSelectedProposal(proposal); setShowAcceptDialog(true); }}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => { setSelectedProposal(proposal); setShowDeclineDialog(true); }}
+                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                        disabled={proposal.status === 'declined'}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+
+            {syncProposalsTab === 'accepted' && (
+              acceptedProposals.length === 0 ? (
+                <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <p className="text-gray-400">No accepted proposals</p>
+                </div>
+              ) : (
+                acceptedProposals.map((proposal) => (
+                  <div
+                    key={proposal.id}
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
+                        <p className="text-sm text-gray-400">
+                          Producer: {proposal.track?.producer?.first_name} {proposal.track?.producer?.last_name}
+                        </p>
+                        <p className="text-xs text-green-400">
+                          ✓ Accepted by both parties
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">
+                          Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <button
+                        onClick={() => handleShowHistory(proposal)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        History
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+
+            {syncProposalsTab === 'declined' && (
+              declinedProposals.length === 0 ? (
+                <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <p className="text-gray-400">No declined proposals</p>
+                </div>
+              ) : (
+                declinedProposals.map((proposal) => (
+                  <div
+                    key={proposal.id}
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
+                        <p className="text-sm text-gray-400">
+                          Producer: {proposal.track?.producer?.first_name} {proposal.track?.producer?.last_name}
+                        </p>
+                        <p className="text-xs text-red-400">
+                          ✗ Declined {proposal.producer_status === 'rejected' ? 'by producer' : 'by you'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-gray-400">${proposal.sync_fee.toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">
+                          Declined: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <button
+                        onClick={() => handleShowHistory(proposal)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        History
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1184,12 +1382,11 @@ export function ClientDashboard() {
 
       {showLicenseDialog && selectedTrackToLicense && (
         <LicenseDialog
+          isOpen={showLicenseDialog}
           track={selectedTrackToLicense}
+          membershipType={userStats.membershipType}
+          remainingLicenses={userStats.remainingLicenses}
           onClose={() => {
-            setShowLicenseDialog(false);
-            setSelectedTrackToLicense(null);
-          }}
-          onSuccess={() => {
             setShowLicenseDialog(false);
             setSelectedTrackToLicense(null);
           }}
@@ -1200,10 +1397,6 @@ export function ClientDashboard() {
         <SyncProposalDialog
           track={selectedTrackToLicense}
           onClose={() => {
-            setShowProposalDialog(false);
-            setSelectedTrackToLicense(null);
-          }}
-          onSuccess={() => {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
           }}
