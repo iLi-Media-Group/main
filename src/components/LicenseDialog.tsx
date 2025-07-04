@@ -179,6 +179,10 @@ export function LicenseDialog({
       setCreatedLicenseId(license.id);
       setShowConfirmation(true);
       
+      // Show success message
+      console.log('License created successfully!', license.id);
+      alert(`License created successfully for "${track.title}"!`);
+      
       // Call the callback if provided
       if (onLicenseCreated) {
         onLicenseCreated();
