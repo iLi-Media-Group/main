@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION create_producer_balance_on_profile_insert()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Only create balance for producers
-  IF NEW.role = 'producer' THEN
+  IF NEW.account_type = 'producer' THEN
     INSERT INTO producer_balances (balance_producer_id, available_balance, pending_balance, lifetime_earnings)
     VALUES (NEW.id, 0, 0, 0)
     ON CONFLICT (balance_producer_id) DO NOTHING;
@@ -16,5 +16,5 @@ $$ LANGUAGE plpgsql;
 INSERT INTO producer_balances (balance_producer_id, available_balance, pending_balance, lifetime_earnings)
 SELECT id, 0, 0, 0
 FROM profiles
-WHERE role = 'producer'
+WHERE account_type = 'producer'
   AND id NOT IN (SELECT balance_producer_id FROM producer_balances); 
