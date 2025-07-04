@@ -37,6 +37,8 @@ interface Proposal {
   producer_status?: string;
   client_status?: string;
   updated_at?: string;
+  last_message_sender_id?: string;
+  last_message_at?: string;
   created_at: string;
   client: {
     first_name: string;
@@ -47,6 +49,18 @@ interface Proposal {
     id: string;
     title: string;
   };
+}
+
+// Add a helper to determine if a proposal has a pending action
+function hasPendingAction(proposal: Proposal, userId: string): boolean {
+  // Show badge if proposal has a recent message from someone else
+  return (
+    (proposal.status === 'pending' || proposal.producer_status === 'pending') && 
+    !!proposal.last_message_sender_id && 
+    proposal.last_message_sender_id !== userId &&
+    !!proposal.last_message_at && 
+    new Date(proposal.last_message_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+  );
 }
 
 export function ProducerDashboard() {
@@ -183,6 +197,8 @@ export function ProducerDashboard() {
           updated_at,
           producer_status,
           client_status,
+          last_message_sender_id,
+          last_message_at,
           client:profiles!client_id (
             first_name,
             last_name,
@@ -214,6 +230,8 @@ export function ProducerDashboard() {
           updated_at,
           producer_status,
           client_status,
+          last_message_sender_id,
+          last_message_at,
           client:profiles!client_id (
             first_name,
             last_name,
@@ -661,8 +679,15 @@ export function ProducerDashboard() {
                     filteredPendingProposals.map((proposal) => (
                       <div
                         key={proposal.id}
-                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
                       >
+                        {/* Notification Badge */}
+                        {user && hasPendingAction(proposal, user.id) && (
+                          <span className="absolute top-2 right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                          </span>
+                        )}
                         <div className="flex items-start justify-between mb-2">
                           <div>
                             <h4 className="text-white font-medium">{proposal.track.title}</h4>
