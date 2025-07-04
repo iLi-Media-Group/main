@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [usdcAddress, setUsdcAddress] = useState('');
   const [ein, setEin] = useState('');
   const [businessStructure, setBusinessStructure] = useState('');
+  const [avatarPath, setAvatarPath] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -68,12 +70,20 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setEin(data.ein || '');
         setBusinessStructure(data.business_structure || '');
         setBio(data.bio || '');
+        setAvatarPath(data.avatar_path);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
       setError('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePhotoUpdate = (newAvatarPath: string) => {
+    setAvatarPath(newAvatarPath);
+    if (onProfileUpdated) {
+      onProfileUpdated();
     }
   };
 
@@ -157,6 +167,16 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                 <p className="text-green-400 text-center">Profile updated successfully!</p>
               </div>
             )}
+
+            {/* Profile Photo Upload */}
+            <div className="flex justify-center mb-6">
+              <ProfilePhotoUpload
+                currentPhotoUrl={avatarPath}
+                onPhotoUpdate={handlePhotoUpdate}
+                size="lg"
+                userId={user?.id}
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
