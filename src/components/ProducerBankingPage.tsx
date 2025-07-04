@@ -73,7 +73,7 @@ export function ProducerBankingPage() {
       const { data: balanceData, error: balanceError } = await supabase
         .from('producer_balances')
         .select('available_balance, pending_balance')
-        .eq('producer_id', user?.id)
+        .eq('balance_producer_id', user?.id)
         .maybeSingle();
 
       if (balanceError) throw balanceError;
@@ -86,7 +86,7 @@ export function ProducerBankingPage() {
         const { error: insertError } = await supabase
           .from('producer_balances')
           .insert({
-            producer_id: user?.id,
+            balance_producer_id: user?.id,
             available_balance: 0,
             pending_balance: 0,
             lifetime_earnings: 0
@@ -134,20 +134,26 @@ export function ProducerBankingPage() {
         typeFilter = 'type.eq.adjustment';
       }
 
-      // Combine filters
-      let filters = [];
-      if (dateFilter) filters.push(dateFilter);
-      if (typeFilter) filters.push(typeFilter);
-      
-      // Fetch transactions
+      // Fetch transactions with proper filtering
       let query = supabase
         .from('producer_transactions')
         .select('*')
-        .eq('producer_id', user?.id);
+        .eq('transaction_producer_id', user?.id);
 
-      // Apply filters
-      if (filters.length > 0) {
-        query = query.or(filters.join(','));
+      // Apply date filter if specified
+      if (dateFilter) {
+        const filterParts = dateFilter.split('.');
+        if (filterParts.length === 3) {
+          query = query.gte(filterParts[0], filterParts[2]);
+        }
+      }
+
+      // Apply type filter if specified
+      if (typeFilter) {
+        const filterParts = typeFilter.split('.');
+        if (filterParts.length === 3) {
+          query = query.eq(filterParts[0], filterParts[2]);
+        }
       }
 
       // Apply sorting
