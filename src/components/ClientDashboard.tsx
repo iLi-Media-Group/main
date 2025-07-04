@@ -14,6 +14,8 @@ import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
 import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
+import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
+import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -49,6 +51,25 @@ interface CustomSyncRequest {
   created_at: string;
 }
 
+interface SyncProposal {
+  id: string;
+  sync_fee: number;
+  payment_terms: string;
+  is_exclusive: boolean;
+  last_message_sender_id?: string;
+  last_message_at?: string;
+  client_terms_accepted?: any;
+  producer_terms_accepted?: any;
+  [key: string]: any;
+}
+interface SyncProposalHistoryMessage {
+  id: string;
+  sender_id: string;
+  sender_name?: string;
+  message: string;
+  created_at: string;
+}
+
 const calculateExpiryDate = (purchaseDate: string, membershipType: string): string => {
   const date = new Date(purchaseDate);
   switch (membershipType) {
@@ -73,6 +94,18 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
   if (daysUntilExpiry <= 30) return 'expiring-soon';
   return 'active';
 };
+
+// Add a helper to determine if a proposal has a pending action
+function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
+  // Show badge if proposal has a recent message from someone else
+  return (
+    proposal.status === 'pending' && 
+    proposal.last_message_sender_id && 
+    proposal.last_message_sender_id !== userId &&
+    proposal.last_message_at && 
+    new Date(proposal.last_message_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+  );
+}
 
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
@@ -111,6 +144,10 @@ export function ClientDashboard() {
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [syncProposalsTab, setSyncProposalsTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyProposal, setHistoryProposal] = useState<SyncProposal | null>(null);
+  const [historyMessages, setHistoryMessages] = useState<SyncProposalHistoryMessage[]>([]);
+  const [showNegotiationModal, setShowNegotiationModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -176,7 +213,8 @@ export function ClientDashboard() {
           track: {
             ...license.track,
             genres: license.track.genres.split(',').map((g: string) => g.trim()),
-            image: license.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'
+            audioUrl: license.track.audio_url || '',
+            image: license.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
           }
         }));
         setLicenses(formattedLicenses);
@@ -345,7 +383,14 @@ export function ClientDashboard() {
     if (!user) return;
     const { data, error } = await supabase
       .from('sync_proposals')
-      .select(`*, track:tracks(*, producer:profiles(*))`)
+      .select(`
+        *, 
+        track:tracks(*, producer:profiles(*)),
+        last_message_sender_id,
+        last_message_at,
+        client_terms_accepted,
+        producer_terms_accepted
+      `)
       .eq('client_id', user.id)
       .order('created_at', { ascending: false });
     if (!error && data) setSyncProposals(data);
@@ -481,6 +526,18 @@ export function ClientDashboard() {
     fetchSyncProposals();
   };
 
+  const handleShowHistory = async (proposal: SyncProposal) => {
+    setHistoryProposal(proposal);
+    // Fetch negotiation/history messages from the new sync_proposal_history table
+    const { data, error } = await supabase
+      .from('sync_proposal_history')
+      .select('*')
+      .eq('proposal_id', proposal.id)
+      .order('created_at', { ascending: true });
+    if (!error && data) setHistoryMessages(data);
+    setShowHistoryModal(true);
+  };
+
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
     .sort((a, b) => {
@@ -613,15 +670,22 @@ export function ClientDashboard() {
             ) : (
               <div className="space-y-4">
                 {pendingProposals.map((proposal) => (
-                  <div key={proposal.id} className="bg-white/5 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div key={proposal.id} className="bg-white/5 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between relative">
+                    {/* Notification Badge */}
+                    {user && hasPendingAction(proposal, user.id) && (
+                      <span className="absolute top-2 right-2 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                      </span>
+                    )}
                     <div>
                       <div className="font-semibold text-white">{proposal.track?.title || 'Untitled Track'}</div>
                       <div className="text-gray-400 text-sm">Status: {proposal.status}</div>
                       <div className="text-gray-400 text-sm">Sync Fee: ${proposal.sync_fee}</div>
                     </div>
                     <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
-                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => {/* Show history logic here */}}>History</button>
-                      <button className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700" onClick={() => {/* Negotiation logic here */}}>Negotiate</button>
+                      <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => handleShowHistory(proposal)}>History</button>
+                      <button className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700" onClick={() => { setSelectedProposal(proposal); setShowNegotiationModal(true); }}>Negotiate</button>
                       <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700" onClick={() => { setSelectedProposal(proposal); setShowAcceptDialog(true); }}>Accept</button>
                       <button className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700" onClick={() => { setSelectedProposal(proposal); setShowDeclineDialog(true); }} disabled={proposal.status === 'declined'}>Decline</button>
                     </div>
@@ -671,6 +735,46 @@ export function ClientDashboard() {
             )
           )}
         </section>
+        {/* History Modal */}
+        {showHistoryModal && historyProposal && (
+          <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
+            <DialogPortal>
+              <DialogOverlay />
+              <DialogContent className="bg-blue-900/90 p-8 rounded-xl w-full max-w-3xl mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold text-white">Proposal History</h2>
+                  <button onClick={() => setShowHistoryModal(false)} className="text-gray-400 hover:text-white transition-colors"><X className="w-6 h-6" /></button>
+                </div>
+                {/* Current Terms */}
+                <div className="mb-6 p-4 bg-white/10 rounded-lg">
+                  <div className="text-white font-semibold mb-2">Current Terms</div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200">
+                    <div><span className="font-medium">Sync Fee:</span> ${historyProposal.sync_fee}</div>
+                    <div><span className="font-medium">Payment Terms:</span> {historyProposal.payment_terms}</div>
+                    <div><span className="font-medium">Exclusivity:</span> {historyProposal.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</div>
+                  </div>
+                </div>
+                {/* History Messages as Chat Bubbles */}
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {historyMessages.length === 0 ? (
+                    <div className="text-gray-400 text-center">No negotiation or history messages yet.</div>
+                  ) : (
+                    historyMessages.map((msg, idx) => (
+                      <div key={msg.id || idx} className={`flex ${(user && msg.sender_id === user.id) ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`rounded-lg px-4 py-2 max-w-lg ${(user && msg.sender_id === user.id) ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}
+                          style={{ borderBottomRightRadius: (user && msg.sender_id === user.id) ? '0.5rem' : '1.5rem', borderBottomLeftRadius: (user && msg.sender_id !== user.id) ? '0.5rem' : '1.5rem' }}>
+                          <div className="text-xs text-gray-300 mb-1">{msg.sender_name || ((user && msg.sender_id === user.id) ? 'You' : 'Other')}</div>
+                          <div>{msg.message}</div>
+                          <div className="text-xs text-gray-400 mt-1 text-right">{new Date(msg.created_at).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </DialogContent>
+            </DialogPortal>
+          </Dialog>
+        )}
         {/* Custom Sync Requests Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -1112,6 +1216,22 @@ export function ClientDashboard() {
         action="reject"
         proposal={selectedProposal}
       />
+
+      {/* Negotiation Modal */}
+      {showNegotiationModal && selectedProposal && (
+        <ProposalNegotiationDialog
+          isOpen={showNegotiationModal}
+          onClose={() => setShowNegotiationModal(false)}
+          proposal={selectedProposal}
+          onNegotiationSent={() => {
+            setShowNegotiationModal(false);
+            fetchSyncProposals();
+            if (showHistoryModal && historyProposal?.id === selectedProposal.id) {
+              handleShowHistory(selectedProposal);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

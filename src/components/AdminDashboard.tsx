@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Wallet } from 'lucide-react';
+import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { LogoUpload } from './LogoUpload';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,7 +8,7 @@ import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { ClientList } from './ClientList';
-import { ProducerPayoutsPage } from './ProducerPayoutsPage';
+
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
 import { Link } from 'react-router-dom';
@@ -53,7 +53,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'white_label'>('analytics');
 
   useEffect(() => {
     if (user) {
@@ -498,7 +498,6 @@ export function AdminDashboard() {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
-            { id: 'payouts', label: 'USDC Payouts', icon: <Wallet className="w-4 h-4 mr-2" /> },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
 			      { id: 'white_label', label: 'White Label Clients', icon: null },
@@ -681,12 +680,7 @@ export function AdminDashboard() {
           </div>
         )}
 
-        {/* USDC Payouts */}
-        {activeTab === 'payouts' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-            <ProducerPayoutsPage />
-          </div>
-        )}
+
 
         {/* Announcements Management */}
         {activeTab === 'announcements' && (

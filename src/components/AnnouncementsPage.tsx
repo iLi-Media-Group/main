@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight } from 'lucide-react';
+import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -20,6 +20,77 @@ interface AnnouncementDetailProps {
   announcement: Announcement;
   onClose: () => void;
 }
+
+// Function to extract YouTube video ID from various URL formats
+const extractYouTubeVideoId = (url: string): string | null => {
+  if (!url) return null;
+  
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/v\/([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+};
+
+// Function to generate YouTube thumbnail URL
+const getYouTubeThumbnail = (videoId: string, quality: 'default' | 'medium' | 'high' | 'maxres' = 'medium'): string => {
+  const qualities = {
+    default: 'default.jpg',
+    medium: 'mqdefault.jpg',
+    high: 'hqdefault.jpg',
+    maxres: 'maxresdefault.jpg'
+  };
+  
+  return `https://img.youtube.com/vi/${videoId}/${qualities[quality]}`;
+};
+
+// Component for YouTube thumbnail with fallback
+const YouTubeThumbnail = ({ url, title, className = "" }: { url: string; title: string; className?: string }) => {
+  const [imageError, setImageError] = useState(false);
+  const videoId = extractYouTubeVideoId(url);
+  
+  if (!videoId) {
+    return (
+      <div className={`bg-gray-800 flex items-center justify-center ${className}`}>
+        <Youtube className="w-12 h-12 text-red-400" />
+      </div>
+    );
+  }
+  
+  if (imageError) {
+    return (
+      <div className={`bg-gray-800 flex items-center justify-center ${className}`}>
+        <div className="text-center">
+          <Youtube className="w-12 h-12 text-red-400 mx-auto mb-2" />
+          <p className="text-gray-400 text-sm">Thumbnail unavailable</p>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className={`relative group ${className}`}>
+      <img
+        src={getYouTubeThumbnail(videoId, 'medium')}
+        alt={`${title} - YouTube Video`}
+        className="w-full h-full object-cover rounded-lg"
+        onError={() => setImageError(true)}
+      />
+      <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center">
+        <div className="bg-red-600 rounded-full p-3 group-hover:scale-110 transition-transform">
+          <Play className="w-6 h-6 text-white fill-white" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) {
   const { user } = useAuth();
@@ -68,7 +139,19 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
           </span>
         </div>
         
-        {announcement.image_url && (
+        {/* Show YouTube thumbnail for YouTube announcements */}
+        {announcement.type === 'youtube' && announcement.external_url && (
+          <div className="mb-6">
+            <YouTubeThumbnail 
+              url={announcement.external_url} 
+              title={announcement.title}
+              className="w-full h-64"
+            />
+          </div>
+        )}
+        
+        {/* Show regular image for non-YouTube announcements */}
+        {announcement.type !== 'youtube' && announcement.image_url && (
           <img
             src={announcement.image_url}
             alt={announcement.title}
@@ -90,7 +173,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
               className="inline-flex items-center text-purple-400 hover:text-purple-300 transition-colors"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Visit Link
+              {announcement.type === 'youtube' ? 'Watch on YouTube' : 'Visit Link'}
             </a>
           )}
           
@@ -285,7 +368,19 @@ export function AnnouncementsPage() {
                     </span>
                   </div>
                   
-                  {announcement.image_url && (
+                  {/* Show YouTube thumbnail for YouTube announcements */}
+                  {announcement.type === 'youtube' && announcement.external_url && (
+                    <div className="mb-4">
+                      <YouTubeThumbnail 
+                        url={announcement.external_url} 
+                        title={announcement.title}
+                        className="w-full h-48"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Show regular image for non-YouTube announcements */}
+                  {announcement.type !== 'youtube' && announcement.image_url && (
                     <img
                       src={announcement.image_url}
                       alt={announcement.title}
