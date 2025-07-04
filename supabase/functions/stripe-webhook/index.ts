@@ -169,7 +169,7 @@ async function handleEvent(event: any) {
       if (metadata?.proposal_id) {
         const { data: proposalData, error: proposalError } = await supabase
           .from('sync_proposals')
-          .select(`id, track_id, client_id, track:tracks!inner (track_producer_id:producer_id, title)`)
+          .select(`id, track_id, client_id, track:tracks!inner (track_producer_id, title)`)
           .eq('id', metadata.proposal_id)
           .single();
         if (proposalError) {
@@ -232,7 +232,7 @@ async function handleEvent(event: any) {
       if (trackId && customerData?.user_id) {
         const { data: trackData, error: trackError } = await supabase
           .from('tracks')
-          .select('id, track_producer_id:producer_id')
+          .select('id, track_producer_id')
           .eq('id', trackId)
           .single();
         if (trackError) {
