@@ -25,6 +25,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [ipiNumber, setIpiNumber] = useState('');
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
   const [usdcAddress, setUsdcAddress] = useState('');
+  const [ein, setEin] = useState('');
+  const [businessStructure, setBusinessStructure] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -41,7 +43,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, ipi_number, performing_rights_org, usdc_address, company_name')
+        .select('*, ipi_number, performing_rights_org, usdc_address, company_name, ein, business_structure')
         .eq('id', user?.id)
         .single();
 
@@ -62,6 +64,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setIpiNumber(data.ipi_number || '');
         setPerformingRightsOrg(data.performing_rights_org || '');
         setUsdcAddress(data.usdc_address || '');
+        setEin(data.ein || '');
+        setBusinessStructure(data.business_structure || '');
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -86,7 +90,6 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           company_name: companyName.trim() || null,
-          company_name: companyName.trim() || null,
           phone_number: phoneNumber.trim() || null,
           street_address: streetAddress.trim() || null,
           city: city.trim() || null,
@@ -96,6 +99,8 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           ipi_number: ipiNumber.trim() || null,
           performing_rights_org: performingRightsOrg.trim() || null,
           usdc_address: usdcAddress.trim() || null,
+          ein: ein.trim() || null,
+          business_structure: businessStructure || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -230,6 +235,37 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   placeholder="Your publishing company or label name"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                EIN (Tax ID)
+              </label>
+              <input
+                type="text"
+                value={ein}
+                onChange={e => setEin(e.target.value)}
+                className="w-full"
+                placeholder="Employer Identification Number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Business Structure
+              </label>
+              <select
+                value={businessStructure}
+                onChange={e => setBusinessStructure(e.target.value)}
+                className="w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Corporation">Corporation</option>
+                <option value="LLC">LLC</option>
+                <option value="Partnership">Partnership</option>
+                <option value="Sole Proprietor">Sole Proprietor</option>
+                <option value="Nonprofit">Nonprofit</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div>

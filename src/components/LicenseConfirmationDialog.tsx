@@ -21,7 +21,7 @@ export function LicenseConfirmationDialog({
 
   return (
     <div className="fixed inset-0 bg-black backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-700 p-6 rounded-xl border border-green-500/20 w-full max-w-md">
+      <div className="bg-blue-900/90 p-6 rounded-xl border border-green-500/20 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center">
             <CheckCircle className="w-6 h-6 text-green-500 mr-2" />

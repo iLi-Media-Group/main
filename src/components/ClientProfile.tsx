@@ -26,6 +26,8 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [ein, setEin] = useState('');
+  const [businessStructure, setBusinessStructure] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -38,7 +40,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path')
+        .select('first_name, last_name, email, company_name, street_address, city, state, postal_code, country, avatar_path, ein, business_structure')
         .eq('id', user?.id)
         .single();
 
@@ -55,6 +57,8 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
         setPostalCode(data.postal_code || '');
         setCountry(data.country || '');
         setAvatarPath(data.avatar_path);
+        setEin(data.ein || '');
+        setBusinessStructure(data.business_structure || '');
         
         if (data.avatar_path) {
           const { data: { publicUrl } } = supabase.storage
@@ -130,6 +134,8 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
           postal_code: postalCode.trim() || null,
           country: country.trim() || null,
           avatar_path: newAvatarPath,
+          ein: ein.trim() || null,
+          business_structure: businessStructure || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -153,7 +159,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Edit Profile</h2>
           <button
@@ -274,6 +280,37 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
                   placeholder="Your company or organization name"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                EIN (Tax ID)
+              </label>
+              <input
+                type="text"
+                value={ein}
+                onChange={e => setEin(e.target.value)}
+                className="w-full"
+                placeholder="Employer Identification Number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Business Structure
+              </label>
+              <select
+                value={businessStructure}
+                onChange={e => setBusinessStructure(e.target.value)}
+                className="w-full"
+              >
+                <option value="">Select...</option>
+                <option value="Corporation">Corporation</option>
+                <option value="LLC">LLC</option>
+                <option value="Partnership">Partnership</option>
+                <option value="Sole Proprietor">Sole Proprietor</option>
+                <option value="Nonprofit">Nonprofit</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div className="space-y-6">

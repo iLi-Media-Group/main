@@ -13,6 +13,7 @@ import { LicenseDialog } from './LicenseDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
 import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
+import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -109,6 +110,7 @@ export function ClientDashboard() {
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [syncProposalsTab, setSyncProposalsTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
+  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -469,6 +471,16 @@ export function ClientDashboard() {
     navigate(`/license-agreement/${licenseId}`);
   };
 
+  const handleDeclineProposal = async (proposal) => {
+    // Update proposal status to declined, disable negotiation, notify other party
+    await supabase
+      .from('sync_proposals')
+      .update({ client_status: 'rejected', status: 'declined', updated_at: new Date().toISOString() })
+      .eq('id', proposal.id);
+    // Optionally: send notification to producer
+    fetchSyncProposals();
+  };
+
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
     .sort((a, b) => {
@@ -611,7 +623,7 @@ export function ClientDashboard() {
                       <button className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700" onClick={() => {/* Show history logic here */}}>History</button>
                       <button className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700" onClick={() => {/* Negotiation logic here */}}>Negotiate</button>
                       <button className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700" onClick={() => { setSelectedProposal(proposal); setShowAcceptDialog(true); }}>Accept</button>
-                      <button className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700" onClick={async () => { /* Decline logic here, similar to SyncProposalAcceptDialog */ }}>Decline</button>
+                      <button className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700" onClick={() => { setSelectedProposal(proposal); setShowDeclineDialog(true); }} disabled={proposal.status === 'declined'}>Decline</button>
                     </div>
                   </div>
                 ))}
@@ -1091,6 +1103,14 @@ export function ClientDashboard() {
         onClose={() => setShowAcceptDialog(false)}
         proposal={selectedProposal}
         onAccept={() => { setShowAcceptDialog(false); fetchSyncProposals(); }}
+      />
+
+      <ProposalConfirmDialog
+        isOpen={showDeclineDialog}
+        onClose={() => setShowDeclineDialog(false)}
+        onConfirm={() => handleDeclineProposal(selectedProposal)}
+        action="reject"
+        proposal={selectedProposal}
       />
     </div>
   );
