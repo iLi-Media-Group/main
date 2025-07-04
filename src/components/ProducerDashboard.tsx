@@ -152,8 +152,8 @@ export function ProducerDashboard() {
       if (salesError) throw salesError;
 
       // Process sales data by track
-      const trackSalesMap = {};
-      const trackRevenueMap = {};
+      const trackSalesMap: Record<string, number> = {};
+      const trackRevenueMap: Record<string, number> = {};
       
       if (salesData) {
         salesData.forEach(sale => {
@@ -176,10 +176,39 @@ export function ProducerDashboard() {
 
       setTracks(tracksWithSales);
 
-      // Calculate total stats
+      // Calculate total stats from track sales only
       const totalTracks = tracksWithSales.length;
-      const totalSales = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + count, 0);
-      const totalRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + amount, 0);
+      const trackSalesCount = Object.values(trackSalesMap).reduce((sum: number, count: number) => sum + count, 0);
+      const trackSalesRevenue = Object.values(trackRevenueMap).reduce((sum: number, amount: number) => sum + amount, 0);
+
+      // Fetch paid sync proposals for this producer's tracks
+      const { data: paidSyncProposals, error: syncProposalsError } = await supabase
+        .from('sync_proposals')
+        .select('id, sync_fee')
+        .in('track_id', trackIds)
+        .eq('payment_status', 'paid')
+        .eq('status', 'accepted');
+
+      if (syncProposalsError) throw syncProposalsError;
+
+      // Fetch completed custom sync requests where this producer is the preferred producer
+      const { data: completedCustomSyncRequests, error: customSyncError } = await supabase
+        .from('custom_sync_requests')
+        .select('id, sync_fee')
+        .eq('preferred_producer_id', user.id)
+        .eq('status', 'completed');
+
+      if (customSyncError) throw customSyncError;
+
+      // Calculate comprehensive totals including all revenue streams
+      const syncProposalsCount = paidSyncProposals?.length || 0;
+      const syncProposalsRevenue = paidSyncProposals?.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) || 0;
+      
+      const customSyncCount = completedCustomSyncRequests?.length || 0;
+      const customSyncRevenue = completedCustomSyncRequests?.reduce((sum, request) => sum + (request.sync_fee || 0), 0) || 0;
+
+      const totalSales = trackSalesCount + syncProposalsCount + customSyncCount;
+      const totalRevenue = trackSalesRevenue + syncProposalsRevenue + customSyncRevenue;
 
       // Fetch all proposals
       const { data: allProposalsData, error: allProposalsError } = await supabase
