@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 interface ProposalHistoryDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  proposalId: string;
+  proposal: any;
 }
 
 interface HistoryEntry {
@@ -50,7 +50,7 @@ interface ProposalFile {
 export function ProposalHistoryDialog({
   isOpen,
   onClose,
-  proposalId
+  proposal
 }: ProposalHistoryDialogProps) {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [negotiations, setNegotiations] = useState<NegotiationMessage[]>([]);
@@ -59,10 +59,10 @@ export function ProposalHistoryDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && proposal?.id) {
       fetchHistory();
     }
-  }, [isOpen, proposalId]);
+  }, [isOpen, proposal?.id]);
 
   const fetchHistory = async () => {
     try {
@@ -83,7 +83,7 @@ export function ProposalHistoryDialog({
             email
           )
         `)
-        .eq('proposal_id', proposalId)
+        .eq('proposal_id', proposal.id)
         .order('changed_at', { ascending: true });
 
       if (historyError) throw historyError;
@@ -103,7 +103,7 @@ export function ProposalHistoryDialog({
             email
           )
         `)
-        .eq('proposal_id', proposalId)
+        .eq('proposal_id', proposal.id)
         .order('created_at', { ascending: true });
 
       if (negotiationsError) throw negotiationsError;
@@ -124,7 +124,7 @@ export function ProposalHistoryDialog({
             email
           )
         `)
-        .eq('proposal_id', proposalId)
+        .eq('proposal_id', proposal.id)
         .order('created_at', { ascending: true });
 
       if (filesError) throw filesError;
@@ -164,6 +164,11 @@ export function ProposalHistoryDialog({
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white/5 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-hidden">
+        {/* Track Name Header */}
+        <div className="mb-6 p-4 bg-white/10 rounded-lg">
+          <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
+        </div>
+        {/* End Track Name Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Proposal History</h2>
           <button

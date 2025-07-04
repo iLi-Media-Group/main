@@ -131,7 +131,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         const { error: fileError } = await supabase
           .from('proposal_files')
           .insert({
-            proposal_id: proposalId,
+            proposal_id: proposal.id,
             uploader_id: user.id,
             file_name: selectedFile.name,
             file_url: publicUrl,
@@ -179,6 +179,17 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white/5 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+        {/* Track and Terms Header */}
+        <div className="mb-6 p-4 bg-white/10 rounded-lg">
+          <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200 text-sm">
+            <div><span className="font-medium">Sync Fee:</span> ${proposal?.sync_fee ?? 'N/A'}</div>
+            <div><span className="font-medium">Payment Terms:</span> {proposal?.payment_terms ?? 'N/A'}</div>
+            <div><span className="font-medium">Exclusivity:</span> {proposal?.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</div>
+          </div>
+        </div>
+        {/* End Track and Terms Header */}
+
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white">Negotiate Proposal for "{proposal?.track?.title}"</h2>
