@@ -170,7 +170,7 @@ export default function WhiteLabelAdminPage() {
         {/* Add/Edit Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+            <div className="bg-blue-700 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
               <h2 className="text-xl font-bold mb-4">{editingClient ? 'Edit Client' : 'Add Client'}</h2>
               <form onSubmit={handleFormSubmit} className="space-y-4">
                 <div>
@@ -227,7 +227,7 @@ export default function WhiteLabelAdminPage() {
         {/* Delete Confirmation Modal */}
         {deletingClient && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-gray-900 p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+            <div className="bg-blue-700 p-6 rounded-xl border border-red-500/20 w-full max-w-md">
               <h2 className="text-xl font-bold mb-4 text-red-400">Delete Client</h2>
               <p className="mb-4">Are you sure you want to delete <span className="font-semibold">{deletingClient.company_name}</span>?</p>
               <div className="flex justify-end space-x-2">

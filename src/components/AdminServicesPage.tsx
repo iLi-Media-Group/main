@@ -310,7 +310,7 @@ export default function AdminServicesPage() {
             {/* Add/Edit Modal */}
             {showForm && (
               <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-2xl max-h-screen overflow-y-auto">
+                <div className="bg-blue-700 p-6 rounded-xl border border-blue-500/20 w-full max-w-2xl max-h-screen overflow-y-auto">
                   <h2 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add Service'}</h2>
                   <form onSubmit={handleFormSubmit} className="space-y-4">
                     <div>
@@ -442,7 +442,7 @@ export default function AdminServicesPage() {
             {/* Onboarding Modal */}
             {showOnboardingModal && (
               <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                <div className="bg-gray-900 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+                <div className="bg-blue-700 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
                   <h2 className="text-xl font-bold mb-4">Invite Service Provider</h2>
                   <label className="block text-sm font-medium mb-1">Provider Email</label>
                   <input

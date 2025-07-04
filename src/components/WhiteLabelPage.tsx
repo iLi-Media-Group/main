@@ -347,7 +347,13 @@ export function WhiteLabelPage() {
           Let producers apply to join your library. Applications are automatically ranked by genre to help you select the best fits.
         </p>
         <p className="text-blue-400 font-bold mb-4">$249</p>
-        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+        <a 
+          href="#" 
+          className="text-blue-400 hover:underline"
+          onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+        >
+          Calculate My Cost
+        </a>
       </div>
 
       {/* AI Search Assistance */}
@@ -357,7 +363,13 @@ export function WhiteLabelPage() {
           Help clients discover music based on their previous searches, favorites, or licensed tracks. AI-driven suggestions in real time.
         </p>
         <p className="text-blue-400 font-bold mb-4">$249</p>
-        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+        <a 
+          href="#" 
+          className="text-blue-400 hover:underline"
+          onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+        >
+          Calculate My Cost
+        </a>
       </div>
 
       {/* Deep Media Search Options */}
@@ -367,7 +379,13 @@ export function WhiteLabelPage() {
           Let producers tag tracks with recommended media types (TV shows, films, commercials, podcasts, YouTube, etc.). Add media filters for your clients.
         </p>
         <p className="text-blue-400 font-bold mb-4">$249</p>
-        <a href="#contact" className="text-blue-400 hover:underline">Add to My Demo Request</a>
+        <a 
+          href="#" 
+          className="text-blue-400 hover:underline"
+          onClick={e => { e.preventDefault(); setShowCalculator(true); }}
+        >
+          Calculate My Cost
+        </a>
       </div>
     </div>
 
@@ -378,9 +396,6 @@ export function WhiteLabelPage() {
         <li>✅ Any 2 Add-Ons for <span className="text-blue-400 font-bold">$449</span> (Save $49)</li>
         <li>✅ All 3 Add-Ons for <span className="text-blue-400 font-bold">$599</span> (Save $148)</li>
       </ul>
-      <a href="#contact" className="mt-4 inline-block py-3 px-6 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/25 transition-colors">
-        Request Bundle Pricing
-      </a>
     </div>
   </div>
 </section>
@@ -603,7 +618,7 @@ export function WhiteLabelPage() {
       {/* White Label Calculator Modal */}
       {showCalculator && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gray-900 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-blue-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-gray-700 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-white">White Label Pricing Calculator</h2>
               <button
