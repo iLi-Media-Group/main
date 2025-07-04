@@ -69,6 +69,7 @@ interface SyncProposalHistoryMessage {
   sender_name?: string;
   message: string;
   created_at: string;
+  type?: 'status_change' | 'negotiation';
 }
 
 const calculateExpiryDate = (purchaseDate: string, membershipType: string): string => {
@@ -149,6 +150,7 @@ export function ClientDashboard() {
   const [historyProposal, setHistoryProposal] = useState<SyncProposal | null>(null);
   const [historyMessages, setHistoryMessages] = useState<SyncProposalHistoryMessage[]>([]);
   const [showNegotiationModal, setShowNegotiationModal] = useState(false);
+  const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -420,19 +422,63 @@ export function ClientDashboard() {
 
   const fetchSyncProposals = async () => {
     if (!user) return;
-    const { data, error } = await supabase
-      .from('sync_proposals')
-      .select(`
-        *, 
-        track:tracks(*, producer:profiles(*)),
-        last_message_sender_id,
-        last_message_at,
-        client_terms_accepted,
-        producer_terms_accepted
-      `)
-      .eq('client_id', user.id)
-      .order('created_at', { ascending: false });
-    if (!error && data) setSyncProposals(data);
+    
+    try {
+      const { data, error } = await supabase
+        .from('sync_proposals')
+        .select(`
+          id,
+          track_id,
+          client_id,
+          project_type,
+          duration,
+          is_exclusive,
+          sync_fee,
+          payment_terms,
+          expiration_date,
+          is_urgent,
+          status,
+          client_status,
+          producer_status,
+          payment_status,
+          negotiation_status,
+          created_at,
+          updated_at,
+          last_message_sender_id,
+          last_message_at,
+          client_terms_accepted,
+          producer_terms_accepted,
+          track:tracks(
+            id,
+            title,
+            artist,
+            genres,
+            audio_url,
+            image_url,
+            track_producer_id,
+            producer:profiles!tracks_track_producer_id_fkey(
+              id,
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        console.error('Error fetching sync proposals:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log('Sync proposals fetched:', data);
+        setSyncProposals(data);
+      }
+    } catch (err) {
+      console.error('Error in fetchSyncProposals:', err);
+    }
   };
 
   const handleSort = (field: typeof sortField) => {
@@ -567,14 +613,94 @@ export function ClientDashboard() {
 
   const handleShowHistory = async (proposal: SyncProposal) => {
     setHistoryProposal(proposal);
-    // Fetch negotiation/history messages from the new sync_proposal_history table
-    const { data, error } = await supabase
-      .from('sync_proposal_history')
-      .select('*')
-      .eq('proposal_id', proposal.id)
-      .order('created_at', { ascending: true });
-    if (!error && data) setHistoryMessages(data);
-    setShowHistoryModal(true);
+    
+    try {
+      // Fetch negotiation messages from proposal_negotiations table
+      const { data: negotiationsData, error: negotiationsError } = await supabase
+        .from('proposal_negotiations')
+        .select(`
+          id,
+          message,
+          counter_offer,
+          counter_terms,
+          created_at,
+          sender:profiles!proposal_negotiations_sender_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('proposal_id', proposal.id)
+        .order('created_at', { ascending: true });
+        
+      if (negotiationsError) {
+        console.error('Error fetching negotiations:', negotiationsError);
+        return;
+      }
+      
+      // Fetch status history from proposal_history table
+      const { data: historyData, error: historyError } = await supabase
+        .from('proposal_history')
+        .select(`
+          id,
+          previous_status,
+          new_status,
+          changed_at,
+          changed_by:profiles!proposal_history_changed_by_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('proposal_id', proposal.id)
+        .order('changed_at', { ascending: true });
+        
+      if (historyError) {
+        console.error('Error fetching history:', historyError);
+        return;
+      }
+      
+      // Combine and format the data
+      const combinedHistory: SyncProposalHistoryMessage[] = [];
+      
+      // Add status changes
+      if (historyData) {
+        historyData.forEach(entry => {
+          combinedHistory.push({
+            id: entry.id,
+            sender_id: entry.changed_by.id,
+            sender_name: `${entry.changed_by.first_name} ${entry.changed_by.last_name}`.trim(),
+            message: `Status changed from ${entry.previous_status || 'none'} to ${entry.new_status}`,
+            created_at: entry.changed_at,
+            type: 'status_change'
+          });
+        });
+      }
+      
+      // Add negotiation messages
+      if (negotiationsData) {
+        negotiationsData.forEach(entry => {
+          combinedHistory.push({
+            id: entry.id,
+            sender_id: entry.sender.id,
+            sender_name: `${entry.sender.first_name} ${entry.sender.last_name}`.trim(),
+            message: entry.message,
+            created_at: entry.created_at,
+            type: 'negotiation'
+          });
+        });
+      }
+      
+      // Sort by creation date
+      combinedHistory.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      
+      setHistoryMessages(combinedHistory);
+      setShowHistoryModal(true);
+    } catch (err) {
+      console.error('Error in handleShowHistory:', err);
+    }
   };
 
   const sortedAndFilteredLicenses = licenses
@@ -1317,7 +1443,22 @@ export function ClientDashboard() {
             setShowProposalDialog(false);
             setSelectedTrackToLicense(null);
           }}
+          onSuccess={() => {
+            setSyncProposalSuccess(true);
+            setTimeout(() => setSyncProposalSuccess(false), 2500);
+          }}
         />
+      )}
+
+      {/* Sync Proposal Success Modal */}
+      {syncProposalSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-green-700/95 p-6 rounded-xl shadow-xl flex flex-col items-center animate-fade-in">
+            <svg className="w-12 h-12 text-white mb-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+            <div className="text-lg font-bold text-white mb-1">Sync Proposal Submitted!</div>
+            <div className="text-white text-sm">Your proposal has been sent to the producer.</div>
+          </div>
+        </div>
       )}
 
       <SyncProposalAcceptDialog

@@ -47,6 +47,10 @@ export interface Track {
     stemsWithVocals: number;
   };
   leaseAgreementUrl: string;
+  // Sync proposal related fields
+  sync_fee?: number;
+  payment_terms?: string;
+  is_exclusive?: boolean;
 }
 
 export interface SyncProposal {

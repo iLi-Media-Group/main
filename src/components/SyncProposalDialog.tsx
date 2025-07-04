@@ -9,9 +9,10 @@ interface SyncProposalDialogProps {
   isOpen: boolean;
   onClose: () => void;
   track: Track;
+  onSuccess?: () => void;
 }
 
-export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialogProps) {
+export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncProposalDialogProps) {
   const { user } = useAuth();
   const [projectType, setProjectType] = useState('');
   const [duration, setDuration] = useState('');
@@ -83,12 +84,29 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
           expiration_date: new Date(expirationDate).toISOString(),
           is_urgent: isUrgent,
           status: 'pending',
+          client_status: 'pending',
+          producer_status: 'pending',
           negotiation_status: 'pending'
         })
         .select()
         .single();
 
       if (proposalError) throw proposalError;
+
+      // Add initial negotiation message
+      const { error: negotiationError } = await supabase
+        .from('proposal_negotiations')
+        .insert({
+          proposal_id: proposal.id,
+          sender_id: user.id,
+          message: projectType,
+          counter_offer: parseFloat(syncFee),
+          counter_terms: `Duration: ${duration}, Exclusive: ${isExclusive}, Payment Terms: ${paymentTerms}`
+        });
+
+      if (negotiationError) {
+        console.error('Error creating negotiation message:', negotiationError);
+      }
 
       // Send notification through edge function
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
@@ -106,6 +124,7 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
         })
       });
 
+      if (onSuccess) onSuccess();
       onClose();
     } catch (err) {
       console.error('Error submitting proposal:', err);
@@ -295,14 +314,6 @@ export function SyncProposalDialog({ isOpen, onClose, track }: SyncProposalDialo
               )}
             </button>
           </div>
-          
-          <div className="mt-4">
-            <div className="relative flex items-center py-2">
-              <div className="flex-grow border-t border-gray-600"></div>
-              <span className="flex-shrink mx-4 text-gray-400">or</span>
-              <div className="flex-grow border-t border-gray-600"></div>
-            </div>
-          </div>              
         </form>
       </div>
     </div>

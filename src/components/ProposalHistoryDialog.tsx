@@ -77,7 +77,7 @@ export function ProposalHistoryDialog({
           previous_status,
           new_status,
           changed_at,
-          changed_by:profiles!changed_by (
+          changed_by:profiles!proposal_history_changed_by_fkey (
             first_name,
             last_name,
             email
@@ -86,7 +86,10 @@ export function ProposalHistoryDialog({
         .eq('proposal_id', proposal.id)
         .order('changed_at', { ascending: true });
 
-      if (historyError) throw historyError;
+      if (historyError) {
+        console.error('History error:', historyError);
+        // Don't throw, just log the error
+      }
 
       // Fetch negotiations
       const { data: negotiationsData, error: negotiationsError } = await supabase
@@ -97,7 +100,7 @@ export function ProposalHistoryDialog({
           counter_offer,
           counter_terms,
           created_at,
-          sender:profiles!sender_id (
+          sender:profiles!proposal_negotiations_sender_id_fkey (
             first_name,
             last_name,
             email
@@ -106,7 +109,10 @@ export function ProposalHistoryDialog({
         .eq('proposal_id', proposal.id)
         .order('created_at', { ascending: true });
 
-      if (negotiationsError) throw negotiationsError;
+      if (negotiationsError) {
+        console.error('Negotiations error:', negotiationsError);
+        // Don't throw, just log the error
+      }
 
       // Fetch files
       const { data: filesData, error: filesError } = await supabase
@@ -118,7 +124,7 @@ export function ProposalHistoryDialog({
           file_type,
           file_size,
           created_at,
-          uploader:profiles!uploader_id (
+          uploader:profiles!proposal_files_uploader_id_fkey (
             first_name,
             last_name,
             email
@@ -127,7 +133,10 @@ export function ProposalHistoryDialog({
         .eq('proposal_id', proposal.id)
         .order('created_at', { ascending: true });
 
-      if (filesError) throw filesError;
+      if (filesError) {
+        console.error('Files error:', filesError);
+        // Don't throw, just log the error
+      }
 
       if (historyData) setHistory(historyData);
       if (negotiationsData) setNegotiations(negotiationsData);
