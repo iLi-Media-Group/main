@@ -1284,7 +1284,7 @@ export function ClientDashboard() {
             setShowEditDialog(false);
             setSelectedRequest(null);
           }}
-          onUpdate={handleUpdateRequest}
+          onUpdate={(updates) => handleUpdateRequest(selectedRequest.id, updates)}
         />
       )}
 
@@ -1296,7 +1296,7 @@ export function ClientDashboard() {
         />
       )}
 
-      {showLicenseDialog && selectedTrackToLicense && (
+      {showLicenseDialog && selectedTrackToLicense && userStats.membershipType && (
         <LicenseDialog
           isOpen={showLicenseDialog}
           track={selectedTrackToLicense}
@@ -1311,6 +1311,7 @@ export function ClientDashboard() {
 
       {showProposalDialog && selectedTrackToLicense && (
         <SyncProposalDialog
+          isOpen={showProposalDialog}
           track={selectedTrackToLicense}
           onClose={() => {
             setShowProposalDialog(false);
@@ -1345,6 +1346,15 @@ export function ClientDashboard() {
             setSelectedProposal(null);
             fetchSyncProposals();
           }}
+        />
+      )}
+
+      {/* History Modal */}
+      {showHistoryModal && historyProposal && (
+        <ProposalHistoryDialog
+          isOpen={showHistoryModal}
+          onClose={() => setShowHistoryModal(false)}
+          proposal={historyProposal}
         />
       )}
     </div>
