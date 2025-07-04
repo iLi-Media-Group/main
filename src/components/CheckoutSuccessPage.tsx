@@ -150,13 +150,27 @@ export function CheckoutSuccessPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-4">
-            {subscription ? 'Subscription Activated!' : 'Payment Successful!'}
+            {subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
+              ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+                  ? 'Subscription Activated!'
+                  : 'Subscription Updated!')
+              : subscription
+                ? 'Subscription Activated!'
+                : order && order.amount_total === 999
+                  ? 'License Purchased!'
+                  : 'Payment Successful!'}
           </h1>
           
           <p className="text-xl text-gray-300 mb-8">
-            {subscription 
-              ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
-              : `Your payment has been processed successfully. ${licenseCreated ? 'Your license has been created and is ready to use.' : ''}`}
+            {subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
+              ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
+                  ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
+                  : 'Your subscription has been updated. Your new plan period is shown below.')
+              : subscription
+                ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
+                : order && order.amount_total === 999
+                  ? `Your license has been purchased and is ready to use. ${licenseCreated ? 'You can view it in your dashboard.' : ''}`
+                  : `Your payment has been processed successfully.`}
           </p>
 
           <div className="bg-white/5 rounded-lg p-6 mb-8">
