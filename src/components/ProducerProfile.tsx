@@ -31,6 +31,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [bio, setBio] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -43,7 +44,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, ipi_number, performing_rights_org, usdc_address, company_name, ein, business_structure')
+        .select('*, ipi_number, performing_rights_org, usdc_address, company_name, ein, business_structure, bio')
         .eq('id', user?.id)
         .single();
 
@@ -66,6 +67,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setUsdcAddress(data.usdc_address || '');
         setEin(data.ein || '');
         setBusinessStructure(data.business_structure || '');
+        setBio(data.bio || '');
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -101,6 +103,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           usdc_address: usdcAddress.trim() || null,
           ein: ein.trim() || null,
           business_structure: businessStructure || null,
+          bio: bio.trim() || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -126,7 +129,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
           <button
@@ -428,6 +431,24 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Bio field */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Bio (max 800 characters)
+              </label>
+              <textarea
+                value={bio}
+                onChange={e => {
+                  if (e.target.value.length <= 800) setBio(e.target.value);
+                }}
+                maxLength={800}
+                rows={5}
+                className="w-full rounded-lg bg-blue-950/60 border border-blue-700 text-white p-3 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Tell clients about yourself, your experience, and your music (max 800 characters)"
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">{bio.length}/800</div>
             </div>
 
             <button
