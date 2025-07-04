@@ -218,7 +218,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
               key={msg.id}
               className={`p-4 rounded-lg ${
                 msg.sender.email === user?.email
-                  ? 'bg-purple-900/20 ml-8'
+                  ? 'bg-purple-950/40 ml-8'
                   : 'bg-white/5 mr-8'
               }`}
             >
