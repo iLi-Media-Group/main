@@ -127,11 +127,13 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
       if (pendingNegotiation.counter_offer) {
         updates.negotiated_amount = pendingNegotiation.counter_offer;
         updates.final_amount = pendingNegotiation.counter_offer;
+        updates.sync_fee = pendingNegotiation.counter_offer; // Update the sync_fee to show in UI
       }
 
       if (pendingNegotiation.counter_payment_terms) {
         updates.negotiated_payment_terms = pendingNegotiation.counter_payment_terms;
         updates.final_payment_terms = pendingNegotiation.counter_payment_terms;
+        updates.payment_terms = pendingNegotiation.counter_payment_terms; // Update the payment_terms to show in UI
       }
 
       const { error: updateError } = await supabase
@@ -140,6 +142,16 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         .eq('id', proposal.id);
 
       if (updateError) throw updateError;
+
+      // Update the local proposal object to reflect changes in UI
+      if (pendingNegotiation.counter_offer) {
+        proposal.sync_fee = pendingNegotiation.counter_offer;
+      }
+      if (pendingNegotiation.counter_payment_terms) {
+        proposal.payment_terms = pendingNegotiation.counter_payment_terms;
+      }
+      proposal.negotiation_status = 'accepted';
+      proposal.client_accepted_at = new Date().toISOString();
 
       // Add acceptance message
       const { error: messageError } = await supabase
@@ -305,8 +317,27 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         <div className="mb-4 p-4 bg-white/10 rounded-lg flex-shrink-0">
           <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200 text-sm">
-            <div><span className="font-medium">Sync Fee:</span> ${proposal?.sync_fee ?? 'N/A'}</div>
-            <div><span className="font-medium">Payment Terms:</span> {proposal?.payment_terms ?? 'N/A'}</div>
+            <div>
+              <span className="font-medium">Sync Fee:</span> 
+              <span className={`ml-1 ${proposal?.negotiation_status === 'accepted' && proposal?.final_amount ? 'text-green-400 font-semibold' : ''}`}>
+                ${proposal?.final_amount || proposal?.sync_fee || 'N/A'}
+              </span>
+              {proposal?.negotiation_status === 'accepted' && proposal?.final_amount && (
+                <span className="ml-2 text-xs text-green-400">✓ Updated</span>
+              )}
+            </div>
+            <div>
+              <span className="font-medium">Payment Terms:</span> 
+              <span className={`ml-1 ${proposal?.negotiation_status === 'accepted' && proposal?.final_payment_terms ? 'text-green-400 font-semibold' : ''}`}>
+                {proposal?.final_payment_terms ? 
+                  PAYMENT_TERMS_OPTIONS.find(opt => opt.value === proposal.final_payment_terms)?.label :
+                  proposal?.payment_terms || 'N/A'
+                }
+              </span>
+              {proposal?.negotiation_status === 'accepted' && proposal?.final_payment_terms && (
+                <span className="ml-2 text-xs text-green-400">✓ Updated</span>
+              )}
+            </div>
             <div><span className="font-medium">Exclusivity:</span> {proposal?.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</div>
           </div>
         </div>
