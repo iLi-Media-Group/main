@@ -103,24 +103,23 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
            proposal.negotiation_status === 'pending');
       
       // Debug logging
-      console.log('Negotiation debug:', {
-        lastMessage,
-        hasPendingNegotiation,
-        hasCounterOffer,
-        counter_offer: lastMessage?.counter_offer,
-        counter_payment_terms: lastMessage?.counter_payment_terms,
-        counter_terms: lastMessage?.counter_terms,
-        senderEmail: lastMessage?.sender?.email,
-        userEmail: user?.email,
-        showAcceptDecline,
-        proposalStatus: proposal.negotiation_status,
-        messagesCount: messagesData?.length,
-        isLastMessageFromOtherUser: lastMessage && user && lastMessage.sender.email !== user.email,
-        hasUnrespondedCounterOffer: lastMessage && user && lastMessage.sender.email !== user.email && hasCounterOffer && proposal.negotiation_status !== 'accepted' && proposal.negotiation_status !== 'rejected',
-        // Additional debugging for payment terms
-        paymentTermsOptions: PAYMENT_TERMS_OPTIONS,
-        paymentTermsMatch: lastMessage?.counter_payment_terms ? PAYMENT_TERMS_OPTIONS.find(opt => opt.value === lastMessage.counter_payment_terms) : null
-      });
+      console.log('=== NEGOTIATION DEBUG START ===');
+      console.log('Last message:', lastMessage);
+      console.log('Has pending negotiation:', hasPendingNegotiation);
+      console.log('Has counter offer:', hasCounterOffer);
+      console.log('Counter offer amount:', lastMessage?.counter_offer);
+      console.log('Counter payment terms:', lastMessage?.counter_payment_terms);
+      console.log('Counter terms:', lastMessage?.counter_terms);
+      console.log('Sender email:', lastMessage?.sender?.email);
+      console.log('User email:', user?.email);
+      console.log('Show accept/decline:', showAcceptDecline);
+      console.log('Proposal status:', proposal.negotiation_status);
+      console.log('Messages count:', messagesData?.length);
+      console.log('Is last message from other user:', lastMessage && user && lastMessage.sender.email !== user.email);
+      console.log('Has unresponded counter offer:', lastMessage && user && lastMessage.sender.email !== user.email && hasCounterOffer && proposal.negotiation_status !== 'accepted' && proposal.negotiation_status !== 'rejected');
+      console.log('Payment terms options:', PAYMENT_TERMS_OPTIONS);
+      console.log('Payment terms match:', lastMessage?.counter_payment_terms ? PAYMENT_TERMS_OPTIONS.find(opt => opt.value === lastMessage.counter_payment_terms) : null);
+      console.log('=== NEGOTIATION DEBUG END ===');
 
       if (hasPendingNegotiation) {
         setShowAcceptDecline(true);
