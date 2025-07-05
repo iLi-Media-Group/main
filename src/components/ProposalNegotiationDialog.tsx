@@ -86,14 +86,32 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       // Check if there's a pending negotiation that needs acceptance/decline
       const lastMessage = messagesData?.[messagesData.length - 1];
-      if (lastMessage && 
+      const hasPendingNegotiation = lastMessage && 
           lastMessage.sender.email !== user?.email && 
-          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
-          !showAcceptDecline) { // Only show if not already showing
-        setPendingNegotiation(lastMessage);
+          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms);
+      
+      const hasPendingStatus = proposal?.negotiation_status === 'client_acceptance_required' || 
+                              proposal?.negotiation_status === 'negotiating';
+      
+      if ((hasPendingNegotiation || hasPendingStatus) && !showAcceptDecline) {
+        // If there's a pending negotiation message, use that
+        if (hasPendingNegotiation) {
+          setPendingNegotiation(lastMessage);
+        } else {
+          // If there's a pending status but no recent message with changes, create a placeholder
+          setPendingNegotiation({
+            id: 'pending',
+            sender: { first_name: 'System', last_name: '', email: 'system' },
+            message: 'Pending negotiation changes',
+            counter_offer: undefined,
+            counter_terms: undefined,
+            counter_payment_terms: proposal?.negotiated_payment_terms || undefined,
+            created_at: new Date().toISOString()
+          });
+        }
         setShowAcceptDecline(true);
-      } else if (!lastMessage || lastMessage.sender.email === user?.email) {
-        // Hide accept/decline if no pending negotiation or if last message is from current user
+      } else if (!hasPendingNegotiation && !hasPendingStatus) {
+        // Hide accept/decline if no pending negotiation
         setShowAcceptDecline(false);
         setPendingNegotiation(null);
       }
