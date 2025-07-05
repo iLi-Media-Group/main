@@ -56,6 +56,14 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
     }
   }, [isOpen, proposal]);
 
+  // Check for pending negotiations when proposal status changes
+  useEffect(() => {
+    if (isOpen && proposal && proposal.negotiation_status === 'client_acceptance_required') {
+      // Re-fetch to check for pending negotiations
+      fetchNegotiationHistory();
+    }
+  }, [proposal?.negotiation_status, isOpen]);
+
   const fetchNegotiationHistory = async () => {
     try {
       setLoading(true);
@@ -87,8 +95,9 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       // Check if there's a pending negotiation that needs acceptance/decline
       const lastMessage = messagesData?.[messagesData.length - 1];
       const hasPendingNegotiation = lastMessage && 
-          lastMessage.sender.email !== user?.email && 
-          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms);
+          user && lastMessage.sender.email !== user.email && 
+          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
+          proposal.negotiation_status === 'client_acceptance_required';
       
       // Debug logging
       console.log('Negotiation debug:', {
@@ -99,7 +108,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         counter_terms: lastMessage?.counter_terms,
         senderEmail: lastMessage?.sender?.email,
         userEmail: user?.email,
-        showAcceptDecline
+        showAcceptDecline,
+        proposalStatus: proposal.negotiation_status
       });
       
       // Only show acceptance dialog if there's a recent message with actual changes
@@ -284,7 +294,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         .from('proposal_negotiations')
         .insert({
           proposal_id: proposal.id,
-          sender_id: user.id,
+          sender_id: user!.id,
           message,
           counter_offer: counterOffer ? parseFloat(counterOffer) : null,
           counter_terms: counterTerms.trim() || null,
@@ -337,7 +347,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       if (selectedFile && negotiation) {
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${negotiation.id}-${Date.now()}.${fileExt}`;
-        const filePath = `${user.id}/${fileName}`;
+        const filePath = `${user!.id}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('proposal-files')
@@ -354,7 +364,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
           .from('proposal_files')
           .insert({
             proposal_id: proposal.id,
-            uploader_id: user.id,
+            uploader_id: user!.id,
             file_name: selectedFile.name,
             file_url: publicUrl,
             file_type: selectedFile.type,
@@ -373,7 +383,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         },
         body: JSON.stringify({
           proposalId: proposal.id,
-          senderId: user.id,
+          senderId: user!.id,
           message,
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
           counterPaymentTerms: counterPaymentTerms || null,
@@ -515,12 +525,12 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                   Counter Offer: ${msg.counter_offer.toFixed(2)}
                 </p>
               )}
-              {msg.counter_payment_terms && (
+              {msg.counter_payment_terms && !msg.message.includes(PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label || '') && (
                 <p className="text-green-400 font-semibold">
                   Counter Payment Terms: {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label}
                 </p>
               )}
-              {msg.counter_terms && (
+              {msg.counter_terms && !msg.message.includes(msg.counter_terms) && (
                 <p className="text-blue-400">
                   Proposed Terms: {msg.counter_terms}
                 </p>
