@@ -15,20 +15,28 @@ export function SiteBrandingProvider({ children }: { children: React.ReactNode }
     }
     
     // Safely fetch white label client info with error handling
-    supabase
-      .from('white_label_clients')
-      .select('display_name')
-      .eq('owner_id', user.id)
-      .single()
-      .then(({ data, error }) => {
+    const fetchWhiteLabelInfo = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('white_label_clients')
+          .select('display_name')
+          .eq('owner_id', user.id);
+        
         if (error) {
           // If table doesn't exist or other error, just set to null (default branding)
           console.warn('White label client fetch failed:', error.message);
           setSiteName(null);
         } else {
-          setSiteName(data?.display_name || null);
+          // Take the first white label client if multiple exist, or null if none exist
+          setSiteName(Array.isArray(data) && data.length > 0 ? data[0]?.display_name || null : null);
         }
-      });
+      } catch (err) {
+        console.warn('White label client fetch error:', err);
+        setSiteName(null);
+      }
+    };
+    
+    fetchWhiteLabelInfo();
   }, [user]);
 
   return (
