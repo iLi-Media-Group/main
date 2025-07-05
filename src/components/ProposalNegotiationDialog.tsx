@@ -90,8 +90,21 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
           lastMessage.sender.email !== user?.email && 
           (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms);
       
+      // Debug logging
+      console.log('Negotiation debug:', {
+        lastMessage,
+        hasPendingNegotiation,
+        counter_offer: lastMessage?.counter_offer,
+        counter_payment_terms: lastMessage?.counter_payment_terms,
+        counter_terms: lastMessage?.counter_terms,
+        senderEmail: lastMessage?.sender?.email,
+        userEmail: user?.email,
+        showAcceptDecline
+      });
+      
       // Only show acceptance dialog if there's a recent message with actual changes
       if (hasPendingNegotiation && !showAcceptDecline) {
+        console.log('Showing acceptance dialog for:', lastMessage);
         setPendingNegotiation(lastMessage);
         setShowAcceptDecline(true);
       } else if (!hasPendingNegotiation) {
@@ -450,7 +463,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 <p><span className="font-medium">New Amount:</span> ${pendingNegotiation.counter_offer.toFixed(2)}</p>
               )}
               {pendingNegotiation.counter_payment_terms && (
-                <p><span className="font-medium">New Payment Terms:</span> {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}</p>
+                <p><span className="font-medium">New Payment Terms:</span> <span className="text-green-400 font-semibold">{PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}</span></p>
               )}
               {pendingNegotiation.counter_terms && (
                 <p><span className="font-medium">Additional Terms:</span> {pendingNegotiation.counter_terms}</p>
@@ -503,8 +516,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 </p>
               )}
               {msg.counter_payment_terms && (
-                <p className="text-blue-400">
-                  Payment Terms: {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label}
+                <p className="text-green-400 font-semibold">
+                  Counter Payment Terms: {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label}
                 </p>
               )}
               {msg.counter_terms && (
