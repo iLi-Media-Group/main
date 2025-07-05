@@ -104,6 +104,42 @@ export function AdvancedAnalyticsDashboard() {
         selectedRange
       });
 
+      // First, let's check if there's ANY data in the tables without filters
+      console.log('Analytics Debug - Checking for any data in tables...');
+      
+      const { data: allSalesData, error: allSalesError } = await supabase
+        .from('sales')
+        .select('id, created_at, amount')
+        .limit(10);
+      
+      const { data: allSyncData, error: allSyncError } = await supabase
+        .from('sync_proposals')
+        .select('id, created_at, sync_fee, payment_status, status')
+        .limit(10);
+      
+      const { data: allCustomSyncData, error: allCustomSyncError } = await supabase
+        .from('custom_sync_requests')
+        .select('id, created_at, sync_fee, status')
+        .limit(10);
+
+      console.log('Analytics Debug - Raw table data:', {
+        sales: {
+          count: allSalesData?.length || 0,
+          sample: allSalesData?.slice(0, 3),
+          error: allSalesError
+        },
+        syncProposals: {
+          count: allSyncData?.length || 0,
+          sample: allSyncData?.slice(0, 3),
+          error: allSyncError
+        },
+        customSyncRequests: {
+          count: allCustomSyncData?.length || 0,
+          sample: allCustomSyncData?.slice(0, 3),
+          error: allCustomSyncError
+        }
+      });
+
       // Fetch track license sales
       const { data: trackSales, error: trackError } = await supabase
         .from('sales')
@@ -201,6 +237,12 @@ export function AdvancedAnalyticsDashboard() {
 
       // Process the data
       const processedData = processAnalyticsData(trackSales || [], syncProposals || [], customSyncRequests || []);
+      console.log('Analytics Debug - Processed Data:', {
+        revenueDataLength: processedData.revenueData.length,
+        licenseDataLength: processedData.licenseData.length,
+        topTracksLength: processedData.topTracks.length,
+        keyMetrics: processedData.keyMetrics
+      });
       setAnalyticsData(processedData);
 
     } catch (err: any) {
@@ -242,9 +284,18 @@ export function AdvancedAnalyticsDashboard() {
     const clientMap = new Map();
     allSales.forEach(sale => {
       const clientId = sale.buyer?.id || sale.preferred_producer?.id;
-      const clientName = sale.buyer ? 
-        `${sale.buyer.first_name} ${sale.buyer.last_name}` : 
-        `${sale.preferred_producer.first_name} ${sale.preferred_producer.last_name}`;
+      
+      // Add defensive checks for undefined buyer/preferred_producer
+      let clientName = 'Unknown Client';
+      if (sale.buyer && sale.buyer.first_name && sale.buyer.last_name) {
+        clientName = `${sale.buyer.first_name} ${sale.buyer.last_name}`;
+      } else if (sale.preferred_producer && sale.preferred_producer.first_name && sale.preferred_producer.last_name) {
+        clientName = `${sale.preferred_producer.first_name} ${sale.preferred_producer.last_name}`;
+      } else if (sale.buyer?.email) {
+        clientName = sale.buyer.email;
+      } else if (sale.preferred_producer?.email) {
+        clientName = sale.preferred_producer.email;
+      }
       
       if (!clientMap.has(clientId)) {
         clientMap.set(clientId, { name: clientName, licenses: 0, revenue: 0 });
@@ -261,10 +312,16 @@ export function AdvancedAnalyticsDashboard() {
     // Top tracks
     const trackMap = new Map();
     trackSales.forEach(sale => {
+      // Add defensive check for track data
+      if (!sale.track || !sale.track.id) {
+        console.warn('Analytics Debug - Skipping sale with missing track data:', sale);
+        return;
+      }
+      
       const trackId = sale.track.id;
       if (!trackMap.has(trackId)) {
         trackMap.set(trackId, {
-          title: sale.track.title,
+          title: sale.track.title || 'Unknown Track',
           plays: 0, // We don't have play data yet
           licenses: 0,
           revenue: 0
@@ -282,14 +339,19 @@ export function AdvancedAnalyticsDashboard() {
     // Genre distribution
     const genreMap = new Map();
     const allTracks = [
-      ...trackSales.map(sale => sale.track),
-      ...syncProposals.map(proposal => proposal.track)
+      ...trackSales.map(sale => sale.track).filter(track => track), // Filter out undefined tracks
+      ...syncProposals.map(proposal => proposal.track).filter(track => track) // Filter out undefined tracks
     ];
 
     allTracks.forEach(track => {
-      track.genres?.forEach((genre: string) => {
-        genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
-      });
+      // Add defensive check for genres
+      if (track.genres && Array.isArray(track.genres)) {
+        track.genres.forEach((genre: string) => {
+          if (genre && typeof genre === 'string') {
+            genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
+          }
+        });
+      }
     });
 
     const genreData = Array.from(genreMap.entries()).map(([name, value], index) => ({
@@ -443,6 +505,22 @@ export function AdvancedAnalyticsDashboard() {
           <p className="text-gray-400 text-sm mt-6">
             The dashboard will automatically populate with charts, metrics, and insights as your business grows.
           </p>
+          
+          {/* Debug Section */}
+          <div className="mt-8 bg-yellow-500/10 backdrop-blur-sm p-4 rounded-xl border border-yellow-500/20 text-left">
+            <h3 className="text-lg font-semibold text-yellow-400 mb-2">Debug Information</h3>
+            <p className="text-yellow-300 text-sm mb-2">
+              Check the browser console for detailed debug logs about data fetching.
+            </p>
+            <p className="text-yellow-300 text-sm">
+              If you have sales activity but see this message, the issue might be:
+            </p>
+            <ul className="text-yellow-300 text-sm mt-2 space-y-1">
+              <li>• Date range filtering (try changing the time period)</li>
+              <li>• Data structure issues (check console for errors)</li>
+              <li>• Permission issues (ensure you have admin access)</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
