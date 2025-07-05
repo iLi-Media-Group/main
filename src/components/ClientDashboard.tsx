@@ -449,8 +449,6 @@ export function ClientDashboard() {
           payment_terms,
           final_amount,
           negotiated_amount,
-          final_payment_terms,
-          negotiated_payment_terms,
           expiration_date,
           is_urgent,
           status,
