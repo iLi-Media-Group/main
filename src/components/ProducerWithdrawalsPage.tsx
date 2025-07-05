@@ -10,10 +10,8 @@ interface Withdrawal {
   status: 'pending' | 'completed' | 'rejected';
   created_at: string;
   updated_at: string;
-  payment_method: {
-    account_type: 'bank' | 'paypal' | 'crypto';
-    account_details: any;
-  };
+  payment_method_type?: string;
+  payment_details?: any;
 }
 
 export function ProducerWithdrawalsPage() {
@@ -35,10 +33,7 @@ export function ProducerWithdrawalsPage() {
 
       const { data, error } = await supabase
         .from('producer_withdrawals')
-        .select(`
-          *,
-          payment_method:producer_payment_methods(*)
-        `)
+        .select('*')
         .eq('withdrawal_producer_id', user?.id)
         .order('created_at', { ascending: false });
 
@@ -80,15 +75,14 @@ export function ProducerWithdrawalsPage() {
   };
 
   const getPaymentMethodLabel = (withdrawal: Withdrawal) => {
-    if (!withdrawal.payment_method) return 'Unknown';
+    if (!withdrawal.payment_method_type) return 'Unknown';
     
-    const method = withdrawal.payment_method;
-    if (method.account_type === 'bank') {
-      return `${method.account_details.bank_name} (****${method.account_details.account_number.slice(-4)})`;
-    } else if (method.account_type === 'paypal') {
-      return `PayPal (${method.account_details.paypal_email})`;
-    } else if (method.account_type === 'crypto') {
-      return `${method.account_details.crypto_type} (${method.account_details.crypto_address.slice(0, 6)}...${method.account_details.crypto_address.slice(-4)})`;
+    if (withdrawal.payment_method_type === 'bank') {
+      return `Bank Transfer`;
+    } else if (withdrawal.payment_method_type === 'paypal') {
+      return `PayPal`;
+    } else if (withdrawal.payment_method_type === 'crypto') {
+      return `Crypto`;
     }
     return 'Unknown';
   };

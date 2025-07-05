@@ -25,7 +25,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [country, setCountry] = useState('');
   const [ipiNumber, setIpiNumber] = useState('');
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
-  const [usdcAddress, setUsdcAddress] = useState('');
+
   const [ein, setEin] = useState('');
   const [businessStructure, setBusinessStructure] = useState('');
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setCountry(data.country || '');
         setIpiNumber(data.ipi_number || '');
         setPerformingRightsOrg(data.performing_rights_org || '');
-        setUsdcAddress(data.usdc_address || '');
+
         setEin(data.ein || '');
         setBusinessStructure(data.business_structure || '');
         setBio(data.bio || '');
@@ -110,7 +110,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           country: country.trim() || null,
           ipi_number: ipiNumber.trim() || null,
           performing_rights_org: performingRightsOrg.trim() || null,
-          usdc_address: usdcAddress.trim() || null,
+
           ein: ein.trim() || null,
           business_structure: businessStructure || null,
           bio: bio.trim() || null,
@@ -365,24 +365,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                USDC Wallet Address
-              </label>
-              <div className="relative">
-                <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={usdcAddress}
-                  onChange={(e) => setUsdcAddress(e.target.value)}
-                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  placeholder="Enter your USDC wallet address (Solana or Polygon)"
-                />
-              </div>
-              <p className="mt-1 text-xs text-gray-400">
-                This address will be used for USDC payouts. We support both Solana and Polygon networks.
-              </p>
-            </div>
+
 
             <div>
               <h3 className="text-lg font-medium text-white">Address Information</h3>
