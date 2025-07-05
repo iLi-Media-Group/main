@@ -87,7 +87,8 @@ export function SyncProposalAcceptDialog({
           amount: Math.round(proposal.sync_fee * 100), // Convert to cents
           description: `Sync license for "${proposal.track.title}"`,
           payment_terms: proposal.payment_terms || 'immediate'
-        }
+        },
+        `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
       );
 
       // Redirect to checkout

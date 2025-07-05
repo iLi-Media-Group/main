@@ -36,6 +36,7 @@ import { ChatSystem } from './components/ChatSystem';
 import { ProducerBankingPage } from './components/ProducerBankingPage';
 import { AdminBankingPage } from './components/AdminBankingPage';
 import { CheckoutSuccessPage } from './components/CheckoutSuccessPage';
+import { SyncProposalSuccessPage } from './components/SyncProposalSuccessPage';
 import { ProducerPayoutsPage } from './components/ProducerPayoutsPage';
 import { ProducerWithdrawalsPage } from './components/ProducerWithdrawalsPage';
 import { TrackPage } from './components/TrackPage';
@@ -201,6 +202,7 @@ const App = () => {
         <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
         <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
         <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
+        <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />

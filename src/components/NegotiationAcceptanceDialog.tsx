@@ -110,7 +110,10 @@ export function NegotiationAcceptanceDialog({
                 : `Custom sync: "${proposal.project_title}"`,
               payment_terms: finalPaymentTerms,
               is_sync_proposal: isSyncProposal
-            }
+            },
+            isSyncProposal 
+              ? `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
+              : undefined
           );
           window.location.href = checkoutUrl;
         } else {
@@ -181,8 +184,9 @@ export function NegotiationAcceptanceDialog({
   const createCheckoutSession = async (
     priceId: string,
     mode: 'payment' | 'subscription',
-    successUrl?: string,
-    metadata?: any
+    trackId?: string,
+    customData?: any,
+    customSuccessUrl?: string
   ) => {
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
       method: 'POST',
@@ -193,9 +197,9 @@ export function NegotiationAcceptanceDialog({
       body: JSON.stringify({
         price_id: priceId,
         mode,
-        success_url: successUrl || `${window.location.origin}/dashboard`,
+        success_url: customSuccessUrl || `${window.location.origin}/dashboard`,
         cancel_url: `${window.location.origin}/dashboard`,
-        metadata
+        metadata: customData
       })
     });
 

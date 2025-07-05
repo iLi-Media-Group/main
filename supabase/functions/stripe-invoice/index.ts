@@ -146,7 +146,7 @@ serve(async (req) => {
           },
         ],
         mode: 'payment',
-        success_url: `${baseSiteUrl}/dashboard?payment=success`,
+        success_url: `${baseSiteUrl}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseSiteUrl}/dashboard?payment=cancel`,
         metadata: {
           proposal_id,

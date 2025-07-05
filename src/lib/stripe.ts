@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-export async function createCheckoutSession(priceId: string, mode: 'payment' | 'subscription', trackId?: string, customData?: any) {
+export async function createCheckoutSession(priceId: string, mode: 'payment' | 'subscription', trackId?: string, customData?: any, customSuccessUrl?: string) {
   try {
     // Get the current session - this implicitly handles refresh
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -24,7 +24,7 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
       },
       body: JSON.stringify({
         price_id: priceId,
-        success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: customSuccessUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${window.location.origin}/pricing`,
         mode,
         metadata: checkoutMetadata,
