@@ -347,8 +347,8 @@ export function RevenueBreakdownDialog({
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 backdrop-blur-md rounded-xl border border-purple-500/20 w-full max-w-6xl max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b border-purple-500/20">
+      <div className="bg-blue-900/90 backdrop-blur-md rounded-xl border border-purple-500/20 w-full max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="p-6 border-b border-purple-500/20 flex-shrink-0">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center">
               <DollarSign className="w-6 h-6 text-green-500 mr-2" />
@@ -382,18 +382,19 @@ export function RevenueBreakdownDialog({
           </div>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-            <p className="text-red-400 text-center">{error}</p>
-          </div>
-        )}
+        <div className="flex-1 overflow-y-auto p-6">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-center">{error}</p>
+            </div>
+          )}
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
-          </div>
-        ) : (
-          <div className="space-y-8">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+            </div>
+          ) : (
+            <div className="space-y-8">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-semibold text-white">Total Revenue</h3>
               <button
@@ -540,6 +541,7 @@ export function RevenueBreakdownDialog({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

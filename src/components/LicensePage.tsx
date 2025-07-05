@@ -62,15 +62,15 @@ export function LicensePage() {
       
       if (trackData) {
         // Convert comma-separated strings to arrays
-        const genres = trackData.genres ? trackData.genres.split(',').map(g => g.trim()) : [];
-        const moods = trackData.moods ? trackData.moods.split(',').map(m => m.trim()) : [];
-        const subGenres = trackData.sub_genres ? trackData.sub_genres.split(',').map(g => g.trim()) : [];
+        const genres = trackData.genres ? (typeof trackData.genres === 'string' ? trackData.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(trackData.genres) ? trackData.genres : [])) : [];
+        const moods = trackData.moods ? (typeof trackData.moods === 'string' ? trackData.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(trackData.moods) ? trackData.moods : [])) : [];
+        const subGenres = trackData.sub_genres ? (typeof trackData.sub_genres === 'string' ? trackData.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(trackData.sub_genres) ? trackData.sub_genres : [])) : [];
 
         // Map the database fields to the Track interface
         const mappedTrack: Track = {
           id: trackData.id,
           title: trackData.title,
-          genre: genres,
+          genres: genres,
           subGenres: subGenres,
           artist: trackData.producer ? `${trackData.producer.first_name} ${trackData.producer.last_name}`.trim() : 'Unknown Artist',
           audioUrl: trackData.audio_url || '',
@@ -82,10 +82,10 @@ export function LicensePage() {
           hasVocals: trackData.has_vocals || false,
           vocalsUsageType: trackData.vocals_usage_type || 'normal',
           isOneStop: trackData.is_one_stop || false,
-          hasSting: trackData.has_sting_ending || false,
-          trackProducerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
-          fileFormats: [], // Default empty array for file formats
-          pricing: [], // Default empty array for pricing
+          hasStingEnding: trackData.has_sting_ending || false,
+          producerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
+          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } }, // Default empty object for file formats
+          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 }, // Default empty object for pricing
           leaseAgreementUrl: '', // Default empty string for lease agreement URL
         };
         
@@ -94,7 +94,7 @@ export function LicensePage() {
 
       // Calculate remaining licenses for Gold Access
       let remainingLicenses = 0;
-      if (membershipPlan === 'Gold Access') {
+      if (membershipPlan === 'Gold Access' && user) {
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -175,13 +175,13 @@ export function LicensePage() {
               <p className="text-gray-400 mb-4">{track.artist}</p>
 
               <div className="mb-6">
-                <AudioPlayer url={track.audioUrl} title={track.title} />
+                <AudioPlayer src={track.audioUrl} title={track.title} />
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center text-gray-300">
                   <Music className="w-5 h-5 mr-2" />
-                  <span>{track.genre.join(', ')}</span>
+                  <span>{track.genres.join(', ')}</span>
                 </div>
                 <div className="flex items-center text-gray-300">
                   <Shield className="w-5 h-5 mr-2" />

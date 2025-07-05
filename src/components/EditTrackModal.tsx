@@ -24,15 +24,15 @@ interface EditTrackModalProps {
 export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackModalProps) {
   const normalizeGenre = (genre: string) => genre.toLowerCase().replace(/\s+/g, '');
 
-  const initialGenres = (track.genres || []).filter(genre =>
+  const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
     GENRES.some(g => normalizeGenre(g) === normalizeGenre(genre))
   ).map(genre => {
     return GENRES.find(g => normalizeGenre(g) === normalizeGenre(genre)) || genre;
   });
 
   const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
-  const [selectedMoods, setSelectedMoods] = useState<string[]>(track.moods || []);
-  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>(track.mediaUsage || []);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>(Array.isArray(track.moods) ? track.moods : []);
+  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
   const [hasVocals, setHasVocals] = useState(track.hasVocals || false);
   const [isSyncOnly, setIsSyncOnly] = useState(track.vocalsUsageType === 'sync_only');
   const [loading, setLoading] = useState(false);
@@ -139,7 +139,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               <div>
                 <span className="text-gray-400 text-sm">Current Genres:</span>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {(initialGenres || []).map(genre => (
+                  {(Array.isArray(initialGenres) ? initialGenres : []).map(genre => (
                     <span key={genre} className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded">
                       {genre}
                     </span>
@@ -149,7 +149,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               <div>
                 <span className="text-gray-400 text-sm">Current Moods:</span>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {(track.moods || []).map(mood => (
+                  {(Array.isArray(track.moods) ? track.moods : []).map(mood => (
                     <span key={mood} className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded">
                       {mood}
                     </span>
