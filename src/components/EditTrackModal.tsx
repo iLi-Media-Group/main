@@ -132,33 +132,6 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Current Values Display */}
-          <div className="bg-white/5 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-white mb-3">Current Values</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-gray-400 text-sm">Current Genres:</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {(Array.isArray(initialGenres) ? initialGenres : []).map(genre => (
-                    <span key={genre} className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded">
-                      {genre}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-400 text-sm">Current Moods:</span>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {(Array.isArray(track.moods) ? track.moods : []).map(mood => (
-                    <span key={mood} className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded">
-                      {mood}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Genres */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-4">
@@ -250,17 +223,21 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                               {types.map((type: string) => {
                                 const fullType = `${category} > ${subcategory} > ${type}`;
+                                const selected = selectedMediaUsage.includes(fullType);
                                 return (
-                                  <label key={fullType} className="flex items-center space-x-2">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedMediaUsage.includes(fullType)}
-                                      onChange={(e) => handleMediaUsageChange(fullType, e.target.checked)}
-                                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                      disabled={loading}
-                                    />
-                                    <span className="text-gray-300 text-sm">{type}</span>
-                                  </label>
+                                  <button
+                                    key={fullType}
+                                    type="button"
+                                    onClick={() => handleMediaUsageChange(fullType, !selected)}
+                                    className={`px-3 py-2 rounded-lg border font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400
+                                      ${selected
+                                        ? 'bg-green-600 text-white border-green-700 shadow-md'
+                                        : 'bg-transparent text-green-500 border-green-500 hover:bg-green-50 hover:text-green-700'}
+                                    `}
+                                    disabled={loading}
+                                  >
+                                    {type}
+                                  </button>
                                 );
                               })}
                             </div>
