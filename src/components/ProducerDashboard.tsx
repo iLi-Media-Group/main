@@ -466,6 +466,11 @@ export function ProducerDashboard() {
     p.producer_status === 'rejected' || p.client_status === 'rejected'
   );
 
+  // Limit proposals to 5 for display with scrolling
+  const displayPendingProposals = filteredPendingProposals.slice(0, 5);
+  const displayAcceptedProposals = filteredAcceptedProposals.slice(0, 5);
+  const displayDeclinedProposals = filteredDeclinedProposals.slice(0, 5);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -723,74 +728,81 @@ export function ProducerDashboard() {
               </div>
 
               {/* Tab Content */}
-              <div className="space-y-4">
+              <div className="space-y-4 max-h-96 overflow-y-auto">
                 {proposalsTab === 'pending' && (
                   filteredPendingProposals.length === 0 ? (
                     <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                       <p className="text-gray-400">No pending or active proposals</p>
                     </div>
                   ) : (
-                    filteredPendingProposals.map((proposal) => (
-                      <div
-                        key={proposal.id}
-                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
-                      >
-                        {/* Notification Badge */}
-                        {user && hasPendingAction(proposal, user.id) && (
-                          <span className="absolute top-2 right-2 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
-                          </span>
-                        )}
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
-                            <p className="text-sm text-gray-400">
-                              From: {proposal.client.first_name} {proposal.client.last_name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              Status: {proposal.status} {proposal.producer_status && `(${proposal.producer_status})`}
-                            </p>
+                    <>
+                      {displayPendingProposals.map((proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
+                        >
+                          {/* Notification Badge */}
+                          {user && hasPendingAction(proposal, user.id) && (
+                            <span className="absolute top-2 right-2 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                            </span>
+                          )}
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                              <p className="text-sm text-gray-400">
+                                From: {proposal.client.first_name} {proposal.client.last_name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Status: {proposal.status} {proposal.producer_status && `(${proposal.producer_status})`}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                              <p className="text-xs text-gray-400">
+                                Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
-                            <p className="text-xs text-gray-400">
-                              Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
-                            </p>
+                          <div className="flex space-x-2 mt-2">
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'history')}
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                            >
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              History
+                            </button>
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'negotiate')}
+                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                            >
+                              <MessageSquare className="w-3 h-3 inline mr-1" />
+                              Negotiate
+                            </button>
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'accept')}
+                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                            >
+                              <Check className="w-3 h-3 inline mr-1" />
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'reject')}
+                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                            >
+                              <X className="w-3 h-3 inline mr-1" />
+                              Decline
+                            </button>
                           </div>
                         </div>
-                        <div className="flex space-x-2 mt-2">
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'history')}
-                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                          >
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            History
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'negotiate')}
-                            className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                          >
-                            <MessageSquare className="w-3 h-3 inline mr-1" />
-                            Negotiate
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'accept')}
-                            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                          >
-                            <Check className="w-3 h-3 inline mr-1" />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleProposalAction(proposal, 'reject')}
-                            className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                          >
-                            <X className="w-3 h-3 inline mr-1" />
-                            Decline
-                          </button>
+                      ))}
+                      {filteredPendingProposals.length > 5 && (
+                        <div className="text-center py-2 text-gray-400 text-sm">
+                          Showing 5 of {filteredPendingProposals.length} proposals
                         </div>
-                      </div>
-                    ))
+                      )}
+                    </>
                   )
                 )}
 
@@ -800,7 +812,8 @@ export function ProducerDashboard() {
                       <p className="text-gray-400">No accepted proposals</p>
                     </div>
                   ) : (
-                    filteredAcceptedProposals.map((proposal) => (
+                    <>
+                      {displayAcceptedProposals.map((proposal) => (
                       <div
                         key={proposal.id}
                         className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
@@ -832,7 +845,13 @@ export function ProducerDashboard() {
                           </button>
                         </div>
                       </div>
-                    ))
+                      ))}
+                      {filteredAcceptedProposals.length > 5 && (
+                        <div className="text-center py-2 text-gray-400 text-sm">
+                          Showing 5 of {filteredAcceptedProposals.length} proposals
+                        </div>
+                      )}
+                    </>
                   )
                 )}
 
@@ -842,7 +861,8 @@ export function ProducerDashboard() {
                       <p className="text-gray-400">No declined proposals</p>
                     </div>
                   ) : (
-                    filteredDeclinedProposals.map((proposal) => (
+                    <>
+                      {displayDeclinedProposals.map((proposal) => (
                       <div
                         key={proposal.id}
                         className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
@@ -874,7 +894,13 @@ export function ProducerDashboard() {
                           </button>
                         </div>
                       </div>
-                    ))
+                      ))}
+                      {filteredDeclinedProposals.length > 5 && (
+                        <div className="text-center py-2 text-gray-400 text-sm">
+                          Showing 5 of {filteredDeclinedProposals.length} proposals
+                        </div>
+                      )}
+                    </>
                   )
                 )}
               </div>

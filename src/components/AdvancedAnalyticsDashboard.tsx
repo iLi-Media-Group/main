@@ -343,6 +343,18 @@ export function AdvancedAnalyticsDashboard() {
       ...syncProposals.map(proposal => proposal.track).filter(track => track) // Filter out undefined tracks
     ];
 
+    console.log('Analytics Debug - Genre Distribution:', {
+      totalTracks: allTracks.length,
+      trackSalesCount: trackSales.length,
+      syncProposalsCount: syncProposals.length,
+      sampleTracks: allTracks.slice(0, 3).map(track => ({
+        title: track.title,
+        genres: track.genres,
+        genresType: typeof track.genres,
+        isArray: Array.isArray(track.genres)
+      }))
+    });
+
     allTracks.forEach(track => {
       // Add defensive check for genres
       if (track.genres && Array.isArray(track.genres)) {
@@ -351,7 +363,20 @@ export function AdvancedAnalyticsDashboard() {
             genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
           }
         });
+      } else if (track.genres && typeof track.genres === 'string') {
+        // Handle case where genres is a comma-separated string
+        const genres = track.genres.split(',').map((g: string) => g.trim()).filter((g: string) => g);
+        genres.forEach((genre: string) => {
+          if (genre && typeof genre === 'string') {
+            genreMap.set(genre, (genreMap.get(genre) || 0) + 1);
+          }
+        });
       }
+    });
+
+    console.log('Analytics Debug - Genre Map:', {
+      genreMapSize: genreMap.size,
+      genreEntries: Array.from(genreMap.entries())
     });
 
     const genreData = Array.from(genreMap.entries()).map(([name, value], index) => ({
@@ -359,6 +384,8 @@ export function AdvancedAnalyticsDashboard() {
       value,
       color: COLORS[index % COLORS.length]
     }));
+
+    console.log('Analytics Debug - Final Genre Data:', genreData);
 
     // Churn risk analysis (simplified - based on last activity)
     const churnData = Array.from(clientMap.values()).map(client => ({
@@ -703,31 +730,43 @@ export function AdvancedAnalyticsDashboard() {
                 <BarChart3 className="w-5 h-5 text-yellow-400" />
                 Genre Distribution
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={analyticsData.genreData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {analyticsData.genreData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {analyticsData.genreData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={analyticsData.genreData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {analyticsData.genreData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-center">
+                  <div>
+                    <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-2">No genre data available</p>
+                    <p className="text-sm text-gray-500">
+                      Genre distribution will appear when tracks with genre information are sold or licensed.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
