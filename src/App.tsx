@@ -205,7 +205,7 @@ const App = () => {
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
-        <Route path="/producers" element={<LayoutWrapper><ProducerLandingPage /></LayoutWrapper>} />
+        <Route path="/producers" element={<ProducerLandingPage />} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
         <Route path="/admin/white-label-clients" element={<AdminWhiteLabelClientsPage />} />

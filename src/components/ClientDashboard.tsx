@@ -99,13 +99,12 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
 
 // Add a helper to determine if a proposal has a pending action
 function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
-  // Show badge if proposal has a recent message from someone else
+  // Show badge if proposal has a message from someone else that hasn't been responded to
   return !!(
     proposal.status === 'pending' && 
     proposal.last_message_sender_id && 
     proposal.last_message_sender_id !== userId &&
-    proposal.last_message_at && 
-    new Date(proposal.last_message_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+    proposal.last_message_at
   );
 }
 

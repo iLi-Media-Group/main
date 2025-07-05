@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, DollarSign, Clock, Upload, AlertTriangle } from 'lucide-react';
+import { X, Send, Clock, DollarSign, Check, X as XIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -20,34 +20,50 @@ interface NegotiationMessage {
   message: string;
   counter_offer?: number;
   counter_terms?: string;
+  counter_payment_terms?: string;
   created_at: string;
 }
 
+const PAYMENT_TERMS_OPTIONS = [
+  { value: 'immediate', label: 'Immediate' },
+  { value: 'net30', label: 'Net 30' },
+  { value: 'net60', label: 'Net 60' },
+  { value: 'net90', label: 'Net 90' }
+];
+
 export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotiationSent }: ProposalNegotiationDialogProps) {
   const { user } = useAuth();
+  const [messages, setMessages] = useState<NegotiationMessage[]>([]);
   const [message, setMessage] = useState('');
   const [counterOffer, setCounterOffer] = useState('');
   const [counterTerms, setCounterTerms] = useState('');
+  const [counterPaymentTerms, setCounterPaymentTerms] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [messages, setMessages] = useState<NegotiationMessage[]>([]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [showAcceptDecline, setShowAcceptDecline] = useState(false);
+  const [pendingNegotiation, setPendingNegotiation] = useState<NegotiationMessage | null>(null);
 
   useEffect(() => {
-    if (isOpen && proposal?.id) {
+    if (isOpen && proposal) {
       fetchNegotiationHistory();
     }
-  }, [isOpen, proposal?.id]);
+  }, [isOpen, proposal]);
 
   const fetchNegotiationHistory = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      setError('');
+
+      // Fetch negotiation messages
+      const { data: messagesData, error: messagesError } = await supabase
         .from('proposal_negotiations')
         .select(`
           id,
           message,
           counter_offer,
           counter_terms,
+          counter_payment_terms,
           created_at,
           sender:profiles!sender_id (
             first_name,
@@ -58,26 +74,119 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         .eq('proposal_id', proposal.id)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      if (data) setMessages(data);
+      if (messagesError) throw messagesError;
+
+      setMessages(messagesData || []);
+
+      // Check if there's a pending negotiation that needs acceptance/decline
+      const lastMessage = messagesData?.[messagesData.length - 1];
+      if (lastMessage && 
+          lastMessage.sender.email !== user?.email && 
+          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms)) {
+        setPendingNegotiation(lastMessage);
+        setShowAcceptDecline(true);
+      }
     } catch (err) {
-      console.error('Error fetching negotiation history:', err);
+      console.error('Error fetching negotiation messages:', err);
       setError('Failed to load negotiation history');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
-      return;
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('File size must be less than 10MB');
+        return;
+      }
+      setSelectedFile(file);
+      setError('');
     }
+  };
 
-    setSelectedFile(file);
-    setError('');
+  const handleAcceptNegotiation = async () => {
+    if (!pendingNegotiation || !user) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Update the proposal with the accepted terms
+      const updates: any = {
+        negotiation_status: 'accepted',
+        client_accepted_at: new Date().toISOString()
+      };
+
+      if (pendingNegotiation.counter_offer) {
+        updates.negotiated_amount = pendingNegotiation.counter_offer;
+        updates.final_amount = pendingNegotiation.counter_offer;
+      }
+
+      if (pendingNegotiation.counter_payment_terms) {
+        updates.negotiated_payment_terms = pendingNegotiation.counter_payment_terms;
+        updates.final_payment_terms = pendingNegotiation.counter_payment_terms;
+      }
+
+      const { error: updateError } = await supabase
+        .from('sync_proposals')
+        .update(updates)
+        .eq('id', proposal.id);
+
+      if (updateError) throw updateError;
+
+      // Add acceptance message
+      const { error: messageError } = await supabase
+        .from('proposal_negotiations')
+        .insert({
+          proposal_id: proposal.id,
+          sender_id: user.id,
+          message: `Accepted the proposed changes: ${pendingNegotiation.counter_offer ? `Amount: $${pendingNegotiation.counter_offer}` : ''} ${pendingNegotiation.counter_payment_terms ? `Payment Terms: ${PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}` : ''}`.trim(),
+          counter_offer: pendingNegotiation.counter_offer,
+          counter_payment_terms: pendingNegotiation.counter_payment_terms
+        });
+
+      if (messageError) throw messageError;
+
+      setShowAcceptDecline(false);
+      setPendingNegotiation(null);
+      onNegotiationSent();
+    } catch (err) {
+      console.error('Error accepting negotiation:', err);
+      setError('Failed to accept negotiation');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineNegotiation = async () => {
+    if (!pendingNegotiation || !user) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      // Add decline message
+      const { error: messageError } = await supabase
+        .from('proposal_negotiations')
+        .insert({
+          proposal_id: proposal.id,
+          sender_id: user.id,
+          message: `Declined the proposed changes: ${pendingNegotiation.counter_offer ? `Amount: $${pendingNegotiation.counter_offer}` : ''} ${pendingNegotiation.counter_payment_terms ? `Payment Terms: ${PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}` : ''}`.trim()
+        });
+
+      if (messageError) throw messageError;
+
+      setShowAcceptDecline(false);
+      setPendingNegotiation(null);
+      onNegotiationSent();
+    } catch (err) {
+      console.error('Error declining negotiation:', err);
+      setError('Failed to decline negotiation');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,7 +213,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           sender_id: user.id,
           message,
           counter_offer: counterOffer ? parseFloat(counterOffer) : null,
-          counter_terms: counterTerms.trim() || null
+          counter_terms: counterTerms.trim() || null,
+          counter_payment_terms: counterPaymentTerms || null
         })
         .select()
         .single();
@@ -154,6 +264,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           senderId: user.id,
           message,
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
+          counterPaymentTerms: counterPaymentTerms || null,
           recipientEmail: proposal.client.email
         })
       });
@@ -162,6 +273,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
       setMessage('');
       setCounterOffer('');
       setCounterTerms('');
+      setCounterPaymentTerms('');
       setSelectedFile(null);
 
       // Refresh messages - fetch the updated list instead of manually adding
@@ -211,6 +323,42 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           </div>
         )}
 
+        {/* Accept/Decline Negotiation Section */}
+        {showAcceptDecline && pendingNegotiation && (
+          <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex-shrink-0">
+            <h3 className="text-lg font-semibold text-yellow-400 mb-2">Review Proposed Changes</h3>
+            <div className="space-y-2 text-gray-300">
+              {pendingNegotiation.counter_offer && (
+                <p><span className="font-medium">New Amount:</span> ${pendingNegotiation.counter_offer.toFixed(2)}</p>
+              )}
+              {pendingNegotiation.counter_payment_terms && (
+                <p><span className="font-medium">New Payment Terms:</span> {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}</p>
+              )}
+              {pendingNegotiation.counter_terms && (
+                <p><span className="font-medium">Additional Terms:</span> {pendingNegotiation.counter_terms}</p>
+              )}
+            </div>
+            <div className="flex space-x-2 mt-4">
+              <button
+                onClick={handleAcceptNegotiation}
+                disabled={loading}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Accept Changes
+              </button>
+              <button
+                onClick={handleDeclineNegotiation}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
+              >
+                <XIcon className="w-4 h-4 mr-2" />
+                Decline Changes
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Scrollable Messages Area */}
         <div className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-0">
           {messages.map((msg) => (
@@ -234,6 +382,11 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
               {msg.counter_offer && (
                 <p className="text-green-400 font-semibold">
                   Counter Offer: ${msg.counter_offer.toFixed(2)}
+                </p>
+              )}
+              {msg.counter_payment_terms && (
+                <p className="text-blue-400">
+                  Payment Terms: {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label}
                 </p>
               )}
               {msg.counter_terms && (
@@ -261,7 +414,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Counter Offer (Optional)
@@ -282,14 +435,32 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Proposed Terms (Optional)
+                Payment Terms (Optional)
+              </label>
+              <select
+                value={counterPaymentTerms}
+                onChange={(e) => setCounterPaymentTerms(e.target.value)}
+                className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
+              >
+                <option value="">Select Payment Terms</option>
+                {PAYMENT_TERMS_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Additional Terms (Optional)
               </label>
               <input
                 type="text"
                 value={counterTerms}
                 onChange={(e) => setCounterTerms(e.target.value)}
                 className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
-                placeholder="e.g., Net 30, 2-year license"
+                placeholder="e.g., 2-year license"
               />
             </div>
           </div>
