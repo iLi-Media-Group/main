@@ -51,6 +51,11 @@ interface Proposal {
     id: string;
     title: string;
   };
+  final_amount?: number;
+  negotiated_amount?: number;
+  payment_terms?: string;
+  final_payment_terms?: string;
+  negotiated_payment_terms?: string;
 }
 
 // Add a helper to determine if a proposal has a pending action
@@ -225,6 +230,11 @@ export function ProducerDashboard() {
           client_id,
           project_type,
           sync_fee,
+          final_amount,
+          negotiated_amount,
+          payment_terms,
+          final_payment_terms,
+          negotiated_payment_terms,
           expiration_date,
           is_urgent,
           status,
@@ -232,6 +242,8 @@ export function ProducerDashboard() {
           updated_at,
           producer_status,
           client_status,
+          negotiation_status,
+          client_accepted_at,
           last_message_sender_id,
           last_message_at,
           client:profiles!client_id (
@@ -258,6 +270,11 @@ export function ProducerDashboard() {
           client_id,
           project_type,
           sync_fee,
+          final_amount,
+          negotiated_amount,
+          payment_terms,
+          final_payment_terms,
+          negotiated_payment_terms,
           expiration_date,
           is_urgent,
           status,
@@ -265,6 +282,8 @@ export function ProducerDashboard() {
           updated_at,
           producer_status,
           client_status,
+          negotiation_status,
+          client_accepted_at,
           last_message_sender_id,
           last_message_at,
           client:profiles!client_id (
@@ -734,7 +753,7 @@ export function ProducerDashboard() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
                             <p className="text-xs text-gray-400">
                               Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
                             </p>
@@ -797,7 +816,7 @@ export function ProducerDashboard() {
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
                             <p className="text-xs text-gray-400">
                               Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
                             </p>

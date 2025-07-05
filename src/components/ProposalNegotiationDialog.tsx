@@ -31,8 +31,9 @@ const PAYMENT_TERMS_OPTIONS = [
   { value: 'net90', label: 'Net 90' }
 ];
 
-export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotiationSent }: ProposalNegotiationDialogProps) {
+export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialProposal, onNegotiationSent }: ProposalNegotiationDialogProps) {
   const { user } = useAuth();
+  const [proposal, setProposal] = useState(initialProposal);
   const [messages, setMessages] = useState<NegotiationMessage[]>([]);
   const [message, setMessage] = useState('');
   const [counterOffer, setCounterOffer] = useState('');
@@ -43,6 +44,11 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
   const [error, setError] = useState('');
   const [showAcceptDecline, setShowAcceptDecline] = useState(false);
   const [pendingNegotiation, setPendingNegotiation] = useState<NegotiationMessage | null>(null);
+
+  // Update proposal when initialProposal changes
+  useEffect(() => {
+    setProposal(initialProposal);
+  }, [initialProposal]);
 
   useEffect(() => {
     if (isOpen && proposal) {
@@ -136,6 +142,10 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
         updates.payment_terms = pendingNegotiation.counter_payment_terms; // Update the payment_terms to show in UI
       }
 
+      // Also update the main status to reflect the acceptance
+      updates.status = 'accepted';
+      updates.client_status = 'accepted';
+
       const { error: updateError } = await supabase
         .from('sync_proposals')
         .update(updates)
@@ -146,12 +156,21 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
       // Update the local proposal object to reflect changes in UI
       if (pendingNegotiation.counter_offer) {
         proposal.sync_fee = pendingNegotiation.counter_offer;
+        proposal.final_amount = pendingNegotiation.counter_offer;
+        proposal.negotiated_amount = pendingNegotiation.counter_offer;
       }
       if (pendingNegotiation.counter_payment_terms) {
         proposal.payment_terms = pendingNegotiation.counter_payment_terms;
+        proposal.final_payment_terms = pendingNegotiation.counter_payment_terms;
+        proposal.negotiated_payment_terms = pendingNegotiation.counter_payment_terms;
       }
       proposal.negotiation_status = 'accepted';
+      proposal.status = 'accepted';
+      proposal.client_status = 'accepted';
       proposal.client_accepted_at = new Date().toISOString();
+
+      // Force re-render by updating state
+      setProposal({ ...proposal });
 
       // Add acceptance message
       const { error: messageError } = await supabase

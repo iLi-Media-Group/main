@@ -61,6 +61,20 @@ interface SyncProposal {
   last_message_at?: string;
   client_terms_accepted?: any;
   producer_terms_accepted?: any;
+  final_amount?: number;
+  negotiated_amount?: number;
+  final_payment_terms?: string;
+  negotiated_payment_terms?: string;
+  expiration_date: string;
+  is_urgent: boolean;
+  status: 'pending' | 'accepted' | 'declined';
+  client_status: 'pending' | 'accepted' | 'rejected';
+  producer_status: 'pending' | 'accepted' | 'rejected';
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  negotiation_status: 'open' | 'closed';
+  client_accepted_at?: string;
+  created_at: string;
+  updated_at: string;
   [key: string]: any;
 }
 interface SyncProposalHistoryMessage {
@@ -433,6 +447,10 @@ export function ClientDashboard() {
           is_exclusive,
           sync_fee,
           payment_terms,
+          final_amount,
+          negotiated_amount,
+          final_payment_terms,
+          negotiated_payment_terms,
           expiration_date,
           is_urgent,
           status,
@@ -440,6 +458,7 @@ export function ClientDashboard() {
           producer_status,
           payment_status,
           negotiation_status,
+          client_accepted_at,
           created_at,
           updated_at,
           last_message_sender_id,
@@ -902,7 +921,7 @@ export function ClientDashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
                         <p className="text-xs text-gray-400">
                           Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
                         </p>
@@ -963,7 +982,7 @@ export function ClientDashboard() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-green-400">${proposal.sync_fee.toFixed(2)}</p>
+                        <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
                         <p className="text-xs text-gray-400">
                           Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
                         </p>
