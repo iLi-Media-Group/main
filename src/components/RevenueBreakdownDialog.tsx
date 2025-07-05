@@ -405,10 +405,20 @@ export function RevenueBreakdownDialog({
         months[monthKey] = 0;
       }
       
+      // Debug logging
+      console.log('=== MONTHLY REVENUE DEBUG ===');
+      console.log('Timeframe:', timeframe);
+      console.log('Month count:', monthCount);
+      console.log('Initialized months:', months);
+      console.log('Sales data count:', salesData?.length || 0);
+      console.log('Sync proposals count:', syncProposalsData?.length || 0);
+      console.log('Custom sync count:', customSyncData?.length || 0);
+      
       // Add track sales to months
       salesData?.forEach(sale => {
         const date = new Date(sale.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        console.log(`Sale: ${date.toISOString()} -> ${monthKey}, amount: ${sale.amount}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += sale.amount || 0;
         }
@@ -418,6 +428,7 @@ export function RevenueBreakdownDialog({
       syncProposalsData?.forEach(proposal => {
         const date = new Date(proposal.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        console.log(`Sync proposal: ${date.toISOString()} -> ${monthKey}, amount: ${proposal.sync_fee}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += proposal.sync_fee || 0;
         }
@@ -427,10 +438,29 @@ export function RevenueBreakdownDialog({
       customSyncData?.forEach(req => {
         const date = new Date(req.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.sync_fee}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += req.sync_fee || 0;
         }
       });
+      
+      // Add pending payments to months (use expected payment date or acceptance date)
+      pendingPaymentsList.forEach(payment => {
+        let date: Date;
+        if (payment.expectedDate) {
+          date = new Date(payment.expectedDate);
+        } else {
+          // If no expected date, use current date for immediate payments
+          date = new Date();
+        }
+        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        console.log(`Pending payment: ${date.toISOString()} -> ${monthKey}, amount: ${payment.amount}`);
+        if (months[monthKey] !== undefined) {
+          months[monthKey] += payment.amount || 0;
+        }
+      });
+      
+      console.log('Final months data:', months);
       
       // Convert to array and sort by date
       const monthlyData = Object.entries(months)
@@ -440,6 +470,9 @@ export function RevenueBreakdownDialog({
           const dateB = new Date(b.month);
           return dateA.getTime() - dateB.getTime();
         });
+      
+      console.log('Monthly data array:', monthlyData);
+      console.log('=== END MONTHLY REVENUE DEBUG ===');
 
       setRevenueSources(sortedSources);
       setMonthlyRevenue(monthlyData);
@@ -687,8 +720,14 @@ export function RevenueBreakdownDialog({
                 </h3>
                 
                 <div className="h-64 relative">
-                  {monthlyRevenue.length === 0 ? (
-                    <p className="text-gray-400 text-center py-4">No monthly data available</p>
+                  {monthlyRevenue.length === 0 || monthlyRevenue.every(item => item.amount === 0) ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <Calendar className="w-12 h-12 text-gray-500 mb-2" />
+                      <p className="text-gray-400">No revenue data for this period</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Try selecting a different timeframe or check if you have any completed sales
+                      </p>
+                    </div>
                   ) : (
                     <>
                       <div className="flex h-full items-end space-x-1">
