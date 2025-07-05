@@ -97,7 +97,9 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       const hasPendingNegotiation = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
           (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
-          proposal.negotiation_status === 'client_acceptance_required';
+          (proposal.negotiation_status === 'client_acceptance_required' || 
+           proposal.negotiation_status === 'negotiating' ||
+           proposal.negotiation_status === 'pending');
       
       // Debug logging
       console.log('Negotiation debug:', {
@@ -109,15 +111,31 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         senderEmail: lastMessage?.sender?.email,
         userEmail: user?.email,
         showAcceptDecline,
-        proposalStatus: proposal.negotiation_status
+        proposalStatus: proposal.negotiation_status,
+        messagesCount: messagesData?.length,
+        isLastMessageFromOtherUser: lastMessage && user && lastMessage.sender.email !== user.email,
+        hasCounterOffer: lastMessage?.counter_offer || lastMessage?.counter_terms || lastMessage?.counter_payment_terms
       });
 
       if (hasPendingNegotiation) {
         setShowAcceptDecline(true);
         setPendingNegotiation(lastMessage);
       } else {
-        setShowAcceptDecline(false);
-        setPendingNegotiation(null);
+        // Fallback: if there's a counter offer from the other party and we haven't responded yet
+        const hasUnrespondedCounterOffer = lastMessage && 
+          user && lastMessage.sender.email !== user.email && 
+          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
+          proposal.negotiation_status !== 'accepted' &&
+          proposal.negotiation_status !== 'rejected';
+        
+        if (hasUnrespondedCounterOffer) {
+          console.log('Fallback: Showing accept/decline for unresponded counter offer');
+          setShowAcceptDecline(true);
+          setPendingNegotiation(lastMessage);
+        } else {
+          setShowAcceptDecline(false);
+          setPendingNegotiation(null);
+        }
       }
 
     } catch (err) {
