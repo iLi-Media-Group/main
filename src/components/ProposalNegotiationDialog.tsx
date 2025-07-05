@@ -123,9 +123,13 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                                lastMessage.message.toLowerCase().includes('offer')
                              ));
       
+      // Only show accept/decline for clients when there's a counter offer from producer
+      const isClient = user && proposal.client_id === user.id;
+      const isProducer = user && proposal.producer_id === user.id;
       const hasPendingNegotiation = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
           hasCounterOffer &&
+          isClient && // Only show for clients
           (proposal.negotiation_status === 'client_acceptance_required' || 
            proposal.negotiation_status === 'negotiating' ||
            proposal.negotiation_status === 'pending');
@@ -151,6 +155,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       } : 'No message');
       console.log('Sender email:', lastMessage?.sender?.email);
       console.log('User email:', user?.email);
+      console.log('User role - isClient:', isClient, 'isProducer:', isProducer);
+      console.log('Client ID:', proposal.client_id, 'Producer ID:', proposal.producer_id, 'User ID:', user?.id);
       console.log('Show accept/decline:', showAcceptDecline);
       console.log('Proposal status:', proposal.negotiation_status);
       console.log('Messages count:', messagesData?.length);
@@ -167,6 +173,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         // More aggressive fallback: if there's any message from the other party and we haven't responded yet
         const hasUnrespondedMessage = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
+          isClient && // Only show for clients
           proposal.negotiation_status !== 'accepted' &&
           proposal.negotiation_status !== 'rejected';
         
@@ -207,55 +214,48 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       setLoading(true);
       setError('');
 
-      // Update the proposal with the accepted terms
-      const updates: any = {
-        negotiation_status: 'accepted',
-        client_accepted_at: new Date().toISOString()
-      };
+      // First, update the negotiated terms in the proposal
+      const updates: any = {};
 
       if (pendingNegotiation.counter_offer) {
         updates.negotiated_amount = pendingNegotiation.counter_offer;
-        updates.final_amount = pendingNegotiation.counter_offer;
-        updates.sync_fee = pendingNegotiation.counter_offer; // Update the sync_fee to show in UI
       }
 
       // Use detected payment terms if database field is null
       const paymentTermsToUse = pendingNegotiation.counter_payment_terms || detectedPaymentTerms;
       if (paymentTermsToUse) {
         updates.negotiated_payment_terms = paymentTermsToUse;
-        updates.final_payment_terms = paymentTermsToUse;
-        updates.payment_terms = paymentTermsToUse; // Update the payment_terms to show in UI
       }
 
-      // Also update the main status to reflect the acceptance
-      updates.status = 'accepted';
-      updates.client_status = 'accepted';
+      // Update the proposal with negotiated terms first
+      if (Object.keys(updates).length > 0) {
+        const { error: updateError } = await supabase
+          .from('sync_proposals')
+          .update(updates)
+          .eq('id', proposal.id);
 
-      const { error: updateError } = await supabase
+        if (updateError) throw updateError;
+      }
+
+      // Use the database function to handle the acceptance properly
+      const { error: functionError } = await supabase.rpc('handle_negotiation_acceptance', {
+        proposal_id: proposal.id,
+        is_sync_proposal: true
+      });
+
+      if (functionError) throw functionError;
+
+      // Refresh the proposal data to get updated status
+      const { data: updatedProposal, error: fetchError } = await supabase
         .from('sync_proposals')
-        .update(updates)
-        .eq('id', proposal.id);
+        .select('*')
+        .eq('id', proposal.id)
+        .single();
 
-      if (updateError) throw updateError;
+      if (fetchError) throw fetchError;
 
-      // Update the local proposal object to reflect changes in UI
-      if (pendingNegotiation.counter_offer) {
-        proposal.sync_fee = pendingNegotiation.counter_offer;
-        proposal.final_amount = pendingNegotiation.counter_offer;
-        proposal.negotiated_amount = pendingNegotiation.counter_offer;
-      }
-      if (paymentTermsToUse) {
-        proposal.payment_terms = paymentTermsToUse;
-        proposal.final_payment_terms = paymentTermsToUse;
-        proposal.negotiated_payment_terms = paymentTermsToUse;
-      }
-      proposal.negotiation_status = 'accepted';
-      proposal.status = 'accepted';
-      proposal.client_status = 'accepted';
-      proposal.client_accepted_at = new Date().toISOString();
-
-      // Force re-render by updating state
-      setProposal({ ...proposal });
+      // Update local proposal state
+      setProposal(updatedProposal);
 
       // Add acceptance message
       const { error: messageError } = await supabase
@@ -288,18 +288,25 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       setLoading(true);
       setError('');
 
-      // Reset negotiation status to pending
-      const { error: statusError } = await supabase
-        .from('sync_proposals')
-        .update({
-          negotiation_status: 'pending',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', proposal.id);
+      // Use the database function to handle the rejection properly
+      const { error: functionError } = await supabase.rpc('handle_negotiation_rejection', {
+        proposal_id: proposal.id,
+        is_sync_proposal: true
+      });
 
-      if (statusError) {
-        console.error('Error resetting negotiation status:', statusError);
-      }
+      if (functionError) throw functionError;
+
+      // Refresh the proposal data to get updated status
+      const { data: updatedProposal, error: fetchError } = await supabase
+        .from('sync_proposals')
+        .select('*')
+        .eq('id', proposal.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update local proposal state
+      setProposal(updatedProposal);
 
       // Add decline message
       const { error: messageError } = await supabase
@@ -311,11 +318,6 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         });
 
       if (messageError) throw messageError;
-
-      // Update local proposal state
-      proposal.negotiation_status = 'pending';
-      proposal.updated_at = new Date().toISOString();
-      setProposal({ ...proposal });
 
       setShowAcceptDecline(false);
       setPendingNegotiation(null);
@@ -539,6 +541,12 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 <p><span className="font-medium">Additional Terms:</span> {pendingNegotiation.counter_terms}</p>
               )}
             </div>
+            <div className="mt-3 p-3 bg-blue-950/40 rounded-lg">
+              <p className="text-sm text-blue-300">
+                <strong>Next Steps:</strong> After you accept, the producer will need to confirm the terms. 
+                Once both parties agree, payment will be due according to the payment terms.
+              </p>
+            </div>
             <div className="flex space-x-2 mt-4">
               <button
                 onClick={handleAcceptNegotiation}
@@ -546,7 +554,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
               >
                 <Check className="w-4 h-4 mr-2" />
-                Accept Changes
+                Accept Terms
               </button>
               <button
                 onClick={handleDeclineNegotiation}
@@ -554,7 +562,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
               >
                 <XIcon className="w-4 h-4 mr-2" />
-                Decline Changes
+                Decline Terms
               </button>
             </div>
           </div>
