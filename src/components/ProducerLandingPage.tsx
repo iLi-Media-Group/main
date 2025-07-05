@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Music } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 const ProducerLandingPage = () => {
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'logo_url')
+        .single();
+
+      if (!error && data) {
+        setLogoUrl(data.value);
+      }
+    };
+
+    fetchLogo();
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section with Studio Background */}
@@ -19,17 +38,17 @@ const ProducerLandingPage = () => {
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
                 <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
-                  {/* You can replace this with an actual logo image */}
-                  <div className="h-full w-auto flex items-center justify-center">
-                    <Music className="w-full h-full text-blue-400" />
-                  </div>
-                  {/* Alternative: Use an actual logo image
-                  <img 
-                    src="/path-to-your-logo.png" 
-                    alt="MyBeatFi Sync" 
-                    className="h-full w-auto object-contain"
-                  />
-                  */}
+                  {logoUrl ? (
+                    <img 
+                      src={logoUrl} 
+                      alt="MyBeatFi Sync" 
+                      className="h-full w-auto object-contain"
+                    />
+                  ) : (
+                    <div className="h-full w-auto flex items-center justify-center">
+                      <Music className="w-full h-full text-blue-400" />
+                    </div>
+                  )}
                 </div>
                 <div className="ml-3 hidden sm:block">
                   <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
