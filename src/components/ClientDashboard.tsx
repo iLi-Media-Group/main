@@ -492,7 +492,7 @@ export function ClientDashboard() {
         .order('created_at', { ascending: false });
         
       if (error) {
-        console.error('Error fetching sync proposals:', error);
+        console.error('Error fetching sync proposals:', error, error.message, error.details, error.hint);
         return;
       }
       
@@ -1072,6 +1072,17 @@ export function ClientDashboard() {
                         <DollarSign className="w-4 h-4 mr-2" />
                         Complete Payment
                       </button>
+                      
+                      {proposal.license_url && (
+                        <button
+                          onClick={() => window.open(proposal.license_url, '_blank')}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Download License PDF"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          License
+                        </button>
+                      )}
  
                       <button
                         onClick={() => handleShowHistory(proposal)}
