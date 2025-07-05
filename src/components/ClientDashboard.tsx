@@ -502,6 +502,7 @@ export function ClientDashboard() {
           status: p.status,
           client_status: p.client_status,
           producer_status: p.producer_status,
+          payment_status: p.payment_status,
           negotiation_status: p.negotiation_status,
           track_title: p.track?.title
         })));
@@ -656,34 +657,22 @@ export function ClientDashboard() {
     }
   };
 
-  const handleManualPaymentComplete = async (proposal: SyncProposal) => {
-    try {
-      // Manually update the proposal to mark payment as complete
-      const { error } = await supabase
-        .from('sync_proposals')
-        .update({
-          payment_status: 'paid',
-          payment_date: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', proposal.id)
-        .eq('client_status', 'accepted')
-        .eq('producer_status', 'accepted');
-
-      if (error) {
-        console.error('Error manually completing payment:', error);
-        alert('Failed to update payment status. Please contact support.');
-        return;
-      }
-
-      // Refresh the proposals list
-      fetchSyncProposals();
-      alert('Payment status updated successfully!');
-    } catch (error) {
-      console.error('Error manually completing payment:', error);
-      alert('Failed to update payment status. Please contact support.');
-    }
+  // Debug function to help identify proposal status
+  const debugProposalStatus = (proposal: SyncProposal) => {
+    console.log('Proposal debug info:', {
+      id: proposal.id,
+      status: proposal.status,
+      client_status: proposal.client_status,
+      producer_status: proposal.producer_status,
+      payment_status: proposal.payment_status,
+      negotiation_status: proposal.negotiation_status,
+      isAcceptedByBoth: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted',
+      isPaymentPending: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted' && (proposal.payment_status === 'pending' || proposal.payment_status === null),
+      isFullyPaid: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted' && proposal.payment_status === 'paid'
+    });
   };
+
+
 
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
@@ -715,26 +704,29 @@ export function ClientDashboard() {
       }
     });
 
-  // Tab filter logic
+  // Tab filter logic - ensure no overlap between tabs
   const pendingProposals = syncProposals.filter(p => 
-    p.status === 'pending' || 
-    p.status === 'accepted' && (p.client_status !== 'accepted' || p.producer_status !== 'accepted') ||
-    p.negotiation_status === 'pending' ||
-    p.negotiation_status === 'negotiating' ||
-    p.negotiation_status === 'client_acceptance_required'
+    // Only show proposals that are NOT accepted by both parties
+    !(p.client_status === 'accepted' && p.producer_status === 'accepted') &&
+    (p.status === 'pending' || 
+     p.status === 'accepted' && (p.client_status !== 'accepted' || p.producer_status !== 'accepted') ||
+     p.negotiation_status === 'pending' ||
+     p.negotiation_status === 'negotiating' ||
+     p.negotiation_status === 'client_acceptance_required')
   );
   
-  // Separate accepted proposals into payment pending and fully paid
-  const acceptedProposals = syncProposals.filter(p => 
-    p.client_status === 'accepted' && 
-    p.producer_status === 'accepted' && 
-    p.payment_status === 'paid'
-  );
-  
+  // Payment pending proposals - accepted by both parties but payment not complete
   const paymentPendingProposals = syncProposals.filter(p => 
     p.client_status === 'accepted' && 
     p.producer_status === 'accepted' && 
     (p.payment_status === 'pending' || p.payment_status === null)
+  );
+  
+  // Fully accepted and paid proposals
+  const acceptedProposals = syncProposals.filter(p => 
+    p.client_status === 'accepted' && 
+    p.producer_status === 'accepted' && 
+    p.payment_status === 'paid'
   );
   
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
@@ -1071,7 +1063,7 @@ export function ClientDashboard() {
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-2 mt-4">
+                                        <div className="flex flex-wrap gap-2 mt-4">
                       <button
                         onClick={() => handlePaymentPendingProposal(proposal)}
                         className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center text-sm font-medium"
@@ -1079,18 +1071,20 @@ export function ClientDashboard() {
                         <DollarSign className="w-4 h-4 mr-2" />
                         Complete Payment
                       </button>
-                      <button
-                        onClick={() => handleManualPaymentComplete(proposal)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
-                        title="Mark payment as complete (if already paid in Stripe)"
-                      >
-                        Mark as Paid
-                      </button>
+ 
                       <button
                         onClick={() => handleShowHistory(proposal)}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                       >
                         History
+                      </button>
+                      
+                      <button
+                        onClick={() => debugProposalStatus(proposal)}
+                        className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
+                        title="Debug proposal status (check console)"
+                      >
+                        Debug
                       </button>
                     </div>
                   </div>
