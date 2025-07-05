@@ -111,6 +111,40 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
   return 'active';
 };
 
+// Calculate payment due date based on payment terms and acceptance date
+const calculatePaymentDueDate = (paymentTerms: string, acceptanceDate: string): Date => {
+  const acceptance = new Date(acceptanceDate);
+  
+  switch (paymentTerms) {
+    case 'immediate':
+      return acceptance; // Same day
+    case 'net30':
+      return new Date(acceptance.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+    case 'net60':
+      return new Date(acceptance.getTime() + (60 * 24 * 60 * 60 * 1000)); // 60 days
+    case 'net90':
+      return new Date(acceptance.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
+    default:
+      return acceptance; // Default to immediate
+  }
+};
+
+// Get payment terms display text
+const getPaymentTermsDisplay = (paymentTerms: string): string => {
+  switch (paymentTerms) {
+    case 'immediate':
+      return 'Immediate';
+    case 'net30':
+      return 'Net 30';
+    case 'net60':
+      return 'Net 60';
+    case 'net90':
+      return 'Net 90';
+    default:
+      return 'Immediate';
+  }
+};
+
 // Add a helper to determine if a proposal has a pending action
 function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
   // Show badge if proposal has a message from someone else that hasn't been responded to
@@ -1082,6 +1116,27 @@ export function ClientDashboard() {
                         <p className="text-xs text-yellow-400">
                           ✓ Accepted by both parties - Payment required
                         </p>
+                        {(() => {
+                          const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
+                          const acceptanceDate = proposal.client_accepted_at || proposal.updated_at || proposal.created_at;
+                          const dueDate = calculatePaymentDueDate(paymentTerms, acceptanceDate);
+                          const isOverdue = dueDate < new Date();
+                          const daysUntilDue = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                          
+                          return (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-xs text-gray-400">
+                                Payment Terms: <span className="text-blue-400 font-medium">{getPaymentTermsDisplay(paymentTerms)}</span>
+                              </p>
+                              <p className={`text-xs font-medium ${isOverdue ? 'text-red-400' : daysUntilDue <= 7 ? 'text-orange-400' : 'text-green-400'}`}>
+                                {isOverdue ? 'Overdue' : daysUntilDue === 0 ? 'Due Today' : daysUntilDue === 1 ? 'Due Tomorrow' : `Due in ${daysUntilDue} days`}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Due Date: {dueDate.toLocaleDateString()}
+                              </p>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-semibold text-yellow-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
