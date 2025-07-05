@@ -497,6 +497,14 @@ export function ClientDashboard() {
       
       if (data) {
         console.log('Sync proposals fetched:', data);
+        console.log('Proposal statuses:', data.map(p => ({
+          id: p.id,
+          status: p.status,
+          client_status: p.client_status,
+          producer_status: p.producer_status,
+          negotiation_status: p.negotiation_status,
+          track_title: p.track?.title
+        })));
         setSyncProposals(data);
       }
     } catch (err) {
@@ -670,7 +678,13 @@ export function ClientDashboard() {
     });
 
   // Tab filter logic
-  const pendingProposals = syncProposals.filter(p => p.status === 'pending' || (p.client_status !== 'accepted' && p.producer_status !== 'accepted'));
+  const pendingProposals = syncProposals.filter(p => 
+    p.status === 'pending' || 
+    p.status === 'accepted' && (p.client_status !== 'accepted' || p.producer_status !== 'accepted') ||
+    p.negotiation_status === 'pending' ||
+    p.negotiation_status === 'negotiating' ||
+    p.negotiation_status === 'client_acceptance_required'
+  );
   const acceptedProposals = syncProposals.filter(p => p.client_status === 'accepted' && p.producer_status === 'accepted');
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
 
