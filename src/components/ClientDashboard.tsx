@@ -157,7 +157,7 @@ export function ClientDashboard() {
   const [syncProposals, setSyncProposals] = useState<any[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
-  const [syncProposalsTab, setSyncProposalsTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
+  const [syncProposalsTab, setSyncProposalsTab] = useState<'pending' | 'payment-pending' | 'accepted' | 'declined'>('pending');
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyProposal, setHistoryProposal] = useState<SyncProposal | null>(null);
@@ -647,6 +647,15 @@ export function ClientDashboard() {
     setShowHistoryModal(true);
   };
 
+  const handlePaymentPendingProposal = async (proposal: SyncProposal) => {
+    try {
+      setSelectedProposal(proposal);
+      setShowAcceptDialog(true);
+    } catch (error) {
+      console.error('Error handling payment pending proposal:', error);
+    }
+  };
+
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
     .sort((a, b) => {
@@ -685,7 +694,20 @@ export function ClientDashboard() {
     p.negotiation_status === 'negotiating' ||
     p.negotiation_status === 'client_acceptance_required'
   );
-  const acceptedProposals = syncProposals.filter(p => p.client_status === 'accepted' && p.producer_status === 'accepted');
+  
+  // Separate accepted proposals into payment pending and fully paid
+  const acceptedProposals = syncProposals.filter(p => 
+    p.client_status === 'accepted' && 
+    p.producer_status === 'accepted' && 
+    p.payment_status === 'paid'
+  );
+  
+  const paymentPendingProposals = syncProposals.filter(p => 
+    p.client_status === 'accepted' && 
+    p.producer_status === 'accepted' && 
+    (p.payment_status === 'pending' || p.payment_status === null)
+  );
+  
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
 
   if (loading) {
@@ -883,6 +905,16 @@ export function ClientDashboard() {
               Pending/Active ({pendingProposals.length})
             </button>
             <button
+              onClick={() => setSyncProposalsTab('payment-pending')}
+              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                syncProposalsTab === 'payment-pending'
+                  ? 'bg-yellow-600 text-white'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              Payment Pending ({paymentPendingProposals.length})
+            </button>
+            <button
               onClick={() => setSyncProposalsTab('accepted')}
               className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 syncProposalsTab === 'accepted'
@@ -967,6 +999,62 @@ export function ClientDashboard() {
                         disabled={proposal.status === 'declined'}
                       >
                         Decline
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )
+            )}
+
+            {syncProposalsTab === 'payment-pending' && (
+              paymentPendingProposals.length === 0 ? (
+                <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <p className="text-gray-400">No payment pending proposals</p>
+                </div>
+              ) : (
+                paymentPendingProposals.map((proposal) => (
+                  <div
+                    key={proposal.id}
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
+                  >
+                    {/* Payment Pending Badge */}
+                    <div className="absolute top-2 right-2">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                        Payment Pending
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
+                        <p className="text-sm text-gray-400">
+                          Producer: {proposal.track?.producer?.first_name} {proposal.track?.producer?.last_name}
+                        </p>
+                        <p className="text-xs text-yellow-400">
+                          ✓ Accepted by both parties - Payment required
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold text-yellow-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                        <p className="text-xs text-gray-400">
+                          Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <button
+                        onClick={() => handlePaymentPendingProposal(proposal)}
+                        className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors flex items-center text-sm font-medium"
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Complete Payment
+                      </button>
+                      <button
+                        onClick={() => handleShowHistory(proposal)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                      >
+                        History
                       </button>
                     </div>
                   </div>
