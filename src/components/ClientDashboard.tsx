@@ -656,6 +656,35 @@ export function ClientDashboard() {
     }
   };
 
+  const handleManualPaymentComplete = async (proposal: SyncProposal) => {
+    try {
+      // Manually update the proposal to mark payment as complete
+      const { error } = await supabase
+        .from('sync_proposals')
+        .update({
+          payment_status: 'paid',
+          payment_date: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', proposal.id)
+        .eq('client_status', 'accepted')
+        .eq('producer_status', 'accepted');
+
+      if (error) {
+        console.error('Error manually completing payment:', error);
+        alert('Failed to update payment status. Please contact support.');
+        return;
+      }
+
+      // Refresh the proposals list
+      fetchSyncProposals();
+      alert('Payment status updated successfully!');
+    } catch (error) {
+      console.error('Error manually completing payment:', error);
+      alert('Failed to update payment status. Please contact support.');
+    }
+  };
+
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
     .sort((a, b) => {
@@ -1049,6 +1078,13 @@ export function ClientDashboard() {
                       >
                         <DollarSign className="w-4 h-4 mr-2" />
                         Complete Payment
+                      </button>
+                      <button
+                        onClick={() => handleManualPaymentComplete(proposal)}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                        title="Mark payment as complete (if already paid in Stripe)"
+                      >
+                        Mark as Paid
                       </button>
                       <button
                         onClick={() => handleShowHistory(proposal)}
