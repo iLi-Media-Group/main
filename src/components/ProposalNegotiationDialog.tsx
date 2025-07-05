@@ -191,12 +191,17 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    setLoading(true);
+    setError('');
+
+    const recipientEmail = proposal?.client?.email;
+    if (!recipientEmail) {
+      setError("Client email is missing. Please contact support.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      setLoading(true);
-      setError('');
-
       if (!message.trim()) {
         throw new Error('Please enter a message');
       }
@@ -265,7 +270,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
           message,
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
           counterPaymentTerms: counterPaymentTerms || null,
-          recipientEmail: proposal.client.email
+          recipientEmail
         })
       });
 
