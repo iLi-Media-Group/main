@@ -1,3 +1,7 @@
+-- Migration: Drop and recreate get_producer_analytics with correct return type
+
+DROP FUNCTION IF EXISTS get_producer_analytics();
+
 CREATE OR REPLACE FUNCTION get_producer_analytics()
 RETURNS TABLE(
     proposal_producer_id UUID,
@@ -25,4 +29,4 @@ BEGIN
     GROUP BY
         p.id;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql; 
