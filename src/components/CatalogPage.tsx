@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
 import { Track, GENRES, MOODS } from '../types';
+import { parseArrayField } from '../lib/utils';
 import AIRecommendationWidget from './AIRecommendationWidget';
 
 // Inside your page component:
@@ -159,15 +160,9 @@ export function CatalogPage() {
               track.track_producer_id?.first_name ||
               track.track_producer_id?.email?.split('@')[0] ||
               'Unknown Artist',
-            genres: Array.isArray(track.genres) 
-              ? track.genres 
-              : track.genres?.split(',').map(g => g.trim()) || [],
-            subGenres: Array.isArray(track.sub_genres)
-              ? track.sub_genres
-              : track.sub_genres?.split(',').map(g => g.trim()) || [],
-            moods: Array.isArray(track.moods)
-              ? track.moods
-              : track.moods?.split(',').map(m => m.trim()) || [],
+            genres: parseArrayField(track.genres),
+            subGenres: parseArrayField(track.sub_genres),
+            moods: parseArrayField(track.moods),
             duration: track.duration || '3:30',
             bpm: track.bpm,
             audioUrl: track.audio_url,

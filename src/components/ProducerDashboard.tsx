@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { parseArrayField } from '../lib/utils';
 import { AudioPlayer } from './AudioPlayer';
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
@@ -175,12 +176,14 @@ export function ProducerDashboard() {
         });
       }
 
+
+
       // Add sales data to tracks
       const tracksWithSales = tracksData?.map(track => ({
         ...track,
-        genres: typeof track.genres === 'string' ? track.genres.split(',') : track.genres,
-        moods: track.moods || [],
-        mediaUsage: track.media_usage || [],
+        genres: parseArrayField(track.genres),
+        moods: parseArrayField(track.moods),
+        mediaUsage: parseArrayField(track.media_usage),
         sales_count: trackSalesMap[track.id] || 0,
         revenue: trackRevenueMap[track.id] || 0
       })) || [];
