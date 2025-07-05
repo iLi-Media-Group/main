@@ -710,17 +710,21 @@ export function ClientDashboard() {
     // Only show proposals that are NOT accepted by both parties
     !(p.client_status === 'accepted' && p.producer_status === 'accepted') &&
     (p.status === 'pending' || 
+     p.status === 'pending_producer' ||
+     p.status === 'pending_client' ||
      p.status === 'accepted' && (p.client_status !== 'accepted' || p.producer_status !== 'accepted') ||
      p.negotiation_status === 'pending' ||
      p.negotiation_status === 'negotiating' ||
-     p.negotiation_status === 'client_acceptance_required')
+     p.negotiation_status === 'client_acceptance_required' ||
+     p.negotiation_status === 'client_accepted' ||
+     p.negotiation_status === 'producer_accepted')
   );
   
   // Payment pending proposals - accepted by both parties but payment not complete
   const paymentPendingProposals = syncProposals.filter(p => 
-    p.client_status === 'accepted' && 
-    p.producer_status === 'accepted' && 
-    (p.payment_status === 'pending' || p.payment_status === null)
+    (p.client_status === 'accepted' && p.producer_status === 'accepted') &&
+    (p.payment_status === 'pending' || p.payment_status === null || p.payment_status === undefined) &&
+    (p.status === 'accepted' || p.negotiation_status === 'accepted')
   );
   
   // Fully accepted and paid proposals
@@ -731,6 +735,29 @@ export function ClientDashboard() {
   );
   
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
+
+  // Debug logging for proposal statuses
+  console.log('=== PROPOSAL STATUS DEBUG ===');
+  console.log('Total proposals:', syncProposals.length);
+  console.log('Pending proposals:', pendingProposals.length);
+  console.log('Payment pending proposals:', paymentPendingProposals.length);
+  console.log('Accepted proposals:', acceptedProposals.length);
+  console.log('Declined proposals:', declinedProposals.length);
+  
+  syncProposals.forEach((p, index) => {
+    console.log(`Proposal ${index + 1}:`, {
+      id: p.id,
+      status: p.status,
+      client_status: p.client_status,
+      producer_status: p.producer_status,
+      negotiation_status: p.negotiation_status,
+      payment_status: p.payment_status,
+      inPending: pendingProposals.includes(p),
+      inPaymentPending: paymentPendingProposals.includes(p),
+      inAccepted: acceptedProposals.includes(p)
+    });
+  });
+  console.log('=== END PROPOSAL STATUS DEBUG ===');
 
   if (loading) {
     return (
