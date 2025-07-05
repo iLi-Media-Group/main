@@ -44,6 +44,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
   const [error, setError] = useState('');
   const [showAcceptDecline, setShowAcceptDecline] = useState(false);
   const [pendingNegotiation, setPendingNegotiation] = useState<NegotiationMessage | null>(null);
+  const [detectedPaymentTerms, setDetectedPaymentTerms] = useState<string | null>(null);
 
   // Update proposal when initialProposal changes
   useEffect(() => {
@@ -94,7 +95,24 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       // Check if there's a pending negotiation that needs acceptance/decline
       const lastMessage = messagesData?.[messagesData.length - 1];
-      const hasCounterOffer = lastMessage?.counter_offer || lastMessage?.counter_terms || lastMessage?.counter_payment_terms;
+      
+      // Parse message for payment terms if counter_payment_terms is null
+      let detectedPaymentTerms = lastMessage?.counter_payment_terms;
+      if (!detectedPaymentTerms && lastMessage?.message) {
+        const messageLower = lastMessage.message.toLowerCase();
+        if (messageLower.includes('net30') || messageLower.includes('net 30')) {
+          detectedPaymentTerms = 'net30';
+        } else if (messageLower.includes('net60') || messageLower.includes('net 60')) {
+          detectedPaymentTerms = 'net60';
+        } else if (messageLower.includes('net90') || messageLower.includes('net 90')) {
+          detectedPaymentTerms = 'net90';
+        } else if (messageLower.includes('immediate')) {
+          detectedPaymentTerms = 'immediate';
+        }
+      }
+      setDetectedPaymentTerms(detectedPaymentTerms);
+      
+      const hasCounterOffer = lastMessage?.counter_offer || lastMessage?.counter_terms || detectedPaymentTerms;
       const hasPendingNegotiation = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
           hasCounterOffer &&
@@ -109,6 +127,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       console.log('Has counter offer:', hasCounterOffer);
       console.log('Counter offer amount:', lastMessage?.counter_offer);
       console.log('Counter payment terms:', lastMessage?.counter_payment_terms);
+      console.log('Detected payment terms:', detectedPaymentTerms);
       console.log('Counter terms:', lastMessage?.counter_terms);
       console.log('Sender email:', lastMessage?.sender?.email);
       console.log('User email:', user?.email);
@@ -492,8 +511,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
               {pendingNegotiation.counter_offer && (
                 <p><span className="font-medium">New Amount:</span> ${pendingNegotiation.counter_offer.toFixed(2)}</p>
               )}
-              {pendingNegotiation.counter_payment_terms && (
-                <p><span className="font-medium">New Payment Terms:</span> <span className="text-green-400 font-semibold">{PAYMENT_TERMS_OPTIONS.find(opt => opt.value === pendingNegotiation.counter_payment_terms)?.label}</span></p>
+              {(pendingNegotiation.counter_payment_terms || detectedPaymentTerms) && (
+                <p><span className="font-medium">New Payment Terms:</span> <span className="text-green-400 font-semibold">{PAYMENT_TERMS_OPTIONS.find(opt => opt.value === (pendingNegotiation.counter_payment_terms || detectedPaymentTerms))?.label}</span></p>
               )}
               {pendingNegotiation.counter_terms && (
                 <p><span className="font-medium">Additional Terms:</span> {pendingNegotiation.counter_terms}</p>
