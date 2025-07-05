@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Send, Clock, DollarSign, Check, X as XIcon } from 'lucide-react';
+import { X, Send, Clock, DollarSign, Check, X as XIcon, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -111,19 +111,17 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         showAcceptDecline,
         proposalStatus: proposal.negotiation_status
       });
-      
-      // Only show acceptance dialog if there's a recent message with actual changes
-      if (hasPendingNegotiation && !showAcceptDecline) {
-        console.log('Showing acceptance dialog for:', lastMessage);
-        setPendingNegotiation(lastMessage);
+
+      if (hasPendingNegotiation) {
         setShowAcceptDecline(true);
-      } else if (!hasPendingNegotiation) {
-        // Hide accept/decline if no pending negotiation
+        setPendingNegotiation(lastMessage);
+      } else {
         setShowAcceptDecline(false);
         setPendingNegotiation(null);
       }
+
     } catch (err) {
-      console.error('Error fetching negotiation messages:', err);
+      console.error('Error fetching negotiation history:', err);
       setError('Failed to load negotiation history');
     } finally {
       setLoading(false);
@@ -521,12 +519,14 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
               </div>
               <p className="text-white mb-2">{msg.message}</p>
               {msg.counter_offer && (
-                <p className="text-green-400 font-semibold">
+                <p className="text-green-400 font-semibold flex items-center">
+                  <DollarSign className="w-4 h-4 mr-1" />
                   Counter Offer: ${msg.counter_offer.toFixed(2)}
                 </p>
               )}
               {msg.counter_payment_terms && !msg.message.includes(PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label || '') && (
-                <p className="text-green-400 font-semibold">
+                <p className="text-green-400 font-semibold flex items-center">
+                  <Calendar className="w-4 h-4 mr-1" />
                   Counter Payment Terms: {PAYMENT_TERMS_OPTIONS.find(opt => opt.value === msg.counter_payment_terms)?.label}
                 </p>
               )}
@@ -572,24 +572,33 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                   defaultValue={proposal?.sync_fee?.toString()}
                 />
               </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Propose a different sync fee amount for this proposal
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Payment Terms (Optional)
               </label>
-              <select
-                value={counterPaymentTerms}
-                onChange={(e) => setCounterPaymentTerms(e.target.value)}
-                className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
-              >
-                <option value="">Select Payment Terms</option>
-                {PAYMENT_TERMS_OPTIONS.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <select
+                  value={counterPaymentTerms}
+                  onChange={(e) => setCounterPaymentTerms(e.target.value)}
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
+                >
+                  <option value="">Select Payment Terms</option>
+                  {PAYMENT_TERMS_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                Propose different payment terms for this sync proposal
+              </p>
             </div>
 
             <div>

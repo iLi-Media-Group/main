@@ -28,8 +28,8 @@ serve(async (req) => {
     }
 
     console.log('Parsing request body...');
-    const { proposal_id, amount, client_user_id, metadata = {} } = await req.json();
-    console.log('Received parameters:', { proposal_id, amount, client_user_id, metadata: !!metadata });
+    const { proposal_id, amount, client_user_id, payment_terms = 'immediate', metadata = {} } = await req.json();
+    console.log('Received parameters:', { proposal_id, amount, client_user_id, payment_terms, metadata: !!metadata });
     
     if (!proposal_id || !amount || !client_user_id) {
       console.log('Missing required parameters');
@@ -116,49 +116,149 @@ serve(async (req) => {
       console.log('Using existing customer:', customerId);
     }
 
-    console.log('Creating Stripe checkout session...');
-    // Create Stripe Checkout session directly without product/price creation
-    const siteUrl = Deno.env.get('SITE_URL') ?? 'https://mybeatfi.io';
-    const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
-    
-    console.log('Using baseSiteUrl:', baseSiteUrl);
-    
-    // Calculate expires_at - must be within 24 hours from now
-    const now = Math.floor(Date.now() / 1000);
-    const expiresAt = now + (23 * 60 * 60); // 23 hours from now (within 24 hour limit)
-    console.log('Session expires at:', new Date(expiresAt * 1000).toISOString());
-    
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: metadata.description || `Sync Proposal #${proposal_id}`,
+    // Handle different payment terms
+    if (payment_terms === 'immediate') {
+      console.log('Creating immediate payment checkout session...');
+      // Create Stripe Checkout session for immediate payment
+      const siteUrl = Deno.env.get('SITE_URL') ?? 'https://mybeatfi.io';
+      const baseSiteUrl = siteUrl.startsWith('http') ? siteUrl : `https://${siteUrl}`;
+      
+      console.log('Using baseSiteUrl:', baseSiteUrl);
+      
+      // Calculate expires_at - must be within 24 hours from now
+      const now = Math.floor(Date.now() / 1000);
+      const expiresAt = now + (23 * 60 * 60); // 23 hours from now (within 24 hour limit)
+      console.log('Session expires at:', new Date(expiresAt * 1000).toISOString());
+      
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: metadata.description || `Sync Proposal #${proposal_id}`,
+              },
+              unit_amount: amount,
             },
-            unit_amount: amount,
+            quantity: 1,
           },
-          quantity: 1,
+        ],
+        mode: 'payment',
+        success_url: `${baseSiteUrl}/dashboard?payment=success`,
+        cancel_url: `${baseSiteUrl}/dashboard?payment=cancel`,
+        metadata: {
+          proposal_id,
+          client_user_id,
+          payment_terms,
+          ...(metadata.track_id ? { track_id: metadata.track_id } : {}),
+          ...metadata,
         },
-      ],
-      mode: 'payment',
-      success_url: `${baseSiteUrl}/dashboard?payment=success`,
-      cancel_url: `${baseSiteUrl}/dashboard?payment=cancel`,
-      metadata: {
-        proposal_id,
-        client_user_id,
-        ...(metadata.track_id ? { track_id: metadata.track_id } : {}),
-        ...metadata,
-      },
-      expires_at: expiresAt,
-    });
+        expires_at: expiresAt,
+      });
 
-    console.log('Stripe session created successfully:', session.id);
-    return new Response(JSON.stringify({ sessionId: session.id, url: session.url }), { 
-      headers: corsHeaders
-    });
+      console.log('Stripe checkout session created successfully:', session.id);
+      return new Response(JSON.stringify({ 
+        sessionId: session.id, 
+        url: session.url,
+        type: 'checkout',
+        payment_terms: 'immediate'
+      }), { 
+        headers: corsHeaders
+      });
+    } else {
+      console.log('Creating invoice for Net payment terms:', payment_terms);
+      // Create Stripe Invoice for Net payment terms
+      
+      // Calculate due date based on payment terms
+      const now = new Date();
+      let dueDate = new Date(now);
+      
+      switch (payment_terms) {
+        case 'net30':
+          dueDate.setDate(now.getDate() + 30);
+          break;
+        case 'net60':
+          dueDate.setDate(now.getDate() + 60);
+          break;
+        case 'net90':
+          dueDate.setDate(now.getDate() + 90);
+          break;
+        default:
+          dueDate.setDate(now.getDate() + 30); // Default to net30
+      }
+      
+      console.log('Invoice due date:', dueDate.toISOString());
+
+      // Create a product for the invoice
+      const product = await stripe.products.create({
+        name: metadata.description || `Sync Proposal #${proposal_id}`,
+        description: `Sync license proposal with ${payment_terms} payment terms`,
+        metadata: {
+          proposal_id,
+          payment_terms
+        }
+      });
+
+      // Create a price for the invoice
+      const price = await stripe.prices.create({
+        product: product.id,
+        unit_amount: amount,
+        currency: 'usd',
+        metadata: {
+          proposal_id,
+          payment_terms
+        }
+      });
+
+      // Create the invoice
+      const invoice = await stripe.invoices.create({
+        customer: customerId,
+        collection_method: 'send_invoice',
+        days_until_due: payment_terms === 'net30' ? 30 : payment_terms === 'net60' ? 60 : 90,
+        metadata: {
+          proposal_id,
+          client_user_id,
+          payment_terms,
+          ...metadata
+        },
+        line_items: [
+          {
+            price: price.id,
+            quantity: 1,
+          },
+        ],
+        description: metadata.description || `Sync license for proposal #${proposal_id}`,
+        footer: `Payment terms: ${payment_terms.toUpperCase()}. Due date: ${dueDate.toLocaleDateString()}`,
+      });
+
+      // Send the invoice to the customer
+      const sentInvoice = await stripe.invoices.sendInvoice(invoice.id);
+
+      console.log('Stripe invoice created and sent successfully:', sentInvoice.id);
+      
+      // Update the proposal with invoice information
+      await supabase
+        .from('sync_proposals')
+        .update({
+          stripe_invoice_id: sentInvoice.id,
+          payment_due_date: dueDate.toISOString(),
+          invoice_created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', proposal_id);
+
+      return new Response(JSON.stringify({ 
+        invoiceId: sentInvoice.id,
+        invoiceUrl: sentInvoice.hosted_invoice_url,
+        dueDate: dueDate.toISOString(),
+        type: 'invoice',
+        payment_terms: payment_terms
+      }), { 
+        headers: corsHeaders
+      });
+    }
     
   } catch (error: any) {
     console.error('Stripe invoice function error:', error.message);

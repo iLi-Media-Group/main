@@ -11,6 +11,7 @@ ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS final_amount integer;
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS payment_due_date timestamptz;
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS stripe_checkout_session_id text;
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS stripe_payment_intent_id text;
+ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS stripe_invoice_id text;
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS negotiation_status text DEFAULT 'pending';
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS client_terms_accepted jsonb DEFAULT '{}';
 ALTER TABLE sync_proposals ADD COLUMN IF NOT EXISTS producer_terms_accepted jsonb DEFAULT '{}';
