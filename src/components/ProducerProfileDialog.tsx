@@ -20,6 +20,8 @@ interface ProducerProfile {
   state: string | null;
   company_name: string | null;
   producer_number: string | null;
+  ipi_number: string | null;
+  performing_rights_org: string | null;
   stats?: {
     totalTracks: number;
   };
@@ -55,7 +57,9 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
           city,
           state,
           company_name,
-          producer_number
+          producer_number,
+          ipi_number,
+          performing_rights_org
         `)
         .eq('id', producerId)
         .single();
@@ -145,6 +149,30 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
             {profile.bio && (
               <div className="bg-white/5 rounded-lg p-4">
                 <p className="text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
+              </div>
+            )}
+
+            {/* Credit Information */}
+            {(profile.ipi_number || profile.performing_rights_org) && (
+              <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-lg p-4 border border-purple-500/20">
+                <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                  <Music className="w-5 h-5 mr-2 text-purple-400" />
+                  Credit Information
+                </h4>
+                <div className="space-y-2">
+                  {profile.performing_rights_org && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">PRO Affiliation:</span>
+                      <span className="text-white font-medium">{profile.performing_rights_org}</span>
+                    </div>
+                  )}
+                  {profile.ipi_number && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm">IPI Number:</span>
+                      <span className="text-white font-mono text-sm">{profile.ipi_number}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
