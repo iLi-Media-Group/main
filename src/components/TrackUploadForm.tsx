@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
-import { GENRES, SUB_GENRES, MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
+import { GENRES, SUB_GENRES, MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { uploadFile, validateAudioFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { useCurrentPlan } from '../hooks/useCurrentPlan';
+import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
 
@@ -18,10 +21,12 @@ interface FormData {
   selectedGenres: string[];
   selectedSubGenres: string[];
   selectedMoods: string[];
+  selectedMediaUsage: string[];
   mp3Url: string;
   trackoutsUrl: string;
   hasVocals: boolean;
   vocalsUsageType: 'normal' | 'sync_only';
+  isSyncOnly: boolean;
 }
 
 export function TrackUploadForm() {
@@ -48,6 +53,7 @@ export function TrackUploadForm() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>(savedData?.selectedGenres || []);
   const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>(savedData?.selectedSubGenres || []);
   const [selectedMoods, setSelectedMoods] = useState<string[]>(savedData?.selectedMoods || []);
+  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>(savedData?.selectedMediaUsage || []);
   const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
   const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
   const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
@@ -55,6 +61,8 @@ export function TrackUploadForm() {
   const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
+  const { currentPlan } = useCurrentPlan();
 
   useEffect(() => {
     const formData: FormData = {
@@ -66,6 +74,7 @@ export function TrackUploadForm() {
       selectedGenres,
       selectedSubGenres,
       selectedMoods,
+      selectedMediaUsage,
       mp3Url,
       trackoutsUrl,
       hasVocals,
@@ -173,6 +182,7 @@ export function TrackUploadForm() {
           genres: formattedGenres,
           sub_genres: selectedSubGenres,
           moods: selectedMoods,
+          media_usage: selectedMediaUsage,
           bpm: bpmNumber,
           key,
           has_sting_ending: hasStingEnding,
@@ -202,30 +212,7 @@ export function TrackUploadForm() {
 
       if (trackFetchError) throw trackFetchError;
 
-      // Save media types if any are selected
-      if (selectedGenres.length > 0 && trackData?.id) {
-        // Get media type IDs
-        const { data: mediaTypesData, error: mediaTypesError } = await supabase
-          .from('media_types')
-          .select('id, name')
-          .in('name', selectedGenres);
 
-        if (mediaTypesError) throw mediaTypesError;
-
-        if (mediaTypesData && mediaTypesData.length > 0) {
-          // Insert track media type associations
-          const mediaTypeAssociations = mediaTypesData.map(mt => ({
-            track_id: trackData.id,
-            media_type_id: mt.id
-          }));
-
-          const { error: mediaAssocError } = await supabase
-            .from('track_media_types')
-            .insert(mediaTypeAssociations);
-
-          if (mediaAssocError) throw mediaAssocError;
-        }
-      }
 
       clearSavedFormData();
       navigate('/producer/dashboard');
@@ -289,9 +276,9 @@ export function TrackUploadForm() {
                   Selected file: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
                 </p>
               )}
-              {uploadedUrl && (
+              {uploadedUrl && audioFile && (
                 <div className="mt-4">
-                  <AudioPlayer url={uploadedUrl} title={audioFile.name} />
+                  <AudioPlayer src={uploadedUrl} title={audioFile.name} />
                 </div>
               )}
             </div>
@@ -587,6 +574,61 @@ export function TrackUploadForm() {
               ))}
             </div>
           </div>
+
+          {/* Media Usage - Show feature or premium notice */}
+          {deepMediaSearchEnabled ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-4">
+                Media Usage Types (Deep Media Search)
+              </label>
+              <p className="text-sm text-gray-400 mb-4">
+                Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
+              </p>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, subcategories]) => (
+                  <div key={category} className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-3">{category}</h3>
+                    <div className="space-y-3">
+                      {Object.entries(subcategories).map(([subcategory, types]) => (
+                        <div key={subcategory} className="ml-4">
+                          <h4 className="text-blue-300 font-medium mb-2 text-sm">{subcategory}</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {types.map((type: string) => {
+                              const fullType = `${category} > ${subcategory} > ${type}`;
+                              return (
+                                <label key={fullType} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedMediaUsage.includes(fullType)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedMediaUsage([...selectedMediaUsage, fullType]);
+                                      } else {
+                                        setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== fullType));
+                                      }
+                                    }}
+                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                    disabled={isSubmitting}
+                                  />
+                                  <span className="text-gray-300 text-sm">{type}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <PremiumFeatureNotice
+              featureName="Deep Media Search"
+              description="Tag your tracks with specific media usage types like TV shows, commercials, podcasts, and more. This helps clients find the perfect music for their specific use cases."
+              currentPlan={currentPlan}
+            />
+          )}
 
           <div className="sticky bottom-8 pt-8 bg-gradient-to-b from-transparent via-gray-900 to-gray-900">
             <button

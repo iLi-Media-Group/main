@@ -17,6 +17,8 @@ interface Track {
   id: string;
   title: string;
   genres: string[];
+  moods?: string[];
+  mediaUsage?: string[];
   bpm: number;
   audio_url: string;
   image_url: string;
@@ -126,6 +128,8 @@ export function ProducerDashboard() {
           id,
           title,
           genres,
+          moods,
+          media_usage,
           bpm,
           audio_url,
           image_url,
@@ -170,6 +174,8 @@ export function ProducerDashboard() {
       const tracksWithSales = tracksData?.map(track => ({
         ...track,
         genres: typeof track.genres === 'string' ? track.genres.split(',') : track.genres,
+        moods: track.moods || [],
+        mediaUsage: track.media_usage || [],
         sales_count: trackSalesMap[track.id] || 0,
         revenue: trackRevenueMap[track.id] || 0
       })) || [];

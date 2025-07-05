@@ -10,11 +10,12 @@ interface WhiteLabelClient {
   last_name: string | null;
   company_name: string | null;
   created_at: string;
+  subscription_plan?: string;
 }
 
 interface FeatureStatus {
-  ai_recommendations: boolean;
-  producer_applications: boolean;
+  ai_search_assistance: boolean;
+  producer_onboarding: boolean;
   deep_media_search: boolean;
   advanced_analytics: boolean;
 }
@@ -48,7 +49,24 @@ export function FeatureManagement() {
 
       if (clientError) throw clientError;
 
-      setClients(clientData || []);
+      // Fetch subscription plans for each client
+      const clientsWithPlans = await Promise.all(
+        (clientData || []).map(async (client) => {
+          const { data: subscriptionData } = await supabase
+            .from('stripe_subscriptions')
+            .select('white_label_plan, status')
+            .eq('customer_id', client.id)
+            .eq('status', 'active')
+            .single();
+
+          return {
+            ...client,
+            subscription_plan: subscriptionData?.white_label_plan || 'starter'
+          };
+        })
+      );
+
+      setClients(clientsWithPlans);
 
       // Fetch feature statuses for each client
       const statuses: Record<string, FeatureStatus> = {};
@@ -65,8 +83,8 @@ export function FeatureManagement() {
         }
 
         statuses[client.id] = {
-          ai_recommendations: featureData?.find(f => f.feature_name === 'ai_recommendations')?.is_enabled || false,
-          producer_applications: featureData?.find(f => f.feature_name === 'producer_applications')?.is_enabled || false,
+          ai_search_assistance: featureData?.find(f => f.feature_name === 'ai_search_assistance')?.is_enabled || false,
+          producer_onboarding: featureData?.find(f => f.feature_name === 'producer_onboarding')?.is_enabled || false,
           deep_media_search: featureData?.find(f => f.feature_name === 'deep_media_search')?.is_enabled || false,
           advanced_analytics: featureData?.find(f => f.feature_name === 'advanced_analytics')?.is_enabled || false
         };
@@ -133,9 +151,9 @@ export function FeatureManagement() {
 
   const getFeatureIcon = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
-      case 'ai_recommendations':
+      case 'ai_search_assistance':
         return Brain;
-      case 'producer_applications':
+      case 'producer_onboarding':
         return Users;
       case 'deep_media_search':
         return DollarSign;
@@ -148,10 +166,10 @@ export function FeatureManagement() {
 
   const getFeatureDisplayName = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
-      case 'ai_recommendations':
-        return 'AI Recommendations';
-      case 'producer_applications':
-        return 'Producer Applications';
+      case 'ai_search_assistance':
+        return 'AI Search Assistance';
+      case 'producer_onboarding':
+        return 'Producer Onboarding';
       case 'deep_media_search':
         return 'Deep Media Search';
       case 'advanced_analytics':
@@ -161,12 +179,12 @@ export function FeatureManagement() {
 
   const getFeatureDescription = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
-      case 'ai_recommendations':
+      case 'ai_search_assistance':
         return 'AI-powered search and recommendation system';
-      case 'producer_applications':
+      case 'producer_onboarding':
         return 'Let producers apply to join your library';
       case 'deep_media_search':
-        return 'Advanced media type tagging and filtering';
+        return 'Advanced media type tagging and filtering for precise track discovery';
       case 'advanced_analytics':
         return 'Comprehensive analytics and reporting dashboard';
       default:
@@ -176,9 +194,9 @@ export function FeatureManagement() {
 
   const getFeaturePlan = (featureName: keyof FeatureStatus) => {
     switch (featureName) {
-      case 'ai_recommendations':
+      case 'ai_search_assistance':
         return 'Pro Plan';
-      case 'producer_applications':
+      case 'producer_onboarding':
         return 'Pro Plan';
       case 'deep_media_search':
         return 'Enterprise Plan';
@@ -186,6 +204,41 @@ export function FeatureManagement() {
         return 'Enterprise Plan';
       default:
         return 'Custom';
+    }
+  };
+
+  const getFeatureAccess = (featureName: keyof FeatureStatus) => {
+    switch (featureName) {
+      case 'ai_search_assistance':
+        return {
+          starter: 'Paid Add-on',
+          pro: 'Paid Add-on',
+          enterprise: 'Included'
+        };
+      case 'producer_onboarding':
+        return {
+          starter: 'Paid Add-on',
+          pro: 'Included',
+          enterprise: 'Included'
+        };
+      case 'deep_media_search':
+        return {
+          starter: 'Paid Add-on',
+          pro: 'Paid Add-on',
+          enterprise: 'Included'
+        };
+      case 'advanced_analytics':
+        return {
+          starter: 'Paid Add-on',
+          pro: 'Paid Add-on',
+          enterprise: 'Included'
+        };
+      default:
+        return {
+          starter: 'Paid Add-on',
+          pro: 'Paid Add-on',
+          enterprise: 'Included'
+        };
     }
   };
 
@@ -227,10 +280,11 @@ export function FeatureManagement() {
 
       {/* Feature Overview */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(['ai_recommendations', 'producer_applications', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
+        {(['ai_search_assistance', 'producer_onboarding', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
           const Icon = getFeatureIcon(feature);
           const enabledCount = Object.values(featureStatuses).filter(status => status?.[feature]).length;
           const totalCount = Object.keys(featureStatuses).length;
+          const access = getFeatureAccess(feature);
           
           return (
             <div key={feature} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-4">
@@ -242,6 +296,29 @@ export function FeatureManagement() {
               </div>
               <h3 className="font-semibold text-white mb-1">{getFeatureDisplayName(feature)}</h3>
               <p className="text-sm text-gray-400 mb-3">{getFeatureDescription(feature)}</p>
+              
+              {/* Plan Access Levels */}
+              <div className="space-y-1 mb-3">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Starter:</span>
+                  <span className={access.starter === 'Included' ? 'text-green-400' : 'text-yellow-400'}>
+                    {access.starter}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Pro:</span>
+                  <span className={access.pro === 'Included' ? 'text-green-400' : 'text-yellow-400'}>
+                    {access.pro}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-400">Enterprise:</span>
+                  <span className={access.enterprise === 'Included' ? 'text-green-400' : 'text-yellow-400'}>
+                    {access.enterprise}
+                  </span>
+                </div>
+              </div>
+              
               <div className="text-sm text-gray-300">
                 {enabledCount} of {totalCount} clients enabled
               </div>
@@ -272,9 +349,12 @@ export function FeatureManagement() {
                     {client.company_name || client.first_name || client.email}
                   </h4>
                   <p className="text-sm text-gray-400">{client.email}</p>
-                  <p className="text-xs text-gray-500">
-                    Joined: {new Date(client.created_at).toLocaleDateString()}
-                  </p>
+                  <div className="flex items-center space-x-4 text-xs text-gray-500">
+                    <span>Joined: {new Date(client.created_at).toLocaleDateString()}</span>
+                    <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded">
+                      {(client.subscription_plan?.charAt(0).toUpperCase() || 'S') + (client.subscription_plan?.slice(1) || 'tarter')} Plan
+                    </span>
+                  </div>
                 </div>
                 {saving[client.id] && (
                   <Loader2 className="w-5 h-5 animate-spin text-blue-400" />
@@ -282,7 +362,7 @@ export function FeatureManagement() {
               </div>
 
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {(['ai_recommendations', 'producer_applications', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
+                {(['ai_search_assistance', 'producer_onboarding', 'deep_media_search', 'advanced_analytics'] as const).map((feature) => {
                   const Icon = getFeatureIcon(feature);
                   const isEnabled = featureStatuses[client.id]?.[feature] || false;
                   

@@ -2,14 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-export type FeatureName = 
-  | 'ai_recommendations' 
-  | 'producer_applications' 
-  | 'deep_media_search'
-  | 'discount_management'
-  | 'advanced_analytics';
-
-export function useFeatureFlag(featureName: FeatureName) {
+export function useFeatureFlag(featureName: string) {
   const { user } = useAuth();
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -23,78 +16,54 @@ export function useFeatureFlag(featureName: FeatureName) {
 
     const checkFeatureFlag = async () => {
       try {
-        setLoading(true);
-        
         // Check if user is admin (admins have access to all features)
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('account_type')
           .eq('id', user.id)
           .single();
 
-        if (profile?.account_type === 'admin') {
+        if (profileData?.account_type === 'admin') {
           setIsEnabled(true);
           setLoading(false);
           return;
         }
 
-        // Special handling for discount_management feature
-        if (featureName === 'discount_management') {
-          // Check if user is a White Label customer with Pro or Enterprise plan
-          const { data: subscriptionData, error: subscriptionError } = await supabase
+        // Check if user is a white label client
+        if (profileData?.account_type === 'white_label') {
+          // Get the client's subscription plan
+          const { data: subscriptionData } = await supabase
             .from('stripe_subscriptions')
             .select('white_label_plan, status')
             .eq('customer_id', user.id)
             .eq('status', 'active')
             .single();
 
-          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-            console.error('Error checking white label subscription:', subscriptionError);
-            setIsEnabled(false);
-          } else if (subscriptionData?.white_label_plan) {
-            // Only Pro and Enterprise plans have access to discount management
-            const hasAccess = ['pro', 'enterprise'].includes(subscriptionData.white_label_plan);
-            setIsEnabled(hasAccess);
-          } else {
-            setIsEnabled(false);
-          }
-        } else if (featureName === 'advanced_analytics') {
-          // Advanced analytics is only available for Enterprise White Label clients
-          const { data: subscriptionData, error: subscriptionError } = await supabase
-            .from('stripe_subscriptions')
-            .select('white_label_plan, status')
-            .eq('customer_id', user.id)
-            .eq('status', 'active')
-            .single();
+          const plan = subscriptionData?.white_label_plan || 'starter';
 
-          if (subscriptionError && subscriptionError.code !== 'PGRST116') {
-            console.error('Error checking white label subscription:', subscriptionError);
-            setIsEnabled(false);
-          } else if (subscriptionData?.white_label_plan) {
-            // Only Enterprise plans have access to advanced analytics
-            const hasAccess = subscriptionData.white_label_plan === 'enterprise';
-            setIsEnabled(hasAccess);
-          } else {
-            setIsEnabled(false);
+          // Check if feature is included in the plan
+          const isIncludedInPlan = checkFeatureInPlan(featureName, plan);
+
+          if (isIncludedInPlan) {
+            setIsEnabled(true);
+            setLoading(false);
+            return;
           }
-        } else {
-          // Check if user has the specific feature enabled
-          const { data: featureData, error } = await supabase
+
+          // If not included in plan, check if it's been purchased as an add-on
+          const { data: featureData } = await supabase
             .from('white_label_features')
             .select('is_enabled')
             .eq('client_id', user.id)
             .eq('feature_name', featureName)
             .single();
 
-          if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-            console.error('Error checking feature flag:', error);
-            setIsEnabled(false);
-          } else {
-            setIsEnabled(featureData?.is_enabled || false);
-          }
+          setIsEnabled(featureData?.is_enabled || false);
+        } else {
+          setIsEnabled(false);
         }
-      } catch (err) {
-        console.error('Error checking feature flag:', err);
+      } catch (error) {
+        console.error('Error checking feature flag:', error);
         setIsEnabled(false);
       } finally {
         setLoading(false);
@@ -105,4 +74,20 @@ export function useFeatureFlag(featureName: FeatureName) {
   }, [user, featureName]);
 
   return { isEnabled, loading };
+}
+
+// Helper function to check if a feature is included in a plan
+function checkFeatureInPlan(featureName: string, plan: string): boolean {
+  switch (featureName) {
+    case 'ai_search_assistance':
+      return plan === 'enterprise';
+    case 'producer_onboarding':
+      return plan === 'pro' || plan === 'enterprise';
+    case 'deep_media_search':
+      return plan === 'enterprise';
+    case 'advanced_analytics':
+      return plan === 'enterprise';
+    default:
+      return false;
+  }
 } 
