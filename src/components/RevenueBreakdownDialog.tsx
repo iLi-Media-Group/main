@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, DollarSign, Download, PieChart, Calendar, FileText, Loader2 } from 'lucide-react';
+import { X, DollarSign, Download, PieChart, Calendar, FileText, Loader2, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -15,11 +15,21 @@ interface RevenueSource {
   amount: number;
   count: number;
   percentage: number;
+  type: 'completed' | 'pending';
 }
 
 interface MonthlyRevenue {
   month: string;
   amount: number;
+}
+
+interface PendingPayment {
+  id: string;
+  source: string;
+  amount: number;
+  expectedDate?: string;
+  status: string;
+  description: string;
 }
 
 export function RevenueBreakdownDialog({
@@ -32,6 +42,8 @@ export function RevenueBreakdownDialog({
   const [revenueSources, setRevenueSources] = useState<RevenueSource[]>([]);
   const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenue[]>([]);
   const [totalRevenue, setTotalRevenue] = useState(0);
+  const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
+  const [totalPendingRevenue, setTotalPendingRevenue] = useState(0);
   const [timeframe, setTimeframe] = useState<'month' | 'quarter' | 'year' | 'all'>('month');
   const [pdfGenerating, setPdfGenerating] = useState(false);
 
@@ -134,6 +146,153 @@ export function RevenueBreakdownDialog({
 
       if (customSyncError) throw customSyncError;
 
+      // Fetch pending sync proposals
+      let pendingSyncProposalsQuery = supabase
+        .from('sync_proposals')
+        .select(`
+          id,
+          sync_fee,
+          final_amount,
+          payment_terms,
+          final_payment_terms,
+          client_accepted_at,
+          payment_due_date,
+          status,
+          client_status,
+          producer_status,
+          created_at,
+          track:tracks!inner (
+            title,
+            track_producer_id
+          )
+        `)
+        .eq('payment_status', 'pending')
+        .eq('client_status', 'accepted')
+        .eq('producer_status', 'accepted');
+
+      // Filter by producer if specified
+      if (producerId) {
+        pendingSyncProposalsQuery = pendingSyncProposalsQuery.eq('track.track_producer_id', producerId);
+      }
+
+      const { data: pendingSyncProposalsData, error: pendingSyncProposalsError } = await pendingSyncProposalsQuery;
+
+      if (pendingSyncProposalsError) throw pendingSyncProposalsError;
+
+      // Fetch pending custom sync requests
+      let pendingCustomSyncQuery = supabase
+        .from('custom_sync_requests')
+        .select(`
+          id,
+          sync_fee,
+          final_amount,
+          payment_terms,
+          final_payment_terms,
+          client_accepted_at,
+          payment_due_date,
+          status,
+          negotiation_status,
+          created_at,
+          preferred_producer_id
+        `)
+        .eq('payment_status', 'pending')
+        .eq('negotiation_status', 'accepted');
+
+      // Filter by producer if specified
+      if (producerId) {
+        pendingCustomSyncQuery = pendingCustomSyncQuery.eq('preferred_producer_id', producerId);
+      }
+
+      const { data: pendingCustomSyncData, error: pendingCustomSyncError } = await pendingCustomSyncQuery;
+
+      if (pendingCustomSyncError) throw pendingCustomSyncError;
+
+      // Process pending payments
+      const pendingPaymentsList: PendingPayment[] = [];
+
+      // Add pending sync proposals
+      pendingSyncProposalsData?.forEach(proposal => {
+        const amount = proposal.final_amount || proposal.sync_fee;
+        const paymentTerms = proposal.final_payment_terms || proposal.payment_terms;
+        const acceptedDate = proposal.client_accepted_at || proposal.created_at;
+        
+        // Calculate expected payment date based on payment terms
+        let expectedDate: string | undefined;
+        if (acceptedDate && paymentTerms) {
+          const accepted = new Date(acceptedDate);
+          switch (paymentTerms) {
+            case 'net30':
+              accepted.setDate(accepted.getDate() + 30);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'net60':
+              accepted.setDate(accepted.getDate() + 60);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'net90':
+              accepted.setDate(accepted.getDate() + 90);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'immediate':
+            default:
+              expectedDate = accepted.toISOString();
+              break;
+          }
+        }
+
+        pendingPaymentsList.push({
+          id: proposal.id,
+          source: 'Sync Proposal',
+          amount: amount,
+          expectedDate: expectedDate,
+          status: 'Payment Pending',
+          description: `"${proposal.track?.title}" - ${paymentTerms || 'immediate'} payment`
+        });
+      });
+
+      // Add pending custom sync requests
+      pendingCustomSyncData?.forEach(request => {
+        const amount = request.final_amount || request.sync_fee;
+        const paymentTerms = request.final_payment_terms || request.payment_terms;
+        const acceptedDate = request.client_accepted_at || request.created_at;
+        
+        // Calculate expected payment date based on payment terms
+        let expectedDate: string | undefined;
+        if (acceptedDate && paymentTerms) {
+          const accepted = new Date(acceptedDate);
+          switch (paymentTerms) {
+            case 'net30':
+              accepted.setDate(accepted.getDate() + 30);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'net60':
+              accepted.setDate(accepted.getDate() + 60);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'net90':
+              accepted.setDate(accepted.getDate() + 90);
+              expectedDate = accepted.toISOString();
+              break;
+            case 'immediate':
+            default:
+              expectedDate = accepted.toISOString();
+              break;
+          }
+        }
+
+        pendingPaymentsList.push({
+          id: request.id,
+          source: 'Custom Sync Request',
+          amount: amount,
+          expectedDate: expectedDate,
+          status: 'Payment Pending',
+          description: `Custom sync project - ${paymentTerms || 'immediate'} payment`
+        });
+      });
+
+      // Calculate total pending revenue
+      const totalPending = pendingPaymentsList.reduce((sum, payment) => sum + payment.amount, 0);
+
       // Process sales by license type
       const salesByLicenseType = salesData?.reduce((acc, sale) => {
         const licenseType = sale.license_type || 'Unknown';
@@ -161,31 +320,65 @@ export function RevenueBreakdownDialog({
       };
 
       // Combine all revenue sources
-      const allSources = [
+      const completedSources = [
         ...Object.entries(salesByLicenseType).map(([source, data]) => ({
           source: `${source} License`,
           amount: (data as { count: number; amount: number }).amount,
-          count: (data as { count: number; amount: number }).count
+          count: (data as { count: number; amount: number }).count,
+          type: 'completed' as const,
+          percentage: 0 // Will be calculated later
         }))
       ];
 
       if (syncProposalsRevenue.count > 0) {
-        allSources.push({
+        completedSources.push({
           source: 'Sync Proposals',
           amount: syncProposalsRevenue.amount,
-          count: syncProposalsRevenue.count
+          count: syncProposalsRevenue.count,
+          type: 'completed',
+          percentage: 0 // Will be calculated later
         });
       }
 
       if (customSyncRevenue.count > 0) {
-        allSources.push({
+        completedSources.push({
           source: 'Custom Sync Requests',
           amount: customSyncRevenue.amount,
-          count: customSyncRevenue.count
+          count: customSyncRevenue.count,
+          type: 'completed',
+          percentage: 0 // Will be calculated later
         });
       }
 
-      // Calculate total revenue
+      // Create pending sources
+      const pendingSources: RevenueSource[] = [];
+      if (pendingPaymentsList.length > 0) {
+        // Group pending payments by source
+        const pendingBySource = pendingPaymentsList.reduce((acc, payment) => {
+          if (!acc[payment.source]) {
+            acc[payment.source] = { count: 0, amount: 0 };
+          }
+          acc[payment.source].count += 1;
+          acc[payment.source].amount += payment.amount;
+          return acc;
+        }, {} as Record<string, { count: number; amount: number }>);
+
+        // Add pending sources
+        Object.entries(pendingBySource).forEach(([source, data]) => {
+          pendingSources.push({
+            source: `Pending ${source}`,
+            amount: data.amount,
+            count: data.count,
+            type: 'pending',
+            percentage: 0 // Will be calculated later
+          });
+        });
+      }
+
+      // Combine all sources
+      const allSources = [...completedSources, ...pendingSources];
+
+      // Calculate total revenue (including pending)
       const total = allSources.reduce((sum, source) => sum + source.amount, 0);
 
       // Calculate percentages
@@ -251,6 +444,8 @@ export function RevenueBreakdownDialog({
       setRevenueSources(sortedSources);
       setMonthlyRevenue(monthlyData);
       setTotalRevenue(total);
+      setPendingPayments(pendingPaymentsList);
+      setTotalPendingRevenue(totalPending);
     } catch (err) {
       console.error('Error fetching revenue breakdown:', err);
       setError('Failed to load revenue data');
@@ -294,6 +489,13 @@ export function RevenueBreakdownDialog({
       doc.setTextColor(40, 40, 40);
       doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 105, 40, { align: 'center' });
       
+      // Add pending revenue if any
+      if (totalPendingRevenue > 0) {
+        doc.setFontSize(14);
+        doc.setTextColor(255, 140, 0); // Orange color for pending
+        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 105, 50, { align: 'center' });
+      }
+      
       // Add revenue sources table
       doc.setFontSize(14);
       doc.text('Revenue by Source', 14, 50);
@@ -302,12 +504,13 @@ export function RevenueBreakdownDialog({
         source.source,
         `$${source.amount.toFixed(2)}`,
         source.count.toString(),
-        `${source.percentage.toFixed(1)}%`
+        `${source.percentage.toFixed(1)}%`,
+        source.type === 'pending' ? 'Pending' : 'Completed'
       ]);
       
       (doc as any).autoTable({
         startY: 55,
-        head: [['Source', 'Amount', 'Count', 'Percentage']],
+        head: [['Source', 'Amount', 'Count', 'Percentage', 'Status']],
         body: sourceTableData,
         theme: 'grid',
         headStyles: { fillColor: [75, 75, 200], textColor: 255 },
@@ -425,6 +628,16 @@ export function RevenueBreakdownDialog({
               </p>
             </div>
 
+            {totalPendingRevenue > 0 && (
+              <div className="bg-white/5 rounded-lg p-6 border border-yellow-500/20">
+                <p className="text-2xl font-bold text-yellow-400">${totalPendingRevenue.toFixed(2)}</p>
+                <p className="text-gray-400 mt-1">Pending Revenue</p>
+                <p className="text-xs text-yellow-400 mt-2">
+                  {pendingPayments.length} payment{pendingPayments.length !== 1 ? 's' : ''} awaiting completion
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Revenue by Source */}
               <div className="bg-white/5 rounded-lg p-6 border border-purple-500/20">
@@ -441,14 +654,21 @@ export function RevenueBreakdownDialog({
                       <div key={index}>
                         <div className="flex justify-between items-center mb-1">
                           <div className="flex items-center">
-                            <span className="text-white">{source.source}</span>
+                            <span className={`${source.type === 'pending' ? 'text-yellow-400' : 'text-white'}`}>
+                              {source.source}
+                            </span>
                             <span className="text-gray-400 text-sm ml-2">({source.count} {source.count === 1 ? 'sale' : 'sales'})</span>
+                            {source.type === 'pending' && (
+                              <span className="text-yellow-400 text-xs ml-2">(Pending)</span>
+                            )}
                           </div>
-                          <span className="text-white font-semibold">${source.amount.toFixed(2)}</span>
+                          <span className={`${source.type === 'pending' ? 'text-yellow-400' : 'text-white'} font-semibold`}>
+                            ${source.amount.toFixed(2)}
+                          </span>
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-2">
                           <div 
-                            className="bg-blue-600 h-2 rounded-full" 
+                            className={`${source.type === 'pending' ? 'bg-yellow-500' : 'bg-blue-600'} h-2 rounded-full`}
                             style={{ width: `${source.percentage}%` }}
                           ></div>
                         </div>
@@ -501,6 +721,52 @@ export function RevenueBreakdownDialog({
               </div>
             </div>
 
+            {/* Pending Payments Table */}
+            {pendingPayments.length > 0 && (
+              <div className="bg-white/5 rounded-lg p-6 border border-yellow-500/20">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-yellow-400" />
+                  Pending Payments
+                </h3>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-gray-700">
+                        <th className="px-4 py-2 text-left text-gray-400">Source</th>
+                        <th className="px-4 py-2 text-left text-gray-400">Description</th>
+                        <th className="px-4 py-2 text-right text-gray-400">Amount</th>
+                        <th className="px-4 py-2 text-right text-gray-400">Expected Date</th>
+                        <th className="px-4 py-2 text-center text-gray-400">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingPayments.map((payment, index) => (
+                        <tr key={index} className="border-b border-gray-800">
+                          <td className="px-4 py-3 text-white">{payment.source}</td>
+                          <td className="px-4 py-3 text-gray-300">{payment.description}</td>
+                          <td className="px-4 py-3 text-right text-yellow-400 font-medium">${payment.amount.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right text-gray-300">
+                            {payment.expectedDate ? new Date(payment.expectedDate).toLocaleDateString() : 'Immediate'}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                              {payment.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      <tr className="bg-white/5">
+                        <td className="px-4 py-3 text-white font-semibold" colSpan={2}>Total Pending</td>
+                        <td className="px-4 py-3 text-right text-yellow-400 font-semibold">${totalPendingRevenue.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right text-gray-300" colSpan={2}></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* Detailed Revenue Table */}
             <div className="bg-white/5 rounded-lg p-6 border border-purple-500/20">
               <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -521,9 +787,13 @@ export function RevenueBreakdownDialog({
                   <tbody>
                     {revenueSources.map((source, index) => (
                       <tr key={index} className="border-b border-gray-800">
-                        <td className="px-4 py-3 text-white">{source.source}</td>
+                        <td className={`px-4 py-3 ${source.type === 'pending' ? 'text-yellow-400' : 'text-white'}`}>
+                          {source.source}
+                        </td>
                         <td className="px-4 py-3 text-right text-gray-300">{source.count}</td>
-                        <td className="px-4 py-3 text-right text-white font-medium">${source.amount.toFixed(2)}</td>
+                        <td className={`px-4 py-3 text-right font-medium ${source.type === 'pending' ? 'text-yellow-400' : 'text-white'}`}>
+                          ${source.amount.toFixed(2)}
+                        </td>
                         <td className="px-4 py-3 text-right text-gray-300">{source.percentage.toFixed(1)}%</td>
                       </tr>
                     ))}
