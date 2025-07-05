@@ -139,7 +139,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               <div>
                 <span className="text-gray-400 text-sm">Current Genres:</span>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {initialGenres.map(genre => (
+                  {(initialGenres || []).map(genre => (
                     <span key={genre} className="px-2 py-1 bg-blue-600/20 text-blue-300 text-xs rounded">
                       {genre}
                     </span>
@@ -149,7 +149,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               <div>
                 <span className="text-gray-400 text-sm">Current Moods:</span>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {track.moods?.map(mood => (
+                  {(track.moods || []).map(mood => (
                     <span key={mood} className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded">
                       {mood}
                     </span>
