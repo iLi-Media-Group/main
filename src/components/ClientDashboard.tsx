@@ -446,6 +446,12 @@ export function ClientDashboard() {
           last_message_at,
           client_terms_accepted,
           producer_terms_accepted,
+          client:profiles!sync_proposals_client_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
           track:tracks(
             id,
             title,

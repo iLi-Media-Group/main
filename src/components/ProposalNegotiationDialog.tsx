@@ -82,9 +82,14 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
       const lastMessage = messagesData?.[messagesData.length - 1];
       if (lastMessage && 
           lastMessage.sender.email !== user?.email && 
-          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms)) {
+          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
+          !showAcceptDecline) { // Only show if not already showing
         setPendingNegotiation(lastMessage);
         setShowAcceptDecline(true);
+      } else if (!lastMessage || lastMessage.sender.email === user?.email) {
+        // Hide accept/decline if no pending negotiation or if last message is from current user
+        setShowAcceptDecline(false);
+        setPendingNegotiation(null);
       }
     } catch (err) {
       console.error('Error fetching negotiation messages:', err);
@@ -194,9 +199,9 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal, onNegotia
     setLoading(true);
     setError('');
 
-    const recipientEmail = proposal?.client?.email;
+    const recipientEmail = proposal?.client?.email || user?.email;
     if (!recipientEmail) {
-      setError("Client email is missing. Please contact support.");
+      setError("Unable to determine recipient email. Please contact support.");
       setLoading(false);
       return;
     }
