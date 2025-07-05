@@ -35,7 +35,7 @@ export default function WhiteLabelAdminPage() {
     setError(null);
     const { data, error } = await supabase.from('white_label_clients').select('*');
     if (error) setError(error.message);
-    else setClients(data);
+    else setClients(Array.isArray(data) ? data : []);
     setLoading(false);
   };
 
