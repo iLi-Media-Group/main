@@ -262,6 +262,26 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       if (negotiationError) throw negotiationError;
 
+      // Update proposal negotiation status if there are counter offers or terms
+      if (counterOffer || counterTerms.trim() || counterPaymentTerms) {
+        const { error: statusError } = await supabase
+          .from('sync_proposals')
+          .update({
+            negotiation_status: 'client_acceptance_required',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', proposal.id);
+
+        if (statusError) {
+          console.error('Error updating negotiation status:', statusError);
+        } else {
+          // Update local proposal state
+          proposal.negotiation_status = 'client_acceptance_required';
+          proposal.updated_at = new Date().toISOString();
+          setProposal({ ...proposal });
+        }
+      }
+
       // Upload reference file if provided
       if (selectedFile && negotiation) {
         const fileExt = selectedFile.name.split('.').pop();
