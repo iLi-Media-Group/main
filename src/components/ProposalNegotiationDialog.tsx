@@ -94,9 +94,10 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       // Check if there's a pending negotiation that needs acceptance/decline
       const lastMessage = messagesData?.[messagesData.length - 1];
+      const hasCounterOffer = lastMessage?.counter_offer || lastMessage?.counter_terms || lastMessage?.counter_payment_terms;
       const hasPendingNegotiation = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
-          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
+          hasCounterOffer &&
           (proposal.negotiation_status === 'client_acceptance_required' || 
            proposal.negotiation_status === 'negotiating' ||
            proposal.negotiation_status === 'pending');
@@ -105,6 +106,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       console.log('Negotiation debug:', {
         lastMessage,
         hasPendingNegotiation,
+        hasCounterOffer,
         counter_offer: lastMessage?.counter_offer,
         counter_payment_terms: lastMessage?.counter_payment_terms,
         counter_terms: lastMessage?.counter_terms,
@@ -114,7 +116,10 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         proposalStatus: proposal.negotiation_status,
         messagesCount: messagesData?.length,
         isLastMessageFromOtherUser: lastMessage && user && lastMessage.sender.email !== user.email,
-        hasCounterOffer: lastMessage?.counter_offer || lastMessage?.counter_terms || lastMessage?.counter_payment_terms
+        hasUnrespondedCounterOffer: lastMessage && user && lastMessage.sender.email !== user.email && hasCounterOffer && proposal.negotiation_status !== 'accepted' && proposal.negotiation_status !== 'rejected',
+        // Additional debugging for payment terms
+        paymentTermsOptions: PAYMENT_TERMS_OPTIONS,
+        paymentTermsMatch: lastMessage?.counter_payment_terms ? PAYMENT_TERMS_OPTIONS.find(opt => opt.value === lastMessage.counter_payment_terms) : null
       });
 
       if (hasPendingNegotiation) {
@@ -124,7 +129,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         // Fallback: if there's a counter offer from the other party and we haven't responded yet
         const hasUnrespondedCounterOffer = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
-          (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms) &&
+          hasCounterOffer &&
           proposal.negotiation_status !== 'accepted' &&
           proposal.negotiation_status !== 'rejected';
         
