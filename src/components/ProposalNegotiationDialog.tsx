@@ -90,27 +90,11 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
           lastMessage.sender.email !== user?.email && 
           (lastMessage.counter_offer || lastMessage.counter_terms || lastMessage.counter_payment_terms);
       
-      const hasPendingStatus = proposal?.negotiation_status === 'client_acceptance_required' || 
-                              proposal?.negotiation_status === 'negotiating';
-      
-      if ((hasPendingNegotiation || hasPendingStatus) && !showAcceptDecline) {
-        // If there's a pending negotiation message, use that
-        if (hasPendingNegotiation) {
-          setPendingNegotiation(lastMessage);
-        } else {
-          // If there's a pending status but no recent message with changes, create a placeholder
-          setPendingNegotiation({
-            id: 'pending',
-            sender: { first_name: 'System', last_name: '', email: 'system' },
-            message: 'Pending negotiation changes',
-            counter_offer: undefined,
-            counter_terms: undefined,
-            counter_payment_terms: proposal?.negotiated_payment_terms || undefined,
-            created_at: new Date().toISOString()
-          });
-        }
+      // Only show acceptance dialog if there's a recent message with actual changes
+      if (hasPendingNegotiation && !showAcceptDecline) {
+        setPendingNegotiation(lastMessage);
         setShowAcceptDecline(true);
-      } else if (!hasPendingNegotiation && !hasPendingStatus) {
+      } else if (!hasPendingNegotiation) {
         // Hide accept/decline if no pending negotiation
         setShowAcceptDecline(false);
         setPendingNegotiation(null);
@@ -221,6 +205,19 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       setLoading(true);
       setError('');
 
+      // Reset negotiation status to pending
+      const { error: statusError } = await supabase
+        .from('sync_proposals')
+        .update({
+          negotiation_status: 'pending',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', proposal.id);
+
+      if (statusError) {
+        console.error('Error resetting negotiation status:', statusError);
+      }
+
       // Add decline message
       const { error: messageError } = await supabase
         .from('proposal_negotiations')
@@ -231,6 +228,11 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         });
 
       if (messageError) throw messageError;
+
+      // Update local proposal state
+      proposal.negotiation_status = 'pending';
+      proposal.updated_at = new Date().toISOString();
+      setProposal({ ...proposal });
 
       setShowAcceptDecline(false);
       setPendingNegotiation(null);
@@ -295,6 +297,24 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         } else {
           // Update local proposal state
           proposal.negotiation_status = 'client_acceptance_required';
+          proposal.updated_at = new Date().toISOString();
+          setProposal({ ...proposal });
+        }
+      } else {
+        // If no changes, just set to negotiating
+        const { error: statusError } = await supabase
+          .from('sync_proposals')
+          .update({
+            negotiation_status: 'negotiating',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', proposal.id);
+
+        if (statusError) {
+          console.error('Error updating negotiation status:', statusError);
+        } else {
+          // Update local proposal state
+          proposal.negotiation_status = 'negotiating';
           proposal.updated_at = new Date().toISOString();
           setProposal({ ...proposal });
         }
