@@ -24,6 +24,7 @@ ALTER TABLE sync_proposals ADD CONSTRAINT sync_proposals_status_check
   CHECK (status IN (
     'pending',
     'pending_client',
+    'pending_producer',
     'client_accepted',
     'producer_accepted',
     'accepted',

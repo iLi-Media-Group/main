@@ -37,6 +37,8 @@ export function NegotiationAcceptanceDialog({
   const [error, setError] = useState('');
   const [invoiceCreated, setInvoiceCreated] = useState(false);
   const [invoiceDetails, setInvoiceDetails] = useState<any>(null);
+  const [acceptanceStatus, setAcceptanceStatus] = useState<'pending' | 'accepted' | 'waiting'>('pending');
+  const [waitingMessage, setWaitingMessage] = useState('');
   const { user } = useAuth();
 
   if (!isOpen) return null;
@@ -83,35 +85,57 @@ export function NegotiationAcceptanceDialog({
 
       if (dbError) throw dbError;
 
-      // If immediate payment, trigger Stripe checkout
-      if (finalPaymentTerms === 'immediate') {
-        const checkoutUrl = await createCheckoutSession(
-          'price_custom',
-          'payment',
-          undefined,
-          {
-            proposal_id: proposal.id,
-            amount: Math.round(finalAmount * 100),
-            description: isSyncProposal 
-              ? `Sync license for "${proposal.track?.title}"`
-              : `Custom sync: "${proposal.project_title}"`,
-            payment_terms: finalPaymentTerms,
-            is_sync_proposal: isSyncProposal
+      // Fetch the updated proposal to check the new status
+      const { data: updatedProposal, error: fetchError } = await supabase
+        .from('sync_proposals')
+        .select('status, client_status, producer_status, negotiation_status')
+        .eq('id', proposal.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Check if both parties have accepted (status = 'accepted')
+      if (updatedProposal.status === 'accepted') {
+        // Both parties have accepted - trigger payment flow
+        if (finalPaymentTerms === 'immediate') {
+          const checkoutUrl = await createCheckoutSession(
+            'price_custom',
+            'payment',
+            undefined,
+            {
+              proposal_id: proposal.id,
+              amount: Math.round(finalAmount * 100),
+              description: isSyncProposal 
+                ? `Sync license for "${proposal.track?.title}"`
+                : `Custom sync: "${proposal.project_title}"`,
+              payment_terms: finalPaymentTerms,
+              is_sync_proposal: isSyncProposal
+            }
+          );
+          window.location.href = checkoutUrl;
+        } else {
+          // For net payment terms, create invoice
+          const invoiceResult = await createInvoice(proposal.id, finalAmount, finalPaymentTerms, isSyncProposal);
+          
+          if (invoiceResult.type === 'invoice') {
+            // Set invoice details and show success UI
+            setInvoiceDetails(invoiceResult);
+            setInvoiceCreated(true);
+          } else if (invoiceResult.type === 'checkout') {
+            // Redirect to checkout (fallback)
+            window.location.href = invoiceResult.url;
           }
-        );
-        window.location.href = checkoutUrl;
-      } else {
-        // For net payment terms, create invoice
-        const invoiceResult = await createInvoice(proposal.id, finalAmount, finalPaymentTerms, isSyncProposal);
-        
-        if (invoiceResult.type === 'invoice') {
-          // Set invoice details and show success UI
-          setInvoiceDetails(invoiceResult);
-          setInvoiceCreated(true);
-        } else if (invoiceResult.type === 'checkout') {
-          // Redirect to checkout (fallback)
-          window.location.href = invoiceResult.url;
         }
+      } else {
+        // Only one party has accepted - show pending message
+        if (updatedProposal.client_status === 'accepted' && updatedProposal.producer_status !== 'accepted') {
+          setAcceptanceStatus('waiting');
+          setWaitingMessage('Your acceptance has been recorded. Waiting for the producer to accept the proposal.');
+        } else if (updatedProposal.producer_status === 'accepted' && updatedProposal.client_status !== 'accepted') {
+          setAcceptanceStatus('waiting');
+          setWaitingMessage('Producer has accepted. Waiting for client acceptance.');
+        }
+        onAccept();
       }
 
       onAccept();
@@ -149,6 +173,8 @@ export function NegotiationAcceptanceDialog({
   const handleClose = () => {
     setInvoiceCreated(false);
     setInvoiceDetails(null);
+    setAcceptanceStatus('pending');
+    setWaitingMessage('');
     onClose();
   };
 
@@ -289,6 +315,40 @@ export function NegotiationAcceptanceDialog({
                 </a>
               </div>
             </div>
+          ) : acceptanceStatus === 'waiting' ? (
+            // Waiting for other party UI
+            <div className="space-y-6">
+              <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6 text-center">
+                <Calendar className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-yellow-400 mb-2">Waiting for Acceptance</h3>
+                <p className="text-yellow-300 mb-4">
+                  {waitingMessage}
+                </p>
+              </div>
+
+              <div className="bg-white/5 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-white mb-3">Proposal Status</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Your Acceptance:</span>
+                    <span className="text-green-400 font-semibold">✓ Recorded</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Other Party:</span>
+                    <span className="text-yellow-400 font-semibold">Pending</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-blue-300 text-sm">
+                    <p>You will be notified when the other party accepts the proposal. Payment will be processed once both parties agree.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             // Original negotiation review UI
             <>
@@ -408,6 +468,14 @@ export function NegotiationAcceptanceDialog({
             >
               <Check className="w-5 h-5 mr-2" />
               Done
+            </button>
+          ) : acceptanceStatus === 'waiting' ? (
+            <button
+              onClick={handleClose}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <X className="w-5 h-5 mr-2" />
+              Close
             </button>
           ) : (
             <>
