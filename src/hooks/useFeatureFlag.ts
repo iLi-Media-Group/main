@@ -24,6 +24,7 @@ export function useFeatureFlag(featureName: string) {
           .single();
 
         if (profileData?.account_type === 'admin') {
+          console.log(`Feature ${featureName}: Admin access granted`);
           setIsEnabled(true);
           setLoading(false);
           return;
@@ -60,7 +61,15 @@ export function useFeatureFlag(featureName: string) {
 
           setIsEnabled(featureData?.is_enabled || false);
         } else {
-          setIsEnabled(false);
+          // For main site users (non-white-label), enable features based on user type
+          // Producers and regular users on the main site should have access to features
+          if (profileData?.account_type === 'producer' || profileData?.account_type === 'client') {
+            console.log(`Feature ${featureName}: Main site user access granted (${profileData.account_type})`);
+            setIsEnabled(true);
+          } else {
+            console.log(`Feature ${featureName}: Access denied for account type: ${profileData?.account_type}`);
+            setIsEnabled(false);
+          }
         }
       } catch (error) {
         console.error('Error checking feature flag:', error);
