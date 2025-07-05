@@ -459,6 +459,7 @@ export function ClientDashboard() {
           payment_status,
           negotiation_status,
           client_accepted_at,
+          license_url,
           created_at,
           updated_at,
           last_message_sender_id,
@@ -1122,6 +1123,17 @@ export function ClientDashboard() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-4">
+                      {proposal.license_url && (
+                        <button
+                          onClick={() => window.open(proposal.license_url, '_blank')}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Download License PDF"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          License
+                        </button>
+                      )}
+                      
                       <button
                         onClick={() => handleShowHistory(proposal)}
                         className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"

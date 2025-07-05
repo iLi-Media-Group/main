@@ -29,6 +29,8 @@ export function SyncProposalSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [proposalData, setProposalData] = useState<SyncProposalData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [licenseUrl, setLicenseUrl] = useState<string | null>(null);
+  const [downloadingLicense, setDownloadingLicense] = useState(false);
 
   const sessionId = searchParams.get('session_id');
   const proposalId = searchParams.get('proposal_id');
@@ -74,6 +76,7 @@ export function SyncProposalSuccessPage() {
             project_type,
             duration,
             is_exclusive,
+            license_url,
             track:tracks!inner (
               title,
               producer:profiles!inner (
@@ -93,6 +96,34 @@ export function SyncProposalSuccessPage() {
         }
 
         setProposalData(proposal);
+
+        // Check if license PDF has been generated
+        if (proposal.license_url) {
+          setLicenseUrl(proposal.license_url);
+        } else {
+          // Try to generate license if it doesn't exist
+          try {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sync-license`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                proposal_id: targetProposalId
+              })
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              if (result.licenseUrl) {
+                setLicenseUrl(result.licenseUrl);
+              }
+            }
+          } catch (licenseError) {
+            console.error('Error generating license:', licenseError);
+          }
+        }
       } catch (error) {
         console.error('Error fetching proposal data:', error);
         setError('An error occurred while loading your proposal');
@@ -134,6 +165,28 @@ export function SyncProposalSuccessPage() {
       case 'youtube': return 'YouTube Video';
       case 'social_media': return 'Social Media';
       default: return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const handleDownloadLicense = async () => {
+    if (!licenseUrl) return;
+    
+    setDownloadingLicense(true);
+    try {
+      const response = await fetch(licenseUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${proposalData?.track.title} - Sync License Agreement.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading license:', error);
+    } finally {
+      setDownloadingLicense(false);
     }
   };
 
@@ -294,6 +347,17 @@ export function SyncProposalSuccessPage() {
           </div>
 
           <div className="flex flex-col items-center space-y-4">
+            {licenseUrl && (
+              <button
+                onClick={handleDownloadLicense}
+                disabled={downloadingLicense}
+                className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg transition-all shadow-lg shadow-green-500/25 flex items-center disabled:opacity-50"
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                {downloadingLicense ? 'Downloading...' : 'Download License PDF'}
+              </button>
+            )}
+            
             <Link
               to="/dashboard"
               className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all shadow-lg shadow-blue-500/25 flex items-center"

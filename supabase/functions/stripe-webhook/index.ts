@@ -224,6 +224,24 @@ async function handleEvent(event: any) {
         } catch (notifyError) {
           console.error('Error sending payment notification:', notifyError);
         }
+
+        // Generate license PDF for the sync proposal
+        try {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-sync-license`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              proposal_id: metadata.proposal_id
+            })
+          });
+          console.info(`License PDF generation initiated for proposal: ${metadata.proposal_id}`);
+        } catch (licenseError) {
+          console.error('Error generating license PDF:', licenseError);
+        }
+
         console.info(`Successfully processed sync proposal payment for proposal: ${metadata.proposal_id}`);
         return;
       }
