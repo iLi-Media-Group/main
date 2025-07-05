@@ -24,22 +24,33 @@ interface EditTrackModalProps {
 export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackModalProps) {
   const normalizeGenre = (genre: string) => genre.toLowerCase().replace(/\s+/g, '');
 
-  const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
-    GENRES.some(g => normalizeGenre(g) === normalizeGenre(genre))
-  ).map(genre => {
-    return GENRES.find(g => normalizeGenre(g) === normalizeGenre(genre)) || genre;
-  });
-
-  const [selectedGenres, setSelectedGenres] = useState<string[]>(initialGenres);
-  const [selectedMoods, setSelectedMoods] = useState<string[]>(Array.isArray(track.moods) ? track.moods : []);
-  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
-  const [hasVocals, setHasVocals] = useState(track.hasVocals || false);
-  const [isSyncOnly, setIsSyncOnly] = useState(track.vocalsUsageType === 'sync_only');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>([]);
+  const [hasVocals, setHasVocals] = useState(false);
+  const [isSyncOnly, setIsSyncOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
+
+  // Update state when track prop changes
+  useEffect(() => {
+    if (track) {
+      const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
+        GENRES.some(g => normalizeGenre(g) === normalizeGenre(genre))
+      ).map(genre => {
+        return GENRES.find(g => normalizeGenre(g) === normalizeGenre(genre)) || genre;
+      });
+
+      setSelectedGenres(initialGenres);
+      setSelectedMoods(Array.isArray(track.moods) ? track.moods : []);
+      setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
+      setHasVocals(track.hasVocals || false);
+      setIsSyncOnly(track.vocalsUsageType === 'sync_only');
+    }
+  }, [track]);
 
   // Expand categories that have selected items
   useEffect(() => {
