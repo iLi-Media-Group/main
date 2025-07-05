@@ -13,13 +13,21 @@ export function SiteBrandingProvider({ children }: { children: React.ReactNode }
       setSiteName(null);
       return;
     }
+    
+    // Safely fetch white label client info with error handling
     supabase
       .from('white_label_clients')
       .select('display_name')
       .eq('owner_id', user.id)
       .single()
-      .then(({ data }) => {
-        setSiteName(data?.display_name || null);
+      .then(({ data, error }) => {
+        if (error) {
+          // If table doesn't exist or other error, just set to null (default branding)
+          console.warn('White label client fetch failed:', error.message);
+          setSiteName(null);
+        } else {
+          setSiteName(data?.display_name || null);
+        }
       });
   }, [user]);
 
