@@ -517,7 +517,8 @@ export function AdminDashboard() {
           display_name: newClient.display_name,
           owner_id: ownerId,
           owner_email: newClient.owner_email,
-          domain: newClient.domain || null,
+          email: newClient.owner_email, // required field
+          custom_domain: newClient.domain || null, // use custom_domain instead of domain
           primary_color: newClient.primary_color,
           secondary_color: newClient.secondary_color
         });
