@@ -71,6 +71,8 @@ interface WhiteLabelClient {
   ai_search_assistance_enabled?: boolean;
   producer_onboarding_enabled?: boolean;
   deep_media_search_enabled?: boolean;
+  password_setup_required?: boolean;
+  temp_password?: string;
 }
 
 export function AdminDashboard() {
@@ -559,10 +561,47 @@ export function AdminDashboard() {
       return;
     }
 
-    // Only required fields for a minimal insert
+    // Generate a random temporary password
+    const generateTempPassword = () => {
+      // 12 chars, alphanumeric + special
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+      let pwd = '';
+      for (let i = 0; i < 12; i++) {
+        pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return pwd;
+    };
+    const tempPassword = generateTempPassword();
+
+    // Create Supabase Auth user (admin API)
+    let authUserId = null;
+    try {
+      // Use service role key if available, otherwise this will fail for anon key
+      const { data, error: authError } = await supabase.auth.admin.createUser({
+        email: newClient.owner_email,
+        password: tempPassword,
+        email_confirm: true,
+      });
+      if (authError) {
+        setWhiteLabelError('Failed to create auth user: ' + authError.message);
+        return;
+      }
+      authUserId = data.user?.id;
+    } catch (err) {
+      setWhiteLabelError('Failed to create auth user.');
+      return;
+    }
+
+    // Insert into white_label_clients
     const payload = {
       display_name: newClient.display_name,
       email: newClient.owner_email,
+      owner_id: authUserId,
+      domain: newClient.domain,
+      primary_color: newClient.primary_color,
+      secondary_color: newClient.secondary_color,
+      password_setup_required: true,
+      temp_password: tempPassword, // Store temp password
     };
 
     const { error } = await supabase
@@ -570,8 +609,8 @@ export function AdminDashboard() {
       .insert(payload);
 
     if (error) {
-      console.error('Supabase insert error:', error);
       setWhiteLabelError(error.message || 'Failed to create white label client');
+      // Optionally: clean up auth user
       return;
     }
 
@@ -585,6 +624,8 @@ export function AdminDashboard() {
     });
     setShowAddClientModal(false);
     fetchWhiteLabelClients();
+    // Show the generated password to the admin (for now, use alert)
+    alert(`Temporary password for ${payload.email}: ${tempPassword}\nShare this with the client. They will be required to change it on first login.`);
     // Navigate to the white label admin page
     navigate('/admin/white-label-clients');
   };

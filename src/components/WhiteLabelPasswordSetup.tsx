@@ -71,6 +71,14 @@ export function WhiteLabelPasswordSetup() {
         // Don't throw here as the password was updated successfully
       }
 
+      // Clear temp_password and set password_setup_required = false in white_label_clients
+      if (user.email) {
+        await supabase
+          .from('white_label_clients')
+          .update({ password_setup_required: false, temp_password: null })
+          .eq('email', user.email);
+      }
+
       setSuccess(true);
       
       // Redirect to white label profile after a short delay
