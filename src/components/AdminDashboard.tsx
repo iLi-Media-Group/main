@@ -50,6 +50,9 @@ interface WhiteLabelClient {
     first_name?: string;
     last_name?: string;
   };
+  ai_search_assistance_enabled?: boolean;
+  producer_onboarding_enabled?: boolean;
+  deep_media_search_enabled?: boolean;
 }
 
 export function AdminDashboard() {
@@ -919,6 +922,9 @@ export function AdminDashboard() {
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Domain</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Colors</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Created</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">AI Search</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Onboarding</th>
+                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Deep Media</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
                     </tr>
                   </thead>
@@ -981,6 +987,36 @@ export function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 text-gray-300">
                           {new Date(client.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!client.ai_search_assistance_enabled}
+                            onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                              await supabase.from('white_label_clients').update({ ai_search_assistance_enabled: e.target.checked }).eq('id', client.id);
+                              fetchWhiteLabelClients();
+                            }}
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!client.producer_onboarding_enabled}
+                            onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                              await supabase.from('white_label_clients').update({ producer_onboarding_enabled: e.target.checked }).eq('id', client.id);
+                              fetchWhiteLabelClients();
+                            }}
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <input
+                            type="checkbox"
+                            checked={!!client.deep_media_search_enabled}
+                            onChange={async (e: React.ChangeEvent<HTMLInputElement>) => {
+                              await supabase.from('white_label_clients').update({ deep_media_search_enabled: e.target.checked }).eq('id', client.id);
+                              fetchWhiteLabelClients();
+                            }}
+                          />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">

@@ -380,6 +380,8 @@ const App = () => {
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
+        <Route path="/white-label-login" element={<WhiteLabelPage />} />
+
         <Route path="*" element={
           <LayoutWrapper>
             <div className="min-h-screen flex items-center justify-center">

@@ -373,7 +373,7 @@ export function AdminBankingPage() {
           <h1 className="text-3xl font-bold text-white">Producer Withdrawals</h1>
         </div>
 
-        {error && (
+        {error && withdrawals.length === 0 && (
           <div className="mb-8 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-red-400 text-center">{error}</p>
           </div>

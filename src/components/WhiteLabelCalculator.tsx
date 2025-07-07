@@ -4,6 +4,9 @@ import { createWhiteLabelCheckout, calculateDiscountedPrice } from '../lib/white
 
 interface PricingCalculatorProps {
   onCalculate?: (total: number) => void;
+  initialFeatures?: string[];
+  initialCustomerEmail?: string;
+  initialCompanyName?: string;
 }
 
 interface DiscountInfo {
@@ -12,21 +15,22 @@ interface DiscountInfo {
   percent: number;
 }
 
-export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
+export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCustomerEmail, initialCompanyName }: PricingCalculatorProps) {
   const [selectedPlan, setSelectedPlan] = useState<'starter' | 'pro'>('starter');
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(initialFeatures || []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerData, setCustomerData] = useState({
-    email: '',
+    email: initialCustomerEmail || '',
     name: '',
-    company: ''
+    company: initialCompanyName || ''
   });
   const [discounts, setDiscounts] = useState<{
     plan?: DiscountInfo;
     features: { [key: string]: DiscountInfo };
   }>({ features: {} });
+  const [success, setSuccess] = useState(false);
 
   // Pricing structure
   const plans = {
@@ -198,9 +202,10 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
         customerName: customerData.name,
         companyName: customerData.company
       });
-
       // Redirect to checkout
       window.location.href = checkoutData.url;
+      // If not redirected (e.g., in test mode), show success
+      setSuccess(true);
     } catch (err) {
       console.error('Checkout error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start checkout');
@@ -220,15 +225,31 @@ export function WhiteLabelCalculator({ onCalculate }: PricingCalculatorProps) {
 
   return (
     <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="p-2 bg-blue-500/20 rounded-lg">
-          <Calculator className="w-6 h-6 text-blue-400" />
+      {success ? (
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
+          <h3 className="text-2xl font-bold text-white mb-2">Feature(s) Paid & Activated!</h3>
+          <p className="text-gray-300 mb-4 text-center">
+            Thank you! Your selected feature(s) are now active. You can start using them immediately.
+          </p>
+          <button
+            className="mt-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold"
+            onClick={() => setSuccess(false)}
+          >
+            Close
+          </button>
         </div>
-        <div>
-          <h3 className="text-2xl font-bold text-white">Pricing Calculator</h3>
-          <p className="text-gray-400">Calculate your startup and annual costs</p>
+      ) : (
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 bg-blue-500/20 rounded-lg">
+            <Calculator className="w-6 h-6 text-blue-400" />
+          </div>
+          <div>
+            <h3 className="text-2xl font-bold text-white">Pricing Calculator</h3>
+            <p className="text-gray-400">Calculate your startup and annual costs</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Plan Selection */}
       <div className="mb-8">

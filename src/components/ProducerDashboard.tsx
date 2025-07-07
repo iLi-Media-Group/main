@@ -470,9 +470,9 @@ export function ProducerDashboard() {
   );
 
   // Limit proposals to 5 for display with scrolling
-  const displayPendingProposals = filteredPendingProposals.slice(0, 5);
-  const displayAcceptedProposals = filteredAcceptedProposals.slice(0, 5);
-  const displayDeclinedProposals = filteredDeclinedProposals.slice(0, 5);
+  // const displayPendingProposals = filteredPendingProposals.slice(0, 5);
+  // const displayAcceptedProposals = filteredAcceptedProposals.slice(0, 5);
+  // const displayDeclinedProposals = filteredDeclinedProposals.slice(0, 5);
 
   if (loading) {
     return (
@@ -739,7 +739,7 @@ export function ProducerDashboard() {
                     </div>
                   ) : (
                     <>
-                      {displayPendingProposals.map((proposal) => (
+                      {filteredPendingProposals.map((proposal: Proposal) => (
                         <div
                           key={proposal.id}
                           className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
@@ -800,11 +800,6 @@ export function ProducerDashboard() {
                           </div>
                         </div>
                       ))}
-                      {filteredPendingProposals.length > 5 && (
-                        <div className="text-center py-2 text-gray-400 text-sm">
-                          Showing 5 of {filteredPendingProposals.length} proposals
-                        </div>
-                      )}
                     </>
                   )
                 )}
@@ -816,7 +811,7 @@ export function ProducerDashboard() {
                     </div>
                   ) : (
                     <>
-                      {displayAcceptedProposals.map((proposal) => (
+                      {filteredAcceptedProposals.map((proposal: Proposal) => (
                       <div
                         key={proposal.id}
                         className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
@@ -849,11 +844,6 @@ export function ProducerDashboard() {
                         </div>
                       </div>
                       ))}
-                      {filteredAcceptedProposals.length > 5 && (
-                        <div className="text-center py-2 text-gray-400 text-sm">
-                          Showing 5 of {filteredAcceptedProposals.length} proposals
-                        </div>
-                      )}
                     </>
                   )
                 )}
@@ -865,7 +855,7 @@ export function ProducerDashboard() {
                     </div>
                   ) : (
                     <>
-                      {displayDeclinedProposals.map((proposal) => (
+                      {filteredDeclinedProposals.map((proposal: Proposal) => (
                       <div
                         key={proposal.id}
                         className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
@@ -898,11 +888,6 @@ export function ProducerDashboard() {
                         </div>
                       </div>
                       ))}
-                      {filteredDeclinedProposals.length > 5 && (
-                        <div className="text-center py-2 text-gray-400 text-sm">
-                          Showing 5 of {filteredDeclinedProposals.length} proposals
-                        </div>
-                      )}
                     </>
                   )
                 )}

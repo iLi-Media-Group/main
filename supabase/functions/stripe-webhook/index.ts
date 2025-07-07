@@ -293,6 +293,73 @@ async function handleEvent(event: any) {
       console.error('Error processing one-time payment:', error);
     }
   }
+  // === BEGIN: White Label Feature Activation (Safe Addition) ===
+  try {
+    if (
+      event.type === 'checkout.session.completed' &&
+      stripeData?.metadata?.type === 'white_label_setup' &&
+      stripeData?.payment_status === 'paid'
+    ) {
+      const features = (stripeData.metadata.features || '').split(',').map(f => f.trim()).filter(Boolean);
+      const email = stripeData.metadata.customer_email;
+      const company = stripeData.metadata.company_name || null;
+      if (features.length && email) {
+        // Find the client by email (or company name as fallback)
+        let { data: client, error } = await supabase
+          .from('white_label_clients')
+          .select('*')
+          .ilike('email', email)
+          .maybeSingle();
+        if (!client && company) {
+          // Try by company name if not found by email
+          const res = await supabase
+            .from('white_label_clients')
+            .select('*')
+            .ilike('company_name', company)
+            .maybeSingle();
+          client = res.data;
+        }
+        if (!client) {
+          // Create new client record if not found
+          const { data: newClient, error: insertError } = await supabase
+            .from('white_label_clients')
+            .insert({ email, company_name: company })
+            .select('*')
+            .single();
+          if (insertError) {
+            console.error('Error creating white_label_client:', insertError);
+            return;
+          }
+          client = newClient;
+        }
+        // Prepare update object for paid features
+        const paidFields = {};
+        if (features.includes('ai_recommendations') || features.includes('ai_search_assistance')) {
+          paidFields['ai_search_assistance_paid'] = true;
+        }
+        if (features.includes('producer_applications') || features.includes('producer_onboarding')) {
+          paidFields['producer_onboarding_paid'] = true;
+        }
+        if (features.includes('deep_media_search')) {
+          paidFields['deep_media_search_paid'] = true;
+        }
+        if (Object.keys(paidFields).length) {
+          const { error: updateError } = await supabase
+            .from('white_label_clients')
+            .update(paidFields)
+            .eq('id', client.id);
+          if (updateError) {
+            console.error('Error updating paid features for client:', updateError);
+          } else {
+            console.info(`Enabled paid features for white label client ${client.id}: ${Object.keys(paidFields).join(', ')}`);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('White label feature activation error:', err);
+  }
+  // === END: White Label Feature Activation (Safe Addition) ===
 }
 
 async function syncCustomerFromStripe(customerId: string) {
