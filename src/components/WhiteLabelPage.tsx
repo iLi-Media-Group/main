@@ -6,28 +6,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 const clientId = process.env.REACT_APP_WHITE_LABEL_CLIENT_ID || '';
 
-function WhiteLabelFeatureExamples() {
-  const flags = useWhiteLabelFeatureFlags();
-  const { user } = useAuth();
-  
-  // Only show for unauthenticated users
-  if (user) {
-    return null;
-  }
-  
-  return (
-    <div className="mb-8">
-      <h2 className="text-xl font-bold text-white mb-2">Enabled Features</h2>
-      <ul className="text-white list-disc ml-6">
-        {flags?.ai_search_assistance_enabled && <li>AI Search Assistance</li>}
-        {flags?.producer_onboarding_enabled && <li>Producer Onboarding</li>}
-        {flags?.deep_media_search_enabled && <li>Deep Media Search</li>}
-        {!flags && <li>Loading feature flags...</li>}
-      </ul>
-    </div>
-  );
-}
-
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -85,8 +63,6 @@ export function WhiteLabelPage() {
   return (
     <WhiteLabelFeatureFlagsProvider clientId={clientId}>
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-        {/* Example usage of feature flags */}
-        <WhiteLabelFeatureExamples />
         <header className="relative overflow-hidden py-20 border-b border-blue-500/20">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-900/50 to-purple-900/50 z-0"></div>
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=1200&auto=format&fit=crop')] bg-cover bg-center opacity-20 z-0"></div>
