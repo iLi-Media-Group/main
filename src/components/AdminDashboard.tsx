@@ -611,6 +611,10 @@ export function AdminDashboard() {
     const contentWidth = pageWidth - (margin * 2);
     let y = 60;
     
+    // White background
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+    
     // Add logo if provided
     if (logoUrl) {
       try {
@@ -633,10 +637,12 @@ export function AdminDashboard() {
     // Title and subtitle
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(24);
+    doc.setTextColor(30, 30, 30);
     doc.text('Comprehensive Revenue Report', margin, y);
     y += 25;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
+    doc.setTextColor(60, 60, 60);
     doc.text('This report provides a comprehensive breakdown of revenue and business metrics.', margin, y);
     y += 20;
     doc.setFontSize(10);
@@ -651,77 +657,75 @@ export function AdminDashboard() {
     
     // Revenue Summary Table
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(13);
+    doc.setTextColor(30, 30, 30);
     doc.text('Revenue Breakdown', margin, y);
     y += 20;
     
-    // Table headers
-    doc.setFontSize(9);
-    doc.setFillColor(40, 40, 80);
+    // Table headers (fit 5 columns in contentWidth)
+    const colWidths = [110, 70, 90, 70, 90];
+    const colX = [margin, margin+colWidths[0], margin+colWidths[0]+colWidths[1], margin+colWidths[0]+colWidths[1]+colWidths[2], margin+colWidths[0]+colWidths[1]+colWidths[2]+colWidths[3]];
+    doc.setFontSize(10);
+    doc.setFillColor(230, 230, 230);
     doc.rect(margin, y, contentWidth, 18, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.text('Category', margin + 5, y + 12);
-    doc.text('Paid Count', margin + 120, y + 12);
-    doc.text('Paid Amount', margin + 180, y + 12);
-    doc.text('Pending Count', margin + 260, y + 12);
-    doc.text('Pending Amount', margin + 340, y + 12);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Category', colX[0]+4, y + 12);
+    doc.text('Paid', colX[1]+4, y + 12);
+    doc.text('Paid $', colX[2]+4, y + 12);
+    doc.text('Pending', colX[3]+4, y + 12);
+    doc.text('Pending $', colX[4]+4, y + 12);
     y += 22;
     
     // Table rows
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    
+    doc.setFontSize(10);
+    doc.setTextColor(30, 30, 30);
     // Track Sales
-    doc.text('Track Sales', margin + 5, y + 12);
-    doc.text(stats.track_sales_count.toString(), margin + 120, y + 12);
-    doc.text(`$${stats.track_sales_amount.toFixed(2)}`, margin + 180, y + 12);
-    doc.text('-', margin + 260, y + 12);
-    doc.text('-', margin + 340, y + 12);
+    doc.text('Track Sales', colX[0]+4, y + 12);
+    doc.text(stats.track_sales_count.toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.track_sales_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[3]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[4]+4, y + 12, { align: 'left' });
     y += 18;
-    
     // Sync Proposals
-    doc.text('Sync Proposals', margin + 5, y + 12);
-    doc.text(stats.sync_proposals_paid_count.toString(), margin + 120, y + 12);
-    doc.text(`$${stats.sync_proposals_paid_amount.toFixed(2)}`, margin + 180, y + 12);
-    doc.text(stats.sync_proposals_pending_count.toString(), margin + 260, y + 12);
-    doc.text(`$${stats.sync_proposals_pending_amount.toFixed(2)}`, margin + 340, y + 12);
+    doc.text('Sync Proposals', colX[0]+4, y + 12);
+    doc.text(stats.sync_proposals_paid_count.toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.sync_proposals_paid_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text(stats.sync_proposals_pending_count.toString(), colX[3]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.sync_proposals_pending_amount.toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
     y += 18;
-    
     // Custom Syncs
-    doc.text('Custom Syncs', margin + 5, y + 12);
-    doc.text(stats.custom_syncs_paid_count.toString(), margin + 120, y + 12);
-    doc.text(`$${stats.custom_syncs_paid_amount.toFixed(2)}`, margin + 180, y + 12);
-    doc.text(stats.custom_syncs_pending_count.toString(), margin + 260, y + 12);
-    doc.text(`$${stats.custom_syncs_pending_amount.toFixed(2)}`, margin + 340, y + 12);
+    doc.text('Custom Syncs', colX[0]+4, y + 12);
+    doc.text(stats.custom_syncs_paid_count.toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.custom_syncs_paid_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text(stats.custom_syncs_pending_count.toString(), colX[3]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.custom_syncs_pending_amount.toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
     y += 22;
-    
     // Totals row
-    doc.setFillColor(60, 60, 120);
-    doc.rect(margin, y, contentWidth, 18, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(255, 255, 255);
-    doc.text('Totals', margin + 5, y + 12);
-    doc.text((stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count).toString(), margin + 120, y + 12);
-    doc.text(`$${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}`, margin + 180, y + 12);
-    doc.text((stats.sync_proposals_pending_count + stats.custom_syncs_pending_count).toString(), margin + 260, y + 12);
-    doc.text(`$${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}`, margin + 340, y + 12);
+    doc.setFillColor(210, 210, 210);
+    doc.rect(margin, y, contentWidth, 18, 'F');
+    doc.setTextColor(30, 30, 30);
+    doc.text('Totals', colX[0]+4, y + 12);
+    doc.text((stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count).toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text((stats.sync_proposals_pending_count + stats.custom_syncs_pending_count).toString(), colX[3]+4, y + 12, { align: 'left' });
+    doc.text(`$${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
     y += 30;
-    
     // Business Metrics
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(13);
+    doc.setTextColor(30, 30, 30);
     doc.text('Business Metrics', margin, y);
     y += 20;
-    
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(11);
+    doc.setTextColor(30, 30, 30);
     doc.text(`Total Producers: ${stats.total_producers}`, margin, y);
     y += 16;
     doc.text(`Total Clients: ${stats.total_clients}`, margin, y);
     y += 16;
     doc.text(`New Memberships (This Period): ${stats.new_memberships_count || 0}`, margin, y);
-    
     // Footer with branding
     const footerY = pageHeight - 60;
     doc.setDrawColor(90, 90, 180);
@@ -736,7 +740,6 @@ export function AdminDashboard() {
     doc.setTextColor(90, 90, 180);
     doc.text(`Website: ${domain || ''}`, margin, footerY + 35);
     doc.text(`Email: ${email || ''}`, margin, footerY + 50);
-    
     // Download PDF
     doc.save('comprehensive-revenue-report.pdf');
   };
