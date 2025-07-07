@@ -17,29 +17,24 @@ export function WhiteLabelClientLogin() {
     setError('');
     setLoading(true);
     try {
-      // Check if this is a white label client
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, account_type, password_setup_required')
+      // Check if this is a white label client (lookup in white_label_clients)
+      const { data: client, error: clientError } = await supabase
+        .from('white_label_clients')
+        .select('id, email, password_setup_required')
         .eq('email', email)
         .maybeSingle();
-      if (profileError && profileError.code !== 'PGRST116') {
-        setError('Error looking up profile.');
+      if (clientError && clientError.code !== 'PGRST116') {
+        setError('Error looking up white label client.');
         setLoading(false);
         return;
       }
-      if (!profile) {
+      if (!client) {
         setError('No white label client found for this email.');
         setLoading(false);
         return;
       }
-      if (profile.account_type !== 'white_label') {
-        setError('This is not a white label client account.');
-        setLoading(false);
-        return;
-      }
       // If password setup is required, redirect BEFORE sign in
-      if (profile.password_setup_required) {
+      if (client.password_setup_required) {
         navigate('/white-label-password-setup', { state: { email } });
         setLoading(false);
         return;
