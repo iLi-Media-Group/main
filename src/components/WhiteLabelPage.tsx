@@ -2,11 +2,19 @@ import React, { useState } from 'react';
 import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 import { WhiteLabelFeatureFlagsProvider, useWhiteLabelFeatureFlags } from '../contexts/WhiteLabelFeatureFlagsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const clientId = process.env.REACT_APP_WHITE_LABEL_CLIENT_ID || '';
 
 function WhiteLabelFeatureExamples() {
   const flags = useWhiteLabelFeatureFlags();
+  const { user } = useAuth();
+  
+  // Don't show this component for logged-in producers or admins
+  if (user) {
+    return null;
+  }
+  
   return (
     <div className="mb-8">
       <h2 className="text-xl font-bold text-white mb-2">Enabled Features</h2>
