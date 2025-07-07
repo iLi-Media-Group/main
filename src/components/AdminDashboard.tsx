@@ -574,19 +574,20 @@ export function AdminDashboard() {
     const tempPassword = generateTempPassword();
 
     const emailLower = newClient.owner_email.toLowerCase();
-    // Create Supabase Auth user (admin API)
+    // Create Supabase Auth user via Edge Function
     let authUserId = null;
     try {
-      const { data, error: authError } = await supabase.auth.admin.createUser({
-        email: emailLower,
-        password: tempPassword,
-        email_confirm: true,
+      const response = await fetch('/functions/v1/create-white-label-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailLower, password: tempPassword }),
       });
-      if (authError) {
-        setWhiteLabelError('Failed to create auth user: ' + authError.message);
+      const result = await response.json();
+      if (!response.ok) {
+        setWhiteLabelError('Failed to create auth user: ' + (result.error || 'Unknown error'));
         return;
       }
-      authUserId = data.user?.id;
+      authUserId = result.user?.id;
     } catch (err) {
       setWhiteLabelError('Failed to create auth user.');
       return;
