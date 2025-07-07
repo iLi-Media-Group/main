@@ -23,15 +23,18 @@ export function WhiteLabelClientLogin() {
         .select('id, account_type, password_setup_required')
         .eq('email', email)
         .maybeSingle();
-      if (profileError) {
-        if (profileError.code !== 'PGRST116') {
-          setError('Error looking up profile');
-          setLoading(false);
-          return;
-        }
+      if (profileError && profileError.code !== 'PGRST116') {
+        setError('Error looking up profile.');
+        setLoading(false);
+        return;
       }
-      if (!profile || profile.account_type !== 'white_label') {
-        setError('Not a white label client account.');
+      if (!profile) {
+        setError('No white label client found for this email.');
+        setLoading(false);
+        return;
+      }
+      if (profile.account_type !== 'white_label') {
+        setError('This is not a white label client account.');
         setLoading(false);
         return;
       }
