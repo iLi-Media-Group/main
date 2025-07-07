@@ -124,7 +124,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                     <Link to="/producer/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
                       <LogIn className="w-4 h-4 mr-2" />Producer Login
                     </Link>
-                    <Link to="/white-label-login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                    <Link to="/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
                       <LogIn className="w-4 h-4 mr-2" />White Label Client Login
                     </Link>
                   </div>
