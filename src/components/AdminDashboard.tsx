@@ -13,6 +13,8 @@ import { CompensationSettings } from './CompensationSettings';
 import { DiscountManagement } from './DiscountManagement';
 import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
 import { Link } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 interface UserStats {
   total_clients: number;
@@ -577,6 +579,66 @@ export function AdminDashboard() {
       return 0;
     });
 
+  const handleDownloadRevenuePDF = async () => {
+    // Fetch logo and branding info if available (replace with your actual logic)
+    const logoUrl = editingClient?.logo_url || null;
+    const companyName = editingClient?.display_name || 'MyBeatFi';
+    const domain = editingClient?.domain || 'www.mybeatfi.com';
+    const email = editingClient?.owner?.email || 'info@mybeatfi.io';
+    // Generate PDF
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 40;
+    // Add logo if provided
+    if (logoUrl) {
+      const img = await fetch(logoUrl).then(r => r.blob());
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(img);
+      });
+      doc.addImage(base64, 'PNG', 40, y, 100, 40, undefined, 'FAST');
+    }
+    // Title and subtitle
+    y += logoUrl ? 60 : 0;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(32);
+    doc.text('Monthly Revenue Report', 160, y, { align: 'left' });
+    y += 30;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(16);
+    doc.text('This report provides a summary of total revenue for the current month.', 160, y, { align: 'left' });
+    y += 20;
+    doc.setFontSize(12);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, y, { align: 'left' });
+    // Section Divider
+    y += 20;
+    doc.setDrawColor(90, 90, 180);
+    doc.setLineWidth(2);
+    doc.line(40, y, pageWidth - 40, y);
+    y += 30;
+    // Revenue Summary
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text(`Total Revenue (Current Month): $${stats.total_revenue.toFixed(2)}`, 50, y);
+    // Footer with branding
+    const footerY = doc.internal.pageSize.getHeight() - 80;
+    doc.setDrawColor(90, 90, 180);
+    doc.setLineWidth(1);
+    doc.line(40, footerY, pageWidth - 40, footerY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(90, 90, 180);
+    doc.text(companyName || '', 50, footerY + 25);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+    doc.setTextColor(90, 90, 180);
+    doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
+    doc.text(`Email: ${email || ''}`, 50, footerY + 65);
+    // Download PDF
+    doc.save('total-revenue-report.pdf');
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -650,8 +712,15 @@ export function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Revenue (Current Month)</p>
-                <p className="text-3xl font-bold text-white">
+                <p className="text-3xl font-bold text-white flex items-center gap-2">
                   ${stats.total_revenue.toFixed(2)}
+                  <button
+                    onClick={handleDownloadRevenuePDF}
+                    title="Download PDF"
+                    className="ml-2 p-1 rounded hover:bg-blue-600/30 transition-colors"
+                  >
+                    <Download className="w-5 h-5 text-blue-400" />
+                  </button>
                 </p>
               </div>
               <div 

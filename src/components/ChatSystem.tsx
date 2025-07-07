@@ -223,6 +223,8 @@ export function ChatSystem() {
       // Subscribe to new room messages
       const messageSub = subscribeToMessages();
       setSubscription(messageSub);
+      // Scroll to top when entering a chat room
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     return () => {
