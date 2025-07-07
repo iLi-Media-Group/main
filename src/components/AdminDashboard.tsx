@@ -597,25 +597,35 @@ export function AdminDashboard() {
     });
 
   const handleDownloadRevenuePDF = async () => {
-    // Fetch logo and branding info if available (replace with your actual logic)
-    const logoUrl = editingClient?.logo_url || null;
+    // Fetch logo from site_settings (same as header)
+    let logoUrl = null;
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'logo_url')
+        .single();
+      if (!error && data) {
+        logoUrl = data.value;
+      }
+    } catch (e) {
+      // fallback: no logo
+    }
     const companyName = editingClient?.display_name || 'MyBeatFi';
     const domain = editingClient?.domain || 'www.mybeatfi.com';
     const email = editingClient?.owner?.email || 'info@mybeatfi.io';
-    
-    // Generate PDF
+    // PDF setup
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 40;
     const contentWidth = pageWidth - (margin * 2);
-    let y = 60;
-    
-    // White background
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-    
-    // Add logo if provided
+    let y = 0;
+    // Blue header bar
+    doc.setFillColor(30, 41, 59); // #1e293b
+    doc.rect(0, 0, pageWidth, 80, 'F');
+    y = 40;
+    // Logo in header
     if (logoUrl) {
       try {
         const img = await fetch(logoUrl).then(r => r.blob());
@@ -624,44 +634,40 @@ export function AdminDashboard() {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(img);
         });
-        doc.addImage(base64, 'PNG', margin, y, 80, 32, undefined, 'FAST');
-        y += 50;
+        doc.addImage(base64, 'PNG', margin, y-20, 80, 32, undefined, 'FAST');
       } catch (error) {
-        console.error('Error loading logo:', error);
-        y += 20;
+        // ignore logo error
       }
-    } else {
-      y += 20;
     }
-    
-    // Title and subtitle
+    // Title in header
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.setTextColor(30, 30, 30);
-    doc.text('Comprehensive Revenue Report', margin, y);
-    y += 25;
+    doc.setFontSize(26);
+    doc.setTextColor(255,255,255);
+    doc.text('Comprehensive Revenue Report', margin+100, y, { align: 'left' });
+    // Subtitle
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(12);
-    doc.setTextColor(60, 60, 60);
-    doc.text('This report provides a comprehensive breakdown of revenue and business metrics.', margin, y);
-    y += 20;
+    doc.setFontSize(13);
+    doc.setTextColor(220,220,220);
+    doc.text('This report provides a comprehensive breakdown of revenue and business metrics.', margin+100, y+22, { align: 'left' });
+    // Date
     doc.setFontSize(10);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
-    
+    doc.setTextColor(200,200,200);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin+100, y+38, { align: 'left' });
+    // White background for content
+    doc.setFillColor(255,255,255);
+    doc.rect(0, 80, pageWidth, pageHeight-80, 'F');
+    y = 110;
     // Section Divider
-    y += 25;
     doc.setDrawColor(90, 90, 180);
     doc.setLineWidth(1);
     doc.line(margin, y, pageWidth - margin, y);
     y += 20;
-    
     // Revenue Summary Table
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(30, 30, 30);
     doc.text('Revenue Breakdown', margin, y);
     y += 20;
-    
     // Table headers (fit 5 columns in contentWidth)
     const colWidths = [110, 70, 90, 70, 90];
     const colX = [margin, margin+colWidths[0], margin+colWidths[0]+colWidths[1], margin+colWidths[0]+colWidths[1]+colWidths[2], margin+colWidths[0]+colWidths[1]+colWidths[2]+colWidths[3]];
@@ -675,27 +681,35 @@ export function AdminDashboard() {
     doc.text('Pending', colX[3]+4, y + 12);
     doc.text('Pending $', colX[4]+4, y + 12);
     y += 22;
-    
     // Table rows
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(30, 30, 30);
+    // Helper for truncation
+    const fitText = (text: string, maxWidth: number) => {
+      if (doc.getTextWidth(text) <= maxWidth) return text;
+      let truncated = text;
+      while (doc.getTextWidth(truncated + '…') > maxWidth && truncated.length > 0) {
+        truncated = truncated.slice(0, -1);
+      }
+      return truncated + '…';
+    };
     // Track Sales
-    doc.text('Track Sales', colX[0]+4, y + 12);
+    doc.text(fitText('Track Sales', colWidths[0]-8), colX[0]+4, y + 12);
     doc.text(stats.track_sales_count.toString(), colX[1]+4, y + 12, { align: 'left' });
     doc.text(`$${stats.track_sales_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
     doc.text('-', colX[3]+4, y + 12, { align: 'left' });
     doc.text('-', colX[4]+4, y + 12, { align: 'left' });
     y += 18;
     // Sync Proposals
-    doc.text('Sync Proposals', colX[0]+4, y + 12);
+    doc.text(fitText('Sync Proposals', colWidths[0]-8), colX[0]+4, y + 12);
     doc.text(stats.sync_proposals_paid_count.toString(), colX[1]+4, y + 12, { align: 'left' });
     doc.text(`$${stats.sync_proposals_paid_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
     doc.text(stats.sync_proposals_pending_count.toString(), colX[3]+4, y + 12, { align: 'left' });
     doc.text(`$${stats.sync_proposals_pending_amount.toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
     y += 18;
     // Custom Syncs
-    doc.text('Custom Syncs', colX[0]+4, y + 12);
+    doc.text(fitText('Custom Syncs', colWidths[0]-8), colX[0]+4, y + 12);
     doc.text(stats.custom_syncs_paid_count.toString(), colX[1]+4, y + 12, { align: 'left' });
     doc.text(`$${stats.custom_syncs_paid_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
     doc.text(stats.custom_syncs_pending_count.toString(), colX[3]+4, y + 12, { align: 'left' });
