@@ -19,7 +19,7 @@ export default function WhiteLabelAdminPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState<WhiteLabelClient | null>(null);
-  const [form, setForm] = useState({ email: '', company_name: '', first_name: '', last_name: '' });
+  const [form, setForm] = useState({ email: '', company_name: '', first_name: '', last_name: '', domain: '' });
   const [deletingClient, setDeletingClient] = useState<WhiteLabelClient | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [apiToken, setApiToken] = useState<string | null>(null);
@@ -46,13 +46,14 @@ export default function WhiteLabelAdminPage() {
       company_name: client.company_name,
       first_name: '',
       last_name: '',
+      domain: client.domain || '',
     });
     setShowForm(true);
   };
 
   const handleAdd = () => {
     setEditingClient(null);
-    setForm({ email: '', company_name: '', first_name: '', last_name: '' });
+    setForm({ email: '', company_name: '', first_name: '', last_name: '', domain: '' });
     setShowForm(true);
   };
 
@@ -73,16 +74,54 @@ export default function WhiteLabelAdminPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingClient) {
-      // Update
-      await supabase.from('profiles').update(form).eq('id', editingClient.id);
-    } else {
-      // Add
-      await supabase.from('profiles').insert([{ ...form, account_type: 'white_label' }]);
+    try {
+      if (editingClient) {
+        // Update existing profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            email: form.email,
+            first_name: form.first_name,
+            last_name: form.last_name
+          })
+          .eq('id', editingClient.id);
+        
+        if (profileError) throw profileError;
+      } else {
+        // Create new profile and white label client
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .insert([{
+            email: form.email,
+            first_name: form.first_name,
+            last_name: form.last_name,
+            account_type: 'white_label'
+          }])
+          .select()
+          .single();
+        
+        if (profileError) throw profileError;
+        
+        // Create white label client record
+        const { error: clientError } = await supabase
+          .from('white_label_clients')
+          .insert({
+            owner_id: profileData.id,
+            owner_email: form.email,
+            display_name: form.company_name,
+            domain: form.domain || null
+          });
+        
+        if (clientError) throw clientError;
+      }
+      
+      setShowForm(false);
+      setEditingClient(null);
+      fetchClients();
+    } catch (error) {
+      console.error('Error creating/updating white label client:', error);
+      setError('Failed to create/update white label client');
     }
-    setShowForm(false);
-    setEditingClient(null);
-    // No need to fetch clients here; FeatureManagement will refresh its own list
   };
 
   // Feature toggle (e.g., AI Recommendation)
@@ -193,6 +232,17 @@ export default function WhiteLabelAdminPage() {
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                     required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Domain (Optional)</label>
+                  <input
+                    type="text"
+                    name="domain"
+                    value={form.domain}
+                    onChange={handleFormChange}
+                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                    placeholder="example.com"
                   />
                 </div>
                 <div>
