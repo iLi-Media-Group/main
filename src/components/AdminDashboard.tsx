@@ -573,12 +573,12 @@ export function AdminDashboard() {
     };
     const tempPassword = generateTempPassword();
 
+    const emailLower = newClient.owner_email.toLowerCase();
     // Create Supabase Auth user (admin API)
     let authUserId = null;
     try {
-      // Use service role key if available, otherwise this will fail for anon key
       const { data, error: authError } = await supabase.auth.admin.createUser({
-        email: newClient.owner_email,
+        email: emailLower,
         password: tempPassword,
         email_confirm: true,
       });
@@ -595,7 +595,7 @@ export function AdminDashboard() {
     // Insert into white_label_clients
     const payload = {
       display_name: newClient.display_name,
-      email: newClient.owner_email,
+      email: emailLower,
       owner_id: authUserId,
       domain: newClient.domain,
       primary_color: newClient.primary_color,

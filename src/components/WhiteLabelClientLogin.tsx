@@ -18,10 +18,11 @@ export function WhiteLabelClientLogin() {
     setLoading(true);
     try {
       // Check if this is a white label client (lookup in white_label_clients)
+      const emailLower = email.toLowerCase();
       const { data: client, error: clientError } = await supabase
         .from('white_label_clients')
         .select('id, email, password_setup_required')
-        .eq('email', email)
+        .eq('email', emailLower)
         .maybeSingle();
       if (clientError && clientError.code !== 'PGRST116') {
         setError('Error looking up white label client.');
@@ -35,12 +36,12 @@ export function WhiteLabelClientLogin() {
       }
       // If password setup is required, redirect BEFORE sign in
       if (client.password_setup_required) {
-        navigate('/white-label-password-setup', { state: { email } });
+        navigate('/white-label-password-setup', { state: { email: emailLower } });
         setLoading(false);
         return;
       }
       // Otherwise, try to sign in
-      const { error: signInError } = await signIn(email, password);
+      const { error: signInError } = await signIn(emailLower, password);
       if (signInError) {
         setError('Invalid email or password.');
         setLoading(false);
