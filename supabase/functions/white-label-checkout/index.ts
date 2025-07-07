@@ -181,6 +181,23 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Create Auth user if not exists
+    if (password && customer_email) {
+      const emailLower = customer_email.toLowerCase();
+      // Check if user already exists
+      const { data: existingUser } = await supabase.auth.admin.listUsers({ email: emailLower });
+      if (!existingUser?.users?.length) {
+        const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+          email: emailLower,
+          password,
+          email_confirm: true,
+        });
+        if (userError) {
+          return corsResponse({ error: 'Failed to create auth user: ' + userError.message }, 400);
+        }
+      }
+    }
+
     // Create or get Stripe customer
     let customerId;
     const { data: existingCustomer } = await supabase

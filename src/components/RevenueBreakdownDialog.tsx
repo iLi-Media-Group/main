@@ -513,20 +513,33 @@ export function RevenueBreakdownDialog({
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(img);
         });
-        doc.addImage(base64, 'PNG', 40, 32, 100, 40, undefined, 'FAST');
+        // Render logo as a square (max 60x60)
+        doc.addImage(base64, 'PNG', 40, 32, 60, 60, undefined, 'FAST');
       }
       // Title
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(32);
+      let titleFontSize = 32;
+      let title = 'Monthly Revenue Report';
+      let titleX = 120;
+      let maxTitleWidth = pageWidth - 180;
+      // Reduce font size if title is too wide
+      doc.setFontSize(titleFontSize);
+      while (doc.getTextWidth(title) > maxTitleWidth && titleFontSize > 16) {
+        titleFontSize -= 2;
+        doc.setFontSize(titleFontSize);
+      }
       doc.setTextColor(230, 230, 255);
-      doc.text('Monthly Revenue Report', 160, 70, { align: 'left' });
+      doc.text(title, titleX, 70, { maxWidth: maxTitleWidth });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(16);
       doc.setTextColor(180, 180, 220);
-      doc.text('This report provides an in-depth analysis of revenue performance.', 160, 100, { align: 'left' });
+      // Wrap subtitle if needed
+      const subtitle = 'This report provides an in-depth analysis of revenue performance.';
+      const subtitleLines = doc.splitTextToSize(subtitle, maxTitleWidth);
+      doc.text(subtitleLines, titleX, 100);
       doc.setFontSize(12);
       doc.setTextColor(180, 180, 220);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, 120, { align: 'left' });
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, titleX, 120);
       // === Section Divider ===
       doc.setDrawColor(90, 90, 180);
       doc.setLineWidth(2);
