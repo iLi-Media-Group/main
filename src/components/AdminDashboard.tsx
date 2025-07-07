@@ -62,11 +62,22 @@ export function AdminDashboard() {
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<UserStats>({
+  const [stats, setStats] = useState<any>({
     total_clients: 0,
     total_producers: 0,
     total_sales: 0,
-    total_revenue: 0
+    total_revenue: 0,
+    track_sales_count: 0,
+    track_sales_amount: 0,
+    sync_proposals_paid_count: 0,
+    sync_proposals_paid_amount: 0,
+    sync_proposals_pending_count: 0,
+    sync_proposals_pending_amount: 0,
+    custom_syncs_paid_count: 0,
+    custom_syncs_paid_amount: 0,
+    custom_syncs_pending_count: 0,
+    custom_syncs_pending_amount: 0,
+    new_memberships_count: 0
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
@@ -218,59 +229,77 @@ export function AdminDashboard() {
           console.error('Error fetching custom sync requests:', customSyncError);
         }
 
-        // Fetch track sales data
+        // Fetch track sales data (all paid)
         const { data: trackSalesData, error: trackSalesError } = await supabase
           .from('sales')
-          .select('id, amount, created_at')
-          .gte('created_at', `${currentMonth}-01`)
-          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
-
+          .select('id, amount, created_at');
         if (trackSalesError) {
           console.error('Error fetching track sales:', trackSalesError);
         }
+        const trackSales = trackSalesData || [];
+        const track_sales_count = trackSales.length;
+        const track_sales_amount = trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
 
-        // Fetch sync proposals data
+        // Fetch sync proposals (paid and pending)
         const { data: syncProposalsData, error: syncProposalsError } = await supabase
           .from('sync_proposals')
-          .select('id, sync_fee, created_at, status')
-          .gte('created_at', `${currentMonth}-01`)
-          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
-          .eq('status', 'accepted');
-
+          .select('id, sync_fee, status, payment_status')
         if (syncProposalsError) {
           console.error('Error fetching sync proposals:', syncProposalsError);
         }
-
-        // Calculate total sales and revenue
-        const trackSales = trackSalesData || [];
         const syncProposals = syncProposalsData || [];
-        const customSyncRequests = customSyncData || [];
+        const sync_proposals_paid = syncProposals.filter(p => p.status === 'accepted' && p.payment_status === 'paid');
+        const sync_proposals_pending = syncProposals.filter(p => p.status === 'pending' || p.status === 'pending_client' || p.status === 'producer_accepted');
+        const sync_proposals_paid_count = sync_proposals_paid.length;
+        const sync_proposals_paid_amount = sync_proposals_paid.reduce((sum, p) => sum + (p.sync_fee || 0), 0);
+        const sync_proposals_pending_count = sync_proposals_pending.length;
+        const sync_proposals_pending_amount = sync_proposals_pending.reduce((sum, p) => sum + (p.sync_fee || 0), 0);
 
-        const totalSales = trackSales.length + syncProposals.length + customSyncRequests.length;
-        const totalRevenue = 
-          (trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0)) +
-          (syncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0)) +
-          (customSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0));
+        // Fetch custom sync requests (paid and pending) - only fetch once
+        const { data: customSyncs, error: customSyncError } = await supabase
+          .from('custom_sync_requests')
+          .select('id, sync_fee, status, payment_status');
+        if (customSyncError) {
+          console.error('Error fetching custom sync requests:', customSyncError);
+        }
+        const customSyncsData = customSyncs || [];
+        const custom_syncs_paid = customSyncsData.filter(c => (c.status === 'completed' || c.status === 'accepted') && c.payment_status === 'paid');
+        const custom_syncs_pending = customSyncsData.filter(c => c.status === 'pending' || c.status === 'negotiating' || c.status === 'client_acceptance_required');
+        const custom_syncs_paid_count = custom_syncs_paid.length;
+        const custom_syncs_paid_amount = custom_syncs_paid.reduce((sum, c) => sum + (c.sync_fee || 0), 0);
+        const custom_syncs_pending_count = custom_syncs_pending.length;
+        const custom_syncs_pending_amount = custom_syncs_pending.reduce((sum, c) => sum + (c.sync_fee || 0), 0);
 
-        // Debug logging
-        console.log('Analytics Debug Info:', {
-          currentMonth,
-          producerUsers: producerUsers.length,
-          trackSales: trackSales.length,
-          syncProposals: syncProposals.length,
-          customSyncRequests: customSyncRequests.length,
-          totalSales,
-          totalRevenue,
-          trackSalesData: trackSales.slice(0, 3), // First 3 for debugging
-          syncProposalsData: syncProposals.slice(0, 3), // First 3 for debugging
-          customSyncData: customSyncRequests.slice(0, 3) // First 3 for debugging
-        });
+        // Fetch new memberships for the current period
+        const { data: newMembershipsData, error: newMembershipsError } = await supabase
+          .from('profiles')
+          .select('id, created_at')
+          .gte('created_at', `${currentMonth}-01`)
+          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
+      
+      if (newMembershipsError) {
+        console.error('Error fetching new memberships:', newMembershipsError);
+      }
+      const new_memberships_count = newMembershipsData?.length || 0;
 
-        // Update stats with comprehensive sales data
-        setStats(prev => ({
+        // Update stats with comprehensive data
+        setStats((prev: typeof stats) => ({
           ...prev,
-          total_sales: totalSales,
-          total_revenue: totalRevenue
+          total_clients: clients.length,
+          total_producers: producerUsers.length,
+          total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count,
+          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount,
+          track_sales_count,
+          track_sales_amount,
+          sync_proposals_paid_count,
+          sync_proposals_paid_amount,
+          sync_proposals_pending_count,
+          sync_proposals_pending_amount,
+          custom_syncs_paid_count,
+          custom_syncs_paid_amount,
+          custom_syncs_pending_count,
+          custom_syncs_pending_amount,
+          new_memberships_count
         }));
 
         // Fetch producer analytics using the existing function
@@ -585,58 +614,143 @@ export function AdminDashboard() {
     const companyName = editingClient?.display_name || 'MyBeatFi';
     const domain = editingClient?.domain || 'www.mybeatfi.com';
     const email = editingClient?.owner?.email || 'info@mybeatfi.io';
+    
     // Generate PDF
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 40;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 40;
+    const contentWidth = pageWidth - (margin * 2);
+    let y = 60;
+    
     // Add logo if provided
     if (logoUrl) {
-      const img = await fetch(logoUrl).then(r => r.blob());
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve) => {
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(img);
-      });
-      doc.addImage(base64, 'PNG', 40, y, 100, 40, undefined, 'FAST');
+      try {
+        const img = await fetch(logoUrl).then(r => r.blob());
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(img);
+        });
+        doc.addImage(base64, 'PNG', margin, y, 80, 32, undefined, 'FAST');
+        y += 50;
+      } catch (error) {
+        console.error('Error loading logo:', error);
+        y += 20;
+      }
+    } else {
+      y += 20;
     }
+    
     // Title and subtitle
-    y += logoUrl ? 60 : 0;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(32);
-    doc.text('Monthly Revenue Report', 160, y, { align: 'left' });
-    y += 30;
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(16);
-    doc.text('This report provides a summary of total revenue for the current month.', 160, y, { align: 'left' });
-    y += 20;
-    doc.setFontSize(12);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, y, { align: 'left' });
-    // Section Divider
-    y += 20;
-    doc.setDrawColor(90, 90, 180);
-    doc.setLineWidth(2);
-    doc.line(40, y, pageWidth - 40, y);
-    y += 30;
-    // Revenue Summary
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(24);
-    doc.text(`Total Revenue (Current Month): $${stats.total_revenue.toFixed(2)}`, 50, y);
-    // Footer with branding
-    const footerY = doc.internal.pageSize.getHeight() - 80;
-    doc.setDrawColor(90, 90, 180);
-    doc.setLineWidth(1);
-    doc.line(40, footerY, pageWidth - 40, footerY);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(90, 90, 180);
-    doc.text(companyName || '', 50, footerY + 25);
+    doc.text('Comprehensive Revenue Report', margin, y);
+    y += 25;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
+    doc.text('This report provides a comprehensive breakdown of revenue and business metrics.', margin, y);
+    y += 20;
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, y);
+    
+    // Section Divider
+    y += 25;
+    doc.setDrawColor(90, 90, 180);
+    doc.setLineWidth(1);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 20;
+    
+    // Revenue Summary Table
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('Revenue Breakdown', margin, y);
+    y += 20;
+    
+    // Table headers
+    doc.setFontSize(9);
+    doc.setFillColor(40, 40, 80);
+    doc.rect(margin, y, contentWidth, 18, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Category', margin + 5, y + 12);
+    doc.text('Paid Count', margin + 120, y + 12);
+    doc.text('Paid Amount', margin + 180, y + 12);
+    doc.text('Pending Count', margin + 260, y + 12);
+    doc.text('Pending Amount', margin + 340, y + 12);
+    y += 22;
+    
+    // Table rows
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    // Track Sales
+    doc.text('Track Sales', margin + 5, y + 12);
+    doc.text(stats.track_sales_count.toString(), margin + 120, y + 12);
+    doc.text(`$${stats.track_sales_amount.toFixed(2)}`, margin + 180, y + 12);
+    doc.text('-', margin + 260, y + 12);
+    doc.text('-', margin + 340, y + 12);
+    y += 18;
+    
+    // Sync Proposals
+    doc.text('Sync Proposals', margin + 5, y + 12);
+    doc.text(stats.sync_proposals_paid_count.toString(), margin + 120, y + 12);
+    doc.text(`$${stats.sync_proposals_paid_amount.toFixed(2)}`, margin + 180, y + 12);
+    doc.text(stats.sync_proposals_pending_count.toString(), margin + 260, y + 12);
+    doc.text(`$${stats.sync_proposals_pending_amount.toFixed(2)}`, margin + 340, y + 12);
+    y += 18;
+    
+    // Custom Syncs
+    doc.text('Custom Syncs', margin + 5, y + 12);
+    doc.text(stats.custom_syncs_paid_count.toString(), margin + 120, y + 12);
+    doc.text(`$${stats.custom_syncs_paid_amount.toFixed(2)}`, margin + 180, y + 12);
+    doc.text(stats.custom_syncs_pending_count.toString(), margin + 260, y + 12);
+    doc.text(`$${stats.custom_syncs_pending_amount.toFixed(2)}`, margin + 340, y + 12);
+    y += 22;
+    
+    // Totals row
+    doc.setFillColor(60, 60, 120);
+    doc.rect(margin, y, contentWidth, 18, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Totals', margin + 5, y + 12);
+    doc.text((stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count).toString(), margin + 120, y + 12);
+    doc.text(`$${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}`, margin + 180, y + 12);
+    doc.text((stats.sync_proposals_pending_count + stats.custom_syncs_pending_count).toString(), margin + 260, y + 12);
+    doc.text(`$${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}`, margin + 340, y + 12);
+    y += 30;
+    
+    // Business Metrics
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Business Metrics', margin, y);
+    y += 20;
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(11);
+    doc.text(`Total Producers: ${stats.total_producers}`, margin, y);
+    y += 16;
+    doc.text(`Total Clients: ${stats.total_clients}`, margin, y);
+    y += 16;
+    doc.text(`New Memberships (This Period): ${stats.new_memberships_count || 0}`, margin, y);
+    
+    // Footer with branding
+    const footerY = pageHeight - 60;
+    doc.setDrawColor(90, 90, 180);
+    doc.setLineWidth(1);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
     doc.setTextColor(90, 90, 180);
-    doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
-    doc.text(`Email: ${email || ''}`, 50, footerY + 65);
+    doc.text(companyName || '', margin, footerY + 20);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(90, 90, 180);
+    doc.text(`Website: ${domain || ''}`, margin, footerY + 35);
+    doc.text(`Email: ${email || ''}`, margin, footerY + 50);
+    
     // Download PDF
-    doc.save('total-revenue-report.pdf');
+    doc.save('comprehensive-revenue-report.pdf');
   };
 
   if (loading) {
@@ -734,6 +848,87 @@ export function AdminDashboard() {
                   Click for details
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Comprehensive Revenue Report Section */}
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-8">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-white">Comprehensive Revenue Report</h2>
+            <button
+              onClick={handleDownloadRevenuePDF}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Download PDF
+            </button>
+          </div>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-blue-500/20">
+                  <th className="text-left py-3 px-4 text-gray-300 font-semibold">Category</th>
+                  <th className="text-right py-3 px-4 text-gray-300 font-semibold">Paid Count</th>
+                  <th className="text-right py-3 px-4 text-gray-300 font-semibold">Paid Amount</th>
+                  <th className="text-right py-3 px-4 text-gray-300 font-semibold">Pending Count</th>
+                  <th className="text-right py-3 px-4 text-gray-300 font-semibold">Pending Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">Track Sales</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.track_sales_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.track_sales_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">Sync Proposals</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.sync_proposals_paid_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.sync_proposals_paid_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-yellow-400">{stats.sync_proposals_pending_count}</td>
+                  <td className="py-3 px-4 text-right text-yellow-400">${stats.sync_proposals_pending_amount.toFixed(2)}</td>
+                </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">Custom Syncs</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.custom_syncs_paid_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.custom_syncs_paid_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-yellow-400">{stats.custom_syncs_pending_count}</td>
+                  <td className="py-3 px-4 text-right text-yellow-400">${stats.custom_syncs_pending_amount.toFixed(2)}</td>
+                </tr>
+                <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
+                  <td className="py-3 px-4 text-white font-semibold">Totals</td>
+                  <td className="py-3 px-4 text-right text-white font-semibold">
+                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count}
+                  </td>
+                  <td className="py-3 px-4 text-right text-green-400 font-semibold">
+                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}
+                  </td>
+                  <td className="py-3 px-4 text-right text-yellow-400 font-semibold">
+                    {stats.sync_proposals_pending_count + stats.custom_syncs_pending_count}
+                  </td>
+                  <td className="py-3 px-4 text-right text-yellow-400 font-semibold">
+                    ${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-blue-500/20">
+            <div className="text-center">
+              <p className="text-gray-400 text-sm">Total Producers</p>
+              <p className="text-2xl font-bold text-white">{stats.total_producers}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-400 text-sm">Total Clients</p>
+              <p className="text-2xl font-bold text-white">{stats.total_clients}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-400 text-sm">New Memberships (This Period)</p>
+              <p className="text-2xl font-bold text-white">{stats.new_memberships_count || 0}</p>
             </div>
           </div>
         </div>

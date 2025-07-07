@@ -71,7 +71,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/white-label-login" className="text-gray-400 hover:text-white transition-colors">
+                <Link to="/white-label-profile" className="text-gray-400 hover:text-white transition-colors">
                   White Label Client Login
                 </Link>
               </li>

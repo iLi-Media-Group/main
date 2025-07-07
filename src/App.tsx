@@ -53,6 +53,7 @@ import AdminServicesPage from './components/AdminServicesPage';
 import ServicesPage from './components/ServicesPage';
 import ServiceOnboardingPage from './components/ServiceOnboardingPage';
 import ClientBrandingSettings from './components/ClientBrandingSettings';
+import { WhiteLabelClientProfile } from './components/WhiteLabelClientProfile';
 import { supabase } from './lib/supabase';
 import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
 
@@ -381,6 +382,12 @@ const App = () => {
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
         <Route path="/white-label-login" element={<WhiteLabelPage />} />
+
+        <Route path="/white-label-profile" element={
+          <ProtectedRoute>
+            <WhiteLabelClientProfile />
+          </ProtectedRoute>
+        } />
 
         <Route path="*" element={
           <LayoutWrapper>
