@@ -31,6 +31,10 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     features: { [key: string]: DiscountInfo };
   }>({ features: {} });
   const [success, setSuccess] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Pricing structure
   const plans = {
@@ -184,10 +188,30 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
   const finalStartupCost = calculateDiscountedStartupCost() - getBundleDiscount();
 
+  const validatePassword = (password: string) => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+    const hasMinLength = password.length >= 8;
+    return hasUpperCase && hasLowerCase && hasSpecial && hasMinLength;
+  };
+
   const handleCheckout = async () => {
     // Validate customer data
     if (!customerData.email || !customerData.name) {
       setError('Please provide your email and name to continue.');
+      return;
+    }
+    if (!password || !confirmPassword) {
+      setError('Please enter and confirm your password.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!validatePassword(password)) {
+      setError('Password must be at least 8 characters long and contain uppercase, lowercase, and special characters.');
       return;
     }
 
@@ -200,7 +224,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         features: selectedFeatures,
         customerEmail: customerData.email,
         customerName: customerData.name,
-        companyName: customerData.company
+        companyName: customerData.company,
+        password: password // Pass password to backend
       });
       // Redirect to checkout
       window.location.href = checkoutData.url;
@@ -506,6 +531,55 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 placeholder="Enter your company name (optional)"
               />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+                Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 pr-10"
+                  placeholder="Create a password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <div className="mt-1 text-xs text-gray-400">
+                Must be at least 8 characters with uppercase, lowercase, and special characters
+              </div>
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-1">
+                Confirm Password *
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 pr-10"
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

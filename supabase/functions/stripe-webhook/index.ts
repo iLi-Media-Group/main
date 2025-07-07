@@ -303,7 +303,38 @@ async function handleEvent(event: any) {
       const features = (stripeData.metadata.features || '').split(',').map(f => f.trim()).filter(Boolean);
       const email = stripeData.metadata.customer_email;
       const company = stripeData.metadata.company_name || null;
+      const password = stripeData.metadata.password || null;
       if (features.length && email) {
+        // Create Supabase auth user if password is present and user does not exist
+        if (password) {
+          const { data: existingUser } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle();
+          if (!existingUser) {
+            // Use Supabase Admin API to create user
+            const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users`, {
+              method: 'POST',
+              headers: {
+                'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                email: email,
+                password: password,
+                email_confirm: true
+              })
+            });
+            if (!res.ok) {
+              const err = await res.text();
+              console.error('Error creating Supabase user:', err);
+            } else {
+              console.info(`Created Supabase user for white label client: ${email}`);
+            }
+          }
+        }
         // Find the client by email (or company name as fallback)
         let { data: client, error } = await supabase
           .from('white_label_clients')

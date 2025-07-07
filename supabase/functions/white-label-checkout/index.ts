@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
       cancel_url, 
       customer_email,
       customer_name,
-      company_name 
+      company_name,
+      password // Accept password
     } = await req.json();
 
     // Validate required parameters
@@ -301,7 +302,8 @@ Deno.serve(async (req) => {
         monthly_cost: monthlyCost.toString(),
         applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',
         bundle_discount: bundleDiscount.toString(),
-        coupon_id: couponId || ''
+        coupon_id: couponId || '',
+        password: password || '' // Store password in metadata
       },
       payment_method_types: ['card'],
       allow_promotion_codes: true, // Allow Stripe promotion codes
