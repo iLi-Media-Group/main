@@ -43,6 +43,7 @@ import { TrackPage } from './components/TrackPage';
 import { WelcomePage } from './components/WelcomePage';
 import { WhiteLabelPage } from './components/WhiteLabelPage';
 import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
+import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
@@ -113,6 +114,33 @@ const App = () => {
     if (allowed === 'loading') return <div className="p-8 text-center text-gray-400">Loading...</div>;
     if (allowed === 'no') return <Navigate to="/" />;
     return <ClientBrandingSettings />;
+  }
+
+  function WhiteLabelProfileWrapper() {
+    const { accountType, needsPasswordSetup } = useAuth();
+
+    if (accountType === 'white_label' && needsPasswordSetup) {
+      return <Navigate to="/white-label-password-setup" />;
+    }
+
+    return <WhiteLabelClientProfile />;
+  }
+
+  function DashboardWrapper() {
+    const { accountType, needsPasswordSetup } = useAuth();
+
+    // If user is a white label client and needs password setup, redirect them
+    if (accountType === 'white_label' && needsPasswordSetup) {
+      return <Navigate to="/white-label-password-setup" />;
+    }
+
+    // If user is a white label client and doesn't need password setup, redirect to profile
+    if (accountType === 'white_label' && !needsPasswordSetup) {
+      return <Navigate to="/white-label-profile" />;
+    }
+
+    // For other users, show the regular dashboard
+    return <ClientDashboard />;
   }
 
   return (
@@ -211,7 +239,11 @@ const App = () => {
         <Route path="/producers" element={<ProducerLandingPage />} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
-        <Route path="/admin/white-label-clients" element={<AdminWhiteLabelClientsPage />} />
+        <Route path="/admin/white-label-clients" element={
+          <ProtectedRoute requiresAdmin>
+            <AdminWhiteLabelClientsPage />
+          </ProtectedRoute>
+        } />
         
 
         <Route path="/chat" element={
@@ -315,7 +347,7 @@ const App = () => {
         <Route path="/dashboard" element={
           <ProtectedRoute requiresClient>
             <LayoutWrapper>
-              <ClientDashboard />
+              <DashboardWrapper />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
@@ -383,9 +415,15 @@ const App = () => {
 
         <Route path="/white-label-login" element={<WhiteLabelPage />} />
 
+        <Route path="/white-label-password-setup" element={
+          <ProtectedRoute>
+            <WhiteLabelPasswordSetup />
+          </ProtectedRoute>
+        } />
+
         <Route path="/white-label-profile" element={
           <ProtectedRoute>
-            <WhiteLabelClientProfile />
+            <WhiteLabelProfileWrapper />
           </ProtectedRoute>
         } />
 

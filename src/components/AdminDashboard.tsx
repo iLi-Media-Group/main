@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
@@ -60,6 +60,7 @@ interface WhiteLabelClient {
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -533,6 +534,9 @@ export function AdminDashboard() {
       });
       setShowAddClientModal(false);
       fetchWhiteLabelClients();
+      
+      // Navigate to the white label admin page
+      navigate('/admin/white-label-clients');
     } catch (error) {
       console.error('Error creating white label client:', error);
       setWhiteLabelError('Failed to create white label client');

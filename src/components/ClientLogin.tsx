@@ -76,8 +76,15 @@ export function ClientLogin() {
         }
       }
 
-      // Default navigation
-      navigate(isAdmin ? '/admin' : '/dashboard');
+      // Default navigation - let the AuthContext handle the routing based on account type
+      // The AuthContext will automatically redirect white label clients to password setup if needed
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        // For non-admin users, navigate to dashboard
+        // The DashboardWrapper will handle white label client routing
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');

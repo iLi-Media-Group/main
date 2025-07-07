@@ -6,8 +6,9 @@ import { getUserSubscription, getMembershipPlanFromPriceId } from '../lib/stripe
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  accountType: 'client' | 'producer' | 'admin' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
+  needsPasswordSetup: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -18,8 +19,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
+  const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const fetchAccountType = async (userId: string, email: string) => {
@@ -27,6 +29,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if user is an admin
       if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email)) {
         setAccountType('admin');
+        setNeedsPasswordSetup(false);
+        return;
+      }
+
+      // Check if this email is associated with a white label client
+      const { data: whiteLabelData, error: whiteLabelError } = await supabase
+        .from('white_label_clients')
+        .select('owner_email')
+        .eq('owner_email', email)
+        .maybeSingle();
+
+      if (whiteLabelData) {
+        // This is a white label client
+        setAccountType('white_label');
+        
+        // Check if they have a profile and if they need password setup
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (profileError || !profileData) {
+          // No profile exists, they need to set up their password
+          setNeedsPasswordSetup(true);
+        } else {
+          setNeedsPasswordSetup(false);
+        }
         return;
       }
 
@@ -56,11 +86,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               error: insertError
             });
             setAccountType('client');
+            setNeedsPasswordSetup(false);
             return;
           }
           
           setAccountType('client');
           setMembershipPlan('Single Track');
+          setNeedsPasswordSetup(false);
           return;
         } else {
           console.error('Error fetching account type:', {
@@ -71,13 +103,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
           // Default to client if there's an error
           setAccountType('client');
+          setNeedsPasswordSetup(false);
           return;
         }
       }
       
       if (data) {
-        setAccountType(data.account_type as 'client' | 'producer');
+        setAccountType(data.account_type as 'client' | 'producer' | 'white_label');
         setMembershipPlan(data.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
+        setNeedsPasswordSetup(false);
         
         // If the user is a client, check for subscription
         if (data.account_type === 'client') {
@@ -108,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setAccountType('client'); // Default to client if no profile found
+        setNeedsPasswordSetup(false);
       }
     } catch (error) {
       console.error('Error fetching account type:', {
@@ -117,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         error
       });
       setAccountType(null);
+      setNeedsPasswordSetup(false);
     }
   };
 
@@ -190,6 +226,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setAccountType(null);
         setMembershipPlan(null);
+        setNeedsPasswordSetup(false);
       }
       setLoading(false);
     });
@@ -220,6 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         // Default to client if there's an error
         setAccountType('client');
+        setNeedsPasswordSetup(false);
       }
     }
     return { error: null };
@@ -306,6 +344,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading, 
       accountType, 
       membershipPlan,
+      needsPasswordSetup,
       signIn, 
       signUp, 
       signOut,
