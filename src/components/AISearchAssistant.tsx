@@ -67,11 +67,28 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   useEffect(() => {
     if (isOpen && activeTab === 'search') {
       // Focus the input when modal opens
-      setTimeout(() => {
-        inputRef.current?.focus();
+      const timeoutId = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
       }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen]);
+
+  // Separate effect to focus when switching to search tab
+  useEffect(() => {
+    if (isOpen && activeTab === 'search' && inputRef.current) {
+      const timeoutId = setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 50);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [activeTab]);
 
   const loadRecentSearches = async () => {
     if (!user) return;
