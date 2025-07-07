@@ -71,16 +71,16 @@ export interface SyncProposal {
 
 // Updated genres to be lowercase and match database constraint pattern
 export const GENRES = [
-  'hiphop',
-  'rnb',
-  'pop',
-  'rock',
-  'electronic',
-  'jazz',
-  'classical',
-  'world',
-  'religious',
-  'childrens',
+  'Hiphop',
+  'Rnb',
+  'Pop',
+  'Rock',
+  'Electronic',
+  'Jazz',
+  'Classical',
+  'World',
+  'Religious',
+  'Childrens',
   'Country',
 ] as const;
 
