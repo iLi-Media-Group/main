@@ -217,18 +217,6 @@ export function AdminDashboard() {
           return map;
         }, {});
 
-        // 3. Custom sync request sales (from custom_sync_requests table)
-        const { data: customSyncData, error: customSyncError } = await supabase
-          .from('custom_sync_requests')
-          .select('sync_fee, created_at, status')
-          .gte('created_at', `${currentMonth}-01`)
-          .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString())
-          .eq('status', 'completed');
-
-        if (customSyncError) {
-          console.error('Error fetching custom sync requests:', customSyncError);
-        }
-
         // Fetch track sales data (all paid)
         const { data: trackSalesData, error: trackSalesError } = await supabase
           .from('sales')
@@ -256,11 +244,11 @@ export function AdminDashboard() {
         const sync_proposals_pending_amount = sync_proposals_pending.reduce((sum, p) => sum + (p.sync_fee || 0), 0);
 
         // Fetch custom sync requests (paid and pending) - only fetch once
-        const { data: customSyncs, error: customSyncError } = await supabase
+        const { data: customSyncs, error: customSyncRequestsError } = await supabase
           .from('custom_sync_requests')
           .select('id, sync_fee, status, payment_status');
-        if (customSyncError) {
-          console.error('Error fetching custom sync requests:', customSyncError);
+        if (customSyncRequestsError) {
+          console.error('Error fetching custom sync requests:', customSyncRequestsError);
         }
         const customSyncsData = customSyncs || [];
         const custom_syncs_paid = customSyncsData.filter(c => (c.status === 'completed' || c.status === 'accepted') && c.payment_status === 'paid');
