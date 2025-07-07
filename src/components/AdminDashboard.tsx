@@ -493,55 +493,38 @@ export function AdminDashboard() {
 
   const createWhiteLabelClient = async () => {
     if (!newClient.display_name || !newClient.owner_email) {
-      setWhiteLabelError('Display name and owner email are required');
+      setWhiteLabelError('Display name and email are required');
       return;
     }
 
-    try {
-      // Try to find the user by email, but allow owner_id to be null if not found
-      let ownerId: string | null = null;
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', newClient.owner_email)
-        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 error
+    // Only required fields for a minimal insert
+    const payload = {
+      display_name: newClient.display_name,
+      email: newClient.owner_email,
+    };
 
-      if (!userError && userData) {
-        ownerId = userData.id;
-      }
+    const { error } = await supabase
+      .from('white_label_clients')
+      .insert(payload);
 
-      // Create the white label client, always storing the owner email
-      const { error } = await supabase
-        .from('white_label_clients')
-        .insert({
-          display_name: newClient.display_name,
-          owner_id: ownerId,
-          owner_email: newClient.owner_email,
-          email: newClient.owner_email, // required field
-          custom_domain: newClient.domain || null, // use custom_domain instead of domain
-          primary_color: newClient.primary_color,
-          secondary_color: newClient.secondary_color
-        });
-
-      if (error) throw error;
-
-      // Reset form and refresh data
-      setNewClient({
-        display_name: '',
-        owner_email: '',
-        domain: '',
-        primary_color: '#6366f1',
-        secondary_color: '#8b5cf6'
-      });
-      setShowAddClientModal(false);
-      fetchWhiteLabelClients();
-      
-      // Navigate to the white label admin page
-      navigate('/admin/white-label-clients');
-    } catch (error) {
-      console.error('Error creating white label client:', error);
-      setWhiteLabelError('Failed to create white label client');
+    if (error) {
+      console.error('Supabase insert error:', error);
+      setWhiteLabelError(error.message || 'Failed to create white label client');
+      return;
     }
+
+    // Reset form and refresh data
+    setNewClient({
+      display_name: '',
+      owner_email: '',
+      domain: '',
+      primary_color: '#6366f1',
+      secondary_color: '#8b5cf6'
+    });
+    setShowAddClientModal(false);
+    fetchWhiteLabelClients();
+    // Navigate to the white label admin page
+    navigate('/admin/white-label-clients');
   };
 
   const updateWhiteLabelClient = async (client: WhiteLabelClient) => {
