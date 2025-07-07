@@ -10,7 +10,7 @@ function WhiteLabelFeatureExamples() {
   const flags = useWhiteLabelFeatureFlags();
   const { user } = useAuth();
   
-  // Don't show this component for logged-in producers or admins
+  // Only show for unauthenticated users
   if (user) {
     return null;
   }

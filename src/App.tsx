@@ -57,6 +57,7 @@ import ClientBrandingSettings from './components/ClientBrandingSettings';
 import { WhiteLabelClientProfile } from './components/WhiteLabelClientProfile';
 import { supabase } from './lib/supabase';
 import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
+import { WhiteLabelClientLogin } from './components/WhiteLabelClientLogin';
 
 
 const App = () => {
@@ -413,7 +414,7 @@ const App = () => {
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
-        <Route path="/white-label-login" element={<WhiteLabelPage />} />
+        <Route path="/white-label-login" element={<WhiteLabelClientLogin />} />
 
         <Route path="/white-label-password-setup" element={
           <ProtectedRoute>
