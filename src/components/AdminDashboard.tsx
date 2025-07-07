@@ -22,6 +22,21 @@ interface UserStats {
   total_producers: number;
   total_sales: number;
   total_revenue: number;
+  track_sales_count: number;
+  track_sales_amount: number;
+  sync_proposals_paid_count: number;
+  sync_proposals_paid_amount: number;
+  sync_proposals_pending_count: number;
+  sync_proposals_pending_amount: number;
+  custom_syncs_paid_count: number;
+  custom_syncs_paid_amount: number;
+  custom_syncs_pending_count: number;
+  custom_syncs_pending_amount: number;
+  white_label_setup_count: number;
+  white_label_setup_amount: number;
+  white_label_subscriptions_count: number;
+  white_label_monthly_amount: number;
+  new_memberships_count: number;
 }
 
 interface UserDetails {
@@ -79,6 +94,10 @@ export function AdminDashboard() {
     custom_syncs_paid_amount: number;
     custom_syncs_pending_count: number;
     custom_syncs_pending_amount: number;
+    white_label_setup_count: number;
+    white_label_setup_amount: number;
+    white_label_subscriptions_count: number;
+    white_label_monthly_amount: number;
     new_memberships_count: number;
   }>({
     total_clients: 0,
@@ -95,6 +114,10 @@ export function AdminDashboard() {
     custom_syncs_paid_amount: 0,
     custom_syncs_pending_count: 0,
     custom_syncs_pending_amount: 0,
+    white_label_setup_count: 0,
+    white_label_setup_amount: 0,
+    white_label_subscriptions_count: 0,
+    white_label_monthly_amount: 0,
     new_memberships_count: 0
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
@@ -288,13 +311,48 @@ export function AdminDashboard() {
       }
       const new_memberships_count = newMembershipsData?.length || 0;
 
+        // Fetch white label client purchases (setup fees and subscriptions)
+        const { data: whiteLabelOrdersData, error: whiteLabelOrdersError } = await supabase
+          .from('stripe_orders')
+          .select('id, amount_total, payment_status, status, metadata, created_at')
+          .eq('payment_status', 'paid')
+          .eq('status', 'completed')
+          .not('metadata', 'is', null);
+        
+        if (whiteLabelOrdersError) {
+          console.error('Error fetching white label orders:', whiteLabelOrdersError);
+        }
+        
+        const whiteLabelOrders = whiteLabelOrdersData || [];
+        const whiteLabelSetupFees = whiteLabelOrders.filter(order => 
+          order.metadata?.type === 'white_label_setup'
+        );
+        const white_label_setup_count = whiteLabelSetupFees.length;
+        const white_label_setup_amount = whiteLabelSetupFees.reduce((sum, order) => sum + (order.amount_total || 0), 0) / 100; // Convert from cents
+
+        // Fetch white label subscriptions (monthly fees)
+        const { data: whiteLabelSubscriptionsData, error: whiteLabelSubscriptionsError } = await supabase
+          .from('stripe_subscriptions')
+          .select('id, subscription_id, status, price_id, created_at')
+          .eq('status', 'active');
+        
+        if (whiteLabelSubscriptionsError) {
+          console.error('Error fetching white label subscriptions:', whiteLabelSubscriptionsError);
+        }
+        
+        const whiteLabelSubscriptions = whiteLabelSubscriptionsData || [];
+        // Count active white label subscriptions (we'll estimate monthly revenue based on plan)
+        const white_label_subscriptions_count = whiteLabelSubscriptions.length;
+        // Estimate monthly revenue: Starter ($49) + Pro ($299) subscriptions
+        const white_label_monthly_amount = white_label_subscriptions_count * 49; // Conservative estimate
+
         // Update stats with comprehensive data
         setStats((prev: typeof stats) => ({
           ...prev,
           total_clients: clients.length,
           total_producers: producerUsers.length,
-          total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count,
-          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount,
+          total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count + white_label_setup_count,
+          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount + white_label_setup_amount + white_label_monthly_amount,
           track_sales_count,
           track_sales_amount,
           sync_proposals_paid_count,
@@ -305,6 +363,10 @@ export function AdminDashboard() {
           custom_syncs_paid_amount,
           custom_syncs_pending_count,
           custom_syncs_pending_amount,
+          white_label_setup_count,
+          white_label_setup_amount,
+          white_label_subscriptions_count,
+          white_label_monthly_amount,
           new_memberships_count
         }));
 
@@ -719,6 +781,20 @@ export function AdminDashboard() {
     doc.text(`$${stats.custom_syncs_paid_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
     doc.text(stats.custom_syncs_pending_count.toString(), colX[3]+4, y + 12, { align: 'left' });
     doc.text(`$${stats.custom_syncs_pending_amount.toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
+    y += 18;
+    // White Label Setup Fees
+    doc.text(fitText('White Label Setup', colWidths[0]-8), colX[0]+4, y + 12);
+    doc.text(stats.white_label_setup_count.toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.white_label_setup_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[3]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[4]+4, y + 12, { align: 'left' });
+    y += 18;
+    // White Label Subscriptions
+    doc.text(fitText('White Label Monthly', colWidths[0]-8), colX[0]+4, y + 12);
+    doc.text(stats.white_label_subscriptions_count.toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${stats.white_label_monthly_amount.toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[3]+4, y + 12, { align: 'left' });
+    doc.text('-', colX[4]+4, y + 12, { align: 'left' });
     y += 22;
     // Totals row
     doc.setFont('helvetica', 'bold');
@@ -726,8 +802,8 @@ export function AdminDashboard() {
     doc.rect(margin, y, contentWidth, 18, 'F');
     doc.setTextColor(30, 30, 30);
     doc.text('Totals', colX[0]+4, y + 12);
-    doc.text((stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count).toString(), colX[1]+4, y + 12, { align: 'left' });
-    doc.text(`$${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
+    doc.text((stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count).toString(), colX[1]+4, y + 12, { align: 'left' });
+    doc.text(`$${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount).toFixed(2)}`, colX[2]+4, y + 12, { align: 'left' });
     doc.text((stats.sync_proposals_pending_count + stats.custom_syncs_pending_count).toString(), colX[3]+4, y + 12, { align: 'left' });
     doc.text(`$${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}`, colX[4]+4, y + 12, { align: 'left' });
     y += 30;
@@ -908,13 +984,27 @@ export function AdminDashboard() {
                   <td className="py-3 px-4 text-right text-yellow-400">{stats.custom_syncs_pending_count}</td>
                   <td className="py-3 px-4 text-right text-yellow-400">${stats.custom_syncs_pending_amount.toFixed(2)}</td>
                 </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">White Label Setup</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.white_label_setup_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.white_label_setup_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">White Label Monthly</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.white_label_subscriptions_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.white_label_monthly_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                </tr>
                 <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
                   <td className="py-3 px-4 text-white font-semibold">Totals</td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
-                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count}
+                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count}
                   </td>
                   <td className="py-3 px-4 text-right text-green-400 font-semibold">
-                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount).toFixed(2)}
+                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount).toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-right text-yellow-400 font-semibold">
                     {stats.sync_proposals_pending_count + stats.custom_syncs_pending_count}
