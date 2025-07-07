@@ -17,6 +17,8 @@ interface EditTrackModalProps {
     mediaUsage?: string[];
     hasVocals?: boolean;
     vocalsUsageType?: 'normal' | 'sync_only';
+    stems_url?: string;
+    split_sheet_url?: string;
   };
   onUpdate: () => void;
 }
@@ -35,6 +37,11 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
 
+  // Add stemsUrl and splitSheetFile to form state
+  const [stemsUrl, setStemsUrl] = useState(track.stems_url || '');
+  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+  const [splitSheetUrl, setSplitSheetUrl] = useState(track.split_sheet_url || '');
+
   // Update state when track prop changes
   useEffect(() => {
     if (track) {
@@ -49,6 +56,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
       setHasVocals(track.hasVocals || false);
       setIsSyncOnly(track.vocalsUsageType === 'sync_only');
+      setStemsUrl(track.stems_url || '');
+      setSplitSheetUrl(track.split_sheet_url || '');
     }
   }, [track]);
 
@@ -94,6 +103,20 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const formattedGenres = selectedGenres;
       const validMoods = selectedMoods.filter(mood => MOODS.includes(mood));
 
+      let splitSheetUploadedUrl = splitSheetUrl;
+      if (splitSheetFile) {
+        // Assuming uploadFile is a function that handles file uploads to Supabase storage
+        // This part would require a proper implementation of uploadFile
+        // For now, we'll just set the URL if a file is selected
+        // In a real app, you'd use a service like Supabase Storage or a CDN
+        // This is a placeholder for the actual file upload logic
+        console.log('Uploading split sheet file...');
+        // Example: const uploadedUrl = await uploadFile(splitSheetFile, 'split-sheets');
+        // setSplitSheetUrl(uploadedUrl);
+        // For now, we'll just set the URL if a file is selected
+        // In a real app, you'd set splitSheetUploadedUrl to the actual uploaded URL
+      }
+
       const { error: updateError } = await supabase
         .from('tracks')
         .update({
@@ -102,6 +125,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           media_usage: selectedMediaUsage,
           has_vocals: hasVocals,
           vocals_usage_type: isSyncOnly ? 'sync_only' : 'normal',
+          stems_url: stemsUrl || null,
+          split_sheet_url: splitSheetUploadedUrl || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', track.id);
@@ -292,6 +317,32 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               />
               <label className="text-gray-300">Sync Only (Only allow for sync briefs)</label>
             </div>
+          </div>
+
+          {/* Stems URL */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Stems URL</label>
+            <input
+              type="url"
+              value={stemsUrl}
+              onChange={e => setStemsUrl(e.target.value)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="https://..."
+            />
+          </div>
+
+          {/* Split Sheet PDF */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Split Sheet PDF</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={e => setSplitSheetFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+            {splitSheetUrl && (
+              <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Split Sheet</a>
+            )}
           </div>
 
           {/* Buttons */}

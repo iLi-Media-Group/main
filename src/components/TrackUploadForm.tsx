@@ -27,6 +27,8 @@ interface FormData {
   hasVocals: boolean;
   vocalsUsageType: 'normal' | 'sync_only';
   isSyncOnly: boolean;
+  stemsUrl: string;
+  splitSheetUrl: string;
 }
 
 export function TrackUploadForm() {
@@ -59,6 +61,9 @@ export function TrackUploadForm() {
   const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
   const [vocalsUsageType, setVocalsUsageType] = useState<'normal' | 'sync_only'>(savedData?.vocalsUsageType || 'normal');
   const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
+  const [stemsUrl, setStemsUrl] = useState(savedData?.stemsUrl || '');
+  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+  const [splitSheetUrl, setSplitSheetUrl] = useState(savedData?.splitSheetUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
@@ -79,7 +84,9 @@ export function TrackUploadForm() {
       trackoutsUrl,
       hasVocals,
       vocalsUsageType,
-      isSyncOnly
+      isSyncOnly,
+      stemsUrl,
+      splitSheetUrl
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [
@@ -95,7 +102,9 @@ export function TrackUploadForm() {
     trackoutsUrl,
     hasVocals,
     vocalsUsageType,
-    isSyncOnly
+    isSyncOnly,
+    stemsUrl,
+    splitSheetUrl
   ]);
 
   const clearSavedFormData = () => {
@@ -173,6 +182,12 @@ export function TrackUploadForm() {
         imageUrl = await uploadFile(imageFile, 'track-images');
       }
 
+      let splitSheetUploadedUrl = splitSheetUrl;
+      if (splitSheetFile) {
+        splitSheetUploadedUrl = await uploadFile(splitSheetFile, 'split-sheets');
+        setSplitSheetUrl(splitSheetUploadedUrl);
+      }
+
       const { error: trackError } = await supabase
         .from('tracks')
         .insert({
@@ -191,6 +206,8 @@ export function TrackUploadForm() {
           image_url: imageUrl,
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsUrl || null,
+          stems_url: stemsUrl || null,
+          split_sheet_url: splitSheetUploadedUrl || null,
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? (isSyncOnly ? 'sync_only' : vocalsUsageType) : null,
           created_at: new Date().toISOString(),
@@ -396,6 +413,30 @@ export function TrackUploadForm() {
                 placeholder="https://boombox.io/..."
               />
             </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Stems URL</label>
+            <input
+              type="url"
+              value={stemsUrl}
+              onChange={e => setStemsUrl(e.target.value)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Split Sheet PDF</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              onChange={e => setSplitSheetFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            />
+            {splitSheetUrl && (
+              <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Split Sheet</a>
+            )}
           </div>
 
           <div className="text-center">

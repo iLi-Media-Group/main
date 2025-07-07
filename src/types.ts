@@ -80,7 +80,8 @@ export const GENRES = [
   'classical',
   'world',
   'religious',
-  'childrens'
+  'childrens',
+  'Country',
 ] as const;
 
 export const SUB_GENRES = {

@@ -23,3 +23,6 @@ COMMENT ON COLUMN tracks.split_sheet_url IS 'URL to PDF split sheet showing all 
 CREATE INDEX IF NOT EXISTS idx_tracks_split_sheet_url 
 ON tracks(split_sheet_url) 
 WHERE split_sheet_url IS NOT NULL;
+
+-- Migration: Add owner_email column to white_label_clients table
+ALTER TABLE white_label_clients ADD COLUMN IF NOT EXISTS owner_email TEXT;

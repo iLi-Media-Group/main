@@ -35,11 +35,6 @@ export function Footer() {
                   Pricing Plans
                 </Link>
               </li>
-              <li>
-                <Link to="/white-label" className="text-gray-400 hover:text-white transition-colors">
-                  White Label Solutions
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -59,6 +54,27 @@ export function Footer() {
                   Get Boombox Account
                 </a>
               </li>
+              <li>
+                <Link to="/services" className="text-gray-400 hover:text-white transition-colors">
+                  Services
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="text-white font-semibold mb-4">White Label Solutions</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/white-label" className="text-gray-400 hover:text-white transition-colors">
+                  White Label Solutions
+                </Link>
+              </li>
+              <li>
+                <Link to="/white-label-login" className="text-gray-400 hover:text-white transition-colors">
+                  White Label Client Login
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -75,7 +91,6 @@ export function Footer() {
                   Privacy Policy
                 </Link>
               </li>
-              
             </ul>
           </div>
         </div>

@@ -458,24 +458,25 @@ export function AdminDashboard() {
     }
 
     try {
-      // First, find the user by email
+      // Try to find the user by email, but allow owner_id to be null if not found
+      let ownerId: string | null = null;
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id')
         .eq('email', newClient.owner_email)
         .single();
 
-      if (userError || !userData) {
-        setWhiteLabelError('User not found with that email');
-        return;
+      if (!userError && userData) {
+        ownerId = userData.id;
       }
 
-      // Create the white label client
+      // Create the white label client, always storing the owner email
       const { error } = await supabase
         .from('white_label_clients')
         .insert({
           display_name: newClient.display_name,
-          owner_id: userData.id,
+          owner_id: ownerId,
+          owner_email: newClient.owner_email,
           domain: newClient.domain || null,
           primary_color: newClient.primary_color,
           secondary_color: newClient.secondary_color
