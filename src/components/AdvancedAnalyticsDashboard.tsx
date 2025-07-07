@@ -9,6 +9,8 @@ import { CalendarDays, FileText, Download, TrendingUp, AlertTriangle, Sparkles, 
 import { useAuth } from '../contexts/AuthContext';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { supabase } from '../lib/supabase';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 interface AnalyticsData {
   revenueData: Array<{
@@ -52,7 +54,14 @@ interface AnalyticsData {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export function AdvancedAnalyticsDashboard() {
+interface AdvancedAnalyticsDashboardProps {
+  logoUrl?: string;
+  companyName?: string;
+  domain?: string;
+  email?: string;
+}
+
+export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email }: AdvancedAnalyticsDashboardProps) {
   const { user, accountType } = useAuth();
   const { isEnabled: hasAnalyticsAccess, loading: featureLoading } = useFeatureFlag('advanced_analytics');
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -454,13 +463,148 @@ export function AdvancedAnalyticsDashboard() {
   };
 
   const handleExport = async (format: 'csv' | 'pdf') => {
+    if (!analyticsData) return;
     try {
       setLoading(true);
-      // In production, this would call your export endpoint
-      console.log(`Exporting ${format} report...`);
-      // Simulate export delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(`${format.toUpperCase()} export completed!`);
+      if (format === 'csv') {
+        // === CSV Export ===
+        let csv = '';
+        // Monthly Revenue
+        csv += 'Monthly Revenue\nMonth,Total\n';
+        analyticsData.revenueData.forEach(row => {
+          csv += `${row.month},${row.total}\n`;
+        });
+        csv += '\n';
+        // License Data
+        csv += 'License Data\nName,Licenses,Revenue\n';
+        analyticsData.licenseData.forEach(row => {
+          csv += `${row.name},${row.licenses},${row.revenue}\n`;
+        });
+        csv += '\n';
+        // Churn Data
+        csv += 'Churn Data\nName,Churn Risk,Last Activity\n';
+        analyticsData.churnData.forEach(row => {
+          csv += `${row.name},${row.churnRisk},${row.lastActivity}\n`;
+        });
+        csv += '\n';
+        // Top Tracks
+        csv += 'Top Tracks\nTitle,Plays,Licenses,Revenue\n';
+        analyticsData.topTracks.forEach(row => {
+          csv += `${row.title},${row.plays},${row.licenses},${row.revenue}\n`;
+        });
+        csv += '\n';
+        // Key Metrics
+        csv += 'Key Metrics\nTotal Revenue,Active Clients,Retention Rate\n';
+        const km = analyticsData.keyMetrics;
+        csv += `${km.totalRevenue},${km.activeClients},${km.retentionRate}\n`;
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'advanced-analytics.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else if (format === 'pdf') {
+        // === PDF Export with Logo and Branding ===
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        let y = 40;
+        // Add logo if provided
+        if (logoUrl) {
+          const img = await fetch(logoUrl).then(r => r.blob());
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(img);
+          });
+          doc.addImage(base64, 'PNG', 40, y, 100, 40, undefined, 'FAST');
+        }
+        // Title and subtitle
+        y += logoUrl ? 60 : 0;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.text('Advanced Analytics Report', 160, y, { align: 'left' });
+        y += 30;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, y, { align: 'left' });
+        y += 20;
+        // Monthly Revenue Table
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('Monthly Revenue', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Month', 'Total']],
+          body: analyticsData.revenueData.map(row => [row.month, row.total]),
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // License Data Table
+        doc.text('License Data', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Name', 'Licenses', 'Revenue']],
+          body: analyticsData.licenseData.map(row => [row.name, row.licenses, row.revenue]),
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Churn Data Table
+        doc.text('Churn Data', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Name', 'Churn Risk', 'Last Activity']],
+          body: analyticsData.churnData.map(row => [row.name, row.churnRisk, row.lastActivity]),
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Top Tracks Table
+        doc.text('Top Tracks', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Title', 'Plays', 'Licenses', 'Revenue']],
+          body: analyticsData.topTracks.map(row => [row.title, row.plays, row.licenses, row.revenue]),
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Key Metrics Table
+        doc.text('Key Metrics', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Total Revenue', 'Active Clients', 'Retention Rate']],
+          body: [[analyticsData.keyMetrics.totalRevenue, analyticsData.keyMetrics.activeClients, analyticsData.keyMetrics.retentionRate]],
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        // Footer with branding
+        const footerY = doc.internal.pageSize.getHeight() - 80;
+        doc.setDrawColor(90, 90, 180);
+        doc.setLineWidth(1);
+        doc.line(40, footerY, pageWidth - 40, footerY);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(90, 90, 180);
+        doc.text(companyName || '', 50, footerY + 25);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(90, 90, 180);
+        doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
+        doc.text(`Email: ${email || ''}`, 50, footerY + 65);
+        // Download PDF
+        doc.save('advanced-analytics.pdf');
+      }
     } catch (err) {
       console.error('Export error:', err);
       setError(`Failed to export ${format.toUpperCase()}`);

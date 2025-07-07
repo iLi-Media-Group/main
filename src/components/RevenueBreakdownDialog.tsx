@@ -8,6 +8,10 @@ interface RevenueBreakdownDialogProps {
   isOpen: boolean;
   onClose: () => void;
   producerId?: string; // Optional - if provided, shows only this producer's revenue
+  logoUrl?: string;
+  companyName?: string;
+  domain?: string;
+  email?: string;
 }
 
 interface RevenueSource {
@@ -35,7 +39,11 @@ interface PendingPayment {
 export function RevenueBreakdownDialog({
   isOpen,
   onClose,
-  producerId
+  producerId,
+  logoUrl,
+  companyName,
+  domain,
+  email
 }: RevenueBreakdownDialogProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -490,49 +498,55 @@ export function RevenueBreakdownDialog({
   const generatePDF = async () => {
     try {
       setPdfGenerating(true);
-      
       // Create a new PDF document
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(20);
-      doc.setTextColor(40, 40, 40);
-      doc.text('Revenue Report', 105, 15, { align: 'center' });
-      
-      // Add date range
-      doc.setFontSize(12);
-      doc.setTextColor(80, 80, 80);
-      
-      let dateRangeText = '';
-      if (timeframe === 'month') {
-        dateRangeText = 'Last 30 Days';
-      } else if (timeframe === 'quarter') {
-        dateRangeText = 'Last 3 Months';
-      } else if (timeframe === 'year') {
-        dateRangeText = 'Last 12 Months';
-      } else {
-        dateRangeText = 'All Time';
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      // === Modern Dark-Themed Header ===
+      doc.setFillColor(24, 26, 48); // Deep navy background
+      doc.rect(0, 0, pageWidth, 180, 'F');
+      // Add logo if provided
+      if (logoUrl) {
+        // Fetch and convert logo to base64
+        const img = await fetch(logoUrl).then(r => r.blob());
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(img);
+        });
+        doc.addImage(base64, 'PNG', 40, 32, 100, 40, undefined, 'FAST');
       }
-      
-      doc.text(`Time Period: ${dateRangeText}`, 105, 25, { align: 'center' });
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
-      
-      // Add total revenue
+      // Title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(32);
+      doc.setTextColor(230, 230, 255);
+      doc.text('Monthly Revenue Report', 160, 70, { align: 'left' });
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(16);
-      doc.setTextColor(40, 40, 40);
-      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 105, 40, { align: 'center' });
-      
-      // Add pending revenue if any
+      doc.setTextColor(180, 180, 220);
+      doc.text('This report provides an in-depth analysis of revenue performance.', 160, 100, { align: 'left' });
+      doc.setFontSize(12);
+      doc.setTextColor(180, 180, 220);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, 120, { align: 'left' });
+      // === Section Divider ===
+      doc.setDrawColor(90, 90, 180);
+      doc.setLineWidth(2);
+      doc.line(40, 150, pageWidth - 40, 150);
+      // === Revenue Summary ===
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(20);
+      doc.setTextColor(230, 230, 255);
+      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 50, 190);
       if (totalPendingRevenue > 0) {
+        doc.setFont('helvetica', 'normal');
         doc.setFontSize(14);
-        doc.setTextColor(255, 140, 0); // Orange color for pending
-        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 105, 50, { align: 'center' });
+        doc.setTextColor(255, 180, 80);
+        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, 215);
       }
-      
-      // Add revenue sources table
-      doc.setFontSize(14);
-      doc.text('Revenue by Source', 14, 50);
-      
+      // === Revenue by Source Table ===
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(180, 180, 220);
+      doc.text('Revenue by Source', 50, 250);
       const sourceTableData = revenueSources.map(source => [
         source.source,
         `$${source.amount.toFixed(2)}`,
@@ -540,35 +554,50 @@ export function RevenueBreakdownDialog({
         `${source.percentage.toFixed(1)}%`,
         source.type === 'pending' ? 'Pending' : 'Completed'
       ]);
-      
       (doc as any).autoTable({
-        startY: 55,
+        startY: 260,
         head: [['Source', 'Amount', 'Count', 'Percentage', 'Status']],
         body: sourceTableData,
         theme: 'grid',
-        headStyles: { fillColor: [75, 75, 200], textColor: 255 },
-        alternateRowStyles: { fillColor: [240, 240, 255] }
+        headStyles: { fillColor: [75, 75, 200], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [40, 40, 60] },
+        styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
+        margin: { left: 40, right: 40 }
       });
-      
-      // Add monthly revenue table
-      const tableEndY = (doc as any).lastAutoTable.finalY + 10;
-      doc.setFontSize(14);
-      doc.text('Monthly Revenue', 14, tableEndY);
-      
+      // === Monthly Revenue Table ===
+      const tableEndY = (doc as any).lastAutoTable.finalY + 20;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(180, 180, 220);
+      doc.text('Monthly Revenue', 50, tableEndY);
       const monthlyTableData = monthlyRevenue.map(item => [
         item.month,
         `$${item.amount.toFixed(2)}`
       ]);
-      
       (doc as any).autoTable({
-        startY: tableEndY + 5,
+        startY: tableEndY + 10,
         head: [['Month', 'Revenue']],
         body: monthlyTableData,
         theme: 'grid',
-        headStyles: { fillColor: [75, 75, 200], textColor: 255 },
-        alternateRowStyles: { fillColor: [240, 240, 255] }
+        headStyles: { fillColor: [75, 75, 200], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [40, 40, 60] },
+        styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
+        margin: { left: 40, right: 40 }
       });
-      
+      // === Footer with Brand Info ===
+      const footerY = doc.internal.pageSize.getHeight() - 80;
+      doc.setDrawColor(90, 90, 180);
+      doc.setLineWidth(1);
+      doc.line(40, footerY, pageWidth - 40, footerY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(180, 180, 220);
+      doc.text(companyName || '', 50, footerY + 25);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(12);
+      doc.setTextColor(180, 180, 220);
+      doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
+      doc.text(`Email: ${email || ''}`, 50, footerY + 65);
       // Save the PDF
       doc.save('revenue-report.pdf');
     } catch (err) {
