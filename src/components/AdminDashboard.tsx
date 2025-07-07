@@ -504,7 +504,7 @@ export function AdminDashboard() {
         .from('profiles')
         .select('id')
         .eq('email', newClient.owner_email)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid 406 error
 
       if (!userError && userData) {
         ownerId = userData.id;
