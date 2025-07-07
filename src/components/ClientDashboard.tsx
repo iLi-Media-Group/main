@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, FileText } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Link, useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
+
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { calculateTimeRemaining } from '../utils/dateUtils';
@@ -14,7 +16,6 @@ import { SyncProposalDialog } from './SyncProposalDialog';
 import AIRecommendationWidget from './AIRecommendationWidget';
 import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
-import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 

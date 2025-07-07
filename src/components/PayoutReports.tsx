@@ -56,8 +56,8 @@ export function PayoutReports() {
 
       if (error) throw error;
       setPayouts(data || []);
-    } catch (err) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export function PayoutReports() {
     
     // Filters info
     doc.setFontSize(12);
-    let yPos = 30;
+    const yPos = 30;
     if (filters.month) doc.text(`Month: ${filters.month}`, 14, yPos);
     if (filters.status) doc.text(`Status: ${filters.status}`, 14, yPos + 10);
     if (filters.producerId) {
@@ -114,7 +114,7 @@ export function PayoutReports() {
       payout.month
     ]);
     
-    let csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n" 
       + rows.map(row => row.join(",")).join("\n");
     

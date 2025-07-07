@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, ArrowUpDown, Search, X, Music, DollarSign, Clock } from 'lucide-react';
+import { FileText, Calendar, Users, Eye, Edit, Trash2, Plus, Search, Filter, Download, Loader2, X, ArrowUpDown, Clock, Music } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface SyncBrief {

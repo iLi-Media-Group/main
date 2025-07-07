@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Users, DollarSign, BarChart3, Upload, X, Mail, Calendar, ArrowUpDown, Music, Plus, Percent, Trash2, Search, Bell, Download, PieChart, Edit, Globe, Palette, Settings } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { LogoUpload } from './LogoUpload';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { ProposalAnalytics } from './ProposalAnalytics';
-import { CustomSyncAnalytics } from './CustomSyncAnalytics';
-import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
-import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
+import { supabase } from '../lib/supabase';
+import { Link } from 'react-router-dom';
 import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
 import { CompensationSettings } from './CompensationSettings';
 import { DiscountManagement } from './DiscountManagement';
+import { FeatureManagement } from './FeatureManagement';
+import { ProposalAnalytics } from './ProposalAnalytics';
+import { CustomSyncAnalytics } from './CustomSyncAnalytics';
 import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
-import { Link } from 'react-router-dom';
+import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
+import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
+import { LogoUpload } from './LogoUpload';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
@@ -62,7 +63,23 @@ export function AdminDashboard() {
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<any>({
+  const [stats, setStats] = useState<{
+    total_clients: number;
+    total_producers: number;
+    total_sales: number;
+    total_revenue: number;
+    track_sales_count: number;
+    track_sales_amount: number;
+    sync_proposals_paid_count: number;
+    sync_proposals_paid_amount: number;
+    sync_proposals_pending_count: number;
+    sync_proposals_pending_amount: number;
+    custom_syncs_paid_count: number;
+    custom_syncs_paid_amount: number;
+    custom_syncs_pending_count: number;
+    custom_syncs_pending_amount: number;
+    new_memberships_count: number;
+  }>({
     total_clients: 0,
     total_producers: 0,
     total_sales: 0,
@@ -172,7 +189,7 @@ export function AdminDashboard() {
       );
 
       // Update stats with user counts
-      setStats(prev => ({
+      setStats((prev) => ({
         ...prev,
         total_clients: clients.length,
         total_producers: producerUsers.length
@@ -197,7 +214,7 @@ export function AdminDashboard() {
         };
 
         // Update stats with sales data
-        setStats(prev => ({
+        setStats((prev) => ({
           ...prev,
           total_sales: latestAnalytics.monthly_sales_count || 0,
           total_revenue: latestAnalytics.monthly_revenue || 0
@@ -252,7 +269,7 @@ export function AdminDashboard() {
         }
         const customSyncsData = customSyncs || [];
         const custom_syncs_paid = customSyncsData.filter(c => (c.status === 'completed' || c.status === 'accepted') && c.payment_status === 'paid');
-        const custom_syncs_pending = customSyncsData.filter(c => c.status === 'pending' || c.status === 'negotiating' || c.status === 'client_acceptance_required');
+        const custom_syncs_pending = customSyncsData.filter(c => c.status === 'pending' || c.status === 'negotiating' || c.status === 'client_acceptance_required' || c.status === 'open');
         const custom_syncs_paid_count = custom_syncs_paid.length;
         const custom_syncs_paid_amount = custom_syncs_paid.reduce((sum, c) => sum + (c.sync_fee || 0), 0);
         const custom_syncs_pending_count = custom_syncs_pending.length;
@@ -948,7 +965,7 @@ export function AdminDashboard() {
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
-			      { id: 'white_label', label: 'White Label Clients', icon: null },
+            { id: 'white_label', label: 'White Label Clients', icon: null },
           ].map(tab => (
             <button
               key={tab.id}

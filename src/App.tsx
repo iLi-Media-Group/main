@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SearchBox } from './components/SearchBox';
 import { ProducerLogin } from './components/ProducerLogin';
@@ -80,7 +80,7 @@ const App = () => {
     </Layout>
   );
 
-  const handleSearch = (filters: any) => {
+  const handleSearch = (filters: { query?: string; genres?: string[]; moods?: string[]; minBpm?: number; maxBpm?: number }) => {
     const params = new URLSearchParams();
     if (filters.query) params.set('q', filters.query);
     if (filters.genres?.length) params.set('genres', filters.genres.join(','));

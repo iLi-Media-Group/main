@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, CreditCard, Coins, DollarSign, Shield, Clock, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp, CreditCard, Coins, DollarSign, Shield, HelpCircle } from 'lucide-react';
 
 interface FAQItem {
   question: string;

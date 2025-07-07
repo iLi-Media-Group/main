@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Loader2, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2, Loader2 } from 'lucide-react';
 
 interface DeleteTrackDialogProps {
   isOpen: boolean;

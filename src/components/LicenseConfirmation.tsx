@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Download, ShoppingBag, Mail, HelpCircle, Music, Star, Sparkles } from 'lucide-react';
+import { Check, Download, Mail, HelpCircle, Music, Star, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SpecialOfferPopup } from './SpecialOfferPopup';
 

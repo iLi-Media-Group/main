@@ -1,27 +1,21 @@
 import React, { useState } from 'react';
-
-type Track = {
-  id: string;
-  title: string;
-  description: string;
-  score: number;
-};
+import { useAuth } from '../contexts/AuthContext';
 
 const AIRecommendationWidget: React.FC = () => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Track[]>([]);
+  const [recommendations, setRecommendations] = useState<Array<{
+    id: string;
+    title: string;
+    genre: string;
+    mood: string;
+    bpm: number;
+    audioUrl: string;
+    reason: string;
+    description?: string;
+    score?: number;
+  }>>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Popular search examples
-  const popularExamples = [
-    'energetic hip hop for workout',
-    'peaceful ambient for meditation',
-    'uplifting pop for commercials',
-    'dramatic orchestral for trailers',
-    'funky jazz for restaurants',
-    'electronic dance for clubs'
-  ];
 
   const fetchRecommendations = async () => {
     if (!query.trim()) return;
@@ -39,9 +33,9 @@ const AIRecommendationWidget: React.FC = () => {
       if (!res.ok) throw new Error('Failed to fetch recommendations');
 
       const data = await res.json();
-      setResults(data.results || []);
-    } catch (err: any) {
-      setError(err.message || 'Unknown error');
+      setRecommendations(data.results || []);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
     }
 
     setLoading(false);
@@ -70,12 +64,12 @@ const AIRecommendationWidget: React.FC = () => {
       {error && <p className="text-red-600 mt-3">{error}</p>}
 
       <ul className="mt-4 space-y-2">
-        {results.length === 0 && !loading && <li>No recommendations yet.</li>}
-        {results.map(track => (
+        {recommendations.length === 0 && !loading && <li>No recommendations yet.</li>}
+        {recommendations.map(track => (
           <li key={track.id} className="border p-3 rounded hover:bg-gray-100">
             <h3 className="font-semibold">{track.title}</h3>
             <p className="text-sm text-gray-600">{track.description}</p>
-            <p className="text-xs text-gray-400">Score: {track.score.toFixed(2)}</p>
+            <p className="text-xs text-gray-400">Score: {track.score?.toFixed(2) || 'N/A'}</p>
           </li>
         ))}
       </ul>

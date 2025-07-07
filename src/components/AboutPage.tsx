@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Music, Users, Shield, Zap, Globe, Award } from 'lucide-react';
+import { Mail, Phone, MapPin, Globe, Award, Users, Music, Star, Zap, Heart, Shield, Target, TrendingUp, CheckCircle, Clock, DollarSign, Users as TeamIcon } from 'lucide-react';
 import { AboutPagePhotoUpload } from './AboutPagePhotoUpload';
 import { supabase } from '../lib/supabase';
 

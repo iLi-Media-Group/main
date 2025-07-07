@@ -28,7 +28,7 @@ export function CheckoutSuccessPage() {
           return;
         }
 
-        let licenseCreated = false;
+        const _licenseCreated = false;
 
         // Refresh membership status
         if (user) {

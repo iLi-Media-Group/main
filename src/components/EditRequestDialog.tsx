@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Loader2, Calendar } from 'lucide-react'; 
+import { Edit, Save, Loader2, Calendar } from 'lucide-react'; 
 
 interface EditRequestDialogProps {
   onClose: () => void;

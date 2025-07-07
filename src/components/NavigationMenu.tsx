@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Music, ShoppingCart, User, Plus, Settings } from 'lucide-react';
+import { Home, ShoppingCart, User, Plus, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export function NavigationMenu() {

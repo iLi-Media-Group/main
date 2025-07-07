@@ -1,10 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Sparkles, Search, TrendingUp, Clock, Zap, Lightbulb, ArrowRight, Loader2, X, MessageSquare, Mic, Filter, Star, Play, Pause } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight, Zap, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 
+interface SearchFilters {
+  query: string;
+  genres: string[];
+  moods: string[];
+  minBpm: number;
+  maxBpm: number;
+}
+
 interface AISearchAssistantProps {
-  onSearchApply?: (filters: any) => void;
+  onSearchApply?: (filters: SearchFilters) => void;
   className?: string;
 }
 
@@ -20,9 +28,9 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [_suggestions, setSuggestions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'suggestions' | 'history'>('search');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -119,7 +127,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   };
 
   const parseQuery = (query: string) => {
-    const filters: any = {
+    const filters: SearchFilters = {
       query: '',
       genres: [],
       moods: [],

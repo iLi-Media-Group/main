@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wallet, Coins, Loader2 } from 'lucide-react';
+import { CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { createHelioCheckout } from '../lib/helio';
 
 interface CryptoPaymentButtonProps {
@@ -67,7 +67,7 @@ export function CryptoPaymentButton({
         <Loader2 className="w-5 h-5 animate-spin mr-2" />
       ) : (
         <>
-          <Wallet className="w-5 h-5 mr-2" />
+          <CreditCard className="w-5 h-5 mr-2" />
           <span>Pay with Crypto</span>
         </>
       )}

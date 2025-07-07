@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { LogIn, Shield } from 'lucide-react';
+import { Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 
 export function AdminLogin() {
   const [email, setEmail] = useState('');
@@ -38,7 +37,7 @@ export function AdminLogin() {
       <div className="w-full max-w-md">
         <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl border border-purple-500/20">
           <div className="flex items-center justify-center mb-8">
-            <Shield className="w-12 h-12 text-purple-500" />
+            <Lock className="w-12 h-12 text-purple-500" />
           </div>
           <h2 className="text-2xl font-bold text-white text-center mb-8">
             Admin Access
