@@ -6,7 +6,7 @@ interface WhiteLabelClient {
   id: string;
   company_name: string;
   email: string;
-  ai_recommendation_enabled: boolean;
+  ai_search_assistance_enabled: boolean;
 }
 
 export default function AdminWhiteLabelClientsPage() {
@@ -56,7 +56,7 @@ export default function AdminWhiteLabelClientsPage() {
           },
           body: JSON.stringify({
             clientId,
-            field: "ai_recommendation_enabled",
+            field: "ai_search_assistance_enabled",
             value: enabled,
           }),
         }
@@ -68,7 +68,7 @@ export default function AdminWhiteLabelClientsPage() {
         setClients((prev) =>
           prev.map((client) =>
             client.id === clientId
-              ? { ...client, ai_recommendation_enabled: enabled }
+              ? { ...client, ai_search_assistance_enabled: enabled }
               : client
           )
         );
@@ -100,7 +100,7 @@ export default function AdminWhiteLabelClientsPage() {
           <tr className="border-b border-gray-600">
             <th className="py-2">Company</th>
             <th className="py-2">Email</th>
-            <th className="py-2">AI Recommendation Module</th>
+            <th className="py-2">AI Search Assistance</th>
           </tr>
         </thead>
         <tbody>
@@ -112,7 +112,7 @@ export default function AdminWhiteLabelClientsPage() {
                 <label className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={client.ai_recommendation_enabled}
+                    checked={client.ai_search_assistance_enabled}
                     onChange={(e) =>
                       toggleAIRecommendation(client.id, e.target.checked)
                     }
@@ -121,7 +121,7 @@ export default function AdminWhiteLabelClientsPage() {
                   <span>
                     {saving === client.id
                       ? "Saving..."
-                      : client.ai_recommendation_enabled
+                      : client.ai_search_assistance_enabled
                       ? "Enabled"
                       : "Disabled"}
                   </span>
