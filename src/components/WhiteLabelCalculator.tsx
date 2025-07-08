@@ -221,91 +221,33 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     setError(null);
 
     try {
-      // 1. Create Auth user (if not exists)
-      const emailLower = customerData.email.toLowerCase();
-      let userId = null;
-      let userCreated = false;
-      // Try to sign up (will error if user exists)
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: emailLower,
-        password: password,
+      // 1. Call Edge Function to create user and white label client
+      const response = await fetch('/functions/v1/create_white_label_client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: customerData.email,
+          password,
+          display_name: customerData.company || (customerData.first_name + ' ' + customerData.last_name),
+          first_name: customerData.first_name,
+          last_name: customerData.last_name
+        })
       });
-      if (signUpError && !signUpError.message.includes('User already registered')) {
-        setError('Failed to create user: ' + signUpError.message);
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setError(data.error || 'Failed to create account.');
         setLoading(false);
         return;
       }
-      if (signUpData?.user) {
-        userId = signUpData.user.id;
-        userCreated = true;
-      }
-      // If user already exists, fetch their id from profiles
-      if (!userId) {
-        const { data: userData, error: userFetchError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', emailLower)
-          .maybeSingle();
-        if (userFetchError || !userData) {
-          setError('Failed to find or create user.');
-          setLoading(false);
-          return;
-        }
-        userId = userData.id;
-      }
-      // 2. Upsert into profiles to ensure foreign key for white_label_clients
-      console.log({
-        id: userId,
-        email: emailLower,
-        first_name: customerData.first_name,
-        last_name: customerData.last_name,
-        account_type: 'white_label'
-      });
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: userId,
-        email: emailLower,
-        first_name: customerData.first_name,
-        last_name: customerData.last_name,
-        account_type: 'white_label',
-      }, { onConflict: 'id' });
-      if (profileError) {
-        setError('Failed to upsert profile: ' + profileError.message);
-        setLoading(false);
-        return;
-      }
-      // 3. Upsert into white_label_clients with only valid columns
-      const { error: wlError } = await supabase.from('white_label_clients').upsert({
-        owner_id: userId,
-        email: emailLower,
-        display_name: customerData.company || (customerData.first_name + ' ' + customerData.last_name),
-        first_name: customerData.first_name,
-        last_name: customerData.last_name,
-        plan: selectedPlan,
-        // Add more fields below if you collect them in your form:
-        // subdomain: customerData.subdomain,
-        // logo_url: customerData.logo_url,
-        // brand_primary_color: customerData.brand_primary_color,
-        // brand_secondary_color: customerData.brand_secondary_color,
-        is_active: true,
-        password_setup_required: false
-      }, { onConflict: 'owner_id' });
-      if (wlError) {
-        console.error('White label client upsert error:', wlError);
-        setError('Failed to insert into white_label_clients: ' + wlError.message);
-        setLoading(false);
-        return;
-      }
-      // 4. Proceed to payment/session
+      // 2. Proceed to Stripe payment
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
         customerName: customerData.first_name + ' ' + customerData.last_name,
         companyName: customerData.company,
-        // Do NOT send password to backend anymore
       });
       window.location.href = checkoutData.url;
-      setSuccess(true);
     } catch (err) {
       console.error('Checkout error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start checkout');
