@@ -224,7 +224,10 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
       // 1. Call Edge Function to create user and white label client
       const response = await fetch('/functions/v1/create_white_label_client', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+        },
         body: JSON.stringify({
           email: customerData.email,
           password,
@@ -233,7 +236,15 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           last_name: customerData.last_name
         })
       });
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        setError('Unexpected response from server. Please try again or contact support.');
+        setLoading(false);
+        return;
+      }
       if (!response.ok || !data.success) {
         setError(data.error || 'Failed to create account.');
         setLoading(false);
