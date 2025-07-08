@@ -24,7 +24,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerData, setCustomerData] = useState({
     email: initialCustomerEmail || '',
-    name: '',
+    first_name: '',
+    last_name: '',
     company: initialCompanyName || ''
   });
   const [discounts, setDiscounts] = useState<{
@@ -199,8 +200,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
   const handleCheckout = async () => {
     // Validate customer data
-    if (!customerData.email || !customerData.name) {
-      setError('Please provide your email and name to continue.');
+    if (!customerData.email || !customerData.first_name || !customerData.last_name) {
+      setError('Please provide your email, first name, and last name to continue.');
       return;
     }
     if (!password || !confirmPassword) {
@@ -256,16 +257,18 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
       await supabase.from('profiles').upsert({
         id: userId,
         email: emailLower,
-        first_name: customerData.name,
+        first_name: customerData.first_name,
+        last_name: customerData.last_name,
         account_type: 'white_label',
       });
       // 3. Upsert into white_label_clients to always save the latest info
       const { error: wlError } = await supabase.from('white_label_clients').upsert({
         owner_id: userId,
         email: emailLower,
-        display_name: customerData.company || customerData.name,
+        display_name: customerData.company || (customerData.first_name + ' ' + customerData.last_name),
         company_name: customerData.company,
-        client_name: customerData.name,
+        first_name: customerData.first_name,
+        last_name: customerData.last_name,
         plan: selectedPlan, // Save the plan
         features: selectedFeatures, // Save the features (ensure this column is text[] or jsonb)
         domain: null,
@@ -284,7 +287,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
-        customerName: customerData.name,
+        customerName: customerData.first_name + ' ' + customerData.last_name,
         companyName: customerData.company,
         // Do NOT send password to backend anymore
       });
@@ -546,18 +549,34 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           <h4 className="text-lg font-semibold text-white mb-4">Complete Your Order</h4>
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                Full Name *
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-300 mb-1">
+                First Name *
               </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={customerData.name}
+                id="first_name"
+                name="first_name"
+                value={customerData.first_name}
                 onChange={handleCustomerDataChange}
                 required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                placeholder="Enter your full name"
+                placeholder="Enter your first name"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-300 mb-1">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                value={customerData.last_name}
+                onChange={handleCustomerDataChange}
+                required
+                className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Enter your last name"
               />
             </div>
             
