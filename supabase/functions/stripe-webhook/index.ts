@@ -134,6 +134,57 @@ async function handleEvent(event: any) {
         currency,
         metadata
       } = stripeData;
+      
+      // Check if this is a white label client onboarding
+      if (metadata?.email && metadata?.password && metadata?.first_name && metadata?.last_name) {
+        console.info('Processing white label client onboarding');
+        
+        try {
+          // Create Auth user
+          const { data: user, error: userError } = await supabase.auth.admin.createUser({
+            email: metadata.email,
+            password: metadata.password,
+            email_confirm: true
+          });
+
+          if (userError || !user?.user?.id) {
+            console.error('Failed to create white label user:', userError);
+            return;
+          }
+
+          const userId = user.user.id;
+
+          // Insert into white_label_clients
+          const { error: insertError } = await supabase
+            .from('white_label_clients')
+            .insert([{
+              owner_id: userId,
+              email: metadata.email,
+              display_name: metadata.company || (metadata.first_name + ' ' + metadata.last_name),
+              first_name: metadata.first_name,
+              last_name: metadata.last_name
+            }]);
+
+          if (insertError) {
+            console.error('Failed to insert white label client:', insertError);
+            return;
+          }
+
+          // Send magic link
+          const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(metadata.email);
+          if (inviteError) {
+            console.error('Failed to send magic link:', inviteError);
+            return;
+          }
+
+          console.info('White label client onboarding completed successfully');
+          return; // Skip the regular order processing for white label clients
+        } catch (error) {
+          console.error('Error in white label client onboarding:', error);
+          return;
+        }
+      }
+      
       // Prepare safe order object for stripe_orders
       const safeOrder = {
         checkout_session_id,

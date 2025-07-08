@@ -221,13 +221,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     setError(null);
 
     try {
-      // 1. Start Stripe payment, pass user info as URL params to success page
-      const successUrl = `${window.location.origin}/white-label/success?session_id={CHECKOUT_SESSION_ID}` +
-        `&email=${encodeURIComponent(customerData.email)}` +
-        `&password=${encodeURIComponent(password)}` +
-        `&first_name=${encodeURIComponent(customerData.first_name)}` +
-        `&last_name=${encodeURIComponent(customerData.last_name)}` +
-        `&company=${encodeURIComponent(customerData.company)}`;
+      // 1. Start Stripe payment, user info will be passed via metadata to webhook
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
@@ -235,7 +229,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         customerName: customerData.first_name + ' ' + customerData.last_name,
         companyName: customerData.company,
         password,
-        successUrl
+        first_name: customerData.first_name,
+        last_name: customerData.last_name
       });
       window.location.href = checkoutData.url;
     } catch (err) {

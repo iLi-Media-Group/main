@@ -350,7 +350,11 @@ Deno.serve(async (req) => {
         applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',
         bundle_discount: bundleDiscount.toString(),
         coupon_id: couponId || '',
-        password: password || '' // Store password in metadata
+        password: password || '',
+        email: customer_email,
+        first_name: customer_name?.split(' ')[0] || '',
+        last_name: customer_name?.split(' ')[1] || '',
+        company: company_name || ''
       },
       payment_method_types: ['card'],
       allow_promotion_codes: true, // Allow Stripe promotion codes

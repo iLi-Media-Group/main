@@ -1,130 +1,51 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle, ArrowRight, Mail, Settings } from 'lucide-react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
-export function WhiteLabelSuccessPage() {
+const WhiteLabelSuccessPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [accountCreated, setAccountCreated] = useState(false);
+  const [countdown, setCountdown] = useState(5);
   const sessionId = searchParams.get('session_id');
 
-  // Read user info from URL params
-  const email = searchParams.get('email') || '';
-  const password = searchParams.get('password') || '';
-  const first_name = searchParams.get('first_name') || '';
-  const last_name = searchParams.get('last_name') || '';
-  const company = searchParams.get('company') || '';
-
   useEffect(() => {
-    // Call Edge Function to create user and client
-    async function createAccount() {
-      setLoading(true);
-      setError(null);
-      setAccountCreated(false);
-      try {
-        const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/create_white_label_client', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            display_name: company || (first_name + ' ' + last_name),
-            first_name,
-            last_name
-          })
-        });
-        const text = await response.text();
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          setError('Unexpected response from server. Please try again or contact support.');
-          setLoading(false);
-          return;
-        }
-        if (!response.ok || !data.success) {
-          setError(data.error || 'Failed to create account.');
-          setLoading(false);
-          return;
-        }
-        setAccountCreated(true);
-      } catch (err) {
-        setError('Failed to create account.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (email && password && first_name && last_name) {
-      createAccount();
+    if (countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
     } else {
-      setLoading(false);
-      setError('Missing account information.');
+      // Redirect to login after countdown
+      window.location.href = '/login';
     }
-  }, [email, password, first_name, last_name, company]);
+  }, [countdown]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-white mb-2">Setting up your white label platform...</h2>
-          <p className="text-gray-400">Please wait while we configure your account.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-8">
-          <h2 className="text-xl font-semibold text-red-400 mb-2">Account Setup Failed</h2>
-          <p className="text-red-300 mb-4">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (accountCreated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-        <div className="max-w-4xl mx-auto px-4 py-20">
-          <div className="text-center">
-            <div className="mb-8">
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Welcome to Your White Label Platform!
-              </h1>
-              <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                Your payment was successful and your account has been set up.
-              </p>
-            </div>
-            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-8 border border-blue-500/20 mb-8">
-              <h2 className="text-2xl font-semibold text-white mb-6">What's Next?</h2>
-              <div className="text-left">
-                <div className="flex items-center mb-3">
-                  <Mail className="w-6 h-6 text-blue-400 mr-3" />
-                  <h3 className="text-lg font-semibold text-white">Check Your Email</h3>
-                </div>
-                <p className="text-gray-300 text-sm">
-                  We've sent you a secure login link. Please check your email and click the link to access your dashboard and complete your setup.
-                </p>
-              </div>
-            </div>
-            <div className="text-sm text-gray-400">
-              Session ID: {sessionId || 'N/A'}
-            </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8 text-center">
+        <div className="mb-6">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+          <p className="text-gray-600">
+            Your white label account has been created and a magic link has been sent to your email.
+          </p>
+        </div>
+
+        <div className="bg-blue-50 rounded-lg p-4 mb-6">
+          <h3 className="font-semibold text-blue-900 mb-2">Next Steps:</h3>
+          <ol className="text-sm text-blue-800 space-y-1 text-left">
+            <li>1. Check your email for the magic link</li>
+            <li>2. Click the link to activate your account</li>
+            <li>3. Log in to access your white label dashboard</li>
+          </ol>
+        </div>
+
+        <div className="text-sm text-gray-500">
+          Redirecting to login in {countdown} seconds...
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+};
 
-  // fallback
-  return null;
-} 
+export default WhiteLabelSuccessPage; 
