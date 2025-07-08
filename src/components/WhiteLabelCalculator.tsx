@@ -239,7 +239,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         userId = signUpData.user.id;
         userCreated = true;
       }
-      // If user already exists, fetch their id
+      // If user already exists, fetch their id from profiles
       if (!userId) {
         const { data: userData, error: userFetchError } = await supabase
           .from('profiles')
@@ -253,27 +253,33 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         }
         userId = userData.id;
       }
-      // 2. Upsert into profiles to ensure account_type is always 'white_label'
-      await supabase.from('profiles').upsert({
+      // 2. Upsert into profiles to ensure foreign key for white_label_clients
+      const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         email: emailLower,
         first_name: customerData.first_name,
         last_name: customerData.last_name,
         account_type: 'white_label',
       }, { onConflict: 'id' });
-      // 3. Upsert into white_label_clients to always save the latest info
+      if (profileError) {
+        setError('Failed to upsert profile: ' + profileError.message);
+        setLoading(false);
+        return;
+      }
+      // 3. Upsert into white_label_clients with only valid columns
       const { error: wlError } = await supabase.from('white_label_clients').upsert({
         owner_id: userId,
         email: emailLower,
         display_name: customerData.company || (customerData.first_name + ' ' + customerData.last_name),
-        company_name: customerData.company,
         first_name: customerData.first_name,
         last_name: customerData.last_name,
-        plan: selectedPlan, // Save the plan
-        features: selectedFeatures, // Save the features (ensure this column is text[] or jsonb)
-        domain: null,
-        primary_color: '#6366f1',
-        secondary_color: '#8b5cf6',
+        plan: selectedPlan,
+        // Add more fields below if you collect them in your form:
+        // subdomain: customerData.subdomain,
+        // logo_url: customerData.logo_url,
+        // brand_primary_color: customerData.brand_primary_color,
+        // brand_secondary_color: customerData.brand_secondary_color,
+        is_active: true,
         password_setup_required: false
       }, { onConflict: 'owner_id' });
       if (wlError) {
