@@ -182,6 +182,7 @@ Deno.serve(async (req) => {
     });
 
     // Create Auth user if not exists
+    let ownerId = null;
     if (password && customer_email) {
       const emailLower = customer_email.toLowerCase();
       // Check if user already exists
@@ -194,6 +195,35 @@ Deno.serve(async (req) => {
         });
         if (userError) {
           return corsResponse({ error: 'Failed to create auth user: ' + userError.message }, 400);
+        }
+        ownerId = userData.user?.id;
+      } else {
+        ownerId = existingUser.users[0].id;
+      }
+    }
+
+    // Insert into white_label_clients if not exists
+    if (ownerId && customer_email) {
+      // Check if already exists
+      const { data: existingClient } = await supabase
+        .from('white_label_clients')
+        .select('id')
+        .eq('owner_id', ownerId)
+        .maybeSingle();
+      if (!existingClient) {
+        const { error: insertError } = await supabase
+          .from('white_label_clients')
+          .insert({
+            owner_id: ownerId,
+            email: customer_email.toLowerCase(),
+            display_name: company_name || customer_name,
+            domain: null,
+            primary_color: '#6366f1',
+            secondary_color: '#8b5cf6',
+            password_setup_required: false
+          });
+        if (insertError) {
+          return corsResponse({ error: 'Failed to create white label client: ' + insertError.message }, 400);
         }
       }
     }

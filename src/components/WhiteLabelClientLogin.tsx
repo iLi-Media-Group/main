@@ -47,7 +47,7 @@ export function WhiteLabelClientLogin() {
         setLoading(false);
         return;
       }
-      navigate('/white-label-profile');
+      navigate('/white-label-dashboard');
     } catch (err) {
       setError('Failed to sign in. Please try again.');
       console.error('White label login error:', err);

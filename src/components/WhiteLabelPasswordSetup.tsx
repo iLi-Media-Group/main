@@ -81,9 +81,9 @@ export function WhiteLabelPasswordSetup() {
 
       setSuccess(true);
       
-      // Redirect to white label profile after a short delay
+      // Redirect to white label dashboard after a short delay
       setTimeout(() => {
-        navigate('/white-label-profile');
+        navigate('/white-label-dashboard');
       }, 2000);
 
     } catch (err) {

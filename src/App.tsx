@@ -58,6 +58,7 @@ import { WhiteLabelClientProfile } from './components/WhiteLabelClientProfile';
 import { supabase } from './lib/supabase';
 import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
 import { WhiteLabelClientLogin } from './components/WhiteLabelClientLogin';
+import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 
 
 const App = () => {
@@ -425,6 +426,12 @@ const App = () => {
         <Route path="/white-label-profile" element={
           <ProtectedRoute>
             <WhiteLabelProfileWrapper />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/white-label-dashboard" element={
+          <ProtectedRoute>
+            <WhiteLabelClientDashboard />
           </ProtectedRoute>
         } />
 
