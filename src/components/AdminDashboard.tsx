@@ -288,7 +288,7 @@ export function AdminDashboard() {
 
         // Fetch custom sync requests (paid and pending) - only fetch once
         const { data: customSyncs, error: customSyncRequestsError } = await supabase
-          .from('custom_sync_requests')
+        .from('custom_sync_requests')
           .select('id, sync_fee, status, payment_status');
         if (customSyncRequestsError) {
           console.error('Error fetching custom sync requests:', customSyncRequestsError);
@@ -305,7 +305,7 @@ export function AdminDashboard() {
         const { data: newMembershipsData, error: newMembershipsError } = await supabase
           .from('profiles')
           .select('id, created_at')
-          .gte('created_at', `${currentMonth}-01`)
+        .gte('created_at', `${currentMonth}-01`)
           .lt('created_at', new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toISOString());
       
       if (newMembershipsError) {
@@ -350,7 +350,7 @@ export function AdminDashboard() {
 
         // Update stats with comprehensive data
         setStats((prev: typeof stats) => ({
-          ...prev,
+        ...prev,
           total_clients: clients.length,
           total_producers: producerUsers.length,
           total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count + white_label_setup_count,
@@ -370,22 +370,22 @@ export function AdminDashboard() {
           white_label_subscriptions_count,
           white_label_monthly_amount,
           new_memberships_count
-        }));
+      }));
 
-        // Fetch producer analytics using the existing function
-        const { data: producerAnalyticsData, error: producerAnalyticsError } = await supabase
-          .rpc('get_producer_analytics');
+      // Fetch producer analytics using the existing function
+      const { data: producerAnalyticsData, error: producerAnalyticsError } = await supabase
+        .rpc('get_producer_analytics');
 
-        if (producerAnalyticsError) {
-          console.error('Error fetching producer analytics:', producerAnalyticsError);
-        }
+      if (producerAnalyticsError) {
+        console.error('Error fetching producer analytics:', producerAnalyticsError);
+      }
 
         // Create a map of producer analytics by producer_id - fixed duplicate declaration
-        const producerAnalyticsMap: Record<string, {
-          total_tracks: number;
-          total_sales: number;
-          total_revenue: number;
-        }> = {};
+      const producerAnalyticsMap: Record<string, {
+        total_tracks: number;
+        total_sales: number;
+        total_revenue: number;
+      }> = {};
 
         // Initialize with data from initial map if available
         Object.keys(initialProducerAnalyticsMap).forEach(producerId => {
@@ -397,127 +397,127 @@ export function AdminDashboard() {
           };
         });
 
-        if (producerAnalyticsData) {
-          producerAnalyticsData.forEach((item: {
-            proposal_producer_id: string;
-            total_tracks: number;
-            total_sales: number;
-            total_revenue: number;
-          }) => {
-            producerAnalyticsMap[item.proposal_producer_id] = {
-              total_tracks: item.total_tracks || 0,
-              total_sales: item.total_sales || 0,
-              total_revenue: item.total_revenue || 0
-            };
-          });
-        }
-
-        // For producers not in the analytics (like admin emails), fetch their data manually
-        const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
-        
-        if (producersNotInAnalytics.length > 0) {
-          // Fetch tracks for these producers
-          const { data: tracksData, error: tracksError } = await supabase
-            .from('tracks')
-            .select('id, track_producer_id, title')
-            .in('track_producer_id', producersNotInAnalytics.map(p => p.id));
-
-          if (tracksError) {
-            console.error('Error fetching tracks for producers:', tracksError);
-          }
-
-          // Fetch sales for these producers' tracks
-          const trackIds = tracksData?.map(t => t.id) || [];
-          let salesData: any[] = [];
-          if (trackIds.length > 0) {
-            const { data: sales, error: salesError } = await supabase
-              .from('sales')
-              .select('id, track_id, amount')
-              .in('track_id', trackIds);
-
-            if (salesError) {
-              console.error('Error fetching sales for producers:', salesError);
-            } else {
-              salesData = sales || [];
-            }
-          }
-
-          // Fetch sync proposals for these producers' tracks
-          let syncProposalsData: any[] = [];
-          if (trackIds.length > 0) {
-            const { data: syncProposals, error: syncProposalsError } = await supabase
-              .from('sync_proposals')
-              .select('id, track_id, sync_fee, payment_status, status')
-              .in('track_id', trackIds)
-              .eq('payment_status', 'paid')
-              .eq('status', 'accepted');
-
-            if (syncProposalsError) {
-              console.error('Error fetching sync proposals for producers:', syncProposalsError);
-            } else {
-              syncProposalsData = syncProposals || [];
-            }
-          }
-
-          // Fetch custom sync requests for these producers (where they are the preferred producer)
-          let customSyncRequestsData: any[] = [];
-          const producerIds = producersNotInAnalytics.map(p => p.id);
-          if (producerIds.length > 0) {
-            const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
-              .from('custom_sync_requests')
-              .select('id, preferred_producer_id, sync_fee, status')
-              .in('preferred_producer_id', producerIds)
-              .eq('status', 'completed');
-
-            if (customSyncRequestsError) {
-              console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
-            } else {
-              customSyncRequestsData = customSyncRequests || [];
-            }
-          }
-
-          // Calculate analytics for producers not in the function
-          producersNotInAnalytics.forEach(producer => {
-            const producerTracks = tracksData?.filter(t => t.track_producer_id === producer.id) || [];
-            const producerTrackIds = producerTracks.map(t => t.id);
-            const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
-            const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
-            const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
-
-            producerAnalyticsMap[producer.id] = {
-              total_tracks: producerTracks.length,
-              total_sales: producerSales.length + producerSyncProposals.length + producerCustomSyncRequests.length,
-              total_revenue: 
-                producerSales.reduce((sum, sale) => sum + (sale.amount || 0), 0) +
-                producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) +
-                producerCustomSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0)
-            };
-          });
-        }
-
-        // Map producer users to include their analytics
-        const transformedProducers = producerUsers.map(producer => {
-          const analytics = producerAnalyticsMap[producer.id] || {
-            total_tracks: 0,
-            total_sales: 0,
-            total_revenue: 0
-          };
-          
-          return {
-            id: producer.id,
-            email: producer.email,
-            first_name: producer.first_name,
-            last_name: producer.last_name,
-            account_type: 'producer' as const,
-            created_at: producer.created_at,
-            producer_number: producer.producer_number,
-            total_tracks: analytics.total_tracks,
-            total_sales: analytics.total_sales,
-            total_revenue: analytics.total_revenue
+      if (producerAnalyticsData) {
+        producerAnalyticsData.forEach((item: {
+          proposal_producer_id: string;
+          total_tracks: number;
+          total_sales: number;
+          total_revenue: number;
+        }) => {
+          producerAnalyticsMap[item.proposal_producer_id] = {
+            total_tracks: item.total_tracks || 0,
+            total_sales: item.total_sales || 0,
+            total_revenue: item.total_revenue || 0
           };
         });
+      }
 
-        setProducers(transformedProducers);
+      // For producers not in the analytics (like admin emails), fetch their data manually
+      const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
+      
+      if (producersNotInAnalytics.length > 0) {
+        // Fetch tracks for these producers
+        const { data: tracksData, error: tracksError } = await supabase
+          .from('tracks')
+          .select('id, track_producer_id, title')
+          .in('track_producer_id', producersNotInAnalytics.map(p => p.id));
+
+        if (tracksError) {
+          console.error('Error fetching tracks for producers:', tracksError);
+        }
+
+        // Fetch sales for these producers' tracks
+        const trackIds = tracksData?.map(t => t.id) || [];
+        let salesData: any[] = [];
+        if (trackIds.length > 0) {
+          const { data: sales, error: salesError } = await supabase
+            .from('sales')
+            .select('id, track_id, amount')
+            .in('track_id', trackIds);
+
+          if (salesError) {
+            console.error('Error fetching sales for producers:', salesError);
+          } else {
+            salesData = sales || [];
+          }
+        }
+
+        // Fetch sync proposals for these producers' tracks
+        let syncProposalsData: any[] = [];
+        if (trackIds.length > 0) {
+          const { data: syncProposals, error: syncProposalsError } = await supabase
+            .from('sync_proposals')
+            .select('id, track_id, sync_fee, payment_status, status')
+            .in('track_id', trackIds)
+            .eq('payment_status', 'paid')
+            .eq('status', 'accepted');
+
+          if (syncProposalsError) {
+            console.error('Error fetching sync proposals for producers:', syncProposalsError);
+          } else {
+            syncProposalsData = syncProposals || [];
+          }
+        }
+
+        // Fetch custom sync requests for these producers (where they are the preferred producer)
+        let customSyncRequestsData: any[] = [];
+        const producerIds = producersNotInAnalytics.map(p => p.id);
+        if (producerIds.length > 0) {
+          const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
+            .from('custom_sync_requests')
+            .select('id, preferred_producer_id, sync_fee, status')
+            .in('preferred_producer_id', producerIds)
+            .eq('status', 'completed');
+
+          if (customSyncRequestsError) {
+            console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
+          } else {
+            customSyncRequestsData = customSyncRequests || [];
+          }
+        }
+
+        // Calculate analytics for producers not in the function
+        producersNotInAnalytics.forEach(producer => {
+          const producerTracks = tracksData?.filter(t => t.track_producer_id === producer.id) || [];
+          const producerTrackIds = producerTracks.map(t => t.id);
+          const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
+          const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
+          const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
+
+          producerAnalyticsMap[producer.id] = {
+            total_tracks: producerTracks.length,
+            total_sales: producerSales.length + producerSyncProposals.length + producerCustomSyncRequests.length,
+            total_revenue: 
+              producerSales.reduce((sum, sale) => sum + (sale.amount || 0), 0) +
+              producerSyncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) +
+              producerCustomSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0)
+          };
+        });
+      }
+
+      // Map producer users to include their analytics
+      const transformedProducers = producerUsers.map(producer => {
+        const analytics = producerAnalyticsMap[producer.id] || {
+          total_tracks: 0,
+          total_sales: 0,
+          total_revenue: 0
+        };
+        
+        return {
+          id: producer.id,
+          email: producer.email,
+          first_name: producer.first_name,
+          last_name: producer.last_name,
+          account_type: 'producer' as const,
+          created_at: producer.created_at,
+          producer_number: producer.producer_number,
+          total_tracks: analytics.total_tracks,
+          total_sales: analytics.total_sales,
+          total_revenue: analytics.total_revenue
+        };
+      });
+
+      setProducers(transformedProducers);
       }
 
     } catch (err) {
@@ -1111,7 +1111,7 @@ export function AdminDashboard() {
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
-            { id: 'white_label', label: 'White Label Clients', icon: null },
+			      { id: 'white_label', label: 'White Label Clients', icon: null },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1317,12 +1317,12 @@ export function AdminDashboard() {
         {activeTab === 'discounts' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
             <DiscountManagement />
-          </div>
+      </div>
         )}
       </div>
         {/* White Label Admin Panel */}
-        {activeTab === 'white_label' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+			 {activeTab === 'white_label' && (
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">White Label Clients</h2>
               <button
@@ -1481,8 +1481,8 @@ export function AdminDashboard() {
                 )}
               </div>
             )}
-          </div>
-        )}
+  </div>
+)}
 
 
       {/* Producer Analytics Modal */}
