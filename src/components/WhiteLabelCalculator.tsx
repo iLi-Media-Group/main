@@ -252,34 +252,27 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         }
         userId = userData.id;
       }
-      // 2. Insert into profiles if not exists
-      if (userCreated) {
-        await supabase.from('profiles').insert({
-          id: userId,
-          email: emailLower,
-          first_name: customerData.name,
-          account_type: 'white_label',
-        });
-      }
-      // 3. Insert into white_label_clients if not exists
-      const { data: existingClient } = await supabase
-        .from('white_label_clients')
-        .select('id')
-        .eq('owner_id', userId)
-        .maybeSingle();
-      if (!existingClient) {
-        await supabase.from('white_label_clients').insert({
-          owner_id: userId,
-          email: emailLower,
-          display_name: customerData.company || customerData.name,
-          company_name: customerData.company,
-          client_name: customerData.name,
-          domain: null,
-          primary_color: '#6366f1',
-          secondary_color: '#8b5cf6',
-          password_setup_required: false
-        });
-      }
+      // 2. Upsert into profiles to ensure account_type is always 'white_label'
+      await supabase.from('profiles').upsert({
+        id: userId,
+        email: emailLower,
+        first_name: customerData.name,
+        account_type: 'white_label',
+      });
+      // 3. Upsert into white_label_clients to always save the latest info
+      await supabase.from('white_label_clients').upsert({
+        owner_id: userId,
+        email: emailLower,
+        display_name: customerData.company || customerData.name,
+        company_name: customerData.company,
+        client_name: customerData.name,
+        plan: selectedPlan, // Save the plan
+        features: selectedFeatures, // Save the features (ensure this column is text[] or jsonb)
+        domain: null,
+        primary_color: '#6366f1',
+        secondary_color: '#8b5cf6',
+        password_setup_required: false
+      });
       // 4. Proceed to payment/session
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
