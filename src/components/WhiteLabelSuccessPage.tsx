@@ -70,14 +70,12 @@ export function WhiteLabelSuccessPage() {
           </div>
 
           <div className="space-y-4">
-            <button
-              onClick={() => navigate('/white-label')}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25"
-            >
-              <ArrowRight className="w-5 h-5 mr-2" />
-              Back to White Label Page
-            </button>
-            
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6 text-center">
+              <h3 className="text-lg font-semibold text-white mb-2">Check Your Email</h3>
+              <p className="text-gray-300 text-sm">
+                We've sent you a secure login link. Please check your email and click the link to access your dashboard and complete your setup.
+              </p>
+            </div>
             <div className="text-sm text-gray-400">
               Session ID: {sessionId || 'N/A'}
             </div>
