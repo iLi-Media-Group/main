@@ -302,18 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Check if there's an active session first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      // If there's no session or an error getting it, just clear local state
-      if (sessionError || !session) {
-        setUser(null);
-        setAccountType(null);
-        setMembershipPlan(null);
-        return;
-      }
-
-      // Only attempt to sign out if we have a valid session
+      // Always attempt to sign out, regardless of session state
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.warn('Error during sign out:', {
@@ -335,6 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       setAccountType(null);
       setMembershipPlan(null);
+      setNeedsPasswordSetup(false);
     }
   };
 
