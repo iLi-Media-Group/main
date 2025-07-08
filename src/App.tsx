@@ -42,7 +42,7 @@ import { ProducerWithdrawalsPage } from './components/ProducerWithdrawalsPage';
 import { TrackPage } from './components/TrackPage';
 import { WelcomePage } from './components/WelcomePage';
 import { WhiteLabelPage } from './components/WhiteLabelPage';
-import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
+import WhiteLabelSuccessPage from './components/WhiteLabelSuccessPage';
 import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
