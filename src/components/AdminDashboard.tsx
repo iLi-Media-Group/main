@@ -579,7 +579,10 @@ export function AdminDashboard() {
     try {
       const response = await fetch('/functions/v1/create-white-label-user', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
         body: JSON.stringify({ email: emailLower, password: tempPassword }),
       });
       console.log('Edge function response:', response);
