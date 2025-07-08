@@ -254,6 +254,13 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         userId = userData.id;
       }
       // 2. Upsert into profiles to ensure foreign key for white_label_clients
+      console.log({
+        id: userId,
+        email: emailLower,
+        first_name: customerData.first_name,
+        last_name: customerData.last_name,
+        account_type: 'white_label'
+      });
       const { error: profileError } = await supabase.from('profiles').upsert({
         id: userId,
         email: emailLower,
