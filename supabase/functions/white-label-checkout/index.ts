@@ -321,6 +321,25 @@ Deno.serve(async (req) => {
 
     console.log(`Created white label checkout session ${session.id} for customer ${customerId}`);
 
+    // Add debugging for webhook testing
+    console.log('=== WHITE LABEL CHECKOUT DEBUG ===');
+    console.log('Session ID:', session.id);
+    console.log('Session URL:', session.url);
+    console.log('Customer ID:', customerId);
+    console.log('Metadata being sent:', {
+      type: 'white_label_setup',
+      plan: plan,
+      features: selectedFeatures.join(','),
+      customer_email: customer_email,
+      customer_name: customer_name,
+      company_name: company_name || '',
+      password: password ? 'present' : 'missing',
+      email: customer_email,
+      first_name: customer_name?.split(' ')[0] || '',
+      last_name: customer_name?.split(' ')[1] || '',
+      company: company_name || ''
+    });
+
     return corsResponse({ 
       sessionId: session.id, 
       url: session.url,

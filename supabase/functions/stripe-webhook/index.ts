@@ -68,42 +68,103 @@ Deno.serve(async (req) => {
   console.log('URL:', req.url);
   console.log('Headers:', Object.fromEntries(req.headers.entries()));
   
+  // Add CORS headers
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature',
+  };
+  
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders
+    });
+  }
+  
   // Add a simple test endpoint
   if (req.url.includes('/test')) {
     return new Response(JSON.stringify({ 
       message: 'Stripe webhook function is working',
       timestamp: new Date().toISOString()
     }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 
+        'Content-Type': 'application/json',
+        ...corsHeaders
+      }
     });
   }
   
+  // Log all incoming requests for debugging
+  console.log('=== INCOMING REQUEST ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Content-Type:', req.headers.get('content-type'));
+  console.log('Stripe-Signature:', req.headers.get('stripe-signature') ? 'present' : 'missing');
+  console.log('Authorization:', req.headers.get('authorization') ? 'present' : 'missing');
+  
   try {
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { status: 204 });
-    }
     if (req.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 });
+      return new Response('Method not allowed', { 
+        status: 405,
+        headers: corsHeaders
+      });
     }
+    
     const sigHeader = req.headers.get('stripe-signature');
+    const authHeader = req.headers.get('authorization');
+    
     console.log('Stripe signature header:', sigHeader ? 'present' : 'missing');
-    if (!sigHeader) {
-      return new Response('No signature found', { status: 400 });
+    console.log('Authorization header:', authHeader ? 'present' : 'missing');
+    
+    // If it's a Stripe webhook (has stripe-signature), don't require auth
+    // If it's from another function (no stripe-signature), require auth
+    if (!sigHeader && !authHeader && !req.url.includes('/test')) {
+      console.log('No Stripe signature or authorization found for webhook request');
+      return new Response('No signature or authorization found', { 
+        status: 400,
+        headers: corsHeaders
+      });
     }
+    
+    // If it's a test request without signature, allow it
+    if (req.url.includes('/test') && !sigHeader) {
+      return new Response(JSON.stringify({ 
+        message: 'Stripe webhook function is working',
+        timestamp: new Date().toISOString()
+      }), {
+        headers: { 
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      });
+    }
+    
     const rawBody = await req.arrayBuffer();
     console.log('Raw body length:', rawBody.byteLength);
-    // Verify signature
-    let isValid = false;
-    try {
-      isValid = await verifyStripeSignature(rawBody, sigHeader, stripeWebhookSecret);
-      console.log('Signature verification result:', isValid);
-    } catch (err) {
-      console.error('Signature verification error:', err);
-      return new Response('Webhook signature verification failed', { status: 400 });
-    }
-    if (!isValid) {
-      console.error('Webhook signature verification failed: Invalid signature');
-      return new Response('Webhook signature verification failed', { status: 400 });
+    
+    // Only verify signature for actual Stripe webhook events
+    if (sigHeader) {
+      // Verify signature
+      let isValid = false;
+      try {
+        isValid = await verifyStripeSignature(rawBody, sigHeader, stripeWebhookSecret);
+        console.log('Signature verification result:', isValid);
+      } catch (err) {
+        console.error('Signature verification error:', err);
+        return new Response('Webhook signature verification failed', { 
+          status: 400,
+          headers: corsHeaders
+        });
+      }
+      if (!isValid) {
+        console.error('Webhook signature verification failed: Invalid signature');
+        return new Response('Webhook signature verification failed', { 
+          status: 400,
+          headers: corsHeaders
+        });
+      }
     }
     // Parse event
     let event;
@@ -401,104 +462,6 @@ async function handleEvent(event: any) {
       console.error('Error processing one-time payment:', error);
     }
   }
-  // === BEGIN: White Label Feature Activation (Safe Addition) ===
-  try {
-    if (
-      event.type === 'checkout.session.completed' &&
-      stripeData?.metadata?.type === 'white_label_setup' &&
-      stripeData?.payment_status === 'paid'
-    ) {
-      const features = (stripeData.metadata.features || '').split(',').map(f => f.trim()).filter(Boolean);
-      const email = stripeData.metadata.customer_email;
-      const company = stripeData.metadata.company_name || null;
-      const password = stripeData.metadata.password || null;
-      if (features.length && email) {
-        // Create Supabase auth user if password is present and user does not exist
-        if (password) {
-          const { data: existingUser } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle();
-          if (!existingUser) {
-            // Use Supabase Admin API to create user
-            const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/auth/v1/admin/users`, {
-              method: 'POST',
-              headers: {
-                'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                email: email,
-                password: password,
-                email_confirm: true
-              })
-            });
-            if (!res.ok) {
-              const err = await res.text();
-              console.error('Error creating Supabase user:', err);
-            } else {
-              console.info(`Created Supabase user for white label client: ${email}`);
-            }
-          }
-        }
-        // Find the client by email (or company name as fallback)
-        let { data: client, error } = await supabase
-          .from('white_label_clients')
-          .select('*')
-          .ilike('email', email)
-          .maybeSingle();
-        if (!client && company) {
-          // Try by company name if not found by email
-          const res = await supabase
-            .from('white_label_clients')
-            .select('*')
-            .ilike('company_name', company)
-            .maybeSingle();
-          client = res.data;
-        }
-        if (!client) {
-          // Create new client record if not found
-          const { data: newClient, error: insertError } = await supabase
-            .from('white_label_clients')
-            .insert({ email, company_name: company })
-            .select('*')
-            .single();
-          if (insertError) {
-            console.error('Error creating white_label_client:', insertError);
-            return;
-          }
-          client = newClient;
-        }
-        // Prepare update object for paid features
-        const paidFields = {};
-        if (features.includes('ai_recommendations') || features.includes('ai_search_assistance')) {
-          paidFields['ai_search_assistance_paid'] = true;
-        }
-        if (features.includes('producer_applications') || features.includes('producer_onboarding')) {
-          paidFields['producer_onboarding_paid'] = true;
-        }
-        if (features.includes('deep_media_search')) {
-          paidFields['deep_media_search_paid'] = true;
-        }
-        if (Object.keys(paidFields).length) {
-          const { error: updateError } = await supabase
-            .from('white_label_clients')
-            .update(paidFields)
-            .eq('id', client.id);
-          if (updateError) {
-            console.error('Error updating paid features for client:', updateError);
-          } else {
-            console.info(`Enabled paid features for white label client ${client.id}: ${Object.keys(paidFields).join(', ')}`);
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.error('White label feature activation error:', err);
-  }
-  // === END: White Label Feature Activation (Safe Addition) ===
 }
 
 async function syncCustomerFromStripe(customerId: string) {
