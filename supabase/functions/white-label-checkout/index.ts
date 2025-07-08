@@ -87,6 +87,27 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
+    // Check authorization
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return corsResponse({ error: 'Missing authorization header' }, 401);
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const {
+      data: { user },
+      error: getUserError,
+    } = await supabase.auth.getUser(token);
+
+    if (getUserError) {
+      console.error('Authorization error:', getUserError);
+      return corsResponse({ error: 'Failed to authenticate user' }, 401);
+    }
+
+    if (!user) {
+      return corsResponse({ error: 'User not found' }, 404);
+    }
+
     const { 
       plan, 
       features, 
