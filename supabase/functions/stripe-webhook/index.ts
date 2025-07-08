@@ -63,6 +63,21 @@ async function verifyStripeSignature(
 }
 
 Deno.serve(async (req) => {
+  console.log('=== STRIPE WEBHOOK CALLED ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', Object.fromEntries(req.headers.entries()));
+  
+  // Add a simple test endpoint
+  if (req.url.includes('/test')) {
+    return new Response(JSON.stringify({ 
+      message: 'Stripe webhook function is working',
+      timestamp: new Date().toISOString()
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+  
   try {
     if (req.method === 'OPTIONS') {
       return new Response(null, { status: 204 });
@@ -71,14 +86,17 @@ Deno.serve(async (req) => {
       return new Response('Method not allowed', { status: 405 });
     }
     const sigHeader = req.headers.get('stripe-signature');
+    console.log('Stripe signature header:', sigHeader ? 'present' : 'missing');
     if (!sigHeader) {
       return new Response('No signature found', { status: 400 });
     }
     const rawBody = await req.arrayBuffer();
+    console.log('Raw body length:', rawBody.byteLength);
     // Verify signature
     let isValid = false;
     try {
       isValid = await verifyStripeSignature(rawBody, sigHeader, stripeWebhookSecret);
+      console.log('Signature verification result:', isValid);
     } catch (err) {
       console.error('Signature verification error:', err);
       return new Response('Webhook signature verification failed', { status: 400 });
@@ -91,11 +109,14 @@ Deno.serve(async (req) => {
     let event;
     try {
       event = JSON.parse(ab2str(rawBody));
+      console.log('Event type:', event.type);
+      console.log('Event data keys:', Object.keys(event.data?.object || {}));
     } catch (err) {
       console.error('Invalid JSON:', err);
       return new Response('Invalid JSON', { status: 400 });
     }
     // Handle event
+    console.log('Calling handleEvent...');
     handleEvent(event); // No waitUntil, just fire and forget
     return Response.json({ received: true });
   } catch (error: any) {
@@ -105,20 +126,46 @@ Deno.serve(async (req) => {
 });
 
 async function handleEvent(event: any) {
+  console.log('=== HANDLE EVENT ===');
+  console.log('Event type:', event.type);
+  
   const stripeData = event?.data?.object ?? {};
-  if (!stripeData) return;
-  if (!('customer' in stripeData)) return;
-  if (event.type === 'payment_intent.succeeded' && event.data.object.invoice === null) return;
+  if (!stripeData) {
+    console.log('No stripe data found');
+    return;
+  }
+  if (!('customer' in stripeData)) {
+    console.log('No customer in stripe data');
+    return;
+  }
+  if (event.type === 'payment_intent.succeeded' && event.data.object.invoice === null) {
+    console.log('Skipping payment_intent.succeeded with null invoice');
+    return;
+  }
   const { customer: customerId } = stripeData;
   if (!customerId || typeof customerId !== 'string') {
     console.error(`No customer received on event: ${JSON.stringify(event)}`);
     return;
   }
+  console.log('Customer ID:', customerId);
+  
   let isSubscription = true;
   if (event.type === 'checkout.session.completed') {
     const { mode } = stripeData;
     isSubscription = mode === 'subscription';
     console.info(`Processing ${isSubscription ? 'subscription' : 'one-time payment'} checkout session`);
+    
+    // Debug metadata for white label
+    console.log('Checkout session metadata:', stripeData.metadata);
+    if (stripeData.metadata?.email) {
+      console.log('White label metadata found:', {
+        email: stripeData.metadata.email,
+        password: stripeData.metadata.password ? 'present' : 'missing',
+        first_name: stripeData.metadata.first_name,
+        last_name: stripeData.metadata.last_name,
+        company: stripeData.metadata.company
+      });
+    }
   }
   const { mode, payment_status } = stripeData;
   if (isSubscription) {
@@ -135,12 +182,15 @@ async function handleEvent(event: any) {
         metadata
       } = stripeData;
       
+      console.log('Processing one-time payment with metadata:', metadata);
+      
       // Check if this is a white label client onboarding
       if (metadata?.email && metadata?.password && metadata?.first_name && metadata?.last_name) {
         console.info('Processing white label client onboarding');
         
         try {
           // Create Auth user
+          console.log('Creating Auth user for:', metadata.email);
           const { data: user, error: userError } = await supabase.auth.admin.createUser({
             email: metadata.email,
             password: metadata.password,
@@ -153,8 +203,10 @@ async function handleEvent(event: any) {
           }
 
           const userId = user.user.id;
+          console.log('Created Auth user with ID:', userId);
 
           // Insert into white_label_clients
+          console.log('Inserting into white_label_clients...');
           const { error: insertError } = await supabase
             .from('white_label_clients')
             .insert([{
@@ -170,7 +222,10 @@ async function handleEvent(event: any) {
             return;
           }
 
+          console.log('Successfully inserted white label client');
+
           // Send magic link
+          console.log('Sending magic link...');
           const { error: inviteError } = await supabase.auth.admin.inviteUserByEmail(metadata.email);
           if (inviteError) {
             console.error('Failed to send magic link:', inviteError);
@@ -183,6 +238,8 @@ async function handleEvent(event: any) {
           console.error('Error in white label client onboarding:', error);
           return;
         }
+      } else {
+        console.log('Not a white label client onboarding - missing required metadata');
       }
       
       // Prepare safe order object for stripe_orders
