@@ -221,42 +221,21 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     setError(null);
 
     try {
-      // 1. Call Edge Function to create user and white label client
-      const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/create_white_label_client', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          email: customerData.email,
-          password,
-          display_name: customerData.company || (customerData.first_name + ' ' + customerData.last_name),
-          first_name: customerData.first_name,
-          last_name: customerData.last_name
-        })
-      });
-      const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        setError('Unexpected response from server. Please try again or contact support.');
-        setLoading(false);
-        return;
-      }
-      if (!response.ok || !data.success) {
-        setError(data.error || 'Failed to create account.');
-        setLoading(false);
-        return;
-      }
-      // 2. Proceed to Stripe payment
+      // 1. Start Stripe payment, pass user info as URL params to success page
+      const successUrl = `${window.location.origin}/white-label/success?session_id={CHECKOUT_SESSION_ID}` +
+        `&email=${encodeURIComponent(customerData.email)}` +
+        `&password=${encodeURIComponent(password)}` +
+        `&first_name=${encodeURIComponent(customerData.first_name)}` +
+        `&last_name=${encodeURIComponent(customerData.last_name)}` +
+        `&company=${encodeURIComponent(customerData.company)}`;
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
         customerName: customerData.first_name + ' ' + customerData.last_name,
         companyName: customerData.company,
+        password,
+        successUrl
       });
       window.location.href = checkoutData.url;
     } catch (err) {
