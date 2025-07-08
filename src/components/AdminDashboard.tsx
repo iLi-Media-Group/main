@@ -1499,7 +1499,7 @@ export function AdminDashboard() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={e => { e.preventDefault(); createWhiteLabelClient(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Display Name *
@@ -1583,19 +1583,20 @@ export function AdminDashboard() {
 
               <div className="flex space-x-3 pt-4">
                 <button
+                  type="button"
                   onClick={() => setShowAddClientModal(false)}
                   className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={createWhiteLabelClient}
+                  type="submit"
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
                   Create Client
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
