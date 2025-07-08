@@ -577,7 +577,7 @@ export function AdminDashboard() {
     // Create Supabase Auth user via Edge Function
     let authUserId = null;
     try {
-      const response = await fetch('/functions/v1/create-white-label-user', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/create-white-label-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
