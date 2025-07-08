@@ -222,7 +222,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
     try {
       // 1. Call Edge Function to create user and white label client
-      const response = await fetch('/functions/v1/create_white_label_client', {
+      const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/create_white_label_client', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
