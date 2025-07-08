@@ -582,13 +582,16 @@ export function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailLower, password: tempPassword }),
       });
+      console.log('Edge function response:', response);
       const result = await response.json();
+      console.log('Edge function result:', result);
       if (!response.ok) {
         setWhiteLabelError('Failed to create auth user: ' + (result.error || 'Unknown error'));
         return;
       }
       authUserId = result.user?.id;
     } catch (err) {
+      console.error('Error creating auth user:', err);
       setWhiteLabelError('Failed to create auth user.');
       return;
     }
