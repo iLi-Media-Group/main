@@ -87,26 +87,24 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    // Check authorization
+    // Check authorization - allow both authenticated and unauthenticated users for white label checkout
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return corsResponse({ error: 'Missing authorization header' }, 401);
-    }
+    let user = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const {
+        data: { user: authUser },
+        error: getUserError,
+      } = await supabase.auth.getUser(token);
 
-    const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: getUserError,
-    } = await supabase.auth.getUser(token);
-
-    if (getUserError) {
-      console.error('Authorization error:', getUserError);
-      return corsResponse({ error: 'Failed to authenticate user' }, 401);
+      if (!getUserError && authUser) {
+        user = authUser;
+      }
     }
-
-    if (!user) {
-      return corsResponse({ error: 'User not found' }, 404);
-    }
+    
+    // For white label checkout, we allow both authenticated and unauthenticated users
+    // The user will be created after payment in the webhook
 
     const { 
       plan, 
