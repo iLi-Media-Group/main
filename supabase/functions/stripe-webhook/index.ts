@@ -128,6 +128,16 @@ Deno.serve(async (req) => {
       });
     }
     
+    // Accept both Stripe webhooks (with stripe-signature) and function calls (with authorization)
+    // Stripe webhooks don't send authorization headers, function calls do
+    if (!sigHeader && !authHeader) {
+      console.log('No Stripe signature or authorization found');
+      return new Response('Missing authorization header', { 
+        status: 401,
+        headers: corsHeaders
+      });
+    }
+    
     // If it's a test request without signature, allow it
     if (req.url.includes('/test') && !sigHeader) {
       return new Response(JSON.stringify({ 
