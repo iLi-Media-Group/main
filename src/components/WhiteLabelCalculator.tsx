@@ -260,7 +260,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         first_name: customerData.first_name,
         last_name: customerData.last_name,
         account_type: 'white_label',
-      });
+      }, { onConflict: 'id' });
       // 3. Upsert into white_label_clients to always save the latest info
       const { error: wlError } = await supabase.from('white_label_clients').upsert({
         owner_id: userId,
