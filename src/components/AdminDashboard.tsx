@@ -576,23 +576,43 @@ export function AdminDashboard() {
     const emailLower = newClient.owner_email.toLowerCase();
     // Create Supabase Auth user via Edge Function
     let authUserId = null;
+    let userCreated = false;
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/create-white-label-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ email: emailLower, password: tempPassword }),
+      // Use Supabase Auth client to create the user directly
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: emailLower,
+        password: tempPassword,
       });
-      console.log('Edge function response:', response);
-      const result = await response.json();
-      console.log('Edge function result:', result);
-      if (!response.ok) {
-        setWhiteLabelError('Failed to create auth user: ' + (result.error || 'Unknown error'));
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        setWhiteLabelError('Failed to create auth user: ' + signUpError.message);
         return;
       }
-      authUserId = result.user?.id;
+      if (data?.user) {
+        authUserId = data.user.id;
+        userCreated = true;
+      }
+      // If user already exists, fetch their id
+      if (!authUserId) {
+        const { data: userData, error: userFetchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailLower)
+          .maybeSingle();
+        if (userFetchError || !userData) {
+          setWhiteLabelError('Failed to find or create user.');
+          return;
+        }
+        authUserId = userData.id;
+      }
+      // Insert into profiles if not exists
+      if (userCreated) {
+        await supabase.from('profiles').insert({
+          id: authUserId,
+          email: emailLower,
+          first_name: newClient.display_name,
+          account_type: 'client',
+        });
+      }
     } catch (err) {
       console.error('Error creating auth user:', err);
       setWhiteLabelError('Failed to create auth user.');

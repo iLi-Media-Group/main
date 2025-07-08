@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, Brain, Users, Search, DollarSign, Calendar, ArrowRight, Percent, Loader2, CheckCircle } from 'lucide-react';
 import { createWhiteLabelCheckout, calculateDiscountedPrice } from '../lib/whiteLabelCheckout';
+import { supabase } from '../lib/supabase';
 
 interface PricingCalculatorProps {
   onCalculate?: (total: number) => void;
@@ -219,17 +220,74 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     setError(null);
 
     try {
+      // 1. Create Auth user (if not exists)
+      const emailLower = customerData.email.toLowerCase();
+      let userId = null;
+      let userCreated = false;
+      // Try to sign up (will error if user exists)
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: emailLower,
+        password: password,
+      });
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        setError('Failed to create user: ' + signUpError.message);
+        setLoading(false);
+        return;
+      }
+      if (signUpData?.user) {
+        userId = signUpData.user.id;
+        userCreated = true;
+      }
+      // If user already exists, fetch their id
+      if (!userId) {
+        const { data: userData, error: userFetchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailLower)
+          .maybeSingle();
+        if (userFetchError || !userData) {
+          setError('Failed to find or create user.');
+          setLoading(false);
+          return;
+        }
+        userId = userData.id;
+      }
+      // 2. Insert into profiles if not exists
+      if (userCreated) {
+        await supabase.from('profiles').insert({
+          id: userId,
+          email: emailLower,
+          first_name: customerData.name,
+          account_type: 'client',
+        });
+      }
+      // 3. Insert into white_label_clients if not exists
+      const { data: existingClient } = await supabase
+        .from('white_label_clients')
+        .select('id')
+        .eq('owner_id', userId)
+        .maybeSingle();
+      if (!existingClient) {
+        await supabase.from('white_label_clients').insert({
+          owner_id: userId,
+          email: emailLower,
+          display_name: customerData.company || customerData.name,
+          domain: null,
+          primary_color: '#6366f1',
+          secondary_color: '#8b5cf6',
+          password_setup_required: false
+        });
+      }
+      // 4. Proceed to payment/session
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
         customerName: customerData.name,
         companyName: customerData.company,
-        password: password // Pass password to backend
+        // Do NOT send password to backend anymore
       });
-      // Redirect to checkout
       window.location.href = checkoutData.url;
-      // If not redirected (e.g., in test mode), show success
       setSuccess(true);
     } catch (err) {
       console.error('Checkout error:', err);
