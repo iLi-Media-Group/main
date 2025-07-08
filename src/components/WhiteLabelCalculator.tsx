@@ -260,7 +260,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         account_type: 'white_label',
       });
       // 3. Upsert into white_label_clients to always save the latest info
-      await supabase.from('white_label_clients').upsert({
+      const { error: wlError } = await supabase.from('white_label_clients').upsert({
         owner_id: userId,
         email: emailLower,
         display_name: customerData.company || customerData.name,
@@ -272,7 +272,13 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         primary_color: '#6366f1',
         secondary_color: '#8b5cf6',
         password_setup_required: false
-      });
+      }, { onConflict: 'owner_id' });
+      if (wlError) {
+        console.error('White label client upsert error:', wlError);
+        setError('Failed to insert into white_label_clients: ' + wlError.message);
+        setLoading(false);
+        return;
+      }
       // 4. Proceed to payment/session
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
