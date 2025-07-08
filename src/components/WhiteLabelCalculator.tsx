@@ -258,7 +258,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           id: userId,
           email: emailLower,
           first_name: customerData.name,
-          account_type: 'client',
+          account_type: 'white_label',
         });
       }
       // 3. Insert into white_label_clients if not exists
@@ -272,6 +272,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           owner_id: userId,
           email: emailLower,
           display_name: customerData.company || customerData.name,
+          company_name: customerData.company,
+          client_name: customerData.name,
           domain: null,
           primary_color: '#6366f1',
           secondary_color: '#8b5cf6',
