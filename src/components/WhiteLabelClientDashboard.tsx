@@ -152,7 +152,7 @@ export default function WhiteLabelClientDashboard() {
         name: 'AI Search Assistance',
         description: 'Advanced AI-powered search and recommendations for your platform',
         icon: Brain,
-        price: 99,
+        price: 249,
         enabled: client.ai_search_assistance_enabled,
         paid: client.ai_search_assistance_paid
       },
@@ -161,7 +161,7 @@ export default function WhiteLabelClientDashboard() {
         name: 'Producer Onboarding',
         description: 'Producer application and onboarding system for your platform',
         icon: Users,
-        price: 149,
+        price: 249,
         enabled: client.producer_onboarding_enabled,
         paid: client.producer_onboarding_paid
       },
@@ -170,7 +170,7 @@ export default function WhiteLabelClientDashboard() {
         name: 'Deep Media Search',
         description: 'Advanced media search and filtering capabilities',
         icon: Search,
-        price: 199,
+        price: 249,
         enabled: client.deep_media_search_enabled,
         paid: client.deep_media_search_paid
       }
@@ -178,6 +178,31 @@ export default function WhiteLabelClientDashboard() {
     
     // Return only features that are not enabled or not paid
     return allFeatures.filter(feature => !feature.enabled || !feature.paid);
+  };
+
+  const getBundlePricing = () => {
+    const availableFeatures = getAvailableFeatures();
+    const featureCount = availableFeatures.length;
+    
+    if (featureCount === 0) return null;
+    if (featureCount === 1) return null;
+    if (featureCount === 2) {
+      return {
+        type: 'bundle_2',
+        price: 449,
+        savings: 49,
+        description: 'Any 2 Add-Ons for $449'
+      };
+    }
+    if (featureCount === 3) {
+      return {
+        type: 'bundle_3',
+        price: 599,
+        savings: 148,
+        description: 'All 3 Add-Ons for $599'
+      };
+    }
+    return null;
   };
 
   const handleBuyFeature = async (feature: any) => {
@@ -192,6 +217,26 @@ export default function WhiteLabelClientDashboard() {
       window.location.href = `/white-label-calculator?${params.toString()}`;
     } catch (error) {
       console.error('Error handling feature purchase:', error);
+    }
+  };
+
+  const handleBuyBundle = async (bundleType: string | undefined) => {
+    try {
+      if (!client || !bundleType) return;
+      
+      // Get all available features for the bundle
+      const availableFeatures = getAvailableFeatures();
+      const featureIds = availableFeatures.map(f => f.id);
+      
+      // Redirect to the white label calculator with all features pre-selected
+      const params = new URLSearchParams({
+        features: featureIds.join(','),
+        client_id: client.id,
+        bundle: bundleType
+      });
+      window.location.href = `/white-label-calculator?${params.toString()}`;
+    } catch (error) {
+      console.error('Error handling bundle purchase:', error);
     }
   };
 
@@ -413,28 +458,51 @@ export default function WhiteLabelClientDashboard() {
               </div>
               
               {getAvailableFeatures().length > 0 ? (
-                <div className="space-y-3">
-                  {getAvailableFeatures().map((feature, index) => {
-                    const Icon = feature.icon;
-                    return (
-                      <div key={index} className="bg-white/10 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <Icon className="w-4 h-4 text-blue-400 mr-2" />
-                            <span className="text-white font-medium text-sm">{feature.name}</span>
-                          </div>
-                          <span className="text-blue-400 text-xs bg-blue-500/20 px-2 py-1 rounded">${feature.price}</span>
+                <div className="space-y-4">
+                  {/* Bundle Pricing */}
+                  {getBundlePricing() && (
+                    <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg p-4 border border-blue-500/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <DollarSign className="w-5 h-5 text-green-400 mr-2" />
+                          <span className="text-white font-semibold text-sm">Bundle and Save</span>
                         </div>
-                        <p className="text-gray-300 text-xs mb-3">{feature.description}</p>
-                        <button
-                          onClick={() => handleBuyFeature(feature)}
-                          className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium"
-                        >
-                          Buy Feature
-                        </button>
+                        <span className="text-green-400 text-xs bg-green-500/20 px-2 py-1 rounded">Save ${getBundlePricing()?.savings}</span>
                       </div>
-                    );
-                  })}
+                      <p className="text-gray-300 text-xs mb-3">{getBundlePricing()?.description}</p>
+                      <button
+                        onClick={() => handleBuyBundle(getBundlePricing()?.type)}
+                        className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-xs rounded-lg transition-colors font-medium"
+                      >
+                        Buy Bundle - ${getBundlePricing()?.price}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Individual Features */}
+                  <div className="space-y-3">
+                    {getAvailableFeatures().map((feature, index) => {
+                      const Icon = feature.icon;
+                      return (
+                        <div key={index} className="bg-white/10 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center">
+                              <Icon className="w-4 h-4 text-blue-400 mr-2" />
+                              <span className="text-white font-medium text-sm">{feature.name}</span>
+                            </div>
+                            <span className="text-blue-400 text-xs bg-blue-500/20 px-2 py-1 rounded">${feature.price}</span>
+                          </div>
+                          <p className="text-gray-300 text-xs mb-3">{feature.description}</p>
+                          <button
+                            onClick={() => handleBuyFeature(feature)}
+                            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium"
+                          >
+                            Buy Feature
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-6">
