@@ -24,8 +24,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerData, setCustomerData] = useState({
     email: initialCustomerEmail || '',
-    first_name: '',
-    last_name: '',
+    firstName: '',
+    lastName: '',
     company: initialCompanyName || ''
   });
   const [discounts, setDiscounts] = useState<{
@@ -200,8 +200,12 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
   const handleCheckout = async () => {
     // Validate customer data
-    if (!customerData.email || !customerData.first_name || !customerData.last_name) {
+    if (!customerData.email || !customerData.firstName || !customerData.lastName) {
       setError('Please provide your email, first name, and last name to continue.');
+      return;
+    }
+    if (!customerData.company) {
+      setError('Please provide your company name to continue.');
       return;
     }
     if (!password || !confirmPassword) {
@@ -221,18 +225,83 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
     setError(null);
 
     try {
-      // 1. Start Stripe payment, user info will be passed via metadata to webhook
+      // 1. Create Auth user (if not exists)
+      const emailLower = customerData.email.toLowerCase();
+      let userId = null;
+      let userCreated = false;
+      // Try to sign up (will error if user exists)
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: emailLower,
+        password: password,
+      });
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        setError('Failed to create user: ' + signUpError.message);
+        setLoading(false);
+        return;
+      }
+      if (signUpData?.user) {
+        userId = signUpData.user.id;
+        userCreated = true;
+      }
+      // If user already exists, fetch their id
+      if (!userId) {
+        const { data: userData, error: userFetchError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', emailLower)
+          .maybeSingle();
+        if (userFetchError || !userData) {
+          setError('Failed to find or create user.');
+          setLoading(false);
+          return;
+        }
+        userId = userData.id;
+      }
+      // 2. Insert into profiles if not exists
+      if (userCreated) {
+        await supabase.from('profiles').insert({
+          id: userId,
+          email: emailLower,
+          first_name: customerData.firstName,
+          last_name: customerData.lastName,
+          account_type: 'white_label',
+        });
+      } else {
+        // If user exists, update account_type if not already set
+        await supabase.from('profiles').update({
+          account_type: 'white_label',
+          first_name: customerData.firstName,
+          last_name: customerData.lastName,
+        }).eq('id', userId);
+      }
+      // 3. Insert into white_label_clients if not exists
+      const { data: existingClient } = await supabase
+        .from('white_label_clients')
+        .select('id')
+        .eq('owner_id', userId)
+        .maybeSingle();
+      if (!existingClient) {
+        await supabase.from('white_label_clients').insert({
+          owner_id: userId,
+          email: emailLower,
+          display_name: customerData.company,
+          domain: null,
+          primary_color: '#6366f1',
+          secondary_color: '#8b5cf6',
+          password_setup_required: false
+        });
+      }
+      // 4. Proceed to payment/session
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
-        customerName: customerData.first_name + ' ' + customerData.last_name,
+        customerName: `${customerData.firstName} ${customerData.lastName}`,
         companyName: customerData.company,
-        password,
-        first_name: customerData.first_name,
-        last_name: customerData.last_name
+        // Do NOT send password to backend anymore
       });
       window.location.href = checkoutData.url;
+      setSuccess(true);
     } catch (err) {
       console.error('Checkout error:', err);
       setError(err instanceof Error ? err.message : 'Failed to start checkout');
@@ -489,37 +558,35 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           <h4 className="text-lg font-semibold text-white mb-4">Complete Your Order</h4>
           <div className="space-y-4">
             <div>
-              <label htmlFor="first_name" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-1">
                 First Name *
               </label>
               <input
                 type="text"
-                id="first_name"
-                name="first_name"
-                value={customerData.first_name}
+                id="firstName"
+                name="firstName"
+                value={customerData.firstName}
                 onChange={handleCustomerDataChange}
                 required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 placeholder="Enter your first name"
               />
             </div>
-            
             <div>
-              <label htmlFor="last_name" className="block text-sm font-medium text-gray-300 mb-1">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-1">
                 Last Name *
               </label>
               <input
                 type="text"
-                id="last_name"
-                name="last_name"
-                value={customerData.last_name}
+                id="lastName"
+                name="lastName"
+                value={customerData.lastName}
                 onChange={handleCustomerDataChange}
                 required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 placeholder="Enter your last name"
               />
             </div>
-            
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
                 Email Address *
@@ -535,10 +602,9 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
                 placeholder="Enter your email address"
               />
             </div>
-            
             <div>
               <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-1">
-                Company Name
+                Company Name *
               </label>
               <input
                 type="text"
@@ -546,8 +612,9 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
                 name="company"
                 value={customerData.company}
                 onChange={handleCustomerDataChange}
+                required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                placeholder="Enter your company name (optional)"
+                placeholder="Enter your company name"
               />
             </div>
             <div>

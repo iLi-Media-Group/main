@@ -109,9 +109,6 @@ export default function WhiteLabelAdminPage() {
             owner_id: profileData.id,
             owner_email: form.email,
             display_name: form.company_name,
-            company_name: form.company_name,
-            client_first_name: form.first_name,
-            client_last_name: form.last_name,
             domain: form.domain || null
           });
         
