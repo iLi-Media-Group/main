@@ -77,7 +77,7 @@ export function WhiteLabelSuccessPage() {
             const { data: clientData } = await supabase
               .from('white_label_clients')
               .select('id')
-              .eq('email', customerEmail.toLowerCase())
+              .eq('owner_email', customerEmail.toLowerCase())
               .maybeSingle();
             
             if (clientData) {

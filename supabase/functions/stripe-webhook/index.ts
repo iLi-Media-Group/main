@@ -144,6 +144,41 @@ Deno.serve(async (req) => {
         console.error('Error inserting white label order:', orderError);
       }
       
+      // Update paid status for purchased features
+      const features = metadata.features ? metadata.features.split(',') : [];
+      const updateObj: any = {};
+      
+      if (features.includes('ai_recommendations')) {
+        updateObj.ai_search_assistance_paid = true;
+      }
+      if (features.includes('producer_applications')) {
+        updateObj.producer_onboarding_paid = true;
+      }
+      if (features.includes('deep_media_search')) {
+        updateObj.deep_media_search_paid = true;
+      }
+      
+      // If Pro plan was purchased, mark producer onboarding as paid
+      if (metadata.plan === 'pro') {
+        updateObj.producer_onboarding_paid = true;
+      }
+      
+      if (Object.keys(updateObj).length > 0) {
+        const clientId = existingWL?.id;
+        if (clientId) {
+          const { error: updateError } = await supabase
+            .from('white_label_clients')
+            .update(updateObj)
+            .eq('id', clientId);
+          
+          if (updateError) {
+            console.error('Error updating paid status:', updateError);
+          } else {
+            console.log('Successfully marked features as paid');
+          }
+        }
+      }
+      
       // Send welcome email
       await sendWelcomeEmail(email, fullName, companyName);
     } catch (error) {
