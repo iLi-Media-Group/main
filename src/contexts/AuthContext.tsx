@@ -304,6 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Always attempt to sign out, regardless of session state
       const { error } = await supabase.auth.signOut();
+      localStorage.removeItem('supabase.auth.token'); // Force clear session
       if (error) {
         console.warn('Error during sign out:', {
           message: (error as any)?.message,
