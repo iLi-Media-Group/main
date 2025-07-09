@@ -355,7 +355,15 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
   return (
     <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8">
-      {success ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-6"></div>
+          <h3 className="text-2xl font-bold text-white mb-4">Creating Your Account</h3>
+          <p className="text-gray-300 text-center max-w-md">
+            Please wait while we set up your white label platform and prepare your payment session...
+          </p>
+        </div>
+      ) : success ? (
         <div className="flex flex-col items-center justify-center min-h-[300px]">
           <CheckCircle className="w-16 h-16 text-green-400 mb-4" />
           <h3 className="text-2xl font-bold text-white mb-2">Feature(s) Paid & Activated!</h3>
