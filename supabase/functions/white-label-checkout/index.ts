@@ -2,7 +2,11 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 
-const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseAdminKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+console.log("SUPABASE_URL:", supabaseUrl);
+console.log("SUPABASE_SERVICE_ROLE_KEY (first 6):", (supabaseAdminKey || '').slice(0, 6));
+const supabase = createClient(supabaseUrl ?? '', supabaseAdminKey ?? '');
 const stripeSecret = Deno.env.get('STRIPE_SECRET_KEY')!;
 const stripe = new Stripe(stripeSecret, {
   appInfo: {
@@ -95,7 +99,8 @@ Deno.serve(async (req) => {
       customer_email,
       customer_name,
       company_name,
-      password // Accept password
+      password, // Accept password
+      client_id // Accept client_id
     } = await req.json();
 
     // Validate required parameters
@@ -345,6 +350,7 @@ Deno.serve(async (req) => {
         customer_email: customer_email,
         customer_name: customer_name,
         company_name: company_name || '',
+        client_id: client_id || '', // Store client_id for payment tracking
         setup_cost: finalSetupCost.toString(),
         monthly_cost: monthlyCost.toString(),
         applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',

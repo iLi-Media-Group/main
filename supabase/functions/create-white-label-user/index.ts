@@ -19,6 +19,8 @@ serve(async (req) => {
 
   const supabaseAdminKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  console.log("SUPABASE_URL:", supabaseUrl);
+  console.log("SUPABASE_SERVICE_ROLE_KEY (first 6):", (supabaseAdminKey || '').slice(0, 6));
   if (!supabaseAdminKey || !supabaseUrl) {
     return new Response(JSON.stringify({ error: 'Missing Supabase env vars' }), { status: 500 });
   }
@@ -31,6 +33,8 @@ serve(async (req) => {
     password,
     email_confirm: true,
   });
+
+  console.log('User creation result:', data, error);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 400 });

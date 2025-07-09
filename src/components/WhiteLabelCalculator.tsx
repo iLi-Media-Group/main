@@ -24,7 +24,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
   const [showCheckoutForm, setShowCheckoutForm] = useState(false);
   const [customerData, setCustomerData] = useState({
     email: initialCustomerEmail || '',
-    name: '',
+    firstName: '',
+    lastName: '',
     company: initialCompanyName || ''
   });
   const [discounts, setDiscounts] = useState<{
@@ -69,7 +70,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
       description: 'AI-powered search and recommendations',
       price: 249,
       icon: Brain,
-      availableIn: ['pro'],
+      availableIn: ['starter', 'pro'],
       includedIn: ['enterprise']
     },
     {
@@ -199,8 +200,12 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
   const handleCheckout = async () => {
     // Validate customer data
-    if (!customerData.email || !customerData.name) {
-      setError('Please provide your email and name to continue.');
+    if (!customerData.email || !customerData.firstName || !customerData.lastName) {
+      setError('Please provide your email, first name, and last name to continue.');
+      return;
+    }
+    if (!customerData.company) {
+      setError('Please provide your company name to continue.');
       return;
     }
     if (!password || !confirmPassword) {
@@ -257,9 +262,17 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         await supabase.from('profiles').insert({
           id: userId,
           email: emailLower,
-          first_name: customerData.name,
-          account_type: 'client',
+          first_name: customerData.firstName,
+          last_name: customerData.lastName,
+          account_type: 'white_label',
         });
+      } else {
+        // If user exists, update account_type if not already set
+        await supabase.from('profiles').update({
+          account_type: 'white_label',
+          first_name: customerData.firstName,
+          last_name: customerData.lastName,
+        }).eq('id', userId);
       }
       // 3. Insert into white_label_clients if not exists
       const { data: existingClient } = await supabase
@@ -267,24 +280,58 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         .select('id')
         .eq('owner_id', userId)
         .maybeSingle();
+      
+      let clientId;
       if (!existingClient) {
-        await supabase.from('white_label_clients').insert({
+        // Create feature flags based on selected features
+        const featureFlags = {
+          ai_search_assistance_enabled: selectedFeatures.includes('ai_recommendations'),
+          producer_onboarding_enabled: selectedFeatures.includes('producer_applications'),
+          deep_media_search_enabled: selectedFeatures.includes('deep_media_search'),
+          // Payment status - all features start as unpaid
+          ai_search_assistance_paid: false,
+          producer_onboarding_paid: false,
+          deep_media_search_paid: false
+        };
+
+        const { data: inserted, error: insertError } = await supabase.from('white_label_clients').insert({
           owner_id: userId,
           email: emailLower,
-          display_name: customerData.company || customerData.name,
+          display_name: customerData.company,
           domain: null,
           primary_color: '#6366f1',
           secondary_color: '#8b5cf6',
-          password_setup_required: false
-        });
+          password_setup_required: false,
+          plan: selectedPlan,
+          // Feature flags
+          ...featureFlags
+        }).select('id').single();
+        
+        if (insertError) {
+          console.error('Error inserting white label client:', insertError);
+          throw new Error('Failed to create white label client');
+        }
+        clientId = inserted.id;
+      } else {
+        clientId = existingClient.id;
+        // Update existing client with new features and plan
+        const featureFlags = {
+          ai_search_assistance_enabled: selectedFeatures.includes('ai_recommendations'),
+          producer_onboarding_enabled: selectedFeatures.includes('producer_applications'),
+          deep_media_search_enabled: selectedFeatures.includes('deep_media_search'),
+          plan: selectedPlan
+        };
+        
+        await supabase.from('white_label_clients').update(featureFlags).eq('id', clientId);
       }
       // 4. Proceed to payment/session
       const checkoutData = await createWhiteLabelCheckout({
         plan: selectedPlan,
         features: selectedFeatures,
         customerEmail: customerData.email,
-        customerName: customerData.name,
+        customerName: `${customerData.firstName} ${customerData.lastName}`,
         companyName: customerData.company,
+        clientId: clientId, // Pass client ID for payment tracking
         // Do NOT send password to backend anymore
       });
       window.location.href = checkoutData.url;
@@ -545,21 +592,35 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           <h4 className="text-lg font-semibold text-white mb-4">Complete Your Order</h4>
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">
-                Full Name *
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-1">
+                First Name *
               </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={customerData.name}
+                id="firstName"
+                name="firstName"
+                value={customerData.firstName}
                 onChange={handleCustomerDataChange}
                 required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                placeholder="Enter your full name"
+                placeholder="Enter your first name"
               />
             </div>
-            
+            <div>
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-1">
+                Last Name *
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                value={customerData.lastName}
+                onChange={handleCustomerDataChange}
+                required
+                className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                placeholder="Enter your last name"
+              />
+            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
                 Email Address *
@@ -575,10 +636,9 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
                 placeholder="Enter your email address"
               />
             </div>
-            
             <div>
               <label htmlFor="company" className="block text-sm font-medium text-gray-300 mb-1">
-                Company Name
+                Company Name *
               </label>
               <input
                 type="text"
@@ -586,8 +646,9 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
                 name="company"
                 value={customerData.company}
                 onChange={handleCustomerDataChange}
+                required
                 className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                placeholder="Enter your company name (optional)"
+                placeholder="Enter your company name"
               />
             </div>
             <div>

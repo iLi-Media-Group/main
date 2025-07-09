@@ -610,8 +610,14 @@ export function AdminDashboard() {
           id: authUserId,
           email: emailLower,
           first_name: newClient.display_name,
-          account_type: 'client',
+          account_type: 'white_label',
         });
+      } else {
+        // If user exists, update account_type if not already set
+        await supabase.from('profiles').update({
+          account_type: 'white_label',
+          first_name: newClient.display_name,
+        }).eq('id', authUserId);
       }
     } catch (err) {
       console.error('Error creating auth user:', err);
@@ -650,11 +656,12 @@ export function AdminDashboard() {
       secondary_color: '#8b5cf6'
     });
     setShowAddClientModal(false);
+    setActiveTab('white_label');
     fetchWhiteLabelClients();
     // Show the generated password to the admin (for now, use alert)
     alert(`Temporary password for ${payload.email}: ${tempPassword}\nShare this with the client. They will be required to change it on first login.`);
-    // Navigate to the white label admin page
-    navigate('/admin/white-label-clients');
+    // Navigate to the white label client dashboard for new white label clients
+    navigate('/white-label-dashboard');
   };
 
   const updateWhiteLabelClient = async (client: WhiteLabelClient) => {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Mail, Settings } from 'lucide-react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export function WhiteLabelSuccessPage() {
   const [searchParams] = useSearchParams();
@@ -8,14 +9,101 @@ export function WhiteLabelSuccessPage() {
   const [loading, setLoading] = useState(true);
   const sessionId = searchParams.get('session_id');
 
+  // Helper function to update payment status
+  const updatePaymentStatus = async (clientId: string, featuresString: string) => {
+    try {
+      const purchasedFeatures = featuresString ? featuresString.split(',') : [];
+      
+      const updateObj: any = {};
+      
+      if (purchasedFeatures.includes('ai_recommendations')) {
+        updateObj.ai_search_assistance_paid = true;
+      }
+      if (purchasedFeatures.includes('producer_applications')) {
+        updateObj.producer_onboarding_paid = true;
+      }
+      if (purchasedFeatures.includes('deep_media_search')) {
+        updateObj.deep_media_search_paid = true;
+      }
+
+      if (Object.keys(updateObj).length > 0) {
+        const { error } = await supabase
+          .from('white_label_clients')
+          .update(updateObj)
+          .eq('id', clientId);
+
+        if (error) {
+          console.error('Error updating payment status:', error);
+        } else {
+          console.log('Successfully marked features as paid');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+    }
+  };
+
   useEffect(() => {
+    async function handlePaymentSuccess() {
+      if (!sessionId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // 1. Fetch session details from Stripe
+        const response = await fetch(`https://api.stripe.com/v1/checkout/sessions/${sessionId}`, {
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          }
+        });
+
+        if (!response.ok) {
+          console.error('Failed to fetch session details');
+          setLoading(false);
+          return;
+        }
+
+        const session = await response.json();
+        const metadata = session.metadata || {};
+        const clientId = metadata.client_id;
+
+        if (!clientId) {
+          console.error('No client_id found in session metadata');
+          // Try to find the client by email instead
+          const customerEmail = metadata.customer_email;
+          if (customerEmail) {
+            const { data: clientData } = await supabase
+              .from('white_label_clients')
+              .select('id')
+              .eq('email', customerEmail.toLowerCase())
+              .maybeSingle();
+            
+            if (clientData) {
+              await updatePaymentStatus(clientData.id, metadata.features);
+            }
+          }
+          setLoading(false);
+          return;
+        }
+
+        await updatePaymentStatus(clientId, metadata.features);
+
+      } catch (error) {
+        console.error('Error processing payment success:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
     // Simulate loading while webhook processes
     const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
+      handlePaymentSuccess();
+    }, 2000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [sessionId]);
 
   if (loading) {
     return (
