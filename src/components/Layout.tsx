@@ -59,6 +59,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (isAdmin) {
       return location.pathname === '/admin' ? '/producer/dashboard' : '/admin';
     }
+    if (accountType === 'white_label') {
+      return '/white-label-dashboard';
+    }
     return accountType === 'producer' ? '/producer/dashboard' : '/dashboard';
   };
 
@@ -66,12 +69,18 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (isAdmin) {
       return location.pathname === '/admin' ? <Music className="w-4 h-4 mr-2" /> : <Shield className="w-4 h-4 mr-2" />;
     }
+    if (accountType === 'white_label') {
+      return <UserCog className="w-4 h-4 mr-2" />;
+    }
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
 
   const getDashboardLabel = () => {
     if (isAdmin) {
       return location.pathname === '/admin' ? 'Producer Dashboard' : 'Admin Dashboard';
+    }
+    if (accountType === 'white_label') {
+      return 'White Label Dashboard';
     }
     return accountType === 'producer' ? 'Producer Dashboard' : 'Dashboard';
   };

@@ -326,9 +326,15 @@ export function AdminDashboard() {
         }
         
         const whiteLabelOrders = whiteLabelOrdersData || [];
+        console.log('White Label Orders found:', whiteLabelOrders.length);
+        console.log('White Label Orders data:', whiteLabelOrders);
+        
         const whiteLabelSetupFees = whiteLabelOrders.filter(order => 
           order.metadata?.type === 'white_label_setup'
         );
+        console.log('White Label Setup Fees found:', whiteLabelSetupFees.length);
+        console.log('White Label Setup Fees data:', whiteLabelSetupFees);
+        
         const white_label_setup_count = whiteLabelSetupFees.length;
         const white_label_setup_amount = whiteLabelSetupFees.reduce((sum, order) => sum + (order.amount_total || 0), 0) / 100; // Convert from cents
 
@@ -343,10 +349,27 @@ export function AdminDashboard() {
         }
         
         const whiteLabelSubscriptions = whiteLabelSubscriptionsData || [];
-        // Count active white label subscriptions (we'll estimate monthly revenue based on plan)
+        console.log('White Label Subscriptions found:', whiteLabelSubscriptions.length);
+        console.log('White Label Subscriptions data:', whiteLabelSubscriptions);
+        
+        // Count active white label subscriptions and calculate actual monthly revenue
         const white_label_subscriptions_count = whiteLabelSubscriptions.length;
-        // Estimate monthly revenue: Starter ($49) + Pro ($299) subscriptions
-        const white_label_monthly_amount = white_label_subscriptions_count * 49; // Conservative estimate
+        
+        // Calculate actual monthly revenue based on price IDs
+        let white_label_monthly_amount = 0;
+        whiteLabelSubscriptions.forEach(subscription => {
+          if (subscription.price_id) {
+            // Map price IDs to monthly amounts
+            if (subscription.price_id.includes('white_label_starter')) {
+              white_label_monthly_amount += 49; // Starter plan
+            } else if (subscription.price_id.includes('white_label_pro')) {
+              white_label_monthly_amount += 299; // Pro plan
+            } else {
+              // Default estimate for unknown price IDs
+              white_label_monthly_amount += 49;
+            }
+          }
+        });
 
         // Update stats with comprehensive data
         setStats((prev: typeof stats) => ({
@@ -628,7 +651,7 @@ export function AdminDashboard() {
     // Insert into white_label_clients
     const payload = {
       display_name: newClient.display_name,
-      email: emailLower,
+      owner_email: emailLower,
       owner_id: authUserId,
       domain: newClient.domain,
       primary_color: newClient.primary_color,
@@ -659,7 +682,7 @@ export function AdminDashboard() {
     setActiveTab('white_label');
     fetchWhiteLabelClients();
     // Show the generated password to the admin (for now, use alert)
-    alert(`Temporary password for ${payload.email}: ${tempPassword}\nShare this with the client. They will be required to change it on first login.`);
+    alert(`Temporary password for ${payload.owner_email}: ${tempPassword}\nShare this with the client. They will be required to change it on first login.`);
     // Navigate to the white label client dashboard for new white label clients
     navigate('/white-label-dashboard');
   };

@@ -136,9 +136,9 @@ const App = () => {
       return <Navigate to="/white-label-password-setup" />;
     }
 
-    // If user is a white label client and doesn't need password setup, redirect to profile
+    // If user is a white label client and doesn't need password setup, redirect to dashboard
     if (accountType === 'white_label' && !needsPasswordSetup) {
-      return <Navigate to="/white-label-profile" />;
+      return <Navigate to="/white-label-dashboard" />;
     }
 
     // For other users, show the regular dashboard
@@ -347,7 +347,7 @@ const App = () => {
         } />
 
         <Route path="/dashboard" element={
-          <ProtectedRoute requiresClient>
+          <ProtectedRoute>
             <LayoutWrapper>
               <DashboardWrapper />
             </LayoutWrapper>

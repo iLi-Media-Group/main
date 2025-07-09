@@ -283,10 +283,10 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
       
       let clientId;
       if (!existingClient) {
-        // Create feature flags based on selected features
+        // Create feature flags based on selected features and plan inclusions
         const featureFlags = {
           ai_search_assistance_enabled: selectedFeatures.includes('ai_recommendations'),
-          producer_onboarding_enabled: selectedFeatures.includes('producer_applications'),
+          producer_onboarding_enabled: selectedFeatures.includes('producer_applications') || selectedPlan === 'pro',
           deep_media_search_enabled: selectedFeatures.includes('deep_media_search'),
           // Payment status - all features start as unpaid
           ai_search_assistance_paid: false,
@@ -296,7 +296,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
 
         const { data: inserted, error: insertError } = await supabase.from('white_label_clients').insert({
           owner_id: userId,
-          email: emailLower,
+          owner_email: emailLower,
           display_name: customerData.company,
           domain: null,
           primary_color: '#6366f1',
@@ -317,7 +317,7 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
         // Update existing client with new features and plan
         const featureFlags = {
           ai_search_assistance_enabled: selectedFeatures.includes('ai_recommendations'),
-          producer_onboarding_enabled: selectedFeatures.includes('producer_applications'),
+          producer_onboarding_enabled: selectedFeatures.includes('producer_applications') || selectedPlan === 'pro',
           deep_media_search_enabled: selectedFeatures.includes('deep_media_search'),
           plan: selectedPlan
         };

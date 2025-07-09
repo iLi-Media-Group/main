@@ -111,13 +111,39 @@ Deno.serve(async (req) => {
           owner_id: profileId,
           display_name: companyName || fullName || 'White Label Client',
           company_name: companyName,
-          email,
+          owner_email: email,
           primary_color: '#1a73e8',
           secondary_color: '#ffffff',
           logo_url: null,
           created_at: new Date().toISOString()
         });
       }
+      
+      // Insert white label setup payment into stripe_orders table
+      const stripeData = event.data.object as any;
+      const { error: orderError } = await supabase.from('stripe_orders').insert({
+        checkout_session_id: stripeData.id,
+        payment_intent_id: stripeData.payment_intent,
+        customer_id: stripeData.customer,
+        amount_subtotal: stripeData.amount_subtotal,
+        amount_total: stripeData.amount_total,
+        currency: stripeData.currency,
+        payment_status: stripeData.payment_status,
+        status: 'completed',
+        metadata: {
+          type: 'white_label_setup',
+          customer_email: email,
+          customer_name: fullName,
+          company_name: companyName,
+          client_id: existingWL?.id || null
+        },
+        created_at: new Date().toISOString()
+      });
+      
+      if (orderError) {
+        console.error('Error inserting white label order:', orderError);
+      }
+      
       // Send welcome email
       await sendWelcomeEmail(email, fullName, companyName);
     } catch (error) {

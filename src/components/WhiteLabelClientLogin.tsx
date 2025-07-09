@@ -21,8 +21,8 @@ export function WhiteLabelClientLogin() {
       const emailLower = email.toLowerCase();
       const { data: client, error: clientError } = await supabase
         .from('white_label_clients')
-        .select('id, email, password_setup_required')
-        .eq('email', emailLower)
+        .select('id, owner_email, password_setup_required')
+        .eq('owner_email', emailLower)
         .maybeSingle();
       if (clientError && clientError.code !== 'PGRST116') {
         setError('Error looking up white label client.');

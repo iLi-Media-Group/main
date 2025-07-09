@@ -45,7 +45,7 @@ export function ProtectedRoute({
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresClient && accountType !== 'client') {
+  if (requiresClient && accountType !== 'client' && accountType !== 'white_label') {
     return <Navigate to="/producer/dashboard" replace />;
   }
 
