@@ -42,7 +42,7 @@ import { ProducerWithdrawalsPage } from './components/ProducerWithdrawalsPage';
 import { TrackPage } from './components/TrackPage';
 import { WelcomePage } from './components/WelcomePage';
 import { WhiteLabelPage } from './components/WhiteLabelPage';
-import WhiteLabelSuccessPage from './components/WhiteLabelSuccessPage';
+import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
 import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
@@ -67,26 +67,6 @@ const App = () => {
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
   
-  // Global auth state listener for magic link login and redirect
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Fetch the white_label_clients record for this user
-        const { data, error } = await supabase
-          .from('white_label_clients')
-          .select('id')
-          .eq('owner_id', session.user.id)
-          .single();
-        if (data) {
-          navigate(`/white-label-dashboard/${data.id}`);
-        }
-      }
-    });
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, [navigate]);
-
   // Check if we have email and redirect params that should trigger opening the signup dialog
   useEffect(() => {
     const email = searchParams.get('email');
