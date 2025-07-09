@@ -131,9 +131,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                 </div>
               </div>
             )}
-            
-
-            
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
