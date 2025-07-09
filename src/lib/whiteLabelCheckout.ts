@@ -10,6 +10,8 @@ export interface WhiteLabelCheckoutOptions {
   clientId?: string;
   successUrl?: string;
   cancelUrl?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 export interface WhiteLabelPricing {
@@ -46,7 +48,8 @@ export async function createWhiteLabelCheckout(options: WhiteLabelCheckoutOption
         customer_name: options.customerName,
         company_name: options.companyName || '',
         password: options.password || '',
-        client_id: options.clientId || '',
+        first_name: options.first_name || '',
+        last_name: options.last_name || '',
         success_url: options.successUrl || `${window.location.origin}/white-label/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: options.cancelUrl || `${window.location.origin}/white-label`,
       }),

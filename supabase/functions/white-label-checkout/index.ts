@@ -91,6 +91,25 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
+    // Check authorization - allow both authenticated and unauthenticated users for white label checkout
+    const authHeader = req.headers.get('Authorization');
+    let user = null;
+    
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const {
+        data: { user: authUser },
+        error: getUserError,
+      } = await supabase.auth.getUser(token);
+
+      if (!getUserError && authUser) {
+        user = authUser;
+      }
+    }
+    
+    // For white label checkout, we allow both authenticated and unauthenticated users
+    // The user will be created after payment in the webhook
+
     const { 
       plan, 
       features, 
@@ -185,53 +204,6 @@ Deno.serve(async (req) => {
         }
       }
     });
-
-    // Create Auth user if not exists
-    let ownerId = null;
-    if (password && customer_email) {
-      const emailLower = customer_email.toLowerCase();
-      // Check if user already exists
-      const { data: existingUser } = await supabase.auth.admin.listUsers({ email: emailLower });
-      if (!existingUser?.users?.length) {
-        const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-          email: emailLower,
-          password,
-          email_confirm: true,
-        });
-        if (userError) {
-          return corsResponse({ error: 'Failed to create auth user: ' + userError.message }, 400);
-        }
-        ownerId = userData.user?.id;
-      } else {
-        ownerId = existingUser.users[0].id;
-      }
-    }
-
-    // Insert into white_label_clients if not exists
-    if (ownerId && customer_email) {
-      // Check if already exists
-      const { data: existingClient } = await supabase
-        .from('white_label_clients')
-        .select('id')
-        .eq('owner_id', ownerId)
-        .maybeSingle();
-      if (!existingClient) {
-        const { error: insertError } = await supabase
-          .from('white_label_clients')
-          .insert({
-            owner_id: ownerId,
-            email: customer_email.toLowerCase(),
-            display_name: company_name || customer_name,
-            domain: null,
-            primary_color: '#6366f1',
-            secondary_color: '#8b5cf6',
-            password_setup_required: false
-          });
-        if (insertError) {
-          return corsResponse({ error: 'Failed to create white label client: ' + insertError.message }, 400);
-        }
-      }
-    }
 
     // Create or get Stripe customer
     let customerId;
@@ -356,7 +328,11 @@ Deno.serve(async (req) => {
         applied_discount: appliedDiscount ? JSON.stringify(appliedDiscount) : '',
         bundle_discount: bundleDiscount.toString(),
         coupon_id: couponId || '',
-        password: password || '' // Store password in metadata
+        password: password || '',
+        email: customer_email,
+        first_name: customer_name?.split(' ')[0] || '',
+        last_name: customer_name?.split(' ')[1] || '',
+        company: company_name || ''
       },
       payment_method_types: ['card'],
       allow_promotion_codes: true, // Allow Stripe promotion codes
@@ -369,6 +345,25 @@ Deno.serve(async (req) => {
     });
 
     console.log(`Created white label checkout session ${session.id} for customer ${customerId}`);
+
+    // Add debugging for webhook testing
+    console.log('=== WHITE LABEL CHECKOUT DEBUG ===');
+    console.log('Session ID:', session.id);
+    console.log('Session URL:', session.url);
+    console.log('Customer ID:', customerId);
+    console.log('Metadata being sent:', {
+      type: 'white_label_setup',
+      plan: plan,
+      features: selectedFeatures.join(','),
+      customer_email: customer_email,
+      customer_name: customer_name,
+      company_name: company_name || '',
+      password: password ? 'present' : 'missing',
+      email: customer_email,
+      first_name: customer_name?.split(' ')[0] || '',
+      last_name: customer_name?.split(' ')[1] || '',
+      company: company_name || ''
+    });
 
     return corsResponse({ 
       sessionId: session.id, 
