@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3 } from 'lucide-react';
+import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus } from 'lucide-react';
 
 interface WhiteLabelClient {
   id: string;
@@ -141,6 +141,58 @@ export default function WhiteLabelClientDashboard() {
       });
     }
     return features;
+  };
+
+  const getAvailableFeatures = () => {
+    if (!client) return [];
+    
+    const allFeatures = [
+      {
+        id: 'ai_recommendations',
+        name: 'AI Search Assistance',
+        description: 'Advanced AI-powered search and recommendations for your platform',
+        icon: Brain,
+        price: 99,
+        enabled: client.ai_search_assistance_enabled,
+        paid: client.ai_search_assistance_paid
+      },
+      {
+        id: 'producer_applications',
+        name: 'Producer Onboarding',
+        description: 'Producer application and onboarding system for your platform',
+        icon: Users,
+        price: 149,
+        enabled: client.producer_onboarding_enabled,
+        paid: client.producer_onboarding_paid
+      },
+      {
+        id: 'deep_media_search',
+        name: 'Deep Media Search',
+        description: 'Advanced media search and filtering capabilities',
+        icon: Search,
+        price: 199,
+        enabled: client.deep_media_search_enabled,
+        paid: client.deep_media_search_paid
+      }
+    ];
+    
+    // Return only features that are not enabled or not paid
+    return allFeatures.filter(feature => !feature.enabled || !feature.paid);
+  };
+
+  const handleBuyFeature = async (feature: any) => {
+    try {
+      if (!client) return;
+      
+      // Redirect to the white label calculator with the specific feature pre-selected
+      const params = new URLSearchParams({
+        feature: feature.id,
+        client_id: client.id
+      });
+      window.location.href = `/white-label-calculator?${params.toString()}`;
+    } catch (error) {
+      console.error('Error handling feature purchase:', error);
+    }
   };
 
   if (loading) {
@@ -349,6 +401,46 @@ export default function WhiteLabelClientDashboard() {
                   <X className="w-8 h-8 text-gray-500 mx-auto mb-2" />
                   <p className="text-gray-400 text-sm">No features enabled</p>
                   <p className="text-gray-500 text-xs mt-1">Contact support to enable features</p>
+                </div>
+              )}
+            </div>
+
+            {/* Available Features */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+              <div className="flex items-center mb-4">
+                <Plus className="w-6 h-6 text-blue-400 mr-3" />
+                <h3 className="text-lg font-semibold text-white">Available Features</h3>
+              </div>
+              
+              {getAvailableFeatures().length > 0 ? (
+                <div className="space-y-3">
+                  {getAvailableFeatures().map((feature, index) => {
+                    const Icon = feature.icon;
+                    return (
+                      <div key={index} className="bg-white/10 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center">
+                            <Icon className="w-4 h-4 text-blue-400 mr-2" />
+                            <span className="text-white font-medium text-sm">{feature.name}</span>
+                          </div>
+                          <span className="text-blue-400 text-xs bg-blue-500/20 px-2 py-1 rounded">${feature.price}</span>
+                        </div>
+                        <p className="text-gray-300 text-xs mb-3">{feature.description}</p>
+                        <button
+                          onClick={() => handleBuyFeature(feature)}
+                          className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg transition-colors font-medium"
+                        >
+                          Buy Feature
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+                  <p className="text-green-400 text-sm font-medium">All Features Unlocked!</p>
+                  <p className="text-gray-500 text-xs mt-1">You have access to all current features</p>
                 </div>
               )}
             </div>
