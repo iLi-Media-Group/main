@@ -127,7 +127,7 @@ export function WhiteLabelSuccessPage() {
               Welcome to Your White Label Platform!
             </h1>
             <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-              Your payment was successful and your white label music licensing platform is being set up.
+              Your payment was successful! Your white label music licensing platform is now ready to use.
             </p>
           </div>
 
@@ -138,10 +138,10 @@ export function WhiteLabelSuccessPage() {
               <div className="text-left">
                 <div className="flex items-center mb-3">
                   <Mail className="w-6 h-6 text-blue-400 mr-3" />
-                  <h3 className="text-lg font-semibold text-white">Check Your Email</h3>
+                  <h3 className="text-lg font-semibold text-white">Access Your Dashboard</h3>
                 </div>
                 <p className="text-gray-300 text-sm">
-                  We'll send you a welcome email with your login credentials and setup instructions within the next few minutes.
+                  Click the button below to access your white label dashboard where you can manage your platform.
                 </p>
               </div>
 
@@ -151,7 +151,7 @@ export function WhiteLabelSuccessPage() {
                   <h3 className="text-lg font-semibold text-white">Customize Your Brand</h3>
                 </div>
                 <p className="text-gray-300 text-sm">
-                  Once you receive your login credentials, you can customize your platform's branding, colors, and logo.
+                  In your dashboard, you can customize your platform's branding, colors, and logo to match your brand.
                 </p>
               </div>
             </div>
@@ -159,11 +159,11 @@ export function WhiteLabelSuccessPage() {
 
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/white-label')}
+              onClick={() => navigate('/white-label-dashboard')}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-colors shadow-lg shadow-blue-500/25"
             >
               <ArrowRight className="w-5 h-5 mr-2" />
-              Back to White Label Page
+              Go to Your Dashboard
             </button>
             
             <div className="text-sm text-gray-400">
