@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus } from 'lucide-react';
+import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus, LogOut } from 'lucide-react';
 
 interface WhiteLabelClient {
   id: string;
@@ -240,6 +240,15 @@ export default function WhiteLabelClientDashboard() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
@@ -283,9 +292,19 @@ export default function WhiteLabelClientDashboard() {
               <h1 className="text-3xl font-bold text-white mb-2">White Label Dashboard</h1>
               <p className="text-gray-300">Manage your white label platform settings and branding</p>
             </div>
-            {logoUrl && (
-              <img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
-            )}
+            <div className="flex items-center space-x-4">
+              {logoUrl && (
+                <img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
+              )}
+              <button
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center font-medium"
+                title="Sign out"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
 
