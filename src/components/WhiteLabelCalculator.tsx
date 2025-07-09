@@ -298,6 +298,8 @@ export function WhiteLabelCalculator({ onCalculate, initialFeatures, initialCust
           owner_id: userId,
           owner_email: emailLower,
           display_name: customerData.company,
+          first_name: customerData.firstName,
+          last_name: customerData.lastName,
           domain: null,
           primary_color: '#6366f1',
           secondary_color: '#8b5cf6',

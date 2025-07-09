@@ -12,6 +12,8 @@ interface WhiteLabelClient {
   secondary_color?: string;
   owner_id: string;
   email?: string;
+  first_name?: string;
+  last_name?: string;
   plan?: string;
   ai_search_assistance_enabled?: boolean;
   producer_onboarding_enabled?: boolean;
@@ -39,6 +41,23 @@ export default function WhiteLabelClientDashboard() {
     }
     // eslint-disable-next-line
   }, [user]);
+
+  useEffect(() => {
+    if (!user || !client) return;
+    // Subscribe to real-time changes for this client
+    const channel = supabase.channel('client-wl-features')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'white_label_clients', filter: `id=eq.${client.id}` },
+        (payload) => {
+          setClient((prev) => prev && payload.new ? { ...prev, ...(payload.new as WhiteLabelClient) } : prev);
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, client]);
 
   const fetchClient = async () => {
     setLoading(true);

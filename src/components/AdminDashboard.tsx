@@ -140,6 +140,8 @@ export function AdminDashboard() {
   const [newClient, setNewClient] = useState({
     display_name: '',
     owner_email: '',
+    first_name: '',
+    last_name: '',
     domain: '',
     primary_color: '#6366f1',
     secondary_color: '#8b5cf6'
@@ -150,6 +152,35 @@ export function AdminDashboard() {
       fetchData();
       fetchWhiteLabelClients();
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    // Subscribe to real-time changes on white_label_clients
+    const channel = supabase.channel('admin-wl-clients')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'white_label_clients' },
+        (payload) => {
+          setWhiteLabelClients((prev) => {
+            if (payload.eventType === 'INSERT') {
+              // Add new client
+              return [payload.new as WhiteLabelClient, ...prev];
+            } else if (payload.eventType === 'UPDATE') {
+              // Update client
+              return prev.map((c) => c.id === (payload.new as WhiteLabelClient).id ? { ...c, ...(payload.new as WhiteLabelClient) } : c);
+            } else if (payload.eventType === 'DELETE') {
+              // Remove client
+              return prev.filter((c) => c.id !== (payload.old as WhiteLabelClient).id);
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user]);
 
   const fetchData = async () => {
@@ -632,14 +663,16 @@ export function AdminDashboard() {
         await supabase.from('profiles').insert({
           id: authUserId,
           email: emailLower,
-          first_name: newClient.display_name,
+          first_name: newClient.first_name || newClient.display_name,
+          last_name: newClient.last_name,
           account_type: 'white_label',
         });
       } else {
         // If user exists, update account_type if not already set
         await supabase.from('profiles').update({
           account_type: 'white_label',
-          first_name: newClient.display_name,
+          first_name: newClient.first_name || newClient.display_name,
+          last_name: newClient.last_name,
         }).eq('id', authUserId);
       }
     } catch (err) {
@@ -653,6 +686,8 @@ export function AdminDashboard() {
       display_name: newClient.display_name,
       owner_email: emailLower,
       owner_id: authUserId,
+      first_name: newClient.first_name || newClient.display_name,
+      last_name: newClient.last_name,
       domain: newClient.domain,
       primary_color: newClient.primary_color,
       secondary_color: newClient.secondary_color,
@@ -674,6 +709,8 @@ export function AdminDashboard() {
     setNewClient({
       display_name: '',
       owner_email: '',
+      first_name: '',
+      last_name: '',
       domain: '',
       primary_color: '#6366f1',
       secondary_color: '#8b5cf6'
@@ -1574,6 +1611,33 @@ export function AdminDashboard() {
                   className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
                   placeholder="Enter owner email address"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newClient.first_name}
+                    onChange={(e) => setNewClient({ ...newClient, first_name: e.target.value })}
+                    className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="Enter first name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newClient.last_name}
+                    onChange={(e) => setNewClient({ ...newClient, last_name: e.target.value })}
+                    className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                    placeholder="Enter last name"
+                  />
+                </div>
               </div>
 
               <div>
