@@ -258,7 +258,8 @@ export function TrackUploadForm() {
           stems_url: stemsUrl || null,
           split_sheet_url: splitSheetUploadedUrl || null,
           has_vocals: hasVocals,
-          vocals_usage_type: hasVocals ? (isSyncOnly ? 'sync_only' : vocalsUsageType) : null,
+          vocals_usage_type: hasVocals ? vocalsUsageType : null,
+          is_sync_only: isSyncOnly,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -560,6 +561,17 @@ export function TrackUploadForm() {
                   </select>
                 </div>
               )}
+
+              <label className="flex items-center space-x-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={isSyncOnly}
+                  onChange={(e) => setIsSyncOnly(e.target.checked)}
+                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <span>Sync Only - Track is only available for submitted Sync Proposals</span>
+              </label>
             </div>
           </div>
 

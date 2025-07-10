@@ -90,8 +90,8 @@ export function CatalogPage() {
             email
           )
         `)
-        // Remove the filter that was excluding sync_only tracks
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .eq('is_sync_only', false);
 
       // If a specific track ID is provided, fetch only that track
       if (filters?.trackId) {
@@ -175,12 +175,24 @@ export function CatalogPage() {
             trackoutsUrl: track.trackouts_url,
             hasVocals: track.has_vocals,
             vocalsUsageType: track.vocals_usage_type,
+            producerId: track.track_producer_id?.id || '',
             producer: track.track_producer_id ? {
               id: track.track_producer_id.id,
               firstName: track.track_producer_id.first_name || '',
               lastName: track.track_producer_id.last_name || '',
               email: track.track_producer_id.email
-            } : undefined
+            } : undefined,
+            fileFormats: {
+              stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+              stems: { format: ['WAV'], url: track.trackouts_url || '' },
+              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+            },
+            pricing: {
+              stereoMp3: 0,
+              stems: 0,
+              stemsWithVocals: 0
+            },
+            leaseAgreementUrl: ''
           }));
 
         if (currentPage === 1) {

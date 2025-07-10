@@ -148,7 +148,7 @@ export function VocalsPage() {
       return;
     }
 
-    if (track.hasVocals && track.vocalsUsageType === 'sync_only') {
+    if (track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only')) {
       setSelectedTrack(track);
       setShowProposalDialog(true);
     } else {

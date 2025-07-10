@@ -207,7 +207,7 @@ export function TrackPage() {
     if (!track) return;
 
     // For sync-only tracks, show the proposal dialog
-    if (track.hasVocals && track.vocalsUsageType === 'sync_only') {
+    if (track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only')) {
       setShowProposalDialog(true);
       return;
     }

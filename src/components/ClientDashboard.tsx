@@ -602,7 +602,7 @@ export function ClientDashboard() {
 
   const handleLicenseClick = (track: Track) => {
     // For sync-only tracks, show the proposal dialog
-    if (track.hasVocals && track.vocalsUsageType === 'sync_only') {
+    if (track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only')) {
       setSelectedTrackToLicense(track);
       setShowProposalDialog(true);
       return;

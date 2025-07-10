@@ -20,6 +20,7 @@ export interface Track {
   splitSheetUrl?: string;
   hasVocals?: boolean;
   vocalsUsageType?: 'normal' | 'sync_only';
+  isSyncOnly?: boolean;
   producerId: string; // Added explicit producerId field
   producer?: {
     id: string;
