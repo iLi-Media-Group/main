@@ -693,20 +693,7 @@ export function ClientDashboard() {
     }
   };
 
-  // Debug function to help identify proposal status
-  const debugProposalStatus = (proposal: SyncProposal) => {
-    console.log('Proposal debug info:', {
-      id: proposal.id,
-      status: proposal.status,
-      client_status: proposal.client_status,
-      producer_status: proposal.producer_status,
-      payment_status: proposal.payment_status,
-      negotiation_status: proposal.negotiation_status,
-      isAcceptedByBoth: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted',
-      isPaymentPending: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted' && (proposal.payment_status === 'pending' || proposal.payment_status === null),
-      isFullyPaid: proposal.client_status === 'accepted' && proposal.producer_status === 'accepted' && proposal.payment_status === 'paid'
-    });
-  };
+
 
 
 
@@ -771,28 +758,7 @@ export function ClientDashboard() {
   
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
 
-  // Debug logging for proposal statuses
-  console.log('=== PROPOSAL STATUS DEBUG ===');
-  console.log('Total proposals:', syncProposals.length);
-  console.log('Pending proposals:', pendingProposals.length);
-  console.log('Payment pending proposals:', paymentPendingProposals.length);
-  console.log('Accepted proposals:', acceptedProposals.length);
-  console.log('Declined proposals:', declinedProposals.length);
-  
-  syncProposals.forEach((p, index) => {
-    console.log(`Proposal ${index + 1}:`, {
-      id: p.id,
-      status: p.status,
-      client_status: p.client_status,
-      producer_status: p.producer_status,
-      negotiation_status: p.negotiation_status,
-      payment_status: p.payment_status,
-      inPending: pendingProposals.includes(p),
-      inPaymentPending: paymentPendingProposals.includes(p),
-      inAccepted: acceptedProposals.includes(p)
-    });
-  });
-  console.log('=== END PROPOSAL STATUS DEBUG ===');
+
 
   if (loading) {
     return (
@@ -1174,13 +1140,7 @@ export function ClientDashboard() {
                         History
                       </button>
                       
-                      <button
-                        onClick={() => debugProposalStatus(proposal)}
-                        className="px-3 py-1 bg-gray-600 text-white rounded hover:bg-gray-700 text-sm"
-                        title="Debug proposal status (check console)"
-                      >
-                        Debug
-                      </button>
+
                     </div>
                   </div>
                 ))
