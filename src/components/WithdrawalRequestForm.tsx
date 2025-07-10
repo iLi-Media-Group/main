@@ -105,7 +105,7 @@ export function WithdrawalRequestForm({
         .update({
           available_balance: availableBalance - withdrawalAmount
         })
-        .eq('producer_id', user.id);
+        .eq('balance_producer_id', user.id);
 
       if (balanceError) throw balanceError;
 

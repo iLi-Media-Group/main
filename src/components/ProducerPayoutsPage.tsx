@@ -212,7 +212,7 @@ export function ProducerPayoutsPage() {
       // Apply filters based on user role
       if (!isAdmin) {
         // Regular producers can only see their own payouts
-        query = query.eq('producer_id', user?.id);
+        query = query.eq('withdrawal_producer_id', user?.id);
       }
 
       // Apply status filter
