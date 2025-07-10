@@ -163,6 +163,25 @@ Deno.serve(async (req) => {
         updateObj.producer_onboarding_paid = true;
       }
       
+      // --- NEW: Update revenue/feature columns ---
+      // Parse features and amount from metadata
+      const featuresArray = metadata.features
+        ? metadata.features.split(',').map((f: string) => f.trim()).filter((f: string) => f)
+        : [];
+      const featuresAmount = metadata.features_amount
+        ? Number(metadata.features_amount)
+        : null;
+      const setupAmount = stripeData.amount_total ? stripeData.amount_total / 100 : null;
+      
+      if (existingWL?.id) {
+        await supabase.from('white_label_clients').update({
+          setup_amount_paid: setupAmount,
+          features_purchased: featuresArray.length > 0 ? featuresArray : null,
+          features_amount_paid: featuresAmount
+        }).eq('id', existingWL.id);
+      }
+      // --- END NEW ---
+      
       if (Object.keys(updateObj).length > 0) {
         const clientId = existingWL?.id;
         if (clientId) {
@@ -183,6 +202,41 @@ Deno.serve(async (req) => {
       await sendWelcomeEmail(email, fullName, companyName);
     } catch (error) {
       console.error('Error processing white label onboarding:', error);
+    }
+    return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+  }
+
+  // --- Additional White Label Feature Purchases ---
+  if (event.type === 'checkout.session.completed' && metadata.type === 'white_label_feature') {
+    try {
+      const clientId = metadata.client_id;
+      const featuresArray = metadata.features
+        ? metadata.features.split(',').map((f: string) => f.trim()).filter((f: string) => f)
+        : [];
+      const featuresAmount = metadata.features_amount
+        ? Number(metadata.features_amount)
+        : null;
+
+      if (clientId) {
+        // Fetch current features and amount
+        const { data: client, error } = await supabase
+          .from('white_label_clients')
+          .select('features_purchased, features_amount_paid')
+          .eq('id', clientId)
+          .single();
+
+        let updatedFeatures = Array.isArray(client?.features_purchased) ? client.features_purchased : [];
+        updatedFeatures = [...new Set([...updatedFeatures, ...featuresArray])];
+
+        const updatedAmount = (client?.features_amount_paid || 0) + (featuresAmount || 0);
+
+        await supabase.from('white_label_clients').update({
+          features_purchased: updatedFeatures,
+          features_amount_paid: updatedAmount
+        }).eq('id', clientId);
+      }
+    } catch (error) {
+      console.error('Error processing additional white label feature purchase:', error);
     }
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
   }
