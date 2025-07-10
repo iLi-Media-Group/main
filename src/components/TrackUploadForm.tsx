@@ -591,7 +591,7 @@ export function TrackUploadForm() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Primary Genres (Select at least one)
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {genres.map((genre) => (
                       <label
                         key={genre.id}
@@ -615,7 +615,7 @@ export function TrackUploadForm() {
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                           disabled={isSubmitting}
                         />
-                        <span>{genre.display_name}</span>
+                        <span className="text-sm">{genre.display_name}</span>
                       </label>
                     ))}
                   </div>
@@ -630,7 +630,7 @@ export function TrackUploadForm() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         {genreName} Sub-Genres
                       </label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {subGenres.map((subGenre) => (
                           <label
                             key={subGenre.id}
@@ -651,7 +651,7 @@ export function TrackUploadForm() {
                               className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                               disabled={isSubmitting}
                             />
-                            <span>{subGenre.display_name}</span>
+                            <span className="text-sm">{subGenre.display_name}</span>
                           </label>
                         ))}
                       </div>
