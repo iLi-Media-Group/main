@@ -145,18 +145,20 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
             <YouTubeThumbnail 
               url={announcement.external_url} 
               title={announcement.title}
-              className="w-full h-64"
+              className="w-full h-80"
             />
           </div>
         )}
         
         {/* Show regular image for non-YouTube announcements */}
         {announcement.type !== 'youtube' && announcement.image_url && (
-          <img
-            src={announcement.image_url}
-            alt={announcement.title}
-            className="w-full max-h-96 object-contain rounded-lg mb-6 bg-black"
-          />
+          <div className="mb-6">
+            <img
+              src={announcement.image_url}
+              alt={announcement.title}
+              className="w-full h-auto max-h-[600px] object-cover rounded-lg bg-black"
+            />
+          </div>
         )}
 
         <div 
@@ -374,18 +376,20 @@ export function AnnouncementsPage() {
                       <YouTubeThumbnail 
                         url={announcement.external_url} 
                         title={announcement.title}
-                        className="w-full h-48"
+                        className="w-full h-56"
                       />
                     </div>
                   )}
                   
                   {/* Show regular image for non-YouTube announcements */}
                   {announcement.type !== 'youtube' && announcement.image_url && (
-                    <img
-                      src={announcement.image_url}
-                      alt={announcement.title}
-                      className="w-full max-h-96 object-contain rounded-lg mb-4 bg-black"
-                    />
+                    <div className="mb-4">
+                      <img
+                        src={announcement.image_url}
+                        alt={announcement.title}
+                        className="w-full h-auto max-h-80 object-cover rounded-lg bg-black"
+                      />
+                    </div>
                   )}
 
                   <div 
