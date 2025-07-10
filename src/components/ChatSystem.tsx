@@ -190,6 +190,7 @@ export function ChatSystem() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [roomSubscription, setRoomSubscription] = useState<any>(null);
+  const [roomJustSelected, setRoomJustSelected] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -223,8 +224,7 @@ export function ChatSystem() {
       // Subscribe to new room messages
       const messageSub = subscribeToMessages();
       setSubscription(messageSub);
-      // Scroll to top when entering a chat room
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      setRoomJustSelected(true); // Mark that a room was just selected
     }
     
     return () => {
@@ -235,6 +235,10 @@ export function ChatSystem() {
   }, [selectedRoom]);
 
   useEffect(() => {
+    if (roomJustSelected) {
+      window.scrollTo({ top: 0 });
+      setRoomJustSelected(false);
+    }
     scrollToBottom();
   }, [messages]);
 
