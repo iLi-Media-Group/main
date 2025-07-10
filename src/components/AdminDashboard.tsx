@@ -14,6 +14,7 @@ import { AdvancedAnalyticsDashboard } from './AdvancedAnalyticsDashboard';
 import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { LogoUpload } from './LogoUpload';
+import { GenreManagement } from './GenreManagement';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
@@ -129,7 +130,7 @@ export function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1179,6 +1180,7 @@ export function AdminDashboard() {
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'white_label', label: 'White Label Clients', icon: null },
+            { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1549,6 +1551,11 @@ export function AdminDashboard() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Genre Management */}
+        {activeTab === 'genres' && (
+          <GenreManagement />
         )}
 
 

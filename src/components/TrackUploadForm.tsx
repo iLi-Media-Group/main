@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
-import { GENRES, SUB_GENRES, MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,23 @@ import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
+
+interface Genre {
+  id: string;
+  name: string;
+  display_name: string;
+}
+
+interface SubGenre {
+  id: string;
+  genre_id: string;
+  name: string;
+  display_name: string;
+}
+
+interface GenreWithSubGenres extends Genre {
+  sub_genres: SubGenre[];
+}
 
 interface FormData {
   title: string;
@@ -66,8 +83,37 @@ export function TrackUploadForm() {
   const [splitSheetUrl, setSplitSheetUrl] = useState(savedData?.splitSheetUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
+  const [genresLoading, setGenresLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
+
+  // Fetch genres from database
+  useEffect(() => {
+    const fetchGenres = async () => {
+      try {
+        setGenresLoading(true);
+        const { data, error } = await supabase
+          .from('genres')
+          .select(`
+            *,
+            sub_genres (*)
+          `)
+          .order('display_name');
+
+        if (error) throw error;
+        setGenres(data || []);
+      } catch (err) {
+        console.error('Error fetching genres:', err);
+        // Fallback to empty array if database is not set up yet
+        setGenres([]);
+      } finally {
+        setGenresLoading(false);
+      }
+    };
+
+    fetchGenres();
+  }, []);
 
   useEffect(() => {
     const formData: FormData = {
@@ -162,13 +208,16 @@ export function TrackUploadForm() {
         throw new Error('Please select at least one genre');
       }
 
-      // Validate and format genres
+      // Validate and format genres - use display names for database storage
       const formattedGenres = selectedGenres
-        .map(genre => genre.toLowerCase().trim())
-        .filter(genre => GENRES.map(g => g.toLowerCase()).includes(genre));
+        .map(genreName => {
+          const genre = genres.find(g => g.display_name === genreName);
+          return genre ? genre.display_name : genreName;
+        })
+        .filter(Boolean);
 
       if (formattedGenres.length === 0) {
-        throw new Error('At least one valid genre from the provided list is required');
+        throw new Error('At least one valid genre is required');
       }
 
       const audioUrl = await uploadFile(audioFile, 'track-audio', (progress) => {
@@ -194,8 +243,8 @@ export function TrackUploadForm() {
           track_producer_id: user.id,
           title,
           artist: user.email?.split('@')[0] || 'Unknown Artist',
-          genres: formattedGenres,
-          sub_genres: selectedSubGenres,
+          genres: formattedGenres.join(','),
+          sub_genres: selectedSubGenres.join(','),
           moods: selectedMoods,
           media_usage: selectedMediaUsage,
           bpm: bpmNumber,
@@ -229,8 +278,6 @@ export function TrackUploadForm() {
 
       if (trackFetchError) throw trackFetchError;
 
-
-
       clearSavedFormData();
       navigate('/producer/dashboard');
     } catch (err) {
@@ -241,347 +288,372 @@ export function TrackUploadForm() {
     }
   };
 
+  if (genresLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-500 mx-auto mb-4" />
+          <p className="text-gray-400">Loading genres...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8">
+    <div className="min-h-screen bg-gray-900 py-8">
+      <div className="max-w-4xl mx-auto px-4">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-white">Add New Track</h2>
-          {error && (
-            <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
-              {error}
-            </div>
-          )}
+          <h1 className="text-3xl font-bold text-white mb-2">Upload New Track</h1>
+          <p className="text-gray-400">Share your music with the world</p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <p className="text-red-400">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-300 mb-2">
-              Track Title
-            </label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="block w-full"
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Upload Audio File
-              </label>
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-300
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-lg file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-blue-600 file:text-white
-                  hover:file:bg-blue-700
-                  file:cursor-pointer file:transition-colors"
-                disabled={isSubmitting}
-                required
-              />
-              {audioFile && (
-                <p className="mt-2 text-sm text-gray-400">
-                  Selected file: {audioFile.name} ({(audioFile.size / 1024 / 1024).toFixed(2)} MB)
-                </p>
-              )}
-              {uploadedUrl && audioFile && (
-                <div className="mt-4">
-                  <AudioPlayer src={uploadedUrl} title={audioFile.name} />
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Track Image
-              </label>
-              <div className="flex items-center space-x-4">
-                <div className="w-32 h-32 rounded-lg overflow-hidden bg-white/10">
-                  {imagePreview ? (
-                    <img
-                      src={imagePreview}
-                      alt="Track preview"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Image className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label className="block">
-                    <div className="flex items-center justify-center w-full h-32 border-2 border-dashed border-blue-500/20 rounded-lg hover:border-blue-500/40 transition-colors cursor-pointer">
-                      <div className="text-center">
-                        <Upload className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-                        <span className="text-sm text-gray-400">
-                          Click to upload image
-                        </span>
-                        <span className="block text-xs text-gray-500 mt-1">
-                          Max size: 2MB
-                        </span>
-                      </div>
-                    </div>
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      disabled={isSubmitting}
-                    />
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="bpm" className="block text-sm font-medium text-gray-300 mb-2">
-                BPM (Required)
-              </label>
-              <div className="relative">
-                <Music className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          {/* Audio Upload Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <Music className="w-5 h-5 mr-2" />
+              Audio File
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Upload Audio File *
+                </label>
                 <input
-                  type="number"
-                  id="bpm"
-                  value={bpm}
-                  onChange={(e) => setBpm(e.target.value)}
-                  min="1"
-                  max="999"
-                  className="block w-full pl-10"
-                  required
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   disabled={isSubmitting}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supported formats: MP3, WAV, AIFF (Max 50MB)
+                </p>
               </div>
-            </div>
 
-            <div>
-              <label htmlFor="key" className="block text-sm font-medium text-gray-300 mb-2">
-                Musical Key (Optional)
-              </label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                              {audioFile && (
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-2">Preview</h3>
+                    <AudioPlayer src={URL.createObjectURL(audioFile)} title={audioFile.name} />
+                  </div>
+                )}
+            </div>
+          </div>
+
+          {/* Track Details Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Track Details</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Track Title *
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="Enter track title"
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  BPM *
+                </label>
+                <input
+                  type="number"
+                  value={bpm}
+                  onChange={(e) => setBpm(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="120"
+                  min="1"
+                  max="999"
+                  disabled={isSubmitting}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Musical Key
+                </label>
                 <select
-                  id="key"
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
-                  className="block w-full pl-10"
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                   disabled={isSubmitting}
                 >
-                  <option value="">Select Key</option>
-                  {MUSICAL_KEYS.map((k) => (
-                    <option key={k} value={k}>{k}</option>
+                  <option value="">Select key</option>
+                  {MUSICAL_KEYS.map((musicalKey) => (
+                    <option key={musicalKey} value={musicalKey}>
+                      {musicalKey}
+                    </option>
                   ))}
                 </select>
               </div>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                MP3 Only Link
-              </label>
-              <input
-                type="url"
-                value={mp3Url}
-                onChange={(e) => setMp3Url(e.target.value)}
-                className="block w-full"
-                placeholder="https://boombox.io/..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Full Trackouts
-              </label>
-              <input
-                type="url"
-                value={trackoutsUrl}
-                onChange={(e) => setTrackoutsUrl(e.target.value)}
-                className="block w-full"
-                placeholder="https://boombox.io/..."
-              />
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Stems URL</label>
-            <input
-              type="url"
-              value={stemsUrl}
-              onChange={e => setStemsUrl(e.target.value)}
-              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Split Sheet PDF</label>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={e => setSplitSheetFile(e.target.files?.[0] || null)}
-              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-            />
-            {splitSheetUrl && (
-              <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Split Sheet</a>
-            )}
-          </div>
-
-          <div className="text-center">
-            <a
-              href="https://app.boombox.io/referral/rn1oVpnyzXBar"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Get A Boombox.io Account Here
-            </a>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center space-x-6">
-              <label className="flex items-center space-x-2 text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={hasStingEnding}
-                  onChange={(e) => setHasStingEnding(e.target.checked)}
-                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                />
-                <span>Has Sting Ending</span>
-              </label>
-
-              <label className="flex items-center space-x-2 text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={isOneStop}
-                  onChange={(e) => setIsOneStop(e.target.checked)}
-                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                />
-                <span>One Stop Production</span>
-              </label>
-            </div>
-            
-            <div className="flex items-center space-x-2 text-gray-300">
-              <input
-                type="checkbox"
-                checked={isSyncOnly}
-                onChange={(e) => setIsSyncOnly(e.target.checked)}
-                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Sync Only</span>
-            </div>
-
-            <div className="flex items-center space-x-2 text-gray-300">
-              <input
-                type="checkbox"
-                checked={hasVocals}
-                onChange={(e) => setHasVocals(e.target.checked)}
-                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-              />
-              <span>Full Track With Vocals</span>
-            </div>
-
-            {hasVocals && (
-              <div className="pl-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Vocals Usage Type
-                </label>
-                <select
-                  value={vocalsUsageType}
-                  onChange={(e) => setVocalsUsageType(e.target.value as 'normal' | 'sync_only')}
-                  className="block w-full"
-                  disabled={isSubmitting}
-                >
-                  <option value="normal">Allow use in normal memberships</option>
-                  <option value="sync_only">Only allow for sync briefs</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Genres (Select primary genre)
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {GENRES.map((genre) => (
-                <label
-                  key={genre}
-                  className="flex items-center space-x-2 text-gray-300"
-                >
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2 text-gray-300">
                   <input
                     type="checkbox"
-                    checked={selectedGenres.includes(genre)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedGenres([...selectedGenres, genre]);
-                      } else {
-                        setSelectedGenres(selectedGenres.filter((g) => g !== genre));
-                      }
-                    }}
+                    checked={hasStingEnding}
+                    onChange={(e) => setHasStingEnding(e.target.checked)}
                     className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
-                  <span>{genre}</span>
+                  <span>Has sting ending</span>
                 </label>
-              ))}
+
+                <label className="flex items-center space-x-2 text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={isOneStop}
+                    onChange={(e) => setIsOneStop(e.target.checked)}
+                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                  />
+                  <span>One-stop production</span>
+                </label>
+              </div>
             </div>
           </div>
 
-          {selectedGenres.map((genre) => {
-            // Add safety check for SUB_GENRES[genre]
-            const subGenres = SUB_GENRES[genre as keyof typeof SUB_GENRES] || [];
+          {/* Image Upload Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <Image className="w-5 h-5 mr-2" />
+              Cover Art
+            </h2>
             
-            return subGenres.length > 0 ? (
-              <div key={genre}>
+            <div className="space-y-4">
+              <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {genre} Sub-Genres
+                  Upload Cover Image
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {subGenres.map((subGenre) => (
-                    <label
-                      key={subGenre}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSubGenres.includes(subGenre)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedSubGenres([...selectedSubGenres, subGenre]);
-                          } else {
-                            setSelectedSubGenres(
-                              selectedSubGenres.filter((sg) => sg !== subGenre)
-                            );
-                          }
-                        }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>{subGenre}</span>
-                    </label>
-                  ))}
-                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Recommended: 800x800px, Max 2MB
+                </p>
               </div>
-            ) : null;
-          })}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              Moods
-            </label>
+              {imagePreview && (
+                <div className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-white font-medium mb-2">Preview</h3>
+                  <img
+                    src={imagePreview}
+                    alt="Cover preview"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Additional Files Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Additional Files</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  MP3 Only Link
+                </label>
+                <input
+                  type="url"
+                  value={mp3Url}
+                  onChange={(e) => setMp3Url(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="https://..."
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Full Trackouts Link
+                </label>
+                <input
+                  type="url"
+                  value={trackoutsUrl}
+                  onChange={(e) => setTrackoutsUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="https://..."
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Stems Link
+                </label>
+                <input
+                  type="url"
+                  value={stemsUrl}
+                  onChange={(e) => setStemsUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="https://..."
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Split Sheet PDF
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setSplitSheetFile(e.target.files?.[0] || null)}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Vocals Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Vocals</h2>
+            
+            <div className="space-y-4">
+              <label className="flex items-center space-x-2 text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={hasVocals}
+                  onChange={(e) => setHasVocals(e.target.checked)}
+                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                  disabled={isSubmitting}
+                />
+                <span>Track contains vocals</span>
+              </label>
+
+              {hasVocals && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Vocals Usage Type
+                  </label>
+                  <select
+                    value={vocalsUsageType}
+                    onChange={(e) => setVocalsUsageType(e.target.value as 'normal' | 'sync_only')}
+                    className="block w-full"
+                    disabled={isSubmitting}
+                  >
+                    <option value="normal">Allow use in normal memberships</option>
+                    <option value="sync_only">Only allow for sync briefs</option>
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Genres Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
+            
+            {genres.length === 0 ? (
+              <div className="text-center py-8">
+                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No genres available</p>
+                <p className="text-sm text-gray-500">Please contact an administrator to add genres</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Genres (Select at least one)
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {genres.map((genre) => (
+                      <label
+                        key={genre.id}
+                        className="flex items-center space-x-2 text-gray-300"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedGenres.includes(genre.display_name)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGenres([...selectedGenres, genre.display_name]);
+                            } else {
+                              setSelectedGenres(selectedGenres.filter((g) => g !== genre.display_name));
+                              // Remove sub-genres for this genre when unchecking
+                              setSelectedSubGenres(selectedSubGenres.filter(sg => {
+                                const subGenre = genre.sub_genres.find(s => s.display_name === sg);
+                                return !subGenre;
+                              }));
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                        <span>{genre.display_name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {selectedGenres.map((genreName) => {
+                  const genre = genres.find(g => g.display_name === genreName);
+                  const subGenres = genre?.sub_genres || [];
+                  
+                  return subGenres.length > 0 ? (
+                    <div key={genreName}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {genreName} Sub-Genres
+                      </label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {subGenres.map((subGenre) => (
+                          <label
+                            key={subGenre.id}
+                            className="flex items-center space-x-2 text-gray-300"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedSubGenres.includes(subGenre.display_name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedSubGenres([...selectedSubGenres, subGenre.display_name]);
+                                } else {
+                                  setSelectedSubGenres(
+                                    selectedSubGenres.filter((sg) => sg !== subGenre.display_name)
+                                  );
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                            />
+                            <span>{subGenre.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Moods Section */}
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
+            
             <div className="space-y-6">
               {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
                 <div key={category} className="bg-white/5 rounded-lg p-4">
@@ -616,12 +688,12 @@ export function TrackUploadForm() {
             </div>
           </div>
 
-          {/* Media Usage - Show feature or premium notice */}
+          {/* Media Usage Section */}
           {deepMediaSearchEnabled ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-4">
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
                 Media Usage Types (Deep Media Search)
-              </label>
+              </h2>
               <p className="text-sm text-gray-400 mb-4">
                 Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
               </p>
