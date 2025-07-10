@@ -1326,10 +1326,7 @@ export function AdminDashboard() {
                         )}
                       </button>
                     </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Setup Paid</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Features</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Features Paid</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">AI Search</th>
+
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-purple-500/10">
