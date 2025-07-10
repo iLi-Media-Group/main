@@ -83,6 +83,7 @@ export function CatalogPage() {
           trackouts_url,
           has_vocals,
           vocals_usage_type,
+          is_sync_only,
           track_producer_id:profiles!track_producer_id (
             id,
             first_name,
@@ -90,8 +91,7 @@ export function CatalogPage() {
             email
           )
         `)
-        .is('deleted_at', null)
-        .eq('is_sync_only', false);
+        .is('deleted_at', null);
 
       // If a specific track ID is provided, fetch only that track
       if (filters?.trackId) {
@@ -175,6 +175,7 @@ export function CatalogPage() {
             trackoutsUrl: track.trackouts_url,
             hasVocals: track.has_vocals,
             vocalsUsageType: track.vocals_usage_type,
+            isSyncOnly: track.is_sync_only || false,
             producerId: track.track_producer_id?.id || '',
             producer: track.track_producer_id ? {
               id: track.track_producer_id.id,

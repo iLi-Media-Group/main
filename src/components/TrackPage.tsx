@@ -242,7 +242,7 @@ export function TrackPage() {
     );
   }
 
-  const isSyncOnly = track.hasVocals && track.vocalsUsageType === 'sync_only';
+  const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
 
   return (
     <div className="container mx-auto px-4 py-8">

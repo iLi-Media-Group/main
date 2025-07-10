@@ -20,7 +20,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
-  const isSyncOnly = track.hasVocals && track.vocalsUsageType === 'sync_only';
+  const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
 
   useEffect(() => {
     if (user && track?.id) {
