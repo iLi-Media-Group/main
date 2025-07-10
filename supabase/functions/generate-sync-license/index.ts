@@ -246,6 +246,17 @@ function generateLicenseHTML(license: any): string {
           margin-bottom: 30px; 
           border-bottom: 2px solid #333;
           padding-bottom: 20px;
+          position: relative;
+        }
+        .logo {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 120px;
+          height: auto;
+        }
+        .header-content {
+          margin-left: 140px;
         }
         .title { 
           font-size: 24px; 
@@ -317,8 +328,11 @@ function generateLicenseHTML(license: any): string {
     </head>
     <body>
       <div class="header">
-        <div class="title">Music Synchronization License Agreement</div>
-        <div class="subtitle">Sync Proposal License</div>
+        <img src="https://mybeatfi.io/logo.png" alt="MyBeatFi Logo" class="logo">
+        <div class="header-content">
+          <div class="title">Music Synchronization License Agreement</div>
+          <div class="subtitle">Sync Proposal License</div>
+        </div>
       </div>
 
       <div class="section">
