@@ -212,7 +212,7 @@ export function CheckoutSuccessPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Music className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Product:</span>
+                    <span className="text-white">Plan:</span>
                   </div>
                   <span className="text-white font-medium">
                     Single Track License
@@ -232,7 +232,17 @@ export function CheckoutSuccessPage() {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Date:</span>
+                    <span className="text-white">License Period:</span>
+                  </div>
+                  <span className="text-white font-medium">
+                    {new Date(order.order_date).toLocaleDateString()} - {new Date(new Date(order.order_date).getTime() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
+                    <span className="text-white">Purchase Date:</span>
                   </div>
                   <span className="text-white font-medium">
                     {new Date(order.order_date).toLocaleDateString()}
