@@ -18,6 +18,7 @@ serve(async (req) => {
       message,
       counterOffer,
       counterTerms,
+      counterPaymentTerms,
       recipientEmail
     } = await req.json();
 
@@ -35,15 +36,30 @@ serve(async (req) => {
         sender_id: senderId,
         message,
         counter_offer: counterOffer,
-        counter_terms: counterTerms
+        counter_terms: counterTerms,
+        counter_payment_terms: counterPaymentTerms
       });
 
     if (negotiationError) throw negotiationError;
 
-    // Update proposal status
+    // Determine if this is a counter offer that requires acceptance
+    const hasCounterOffer = counterOffer || counterTerms || counterPaymentTerms;
+    
+    // Update proposal status and mark as unread for the recipient
+    const updateData: any = {
+      last_message_sender_id: senderId,
+      last_message_at: new Date().toISOString()
+    };
+
+    if (hasCounterOffer) {
+      updateData.negotiation_status = 'client_acceptance_required';
+    } else {
+      updateData.negotiation_status = 'negotiating';
+    }
+
     const { error: statusError } = await supabaseClient
       .from('sync_proposals')
-      .update({ negotiation_status: 'negotiating' })
+      .update(updateData)
       .eq('id', proposalId);
 
     if (statusError) throw statusError;
@@ -51,12 +67,13 @@ serve(async (req) => {
     // Send email notification
     const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
       email: recipientEmail,
-      subject: 'New Counter-Offer Received',
+      subject: hasCounterOffer ? 'New Counter-Offer Received' : 'New Negotiation Message',
       template: `
-        <p>You have received a new counter-offer for your sync proposal.</p>
+        <p>You have received a ${hasCounterOffer ? 'new counter-offer' : 'new message'} for your sync proposal.</p>
         <p>Message: ${message}</p>
         ${counterOffer ? `<p>Counter Offer: $${counterOffer}</p>` : ''}
         ${counterTerms ? `<p>Proposed Terms: ${counterTerms}</p>` : ''}
+        ${counterPaymentTerms ? `<p>Counter Payment Terms: ${counterPaymentTerms}</p>` : ''}
         <p>Please log in to your dashboard to review and respond.</p>
       `
     });

@@ -57,18 +57,26 @@ interface Proposal {
   payment_terms?: string;
   final_payment_terms?: string;
   negotiated_payment_terms?: string;
+  negotiation_status?: string;
+  client_accepted_at?: string;
 }
 
 // Add a helper to determine if a proposal has a pending action
 function hasPendingAction(proposal: Proposal, userId: string): boolean {
-  // Show badge if proposal has a recent message from someone else
-  return (
-    (proposal.status === 'pending' || proposal.producer_status === 'pending') && 
-    !!proposal.last_message_sender_id && 
+  // Show badge if proposal has a message from someone else that hasn't been responded to
+  const hasNewMessage = !!(
+    proposal.last_message_sender_id && 
     proposal.last_message_sender_id !== userId &&
-    !!proposal.last_message_at && 
-    new Date(proposal.last_message_at) > new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+    proposal.last_message_at
   );
+
+  // Show badge if there's a counter offer that needs acceptance
+  const hasCounterOffer = proposal.negotiation_status === 'client_acceptance_required';
+
+  // Show badge if there's a pending negotiation that requires response
+  const needsResponse = proposal.negotiation_status === 'negotiating' && hasNewMessage;
+
+  return hasNewMessage && (hasCounterOffer || needsResponse);
 }
 
 export function ProducerDashboard() {

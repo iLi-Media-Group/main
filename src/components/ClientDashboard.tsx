@@ -72,7 +72,7 @@ interface SyncProposal {
   client_status: 'pending' | 'accepted' | 'rejected';
   producer_status: 'pending' | 'accepted' | 'rejected';
   payment_status: 'pending' | 'paid' | 'cancelled';
-  negotiation_status: 'open' | 'closed';
+  negotiation_status: 'pending' | 'negotiating' | 'client_acceptance_required' | 'accepted' | 'rejected';
   client_accepted_at?: string;
   created_at: string;
   updated_at: string;
@@ -149,12 +149,19 @@ const getPaymentTermsDisplay = (paymentTerms: string): string => {
 // Add a helper to determine if a proposal has a pending action
 function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
   // Show badge if proposal has a message from someone else that hasn't been responded to
-  return !!(
-    proposal.status === 'pending' && 
+  const hasNewMessage = !!(
     proposal.last_message_sender_id && 
     proposal.last_message_sender_id !== userId &&
     proposal.last_message_at
   );
+
+  // Show badge if there's a counter offer that needs acceptance
+  const hasCounterOffer = proposal.negotiation_status === 'client_acceptance_required';
+
+  // Show badge if there's a pending negotiation that requires response
+  const needsResponse = proposal.negotiation_status === 'negotiating' && hasNewMessage;
+
+  return hasNewMessage && (hasCounterOffer || needsResponse);
 }
 
 export function ClientDashboard() {

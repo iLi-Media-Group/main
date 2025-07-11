@@ -337,112 +337,27 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    const recipientEmail = proposal?.client?.email || user?.email;
-    if (!recipientEmail) {
-      setError("Unable to determine recipient email. Please contact support.");
-      setLoading(false);
-      return;
-    }
+    if (!user || !proposal) return;
 
     try {
-      if (!message.trim()) {
-        throw new Error('Please enter a message');
+      setLoading(true);
+      setError('');
+
+      if (!message.trim() && !counterOffer && !counterTerms && !counterPaymentTerms) {
+        throw new Error('Please enter a message or make a counter offer');
       }
 
-      if (counterOffer && isNaN(parseFloat(counterOffer))) {
-        throw new Error('Please enter a valid counter offer amount');
+      // Determine recipient email
+      const recipientEmail = user.id === proposal.client_id 
+        ? proposal.track?.producer?.email 
+        : proposal.client?.email;
+
+      if (!recipientEmail) {
+        throw new Error('Could not determine recipient email');
       }
 
-      // Create negotiation message
-      const { data: negotiation, error: negotiationError } = await supabase
-        .from('proposal_negotiations')
-        .insert({
-          proposal_id: proposal.id,
-          sender_id: user!.id,
-          message,
-          counter_offer: counterOffer ? parseFloat(counterOffer) : null,
-          counter_terms: counterTerms.trim() || null,
-          counter_payment_terms: counterPaymentTerms || null
-        })
-        .select()
-        .single();
-
-      if (negotiationError) throw negotiationError;
-
-      // Update proposal negotiation status if there are counter offers or terms
-      if (counterOffer || counterTerms.trim() || counterPaymentTerms) {
-        const { error: statusError } = await supabase
-          .from('sync_proposals')
-          .update({
-            negotiation_status: 'client_acceptance_required',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', proposal.id);
-
-        if (statusError) {
-          console.error('Error updating negotiation status:', statusError);
-        } else {
-          // Update local proposal state
-          proposal.negotiation_status = 'client_acceptance_required';
-          proposal.updated_at = new Date().toISOString();
-          setProposal({ ...proposal });
-        }
-      } else {
-        // If no changes, just set to negotiating
-        const { error: statusError } = await supabase
-          .from('sync_proposals')
-          .update({
-            negotiation_status: 'negotiating',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', proposal.id);
-
-        if (statusError) {
-          console.error('Error updating negotiation status:', statusError);
-        } else {
-          // Update local proposal state
-          proposal.negotiation_status = 'negotiating';
-          proposal.updated_at = new Date().toISOString();
-          setProposal({ ...proposal });
-        }
-      }
-
-      // Upload reference file if provided
-      if (selectedFile && negotiation) {
-        const fileExt = selectedFile.name.split('.').pop();
-        const fileName = `${negotiation.id}-${Date.now()}.${fileExt}`;
-        const filePath = `${user!.id}/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('proposal-files')
-          .upload(filePath, selectedFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('proposal-files')
-          .getPublicUrl(filePath);
-
-        // Record file in database
-        const { error: fileError } = await supabase
-          .from('proposal_files')
-          .insert({
-            proposal_id: proposal.id,
-            uploader_id: user!.id,
-            file_name: selectedFile.name,
-            file_url: publicUrl,
-            file_type: selectedFile.type,
-            file_size: selectedFile.size
-          });
-
-        if (fileError) throw fileError;
-      }
-
-      // Send notification through edge function
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
+      // Call the negotiation function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
@@ -450,15 +365,21 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         },
         body: JSON.stringify({
           proposalId: proposal.id,
-          senderId: user!.id,
-          message,
+          senderId: user.id,
+          message: message.trim(),
           counterOffer: counterOffer ? parseFloat(counterOffer) : null,
+          counterTerms: counterTerms || null,
           counterPaymentTerms: counterPaymentTerms || null,
           recipientEmail
         })
       });
 
-      // Reset form
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send negotiation');
+      }
+
+      // Clear form
       setMessage('');
       setCounterOffer('');
       setCounterTerms('');
