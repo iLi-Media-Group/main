@@ -1427,9 +1427,6 @@ export function AdminDashboard() {
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Domain</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Colors</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Created</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Setup Paid</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Features</th>
-                      <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Features Paid</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">AI Search</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Onboarding</th>
                       <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Deep Media</th>
@@ -1495,17 +1492,6 @@ export function AdminDashboard() {
                         </td>
                         <td className="px-6 py-4 text-gray-300">
                           {new Date(client.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-green-400 font-semibold">
-                          {typeof client.setup_amount_paid === 'number' ? `$${client.setup_amount_paid.toFixed(2)}` : '-'}
-                        </td>
-                        <td className="px-6 py-4 text-gray-300">
-                          {Array.isArray(client.features_purchased) && client.features_purchased.length > 0
-                            ? client.features_purchased.join(', ')
-                            : '-'}
-                        </td>
-                        <td className="px-6 py-4 text-green-400 font-semibold">
-                          {typeof client.features_amount_paid === 'number' ? `$${client.features_amount_paid.toFixed(2)}` : '-'}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <input
