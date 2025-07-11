@@ -139,10 +139,12 @@ export function LicenseAgreement() {
         .getPublicUrl(fileName);
 
       // Send email and store agreement
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-license-agreement`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

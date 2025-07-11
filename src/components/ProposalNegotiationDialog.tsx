@@ -329,78 +329,17 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !proposal) return;
-
-    try {
-      setLoading(true);
-      setError('');
-
-      if (!message.trim() && !counterOffer && !counterTerms && !counterPaymentTerms) {
-        throw new Error('Please enter a message or make a counter offer');
-      }
-
-      // Determine recipient email
-      const recipientEmail = user.id === proposal.client_id 
-        ? proposal.track?.producer?.email 
-        : proposal.client?.email;
-
-      if (!recipientEmail) {
-        throw new Error('Could not determine recipient email');
-      }
-
-      // Call the negotiation function
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          proposalId: proposal.id,
-          senderId: user.id,
-          message: message.trim(),
-          counterOffer: counterOffer ? parseFloat(counterOffer) : null,
-          counterTerms: counterTerms || null,
-          counterPaymentTerms: counterPaymentTerms || null,
-          recipientEmail
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send negotiation');
-      }
-
-      // Clear form
-      setMessage('');
-      setCounterOffer('');
-      setCounterTerms('');
-      setCounterPaymentTerms('');
-      setSelectedFile(null);
-
-      // Refresh messages - fetch the updated list instead of manually adding
-      onNegotiationSent();
-    } catch (err) {
-      console.error('Error submitting negotiation:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit negotiation');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Accept/Decline handlers
   const handleAcceptCounter = async () => {
     if (!user || !proposal) return;
     setLoading(true);
     setError('');
     try {
-      // Call backend to record acceptance
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -426,11 +365,12 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
     setLoading(true);
     setError('');
     try {
-      // Call backend to record declination
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -447,6 +387,60 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       onNegotiationSent();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to decline counter');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !proposal) return;
+    try {
+      setLoading(true);
+      setError('');
+      if (!message.trim() && !counterOffer && !counterTerms && !counterPaymentTerms) {
+        throw new Error('Please enter a message or make a counter offer');
+      }
+      // Determine recipient email
+      const recipientEmail = user.id === proposal.client_id 
+        ? proposal.track?.producer?.email 
+        : proposal.client?.email;
+      if (!recipientEmail) {
+        throw new Error('Could not determine recipient email');
+      }
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      // Call the negotiation function
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          senderId: user.id,
+          message: message.trim(),
+          counterOffer: counterOffer ? parseFloat(counterOffer) : null,
+          counterTerms: counterTerms || null,
+          counterPaymentTerms: counterPaymentTerms || null,
+          recipientEmail
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send negotiation');
+      }
+      // Clear form
+      setMessage('');
+      setCounterOffer('');
+      setCounterTerms('');
+      setCounterPaymentTerms('');
+      setSelectedFile(null);
+      // Refresh messages - fetch the updated list instead of manually adding
+      onNegotiationSent();
+    } catch (err) {
+      console.error('Error submitting negotiation:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit negotiation');
     } finally {
       setLoading(false);
     }

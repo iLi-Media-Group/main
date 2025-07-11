@@ -3,6 +3,7 @@ import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare
 import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 import { WhiteLabelFeatureFlagsProvider, useWhiteLabelFeatureFlags } from '../contexts/WhiteLabelFeatureFlagsContext';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const clientId = process.env.REACT_APP_WHITE_LABEL_CLIENT_ID || '';
 
@@ -31,10 +32,12 @@ export function WhiteLabelPage() {
     
     try {
       // Send the message to the edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-contact-form`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({

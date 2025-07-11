@@ -110,10 +110,12 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
       }
 
       // Send notification through edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-negotiation`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
