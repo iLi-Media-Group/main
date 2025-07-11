@@ -86,11 +86,7 @@ serve(async (req) => {
       });
 
       // Notify the other party
-      await supabaseClient.auth.admin.sendRawEmail({
-        email: recipientProfile.email,
-        subject: 'Counter-Offer Accepted!',
-        template: `<p>Your counter-offer has been accepted. Please review the updated proposal and proceed with the final confirmation in your dashboard.</p>`,
-      });
+      // Removed unsupported email notification code
 
     } else if (action === 'decline') {
       // Add a system message for the declination
@@ -102,11 +98,7 @@ serve(async (req) => {
       });
 
       // Notify the other party
-      await supabaseClient.auth.admin.sendRawEmail({
-        email: recipientProfile.email,
-        subject: 'Counter-Offer Declined',
-        template: `<p>Your recent counter-offer was declined. Please check your dashboard to continue the negotiation.</p>`,
-      });
+      // Removed unsupported email notification code
     }
 
     return new Response(

@@ -42,19 +42,7 @@ serve(async (req) => {
 
     if (fileError) throw fileError;
 
-    // Send email notification
-    const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-      email: recipientEmail,
-      subject: 'New File Shared for Sync Proposal',
-      template: `
-        <p>A new file has been shared for your sync proposal:</p>
-        <p>File: ${fileName}</p>
-        <p>Type: ${fileType}</p>
-        <p>Please log in to your dashboard to access the file.</p>
-      `
-    });
-
-    if (emailError) throw emailError;
+    // Removed unsupported email notification code
 
     return new Response(
       JSON.stringify({ message: 'File share processed successfully' }),

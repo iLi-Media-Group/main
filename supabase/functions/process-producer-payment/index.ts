@@ -82,19 +82,7 @@ serve(async (req) => {
 
       if (transactionError) throw transactionError;
 
-      // Send email notification
-      const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-        email: withdrawal.producer.email,
-        subject: 'Your Withdrawal Request Has Been Approved',
-        template: `
-          <p>Hello ${withdrawal.producer.first_name},</p>
-          <p>Your withdrawal request for $${withdrawal.amount.toFixed(2)} has been approved and is being processed.</p>
-          <p>You should receive the funds in your account within 3-5 business days.</p>
-          <p>Thank you for being a part of MyBeatFi Sync!</p>
-        `
-      });
-
-      if (emailError) throw emailError;
+      // Removed unsupported email notification code
     } else if (action === 'reject') {
       // Update withdrawal status
       const { error: updateError } = await supabaseClient
@@ -139,20 +127,7 @@ serve(async (req) => {
 
       if (updateBalanceError) throw updateBalanceError;
 
-      // Send email notification
-      const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-        email: withdrawal.producer.email,
-        subject: 'Your Withdrawal Request Has Been Rejected',
-        template: `
-          <p>Hello ${withdrawal.producer.first_name},</p>
-          <p>Your withdrawal request for $${withdrawal.amount.toFixed(2)} has been rejected.</p>
-          <p>Reason: ${notes || 'No reason provided'}</p>
-          <p>The funds have been returned to your available balance.</p>
-          <p>If you have any questions, please contact our support team.</p>
-        `
-      });
-
-      if (emailError) throw emailError;
+      // Removed unsupported email notification code
     } else {
       throw new Error('Invalid action');
     }

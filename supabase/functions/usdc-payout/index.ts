@@ -130,23 +130,7 @@ serve(async (req) => {
       })
       .eq('id', payout.id);
 
-    // Send email notification to producer
-    try {
-      await supabaseClient.auth.admin.sendRawEmail({
-        email: payout.producer.email,
-        subject: `Your USDC Payout for ${payout.month} Has Been Sent`,
-        template: `
-          <p>Hello ${payout.producer.first_name},</p>
-          <p>We've sent your USDC payout of $${payout.amount_usdc.toFixed(2)} for ${payout.month} to your wallet address:</p>
-          <p><code>${payout.producer.usdc_address}</code></p>
-          <p>Transaction ID: ${transactionId}</p>
-          <p>Thank you for being a part of MyBeatFi Sync!</p>
-        `
-      });
-    } catch (emailError) {
-      console.error('Error sending email notification:', emailError);
-      // Continue processing even if email fails
-    }
+    // Removed unsupported email notification code
 
     // Return success response
     return new Response(

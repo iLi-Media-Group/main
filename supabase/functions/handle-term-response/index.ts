@@ -38,19 +38,7 @@ serve(async (req) => {
 
     if (termResponseError) throw termResponseError;
 
-    // Send email notification
-    const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-      email: recipientEmail,
-      subject: 'New Term Response Received',
-      template: `
-        <p>You have received a new term response for your sync proposal.</p>
-        <p>Message: ${message || 'No additional message provided'}</p>
-        <p>Term Response: ${JSON.stringify(termsResponse, null, 2)}</p>
-        <p>Please log in to your dashboard to review and respond.</p>
-      `
-    });
-
-    if (emailError) throw emailError;
+    // Removed unsupported email notification code
 
     return new Response(
       JSON.stringify({ 
