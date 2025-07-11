@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
+import { createCheckoutSession } from '../lib/stripe';
 
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -693,10 +694,61 @@ export function ClientDashboard() {
 
   const handlePaymentPendingProposal = async (proposal: SyncProposal) => {
     try {
-      setSelectedProposal(proposal);
-      setShowAcceptDialog(true);
+      const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
+      const amount = proposal.final_amount || proposal.sync_fee;
+      
+      if (paymentTerms === 'immediate') {
+        // For immediate payment, redirect to Stripe checkout
+        const checkoutUrl = await createCheckoutSession(
+          'price_custom',
+          'payment',
+          undefined,
+          {
+            proposal_id: proposal.id,
+            amount: Math.round(amount * 100),
+            description: `Sync license for "${proposal.track?.title}"`,
+            payment_terms: paymentTerms
+          },
+          `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
+        );
+        
+        window.location.href = checkoutUrl;
+      } else {
+        // For Net30, Net60, Net90 - create an invoice instead
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabase.auth.session()?.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            proposal_id: proposal.id,
+            amount: Math.round(amount * 100),
+            client_user_id: user?.id,
+            payment_terms: paymentTerms,
+            is_sync_proposal: true,
+            metadata: {
+              description: `Sync license for "${proposal.track?.title}"`,
+              payment_terms: paymentTerms
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create invoice');
+        }
+
+        const result = await response.json();
+        
+        // Show success message or redirect to invoice
+        alert(`Invoice created successfully! You will receive an email with payment details. Due date: ${new Date(result.dueDate).toLocaleDateString()}`);
+        
+        // Refresh the proposals to update the UI
+        fetchSyncProposals();
+      }
     } catch (error) {
       console.error('Error handling payment pending proposal:', error);
+      alert('Failed to process payment. Please try again.');
     }
   };
 
