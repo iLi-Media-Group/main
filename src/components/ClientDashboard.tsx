@@ -718,7 +718,7 @@ export function ClientDashboard() {
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${supabase.auth.session()?.access_token}`,
+            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -735,10 +735,13 @@ export function ClientDashboard() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to create invoice');
+          const errorData = await response.json();
+          console.error('Invoice creation failed:', errorData);
+          throw new Error(errorData.error || 'Failed to create invoice');
         }
 
         const result = await response.json();
+        console.log('Invoice creation result:', result);
         
         // Show success message or redirect to invoice
         alert(`Invoice created successfully! You will receive an email with payment details. Due date: ${new Date(result.dueDate).toLocaleDateString()}`);
