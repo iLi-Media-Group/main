@@ -867,9 +867,9 @@ export function ProducerDashboard() {
                             key={proposal.id}
                             className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 relative"
                           >
-                            {/* Payment Pending Badge */}
+                            {/* Payment Pending Badge - moved to bottom */}
                             {isPaymentPending && (
-                              <div className="absolute top-2 right-2">
+                              <div className="absolute bottom-2 right-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                                   Payment Pending
                                 </span>
