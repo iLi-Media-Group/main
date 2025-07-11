@@ -42,7 +42,6 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showAcceptDecline, setShowAcceptDecline] = useState(false);
   const [pendingNegotiation, setPendingNegotiation] = useState<NegotiationMessage | null>(null);
   const [detectedPaymentTerms, setDetectedPaymentTerms] = useState<string | null>(null);
 
@@ -162,7 +161,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       console.log('User email:', user?.email);
       console.log('User role - isClient:', isClient, 'isProducer:', isProducer);
       console.log('Client ID:', proposal.client_id, 'Producer ID:', proposal.proposal_producer_id, 'User ID:', user?.id);
-      console.log('Show accept/decline:', showAcceptDecline);
+      console.log('Show accept/decline:', hasPendingNegotiation);
       console.log('Proposal status:', proposal.negotiation_status);
       console.log('Messages count:', messagesData?.length);
       console.log('Is last message from other user:', lastMessage && user && lastMessage.sender.email !== user.email);
@@ -172,7 +171,6 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       console.log('=== NEGOTIATION DEBUG END ===');
 
       if (hasPendingNegotiation) {
-        setShowAcceptDecline(true);
         setPendingNegotiation(lastMessage);
       } else {
         // More aggressive fallback: if there's any message from the other party and we haven't responded yet
@@ -184,10 +182,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         
         if (hasUnrespondedMessage) {
           console.log('Fallback: Showing accept/decline for unresponded message');
-          setShowAcceptDecline(true);
           setPendingNegotiation(lastMessage);
         } else {
-          setShowAcceptDecline(false);
           setPendingNegotiation(null);
         }
       }
@@ -275,7 +271,6 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       if (messageError) throw messageError;
 
-      setShowAcceptDecline(false);
       setPendingNegotiation(null);
       onNegotiationSent();
     } catch (err) {
@@ -324,7 +319,6 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       if (messageError) throw messageError;
 
-      setShowAcceptDecline(false);
       setPendingNegotiation(null);
       onNegotiationSent();
     } catch (err) {
@@ -395,6 +389,75 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       setLoading(false);
     }
   };
+
+  // Accept/Decline handlers
+  const handleAcceptCounter = async () => {
+    if (!user || !proposal) return;
+    setLoading(true);
+    setError('');
+    try {
+      // Call backend to record acceptance
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          negotiationId: messages[messages.length - 1]?.id,
+          action: 'accept',
+          userId: user.id
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to accept counter');
+      }
+      onNegotiationSent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to accept counter');
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleDeclineCounter = async () => {
+    if (!user || !proposal) return;
+    setLoading(true);
+    setError('');
+    try {
+      // Call backend to record declination
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/respond-to-counter`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposalId: proposal.id,
+          negotiationId: messages[messages.length - 1]?.id,
+          action: 'decline',
+          userId: user.id
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to decline counter');
+      }
+      onNegotiationSent();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to decline counter');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Determine if the current user should see accept/decline
+  const isClient = user && proposal?.client_id === user.id;
+  const isProducer = user && proposal?.track?.producer?.id === user.id;
+  const needsClientAcceptance = proposal?.negotiation_status === 'client_acceptance_required' && isClient;
+  const needsProducerAcceptance = proposal?.negotiation_status === 'producer_acceptance_required' && isProducer;
+  const showAcceptDecline = needsClientAcceptance || needsProducerAcceptance;
 
   if (!isOpen) return null;
 
@@ -473,22 +536,21 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 Once both parties agree, payment will be due according to the payment terms.
               </p>
             </div>
-            <div className="flex space-x-2 mt-4">
+            {/* Accept/Decline Buttons */}
+            <div className="flex space-x-4 mt-4">
               <button
-                onClick={handleAcceptNegotiation}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                onClick={handleAcceptCounter}
                 disabled={loading}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
               >
-                <Check className="w-4 h-4 mr-2" />
                 Accept Terms
               </button>
               <button
-                onClick={handleDeclineNegotiation}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                onClick={handleDeclineCounter}
                 disabled={loading}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
               >
-                <XIcon className="w-4 h-4 mr-2" />
-                Decline Terms
+                Decline
               </button>
             </div>
           </div>

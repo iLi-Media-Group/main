@@ -28,6 +28,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Fetch proposal to determine sender role
+    const { data: proposal, error: proposalError } = await supabaseClient
+      .from('sync_proposals')
+      .select('client_id, track:tracks(track_producer_id)')
+      .eq('id', proposalId)
+      .single();
+    if (proposalError || !proposal) throw new Error('Could not fetch proposal for negotiation.');
+
+    const producerId = proposal.track?.track_producer_id;
+    const clientId = proposal.client_id;
+    let statusToSet = 'negotiating';
+    const hasCounterOffer = counterOffer || counterTerms || counterPaymentTerms;
+    if (hasCounterOffer) {
+      if (senderId === clientId) {
+        statusToSet = 'producer_acceptance_required';
+      } else if (senderId === producerId) {
+        statusToSet = 'client_acceptance_required';
+      }
+    }
+
     // Create negotiation record
     const { error: negotiationError } = await supabaseClient
       .from('proposal_negotiations')
@@ -39,29 +59,18 @@ serve(async (req) => {
         counter_terms: counterTerms,
         counter_payment_terms: counterPaymentTerms
       });
-
     if (negotiationError) throw negotiationError;
 
-    // Determine if this is a counter offer that requires acceptance
-    const hasCounterOffer = counterOffer || counterTerms || counterPaymentTerms;
-    
     // Update proposal status and mark as unread for the recipient
     const updateData: any = {
       last_message_sender_id: senderId,
-      last_message_at: new Date().toISOString()
+      last_message_at: new Date().toISOString(),
+      negotiation_status: statusToSet
     };
-
-    if (hasCounterOffer) {
-      updateData.negotiation_status = 'client_acceptance_required';
-    } else {
-      updateData.negotiation_status = 'negotiating';
-    }
-
     const { error: statusError } = await supabaseClient
       .from('sync_proposals')
       .update(updateData)
       .eq('id', proposalId);
-
     if (statusError) throw statusError;
 
     // Send email notification
@@ -77,7 +86,6 @@ serve(async (req) => {
         <p>Please log in to your dashboard to review and respond.</p>
       `
     });
-
     if (emailError) throw emailError;
 
     return new Response(
