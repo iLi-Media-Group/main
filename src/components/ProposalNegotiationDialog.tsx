@@ -91,10 +91,15 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
       if (messagesError) throw messagesError;
 
-      setMessages(messagesData || []);
+      // Normalize sender field in case it's an array
+      const normalizedMessages = (messagesData || []).map((msg: any) => ({
+        ...msg,
+        sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
+      }));
+      setMessages(normalizedMessages);
 
       // Check if there's a pending negotiation that needs acceptance/decline
-      const lastMessage = messagesData?.[messagesData.length - 1];
+      const lastMessage = normalizedMessages[normalizedMessages.length - 1];
       
       // Parse message for payment terms if counter_payment_terms is null
       let detectedPaymentTerms = lastMessage?.counter_payment_terms;
@@ -125,7 +130,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       
       // Only show accept/decline for clients when there's a counter offer from producer
       const isClient = user && proposal.client_id === user.id;
-      const isProducer = user && proposal.producer_id === user.id;
+      const isProducer = user && proposal.proposal_producer_id === user.id;
       const hasPendingNegotiation = lastMessage && 
           user && lastMessage.sender.email !== user.email && 
           hasCounterOffer &&
@@ -156,7 +161,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       console.log('Sender email:', lastMessage?.sender?.email);
       console.log('User email:', user?.email);
       console.log('User role - isClient:', isClient, 'isProducer:', isProducer);
-      console.log('Client ID:', proposal.client_id, 'Producer ID:', proposal.producer_id, 'User ID:', user?.id);
+      console.log('Client ID:', proposal.client_id, 'Producer ID:', proposal.proposal_producer_id, 'User ID:', user?.id);
       console.log('Show accept/decline:', showAcceptDecline);
       console.log('Proposal status:', proposal.negotiation_status);
       console.log('Messages count:', messagesData?.length);
