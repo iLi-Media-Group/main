@@ -73,20 +73,7 @@ serve(async (req) => {
       .eq('id', proposalId);
     if (statusError) throw statusError;
 
-    // Send email notification
-    const { error: emailError } = await supabaseClient.auth.admin.sendRawEmail({
-      email: recipientEmail,
-      subject: hasCounterOffer ? 'New Counter-Offer Received' : 'New Negotiation Message',
-      template: `
-        <p>You have received a ${hasCounterOffer ? 'new counter-offer' : 'new message'} for your sync proposal.</p>
-        <p>Message: ${message}</p>
-        ${counterOffer ? `<p>Counter Offer: $${counterOffer}</p>` : ''}
-        ${counterTerms ? `<p>Proposed Terms: ${counterTerms}</p>` : ''}
-        ${counterPaymentTerms ? `<p>Counter Payment Terms: ${counterPaymentTerms}</p>` : ''}
-        <p>Please log in to your dashboard to review and respond.</p>
-      `
-    });
-    if (emailError) throw emailError;
+    // Remove email notification code
 
     return new Response(
       JSON.stringify({ message: 'Negotiation processed successfully' }),
