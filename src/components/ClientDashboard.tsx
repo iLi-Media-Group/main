@@ -752,8 +752,7 @@ export function ClientDashboard() {
   // Payment pending proposals - accepted by both parties but payment not complete
   const paymentPendingProposals = syncProposals.filter(p => 
     (p.client_status === 'accepted' && p.producer_status === 'accepted') &&
-    (p.payment_status === 'pending' || p.payment_status === null || p.payment_status === undefined) &&
-    (p.status === 'accepted' || p.negotiation_status === 'accepted')
+    (p.payment_status === 'pending' || p.payment_status === null || p.payment_status === undefined)
   );
   
   // Fully accepted and paid proposals
