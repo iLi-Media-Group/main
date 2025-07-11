@@ -1149,16 +1149,18 @@ export function ClientDashboard() {
                           const daysUntilDue = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
                           
                           return (
-                            <div className="mt-2 space-y-1">
-                              <p className="text-xs text-gray-400">
+                            <div className="mt-3 space-y-2">
+                              <p className="text-sm text-gray-400">
                                 Payment Terms: <span className="text-blue-400 font-medium">{getPaymentTermsDisplay(paymentTerms)}</span>
                               </p>
-                              <p className={`text-xs font-medium ${isOverdue ? 'text-red-400' : daysUntilDue <= 7 ? 'text-orange-400' : 'text-green-400'}`}>
-                                {isOverdue ? 'Overdue' : daysUntilDue === 0 ? 'Due Today' : daysUntilDue === 1 ? 'Due Tomorrow' : `Due in ${daysUntilDue} days`}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                Due Date: {dueDate.toLocaleDateString()}
-                              </p>
+                              <div className="bg-white/10 rounded-lg p-3 border border-yellow-500/30">
+                                <p className={`text-lg font-bold ${isOverdue ? 'text-red-400' : daysUntilDue <= 7 ? 'text-orange-400' : 'text-green-400'}`}>
+                                  {isOverdue ? '⚠️ OVERDUE' : daysUntilDue === 0 ? '🕐 DUE TODAY' : daysUntilDue === 1 ? '🕐 DUE TOMORROW' : `📅 DUE IN ${daysUntilDue} DAYS`}
+                                </p>
+                                <p className="text-base font-medium text-white mt-1">
+                                  Due Date: {dueDate.toLocaleDateString()}
+                                </p>
+                              </div>
                             </div>
                           );
                         })()}
