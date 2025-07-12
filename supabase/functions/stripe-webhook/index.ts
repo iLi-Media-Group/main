@@ -286,6 +286,25 @@ Deno.serve(async (req) => {
                 console.error('Error updating proposal payment status:', updateError);
                 return new Response('Error updating proposal payment status', { status: 500, headers: corsHeaders });
               }
+              
+              // Generate license agreement for the sync proposal
+              try {
+                await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-sync-license`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    proposal_id: metadata.proposal_id
+                  })
+                });
+                console.log('License agreement generated for sync proposal:', metadata.proposal_id);
+              } catch (licenseError) {
+                console.error('Error generating license agreement:', licenseError);
+                // Don't fail the webhook if license generation fails
+              }
+              
               // Notify proposal update
               try {
                 await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-proposal-update`, {
@@ -298,27 +317,13 @@ Deno.serve(async (req) => {
                     proposalId: metadata.proposal_id,
                     action: 'payment_complete',
                     trackTitle: proposalData.track.title,
-                    producerEmail: (await supabase.from('profiles').select('email').eq('id', proposalData.track.track_producer_id).single()).data.email,
-                    clientEmail: (await supabase.from('profiles').select('email').eq('id', proposalData.client_id).single()).data.email
+                    producerEmail: proposalData.track.producer?.email,
+                    clientEmail: proposalData.client?.email
                   })
                 });
               } catch (notifyError) {
                 console.error('Error sending payment notification:', notifyError);
               }
-              // Generate license PDF for the sync proposal
-              try {
-                await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-sync-license`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ proposal_id: metadata.proposal_id })
-                });
-              } catch (licenseError) {
-                console.error('Error generating license PDF:', licenseError);
-              }
-              return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
             // --- Track Purchase ---
             const trackId = metadata?.track_id;

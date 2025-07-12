@@ -33,20 +33,24 @@ serve(async (req) => {
       .select(`
         *,
         track:tracks (
+          id,
           title,
           artist,
           genre,
           bpm,
           key,
-          duration
+          duration,
+          track_producer_id
         ),
-        client:clients (
+        client:profiles!sync_proposals_client_id_fkey (
+          id,
           first_name,
           last_name,
           email,
           company_name
         ),
-        producer:producers (
+        producer:profiles!tracks_track_producer_id_fkey (
+          id,
           first_name,
           last_name,
           email,
@@ -71,54 +75,76 @@ serve(async (req) => {
       );
     }
 
-    // Calculate expiration date based on duration
-    const calculateExpirationDate = (paymentDate: string, duration: string): string => {
-      const payment = new Date(paymentDate);
-      
-      switch (duration.toLowerCase()) {
-        case 'perpetual':
-          return 'Perpetual';
-        case '1 year':
-          payment.setFullYear(payment.getFullYear() + 1);
-          return payment.toISOString();
-        case '2 years':
-          payment.setFullYear(payment.getFullYear() + 2);
-          return payment.toISOString();
-        case '3 years':
-          payment.setFullYear(payment.getFullYear() + 3);
-          return payment.toISOString();
-        case '5 years':
-          payment.setFullYear(payment.getFullYear() + 5);
-          return payment.toISOString();
-        default:
-          // Default to 1 year if duration is not specified
-          payment.setFullYear(payment.getFullYear() + 1);
-          return payment.toISOString();
-      }
-    };
+    // Check if license already exists
+    const { data: existingLicense, error: checkError } = await supabaseClient
+      .from('sales')
+      .select('id')
+      .eq('track_id', proposal.track_id)
+      .eq('buyer_id', proposal.client_id)
+      .eq('license_type', 'Sync Proposal')
+      .eq('transaction_id', proposal_id)
+      .maybeSingle();
 
-    // Prepare license data
-    const licenseData = {
+    if (checkError) {
+      console.error('Error checking existing license:', checkError);
+    } else if (existingLicense) {
+      return new Response(
+        JSON.stringify({ error: 'License already exists for this proposal' }),
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
+    // Calculate license amount (use negotiated amount if available)
+    const licenseAmount = proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0;
+
+    // Create license record in sales table
+    const { data: licenseRecord, error: licenseError } = await supabaseClient
+      .from('sales')
+      .insert({
+        track_id: proposal.track_id,
+        sale_producer_id: proposal.track.track_producer_id,
+        buyer_id: proposal.client_id,
+        license_type: 'Sync Proposal',
+        amount: licenseAmount,
+        payment_method: 'stripe',
+        transaction_id: proposal_id,
+        created_at: proposal.payment_date || proposal.client_accepted_at || new Date().toISOString(),
+        licensee_info: {
+          name: `${proposal.client.first_name || ''} ${proposal.client.last_name || ''}`.trim(),
+          email: proposal.client.email,
+          company: proposal.client.company_name
+        }
+      })
+      .select('id')
+      .single();
+
+    if (licenseError) {
+      console.error('Error creating license record:', licenseError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to create license record' }),
+        { status: 500, headers: corsHeaders }
+      );
+    }
+
+    // Generate PDF using a simple HTML template
+    const pdfHtml = generateLicenseHTML({
       trackTitle: proposal.track?.title || 'Unknown Track',
       producerName: `${proposal.producer?.first_name || ''} ${proposal.producer?.last_name || ''}`.trim(),
       producerEmail: proposal.producer?.email || '',
       clientName: `${proposal.client?.first_name || ''} ${proposal.client?.last_name || ''}`.trim(),
       clientEmail: proposal.client?.email || '',
       clientCompany: proposal.client?.company_name || undefined,
-      projectDescription: proposal.project_description || proposal.project_title || 'Sync project',
+      projectDescription: proposal.project_description || proposal.project_type || 'Sync project',
       duration: proposal.duration || '1 year',
       isExclusive: proposal.is_exclusive || false,
-      syncFee: proposal.sync_fee || proposal.final_amount || 0,
+      syncFee: licenseAmount,
       paymentDate: proposal.payment_date || proposal.client_accepted_at || new Date().toISOString(),
       expirationDate: calculateExpirationDate(
         proposal.payment_date || proposal.client_accepted_at || new Date().toISOString(),
         proposal.duration || '1 year'
       ),
       paymentTerms: proposal.payment_terms || proposal.final_payment_terms || 'immediate'
-    };
-
-    // Generate PDF using a simple HTML template (since we can't use React PDF in edge functions)
-    const pdfHtml = generateLicenseHTML(licenseData);
+    });
 
     // Convert HTML to PDF (simplified approach)
     const pdfContent = new TextEncoder().encode(pdfHtml);
@@ -146,13 +172,13 @@ serve(async (req) => {
     const { error: dbError } = await supabaseClient
       .from('license_agreements')
       .insert({
-        license_id: proposal_id,
+        license_id: licenseRecord.id,
         type: 'sync_proposal',
         pdf_url: publicUrl,
         licensee_info: {
-          name: licenseData.clientName,
-          email: licenseData.clientEmail,
-          company: licenseData.clientCompany
+          name: `${proposal.client?.first_name || ''} ${proposal.client?.last_name || ''}`.trim(),
+          email: proposal.client?.email || '',
+          company: proposal.client?.company_name
         },
         sent_at: new Date().toISOString()
       });
@@ -174,6 +200,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
+        licenseId: licenseRecord.id,
         licenseUrl: publicUrl,
         message: 'Sync proposal license generated successfully'
       }),
@@ -189,273 +216,118 @@ serve(async (req) => {
   }
 });
 
-function generateLicenseHTML(license: any): string {
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
+function calculateExpirationDate(paymentDate: string, duration: string): string {
+  const date = new Date(paymentDate);
+  
+  switch (duration.toLowerCase()) {
+    case '1 year':
+    case '1yr':
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    case '2 years':
+    case '2yr':
+      date.setFullYear(date.getFullYear() + 2);
+      break;
+    case 'perpetual':
+    case 'forever':
+      date.setFullYear(date.getFullYear() + 100); // Set to 100 years for "perpetual"
+      break;
+    default:
+      // Default to 1 year
+      date.setFullYear(date.getFullYear() + 1);
+  }
+  
+  return date.toISOString();
+}
 
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const calculateDuration = (duration: string): string => {
-    switch (duration.toLowerCase()) {
-      case 'perpetual':
-        return 'Perpetual (No Expiration)';
-      case '1 year':
-        return '1 Year';
-      case '2 years':
-        return '2 Years';
-      case '3 years':
-        return '3 Years';
-      case '5 years':
-        return '5 Years';
-      default:
-        return duration;
-    }
-  };
-
-  const getRightsText = (isExclusive: boolean): string => {
-    return isExclusive 
-      ? 'Exclusive rights granted for the specified duration'
-      : 'Non-exclusive rights granted for the specified duration';
-  };
-
+function generateLicenseHTML(licenseData: any): string {
+  const expirationDate = new Date(licenseData.expirationDate).toLocaleDateString();
+  const paymentDate = new Date(licenseData.paymentDate).toLocaleDateString();
+  
   return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Sync License - ${license.trackTitle}</title>
-      <style>
-        body { 
-          font-family: Arial, sans-serif; 
-          margin: 40px; 
-          color: #333; 
-          line-height: 1.6;
-        }
-        .header { 
-          text-align: center; 
-          margin-bottom: 30px; 
-          border-bottom: 2px solid #333;
-          padding-bottom: 20px;
-          position: relative;
-        }
-        .logo {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 120px;
-          height: auto;
-        }
-        .header-content {
-          margin-left: 140px;
-        }
-        .title { 
-          font-size: 24px; 
-          font-weight: bold; 
-          margin-bottom: 8px; 
-          color: #1f2937; 
-        }
-        .subtitle { 
-          font-size: 16px; 
-          color: #6b7280; 
-          margin-bottom: 20px; 
-        }
-        .section { 
-          margin-bottom: 20px; 
-        }
-        .section-title { 
-          font-size: 14px; 
-          font-weight: bold; 
-          margin-bottom: 10px; 
-          color: #1f2937; 
-          border-bottom: 1px solid #e5e7eb; 
-          padding-bottom: 5px; 
-        }
-        .info-grid { 
-          display: grid; 
-          grid-template-columns: 1fr 2fr; 
-          gap: 10px; 
-          margin-bottom: 8px; 
-        }
-        .info-label { 
-          font-weight: bold; 
-          color: #4b5563; 
-        }
-        .info-value { 
-          color: #374151; 
-        }
-        .party-info { 
-          margin-bottom: 15px; 
-          padding: 12px; 
-          background-color: #f9fafb; 
-          border-radius: 4px; 
-        }
-        .highlight { 
-          background-color: #fef3c7; 
-          padding: 8px; 
-          border-radius: 4px; 
-          margin: 20px 0; 
-        }
-        .terms-list { 
-          margin-left: 20px; 
-          margin-bottom: 8px; 
-        }
-        .terms-item { 
-          margin-bottom: 5px; 
-          color: #374151; 
-        }
-        .signature { 
-          margin-top: 40px; 
-          border-top: 1px solid #e5e7eb; 
-          padding-top: 20px; 
-        }
-        .footer { 
-          margin-top: 30px; 
-          text-align: center; 
-          font-size: 10px; 
-          color: #6b7280; 
-        }
-      </style>
-    </head>
-    <body>
-      <div class="header">
-        <img src="https://mybeatfi.io/logo.png" alt="MyBeatFi Logo" class="logo">
-        <div class="header-content">
-          <div class="title">Music Synchronization License Agreement</div>
-          <div class="subtitle">Sync Proposal License</div>
-        </div>
-      </div>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sync License Agreement</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; margin-bottom: 30px; }
+        .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .section { margin: 20px 0; }
+        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
+        .party-info { margin: 20px 0; padding: 15px; background: #f5f5f5; }
+        .terms { margin: 20px 0; }
+        .signature { margin-top: 40px; }
+        .footer { margin-top: 40px; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="title">Music Synchronization License Agreement</div>
+        <div style="font-size: 18px; color: #666;">"${licenseData.trackTitle}"</div>
+    </div>
 
-      <div class="section">
-        <div class="section-title">LICENSE SUMMARY</div>
-        <div class="info-grid">
-          <div class="info-label">Track Title:</div>
-          <div class="info-value">${license.trackTitle}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">Producer:</div>
-          <div class="info-value">${license.producerName}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">License Type:</div>
-          <div class="info-value">${license.isExclusive ? 'Exclusive' : 'Non-Exclusive'} Sync License</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">Duration:</div>
-          <div class="info-value">${calculateDuration(license.duration)}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">License Fee:</div>
-          <div class="info-value">${formatCurrency(license.syncFee)}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">Payment Date:</div>
-          <div class="info-value">${formatDate(license.paymentDate)}</div>
-        </div>
-        ${license.expirationDate !== 'Perpetual' ? `
-        <div class="info-grid">
-          <div class="info-label">Expiration Date:</div>
-          <div class="info-value">${formatDate(license.expirationDate)}</div>
-        </div>
-        ` : ''}
-      </div>
-
-      <div class="section">
-        <div class="section-title">PROJECT DETAILS</div>
-        <div class="info-grid">
-          <div class="info-label">Project Description:</div>
-          <div class="info-value">${license.projectDescription}</div>
-        </div>
-        <div class="info-grid">
-          <div class="info-label">Usage Rights:</div>
-          <div class="info-value">${getRightsText(license.isExclusive)}</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">PARTIES</div>
+    <div class="section">
+        <p>This Music Synchronization License Agreement ("Agreement") is entered into on ${paymentDate} by and between:</p>
+        
         <div class="party-info">
-          <div><strong>Licensor (Producer):</strong> ${license.producerName}</div>
-          <div>Email: ${license.producerEmail}</div>
+            <strong>Licensor:</strong> MyBeatFi Sync<br>
+            <strong>Licensee:</strong> ${licenseData.clientName}
+            ${licenseData.clientCompany ? ` (${licenseData.clientCompany})` : ''}
         </div>
-        <div class="party-info">
-          <div><strong>Licensee (Client):</strong> ${license.clientName}</div>
-          ${license.clientCompany ? `<div>Company: ${license.clientCompany}</div>` : ''}
-          <div>Email: ${license.clientEmail}</div>
+    </div>
+
+    <div class="section">
+        <div class="section-title">License Summary</div>
+        <p><strong>Track:</strong> ${licenseData.trackTitle}</p>
+        <p><strong>License Type:</strong> Sync Proposal</p>
+        <p><strong>Duration:</strong> ${licenseData.duration}</p>
+        <p><strong>Exclusive:</strong> ${licenseData.isExclusive ? 'Yes' : 'No'}</p>
+        <p><strong>Project Description:</strong> ${licenseData.projectDescription}</p>
+        <p><strong>Purchase Date:</strong> ${paymentDate}</p>
+        <p><strong>Expiration Date:</strong> ${expirationDate}</p>
+        <p><strong>License Fee:</strong> $${licenseData.syncFee.toFixed(2)} USD</p>
+        <p><strong>Payment Terms:</strong> ${licenseData.paymentTerms.toUpperCase()}</p>
+    </div>
+
+    <div class="section">
+        <div class="section-title">License Terms</div>
+        <div class="terms">
+            <p><strong>1. Grant of License:</strong> Licensor grants Licensee a non-exclusive (unless specified as exclusive above) license to synchronize the musical composition "${licenseData.trackTitle}" in audiovisual works.</p>
+            
+            <p><strong>2. Scope of Use:</strong> This license covers synchronization in ${licenseData.projectDescription} for the duration specified above.</p>
+            
+            <p><strong>3. Territory:</strong> Worldwide</p>
+            
+            <p><strong>4. Term:</strong> ${licenseData.duration} from the date of payment</p>
+            
+            <p><strong>5. Payment:</strong> Licensee has paid the full license fee of $${licenseData.syncFee.toFixed(2)} USD under ${licenseData.paymentTerms.toUpperCase()} terms.</p>
+            
+            <p><strong>6. Restrictions:</strong> Licensee may not:</p>
+            <ul>
+                <li>Use the composition in a manner that exceeds the scope of this license</li>
+                <li>Transfer or sublicense this agreement without written consent</li>
+                <li>Use the composition after the expiration date</li>
+            </ul>
+            
+            <p><strong>7. Representations:</strong> Licensor represents that it has the right to grant this license.</p>
+            
+            <p><strong>8. Indemnification:</strong> Licensee agrees to indemnify Licensor against any claims arising from Licensee's use of the composition.</p>
         </div>
-      </div>
+    </div>
 
-      <div class="section">
-        <div class="section-title">GRANT OF LICENSE</div>
-        <p>
-          Licensor hereby grants Licensee a ${license.isExclusive ? 'exclusive' : 'non-exclusive'}, 
-          non-transferable license to synchronize and use the musical composition and sound recording 
-          titled "${license.trackTitle}" ("Music") for the project described above.
-        </p>
-        <p>
-          This license is worldwide and valid for ${calculateDuration(license.duration).toLowerCase()}, 
-          subject to the terms and conditions stated herein.
-        </p>
-      </div>
+    <div class="signature">
+        <p><strong>Licensor:</strong> MyBeatFi Sync</p>
+        <p><strong>Licensee:</strong> ${licenseData.clientName}</p>
+        <p><strong>Date:</strong> ${paymentDate}</p>
+    </div>
 
-      <div class="section">
-        <div class="section-title">PERMITTED USES</div>
-        <div class="terms-list">
-          <div class="terms-item">• Synchronization with visual content for the specified project</div>
-          <div class="terms-item">• Public performance in connection with the licensed project</div>
-          <div class="terms-item">• Reproduction and distribution as part of the licensed project</div>
-          <div class="terms-item">• Digital streaming and broadcasting of the licensed project</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">RESTRICTIONS</div>
-        <div class="terms-list">
-          <div class="terms-item">• Resell, sublicense, or distribute the Music as a standalone product</div>
-          <div class="terms-item">• Use the Music in projects not specified in this agreement</div>
-          <div class="terms-item">• Use the Music in a manner that is defamatory, obscene, or illegal</div>
-          <div class="terms-item">• Register the Music with any content identification system</div>
-        </div>
-      </div>
-
-      <div class="section">
-        <div class="section-title">COMPENSATION</div>
-        <p>
-          Licensee has paid ${formatCurrency(license.syncFee)} for this license, 
-          which covers the specified usage rights for the duration of this agreement.
-        </p>
-        <p>Payment Terms: ${license.paymentTerms}</p>
-      </div>
-
-      <div class="highlight">
-        <p>
-          <strong>Important:</strong> This license is valid only for the 
-          project described above. Any use outside the scope of this agreement requires a separate license.
-        </p>
-      </div>
-
-      <div class="signature">
-        <p>Agreement accepted electronically by ${license.clientName} on ${formatDate(license.paymentDate)}</p>
-        <p>Licensee Email: ${license.clientEmail}</p>
-        <p>Agreement executed by ${license.producerName} on ${formatDate(license.paymentDate)}</p>
-        <p>Licensor Email: ${license.producerEmail}</p>
-      </div>
-
-      <div class="footer">
-        <p>This agreement was generated automatically by MyBeatFi.io</p>
-        <p>Generated on: ${formatDate(new Date().toISOString())}</p>
-        <p>For questions or support, contact: support@mybeatfi.io</p>
-      </div>
-    </body>
-    </html>
+    <div class="footer">
+        <p>This agreement constitutes the entire understanding between the parties regarding the synchronization license for "${licenseData.trackTitle}".</p>
+        <p>Generated by MyBeatFi Sync on ${new Date().toLocaleDateString()}</p>
+    </div>
+</body>
+</html>
   `;
 } 

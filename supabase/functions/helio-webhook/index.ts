@@ -130,6 +130,24 @@ serve(async (req) => {
           throw updateError;
         }
         
+        // Generate license agreement for the sync proposal
+        try {
+          await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-sync-license`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              proposal_id: proposal_id
+            })
+          });
+          console.log('License agreement generated for sync proposal:', proposal_id);
+        } catch (licenseError) {
+          console.error('Error generating license agreement:', licenseError);
+          // Don't fail the webhook if license generation fails
+        }
+        
         // Get proposal details
         const { data: proposalData, error: proposalError } = await supabaseClient
           .from('sync_proposals')
@@ -138,7 +156,7 @@ serve(async (req) => {
             track_id, 
             client_id,
             track:tracks!inner (
-              proposal_producer_id,
+              track_producer_id,
               title
             )
           `)
@@ -153,7 +171,7 @@ serve(async (req) => {
         const { data: producerData, error: producerError } = await supabaseClient
           .from('profiles')
           .select('email')
-          .eq('id', proposalData.track.proposal_producer_id)
+          .eq('id', proposalData.track.track_producer_id)
           .single();
           
         if (producerError) {

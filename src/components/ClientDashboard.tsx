@@ -1537,12 +1537,12 @@ export function ClientDashboard() {
                                 </button>
                                 {proposal.license_url && (
                                   <button
-                                    onClick={() => window.open(proposal.license_url, '_blank')}
+                                    onClick={() => handleViewLicenseAgreement(proposal.id)}
                                     className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download License PDF"
+                                    title="View License Agreement"
                                   >
                                     <FileText className="w-4 h-4 mr-1" />
-                                    License
+                                    View Agreement
                                   </button>
                                 )}
                               </div>
