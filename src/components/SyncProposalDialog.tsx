@@ -94,21 +94,6 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
 
       if (proposalError) throw proposalError;
 
-      // Add initial negotiation message
-      const { error: negotiationError } = await supabase
-        .from('proposal_negotiations')
-        .insert({
-          proposal_id: proposal.id,
-          sender_id: user.id,
-          message: projectType,
-          counter_offer: parseFloat(syncFee),
-          counter_terms: `Duration: ${duration}, Exclusive: ${isExclusive}, Payment Terms: ${paymentTerms}`
-        });
-
-      if (negotiationError) {
-        console.error('Error creating negotiation message:', negotiationError);
-      }
-
       // Send notification through edge function
       const { data: { session } } = await supabase.auth.getSession();
       const accessToken = session?.access_token;
@@ -122,7 +107,6 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
           proposalId: proposal.id,
           senderId: user.id,
           message: projectType,
-          syncFee: parseFloat(syncFee),
           recipientEmail: track.artist // This should be the producer's email
         })
       });
