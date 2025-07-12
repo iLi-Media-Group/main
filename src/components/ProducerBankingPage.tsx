@@ -288,6 +288,9 @@ export function ProducerBankingPage() {
               <div>
                 <p className="text-gray-400">Pending Balance</p>
                 <p className="text-3xl font-bold text-white">${pendingBalance.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Current month only
+                </p>
               </div>
               <Clock className="w-12 h-12 text-yellow-500" />
             </div>
