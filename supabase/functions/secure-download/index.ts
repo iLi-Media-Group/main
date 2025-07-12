@@ -44,39 +44,28 @@ serve(async (req) => {
       )
     }
 
-    // Get the file content
+    // Get the file content as array buffer
     const fileBuffer = await response.arrayBuffer()
     
-    // Set appropriate content type based on file type
-    let contentType = 'application/octet-stream'
-    switch (fileType) {
-      case 'mp3':
-        contentType = 'audio/mpeg'
-        break
-      case 'zip':
-        contentType = 'application/zip'
-        break
-      case 'pdf':
-        contentType = 'application/pdf'
-        break
-    }
-
-    // Return the file directly with proper headers
-    // This completely hides the original URL from the client
-    return new Response(fileBuffer, {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'X-XSS-Protection': '1; mode=block'
+    // Convert to base64 for transmission
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
+    
+    // Return the file data as JSON
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: base64Data,
+        filename: filename,
+        fileType: fileType
+      }),
+      {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
       }
-    })
+    )
 
   } catch (error) {
     console.error('Secure download error:', error)

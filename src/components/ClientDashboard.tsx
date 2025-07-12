@@ -810,10 +810,17 @@ export function ClientDashboard() {
         return;
       }
 
-      // The Edge Function returns the file directly, so we need to handle it as a blob
-      if (data) {
-        // Convert the response to a blob and download
-        const blob = new Blob([data], { 
+      // The Edge Function returns the file data as base64, so we need to decode it
+      if (data && data.success && data.data) {
+        // Decode base64 data back to binary
+        const binaryString = atob(data.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Create blob from decoded data
+        const blob = new Blob([bytes], { 
           type: fileType === 'mp3' ? 'audio/mpeg' : 
                 fileType === 'zip' ? 'application/zip' : 
                 fileType === 'pdf' ? 'application/pdf' : 'application/octet-stream' 
@@ -830,7 +837,7 @@ export function ClientDashboard() {
         window.URL.revokeObjectURL(downloadUrl);
         console.log('Secure download completed for:', filename);
       } else {
-        console.error('No data received from secure download function');
+        console.error('No valid data received from secure download function');
         alert('Download failed. Please try again or contact support.');
       }
     } catch (error) {
