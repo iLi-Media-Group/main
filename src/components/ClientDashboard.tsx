@@ -784,7 +784,7 @@ export function ClientDashboard() {
 
   const handleDownload = async (url: string, filename: string, fileType: string) => {
     try {
-      console.log('Starting download for:', filename, 'from URL:', url);
+      console.log('Starting secure download for:', filename);
       
       // Check if URL is valid
       if (!url || url.trim() === '') {
@@ -793,17 +793,32 @@ export function ClientDashboard() {
         return;
       }
 
-      // Direct download with URL obfuscation
-      const response = await fetch(url, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'Accept': '*/*',
+      // Use Supabase Edge Function for secure download
+      const { data, error } = await supabase.functions.invoke('secure-download', {
+        body: {
+          url: url,
+          filename: filename,
+          fileType: fileType
         }
       });
-      
-      if (response.ok) {
-        const blob = await response.blob();
+
+      if (error) {
+        console.error('Secure download failed:', error);
+        
+        // Fallback: Show user that direct download is not available
+        alert('Secure download is not available. Please contact support for file access.');
+        return;
+      }
+
+      // The Edge Function returns the file directly, so we need to handle it as a blob
+      if (data) {
+        // Convert the response to a blob and download
+        const blob = new Blob([data], { 
+          type: fileType === 'mp3' ? 'audio/mpeg' : 
+                fileType === 'zip' ? 'application/zip' : 
+                fileType === 'pdf' ? 'application/pdf' : 'application/octet-stream' 
+        });
+        
         const downloadUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = downloadUrl;
@@ -813,37 +828,14 @@ export function ClientDashboard() {
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(downloadUrl);
-        console.log('Download completed successfully for:', filename);
+        console.log('Secure download completed for:', filename);
       } else {
-        console.error('Download failed - response not ok:', response.status, response.statusText);
-        
-        // Try alternative approach for CORS issues
-        try {
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = filename;
-          link.target = '_blank';
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          console.log('Download attempted via direct link for:', filename);
-        } catch (fallbackError) {
-          console.error('Fallback download also failed:', fallbackError);
-          alert('Download failed. The file may not be accessible or there may be a network issue.');
-        }
+        console.error('No data received from secure download function');
+        alert('Download failed. Please try again or contact support.');
       }
     } catch (error) {
       console.error('Download error:', error);
-      
-      // Try one more fallback approach
-      try {
-        window.open(url, '_blank');
-        console.log('Opened file in new tab as fallback for:', filename);
-      } catch (finalError) {
-        console.error('All download methods failed:', finalError);
-        alert('Download failed. Please check your internet connection and try again.');
-      }
+      alert('Download failed. Please contact support for assistance.');
     }
   };
 
