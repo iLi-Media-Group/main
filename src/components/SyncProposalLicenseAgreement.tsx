@@ -86,6 +86,19 @@ export function SyncProposalLicenseAgreement() {
           const amount = data.final_amount || data.negotiated_amount || data.sync_fee || 0;
           const paymentTerms = data.final_payment_terms || data.negotiated_payment_terms || data.payment_terms || 'immediate';
           const paymentDate = data.payment_date || data.client_accepted_at || data.created_at;
+          const duration = data.duration || '1 year';
+          
+          console.log('Payment date calculation:', {
+            payment_date: data.payment_date,
+            client_accepted_at: data.client_accepted_at,
+            created_at: data.created_at,
+            final_payment_date: paymentDate
+          });
+          
+          console.log('Duration calculation:', {
+            duration: data.duration,
+            final_duration: duration
+          });
           
           // Create a more detailed project description
           let detailedProjectDescription = data.project_type || 'Sync project';
@@ -103,12 +116,18 @@ export function SyncProposalLicenseAgreement() {
             clientEmail: data.client?.email || '',
             clientCompany: data.client?.company_name,
             projectDescription: detailedProjectDescription,
-            duration: data.duration || '1 year',
+            duration: duration,
             isExclusive: data.is_exclusive || false,
             syncFee: amount,
             paymentDate: paymentDate,
-            expirationDate: calculateExpirationDate(paymentDate, data.duration || '1 year'),
+            expirationDate: calculateExpirationDate(paymentDate, duration),
             paymentTerms: paymentTerms
+          });
+          
+          console.log('Expiration date calculation:', {
+            paymentDate: paymentDate,
+            duration: duration,
+            expirationDate: calculateExpirationDate(paymentDate, duration)
           });
         }
       } catch (err) {
@@ -125,23 +144,59 @@ export function SyncProposalLicenseAgreement() {
   const calculateExpirationDate = (paymentDate: string, duration: string): string => {
     const date = new Date(paymentDate);
     
-    switch (duration.toLowerCase()) {
+    // Handle different duration formats
+    const durationLower = duration.toLowerCase().trim();
+    
+    switch (durationLower) {
       case 'perpetual':
       case 'forever':
         date.setFullYear(date.getFullYear() + 100); // Set to 100 years for "perpetual"
         break;
+      case '1 year':
+      case '1yr':
+      case 'one year':
+        date.setFullYear(date.getFullYear() + 1);
+        break;
       case '2 years':
+      case '2yr':
+      case 'two years':
         date.setFullYear(date.getFullYear() + 2);
         break;
       case '3 years':
+      case '3yr':
+      case 'three years':
         date.setFullYear(date.getFullYear() + 3);
         break;
       case '5 years':
+      case '5yr':
+      case 'five years':
         date.setFullYear(date.getFullYear() + 5);
         break;
+      case '6 months':
+      case '6mo':
+      case 'half year':
+        date.setMonth(date.getMonth() + 6);
+        break;
+      case '1 month':
+      case '1mo':
+      case 'one month':
+        date.setMonth(date.getMonth() + 1);
+        break;
       default:
-        // Default to 1 year
-        date.setFullYear(date.getFullYear() + 1);
+        // Try to parse numeric values like "2 years", "1 year", etc.
+        const yearMatch = durationLower.match(/(\d+)\s*year/);
+        const monthMatch = durationLower.match(/(\d+)\s*month/);
+        
+        if (yearMatch) {
+          const years = parseInt(yearMatch[1]);
+          date.setFullYear(date.getFullYear() + years);
+        } else if (monthMatch) {
+          const months = parseInt(monthMatch[1]);
+          date.setMonth(date.getMonth() + months);
+        } else {
+          // Default to 1 year if we can't parse the duration
+          date.setFullYear(date.getFullYear() + 1);
+        }
     }
     
     return date.toISOString();
