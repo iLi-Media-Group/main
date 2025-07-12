@@ -84,40 +84,38 @@ export function ProducerAnalyticsModal({
 
       if (salesError) throw salesError;
 
-      // Fetch paid sync proposals
+      // Fetch paid sync proposals for this producer's tracks
       const { data: paidSyncProposals, error: syncProposalsError } = await supabase
         .from('sync_proposals')
         .select(`
+          id, 
           sync_fee,
-          status,
+          final_amount,
+          negotiated_amount,
           created_at,
           track:tracks!inner (
             id,
-            title,
-            track_producer_id
+            title
           )
         `)
-        .eq('tracks.track_producer_id', producerId)
+        .in('track_id', tracks?.map(t => t.id) || [])
         .eq('payment_status', 'paid')
-        .eq('status', 'accepted')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .eq('status', 'accepted');
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests
+      // Fetch completed custom sync requests where this producer is the preferred producer
       const { data: completedCustomSyncRequests, error: customSyncError } = await supabase
         .from('custom_sync_requests')
         .select(`
+          id, 
           sync_fee,
-          status,
-          created_at,
-          preferred_producer_id
+          final_amount,
+          negotiated_amount,
+          created_at
         `)
         .eq('preferred_producer_id', producerId)
-        .eq('status', 'completed')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+        .eq('status', 'completed');
 
       if (customSyncError) throw customSyncError;
 
@@ -148,11 +146,11 @@ export function ProducerAnalyticsModal({
       
       // Sync proposals
       const syncProposalsCount = paidSyncProposals?.length || 0;
-      const syncProposalsRevenue = paidSyncProposals?.reduce((sum, proposal) => sum + proposal.sync_fee, 0) || 0;
+      const syncProposalsRevenue = paidSyncProposals?.reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0) || 0;
       
       // Custom sync requests
       const customSyncCount = completedCustomSyncRequests?.length || 0;
-      const customSyncRevenue = completedCustomSyncRequests?.reduce((sum, request) => sum + request.sync_fee, 0) || 0;
+      const customSyncRevenue = completedCustomSyncRequests?.reduce((sum, request) => sum + (request.final_amount || request.negotiated_amount || request.sync_fee || 0), 0) || 0;
       
       // Total calculations
       const totalSales = trackSalesCount + syncProposalsCount + customSyncCount;
@@ -184,7 +182,7 @@ export function ProducerAnalyticsModal({
           monthlyData[month] = { sales: 0, revenue: 0 };
         }
         monthlyData[month].sales++;
-        monthlyData[month].revenue += proposal.sync_fee;
+        monthlyData[month].revenue += (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0);
       });
       
       // Add custom sync requests to monthly data
@@ -194,7 +192,7 @@ export function ProducerAnalyticsModal({
           monthlyData[month] = { sales: 0, revenue: 0 };
         }
         monthlyData[month].sales++;
-        monthlyData[month].revenue += request.sync_fee;
+        monthlyData[month].revenue += (request.final_amount || request.negotiated_amount || request.sync_fee || 0);
       });
 
       // Calculate top tracks including all revenue streams
@@ -202,28 +200,35 @@ export function ProducerAnalyticsModal({
       
       // Add track sales to track stats
       sales?.forEach(sale => {
-        if (!trackStats[sale.track_id]) {
-          trackStats[sale.track_id] = {
-            title: sale.track.title,
-            sales: 0,
-            revenue: 0
-          };
+        const trackTitle = sale.track?.[0]?.title;
+        if (trackTitle) {
+          if (!trackStats[sale.track_id]) {
+            trackStats[sale.track_id] = {
+              title: trackTitle,
+              sales: 0,
+              revenue: 0
+            };
+          }
+          trackStats[sale.track_id].sales++;
+          trackStats[sale.track_id].revenue += sale.amount;
         }
-        trackStats[sale.track_id].sales++;
-        trackStats[sale.track_id].revenue += sale.amount;
       });
       
       // Add sync proposals to track stats
       paidSyncProposals?.forEach(proposal => {
-        if (!trackStats[proposal.track.id]) {
-          trackStats[proposal.track.id] = {
-            title: proposal.track.title,
-            sales: 0,
-            revenue: 0
-          };
+        const trackId = proposal.track?.[0]?.id;
+        const trackTitle = proposal.track?.[0]?.title;
+        if (trackId && trackTitle) {
+          if (!trackStats[trackId]) {
+            trackStats[trackId] = {
+              title: trackTitle,
+              sales: 0,
+              revenue: 0
+            };
+          }
+          trackStats[trackId].sales++;
+          trackStats[trackId].revenue += (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0);
         }
-        trackStats[proposal.track.id].sales++;
-        trackStats[proposal.track.id].revenue += proposal.sync_fee;
       });
 
       setStats({

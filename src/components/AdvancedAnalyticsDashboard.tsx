@@ -267,8 +267,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
     const monthlyData = new Map();
     const allSales = [
       ...trackSales.map(sale => ({ ...sale, type: 'track_license', revenue: sale.amount })),
-      ...syncProposals.map(proposal => ({ ...proposal, type: 'sync_proposal', revenue: proposal.sync_fee })),
-      ...customSyncRequests.map(request => ({ ...request, type: 'custom_sync', revenue: request.sync_fee }))
+      ...syncProposals.map(proposal => ({ ...proposal, type: 'sync_proposal', revenue: proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee })),
+      ...customSyncRequests.map(request => ({ ...request, type: 'custom_sync', revenue: request.final_amount || request.negotiated_amount || request.sync_fee }))
     ];
 
     allSales.forEach(sale => {

@@ -112,6 +112,8 @@ export function RevenueBreakdownDialog({
         .select(`
           id,
           sync_fee,
+          final_amount,
+          negotiated_amount,
           status,
           created_at,
           track:tracks!inner (
@@ -138,6 +140,8 @@ export function RevenueBreakdownDialog({
         .select(`
           id,
           sync_fee,
+          final_amount,
+          negotiated_amount,
           status,
           created_at,
           preferred_producer_id
@@ -335,13 +339,13 @@ export function RevenueBreakdownDialog({
       // Process sync proposals
       const syncProposalsRevenue = {
         count: syncProposalsData?.length || 0,
-        amount: syncProposalsData?.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) || 0
+        amount: syncProposalsData?.reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0) || 0
       };
 
       // Process custom sync requests
       const customSyncRevenue = {
         count: customSyncData?.length || 0,
-        amount: customSyncData?.reduce((sum, request) => sum + (request.sync_fee || 0), 0) || 0
+        amount: customSyncData?.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
       };
 
       // Combine all revenue sources
@@ -453,9 +457,9 @@ export function RevenueBreakdownDialog({
       syncProposalsData?.forEach(proposal => {
         const date = new Date(proposal.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-        console.log(`Sync proposal: ${date.toISOString()} -> ${monthKey}, amount: ${proposal.sync_fee}`);
+        console.log(`Sync proposal: ${date.toISOString()} -> ${monthKey}, amount: ${proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee}`);
         if (months[monthKey] !== undefined) {
-          months[monthKey] += proposal.sync_fee || 0;
+          months[monthKey] += (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee) || 0;
         }
       });
       
@@ -463,9 +467,9 @@ export function RevenueBreakdownDialog({
       customSyncData?.forEach(req => {
         const date = new Date(req.created_at);
         const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
-        console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.sync_fee}`);
+        console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.final_amount || req.sync_fee}`);
         if (months[monthKey] !== undefined) {
-          months[monthKey] += req.sync_fee || 0;
+          months[monthKey] += (req.final_amount || req.sync_fee) || 0;
         }
       });
       

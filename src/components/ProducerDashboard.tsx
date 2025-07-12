@@ -241,7 +241,7 @@ export function ProducerDashboard() {
       // Fetch paid sync proposals for this producer's tracks
       const { data: paidSyncProposals, error: syncProposalsError } = await supabase
         .from('sync_proposals')
-        .select('id, sync_fee, payment_status')
+        .select('id, sync_fee, final_amount, negotiated_amount, payment_status')
         .in('track_id', trackIds)
         .eq('payment_status', 'paid')
         .eq('status', 'accepted');
@@ -251,7 +251,7 @@ export function ProducerDashboard() {
       // Fetch completed custom sync requests where this producer is the preferred producer
       const { data: completedCustomSyncRequests, error: customSyncError } = await supabase
         .from('custom_sync_requests')
-        .select('id, sync_fee')
+        .select('id, sync_fee, final_amount, negotiated_amount')
         .eq('preferred_producer_id', user.id)
         .eq('status', 'completed');
 
@@ -259,10 +259,10 @@ export function ProducerDashboard() {
 
       // Calculate comprehensive totals including all revenue streams
       const syncProposalsCount = paidSyncProposals?.length || 0;
-      const syncProposalsRevenue = paidSyncProposals?.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0) || 0;
+      const syncProposalsRevenue = paidSyncProposals?.reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0) || 0;
       
       const customSyncCount = completedCustomSyncRequests?.length || 0;
-      const customSyncRevenue = completedCustomSyncRequests?.reduce((sum, request) => sum + (request.sync_fee || 0), 0) || 0;
+      const customSyncRevenue = completedCustomSyncRequests?.reduce((sum, request) => sum + (request.final_amount || request.negotiated_amount || request.sync_fee || 0), 0) || 0;
 
       const totalSales = trackSalesCount + syncProposalsCount + customSyncCount;
       const totalRevenue = trackSalesRevenue + syncProposalsRevenue + customSyncRevenue;

@@ -150,8 +150,8 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
   const processReportData = (trackSales: any[], syncProposals: any[], customSyncRequests: any[]): ReportData => {
     // Calculate summary
     const trackLicenseRevenue = trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
-    const syncProposalRevenue = syncProposals.reduce((sum, proposal) => sum + (proposal.sync_fee || 0), 0);
-    const customSyncRevenue = customSyncRequests.reduce((sum, request) => sum + (request.sync_fee || 0), 0);
+    const syncProposalRevenue = syncProposals.reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0);
+    const customSyncRevenue = customSyncRequests.reduce((sum, request) => sum + (request.final_amount || request.negotiated_amount || request.sync_fee || 0), 0);
     
     const totalRevenue = trackLicenseRevenue + syncProposalRevenue + customSyncRevenue;
     const totalSales = trackSales.length + syncProposals.length + customSyncRequests.length;
