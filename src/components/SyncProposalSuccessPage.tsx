@@ -87,7 +87,7 @@ export function SyncProposalSuccessPage() {
             license_url,
             track:tracks!inner (
               title,
-              producer:profiles!inner (
+              producer:profiles!track_producer_id (
                 first_name,
                 last_name
               )
@@ -103,6 +103,11 @@ export function SyncProposalSuccessPage() {
           return;
         }
 
+        // Debug the data structure
+        console.log('Raw proposal data:', proposal);
+        console.log('Track data:', proposal.track);
+        console.log('Producer data:', proposal.track?.[0]?.producer);
+
         // Fix track data structure (Supabase returns arrays for joins)
         const proposalData = {
           ...proposal,
@@ -114,6 +119,8 @@ export function SyncProposalSuccessPage() {
             }
           }
         };
+
+        console.log('Processed proposal data:', proposalData);
 
         setProposalData(proposalData);
 

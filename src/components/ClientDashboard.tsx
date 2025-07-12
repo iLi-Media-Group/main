@@ -217,6 +217,22 @@ export function ClientDashboard() {
     }
   }, [user, membershipPlan]);
 
+  // Add a manual refresh function for testing
+  const handleManualRefresh = async () => {
+    if (user) {
+      setLoading(true);
+      try {
+        await refreshMembership();
+        await fetchDashboardData();
+        await fetchSyncProposals();
+      } catch (error) {
+        console.error('Error refreshing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const fetchDashboardData = async () => {
     if (!user) return;
     
@@ -853,6 +869,14 @@ export function ClientDashboard() {
             >
               Upgrade Membership
             </Link>
+            <button
+              onClick={handleManualRefresh}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
+            >
+              <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
           </div>
         </div>
 

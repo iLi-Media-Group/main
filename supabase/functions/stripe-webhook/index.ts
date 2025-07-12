@@ -324,6 +324,9 @@ Deno.serve(async (req) => {
               } catch (notifyError) {
                 console.error('Error sending payment notification:', notifyError);
               }
+              
+              // Return after processing sync proposal payment
+              return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
             // --- Track Purchase ---
             const trackId = metadata?.track_id;

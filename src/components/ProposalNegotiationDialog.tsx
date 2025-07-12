@@ -86,7 +86,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
           )
         `)
         .eq('proposal_id', proposal.id)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (messagesError) throw messagesError;
 
@@ -98,7 +98,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       setMessages(normalizedMessages);
 
       // Check if there's a pending negotiation that needs acceptance/decline
-      const lastMessage = normalizedMessages[normalizedMessages.length - 1];
+      const lastMessage = normalizedMessages[0]; // First message is now the newest since we order by descending
       
       // Parse message for payment terms if counter_payment_terms is null
       let detectedPaymentTerms = lastMessage?.counter_payment_terms;
@@ -451,7 +451,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
   const isProducer = user && proposal?.track?.producer?.id === user.id;
   
   // Check if there's a pending negotiation that needs acceptance/decline
-  const lastMessage = messages[messages.length - 1];
+  const lastMessage = messages[0]; // First message is now the newest since we order by descending
   const hasPendingNegotiation = lastMessage && 
       user && lastMessage.sender.email !== user.email && 
       (lastMessage.counter_offer || 
