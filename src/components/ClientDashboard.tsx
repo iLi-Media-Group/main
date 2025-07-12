@@ -784,38 +784,24 @@ export function ClientDashboard() {
 
   const handleDownload = async (url: string, filename: string, fileType: string) => {
     try {
-      // Method 1: Try using the secure download API if available
-      try {
-        const response = await fetch('/api/download', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url: url,
-            filename: filename,
-            fileType: fileType
-          })
-        });
-
-        if (response.ok) {
-          const blob = await response.blob();
-          const downloadUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(downloadUrl);
-          return;
-        }
-      } catch (apiError) {
-        console.log('API download failed, falling back to direct download');
+      console.log('Starting download for:', filename, 'from URL:', url);
+      
+      // Check if URL is valid
+      if (!url || url.trim() === '') {
+        console.error('Invalid URL provided');
+        alert('Download failed: Invalid file URL.');
+        return;
       }
 
-      // Method 2: Fallback to direct download with URL obfuscation
-      const response = await fetch(url);
+      // Direct download with URL obfuscation
+      const response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': '*/*',
+        }
+      });
+      
       if (response.ok) {
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
@@ -827,11 +813,37 @@ export function ClientDashboard() {
         link.click();
         document.body.removeChild(link);
         window.URL.revokeObjectURL(downloadUrl);
+        console.log('Download completed successfully for:', filename);
       } else {
-        console.error('Download failed');
+        console.error('Download failed - response not ok:', response.status, response.statusText);
+        
+        // Try alternative approach for CORS issues
+        try {
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.target = '_blank';
+          link.style.display = 'none';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          console.log('Download attempted via direct link for:', filename);
+        } catch (fallbackError) {
+          console.error('Fallback download also failed:', fallbackError);
+          alert('Download failed. The file may not be accessible or there may be a network issue.');
+        }
       }
     } catch (error) {
       console.error('Download error:', error);
+      
+      // Try one more fallback approach
+      try {
+        window.open(url, '_blank');
+        console.log('Opened file in new tab as fallback for:', filename);
+      } catch (finalError) {
+        console.error('All download methods failed:', finalError);
+        alert('Download failed. Please check your internet connection and try again.');
+      }
     }
   };
 
