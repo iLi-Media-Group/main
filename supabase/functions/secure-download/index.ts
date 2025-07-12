@@ -31,18 +31,41 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (!user || authError) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-    // 2. License check
+    // 2. License check - check both sales and sync proposals
+    let hasLicense = false;
+    
+    // Check sales table
     const { data: sale } = await supabase
       .from("sales")
       .select("*")
       .eq("track_id", trackId)
       .eq("buyer_id", user.id)
       .maybeSingle();
-    if (!sale) return new Response("Not licensed", { status: 403, headers: corsHeaders });
+    
+    if (sale) {
+      hasLicense = true;
+    } else {
+      // Check sync proposals table
+      const { data: syncProposal } = await supabase
+        .from("sync_proposals")
+        .select("*")
+        .eq("track_id", trackId)
+        .eq("client_id", user.id)
+        .eq("payment_status", "paid")
+        .maybeSingle();
+      
+      if (syncProposal) {
+        hasLicense = true;
+      }
+    }
+    
+    if (!hasLicense) {
+      return new Response("Not licensed", { status: 403, headers: corsHeaders });
+    }
 
     // 3. Fetch file from BoomBox
-    // Adjust this URL pattern as needed for your BoomBox structure
-    const boomBoxUrl = `https://boombox.io/private/folder/${trackId}/${filename}`;
+    // Use the actual BoomBox share URL pattern from the console output
+    const boomBoxUrl = `https://app.boombox.io/app/shares/${trackId}`;
     const fileRes = await fetch(boomBoxUrl);
     if (!fileRes.ok) return new Response("File error", { status: 500, headers: corsHeaders });
 
