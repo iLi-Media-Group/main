@@ -783,7 +783,7 @@ export function ClientDashboard() {
   };
 
   // New secure download handler using Edge Function streaming
-  const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3") => {
+  const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3", boomBoxUrl?: string) => {
     try {
       // Get the user's JWT (adjust for your auth setup)
       const { data: { session } } = await supabase.auth.getSession();
@@ -793,9 +793,15 @@ export function ClientDashboard() {
         return;
       }
 
+      // Extract BoomBox share ID from URL if provided, otherwise use trackId
+      let shareId = trackId;
+      if (boomBoxUrl && boomBoxUrl.includes('app.boombox.io/app/shares/')) {
+        shareId = boomBoxUrl.split('app.boombox.io/app/shares/')[1];
+      }
+
       // Replace <your-project-ref> with your actual Supabase project ref
       const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
+      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${jwt}` }
       });
@@ -1388,7 +1394,7 @@ export function ClientDashboard() {
                           {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                           {proposal.track.mp3_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
                               className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                               title="Download MP3"
                             >
@@ -1398,7 +1404,7 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.trackouts_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip', proposal.track.trackouts_url)}
                               className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                               title="Download Trackouts"
                             >
@@ -1408,7 +1414,7 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.split_sheet_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
                               className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                               title="Download Split Sheet"
                             >
@@ -1824,7 +1830,7 @@ export function ClientDashboard() {
                                     {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                                     {proposal.track.mp3_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
                                       >
@@ -1834,7 +1840,7 @@ export function ClientDashboard() {
                                     )}
                                     {proposal.track.trackouts_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip', proposal.track.trackouts_url)}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
                                       >
@@ -1844,7 +1850,7 @@ export function ClientDashboard() {
                                     )}
                                     {proposal.track.split_sheet_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
                                       >
