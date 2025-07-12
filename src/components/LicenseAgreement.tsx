@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download, FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSiteBranding } from '../contexts/SiteBrandingContext';
 import { supabase } from '../lib/supabase';
 import { pdf } from '@react-pdf/renderer';
 import { LicensePDF } from './LicensePDF';
@@ -122,6 +123,7 @@ export function LicenseAgreement() {
           license={license}
           showCredits={showCreditOption}
           acceptedDate={new Date().toISOString()}
+          logoUrl={undefined} // Removed logoUrl usage
         />
       ).toBlob();
 

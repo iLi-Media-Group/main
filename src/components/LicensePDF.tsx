@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
 interface LicensePDFProps {
   license: {
@@ -16,13 +16,42 @@ interface LicensePDFProps {
   };
   showCredits: boolean;
   acceptedDate: string;
+  logoUrl?: string;
 }
 
 const styles = StyleSheet.create({
   page: {
     padding: 40,
     fontSize: 12,
-    fontFamily: 'Helvetica'
+    fontFamily: 'Helvetica',
+    position: 'relative'
+  },
+  watermark: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.05,
+    zIndex: 1
+  },
+  watermarkImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain'
+  },
+  content: {
+    position: 'relative',
+    zIndex: 2
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 30
+  },
+  logo: {
+    width: 120,
+    height: 60,
+    objectFit: 'contain'
   },
   title: {
     fontSize: 24,
@@ -97,101 +126,118 @@ const getLicenseDurationInfo = (licenseType: string, purchaseDate: string) => {
   return { expirationDate, durationText };
 };
 
-export function LicensePDF({ license, showCredits, acceptedDate }: LicensePDFProps) {
+export function LicensePDF({ license, showCredits, acceptedDate, logoUrl }: LicensePDFProps) {
   const { expirationDate, durationText } = getLicenseDurationInfo(license.licenseType, license.purchaseDate);
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Music Synchronization License Agreement</Text>
-
-        <Text style={styles.trackTitle}>"{license.trackTitle}"</Text>
-
-        <View style={styles.section}>
-          <Text style={styles.text}>
-            This Music Synchronization License Agreement ("Agreement") is entered into on{' '}
-            {new Date(license.purchaseDate).toLocaleDateString()} by and between:
-          </Text>
-
-          <View style={styles.partyInfo}>
-            <Text style={styles.text}>Licensor: MyBeatFi Sync</Text>
-            <Text style={styles.text}>
-              Licensee: {license.licenseeInfo.name}
-              {license.licenseeInfo.company && ` (${license.licenseeInfo.company})`}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>License Summary</Text>
-          <Text style={styles.text}>Track: {license.trackTitle}</Text>
-          <Text style={styles.text}>License Type: {license.licenseType}</Text>
-          <Text style={styles.text}>Duration: {durationText}</Text>
-          <Text style={styles.text}>Purchase Date: {new Date(license.purchaseDate).toLocaleDateString()}</Text>
-          <Text style={styles.text}>Expiration Date: {expirationDate}</Text>
-          <Text style={styles.text}>
-            License Fee:{' '}
-            {license.licenseType === 'Single Track'
-              ? '$9.99 USD'
-              : `Included with ${license.licenseType}`}
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>1. GRANT OF LICENSE</Text>
-          <Text style={styles.text}>
-            Licensor hereby grants Licensee a non-exclusive, non-transferable license to synchronize
-            and use the musical composition and sound recording titled "{license.trackTitle}" ("Music")
-            for commercial purposes worldwide, subject to the terms and conditions stated herein.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>2. PERMITTED USES</Text>
-          <View style={styles.list}>
-            <Text style={styles.listItem}>• Online content (social media, websites, podcasts)</Text>
-            <Text style={styles.listItem}>• Advertisements and promotional videos</Text>
-            <Text style={styles.listItem}>• Film, TV, and video productions</Text>
-            <Text style={styles.listItem}>• Video games and apps</Text>
-            <Text style={styles.listItem}>• Live events and public performances</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>3. RESTRICTIONS</Text>
-          <View style={styles.list}>
-            <Text style={styles.listItem}>• Resell, sublicense, or distribute the Music as a standalone product</Text>
-            <Text style={styles.listItem}>• Use the Music in a manner that is defamatory, obscene, or illegal</Text>
-            <Text style={styles.listItem}>• Register the Music with any content identification system</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>4. COMPENSATION</Text>
-          <Text style={styles.text}>
-            Licensee has paid the amount {' '}
-            {license.licenseType === 'Single Track'
-              ? '$9.99 USD to use this track'
-              : `Included with ${license.licenseType} plan`}
-          </Text>
-        </View>
-
-        {showCredits && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>5. CREDITS</Text>
-            <Text style={styles.text}>
-              Licensee has opted to provide credit in the following format:
-              "Music by {license.producerName}"
-            </Text>
+        {/* Watermark */}
+        {logoUrl && (
+          <View style={styles.watermark}>
+            <Image src={logoUrl} style={styles.watermarkImage} />
           </View>
         )}
+        
+        {/* Content */}
+        <View style={styles.content}>
+          {/* Logo at top */}
+          {logoUrl && (
+            <View style={styles.logoContainer}>
+              <Image src={logoUrl} style={styles.logo} />
+            </View>
+          )}
 
-        <View style={styles.signature}>
-          <Text style={styles.text}>
-            Agreement accepted electronically by {license.licenseeInfo.name} on{' '}
-            {new Date(acceptedDate).toLocaleDateString()}
-          </Text>
-          <Text style={styles.text}>Email: {license.licenseeInfo.email}</Text>
+          <Text style={styles.title}>Music Synchronization License Agreement</Text>
+
+          <Text style={styles.trackTitle}>"{license.trackTitle}"</Text>
+
+          <View style={styles.section}>
+            <Text style={styles.text}>
+              This Music Synchronization License Agreement ("Agreement") is entered into on{' '}
+              {new Date(license.purchaseDate).toLocaleDateString()} by and between:
+            </Text>
+
+            <View style={styles.partyInfo}>
+              <Text style={styles.text}>Licensor: MyBeatFi Sync</Text>
+              <Text style={styles.text}>
+                Licensee: {license.licenseeInfo.name}
+                {license.licenseeInfo.company && ` (${license.licenseeInfo.company})`}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>License Summary</Text>
+            <Text style={styles.text}>Track: {license.trackTitle}</Text>
+            <Text style={styles.text}>License Type: {license.licenseType}</Text>
+            <Text style={styles.text}>Duration: {durationText}</Text>
+            <Text style={styles.text}>Purchase Date: {new Date(license.purchaseDate).toLocaleDateString()}</Text>
+            <Text style={styles.text}>Expiration Date: {expirationDate}</Text>
+            <Text style={styles.text}>
+              License Fee:{' '}
+              {license.licenseType === 'Single Track'
+                ? '$9.99 USD'
+                : `Included with ${license.licenseType}`}
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>1. GRANT OF LICENSE</Text>
+            <Text style={styles.text}>
+              Licensor hereby grants Licensee a non-exclusive, non-transferable license to synchronize
+              and use the musical composition and sound recording titled "{license.trackTitle}" ("Music")
+              for commercial purposes worldwide, subject to the terms and conditions stated herein.
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>2. PERMITTED USES</Text>
+            <View style={styles.list}>
+              <Text style={styles.listItem}>• Online content (social media, websites, podcasts)</Text>
+              <Text style={styles.listItem}>• Advertisements and promotional videos</Text>
+              <Text style={styles.listItem}>• Film, TV, and video productions</Text>
+              <Text style={styles.listItem}>• Video games and apps</Text>
+              <Text style={styles.listItem}>• Live events and public performances</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>3. RESTRICTIONS</Text>
+            <View style={styles.list}>
+              <Text style={styles.listItem}>• Resell, sublicense, or distribute the Music as a standalone product</Text>
+              <Text style={styles.listItem}>• Use the Music in a manner that is defamatory, obscene, or illegal</Text>
+              <Text style={styles.listItem}>• Register the Music with any content identification system</Text>
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>4. COMPENSATION</Text>
+            <Text style={styles.text}>
+              Licensee has paid the amount {' '}
+              {license.licenseType === 'Single Track'
+                ? '$9.99 USD to use this track'
+                : `Included with ${license.licenseType} plan`}
+            </Text>
+          </View>
+
+          {showCredits && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>5. CREDITS</Text>
+              <Text style={styles.text}>
+                Licensee has opted to provide credit in the following format:
+                "Music by {license.producerName}"
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.signature}>
+            <Text style={styles.text}>
+              Agreement accepted electronically by {license.licenseeInfo.name} on{' '}
+              {new Date(acceptedDate).toLocaleDateString()}
+            </Text>
+            <Text style={styles.text}>Email: {license.licenseeInfo.email}</Text>
+          </View>
         </View>
       </Page>
     </Document>

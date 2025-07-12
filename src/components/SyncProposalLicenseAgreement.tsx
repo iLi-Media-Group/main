@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useSiteBranding } from '../contexts/SiteBrandingContext';
 import { supabase } from '../lib/supabase';
 import { pdf } from '@react-pdf/renderer';
 import { SyncProposalLicensePDF } from './SyncProposalLicensePDF';
@@ -30,6 +31,7 @@ export function SyncProposalLicenseAgreement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const { logoUrl } = useSiteBranding();
 
   useEffect(() => {
     const fetchProposalDetails = async () => {
@@ -233,6 +235,7 @@ export function SyncProposalLicenseAgreement() {
       const pdfDoc = await pdf(
         <SyncProposalLicensePDF
           license={proposal}
+          logoUrl={logoUrl}
         />
       ).toBlob();
 
