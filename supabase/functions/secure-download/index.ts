@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,8 +48,8 @@ serve(async (req) => {
     // Get the file content as array buffer
     const fileBuffer = await response.arrayBuffer()
     
-    // Convert to base64 for transmission
-    const base64Data = btoa(String.fromCharCode(...new Uint8Array(fileBuffer)))
+    // Convert to base64 for transmission using Deno's built-in encoder
+    const base64Data = base64Encode(new Uint8Array(fileBuffer))
     
     // Return the file data as JSON
     return new Response(
