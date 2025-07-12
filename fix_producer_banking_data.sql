@@ -103,7 +103,6 @@ SET
 UPDATE sync_proposals 
 SET 
     license_url = 'https://example.com/license-placeholder.pdf',
-    license_generated_at = NOW(),
     updated_at = NOW()
 WHERE payment_status = 'paid' 
   AND (license_url IS NULL OR license_url = '');
