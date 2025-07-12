@@ -59,6 +59,14 @@ export function ProducerBankingPage() {
     if (user) {
       setLoading(true);
       try {
+        // Force refresh by clearing any cached data
+        setBalance(0);
+        setPendingBalance(0);
+        setTransactions([]);
+        
+        // Add a small delay to ensure state is cleared
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         await fetchData();
       } catch (error) {
         console.error('Error refreshing banking data:', error);
@@ -86,15 +94,18 @@ export function ProducerBankingPage() {
       // Fetch producer balance using maybeSingle() instead of single()
       const { data: balanceData, error: balanceError } = await supabase
         .from('producer_balances')
-        .select('available_balance, pending_balance')
+        .select('available_balance, pending_balance, lifetime_earnings')
         .eq('balance_producer_id', user?.id)
         .maybeSingle();
 
       if (balanceError) throw balanceError;
       
+      console.log('Balance data fetched:', balanceData); // Debug log
+      
       if (balanceData) {
         setBalance(balanceData.available_balance || 0);
         setPendingBalance(balanceData.pending_balance || 0);
+        console.log('Set balance:', balanceData.available_balance, 'pending:', balanceData.pending_balance); // Debug log
       } else {
         // Create balance record if it doesn't exist
         const { error: insertError } = await supabase
@@ -280,9 +291,19 @@ export function ProducerBankingPage() {
               </div>
               <Clock className="w-12 h-12 text-yellow-500" />
             </div>
-            <p className="mt-4 text-sm text-gray-400">
-              Pending funds will be available after the 30-day holding period
-            </p>
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-gray-400">
+                Pending funds will be available after the 30-day holding period
+              </p>
+              <button
+                onClick={handleManualRefresh}
+                disabled={loading}
+                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-1"
+              >
+                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
