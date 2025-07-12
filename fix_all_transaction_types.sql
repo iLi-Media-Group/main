@@ -25,6 +25,17 @@ WHERE sp.payment_status = 'paid'
 UNION ALL
 
 SELECT 
+    'Custom Sync Requests' as transaction_type,
+    COUNT(*) as count,
+    COALESCE(SUM(COALESCE(csr.final_amount, csr.sync_fee) * 0.90), 0) as total_amount
+FROM custom_sync_requests csr
+JOIN tracks t ON csr.track_id = t.id
+WHERE csr.payment_status = 'paid'
+  AND t.track_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
+
+UNION ALL
+
+SELECT 
     'Single Track Sales' as transaction_type,
     COUNT(*) as count,
     COALESCE(SUM(s.amount * 0.75), 0) as total_amount
@@ -43,6 +54,9 @@ WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale'
   AND pt.reference_id NOT IN (
     SELECT id::text FROM sync_proposals WHERE payment_status = 'paid'
+  )
+  AND pt.reference_id NOT IN (
+    SELECT id::text FROM custom_sync_requests WHERE payment_status = 'paid'
   )
   AND pt.reference_id NOT IN (
     SELECT id::text FROM sales
@@ -71,6 +85,7 @@ SELECT
     pt.created_at,
     CASE 
         WHEN sp.id IS NOT NULL THEN 'Sync Proposal'
+        WHEN csr.id IS NOT NULL THEN 'Custom Sync Request'
         WHEN s.id IS NOT NULL THEN 'Single Track Sale'
         WHEN pt.description ILIKE '%white label%' THEN 'White Label'
         WHEN pt.description ILIKE '%membership%' THEN 'Membership'
@@ -78,6 +93,7 @@ SELECT
     END as transaction_category
 FROM producer_transactions pt
 LEFT JOIN sync_proposals sp ON sp.id::text = pt.reference_id
+LEFT JOIN custom_sync_requests csr ON csr.id::text = pt.reference_id
 LEFT JOIN sales s ON s.id::text = pt.reference_id
 WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale'
@@ -97,7 +113,21 @@ WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
     WHERE payment_status = 'paid'
   );
 
--- 5. Update transaction amounts for single track sales (75% rate)
+-- 5. Update transaction amounts for custom sync requests (90% rate)
+UPDATE producer_transactions 
+SET amount = (
+    SELECT COALESCE(csr.final_amount, csr.sync_fee) * 0.90
+    FROM custom_sync_requests csr
+    WHERE csr.id::text = producer_transactions.reference_id
+)
+WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
+  AND type = 'sale'
+  AND reference_id IN (
+    SELECT id::text FROM custom_sync_requests 
+    WHERE payment_status = 'paid'
+  );
+
+-- 6. Update transaction amounts for single track sales (75% rate)
 UPDATE producer_transactions 
 SET amount = (
     SELECT s.amount * 0.75
@@ -110,10 +140,10 @@ WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
     SELECT id::text FROM sales
   );
 
--- 6. For membership and white label transactions, keep existing amounts
+-- 7. For membership and white label transactions, keep existing amounts
 -- (These are already calculated correctly by the system)
 
--- 7. Recalculate producer balance based on all corrected transaction amounts
+-- 8. Recalculate producer balance based on all corrected transaction amounts
 UPDATE producer_balances 
 SET 
     pending_balance = COALESCE((
@@ -131,7 +161,7 @@ SET
     ), 0)
 WHERE balance_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18';
 
--- 8. Show final results
+-- 9. Show final results
 SELECT 
     'Updated Producer Balance' as table_name,
     pb.pending_balance,
@@ -151,10 +181,11 @@ FROM producer_transactions pt
 WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale';
 
--- 9. Show breakdown of corrected transactions by type
+-- 10. Show breakdown of corrected transactions by type
 SELECT 
     CASE 
         WHEN sp.id IS NOT NULL THEN 'Sync Proposals (90%)'
+        WHEN csr.id IS NOT NULL THEN 'Custom Sync Requests (90%)'
         WHEN s.id IS NOT NULL THEN 'Single Track Sales (75%)'
         WHEN pt.description ILIKE '%white label%' THEN 'White Label'
         WHEN pt.description ILIKE '%membership%' THEN 'Membership'
@@ -164,12 +195,14 @@ SELECT
     COALESCE(SUM(pt.amount), 0) as total_amount
 FROM producer_transactions pt
 LEFT JOIN sync_proposals sp ON sp.id::text = pt.reference_id
+LEFT JOIN custom_sync_requests csr ON csr.id::text = pt.reference_id
 LEFT JOIN sales s ON s.id::text = pt.reference_id
 WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale'
 GROUP BY 
     CASE 
         WHEN sp.id IS NOT NULL THEN 'Sync Proposals (90%)'
+        WHEN csr.id IS NOT NULL THEN 'Custom Sync Requests (90%)'
         WHEN s.id IS NOT NULL THEN 'Single Track Sales (75%)'
         WHEN pt.description ILIKE '%white label%' THEN 'White Label'
         WHEN pt.description ILIKE '%membership%' THEN 'Membership'
