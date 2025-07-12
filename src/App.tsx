@@ -21,6 +21,7 @@ import { ClientsCarousel } from './components/ClientsCarousel';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
 import { LicenseAgreement } from './components/LicenseAgreement';
+import { SyncProposalLicenseAgreement } from './components/SyncProposalLicenseAgreement';
 import { TestUpload } from './components/TestUpload';
 import { useAuth } from './contexts/AuthContext';
 import { GoldAccessPage } from './components/GoldAccessPage';
@@ -284,6 +285,14 @@ const App = () => {
           <ProtectedRoute>
             <LayoutWrapper>
               <LicenseAgreement />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/sync-proposal-license-agreement/:proposalId" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <SyncProposalLicenseAgreement />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

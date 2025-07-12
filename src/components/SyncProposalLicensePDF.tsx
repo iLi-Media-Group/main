@@ -1,302 +1,196 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+
+interface SyncProposalLicenseDetails {
+  trackTitle: string;
+  producerName: string;
+  producerEmail: string;
+  clientName: string;
+  clientEmail: string;
+  clientCompany?: string;
+  projectDescription: string;
+  duration: string;
+  isExclusive: boolean;
+  syncFee: number;
+  paymentDate: string;
+  expirationDate: string;
+  paymentTerms: string;
+}
 
 interface SyncProposalLicensePDFProps {
-  license: {
-    trackTitle: string;
-    producerName: string;
-    producerEmail: string;
-    clientName: string;
-    clientEmail: string;
-    clientCompany?: string;
-    projectDescription: string;
-    duration: string;
-    isExclusive: boolean;
-    syncFee: number;
-    paymentDate: string;
-    expirationDate: string;
-    paymentTerms: string;
-  };
-  logoUrl?: string;
+  license: SyncProposalLicenseDetails;
 }
+
+// Register fonts
+Font.register({
+  family: 'Helvetica',
+  src: 'https://fonts.gstatic.com/s/helveticaneue/v70/1Ptsg8zYS_SKggPNyC0IT4ttDfA.ttf'
+});
 
 const styles = StyleSheet.create({
   page: {
+    flexDirection: 'column',
+    backgroundColor: '#ffffff',
     padding: 40,
-    fontSize: 12,
-    fontFamily: 'Helvetica',
-    backgroundColor: '#fff',
+    fontFamily: 'Helvetica'
   },
   header: {
-    textAlign: 'center',
-    marginBottom: 30,
-  },
-  title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#1f2937',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    marginBottom: 20,
+    textAlign: 'center',
+    marginBottom: 30,
+    color: '#1f2937'
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 20
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 10,
-    color: '#1f2937',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    paddingBottom: 5,
+    color: '#1f2937'
   },
   text: {
+    fontSize: 12,
     marginBottom: 8,
-    lineHeight: 1.5,
-    color: '#374151',
+    lineHeight: 1.4,
+    color: '#374151'
   },
-  partyInfo: {
-    marginBottom: 15,
-    padding: 12,
+  bold: {
+    fontWeight: 'bold'
+  },
+  parties: {
+    marginBottom: 20,
+    padding: 15,
     backgroundColor: '#f9fafb',
-    borderRadius: 4,
+    borderRadius: 5
   },
-  infoGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+  summary: {
+    marginBottom: 20,
+    padding: 15,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 5
   },
-  infoLabel: {
-    fontWeight: 'bold',
-    color: '#4b5563',
-    width: '30%',
-  },
-  infoValue: {
-    color: '#374151',
-    width: '70%',
-  },
-  highlight: {
-    backgroundColor: '#fef3c7',
-    padding: 8,
-    borderRadius: 4,
-    marginVertical: 8,
-  },
-  termsList: {
-    marginLeft: 20,
-    marginBottom: 8,
-  },
-  termsItem: {
-    marginBottom: 5,
-    color: '#374151',
+  terms: {
+    marginBottom: 20
   },
   signature: {
-    marginTop: 40,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    paddingTop: 20,
-  },
-  footer: {
     marginTop: 30,
-    textAlign: 'center',
-    fontSize: 10,
-    color: '#6b7280',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#d1d5db'
   },
+  signatureLine: {
+    marginBottom: 5
+  }
 });
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
-};
-
-const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-};
-
-export function SyncProposalLicensePDF({ license, logoUrl }: SyncProposalLicensePDFProps) {
-  const calculateDuration = (duration: string): string => {
-    switch (duration.toLowerCase()) {
-      case 'perpetual':
-        return 'Perpetual (No Expiration)';
-      case '1 year':
-        return '1 Year';
-      case '2 years':
-        return '2 Years';
-      case '3 years':
-        return '3 Years';
-      case '5 years':
-        return '5 Years';
-      default:
-        return duration;
-    }
-  };
-
-  const getRightsText = (isExclusive: boolean): string => {
-    return isExclusive 
-      ? 'Exclusive rights granted for the specified duration'
-      : 'Non-exclusive rights granted for the specified duration';
-  };
-
+export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ license }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {logoUrl && (
-          <View style={{ alignItems: 'center', marginBottom: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937' }}>
-              MyBeatFi.io
-            </Text>
-          </View>
-        )}
-
         <View style={styles.header}>
-          <Text style={styles.title}>Music Synchronization License Agreement</Text>
-          <Text style={styles.subtitle}>Sync Proposal License</Text>
+          <Text>Sync Proposal License Agreement</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>LICENSE SUMMARY</Text>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Track Title:</Text>
-            <Text style={styles.infoValue}>{license.trackTitle}</Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Producer:</Text>
-            <Text style={styles.infoValue}>{license.producerName}</Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>License Type:</Text>
-            <Text style={styles.infoValue}>
-              {license.isExclusive ? 'Exclusive' : 'Non-Exclusive'} Sync License
-            </Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Duration:</Text>
-            <Text style={styles.infoValue}>{calculateDuration(license.duration)}</Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>License Fee:</Text>
-            <Text style={styles.infoValue}>{formatCurrency(license.syncFee)}</Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Payment Date:</Text>
-            <Text style={styles.infoValue}>{formatDate(license.paymentDate)}</Text>
-          </View>
-          {license.expirationDate !== 'Perpetual' && (
-            <View style={styles.infoGrid}>
-              <Text style={styles.infoLabel}>Expiration Date:</Text>
-              <Text style={styles.infoValue}>{formatDate(license.expirationDate)}</Text>
-            </View>
-          )}
+          <Text style={styles.text}>
+            This Sync Proposal License Agreement ("Agreement") is entered into on{' '}
+            {new Date(license.paymentDate).toLocaleDateString()} by and between:
+          </Text>
+        </View>
+
+        <View style={styles.parties}>
+          <Text style={[styles.text, styles.bold]}>
+            Licensor: {license.producerName} ({license.producerEmail})
+          </Text>
+          <Text style={[styles.text, styles.bold]}>
+            Licensee: {license.clientName} ({license.clientEmail})
+            {license.clientCompany && ` - ${license.clientCompany}`}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PROJECT DETAILS</Text>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Project Description:</Text>
-            <Text style={styles.infoValue}>{license.projectDescription}</Text>
-          </View>
-          <View style={styles.infoGrid}>
-            <Text style={styles.infoLabel}>Usage Rights:</Text>
-            <Text style={styles.infoValue}>{getRightsText(license.isExclusive)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PARTIES</Text>
-          <View style={styles.partyInfo}>
+          <Text style={styles.sectionTitle}>License Summary</Text>
+          <View style={styles.summary}>
             <Text style={styles.text}>
-              <Text style={{ fontWeight: 'bold' }}>Licensor (Producer):</Text> {license.producerName}
+              <Text style={styles.bold}>Track:</Text> {license.trackTitle}
             </Text>
-            <Text style={styles.text}>Email: {license.producerEmail}</Text>
-          </View>
-          <View style={styles.partyInfo}>
             <Text style={styles.text}>
-              <Text style={{ fontWeight: 'bold' }}>Licensee (Client):</Text> {license.clientName}
+              <Text style={styles.bold}>Project:</Text> {license.projectDescription}
             </Text>
-            {license.clientCompany && (
-              <Text style={styles.text}>Company: {license.clientCompany}</Text>
-            )}
-            <Text style={styles.text}>Email: {license.clientEmail}</Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>Duration:</Text> {license.duration}
+            </Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>Exclusive:</Text> {license.isExclusive ? 'Yes' : 'No'}
+            </Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>License Fee:</Text> ${license.syncFee.toFixed(2)}
+            </Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>Payment Terms:</Text> {license.paymentTerms.toUpperCase()}
+            </Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>Payment Date:</Text> {new Date(license.paymentDate).toLocaleDateString()}
+            </Text>
+            <Text style={styles.text}>
+              <Text style={styles.bold}>Expiration Date:</Text> {new Date(license.expirationDate).toLocaleDateString()}
+            </Text>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>GRANT OF LICENSE</Text>
+        <View style={styles.terms}>
+          <Text style={styles.sectionTitle}>License Terms</Text>
+          
           <Text style={styles.text}>
-            Licensor hereby grants Licensee a {license.isExclusive ? 'exclusive' : 'non-exclusive'}, 
-            non-transferable license to synchronize and use the musical composition and sound recording 
-            titled "{license.trackTitle}" ("Music") for the project described above.
+            <Text style={styles.bold}>1. Grant of License:</Text> Licensor grants Licensee a {license.isExclusive ? 'exclusive' : 'non-exclusive'} license to synchronize the musical composition "{license.trackTitle}" in audiovisual works.
           </Text>
+          
           <Text style={styles.text}>
-            This license is worldwide and valid for {calculateDuration(license.duration).toLowerCase()}, 
-            subject to the terms and conditions stated herein.
+            <Text style={styles.bold}>2. Scope of Use:</Text> This license covers synchronization in {license.projectDescription} for the duration specified above.
           </Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PERMITTED USES</Text>
-          <View style={styles.termsList}>
-            <Text style={styles.termsItem}>• Synchronization with visual content for the specified project</Text>
-            <Text style={styles.termsItem}>• Public performance in connection with the licensed project</Text>
-            <Text style={styles.termsItem}>• Reproduction and distribution as part of the licensed project</Text>
-            <Text style={styles.termsItem}>• Digital streaming and broadcasting of the licensed project</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RESTRICTIONS</Text>
-          <View style={styles.termsList}>
-            <Text style={styles.termsItem}>• Resell, sublicense, or distribute the Music as a standalone product</Text>
-            <Text style={styles.termsItem}>• Use the Music in projects not specified in this agreement</Text>
-            <Text style={styles.termsItem}>• Use the Music in a manner that is defamatory, obscene, or illegal</Text>
-            <Text style={styles.termsItem}>• Register the Music with any content identification system</Text>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COMPENSATION</Text>
+          
           <Text style={styles.text}>
-            Licensee has paid {formatCurrency(license.syncFee)} for this license, 
-            which covers the specified usage rights for the duration of this agreement.
+            <Text style={styles.bold}>3. Territory:</Text> Worldwide
           </Text>
+          
           <Text style={styles.text}>
-            Payment Terms: {license.paymentTerms}
+            <Text style={styles.bold}>4. Term:</Text> {license.duration} from the date of payment
           </Text>
-        </View>
-
-        <View style={styles.highlight}>
+          
           <Text style={styles.text}>
-            <Text style={{ fontWeight: 'bold' }}>Important:</Text> This license is valid only for the 
-            project described above. Any use outside the scope of this agreement requires a separate license.
+            <Text style={styles.bold}>5. Payment:</Text> Licensee has paid the full license fee of ${license.syncFee.toFixed(2)} under {license.paymentTerms.toUpperCase()} terms.
+          </Text>
+          
+          <Text style={styles.text}>
+            <Text style={styles.bold}>6. Restrictions:</Text> Licensee may not:
+          </Text>
+          <Text style={styles.text}>• Use the composition in a manner that exceeds the scope of this license</Text>
+          <Text style={styles.text}>• Transfer or sublicense this agreement without written consent</Text>
+          <Text style={styles.text}>• Use the composition after the expiration date</Text>
+          
+          <Text style={styles.text}>
+            <Text style={styles.bold}>7. Representations:</Text> Licensor represents that it has the right to grant this license.
+          </Text>
+          
+          <Text style={styles.text}>
+            <Text style={styles.bold}>8. Indemnification:</Text> Licensee agrees to indemnify Licensor against any claims arising from Licensee's use of the composition.
           </Text>
         </View>
 
         <View style={styles.signature}>
-          <Text style={styles.text}>
-            Agreement accepted electronically by {license.clientName} on {formatDate(license.paymentDate)}
+          <Text style={styles.signatureLine}>
+            <Text style={styles.bold}>Licensor:</Text> {license.producerName}
           </Text>
-          <Text style={styles.text}>Licensee Email: {license.clientEmail}</Text>
-          <Text style={styles.text}>
-            Agreement executed by {license.producerName} on {formatDate(license.paymentDate)}
+          <Text style={styles.signatureLine}>
+            <Text style={styles.bold}>Licensee:</Text> {license.clientName}
           </Text>
-          <Text style={styles.text}>Licensor Email: {license.producerEmail}</Text>
-        </View>
-
-        <View style={styles.footer}>
-          <Text>This agreement was generated automatically by MyBeatFi.io</Text>
-          <Text>Generated on: {formatDate(new Date().toISOString())}</Text>
-          <Text>For questions or support, contact: support@mybeatfi.io</Text>
+          <Text style={styles.signatureLine}>
+            <Text style={styles.bold}>Date:</Text> {new Date(license.paymentDate).toLocaleDateString()}
+          </Text>
         </View>
       </Page>
     </Document>
   );
-} 
+}; 

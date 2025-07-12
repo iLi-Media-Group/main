@@ -309,7 +309,7 @@ export function AdminDashboard() {
         // Fetch sync proposals (paid and pending)
         const { data: syncProposalsData, error: syncProposalsError } = await supabase
           .from('sync_proposals')
-          .select('id, sync_fee, status, payment_status')
+          .select('id, sync_fee, final_amount, negotiated_amount, status, payment_status')
         if (syncProposalsError) {
           console.error('Error fetching sync proposals:', syncProposalsError);
         }
@@ -317,14 +317,14 @@ export function AdminDashboard() {
         const sync_proposals_paid = syncProposals.filter(p => p.status === 'accepted' && p.payment_status === 'paid');
         const sync_proposals_pending = syncProposals.filter(p => p.status === 'pending' || p.status === 'pending_client' || p.status === 'producer_accepted');
         const sync_proposals_paid_count = sync_proposals_paid.length;
-        const sync_proposals_paid_amount = sync_proposals_paid.reduce((sum, p) => sum + (p.sync_fee || 0), 0);
+        const sync_proposals_paid_amount = sync_proposals_paid.reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0);
         const sync_proposals_pending_count = sync_proposals_pending.length;
-        const sync_proposals_pending_amount = sync_proposals_pending.reduce((sum, p) => sum + (p.sync_fee || 0), 0);
+        const sync_proposals_pending_amount = sync_proposals_pending.reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0);
 
         // Fetch custom sync requests (paid and pending) - only fetch once
         const { data: customSyncs, error: customSyncRequestsError } = await supabase
           .from('custom_sync_requests')
-          .select('id, sync_fee, status, payment_status');
+          .select('id, sync_fee, final_amount, negotiated_amount, status, payment_status');
         if (customSyncRequestsError) {
           console.error('Error fetching custom sync requests:', customSyncRequestsError);
         }
@@ -332,9 +332,9 @@ export function AdminDashboard() {
         const custom_syncs_paid = customSyncsData.filter(c => (c.status === 'completed' || c.status === 'accepted') && c.payment_status === 'paid');
         const custom_syncs_pending = customSyncsData.filter(c => c.status === 'pending' || c.status === 'negotiating' || c.status === 'client_acceptance_required' || c.status === 'open');
         const custom_syncs_paid_count = custom_syncs_paid.length;
-        const custom_syncs_paid_amount = custom_syncs_paid.reduce((sum, c) => sum + (c.sync_fee || 0), 0);
+        const custom_syncs_paid_amount = custom_syncs_paid.reduce((sum, c) => sum + (c.final_amount || c.negotiated_amount || c.sync_fee || 0), 0);
         const custom_syncs_pending_count = custom_syncs_pending.length;
-        const custom_syncs_pending_amount = custom_syncs_pending.reduce((sum, c) => sum + (c.sync_fee || 0), 0);
+        const custom_syncs_pending_amount = custom_syncs_pending.reduce((sum, c) => sum + (c.final_amount || c.negotiated_amount || c.sync_fee || 0), 0);
 
         // Fetch new memberships for the current period
         const { data: newMembershipsData, error: newMembershipsError } = await supabase

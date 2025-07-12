@@ -693,36 +693,8 @@ export function ClientDashboard() {
     navigate(`/license-agreement/${licenseId}`);
   };
 
-  const handleViewSyncProposalLicense = async (proposalId: string) => {
-    try {
-      // Call the generate-sync-license edge function
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-      
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sync-license`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          proposal_id: proposalId
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate license agreement');
-      }
-
-      const { pdfUrl } = await response.json();
-      
-      // Open the PDF in a new tab
-      window.open(pdfUrl, '_blank');
-    } catch (error) {
-      console.error('Error generating sync proposal license:', error);
-      alert('Failed to generate license agreement. Please try again.');
-    }
+  const handleViewSyncProposalLicense = (proposalId: string) => {
+    navigate(`/sync-proposal-license-agreement/${proposalId}`);
   };
 
   const handleDeclineProposal = async (proposal: SyncProposal) => {
