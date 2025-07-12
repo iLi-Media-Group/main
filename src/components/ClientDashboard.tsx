@@ -782,6 +782,59 @@ export function ClientDashboard() {
     }
   };
 
+  const handleDownload = async (url: string, filename: string, fileType: string) => {
+    try {
+      // Method 1: Try using the secure download API if available
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            url: url,
+            filename: filename,
+            fileType: fileType
+          })
+        });
+
+        if (response.ok) {
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(downloadUrl);
+          return;
+        }
+      } catch (apiError) {
+        console.log('API download failed, falling back to direct download');
+      }
+
+      // Method 2: Fallback to direct download with URL obfuscation
+      const response = await fetch(url);
+      if (response.ok) {
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(downloadUrl);
+      } else {
+        console.error('Download failed');
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+    }
+  };
+
 
 
 
@@ -1347,58 +1400,34 @@ export function ClientDashboard() {
                         <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
                           {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                           {proposal.track.mp3_url && (
-                            <a
-                              href={proposal.track.mp3_url}
-                              download
-                              onClick={(e) => {
-                                // Prevent any state changes that might hide the buttons
-                                e.stopPropagation();
-                                console.log('Downloading MP3 from sync proposal:', proposal.track.mp3_url);
-                              }}
+                            <button
+                              onClick={() => handleDownload(proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`, 'mp3')}
                               className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                               title="Download MP3"
-                              target="_blank"
-                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               MP3
-                            </a>
+                            </button>
                           )}
                           {proposal.track.trackouts_url && (
-                            <a
-                              href={proposal.track.trackouts_url}
-                              download
-                              onClick={(e) => {
-                                // Prevent any state changes that might hide the buttons
-                                e.stopPropagation();
-                                console.log('Downloading Trackouts from sync proposal:', proposal.track.trackouts_url);
-                              }}
+                            <button
+                              onClick={() => handleDownload(proposal.track.trackouts_url, `${proposal.track.title}_Stems.zip`, 'zip')}
                               className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                               title="Download Trackouts"
-                              target="_blank"
-                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               Stems
-                            </a>
+                            </button>
                           )}
                           {proposal.track.split_sheet_url && (
-                            <a
-                              href={proposal.track.split_sheet_url}
-                              download
-                              onClick={(e) => {
-                                // Prevent any state changes that might hide the buttons
-                                e.stopPropagation();
-                                console.log('Downloading Split Sheet from sync proposal:', proposal.track.split_sheet_url);
-                              }}
+                            <button
+                              onClick={() => handleDownload(proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
                               className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                               title="Download Split Sheet"
-                              target="_blank"
-                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               Sheet
-                            </a>
+                            </button>
                           )}
                         </div>
                       )}
@@ -1668,58 +1697,34 @@ export function ClientDashboard() {
                                   <div className="flex items-center space-x-1" key={`download-${license.id}`}>
                                     {console.log('License track URLs:', { mp3Url: license.track.mp3Url, trackoutsUrl: license.track.trackoutsUrl, splitSheetUrl: license.track.splitSheetUrl })}
                                     {license.track.mp3Url && (
-                                      <a
-                                        href={license.track.mp3Url}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading MP3:', license.track.mp3Url);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(license.track.mp3Url, `${license.track.title}_MP3.mp3`, 'mp3')}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         MP3
-                                      </a>
+                                      </button>
                                     )}
                                     {license.track.trackoutsUrl && (
-                                      <a
-                                        href={license.track.trackoutsUrl}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading Trackouts:', license.track.trackoutsUrl);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(license.track.trackoutsUrl, `${license.track.title}_Stems.zip`, 'zip')}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Stems
-                                      </a>
+                                      </button>
                                     )}
                                     {license.track.splitSheetUrl && (
-                                      <a
-                                        href={license.track.splitSheetUrl}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading Split Sheet:', license.track.splitSheetUrl);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Sheet
-                                      </a>
+                                      </button>
                                     )}
                                   </div>
                                 )}
@@ -1831,58 +1836,34 @@ export function ClientDashboard() {
                                   <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
                                     {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                                     {proposal.track.mp3_url && (
-                                      <a
-                                        href={proposal.track.mp3_url}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading MP3 from sync proposal:', proposal.track.mp3_url);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`, 'mp3')}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         MP3
-                                      </a>
+                                      </button>
                                     )}
                                     {proposal.track.trackouts_url && (
-                                      <a
-                                        href={proposal.track.trackouts_url}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading Trackouts from sync proposal:', proposal.track.trackouts_url);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(proposal.track.trackouts_url, `${proposal.track.title}_Stems.zip`, 'zip')}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Stems
-                                      </a>
+                                      </button>
                                     )}
                                     {proposal.track.split_sheet_url && (
-                                      <a
-                                        href={proposal.track.split_sheet_url}
-                                        download
-                                        onClick={(e) => {
-                                          // Prevent any state changes that might hide the buttons
-                                          e.stopPropagation();
-                                          console.log('Downloading Split Sheet from sync proposal:', proposal.track.split_sheet_url);
-                                        }}
+                                      <button
+                                        onClick={() => handleDownload(proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Sheet
-                                      </a>
+                                      </button>
                                     )}
                                   </div>
                                 )}
