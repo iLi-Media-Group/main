@@ -1632,7 +1632,7 @@ export function ClientDashboard() {
                           </button>
                           <p className="text-xs text-gray-400 truncate">{track.artist}</p>
                           <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-xs text-purple-400">{track.genres[0]}</span>
+                            <span className="text-xs text-purple-400">{Array.isArray(track.genres) && track.genres[0] ? track.genres[0] : 'Unknown'}</span>
                             <span className="text-xs text-gray-400">{track.bpm} BPM</span>
                           </div>
                         </div>
@@ -1709,7 +1709,7 @@ export function ClientDashboard() {
                           </button>
                           <p className="text-xs text-gray-400 truncate">{track.artist}</p>
                           <div className="flex items-center space-x-2 mt-1">
-                            <span className="text-xs text-purple-400">{track.genres[0]}</span>
+                            <span className="text-xs text-purple-400">{Array.isArray(track.genres) && track.genres[0] ? track.genres[0] : 'Unknown'}</span>
                             <span className="text-xs text-gray-400">{track.bpm} BPM</span>
                           </div>
                         </div>
