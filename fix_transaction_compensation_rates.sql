@@ -48,8 +48,7 @@ SET
         FROM sync_proposals sp
         FULL OUTER JOIN sales s ON s.id::text = producer_transactions.reference_id
         WHERE (sp.id::text = producer_transactions.reference_id OR s.id::text = producer_transactions.reference_id)
-    ),
-    updated_at = NOW()
+    )
 WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND type = 'sale'
   AND reference_id IS NOT NULL;
