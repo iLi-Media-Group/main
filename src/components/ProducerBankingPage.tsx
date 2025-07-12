@@ -270,6 +270,9 @@ export function ProducerBankingPage() {
               <div>
                 <p className="text-gray-400">Available Balance</p>
                 <p className="text-3xl font-bold text-white">${balance.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Previous months (ready for payout)
+                </p>
               </div>
               <DollarSign className="w-12 h-12 text-green-500" />
             </div>
@@ -296,7 +299,7 @@ export function ProducerBankingPage() {
             </div>
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-gray-400">
-                Pending funds will be available after the 30-day holding period
+                Current month (payout on 10th of next month)
               </p>
               <button
                 onClick={handleManualRefresh}
