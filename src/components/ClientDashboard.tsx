@@ -782,63 +782,43 @@ export function ClientDashboard() {
     }
   };
 
-  const handleDownload = async (url: string, filename: string, fileType: string) => {
+  // New secure download handler using Edge Function streaming
+  const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3") => {
     try {
-      console.log('Starting secure download for:', filename);
-      
-      // Check if URL is valid
-      if (!url || url.trim() === '') {
-        console.error('Invalid URL provided');
-        alert('Download failed: Invalid file URL.');
+      // Get the user's JWT (adjust for your auth setup)
+      const { data: { session } } = await supabase.auth.getSession();
+      const jwt = session?.access_token;
+      if (!jwt) {
+        alert("You must be logged in to download.");
         return;
       }
 
-      // Use Supabase Edge Function for secure download
-      const { data, error } = await supabase.functions.invoke('secure-download', {
-        body: {
-          url: url,
-          filename: filename,
-          fileType: fileType
-        }
+      // Replace <your-project-ref> with your actual Supabase project ref
+      const projectRef = 'yciqkebqlajqbpwlujma';
+      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${jwt}` }
       });
 
-      if (error) {
-        console.error('Secure download failed:', error);
-        
-        // Fallback: Show user that direct download is not available
-        alert('Secure download is not available. Please contact support for file access.');
+      if (!res.ok) {
+        alert("Download failed. Please check your license or contact support.");
         return;
       }
 
-      // The Edge Function returns the file directly as a stream
-      // We need to fetch it and create a blob for download
-      if (data) {
-        // Fetch the file from the Edge Function response
-        const fileResponse = await fetch(data);
-        
-        if (fileResponse.ok) {
-          const blob = await fileResponse.blob();
-          const downloadUrl = window.URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = downloadUrl;
-          link.download = filename;
-          link.style.display = 'none';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(downloadUrl);
-          console.log('Secure download completed for:', filename);
-        } else {
-          console.error('Failed to fetch file from secure download function');
-          alert('Download failed. Please try again or contact support.');
-        }
-      } else {
-        console.error('No data received from secure download function');
-        alert('Download failed. Please try again or contact support.');
-      }
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      console.log("Secure download completed for:", filename);
     } catch (error) {
-      console.error('Download error:', error);
-      alert('Download failed. Please contact support for assistance.');
+      console.error("Download error:", error);
+      alert("Download failed. Please contact support.");
     }
   };
 
@@ -1408,7 +1388,7 @@ export function ClientDashboard() {
                           {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                           {proposal.track.mp3_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`, 'mp3')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3')}
                               className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                               title="Download MP3"
                             >
@@ -1418,7 +1398,7 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.trackouts_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.trackouts_url, `${proposal.track.title}_Stems.zip`, 'zip')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip')}
                               className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                               title="Download Trackouts"
                             >
@@ -1428,7 +1408,7 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.split_sheet_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
+                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
                               className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                               title="Download Split Sheet"
                             >
@@ -1705,7 +1685,7 @@ export function ClientDashboard() {
                                     {console.log('License track URLs:', { mp3Url: license.track.mp3Url, trackoutsUrl: license.track.trackoutsUrl, splitSheetUrl: license.track.splitSheetUrl })}
                                     {license.track.mp3Url && (
                                       <button
-                                        onClick={() => handleDownload(license.track.mp3Url, `${license.track.title}_MP3.mp3`, 'mp3')}
+                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_MP3.mp3`, 'mp3')}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
                                       >
@@ -1715,7 +1695,7 @@ export function ClientDashboard() {
                                     )}
                                     {license.track.trackoutsUrl && (
                                       <button
-                                        onClick={() => handleDownload(license.track.trackoutsUrl, `${license.track.title}_Stems.zip`, 'zip')}
+                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_Stems.zip`, 'zip')}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
                                       >
@@ -1725,7 +1705,7 @@ export function ClientDashboard() {
                                     )}
                                     {license.track.splitSheetUrl && (
                                       <button
-                                        onClick={() => handleDownload(license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
+                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
                                       >
@@ -1844,7 +1824,7 @@ export function ClientDashboard() {
                                     {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                                     {proposal.track.mp3_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`, 'mp3')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3')}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
                                       >
@@ -1854,7 +1834,7 @@ export function ClientDashboard() {
                                     )}
                                     {proposal.track.trackouts_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.trackouts_url, `${proposal.track.title}_Stems.zip`, 'zip')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip')}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
                                       >
@@ -1864,7 +1844,7 @@ export function ClientDashboard() {
                                     )}
                                     {proposal.track.split_sheet_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
+                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf')}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
                                       >

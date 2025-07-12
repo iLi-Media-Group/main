@@ -1,100 +1,88 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    // Get the request body
-    const { url, filename, fileType } = await req.json()
+    const url = new URL(req.url);
+    const trackId = url.searchParams.get("trackId");
+    const filename = url.searchParams.get("filename") || "download.mp3";
+    const fileType = url.searchParams.get("fileType") || "mp3";
 
-    if (!url) {
-      return new Response(
-        JSON.stringify({ error: 'URL is required' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
+    if (!trackId) {
+      return new Response("Missing trackId", { status: 400, headers: corsHeaders });
     }
 
-    // Fetch the file from the URL server-side
-    const response = await fetch(url)
-    
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch file' }),
-        { 
-          status: 404, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    // 1. Auth check
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (!user || authError) return new Response("Unauthorized", { status: 401, headers: corsHeaders });
 
-    // Get the file content as a readable stream
-    const fileStream = response.body
-    
-    if (!fileStream) {
-      return new Response(
-        JSON.stringify({ error: 'No file content available' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      )
-    }
+    // 2. License check
+    const { data: sale } = await supabase
+      .from("sales")
+      .select("*")
+      .eq("track_id", trackId)
+      .eq("buyer_id", user.id)
+      .maybeSingle();
+    if (!sale) return new Response("Not licensed", { status: 403, headers: corsHeaders });
 
-    // Set appropriate content type based on file type
-    let contentType = 'application/octet-stream'
+    // 3. Fetch file from BoomBox
+    // Adjust this URL pattern as needed for your BoomBox structure
+    const boomBoxUrl = `https://boombox.io/private/folder/${trackId}/${filename}`;
+    const fileRes = await fetch(boomBoxUrl);
+    if (!fileRes.ok) return new Response("File error", { status: 500, headers: corsHeaders });
+
+    // 4. Set content type
+    let contentType = "application/octet-stream";
     switch (fileType) {
-      case 'mp3':
-        contentType = 'audio/mpeg'
-        break
-      case 'zip':
-        contentType = 'application/zip'
-        break
-      case 'pdf':
-        contentType = 'application/pdf'
-        break
+      case "mp3":
+        contentType = "audio/mpeg";
+        break;
+      case "zip":
+        contentType = "application/zip";
+        break;
+      case "pdf":
+        contentType = "application/pdf";
+        break;
     }
 
-    // Return the file directly as a stream - this completely hides the original URL
-    return new Response(fileStream, {
+    // 5. Stream file to client
+    return new Response(fileRes.body, {
       status: 200,
       headers: {
         ...corsHeaders,
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'X-XSS-Protection': '1; mode=block'
+        "Content-Type": contentType,
+        "Content-Disposition": `attachment; filename=\"${filename}\"`,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block"
       }
-    })
-
+    });
   } catch (error) {
-    console.error('Secure download error:', error)
+    console.error("Secure download error:", error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       }
-    )
+    );
   }
-}) 
+}); 
