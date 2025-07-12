@@ -172,6 +172,21 @@ export function SyncProposalLicenseAgreement() {
       case 'five years':
         date.setFullYear(date.getFullYear() + 5);
         break;
+      case '3.5 years':
+      case '3.5yr':
+        date.setFullYear(date.getFullYear() + 3);
+        date.setMonth(date.getMonth() + 6); // Add 6 months for the 0.5
+        break;
+      case '2.5 years':
+      case '2.5yr':
+        date.setFullYear(date.getFullYear() + 2);
+        date.setMonth(date.getMonth() + 6); // Add 6 months for the 0.5
+        break;
+      case '1.5 years':
+      case '1.5yr':
+        date.setFullYear(date.getFullYear() + 1);
+        date.setMonth(date.getMonth() + 6); // Add 6 months for the 0.5
+        break;
       case '6 months':
       case '6mo':
       case 'half year':
@@ -184,15 +199,21 @@ export function SyncProposalLicenseAgreement() {
         break;
       default:
         // Try to parse numeric values like "2 years", "1 year", etc.
-        const yearMatch = durationLower.match(/(\d+)\s*year/);
-        const monthMatch = durationLower.match(/(\d+)\s*month/);
+        const yearMatch = durationLower.match(/(\d+(?:\.\d+)?)\s*year/);
+        const monthMatch = durationLower.match(/(\d+(?:\.\d+)?)\s*month/);
         
         if (yearMatch) {
-          const years = parseInt(yearMatch[1]);
-          date.setFullYear(date.getFullYear() + years);
+          const years = parseFloat(yearMatch[1]);
+          date.setFullYear(date.getFullYear() + Math.floor(years));
+          // Add the decimal part as months
+          const decimalPart = years - Math.floor(years);
+          if (decimalPart > 0) {
+            const months = Math.round(decimalPart * 12);
+            date.setMonth(date.getMonth() + months);
+          }
         } else if (monthMatch) {
-          const months = parseInt(monthMatch[1]);
-          date.setMonth(date.getMonth() + months);
+          const months = parseFloat(monthMatch[1]);
+          date.setMonth(date.getMonth() + Math.round(months));
         } else {
           // Default to 1 year if we can't parse the duration
           date.setFullYear(date.getFullYear() + 1);
