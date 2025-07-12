@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,28 +44,48 @@ serve(async (req) => {
       )
     }
 
-    // Get the file content as array buffer
-    const fileBuffer = await response.arrayBuffer()
+    // Get the file content as a readable stream
+    const fileStream = response.body
     
-    // Convert to base64 for transmission using Deno's built-in encoder
-    const base64Data = base64Encode(new Uint8Array(fileBuffer))
-    
-    // Return the file data as JSON
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: base64Data,
-        filename: filename,
-        fileType: fileType
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+    if (!fileStream) {
+      return new Response(
+        JSON.stringify({ error: 'No file content available' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
+      )
+    }
+
+    // Set appropriate content type based on file type
+    let contentType = 'application/octet-stream'
+    switch (fileType) {
+      case 'mp3':
+        contentType = 'audio/mpeg'
+        break
+      case 'zip':
+        contentType = 'application/zip'
+        break
+      case 'pdf':
+        contentType = 'application/pdf'
+        break
+    }
+
+    // Return the file directly as a stream - this completely hides the original URL
+    return new Response(fileStream, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'X-XSS-Protection': '1; mode=block'
       }
-    )
+    })
 
   } catch (error) {
     console.error('Secure download error:', error)
