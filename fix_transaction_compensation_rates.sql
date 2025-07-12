@@ -43,16 +43,16 @@ SET
                 -- For regular sales, use standard_rate (75%)
                 WHEN s.id IS NOT NULL THEN s.amount * 0.75
                 -- Default fallback
-                ELSE pt.amount
+                ELSE producer_transactions.amount
             END
         FROM sync_proposals sp
-        FULL OUTER JOIN sales s ON s.id::text = pt.reference_id
-        WHERE (sp.id::text = pt.reference_id OR s.id::text = pt.reference_id)
+        FULL OUTER JOIN sales s ON s.id::text = producer_transactions.reference_id
+        WHERE (sp.id::text = producer_transactions.reference_id OR s.id::text = producer_transactions.reference_id)
     ),
     updated_at = NOW()
-WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
-  AND pt.type = 'sale'
-  AND pt.reference_id IS NOT NULL;
+WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
+  AND type = 'sale'
+  AND reference_id IS NOT NULL;
 
 -- 4. Recalculate producer balance based on corrected transaction amounts
 UPDATE producer_balances 
