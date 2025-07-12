@@ -766,8 +766,9 @@ export function ClientDashboard() {
 
   // Tab filter logic - ensure no overlap between tabs
   const pendingProposals = syncProposals.filter(p => 
-    // Only show proposals that are NOT accepted by both parties
+    // Only show proposals that are NOT accepted by both parties AND NOT rejected by either party
     !(p.client_status === 'accepted' && p.producer_status === 'accepted') &&
+    !(p.client_status === 'rejected' || p.producer_status === 'rejected') &&
     (p.status === 'pending' || 
      p.status === 'pending_producer' ||
      p.status === 'pending_client' ||
