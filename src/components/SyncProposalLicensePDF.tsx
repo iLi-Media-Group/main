@@ -20,6 +20,7 @@ interface SyncProposalLicenseDetails {
 interface SyncProposalLicensePDFProps {
   license: SyncProposalLicenseDetails;
   logoUrl?: string;
+  showCredits?: boolean;
 }
 
 // Register fonts
@@ -114,7 +115,7 @@ const styles = StyleSheet.create({
   }
 });
 
-export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ license, logoUrl }) => {
+export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ license, logoUrl, showCredits = false }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -225,6 +226,16 @@ export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ 
             </Text>
           </View>
 
+          {showCredits && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>9. CREDITS</Text>
+              <Text style={styles.text}>
+                Licensee has opted to provide credit in the following format:
+                "Music by {license.producerName}"
+              </Text>
+            </View>
+          )}
+
           <View style={styles.signature}>
             <Text style={styles.signatureLine}>
               <Text style={styles.bold}>Licensor:</Text> {license.producerName}
@@ -235,6 +246,11 @@ export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ 
             <Text style={styles.signatureLine}>
               <Text style={styles.bold}>Date:</Text> {new Date(license.paymentDate).toLocaleDateString()}
             </Text>
+            <Text style={styles.text}>
+              Agreement accepted electronically by {license.producerName} on{' '}
+              {new Date(license.paymentDate).toLocaleDateString()}
+            </Text>
+            <Text style={styles.text}>Email: {license.producerEmail}</Text>
           </View>
         </View>
       </Page>

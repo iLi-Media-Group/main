@@ -31,6 +31,8 @@ export function SyncProposalLicenseAgreement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+  const [showCreditOption, setShowCreditOption] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { logoUrl } = useSiteBranding();
 
   useEffect(() => {
@@ -226,7 +228,7 @@ export function SyncProposalLicenseAgreement() {
   };
 
   const generatePDF = async () => {
-    if (!proposal) return;
+    if (!proposal || !acceptedTerms) return;
 
     try {
       setGeneratingPDF(true);
@@ -236,6 +238,7 @@ export function SyncProposalLicenseAgreement() {
         <SyncProposalLicensePDF
           license={proposal}
           logoUrl={logoUrl}
+          showCredits={showCreditOption}
         />
       ).toBlob();
 
@@ -284,7 +287,7 @@ export function SyncProposalLicenseAgreement() {
           <h1 className="text-3xl font-bold text-white">Sync Proposal License Agreement</h1>
           <button
             onClick={generatePDF}
-            disabled={generatingPDF}
+            disabled={!acceptedTerms || generatingPDF}
             className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50"
           >
             <Download className="w-5 h-5 mr-2" />
@@ -349,6 +352,59 @@ export function SyncProposalLicenseAgreement() {
             <p><strong>Licensor:</strong> {proposal.producerName}</p>
             <p><strong>Licensee:</strong> {proposal.clientName}</p>
             <p><strong>Date:</strong> {new Date(proposal.paymentDate).toLocaleDateString()}</p>
+          </div>
+
+          <div className="bg-white/5 rounded-lg p-6 my-8">
+            <h2 className="text-xl font-bold text-white mb-4">License Acceptance</h2>
+            
+            <label className="flex items-center space-x-3 mb-6">
+              <input
+                type="checkbox"
+                checked={showCreditOption}
+                onChange={(e) => setShowCreditOption(e.target.checked)}
+                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-gray-300">
+                I would like to provide credit to the producer in my productions
+              </span>
+            </label>
+
+            {showCreditOption && (
+              <div className="mb-6 p-4 bg-black/20 rounded-lg">
+                <p className="text-gray-300">
+                  Suggested credit format: "Music by {proposal.producerName}"
+                </p>
+              </div>
+            )}
+
+            <label className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-gray-300">
+                I have read and agree to the terms of this license agreement
+              </span>
+            </label>
+
+            <div className="mt-6 flex justify-end space-x-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={generatePDF}
+                disabled={!acceptedTerms || generatingPDF}
+                className="flex items-center px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                {generatingPDF ? 'Generating...' : 'Download Agreement'}
+              </button>
+            </div>
           </div>
         </div>
       </div>

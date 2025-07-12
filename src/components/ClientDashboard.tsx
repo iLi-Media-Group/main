@@ -206,6 +206,8 @@ export function ClientDashboard() {
   const [historyProposal, setHistoryProposal] = useState<SyncProposal | null>(null);
   const [showNegotiationModal, setShowNegotiationModal] = useState(false);
   const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
+  const [syncProposalSortField, setSyncProposalSortField] = useState<'date' | 'title' | 'amount' | 'status'>('date');
+  const [syncProposalSortOrder, setSyncProposalSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     if (user) {
@@ -582,6 +584,15 @@ export function ClientDashboard() {
     }
   };
 
+  const handleSyncProposalSort = (field: typeof syncProposalSortField) => {
+    if (syncProposalSortField === field) {
+      setSyncProposalSortOrder(syncProposalSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSyncProposalSortField(field);
+      setSyncProposalSortOrder('desc');
+    }
+  };
+
   const handleRemoveFavorite = async (trackId: string) => {
     if (!user) return;
 
@@ -837,7 +848,48 @@ export function ClientDashboard() {
   
   const declinedProposals = syncProposals.filter(p => p.client_status === 'rejected' || p.producer_status === 'rejected');
 
+  // Sort function for sync proposals
+  const sortSyncProposals = (proposals: any[]) => {
+    return proposals.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+      
+      switch (syncProposalSortField) {
+        case 'date':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'title':
+          aValue = a.track?.title || '';
+          bValue = b.track?.title || '';
+          break;
+        case 'amount':
+          aValue = a.final_amount || a.sync_fee || 0;
+          bValue = b.final_amount || b.sync_fee || 0;
+          break;
+        case 'status':
+          aValue = a.status || '';
+          bValue = b.status || '';
+          break;
+        default:
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+      }
+      
+      if (syncProposalSortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  };
 
+  // Sorted proposal arrays
+  const sortedPendingProposals = sortSyncProposals([...pendingProposals]);
+  const sortedPaymentPendingProposals = sortSyncProposals([...paymentPendingProposals]);
+  const sortedAcceptedProposals = sortSyncProposals([...acceptedProposals]);
+  const sortedPaidProposals = sortSyncProposals([...paidProposals]);
+  const sortedDeclinedProposals = sortSyncProposals([...declinedProposals]);
 
   if (loading) {
     return (
@@ -1027,6 +1079,62 @@ export function ClientDashboard() {
               <FileText className="w-5 h-5 mr-2 text-yellow-400" />
               Sync Proposals
             </h2>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => handleSyncProposalSort('date')}
+                className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
+                  syncProposalSortField === 'date' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white/10 text-gray-300 hover:text-white'
+                }`}
+              >
+                <Calendar className="w-3 h-3" />
+                <span>Date</span>
+                {syncProposalSortField === 'date' && (
+                  <ArrowUpDown className="w-3 h-3" />
+                )}
+              </button>
+              <button
+                onClick={() => handleSyncProposalSort('title')}
+                className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
+                  syncProposalSortField === 'title' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white/10 text-gray-300 hover:text-white'
+                }`}
+              >
+                <span>Title</span>
+                {syncProposalSortField === 'title' && (
+                  <ArrowUpDown className="w-3 h-3" />
+                )}
+              </button>
+              <button
+                onClick={() => handleSyncProposalSort('amount')}
+                className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
+                  syncProposalSortField === 'amount' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white/10 text-gray-300 hover:text-white'
+                }`}
+              >
+                <DollarSign className="w-3 h-3" />
+                <span>Amount</span>
+                {syncProposalSortField === 'amount' && (
+                  <ArrowUpDown className="w-3 h-3" />
+                )}
+              </button>
+              <button
+                onClick={() => handleSyncProposalSort('status')}
+                className={`flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors ${
+                  syncProposalSortField === 'status' 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-white/10 text-gray-300 hover:text-white'
+                }`}
+              >
+                <span>Status</span>
+                {syncProposalSortField === 'status' && (
+                  <ArrowUpDown className="w-3 h-3" />
+                )}
+              </button>
+            </div>
           </div>
           
           {/* Tab Navigation */}
@@ -1084,14 +1192,14 @@ export function ClientDashboard() {
           </div>
 
           {/* Tab Content */}
-          <div className="space-y-4">
+          <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
             {syncProposalsTab === 'pending' && (
-              pendingProposals.length === 0 ? (
+              sortedPendingProposals.length === 0 ? (
                 <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                   <p className="text-gray-400">No pending or active proposals</p>
                 </div>
               ) : (
-                pendingProposals.map((proposal) => (
+                sortedPendingProposals.map((proposal) => (
                   <div
                     key={proposal.id}
                     className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
@@ -1154,12 +1262,12 @@ export function ClientDashboard() {
             )}
 
             {syncProposalsTab === 'payment-pending' && (
-              paymentPendingProposals.length === 0 ? (
+              sortedPaymentPendingProposals.length === 0 ? (
                 <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                   <p className="text-gray-400">No payment pending proposals</p>
                 </div>
               ) : (
-                paymentPendingProposals.map((proposal) => (
+                sortedPaymentPendingProposals.map((proposal) => (
                   <div
                     key={proposal.id}
                     className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
@@ -1245,12 +1353,12 @@ export function ClientDashboard() {
             )}
 
             {syncProposalsTab === 'accepted' && (
-              acceptedProposals.length === 0 ? (
+              sortedAcceptedProposals.length === 0 ? (
                 <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                   <p className="text-gray-400">No accepted proposals</p>
                 </div>
               ) : (
-                acceptedProposals.map((proposal) => (
+                sortedAcceptedProposals.map((proposal) => (
                   <div
                     key={proposal.id}
                     className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20"
@@ -1296,12 +1404,12 @@ export function ClientDashboard() {
             )}
 
             {syncProposalsTab === 'paid' && (
-              paidProposals.length === 0 ? (
+              sortedPaidProposals.length === 0 ? (
                 <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                   <p className="text-gray-400">No paid proposals</p>
                 </div>
               ) : (
-                paidProposals.map((proposal) => (
+                sortedPaidProposals.map((proposal) => (
                   <div
                     key={proposal.id}
                     className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
@@ -1347,12 +1455,12 @@ export function ClientDashboard() {
             )}
 
             {syncProposalsTab === 'declined' && (
-              declinedProposals.length === 0 ? (
+              sortedDeclinedProposals.length === 0 ? (
                 <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                   <p className="text-gray-400">No declined proposals</p>
                 </div>
               ) : (
-                declinedProposals.map((proposal) => (
+                sortedDeclinedProposals.map((proposal) => (
                   <div
                     key={proposal.id}
                     className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
@@ -1561,7 +1669,7 @@ export function ClientDashboard() {
                       <div className="flex flex-col space-y-3">
                         <div className="flex items-start space-x-4">
                           <img
-                            src={proposal.track.image}
+                            src={proposal.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
                             alt={proposal.track.title}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                             onClick={() => navigate(`/track/${proposal.track.id}`)}
