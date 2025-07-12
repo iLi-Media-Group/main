@@ -161,14 +161,17 @@ export function RevenueBreakdownDialog({
           id,
           sync_fee,
           final_amount,
+          negotiated_amount,
           payment_terms,
           final_payment_terms,
+          negotiated_payment_terms,
           client_accepted_at,
           payment_due_date,
           status,
           client_status,
           producer_status,
           created_at,
+          updated_at,
           track:tracks!inner (
             title,
             track_producer_id
@@ -187,6 +190,12 @@ export function RevenueBreakdownDialog({
 
       if (pendingSyncProposalsError) throw pendingSyncProposalsError;
 
+      // Debug logging for pending sync proposals
+      console.log('=== PENDING SYNC PROPOSALS DEBUG ===');
+      console.log('Pending sync proposals count:', pendingSyncProposalsData?.length || 0);
+      console.log('Pending sync proposals data:', pendingSyncProposalsData);
+      console.log('=== END PENDING SYNC PROPOSALS DEBUG ===');
+
       // Fetch pending custom sync requests
       let pendingCustomSyncQuery = supabase
         .from('custom_sync_requests')
@@ -201,6 +210,7 @@ export function RevenueBreakdownDialog({
           status,
           negotiation_status,
           created_at,
+          updated_at,
           preferred_producer_id
         `)
         .eq('payment_status', 'pending')
@@ -220,9 +230,9 @@ export function RevenueBreakdownDialog({
 
       // Add pending sync proposals
       pendingSyncProposalsData?.forEach(proposal => {
-        const amount = proposal.final_amount || proposal.sync_fee;
-        const paymentTerms = proposal.final_payment_terms || proposal.payment_terms;
-        const acceptedDate = proposal.client_accepted_at || proposal.created_at;
+        const amount = proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee;
+        const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms;
+        const acceptedDate = proposal.client_accepted_at || proposal.updated_at || proposal.created_at;
         
         // Calculate expected payment date based on payment terms
         let expectedDate: string | undefined;
@@ -254,7 +264,7 @@ export function RevenueBreakdownDialog({
           amount: amount,
           expectedDate: expectedDate,
           status: 'Payment Pending',
-          description: `"${proposal.track?.title}" - ${paymentTerms || 'immediate'} payment`
+          description: `"${proposal.track?.[0]?.title || 'Untitled Track'}" - ${paymentTerms || 'immediate'} payment`
         });
       });
 
@@ -262,7 +272,7 @@ export function RevenueBreakdownDialog({
       pendingCustomSyncData?.forEach(request => {
         const amount = request.final_amount || request.sync_fee;
         const paymentTerms = request.final_payment_terms || request.payment_terms;
-        const acceptedDate = request.client_accepted_at || request.created_at;
+        const acceptedDate = request.client_accepted_at || request.updated_at || request.created_at;
         
         // Calculate expected payment date based on payment terms
         let expectedDate: string | undefined;
@@ -300,6 +310,13 @@ export function RevenueBreakdownDialog({
 
       // Calculate total pending revenue
       const totalPending = pendingPaymentsList.reduce((sum, payment) => sum + payment.amount, 0);
+
+      // Debug logging for pending payments
+      console.log('=== PENDING PAYMENTS DEBUG ===');
+      console.log('Total pending payments count:', pendingPaymentsList.length);
+      console.log('Total pending revenue:', totalPending);
+      console.log('Pending payments list:', pendingPaymentsList);
+      console.log('=== END PENDING PAYMENTS DEBUG ===');
 
       // Process sales by license type
       const salesByLicenseType = salesData?.reduce((acc, sale) => {
