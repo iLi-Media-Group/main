@@ -846,7 +846,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Top Performing Tracks */}
-          <Card className="xl:col-span-1 md:col-span-2">
+          <Card>
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <Music className="w-5 h-5 text-purple-400" />
@@ -928,7 +928,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Revenue Forecast */}
-          <Card className="xl:col-span-2">
+          <Card>
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-500" />
@@ -958,7 +958,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Client Churn Risk */}
-          <Card className="xl:col-span-3">
+          <Card>
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
