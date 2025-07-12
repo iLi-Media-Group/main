@@ -817,11 +817,11 @@ export function ClientDashboard() {
     (p.payment_status === 'pending' || p.payment_status === null || p.payment_status === undefined)
   );
   
-  // Fully accepted and paid proposals
+  // Accepted proposals (accepted by both parties but not yet paid)
   const acceptedProposals = syncProposals.filter(p => 
     p.client_status === 'accepted' && 
     p.producer_status === 'accepted' && 
-    p.payment_status === 'paid'
+    (p.payment_status === 'pending' || p.payment_status === null || p.payment_status === undefined)
   );
   
   // Paid proposals (accepted by both parties and payment completed)
