@@ -36,6 +36,8 @@ export function SyncProposalLicenseAgreement() {
       if (!user || !proposalId) return;
 
       try {
+        console.log('Fetching sync proposal with ID:', proposalId);
+        
         const { data, error } = await supabase
           .from('sync_proposals')
           .select(`
@@ -52,17 +54,17 @@ export function SyncProposalLicenseAgreement() {
             payment_date,
             client_accepted_at,
             created_at,
-            track:tracks!inner (
+            track:tracks(
               id,
               title,
-              producer:profiles!tracks_track_producer_id_fkey (
+              producer:profiles!tracks_track_producer_id_fkey(
                 id,
                 first_name,
                 last_name,
                 email
               )
             ),
-            client:profiles!sync_proposals_client_id_fkey (
+            client:profiles!sync_proposals_client_id_fkey(
               id,
               first_name,
               last_name,
@@ -73,7 +75,12 @@ export function SyncProposalLicenseAgreement() {
           .eq('id', proposalId)
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase error:', error);
+          throw error;
+        }
+        
+        console.log('Sync proposal data:', data);
 
         if (data) {
           const amount = data.final_amount || data.negotiated_amount || data.sync_fee || 0;
