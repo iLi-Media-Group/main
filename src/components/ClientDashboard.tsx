@@ -1344,13 +1344,21 @@ export function ClientDashboard() {
                         View Agreement
                       </button>
                       {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
-                        <div className="flex items-center space-x-1">
+                        <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
+                          {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                           {proposal.track.mp3_url && (
                             <a
                               href={proposal.track.mp3_url}
                               download
+                              onClick={(e) => {
+                                // Prevent any state changes that might hide the buttons
+                                e.stopPropagation();
+                                console.log('Downloading MP3 from sync proposal:', proposal.track.mp3_url);
+                              }}
                               className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                               title="Download MP3"
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               MP3
@@ -1360,8 +1368,15 @@ export function ClientDashboard() {
                             <a
                               href={proposal.track.trackouts_url}
                               download
+                              onClick={(e) => {
+                                // Prevent any state changes that might hide the buttons
+                                e.stopPropagation();
+                                console.log('Downloading Trackouts from sync proposal:', proposal.track.trackouts_url);
+                              }}
                               className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                               title="Download Trackouts"
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               Stems
@@ -1371,8 +1386,15 @@ export function ClientDashboard() {
                             <a
                               href={proposal.track.split_sheet_url}
                               download
+                              onClick={(e) => {
+                                // Prevent any state changes that might hide the buttons
+                                e.stopPropagation();
+                                console.log('Downloading Split Sheet from sync proposal:', proposal.track.split_sheet_url);
+                              }}
                               className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                               title="Download Split Sheet"
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
                               <Download className="w-3 h-3 mr-1" />
                               Sheet
@@ -1643,13 +1665,21 @@ export function ClientDashboard() {
                                   View Agreement
                                 </button>
                                 {(license.track.mp3Url || license.track.trackoutsUrl || license.track.splitSheetUrl) && (
-                                  <div className="flex items-center space-x-1">
+                                  <div className="flex items-center space-x-1" key={`download-${license.id}`}>
+                                    {console.log('License track URLs:', { mp3Url: license.track.mp3Url, trackoutsUrl: license.track.trackoutsUrl, splitSheetUrl: license.track.splitSheetUrl })}
                                     {license.track.mp3Url && (
                                       <a
                                         href={license.track.mp3Url}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading MP3:', license.track.mp3Url);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         MP3
@@ -1659,8 +1689,15 @@ export function ClientDashboard() {
                                       <a
                                         href={license.track.trackoutsUrl}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading Trackouts:', license.track.trackoutsUrl);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Stems
@@ -1670,8 +1707,15 @@ export function ClientDashboard() {
                                       <a
                                         href={license.track.splitSheetUrl}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading Split Sheet:', license.track.splitSheetUrl);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Sheet
@@ -1784,13 +1828,21 @@ export function ClientDashboard() {
                                   </button>
                                 )}
                                 {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
-                                  <div className="flex items-center space-x-1">
+                                  <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
+                                    {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                                     {proposal.track.mp3_url && (
                                       <a
                                         href={proposal.track.mp3_url}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading MP3 from sync proposal:', proposal.track.mp3_url);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
                                         title="Download MP3"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         MP3
@@ -1800,8 +1852,15 @@ export function ClientDashboard() {
                                       <a
                                         href={proposal.track.trackouts_url}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading Trackouts from sync proposal:', proposal.track.trackouts_url);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Stems
@@ -1811,8 +1870,15 @@ export function ClientDashboard() {
                                       <a
                                         href={proposal.track.split_sheet_url}
                                         download
+                                        onClick={(e) => {
+                                          // Prevent any state changes that might hide the buttons
+                                          e.stopPropagation();
+                                          console.log('Downloading Split Sheet from sync proposal:', proposal.track.split_sheet_url);
+                                        }}
                                         className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
                                         title="Download Split Sheet"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
                                         Sheet
