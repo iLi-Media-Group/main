@@ -18,12 +18,13 @@ SELECT
     p.first_name,
     p.last_name,
     p.email,
+    p.account_type,
     pb.pending_balance,
     pb.available_balance,
     pb.lifetime_earnings
 FROM profiles p
 LEFT JOIN producer_balances pb ON pb.balance_producer_id = p.id
-WHERE p.account_type = 'producer'
+WHERE p.account_type IN ('producer', 'admin')  -- Include both producers and admin (hybrid)
 ORDER BY pb.lifetime_earnings DESC NULLS LAST;
 
 -- 3. Show breakdown of all transaction types for ALL producers
@@ -42,7 +43,6 @@ SELECT
     COUNT(*) as count,
     COALESCE(SUM(COALESCE(csr.final_amount, csr.sync_fee) * 0.90), 0) as total_amount
 FROM custom_sync_requests csr
-JOIN tracks t ON csr.track_id = t.id
 WHERE csr.payment_status = 'paid'
 
 UNION ALL
@@ -146,12 +146,13 @@ SELECT
     p.first_name,
     p.last_name,
     p.email,
+    p.account_type,
     pb.pending_balance,
     pb.available_balance,
     pb.lifetime_earnings
 FROM profiles p
 LEFT JOIN producer_balances pb ON pb.balance_producer_id = p.id
-WHERE p.account_type = 'producer'
+WHERE p.account_type IN ('producer', 'admin')  -- Include both producers and admin (hybrid)
 ORDER BY pb.lifetime_earnings DESC NULLS LAST;
 
 -- 10. Show breakdown of corrected transactions by type for ALL producers
@@ -192,7 +193,15 @@ WHERE pt.type = 'sale'
 UNION ALL
 
 SELECT 
-    'Total Producers' as metric,
+    'Total Producers (including admin)' as metric,
+    COUNT(*) as value
+FROM profiles p
+WHERE p.account_type IN ('producer', 'admin')
+
+UNION ALL
+
+SELECT 
+    'Total Producers (excluding admin)' as metric,
     COUNT(*) as value
 FROM profiles p
 WHERE p.account_type = 'producer'; 
