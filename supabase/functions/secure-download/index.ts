@@ -100,7 +100,7 @@ serve(async (req) => {
     // Use the shareId for BoomBox URL construction
     const boomBoxUrl = `https://app.boombox.io/app/shares/${shareId}`;
     console.log("Fetching from BoomBox URL:", boomBoxUrl);
-    const fileRes = await fetch(boomBoxUrl);
+    let fileRes = await fetch(boomBoxUrl);
     
     console.log("BoomBox response status:", fileRes.status);
     console.log("BoomBox response headers:", Object.fromEntries(fileRes.headers.entries()));
@@ -115,8 +115,35 @@ serve(async (req) => {
     console.log("BoomBox content-type:", boomBoxContentType);
     
     if (boomBoxContentType && boomBoxContentType.includes("text/html")) {
-      console.log("Received HTML instead of file - BoomBox URL might be a web page");
-      return new Response("Invalid file URL", { status: 400, headers: corsHeaders });
+      console.log("Received HTML instead of file - parsing BoomBox page for download URL");
+      
+      // Parse the HTML to find the actual download URL
+      const htmlText = await fileRes.text();
+      console.log("HTML response length:", htmlText.length);
+      
+      // Look for download links in the HTML
+      const downloadUrlMatch = htmlText.match(/href="([^"]*download[^"]*)"/i) || 
+                              htmlText.match(/href="([^"]*\.mp3[^"]*)"/i) ||
+                              htmlText.match(/href="([^"]*\.zip[^"]*)"/i) ||
+                              htmlText.match(/href="([^"]*\.pdf[^"]*)"/i);
+      
+      if (downloadUrlMatch) {
+        const actualDownloadUrl = downloadUrlMatch[1];
+        console.log("Found download URL in HTML:", actualDownloadUrl);
+        
+        // Fetch the actual file from the extracted URL
+        const actualFileRes = await fetch(actualDownloadUrl);
+        if (!actualFileRes.ok) {
+          console.log("Failed to fetch actual file:", actualFileRes.status);
+          return new Response("File download failed", { status: 500, headers: corsHeaders });
+        }
+        
+        console.log("Successfully fetched actual file");
+        fileRes = actualFileRes; // Use the actual file response
+      } else {
+        console.log("No download URL found in HTML");
+        return new Response("No download link found", { status: 400, headers: corsHeaders });
+      }
     }
 
     // Get file size if available
