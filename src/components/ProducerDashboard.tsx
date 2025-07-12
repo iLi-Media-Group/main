@@ -523,7 +523,7 @@ export function ProducerDashboard() {
     p.client_status !== 'rejected'
   );
   const filteredAcceptedProposals = proposals.filter(p => 
-    p.producer_status === 'accepted' && p.client_status === 'accepted'
+    p.producer_status === 'accepted' && p.client_status === 'accepted' && p.payment_status !== 'paid'
   );
   const filteredDeclinedProposals = proposals.filter(p => 
     p.producer_status === 'rejected' || p.client_status === 'rejected'
