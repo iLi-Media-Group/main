@@ -41,7 +41,7 @@ ORDER BY pt.created_at DESC;
 -- Calculate the total amount that should be in pending balance
 SELECT 
     'Total from Sync Proposals' as source,
-    SUM(COALESCE(sp.final_amount, sp.sync_fee) * 0.70) as total_amount
+    COALESCE(SUM(COALESCE(sp.final_amount, sp.sync_fee) * 0.70), 0) as total_amount
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
 WHERE sp.payment_status = 'paid'
@@ -53,7 +53,7 @@ UNION ALL
 
 SELECT 
     'Total from Transactions' as source,
-    SUM(pt.amount) as total_amount
+    COALESCE(SUM(pt.amount), 0) as total_amount
 FROM producer_transactions pt
 WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.created_at >= '2024-07-01'
@@ -104,10 +104,10 @@ WHERE sp.payment_status = 'paid'
     WHERE reference_id IS NOT NULL
   );
 
--- 2. Update producer balance with correct July 2024 total
+-- 2. Update producer balance with correct July 2024 total (with NULL handling)
 UPDATE producer_balances 
 SET 
-    pending_balance = (
+    pending_balance = COALESCE((
         SELECT SUM(COALESCE(sp.final_amount, sp.sync_fee) * 0.70)
         FROM sync_proposals sp
         JOIN tracks t ON sp.track_id = t.id
@@ -115,14 +115,14 @@ SET
           AND sp.payment_date >= '2024-07-01'
           AND sp.payment_date < '2024-08-01'
           AND t.track_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
-    ),
-    lifetime_earnings = (
+    ), 0),
+    lifetime_earnings = COALESCE((
         SELECT SUM(COALESCE(sp.final_amount, sp.sync_fee) * 0.70)
         FROM sync_proposals sp
         JOIN tracks t ON sp.track_id = t.id
         WHERE sp.payment_status = 'paid'
           AND t.track_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
-    )
+    ), 0)
 WHERE balance_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18';
 
 -- 3. Show final results
