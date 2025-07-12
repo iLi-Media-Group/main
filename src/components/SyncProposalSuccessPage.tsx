@@ -288,6 +288,34 @@ export function SyncProposalSuccessPage() {
             Your payment has been successfully completed and your sync license is now active.
           </p>
 
+          {/* Payment Summary Section */}
+          <div className="bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-lg p-6 mb-8 border border-green-500/20">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-white">Payment Summary</h2>
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 text-lg">Amount Paid:</span>
+                  <span className="text-green-400 font-bold text-2xl">
+                    ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 text-lg">Payment Terms:</span>
+                  <span className="text-blue-400 font-bold text-xl">
+                    {formatPaymentTerms(proposalData.final_payment_terms || proposalData.negotiated_payment_terms || proposalData.payment_terms)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white/5 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">License Details</h2>
             

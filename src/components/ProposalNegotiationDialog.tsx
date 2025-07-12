@@ -449,9 +449,33 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
   // Determine if the current user should see accept/decline
   const isClient = user && proposal?.client_id === user.id;
   const isProducer = user && proposal?.track?.producer?.id === user.id;
-  const needsClientAcceptance = proposal?.negotiation_status === 'client_acceptance_required' && isClient;
-  const needsProducerAcceptance = proposal?.negotiation_status === 'producer_acceptance_required' && isProducer;
-  const showAcceptDecline = needsClientAcceptance || needsProducerAcceptance;
+  
+  // Check if there's a pending negotiation that needs acceptance/decline
+  const lastMessage = messages[messages.length - 1];
+  const hasPendingNegotiation = lastMessage && 
+      user && lastMessage.sender.email !== user.email && 
+      (lastMessage.counter_offer || 
+       lastMessage.counter_terms || 
+       detectedPaymentTerms ||
+       (lastMessage.message && (
+         lastMessage.message.toLowerCase().includes('counter') ||
+         lastMessage.message.toLowerCase().includes('propose') ||
+         lastMessage.message.toLowerCase().includes('suggest') ||
+         lastMessage.message.toLowerCase().includes('offer')
+       ))) &&
+      isClient && // Only show for clients
+      (proposal?.negotiation_status === 'client_acceptance_required' || 
+       proposal?.negotiation_status === 'negotiating' ||
+       proposal?.negotiation_status === 'pending');
+  
+  // Fallback: if there's any message from the other party and we haven't responded yet
+  const hasUnrespondedMessage = lastMessage && 
+    user && lastMessage.sender.email !== user.email && 
+    isClient && // Only show for clients
+    proposal?.negotiation_status !== 'accepted' &&
+    proposal?.negotiation_status !== 'rejected';
+  
+  const showAcceptDecline = hasPendingNegotiation || hasUnrespondedMessage;
 
   if (!isOpen) return null;
 
