@@ -987,7 +987,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* AI Recommendations */}
-          <Card className="xl:col-span-3">
+          <Card className="xl:col-span-2">
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-violet-400" />
