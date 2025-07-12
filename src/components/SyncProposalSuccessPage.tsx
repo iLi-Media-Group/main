@@ -15,7 +15,11 @@ interface SyncProposalData {
     };
   };
   sync_fee: number;
+  final_amount?: number;
+  negotiated_amount?: number;
   payment_terms: string;
+  final_payment_terms?: string;
+  negotiated_payment_terms?: string;
   payment_date: string;
   project_type: string;
   duration: string;
@@ -71,7 +75,11 @@ export function SyncProposalSuccessPage() {
           .select(`
             id,
             sync_fee,
+            final_amount,
+            negotiated_amount,
             payment_terms,
+            final_payment_terms,
+            negotiated_payment_terms,
             payment_date,
             project_type,
             duration,
@@ -95,7 +103,19 @@ export function SyncProposalSuccessPage() {
           return;
         }
 
-        setProposalData(proposal);
+        // Fix track data structure (Supabase returns arrays for joins)
+        const proposalData = {
+          ...proposal,
+          track: {
+            title: proposal.track?.[0]?.title || 'Unknown Track',
+            producer: {
+              first_name: proposal.track?.[0]?.producer?.[0]?.first_name || 'Unknown',
+              last_name: proposal.track?.[0]?.producer?.[0]?.last_name || 'Producer'
+            }
+          }
+        };
+
+        setProposalData(proposalData);
 
         // Check if license PDF has been generated
         if (proposal.license_url) {
@@ -318,7 +338,7 @@ export function SyncProposalSuccessPage() {
                   <span className="text-white">Amount Paid:</span>
                 </div>
                 <span className="text-green-400 font-semibold">
-                  ${proposalData.sync_fee.toFixed(2)}
+                  ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee).toFixed(2)}
                 </span>
               </div>
               
@@ -328,7 +348,7 @@ export function SyncProposalSuccessPage() {
                   <span className="text-white">Payment Terms:</span>
                 </div>
                 <span className="text-white font-medium">
-                  {formatPaymentTerms(proposalData.payment_terms)}
+                  {formatPaymentTerms(proposalData.final_payment_terms || proposalData.negotiated_payment_terms || proposalData.payment_terms)}
                 </span>
               </div>
               
