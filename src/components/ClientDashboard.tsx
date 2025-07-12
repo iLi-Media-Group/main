@@ -744,7 +744,7 @@ export function ClientDashboard() {
         case 'title':
           return a.title.localeCompare(b.title) * modifier;
         case 'genre':
-          return a.genres[0].localeCompare(b.genres[0]) * modifier;
+          return (Array.isArray(a.genres) && a.genres[0] ? a.genres[0] : '').localeCompare(Array.isArray(b.genres) && b.genres[0] ? b.genres[0] : '') * modifier;
         case 'bpm':
           return (a.bpm - b.bpm) * modifier;
         default:
@@ -1453,7 +1453,7 @@ export function ClientDashboard() {
                             <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
                               <span className="flex items-center">
                                 <Tag className="w-4 h-4 mr-1" />
-                                {license.track.genres.join(', ')}
+                                {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
                               </span>
                               <span className="flex items-center">
                                 <Hash className="w-4 h-4 mr-1" />
@@ -1550,7 +1550,7 @@ export function ClientDashboard() {
                             <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
                               <span className="flex items-center">
                                 <Tag className="w-4 h-4 mr-1" />
-                                {proposal.track.genres.join(', ')}
+                                {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
                               </span>
                               <span className="flex items-center">
                                 <Hash className="w-4 h-4 mr-1" />
