@@ -422,16 +422,21 @@ export function RevenueBreakdownDialog({
       // Calculate monthly revenue
       const months: Record<string, number> = {};
       
-      // Initialize months
+      // Initialize months with proper date handling
       const monthCount = timeframe === 'month' ? 1 : 
                          timeframe === 'quarter' ? 3 : 
                          timeframe === 'year' ? 12 : 24;
       
+      // Create a more robust month key generation
       for (let i = 0; i < monthCount; i++) {
         const date = new Date();
         date.setMonth(date.getMonth() - i);
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        // Use a more consistent month key format
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const displayMonth = date.toLocaleString('default', { month: 'short', year: 'numeric' });
         months[monthKey] = 0;
+        // Store display name for later use
+        (months as any)[`${monthKey}_display`] = displayMonth;
       }
       
       // Debug logging
@@ -443,10 +448,15 @@ export function RevenueBreakdownDialog({
       console.log('Sync proposals count:', syncProposalsData?.length || 0);
       console.log('Custom sync count:', customSyncData?.length || 0);
       
+      // Helper function to get month key
+      const getMonthKey = (date: Date) => {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      };
+      
       // Add track sales to months
       salesData?.forEach(sale => {
         const date = new Date(sale.created_at);
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const monthKey = getMonthKey(date);
         console.log(`Sale: ${date.toISOString()} -> ${monthKey}, amount: ${sale.amount}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += sale.amount || 0;
@@ -456,7 +466,7 @@ export function RevenueBreakdownDialog({
       // Add sync proposals to months
       syncProposalsData?.forEach(proposal => {
         const date = new Date(proposal.created_at);
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const monthKey = getMonthKey(date);
         console.log(`Sync proposal: ${date.toISOString()} -> ${monthKey}, amount: ${proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee) || 0;
@@ -466,7 +476,7 @@ export function RevenueBreakdownDialog({
       // Add custom sync requests to months
       customSyncData?.forEach(req => {
         const date = new Date(req.created_at);
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const monthKey = getMonthKey(date);
         console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.final_amount || req.sync_fee}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += (req.final_amount || req.sync_fee) || 0;
@@ -482,7 +492,7 @@ export function RevenueBreakdownDialog({
           // If no expected date, use current date for immediate payments
           date = new Date();
         }
-        const monthKey = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+        const monthKey = getMonthKey(date);
         console.log(`Pending payment: ${date.toISOString()} -> ${monthKey}, amount: ${payment.amount}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += payment.amount || 0;
@@ -491,12 +501,19 @@ export function RevenueBreakdownDialog({
       
       console.log('Final months data:', months);
       
-      // Convert to array and sort by date
+      // Convert to array and sort by date, using display names
       const monthlyData = Object.entries(months)
-        .map(([month, amount]) => ({ month, amount }))
+        .filter(([key]) => !key.endsWith('_display')) // Exclude display name entries
+        .map(([monthKey, amount]) => ({ 
+          month: (months as any)[`${monthKey}_display`] || monthKey, 
+          amount 
+        }))
         .sort((a, b) => {
-          const dateA = new Date(a.month);
-          const dateB = new Date(b.month);
+          // Parse the month key for sorting
+          const [yearA, monthA] = a.month.includes('-') ? a.month.split('-') : [a.month, '1'];
+          const [yearB, monthB] = b.month.includes('-') ? b.month.split('-') : [b.month, '1'];
+          const dateA = new Date(parseInt(yearA), parseInt(monthA) - 1);
+          const dateB = new Date(parseInt(yearB), parseInt(monthB) - 1);
           return dateA.getTime() - dateB.getTime();
         });
       

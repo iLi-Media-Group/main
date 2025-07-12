@@ -7,7 +7,8 @@ import { WithdrawalRequestForm } from './WithdrawalRequestForm';
 
 interface Transaction {
   id: string;
-  amount: number;
+  amount: number; // compensation amount
+  original_amount?: number; // original transaction amount
   type: 'sale' | 'withdrawal' | 'adjustment';
   status: 'pending' | 'completed' | 'rejected';
   created_at: string;

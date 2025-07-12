@@ -367,12 +367,20 @@ export function ProducerDashboard() {
       setProposals(flattenedAllProposals);
       setPendingProposals(flattenedRecentProposals);
 
+      // Calculate pending proposals count using the same filtering logic as the UI
+      const pendingProposalsCount = flattenedAllProposals.filter(p => 
+        (p.status === 'pending' || 
+        (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+        p.producer_status !== 'rejected' && 
+        p.client_status !== 'rejected'
+      ).length;
+
       // Update stats
       setStats({
         totalTracks,
         totalSales,
         totalRevenue,
-        pendingProposals: recentProposalsData?.length || 0
+        pendingProposals: pendingProposalsCount
       });
 
     } catch (err) {
@@ -486,13 +494,28 @@ export function ProducerDashboard() {
           : p
       ));
       
-      setPendingProposals(pendingProposals.filter(p => p.id !== selectedProposal.id));
-      
       setShowConfirmDialog(false);
       setSelectedProposal(null);
       
-      // Refresh dashboard data
-      fetchDashboardData();
+      // Recalculate pending proposals count after the update
+      const updatedProposals = proposals.map(p => 
+        p.id === selectedProposal.id 
+          ? { ...p, producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected', updated_at: new Date().toISOString() } 
+          : p
+      );
+      
+      const newPendingCount = updatedProposals.filter(p => 
+        (p.status === 'pending' || 
+        (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+        p.producer_status !== 'rejected' && 
+        p.client_status !== 'rejected'
+      ).length;
+
+      // Update stats to reflect the change
+      setStats(prev => ({
+        ...prev,
+        pendingProposals: newPendingCount
+      }));
     } catch (err) {
       console.error(`Error ${confirmAction}ing proposal:`, err);
       setError(`Failed to ${confirmAction} proposal`);

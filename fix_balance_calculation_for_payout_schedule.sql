@@ -152,10 +152,10 @@ WHERE pt.type = 'sale'
 -- 9. Show next payout date calculation
 SELECT 
     'Next Payout Date' as info,
-    DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' + INTERVAL '9 days' as payout_date
+    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' + INTERVAL '9 days')::text as payout_date
 
 UNION ALL
 
 SELECT 
     'Days Until Payout' as info,
-    (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' + INTERVAL '9 days' - CURRENT_DATE)::integer as days_remaining; 
+    EXTRACT(DAY FROM (DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month' + INTERVAL '9 days' - CURRENT_DATE))::text as days_remaining; 
