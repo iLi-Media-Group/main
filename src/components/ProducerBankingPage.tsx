@@ -54,6 +54,20 @@ export function ProducerBankingPage() {
     }
   }, [user, filterType, dateRange, sortField, sortOrder]);
 
+  // Add manual refresh function
+  const handleManualRefresh = async () => {
+    if (user) {
+      setLoading(true);
+      try {
+        await fetchData();
+      } catch (error) {
+        console.error('Error refreshing banking data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -223,6 +237,14 @@ export function ProducerBankingPage() {
               </p>
             )}
           </div>
+          <button
+            onClick={handleManualRefresh}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <Loader2 className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh</span>
+          </button>
         </div>
 
         {error && (
