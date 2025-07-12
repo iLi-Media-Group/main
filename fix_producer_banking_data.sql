@@ -1,20 +1,24 @@
--- Fix Producer Banking and License URLs for Paid Sync Proposals
+-- Fix Producer Banking Data for Paid Sync Proposals
 -- Run this in your Supabase SQL Editor
 
--- First, let's see the current state of paid proposals
+-- First, let's check what paid sync proposals we have
 SELECT 
-    id,
-    sync_fee,
-    final_amount,
-    payment_status,
-    license_url,
-    created_at,
-    updated_at
-FROM sync_proposals 
-WHERE payment_status = 'paid'
-ORDER BY created_at DESC;
+    sp.id,
+    sp.sync_fee,
+    sp.final_amount,
+    sp.payment_status,
+    sp.payment_date,
+    t.title as track_title,
+    t.track_producer_id,
+    p.first_name,
+    p.last_name
+FROM sync_proposals sp
+JOIN tracks t ON sp.track_id = t.id
+JOIN profiles p ON t.track_producer_id = p.id
+WHERE sp.payment_status = 'paid'
+ORDER BY sp.payment_date DESC;
 
--- Check if transaction records exist for paid proposals
+-- Check current transaction records
 SELECT 
     pt.id,
     pt.transaction_producer_id,
@@ -31,14 +35,15 @@ WHERE pt.reference_id IN (
 )
 ORDER BY pt.created_at DESC;
 
--- Check producer balances
+-- Check current producer balances
 SELECT 
     pb.balance_producer_id,
     pb.available_balance,
     pb.pending_balance,
     pb.lifetime_earnings,
     p.first_name,
-    p.last_name
+    p.last_name,
+    p.email
 FROM producer_balances pb
 JOIN profiles p ON pb.balance_producer_id = p.id
 ORDER BY pb.lifetime_earnings DESC;
@@ -56,13 +61,13 @@ INSERT INTO producer_transactions (
 )
 SELECT 
     t.track_producer_id,
-    sp.sync_fee * 0.70, -- 70% producer share
+    COALESCE(sp.final_amount, sp.sync_fee) * 0.70, -- 70% producer share, use final_amount if available
     'sale',
     'pending',
     'Sync Fee: ' || t.title,
     t.title,
     sp.id::text,
-    sp.payment_date
+    COALESCE(sp.payment_date, sp.updated_at)
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
 WHERE sp.payment_status = 'paid'
@@ -80,9 +85,9 @@ INSERT INTO producer_balances (
 )
 SELECT 
     t.track_producer_id,
-    sp.sync_fee * 0.70,
+    COALESCE(sp.final_amount, sp.sync_fee) * 0.70,
     0,
-    sp.sync_fee * 0.70
+    COALESCE(sp.final_amount, sp.sync_fee) * 0.70
 FROM sync_proposals sp
 JOIN tracks t ON sp.track_id = t.id
 WHERE sp.payment_status = 'paid'
@@ -103,7 +108,7 @@ SET
 WHERE payment_status = 'paid' 
   AND (license_url IS NULL OR license_url = '');
 
--- 4. Verify the fixes worked
+-- 4. Show final results
 SELECT 
     'Paid Proposals' as table_name,
     COUNT(*) as count
