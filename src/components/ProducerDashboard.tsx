@@ -59,6 +59,7 @@ interface Proposal {
   negotiated_payment_terms?: string;
   negotiation_status?: string;
   client_accepted_at?: string;
+  payment_status?: string; // Added for paid sync proposals
 }
 
 // Add a helper to determine if a proposal has a pending action
@@ -142,7 +143,7 @@ export function ProducerDashboard() {
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
-  const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'declined'>('pending');
+  const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'paid' | 'declined'>('pending');
 
   useEffect(() => {
     if (user) {
@@ -240,7 +241,7 @@ export function ProducerDashboard() {
       // Fetch paid sync proposals for this producer's tracks
       const { data: paidSyncProposals, error: syncProposalsError } = await supabase
         .from('sync_proposals')
-        .select('id, sync_fee')
+        .select('id, sync_fee, payment_status')
         .in('track_id', trackIds)
         .eq('payment_status', 'paid')
         .eq('status', 'accepted');
@@ -291,6 +292,7 @@ export function ProducerDashboard() {
           client_accepted_at,
           last_message_sender_id,
           last_message_at,
+          payment_status,
           client:profiles!client_id (
             first_name,
             last_name,
@@ -331,6 +333,7 @@ export function ProducerDashboard() {
           client_accepted_at,
           last_message_sender_id,
           last_message_at,
+          payment_status,
           client:profiles!client_id (
             first_name,
             last_name,
@@ -348,8 +351,21 @@ export function ProducerDashboard() {
 
       if (proposalsError) throw proposalsError;
 
-      setProposals(allProposalsData || []);
-      setPendingProposals(recentProposalsData || []);
+      // Flatten client and track fields for allProposalsData
+      const flattenedAllProposals = (allProposalsData || []).map((p: any) => ({
+        ...p,
+        client: Array.isArray(p.client) ? p.client[0] : p.client,
+        track: Array.isArray(p.track) ? p.track[0] : p.track,
+      }));
+      // Flatten client and track fields for recentProposalsData
+      const flattenedRecentProposals = (recentProposalsData || []).map((p: any) => ({
+        ...p,
+        client: Array.isArray(p.client) ? p.client[0] : p.client,
+        track: Array.isArray(p.track) ? p.track[0] : p.track,
+      }));
+
+      setProposals(flattenedAllProposals);
+      setPendingProposals(flattenedRecentProposals);
 
       // Update stats
       setStats({
@@ -509,6 +525,12 @@ export function ProducerDashboard() {
   );
   const filteredDeclinedProposals = proposals.filter(p => 
     p.producer_status === 'rejected' || p.client_status === 'rejected'
+  );
+  const filteredPaidProposals = proposals.filter(
+    (p) =>
+      p.client_status === 'accepted' &&
+      p.producer_status === 'accepted' &&
+      p.payment_status === 'paid'
   );
 
   // Limit proposals to 5 for display with scrolling
@@ -761,6 +783,16 @@ export function ProducerDashboard() {
                   Accepted ({filteredAcceptedProposals.length})
                 </button>
                 <button
+                  onClick={() => setProposalsTab('paid')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    proposalsTab === 'paid'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Paid ({filteredPaidProposals.length})
+                </button>
+                <button
                   onClick={() => setProposalsTab('declined')}
                   className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                     proposalsTab === 'declined'
@@ -922,6 +954,50 @@ export function ProducerDashboard() {
                           </div>
                         );
                       })}
+                    </>
+                  )
+                )}
+
+                {proposalsTab === 'paid' && (
+                  filteredPaidProposals.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No paid proposals</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredPaidProposals.map((proposal: Proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 relative"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                              <p className="text-sm text-gray-400">
+                                From: {proposal.client.first_name} {proposal.client.last_name}
+                              </p>
+                              <p className="text-xs text-purple-400">
+                                ✓ Paid - Sync License
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-purple-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                              <p className="text-xs text-gray-400">
+                                Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 mt-2">
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'history')}
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                            >
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              History
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </>
                   )
                 )}
