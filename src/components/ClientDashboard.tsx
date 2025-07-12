@@ -693,6 +693,38 @@ export function ClientDashboard() {
     navigate(`/license-agreement/${licenseId}`);
   };
 
+  const handleViewSyncProposalLicense = async (proposalId: string) => {
+    try {
+      // Call the generate-sync-license edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sync-license`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposal_id: proposalId
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate license agreement');
+      }
+
+      const { pdfUrl } = await response.json();
+      
+      // Open the PDF in a new tab
+      window.open(pdfUrl, '_blank');
+    } catch (error) {
+      console.error('Error generating sync proposal license:', error);
+      alert('Failed to generate license agreement. Please try again.');
+    }
+  };
+
   const handleDeclineProposal = async (proposal: SyncProposal) => {
     try {
       // Update proposal status to declined, disable negotiation, notify other party
@@ -1217,16 +1249,14 @@ export function ClientDashboard() {
                         Complete Payment
                       </button>
                       
-                      {proposal.license_url && (
-                        <button
-                          onClick={() => window.open(proposal.license_url, '_blank')}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                          title="Download License PDF"
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          License
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                        title="Generate License Agreement PDF"
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        View Agreement
+                      </button>
  
                       <button
                         onClick={() => handleShowHistory(proposal)}
@@ -1272,16 +1302,14 @@ export function ClientDashboard() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {proposal.license_url && (
-                        <button
-                          onClick={() => window.open(proposal.license_url, '_blank')}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                          title="Download License PDF"
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          License
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                        title="Generate License Agreement PDF"
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        View Agreement
+                      </button>
                       
                       <button
                         onClick={() => handleShowHistory(proposal)}
@@ -1325,16 +1353,14 @@ export function ClientDashboard() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-4">
-                      {proposal.license_url && (
-                        <button
-                          onClick={() => window.open(proposal.license_url, '_blank')}
-                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                          title="Download License PDF"
-                        >
-                          <FileText className="w-3 h-3 mr-1" />
-                          License
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                        title="Generate License Agreement PDF"
+                      >
+                        <FileText className="w-3 h-3 mr-1" />
+                        View Agreement
+                      </button>
                       
                       <button
                         onClick={() => handleShowHistory(proposal)}
