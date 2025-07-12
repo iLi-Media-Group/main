@@ -1587,7 +1587,7 @@ export function ClientDashboard() {
                                 </button>
                                 {proposal.license_url && (
                                   <button
-                                    onClick={() => handleViewLicenseAgreement(proposal.id)}
+                                    onClick={() => handleViewSyncProposalLicense(proposal.id)}
                                     className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                                     title="View License Agreement"
                                   >
