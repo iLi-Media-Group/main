@@ -801,7 +801,7 @@ export function ClientDashboard() {
 
       // Replace <your-project-ref> with your actual Supabase project ref
       const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
+      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&shareId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${jwt}` }
       });

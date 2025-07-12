@@ -25,14 +25,20 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const trackId = url.searchParams.get("trackId");
+    const shareId = url.searchParams.get("shareId");
     const filename = url.searchParams.get("filename") || "download.mp3";
     const fileType = url.searchParams.get("fileType") || "mp3";
 
-    console.log("Request parameters:", { trackId, filename, fileType });
+    console.log("Request parameters:", { trackId, shareId, filename, fileType });
 
     if (!trackId) {
       console.log("Missing trackId - returning 400");
       return new Response("Missing trackId", { status: 400, headers: corsHeaders });
+    }
+
+    if (!shareId) {
+      console.log("Missing shareId - returning 400");
+      return new Response("Missing shareId", { status: 400, headers: corsHeaders });
     }
 
     // 1. Auth check
@@ -92,8 +98,8 @@ serve(async (req) => {
     }
 
     // 3. Fetch file from BoomBox
-    // Use the actual BoomBox share URL pattern from the console output
-    const boomBoxUrl = `https://app.boombox.io/app/shares/${trackId}`;
+    // Use the shareId for BoomBox URL construction
+    const boomBoxUrl = `https://app.boombox.io/app/shares/${shareId}`;
     console.log("Fetching from BoomBox URL:", boomBoxUrl);
     const fileRes = await fetch(boomBoxUrl);
     if (!fileRes.ok) {
