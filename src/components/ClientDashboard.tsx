@@ -691,6 +691,21 @@ export function ClientDashboard() {
 
       if (error) throw error;
 
+      // Create history entry
+      const { error: historyError } = await supabase
+        .from('proposal_history')
+        .insert({
+          proposal_id: proposal.id,
+          previous_status: proposal.client_status || 'pending',
+          new_status: 'rejected',
+          changed_by: user?.id
+        });
+
+      if (historyError) {
+        console.error('Error creating history entry:', historyError);
+        // Don't throw, just log the error
+      }
+
       // Refresh the proposals data
       await fetchSyncProposals();
     } catch (err) {

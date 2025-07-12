@@ -458,7 +458,7 @@ export function ProducerDashboard() {
         .insert({
           proposal_id: selectedProposal.id,
           previous_status: selectedProposal.producer_status || 'pending',
-          new_status: confirmAction === 'accept' ? 'producer_accepted' : 'producer_rejected',
+          new_status: confirmAction === 'accept' ? 'producer_accepted' : 'rejected',
           changed_by: user.id
         });
 
@@ -517,8 +517,10 @@ export function ProducerDashboard() {
 
   // Tab filter logic for proposals
   const filteredPendingProposals = proposals.filter(p => 
-    p.status === 'pending' || 
-    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')
+    (p.status === 'pending' || 
+    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+    p.producer_status !== 'rejected' && 
+    p.client_status !== 'rejected'
   );
   const filteredAcceptedProposals = proposals.filter(p => 
     p.producer_status === 'accepted' && p.client_status === 'accepted'

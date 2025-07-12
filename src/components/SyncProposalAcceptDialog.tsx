@@ -127,7 +127,7 @@ export function SyncProposalAcceptDialog({
         .insert({
           proposal_id: proposal.id,
           previous_status: 'pending_client',
-          new_status: 'client_rejected',
+          new_status: 'rejected',
           changed_by: user.id
         });
 
