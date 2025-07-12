@@ -101,10 +101,27 @@ serve(async (req) => {
     const boomBoxUrl = `https://app.boombox.io/app/shares/${shareId}`;
     console.log("Fetching from BoomBox URL:", boomBoxUrl);
     const fileRes = await fetch(boomBoxUrl);
+    
+    console.log("BoomBox response status:", fileRes.status);
+    console.log("BoomBox response headers:", Object.fromEntries(fileRes.headers.entries()));
+    
     if (!fileRes.ok) {
       console.log("BoomBox fetch failed:", fileRes.status, fileRes.statusText);
       return new Response("File error", { status: 500, headers: corsHeaders });
     }
+
+    // Check if we got the actual file or a web page
+    const boomBoxContentType = fileRes.headers.get("content-type");
+    console.log("BoomBox content-type:", boomBoxContentType);
+    
+    if (boomBoxContentType && boomBoxContentType.includes("text/html")) {
+      console.log("Received HTML instead of file - BoomBox URL might be a web page");
+      return new Response("Invalid file URL", { status: 400, headers: corsHeaders });
+    }
+
+    // Get file size if available
+    const contentLength = fileRes.headers.get("content-length");
+    console.log("File size:", contentLength ? `${contentLength} bytes` : "Unknown");
 
     // 4. Set content type
     let contentType = "application/octet-stream";
