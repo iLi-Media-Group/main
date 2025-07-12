@@ -270,6 +270,9 @@ export function ClientDashboard() {
             bpm,
             audio_url,
             image_url,
+            mp3_url,
+            trackouts_url,
+            split_sheet_url,
             track_producer_id,
             producer:profiles!tracks_track_producer_id_fkey (
               id,
@@ -540,6 +543,9 @@ export function ClientDashboard() {
             genres,
             audio_url,
             image_url,
+            mp3_url,
+            trackouts_url,
+            split_sheet_url,
             track_producer_id,
             producer:profiles!tracks_track_producer_id_fkey(
               id,
@@ -1337,6 +1343,43 @@ export function ClientDashboard() {
                         <FileText className="w-3 h-3 mr-1" />
                         View Agreement
                       </button>
+                      {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
+                        <div className="flex items-center space-x-1">
+                          {proposal.track.mp3_url && (
+                            <a
+                              href={proposal.track.mp3_url}
+                              download
+                              className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                              title="Download MP3"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              MP3
+                            </a>
+                          )}
+                          {proposal.track.trackouts_url && (
+                            <a
+                              href={proposal.track.trackouts_url}
+                              download
+                              className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                              title="Download Trackouts"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Stems
+                            </a>
+                          )}
+                          {proposal.track.split_sheet_url && (
+                            <a
+                              href={proposal.track.split_sheet_url}
+                              download
+                              className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
+                              title="Download Split Sheet"
+                            >
+                              <Download className="w-3 h-3 mr-1" />
+                              Sheet
+                            </a>
+                          )}
+                        </div>
+                      )}
  
                       <button
                         onClick={() => handleShowHistory(proposal)}
@@ -1599,6 +1642,43 @@ export function ClientDashboard() {
                                   <FileText className="w-4 h-4 mr-1" />
                                   View Agreement
                                 </button>
+                                {(license.track.mp3Url || license.track.trackoutsUrl || license.track.splitSheetUrl) && (
+                                  <div className="flex items-center space-x-1">
+                                    {license.track.mp3Url && (
+                                      <a
+                                        href={license.track.mp3Url}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                                        title="Download MP3"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        MP3
+                                      </a>
+                                    )}
+                                    {license.track.trackoutsUrl && (
+                                      <a
+                                        href={license.track.trackoutsUrl}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                        title="Download Trackouts"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Stems
+                                      </a>
+                                    )}
+                                    {license.track.splitSheetUrl && (
+                                      <a
+                                        href={license.track.splitSheetUrl}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
+                                        title="Download Split Sheet"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Sheet
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
                                 <button
                                   onClick={() => setSelectedLicenseToDelete(license)}
                                   className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
@@ -1702,6 +1782,43 @@ export function ClientDashboard() {
                                     <FileText className="w-4 h-4 mr-1" />
                                     View Agreement
                                   </button>
+                                )}
+                                {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
+                                  <div className="flex items-center space-x-1">
+                                    {proposal.track.mp3_url && (
+                                      <a
+                                        href={proposal.track.mp3_url}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                                        title="Download MP3"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        MP3
+                                      </a>
+                                    )}
+                                    {proposal.track.trackouts_url && (
+                                      <a
+                                        href={proposal.track.trackouts_url}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                        title="Download Trackouts"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Stems
+                                      </a>
+                                    )}
+                                    {proposal.track.split_sheet_url && (
+                                      <a
+                                        href={proposal.track.split_sheet_url}
+                                        download
+                                        className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
+                                        title="Download Split Sheet"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Sheet
+                                      </a>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             </div>
