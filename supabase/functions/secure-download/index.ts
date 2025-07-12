@@ -75,17 +75,16 @@ serve(async (req) => {
       console.log("License found in sales table");
     } else {
       // Check sync proposals table
-      const { data: syncProposal, error: syncError } = await supabase
+      const { data: syncProposals, error: syncError } = await supabase
         .from("sync_proposals")
         .select("*")
         .eq("track_id", trackId)
         .eq("client_id", user.id)
-        .eq("payment_status", "paid")
-        .maybeSingle();
+        .eq("payment_status", "paid");
       
-      console.log("Sync proposals check result:", { syncProposal, syncError });
+      console.log("Sync proposals check result:", { syncProposals, syncError });
       
-      if (syncProposal) {
+      if (syncProposals && syncProposals.length > 0) {
         hasLicense = true;
         console.log("License found in sync_proposals table");
       }
