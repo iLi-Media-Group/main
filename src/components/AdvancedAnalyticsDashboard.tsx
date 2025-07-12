@@ -906,6 +906,10 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                         fontSize: '12px',
                         fontWeight: '500'
                       }}
+                      itemStyle={{
+                        color: '#fff',
+                        fontWeight: 500
+                      }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
