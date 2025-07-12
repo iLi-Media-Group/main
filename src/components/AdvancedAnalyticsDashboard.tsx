@@ -785,9 +785,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                   <YAxis stroke="rgba(255,255,255,0.7)" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      backgroundColor: 'rgba(0,0,0,0.9)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '500'
                     }}
                   />
                   <Legend />
@@ -828,9 +831,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                   <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.7)" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      backgroundColor: 'rgba(0,0,0,0.9)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '500'
                     }}
                   />
                   <Bar dataKey="licenses" fill="#10b981" name="Licenses" />
@@ -893,9 +899,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                        backgroundColor: 'rgba(0,0,0,0.9)', 
                         border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: '500'
                       }}
                     />
                   </PieChart>
@@ -928,9 +937,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                   <YAxis stroke="rgba(255,255,255,0.7)" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      backgroundColor: 'rgba(0,0,0,0.9)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '500'
                     }}
                   />
                   <Legend />
@@ -955,9 +967,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                   <YAxis type="category" dataKey="name" stroke="rgba(255,255,255,0.7)" />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.8)', 
+                      backgroundColor: 'rgba(0,0,0,0.9)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: '500'
                     }}
                   />
                   <Legend />
