@@ -32,28 +32,34 @@ WHERE sp.payment_status = 'paid'
   AND t.track_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
 ORDER BY sp.payment_date DESC;
 
--- 3. Update transaction amounts to use correct compensation rates
+-- 3. Update transaction amounts for sync proposals (90% rate)
 UPDATE producer_transactions 
-SET 
-    amount = (
-        SELECT 
-            CASE 
-                -- For sync proposals, use sync_fee_rate (90%)
-                WHEN sp.id IS NOT NULL THEN COALESCE(sp.final_amount, sp.sync_fee) * 0.90
-                -- For regular sales, use standard_rate (75%)
-                WHEN s.id IS NOT NULL THEN s.amount * 0.75
-                -- Default fallback
-                ELSE producer_transactions.amount
-            END
-        FROM sync_proposals sp
-        FULL OUTER JOIN sales s ON s.id::text = producer_transactions.reference_id
-        WHERE (sp.id::text = producer_transactions.reference_id OR s.id::text = producer_transactions.reference_id)
-    )
+SET amount = (
+    SELECT COALESCE(sp.final_amount, sp.sync_fee) * 0.90
+    FROM sync_proposals sp
+    WHERE sp.id::text = producer_transactions.reference_id
+)
 WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND type = 'sale'
-  AND reference_id IS NOT NULL;
+  AND reference_id IN (
+    SELECT id::text FROM sync_proposals 
+    WHERE payment_status = 'paid'
+  );
 
--- 4. Recalculate producer balance based on corrected transaction amounts
+-- 4. Update transaction amounts for regular sales (75% rate)
+UPDATE producer_transactions 
+SET amount = (
+    SELECT s.amount * 0.75
+    FROM sales s
+    WHERE s.id::text = producer_transactions.reference_id
+)
+WHERE transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
+  AND type = 'sale'
+  AND reference_id IN (
+    SELECT id::text FROM sales
+  );
+
+-- 5. Recalculate producer balance based on corrected transaction amounts
 UPDATE producer_balances 
 SET 
     pending_balance = COALESCE((
@@ -71,7 +77,7 @@ SET
     ), 0)
 WHERE balance_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18';
 
--- 5. Show final results
+-- 6. Show final results
 SELECT 
     'Updated Producer Balance' as table_name,
     pb.pending_balance,
@@ -91,7 +97,7 @@ FROM producer_transactions pt
 WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale';
 
--- 6. Show corrected transaction amounts
+-- 7. Show corrected transaction amounts
 SELECT 
     pt.id,
     pt.amount,
@@ -106,7 +112,7 @@ WHERE pt.transaction_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
   AND pt.type = 'sale'
 ORDER BY pt.created_at DESC;
 
--- 7. Show total from corrected transactions
+-- 8. Show total from corrected transactions
 SELECT 
     'Total from Corrected Transactions' as source,
     COALESCE(SUM(pt.amount), 0) as total_amount
