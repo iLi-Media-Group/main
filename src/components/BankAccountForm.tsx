@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Building, Hash, Bitcoin } from 'lucide-react';
+import { X, Building, Hash, Bitcoin, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
