@@ -1,4 +1,4 @@
--- Fix test payment status and check webhook logs
+-- Fix test payment status and check payment records
 -- Run this in your Supabase SQL Editor
 
 -- First, let's see what proposals exist and their current status
@@ -18,18 +18,6 @@ WHERE client_status = 'accepted'
   AND producer_status = 'accepted'
 ORDER BY created_at DESC;
 
--- Check webhook logs to see if the payment was received
-SELECT 
-    event_id,
-    event_type,
-    metadata,
-    status,
-    created_at
-FROM stripe_webhook_logs 
-WHERE event_type = 'checkout.session.completed'
-ORDER BY created_at DESC
-LIMIT 10;
-
 -- Check stripe_orders table for the payment
 SELECT 
     id,
@@ -42,6 +30,20 @@ SELECT
     created_at
 FROM stripe_orders 
 WHERE metadata->>'proposal_id' IS NOT NULL
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Check all stripe_orders to see what payments exist
+SELECT 
+    id,
+    checkout_session_id,
+    payment_intent_id,
+    amount_total,
+    payment_status,
+    status,
+    metadata,
+    created_at
+FROM stripe_orders 
 ORDER BY created_at DESC
 LIMIT 10;
 
