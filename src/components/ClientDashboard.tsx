@@ -678,13 +678,25 @@ export function ClientDashboard() {
   };
 
   const handleDeclineProposal = async (proposal: SyncProposal) => {
-    // Update proposal status to declined, disable negotiation, notify other party
-    await supabase
-      .from('sync_proposals')
-      .update({ client_status: 'rejected', status: 'declined', updated_at: new Date().toISOString() })
-      .eq('id', proposal.id);
-    // Optionally: send notification to producer
-    fetchSyncProposals();
+    try {
+      // Update proposal status to declined, disable negotiation, notify other party
+      const { error } = await supabase
+        .from('sync_proposals')
+        .update({ 
+          client_status: 'rejected', 
+          status: 'declined', 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', proposal.id);
+
+      if (error) throw error;
+
+      // Refresh the proposals data
+      await fetchSyncProposals();
+    } catch (err) {
+      console.error('Error declining proposal:', err);
+      alert('Failed to decline proposal. Please try again.');
+    }
   };
 
   const handleShowHistory = async (proposal: SyncProposal) => {
@@ -1815,7 +1827,10 @@ export function ClientDashboard() {
       <ProposalConfirmDialog
         isOpen={showDeclineDialog}
         onClose={() => setShowDeclineDialog(false)}
-        onConfirm={() => handleDeclineProposal(selectedProposal)}
+        onConfirm={async () => {
+          await handleDeclineProposal(selectedProposal);
+          setShowDeclineDialog(false);
+        }}
         action="reject"
         proposal={selectedProposal}
       />
