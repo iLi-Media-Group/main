@@ -87,6 +87,14 @@ export function SyncProposalLicenseAgreement() {
           const paymentTerms = data.final_payment_terms || data.negotiated_payment_terms || data.payment_terms || 'immediate';
           const paymentDate = data.payment_date || data.client_accepted_at || data.created_at;
           
+          // Create a more detailed project description
+          let detailedProjectDescription = data.project_type || 'Sync project';
+          
+          // If we have additional project details, include them
+          if (data.project_type) {
+            detailedProjectDescription = data.project_type;
+          }
+          
           setProposal({
             trackTitle: data.track?.title || 'Unknown Track',
             producerName: `${data.track?.producer?.first_name || ''} ${data.track?.producer?.last_name || ''}`.trim(),
@@ -94,7 +102,7 @@ export function SyncProposalLicenseAgreement() {
             clientName: `${data.client?.first_name || ''} ${data.client?.last_name || ''}`.trim(),
             clientEmail: data.client?.email || '',
             clientCompany: data.client?.company_name,
-            projectDescription: data.project_type || 'Sync project',
+            projectDescription: detailedProjectDescription,
             duration: data.duration || '1 year',
             isExclusive: data.is_exclusive || false,
             syncFee: amount,
@@ -235,9 +243,9 @@ export function SyncProposalLicenseAgreement() {
 
           <h2 className="text-xl font-bold text-white mt-8">License Terms</h2>
           <div className="bg-white/5 rounded-lg p-4 my-4">
-            <p><strong>1. Grant of License:</strong> Licensor grants Licensee a {proposal.isExclusive ? 'exclusive' : 'non-exclusive'} license to synchronize the musical composition "{proposal.trackTitle}" in audiovisual works.</p>
+            <p><strong>1. Grant of License:</strong> Licensor grants Licensee a {proposal.isExclusive ? 'exclusive' : 'non-exclusive'} license to synchronize the musical composition "{proposal.trackTitle}" specifically for the project described as: "{proposal.projectDescription}".</p>
             
-            <p><strong>2. Scope of Use:</strong> This license covers synchronization in {proposal.projectDescription} for the duration specified above.</p>
+            <p><strong>2. Scope of Use:</strong> This license is limited to the specific project: "{proposal.projectDescription}". The composition may only be used in connection with this project and may not be used for any other purpose without additional licensing.</p>
             
             <p><strong>3. Territory:</strong> Worldwide</p>
             
@@ -247,6 +255,7 @@ export function SyncProposalLicenseAgreement() {
             
             <p><strong>6. Restrictions:</strong> Licensee may not:</p>
             <ul className="list-disc list-inside ml-4">
+              <li>Use the composition for any project other than the specific project described above</li>
               <li>Use the composition in a manner that exceeds the scope of this license</li>
               <li>Transfer or sublicense this agreement without written consent</li>
               <li>Use the composition after the expiration date</li>

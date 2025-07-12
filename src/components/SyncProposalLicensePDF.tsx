@@ -144,11 +144,11 @@ export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ 
           <Text style={styles.sectionTitle}>License Terms</Text>
           
           <Text style={styles.text}>
-            <Text style={styles.bold}>1. Grant of License:</Text> Licensor grants Licensee a {license.isExclusive ? 'exclusive' : 'non-exclusive'} license to synchronize the musical composition "{license.trackTitle}" in audiovisual works.
+            <Text style={styles.bold}>1. Grant of License:</Text> Licensor grants Licensee a {license.isExclusive ? 'exclusive' : 'non-exclusive'} license to synchronize the musical composition "{license.trackTitle}" specifically for the project described as: "{license.projectDescription}".
           </Text>
           
           <Text style={styles.text}>
-            <Text style={styles.bold}>2. Scope of Use:</Text> This license covers synchronization in {license.projectDescription} for the duration specified above.
+            <Text style={styles.bold}>2. Scope of Use:</Text> This license is limited to the specific project: "{license.projectDescription}". The composition may only be used in connection with this project and may not be used for any other purpose without additional licensing.
           </Text>
           
           <Text style={styles.text}>
@@ -166,6 +166,7 @@ export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ 
           <Text style={styles.text}>
             <Text style={styles.bold}>6. Restrictions:</Text> Licensee may not:
           </Text>
+          <Text style={styles.text}>• Use the composition for any project other than the specific project described above</Text>
           <Text style={styles.text}>• Use the composition in a manner that exceeds the scope of this license</Text>
           <Text style={styles.text}>• Transfer or sublicense this agreement without written consent</Text>
           <Text style={styles.text}>• Use the composition after the expiration date</Text>
