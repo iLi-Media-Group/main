@@ -776,9 +776,21 @@ export function ClientDashboard() {
 
   const handlePaymentPendingProposal = async (proposal: SyncProposal) => {
     try {
+      // Ensure negotiation is finalized before payment
+      if (
+        proposal.client_status === 'accepted' &&
+        proposal.producer_status === 'accepted' &&
+        (proposal.status !== 'accepted' || proposal.negotiation_status !== 'accepted')
+      ) {
+        const { error: rpcError } = await supabase.rpc('handle_negotiation_acceptance', {
+          proposal_id: proposal.id,
+          is_sync_proposal: true
+        });
+        if (rpcError) throw rpcError;
+        // Optionally, refetch the proposal here if needed
+      }
       const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
       const amount = proposal.final_amount || proposal.sync_fee;
-      
       // For all payment terms, redirect to Stripe checkout to pay the invoice
       const checkoutUrl = await createCheckoutSession(
         'price_custom',
@@ -792,11 +804,10 @@ export function ClientDashboard() {
         },
         `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
       );
-      
       window.location.href = checkoutUrl;
-    } catch (error) {
-      console.error('Error handling payment pending proposal:', error);
-      alert('Failed to process payment. Please try again.');
+    } catch (err) {
+      console.error('Error initiating payment:', err);
+      alert('Failed to initiate payment. Please try again.');
     }
   };
 
