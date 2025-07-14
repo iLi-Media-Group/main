@@ -1325,14 +1325,6 @@ export function ClientDashboard() {
                       >
                         Decline
                       </button>
-                      {(proposal.negotiation_status !== 'accepted' && proposal.negotiation_status !== 'rejected' && (proposal.client_status !== 'accepted' || proposal.producer_status !== 'accepted')) && (
-                        <button
-                          onClick={() => handleFinalAcceptance(proposal)}
-                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                        >
-                          Final Acceptance
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))
