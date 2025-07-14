@@ -56,6 +56,7 @@ Deno.serve(async (req) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
+  // Remove any Authorization header check here. Only check for stripe-signature.
   const signature = req.headers.get('stripe-signature');
   if (!signature) {
     return new Response('No signature found', { status: 400, headers: corsHeaders });
