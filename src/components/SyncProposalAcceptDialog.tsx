@@ -30,61 +30,24 @@ export function SyncProposalAcceptDialog({
       setLoading(true);
       setError('');
 
-      // Update proposal status to client_accepted
-      const { error: updateError } = await supabase
-        .from('sync_proposals')
-        .update({ 
-          client_status: 'accepted',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', proposal.id);
-
-      if (updateError) throw updateError;
-
-      // Create history entry
-      const { error: historyError } = await supabase
-        .from('proposal_history')
-        .insert({
-          proposal_id: proposal.id,
-          previous_status: 'pending_client',
-          new_status: 'client_accepted',
-          changed_by: user.id
-        });
-
-      if (historyError) throw historyError;
-
-      // Get producer email for notification
-      const { data: producerData, error: producerError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', proposal.track.producer.id)
-        .single();
-
-      if (producerError) throw producerError;
-
-      // Send notification to producer
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-proposal-update`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          proposalId: proposal.id,
-          action: 'client_accept',
-          trackTitle: proposal.track.title,
-          producerEmail: producerData.email
-        })
+      // Call the backend RPC to finalize negotiation acceptance
+      const { error: rpcError } = await supabase.rpc('handle_negotiation_acceptance', {
+        proposal_id: proposal.id,
+        is_sync_proposal: true
       });
+      if (rpcError) throw rpcError;
+
+      // Optionally, refresh proposals in parent/dashboard
+      onAccept();
 
       // Create a checkout session for the sync fee
       const checkoutUrl = await createCheckoutSession(
-        'price_custom', // This will be handled specially in the edge function
+        'price_custom',
         'payment',
         undefined,
         {
           proposal_id: proposal.id,
-          amount: Math.round(proposal.sync_fee * 100), // Convert to cents
+          amount: Math.round(proposal.sync_fee * 100),
           description: `Sync license for "${proposal.track.title}"`,
           payment_terms: proposal.payment_terms || 'immediate'
         },
@@ -93,8 +56,6 @@ export function SyncProposalAcceptDialog({
 
       // Redirect to checkout
       window.location.href = checkoutUrl;
-
-      onAccept();
     } catch (err) {
       console.error('Error accepting proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to accept proposal');
