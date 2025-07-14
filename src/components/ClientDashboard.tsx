@@ -219,6 +219,17 @@ export function ClientDashboard() {
     }
   }, [user, membershipPlan]);
 
+  // Add this useEffect to force refresh proposals after payment
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('refresh') === '1') {
+      fetchSyncProposals();
+      // Optionally, remove the param from the URL
+      params.delete('refresh');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, [fetchSyncProposals]);
+
   // Add a manual refresh function for testing
   const handleManualRefresh = async () => {
     if (user) {
