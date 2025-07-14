@@ -44,6 +44,10 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
   const [error, setError] = useState('');
   const [pendingNegotiation, setPendingNegotiation] = useState<NegotiationMessage | null>(null);
   const [detectedPaymentTerms, setDetectedPaymentTerms] = useState<string | null>(null);
+  // New state for independent acceptance
+  const [acceptAmount, setAcceptAmount] = useState(true);
+  const [acceptPaymentTerms, setAcceptPaymentTerms] = useState(true);
+  const [acceptAdditionalTerms, setAcceptAdditionalTerms] = useState(true);
 
   // Update proposal when initialProposal changes
   useEffect(() => {
@@ -63,6 +67,15 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
       fetchNegotiationHistory();
     }
   }, [proposal?.negotiation_status, isOpen]);
+
+  useEffect(() => {
+    // Reset checkboxes when a new negotiation is pending
+    if (pendingNegotiation) {
+      setAcceptAmount(true);
+      setAcceptPaymentTerms(true);
+      setAcceptAdditionalTerms(true);
+    }
+  }, [pendingNegotiation]);
 
   const fetchNegotiationHistory = async () => {
     try {
@@ -210,67 +223,70 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
   const handleAcceptNegotiation = async () => {
     if (!pendingNegotiation || !user) return;
-
     try {
       setLoading(true);
       setError('');
-
-      // First, update the negotiated terms in the proposal
       const updates: any = {};
-
-      if (pendingNegotiation.counter_offer) {
+      let acceptedFields: string[] = [];
+      let declinedFields: string[] = [];
+      if (pendingNegotiation.counter_offer && acceptAmount) {
         updates.negotiated_amount = pendingNegotiation.counter_offer;
+        acceptedFields.push('Amount');
+      } else if (pendingNegotiation.counter_offer) {
+        declinedFields.push('Amount');
       }
-
-      // Use detected payment terms if database field is null
       const paymentTermsToUse = pendingNegotiation.counter_payment_terms || detectedPaymentTerms;
-      if (paymentTermsToUse) {
+      if (paymentTermsToUse && acceptPaymentTerms) {
         updates.negotiated_payment_terms = paymentTermsToUse;
+        acceptedFields.push('Payment Terms');
+      } else if (paymentTermsToUse) {
+        declinedFields.push('Payment Terms');
       }
-
-      // Update the proposal with negotiated terms first
+      if (pendingNegotiation.counter_terms && acceptAdditionalTerms) {
+        updates.negotiated_additional_terms = pendingNegotiation.counter_terms;
+        acceptedFields.push('Additional Terms');
+      } else if (pendingNegotiation.counter_terms) {
+        declinedFields.push('Additional Terms');
+      }
+      // Only update proposal if any terms accepted
       if (Object.keys(updates).length > 0) {
         const { error: updateError } = await supabase
           .from('sync_proposals')
           .update(updates)
           .eq('id', proposal.id);
-
         if (updateError) throw updateError;
       }
-
-      // Use the database function to handle the acceptance properly
-      const { error: functionError } = await supabase.rpc('handle_negotiation_acceptance', {
-        proposal_id: proposal.id,
-        is_sync_proposal: true
-      });
-
-      if (functionError) throw functionError;
-
-      // Refresh the proposal data to get updated status
+      // If all terms accepted, finalize negotiation
+      if (declinedFields.length === 0) {
+        const { error: functionError } = await supabase.rpc('handle_negotiation_acceptance', {
+          proposal_id: proposal.id,
+          is_sync_proposal: true
+        });
+        if (functionError) throw functionError;
+      }
+      // Refresh proposal data
       const { data: updatedProposal, error: fetchError } = await supabase
         .from('sync_proposals')
         .select('*')
         .eq('id', proposal.id)
         .single();
-
       if (fetchError) throw fetchError;
-
-      // Update local proposal state
       setProposal(updatedProposal);
-
-      // Add acceptance message
+      // Add acceptance/decline message
+      const messageParts = [];
+      if (acceptedFields.length > 0) messageParts.push(`Accepted: ${acceptedFields.join(', ')}`);
+      if (declinedFields.length > 0) messageParts.push(`Declined: ${declinedFields.join(', ')}`);
       const { error: messageError } = await supabase
         .from('proposal_negotiations')
         .insert({
           proposal_id: proposal.id,
           sender_id: user.id,
-          message: `Accepted the proposed changes: ${pendingNegotiation.counter_offer ? `Amount: $${pendingNegotiation.counter_offer}` : ''} ${paymentTermsToUse ? `Payment Terms: ${PAYMENT_TERMS_OPTIONS.find(opt => opt.value === paymentTermsToUse)?.label}` : ''}`.trim(),
-          counter_offer: pendingNegotiation.counter_offer,
-          counter_payment_terms: paymentTermsToUse
+          message: messageParts.join(' | '),
+          counter_offer: acceptAmount ? pendingNegotiation.counter_offer : undefined,
+          counter_payment_terms: acceptPaymentTerms ? paymentTermsToUse : undefined,
+          counter_terms: acceptAdditionalTerms ? pendingNegotiation.counter_terms : undefined
         });
-
       if (messageError) throw messageError;
-
       setPendingNegotiation(null);
       onNegotiationSent();
     } catch (err) {
@@ -539,19 +555,27 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
             <h3 className="text-lg font-semibold text-yellow-400 mb-2">Review Proposed Changes</h3>
             <div className="space-y-2 text-gray-300">
               {pendingNegotiation.counter_offer && (
-                <p><span className="font-medium">New Amount:</span> ${pendingNegotiation.counter_offer.toFixed(2)}</p>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" checked={acceptAmount} onChange={e => setAcceptAmount(e.target.checked)} id="accept-amount" />
+                  <label htmlFor="accept-amount" className="font-medium">New Amount: ${pendingNegotiation.counter_offer.toFixed(2)}</label>
+                </div>
               )}
               {(pendingNegotiation.counter_payment_terms || detectedPaymentTerms) && (
-                <p><span className="font-medium">New Payment Terms:</span> <span className="text-green-400 font-semibold">{PAYMENT_TERMS_OPTIONS.find(opt => opt.value === (pendingNegotiation.counter_payment_terms || detectedPaymentTerms))?.label}</span> {!pendingNegotiation.counter_payment_terms && detectedPaymentTerms && <span className="text-yellow-400 text-xs">(detected from message)</span>}</p>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" checked={acceptPaymentTerms} onChange={e => setAcceptPaymentTerms(e.target.checked)} id="accept-payment-terms" />
+                  <label htmlFor="accept-payment-terms" className="font-medium">New Payment Terms: <span className="text-green-400 font-semibold">{PAYMENT_TERMS_OPTIONS.find(opt => opt.value === (pendingNegotiation.counter_payment_terms || detectedPaymentTerms))?.label}</span> {!pendingNegotiation.counter_payment_terms && detectedPaymentTerms && <span className="text-yellow-400 text-xs">(detected from message)</span>}</label>
+                </div>
               )}
               {pendingNegotiation.counter_terms && (
-                <p><span className="font-medium">Additional Terms:</span> {pendingNegotiation.counter_terms}</p>
+                <div className="flex items-center space-x-2">
+                  <input type="checkbox" checked={acceptAdditionalTerms} onChange={e => setAcceptAdditionalTerms(e.target.checked)} id="accept-additional-terms" />
+                  <label htmlFor="accept-additional-terms" className="font-medium">Additional Terms: {pendingNegotiation.counter_terms}</label>
+                </div>
               )}
             </div>
             <div className="mt-3 p-3 bg-blue-950/40 rounded-lg">
               <p className="text-sm text-blue-300">
-                <strong>Next Steps:</strong> After you accept, the producer will need to confirm the terms. 
-                Once both parties agree, payment will be due according to the payment terms.
+                <strong>Next Steps:</strong> You can accept or decline each proposed change. If you decline any, the negotiation will remain open for further discussion.
               </p>
             </div>
             {/* Accept/Decline Buttons */}
@@ -561,14 +585,14 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
                 onClick={handleAcceptNegotiation}
                 disabled={loading}
               >
-                Accept Terms
+                Accept Selected
               </button>
               <button
                 className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
                 onClick={handleDeclineNegotiation}
                 disabled={loading}
               >
-                Decline
+                Decline All
               </button>
             </div>
           </div>
