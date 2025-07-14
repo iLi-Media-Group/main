@@ -165,6 +165,24 @@ function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
   return hasNewMessage && (hasCounterOffer || needsResponse);
 }
 
+// Add this handler at the top-level of the component
+const handleFinalAcceptance = async (proposal: any) => {
+  try {
+    // Call the backend RPC to finalize acceptance
+    const { error } = await supabase.rpc('handle_negotiation_acceptance', {
+      proposal_id: proposal.id,
+      is_sync_proposal: true
+    });
+    if (error) throw error;
+    // Optionally, refresh proposals
+    await fetchSyncProposals();
+    alert('Final acceptance recorded.');
+  } catch (err) {
+    alert('Failed to record final acceptance.');
+    console.error(err);
+  }
+};
+
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -1307,6 +1325,14 @@ export function ClientDashboard() {
                       >
                         Decline
                       </button>
+                      {(proposal.negotiation_status !== 'accepted' && proposal.negotiation_status !== 'rejected' && (proposal.client_status !== 'accepted' || proposal.producer_status !== 'accepted')) && (
+                        <button
+                          onClick={() => handleFinalAcceptance(proposal)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                        >
+                          Final Acceptance
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
