@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Wallet, CreditCard, Loader2 } from 'lucide-react';
-import { createHelioCheckout } from '../lib/helio';
 import { createStripeCheckout } from '../lib/stripe';
 
 interface PaymentOptionsProps {
@@ -22,32 +21,7 @@ export function PaymentOptions({
   onError,
   metadata
 }: PaymentOptionsProps) {
-  const [loading, setLoading] = useState<'crypto' | 'fiat' | null>(null);
-
-  const handleCryptoPayment = async () => {
-    try {
-      setLoading('crypto');
-      
-      const checkoutUrl = await createHelioCheckout({
-        productId,
-        name: productName,
-        description: productDescription,
-        price,
-        successUrl: `${window.location.origin}/checkout/success?payment_method=crypto`,
-        cancelUrl: `${window.location.origin}/pricing`,
-        metadata
-      });
-      
-      window.location.href = checkoutUrl;
-      
-      if (onSuccess) onSuccess();
-    } catch (error) {
-      console.error('Crypto payment error:', error);
-      if (onError) onError(error instanceof Error ? error : new Error('Crypto payment failed'));
-    } finally {
-      setLoading(null);
-    }
-  };
+  const [loading, setLoading] = useState<'fiat' | null>(null);
 
   const handleFiatPayment = async () => {
     try {
@@ -76,21 +50,6 @@ export function PaymentOptions({
 
   return (
     <div className="space-y-4">
-      <button
-        onClick={handleCryptoPayment}
-        disabled={loading === 'crypto'}
-        className="w-full py-3 px-6 rounded-lg bg-blue-900/40 hover:bg-blue-900/60 text-white font-semibold transition-all flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {loading === 'crypto' ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <>
-            <Wallet className="w-5 h-5" />
-            <span>Pay with USDC</span>
-          </>
-        )}
-      </button>
-
       <button
         onClick={handleFiatPayment}
         disabled={loading === 'fiat'}

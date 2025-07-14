@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Music, Calendar, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getUserSubscription, getUserOrders, formatCurrency, formatDate, getMembershipPlanFromPriceId } from '../lib/stripe'; 
-import { getHelioPaymentStatus } from '../lib/helio';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -18,12 +17,11 @@ export function CheckoutSuccessPage() {
 
   const sessionId = searchParams.get('session_id');
   const paymentMethod = searchParams.get('payment_method');
-  const helioPaymentId = searchParams.get('payment_id');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        if (!sessionId && !helioPaymentId) {
+        if (!sessionId) {
           navigate('/dashboard');
           return;
         }
@@ -35,90 +33,65 @@ export function CheckoutSuccessPage() {
           await refreshMembership();
         }
 
-        if (paymentMethod === 'crypto' && helioPaymentId) {
-          // Handle Helio payment
-          const paymentStatus = await getHelioPaymentStatus(helioPaymentId);
-          
-          if (paymentStatus.status === 'completed') {
-            // Check if a license was created for this payment
-            if (user) {
-              const { data: cryptoPayment } = await supabase
-                .from('crypto_payments')
-                .select('track_id')
-                .eq('payment_id', helioPaymentId)
-                .single();
-                
-              if (cryptoPayment?.track_id) {
-                const result = await supabase
-                  .from('sales')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('transaction_id', helioPaymentId);
-                
-                setLicenseCreated(result.count !== null && result.count > 0);
-              }
-            }
-          }
-        } else {
-          // Handle Stripe payment
-          // Get subscription details
-          const subscription = await getUserSubscription();
-          setSubscription(subscription);
+        // Handle Stripe payment
+        // Get subscription details
+        const subscription = await getUserSubscription();
+        setSubscription(subscription);
 
-          // If subscription data is missing or has invalid dates, try to get it directly from the subscriptions table
-          if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
-            console.log('Subscription data incomplete, trying direct query...');
+        // If subscription data is missing or has invalid dates, try to get it directly from the subscriptions table
+        if (subscription && (!subscription.price_id || !subscription.current_period_start || !subscription.current_period_end)) {
+          console.log('Subscription data incomplete, trying direct query...');
+          
+          // Only query if user and user.id are defined
+          if (user?.id) {
+            // Get the customer ID first
+            const { data: customerData } = await supabase
+              .from('stripe_customers')
+              .select('customer_id')
+              .eq('user_id', user.id)
+              .single();
             
-            // Only query if user and user.id are defined
-            if (user?.id) {
-              // Get the customer ID first
-              const { data: customerData } = await supabase
-                .from('stripe_customers')
-                .select('customer_id')
-                .eq('user_id', user.id)
+            if (customerData?.customer_id) {
+              // Query the subscriptions table directly
+              const { data: directSubscription } = await supabase
+                .from('stripe_subscriptions')
+                .select('*')
+                .eq('customer_id', customerData.customer_id)
                 .single();
               
-              if (customerData?.customer_id) {
-                // Query the subscriptions table directly
-                const { data: directSubscription } = await supabase
-                  .from('stripe_subscriptions')
-                  .select('*')
-                  .eq('customer_id', customerData.customer_id)
-                  .single();
-                
-                console.log('Direct subscription data:', directSubscription);
-                
-                if (directSubscription && directSubscription.price_id && directSubscription.current_period_start) {
-                  // Update the subscription state with the direct data
-                  setSubscription({
-                    ...subscription,
-                    price_id: directSubscription.price_id,
-                    current_period_start: directSubscription.current_period_start,
-                    current_period_end: directSubscription.current_period_end,
-                    status: directSubscription.status
-                  });
-                }
-              }
-            } else {
-              console.warn('User or user.id is undefined, skipping direct subscription query.');
-            }
-          }
-
-          // Get order details
-          const orders = await getUserOrders();
-          const matchingOrder = orders.find(o => o.checkout_session_id === sessionId);
-          
-          if (matchingOrder) {
-            setOrder(matchingOrder);
-
-            // Check if a license was created for this order
-            if (user) {
-              const result = await supabase
-                .from('sales')
-                .select('*', { count: 'exact', head: true })
-                .eq('transaction_id', matchingOrder.payment_intent_id);
+              console.log('Direct subscription data:', directSubscription);
               
-              setLicenseCreated(result.count !== null && result.count > 0);
+              if (directSubscription && directSubscription.price_id && directSubscription.current_period_start) {
+                // Update the subscription state with the direct data
+                setSubscription({
+                  ...subscription,
+                  price_id: directSubscription.price_id,
+                  current_period_start: directSubscription.current_period_start,
+                  current_period_end: directSubscription.current_period_end,
+                  status: directSubscription.status
+                });
+              }
             }
+          } else {
+            console.warn('User or user.id is undefined, skipping direct subscription query.');
+          }
+        }
+
+        // Get order details
+        const orders = await getUserOrders();
+        const matchingOrder = orders.find(o => o.checkout_session_id === sessionId);
+        
+        if (matchingOrder) {
+          setOrder(matchingOrder);
+
+          // Check if a license was created for this order
+          if (user) {
+            const result = await supabase
+              .from('sales')
+              .select('*', { count: 'exact', head: true })
+              .eq('transaction_id', matchingOrder.payment_intent_id);
+            
+            setLicenseCreated(result.count !== null && result.count > 0);
           }
         }
       } catch (error) {

@@ -290,7 +290,7 @@ Deno.serve(async (req) => {
               
               // Generate license agreement for the sync proposal
               try {
-                await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-sync-license`, {
+                await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/handle-license-agreement`, {
                   method: 'POST',
                   headers: {
                     'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
@@ -300,9 +300,9 @@ Deno.serve(async (req) => {
                     proposal_id: metadata.proposal_id
                   })
                 });
-                console.log('License agreement generated for sync proposal:', metadata.proposal_id);
+                console.log('License agreement handled for sync proposal:', metadata.proposal_id);
               } catch (licenseError) {
-                console.error('Error generating license agreement:', licenseError);
+                console.error('Error handling license agreement:', licenseError);
                 // Don't fail the webhook if license generation fails
               }
               

@@ -132,7 +132,7 @@ export function SyncProposalSuccessPage() {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             const accessToken = session?.access_token;
-            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-sync-license`, {
+            const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/handle-license-agreement`, {
               method: 'POST',
               headers: {
                 'Authorization': `Bearer ${accessToken}`,

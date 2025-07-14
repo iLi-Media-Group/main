@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { CreditCard, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-import { createHelioCheckout } from '../lib/helio';
 
 interface CryptoPaymentButtonProps {
   productId: string;
@@ -31,18 +30,9 @@ export function CryptoPaymentButton({
     try {
       setLoading(true);
       
-      const checkoutUrl = await createHelioCheckout({
-        productId,
-        name: productName,
-        description: productDescription,
-        price,
-        successUrl: `${window.location.origin}/checkout/success?payment_method=crypto`,
-        cancelUrl: `${window.location.origin}/pricing`,
-        metadata
-      });
-      
+      // Remove Helio payment logic (createHelioCheckout, etc.)
       // Redirect to Helio checkout
-      window.location.href = checkoutUrl;
+      // window.location.href = checkoutUrl;
       
       if (onSuccess) {
         onSuccess();
