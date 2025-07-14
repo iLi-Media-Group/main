@@ -24,8 +24,6 @@ interface SyncProposalData {
   project_type: string;
   duration: string;
   is_exclusive: boolean;
-  payment_status: string;
-  license_url?: string;
 }
 
 export function SyncProposalSuccessPage() {
@@ -87,7 +85,6 @@ export function SyncProposalSuccessPage() {
             duration,
             is_exclusive,
             license_url,
-            payment_status,
             track:tracks!inner (
               title,
               producer:profiles!track_producer_id (
@@ -111,40 +108,25 @@ export function SyncProposalSuccessPage() {
         console.log('Track data:', proposal.track);
         console.log('Producer data:', proposal.track?.[0]?.producer);
 
-        // Fix track data structure (Supabase returns arrays for joins, but sometimes may return objects)
-        let trackDataRaw = proposal.track;
-        let trackData: { title?: string; producer?: any } = {};
-        if (Array.isArray(trackDataRaw)) {
-          trackData = trackDataRaw[0] || {};
-        } else {
-          trackData = trackDataRaw || {};
-        }
-        let producerDataRaw = trackData.producer;
-        let producerData: { first_name?: string; last_name?: string } = {};
-        if (Array.isArray(producerDataRaw)) {
-          producerData = producerDataRaw[0] || {};
-        } else {
-          producerData = producerDataRaw || {};
-        }
-        const processedProposalData: SyncProposalData = {
+        // Fix track data structure (Supabase returns arrays for joins)
+        const proposalData = {
           ...proposal,
-          payment_status: proposal.payment_status || 'pending',
           track: {
-            title: trackData.title || 'Unknown Track',
+            title: proposal.track?.[0]?.title || 'Unknown Track',
             producer: {
-              first_name: producerData.first_name || 'Unknown',
-              last_name: producerData.last_name || 'Producer'
+              first_name: proposal.track?.[0]?.producer?.[0]?.first_name || 'Unknown',
+              last_name: proposal.track?.[0]?.producer?.[0]?.last_name || 'Producer'
             }
           }
         };
 
-        console.log('Processed proposal data:', processedProposalData);
+        console.log('Processed proposal data:', proposalData);
 
-        setProposalData(processedProposalData);
+        setProposalData(proposalData);
 
         // Check if license PDF has been generated
-        if (processedProposalData.license_url) {
-          setLicenseUrl(processedProposalData.license_url);
+        if (proposal.license_url) {
+          setLicenseUrl(proposal.license_url);
         } else {
           // Try to generate license if it doesn't exist
           try {
@@ -181,15 +163,6 @@ export function SyncProposalSuccessPage() {
 
     fetchProposalData();
   }, [sessionId, proposalId, navigate]);
-
-  useEffect(() => {
-    if (!loading && proposalData && proposalData.id && proposalData.payment_status === 'paid') {
-      const timeout = setTimeout(() => {
-        window.location.href = '/dashboard?refresh=1';
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [loading, proposalData]);
 
   const formatPaymentTerms = (terms: string) => {
     switch (terms) {
