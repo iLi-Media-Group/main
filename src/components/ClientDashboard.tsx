@@ -226,6 +226,12 @@ export function ClientDashboard() {
   const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
   const [syncProposalSortField, setSyncProposalSortField] = useState<'date' | 'title' | 'amount' | 'status'>('date');
   const [syncProposalSortOrder, setSyncProposalSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [customSyncRequests, setCustomSyncRequests] = useState<any[]>([]);
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  const [submissions, setSubmissions] = useState<{ [id: string]: any[] }>({});
+  const [selecting, setSelecting] = useState<string | null>(null);
+  const [selectedSubmissionId, setSelectedSubmissionId] = useState<{ [requestId: string]: string }>({});
+  const [paymentStatus, setPaymentStatus] = useState<{ [requestId: string]: string }>({});
 
   useEffect(() => {
     if (user) {
@@ -971,6 +977,41 @@ export function ClientDashboard() {
   const sortedAcceptedProposals = sortSyncProposals([...acceptedProposals]);
   const sortedPaidProposals = sortSyncProposals([...paidProposals]);
   const sortedDeclinedProposals = sortSyncProposals([...declinedProposals]);
+
+  // Fetch custom sync requests and their submissions
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const { data: requests } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+      setCustomSyncRequests(requests || []);
+      // Fetch submissions for each request
+      const allSubs: { [id: string]: any[] } = {};
+      for (const req of requests || []) {
+        const { data: subs } = await supabase
+          .from('sync_submissions')
+          .select('*, producer:profiles!producer_id(first_name, last_name, email)')
+          .eq('sync_request_id', req.id);
+        allSubs[req.id] = subs || [];
+      }
+      setSubmissions(allSubs);
+    };
+    if (user) fetchRequests();
+  }, [user, selecting]);
+
+  // Helper to calculate due date
+  const getDueDate = (createdAt: string, paymentTerms: string) => {
+    const base = new Date(createdAt);
+    switch (paymentTerms) {
+      case 'net30': base.setDate(base.getDate() + 30); break;
+      case 'net60': base.setDate(base.getDate() + 60); break;
+      case 'net90': base.setDate(base.getDate() + 90); break;
+      default: break;
+    }
+    return base.toLocaleDateString();
+  };
 
   if (loading) {
     return (
@@ -2188,6 +2229,131 @@ export function ClientDashboard() {
           proposal={historyProposal}
         />
       )}
+
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
+          <FileMusic className="w-6 h-6 mr-2 text-blue-400" />
+          Your Custom Sync Requests
+        </h2>
+        {customSyncRequests.length === 0 ? (
+          <div className="text-gray-400">You have no custom sync requests.</div>
+        ) : (
+          <>
+            {/* Scrollable List */}
+            <div className="max-h-64 overflow-y-auto border border-blue-500/20 rounded-lg mb-4 bg-blue-900/60">
+              {customSyncRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className={`flex items-center justify-between px-4 py-3 border-b border-blue-500/10 cursor-pointer hover:bg-blue-800/40 ${expandedRequestId === req.id ? 'bg-blue-800/60' : ''}`}
+                  onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
+                >
+                  <div>
+                    <span className="text-white font-semibold">{req.project_title}</span>
+                    <span className="ml-2 text-blue-300 text-xs">{req.genre}</span>
+                    <span className="ml-2 text-gray-400 text-xs">Deadline: {new Date(req.end_date).toLocaleDateString()}</span>
+                  </div>
+                  <button
+                    className="text-blue-400 hover:text-blue-200 text-sm font-semibold"
+                    onClick={e => { e.stopPropagation(); setExpandedRequestId(expandedRequestId === req.id ? null : req.id); }}
+                  >
+                    {expandedRequestId === req.id ? 'Hide' : 'View Submissions'}
+                  </button>
+                </div>
+              ))}
+            </div>
+            {/* Expanded Details & Submissions */}
+            {customSyncRequests.map((req) => {
+              if (expandedRequestId !== req.id) return null;
+              const reqSubs = submissions[req.id] || [];
+              return (
+                <div key={req.id} className="bg-blue-800/80 border border-blue-500/20 rounded-xl p-6 mb-6">
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Project:</span> {req.project_title}
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Description:</span> {req.project_description}
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Genre:</span> <span className="text-blue-300">{req.genre}</span>
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Sync Fee:</span> ${req.price || req.sync_fee}
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Payment Terms:</span> {req.payment_terms || 'immediate'}
+                  </div>
+                  <div className="mb-2">
+                    <span className="text-white font-semibold">Payment Due Date:</span> {getDueDate(req.created_at, req.payment_terms)}
+                  </div>
+                  <div className="mb-4">
+                    <span className="text-white font-semibold">Submissions:</span>
+                    {reqSubs.length === 0 ? (
+                      <div className="text-gray-400 ml-2">No submissions yet.</div>
+                    ) : (
+                      reqSubs.map((sub) => (
+                        <div key={sub.id} className="bg-blue-900/60 border border-blue-500/10 rounded-lg p-4 my-2">
+                          <div className="mb-1 text-blue-200 font-semibold">{sub.producer?.first_name || 'Anonymous'} {sub.producer?.last_name || ''}</div>
+                          <AudioPlayer src={sub.track_url} title="Preview" />
+                          <div className="text-gray-300 text-sm mb-2">{sub.notes}</div>
+                          {selectedSubmissionId[req.id] === sub.id ? (
+                            <div className="text-green-400 font-semibold">Selected for licensing</div>
+                          ) : (
+                            <button
+                              className="py-1 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold"
+                              disabled={!!selectedSubmissionId[req.id] || selecting === sub.id}
+                              onClick={async () => {
+                                setSelecting(sub.id);
+                                // Mark as selected in DB
+                                await supabase.from('sync_submissions').update({ status: 'selected' }).eq('id', sub.id);
+                                setSelectedSubmissionId((prev) => ({ ...prev, [req.id]: sub.id }));
+                                // Notify producer (could be email or in-app notification)
+                                // ... notification logic here ...
+                                setSelecting(null);
+                              }}
+                            >
+                              {selecting === sub.id ? 'Selecting...' : 'Select'}
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {/* Payment section for selected submission */}
+                  {selectedSubmissionId[req.id] && (
+                    <div className="mt-4 p-4 bg-blue-900/40 rounded-lg border border-blue-500/10">
+                      <div className="mb-2 text-white font-semibold">Payment Terms: {req.payment_terms || 'immediate'}</div>
+                      <div className="mb-2 text-white font-semibold">Payment Due Date: {getDueDate(req.created_at, req.payment_terms)}</div>
+                      {['net30', 'net60', 'net90'].includes(req.payment_terms) && (
+                        <div className="mb-2 text-yellow-400 text-sm">You must pay by the due date to complete your license. Payment is required through Stripe.</div>
+                      )}
+                      <button
+                        className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                        disabled={!!paymentStatus[req.id]}
+                        onClick={async () => {
+                          // Call backend to create Stripe Checkout session
+                          // (Assume a function createCustomSyncCheckout exists)
+                          const res = await createCustomSyncCheckout({
+                            sync_request_id: req.id,
+                            submission_id: selectedSubmissionId[req.id],
+                            producer_id: submissions[req.id].find(s => s.id === selectedSubmissionId[req.id])?.producer_id,
+                            amount: req.price || req.sync_fee,
+                            client_id: user.id,
+                          });
+                          if (res?.checkoutUrl) {
+                            window.location.href = res.checkoutUrl;
+                          }
+                        }}
+                      >
+                        {paymentStatus[req.id] ? 'Paid' : 'Proceed to Payment'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
     </div>
   );
 }
