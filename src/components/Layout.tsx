@@ -117,28 +117,37 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           </div>
           
           <div className="flex items-center justify-end w-1/3">
-            {/* Login dropdown for logged out users */}
+            {/* Login and Create Account for logged out users */}
             {!user && (
-              <div className="relative group mr-4">
-                <button className="flex items-center px-4 py-2 text-gray-300 hover:text-white transition-colors rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
-                  <LogIn className="w-5 h-5 mr-2" />
-                  Login
-                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
-                </button>
-                <div className="absolute right-0 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[200] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
-                  <div className="py-1">
-                    <Link to="/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
-                      <LogIn className="w-4 h-4 mr-2" />Client Login
-                    </Link>
-                    <Link to="/producer/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
-                      <LogIn className="w-4 h-4 mr-2" />Producer Login
-                    </Link>
-                    <Link to="/white-label-login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
-                      <LogIn className="w-4 h-4 mr-2" />White Label Client Login
-                    </Link>
+              <>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors mr-2"
+                  style={{ minWidth: 120, textAlign: 'center' }}
+                >
+                  Create Account
+                </Link>
+                <div className="relative group mr-4">
+                  <button className="flex items-center px-4 py-2 text-gray-300 hover:text-white transition-colors rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Login
+                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                  </button>
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[200] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-focus-within:pointer-events-auto">
+                    <div className="py-1">
+                      <Link to="/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                        <LogIn className="w-4 h-4 mr-2" />Client Login
+                      </Link>
+                      <Link to="/producer/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                        <LogIn className="w-4 h-4 mr-2" />Producer Login
+                      </Link>
+                      <Link to="/white-label-login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                        <LogIn className="w-4 h-4 mr-2" />White Label Client Login
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </>
             )}
             {/* Mobile menu button */}
             <button
