@@ -21,6 +21,7 @@ interface SyncSubmission {
   has_stems?: boolean;
   has_trackouts?: boolean;
   created_at?: string;
+  signed_mp3_url?: string;
 }
 
 export default function CustomSyncRequestSubs() {
@@ -43,11 +44,28 @@ export default function CustomSyncRequestSubs() {
       if (error) setError(error.message);
       else {
         setRequests(data || []);
-        // Map submissions by request id
+        // Map submissions by request id and fetch signed URLs for mp3s
         const subMap: Record<string, SyncSubmission[]> = {};
-        (data || []).forEach((req: any) => {
-          subMap[req.id] = req.sync_submissions || [];
-        });
+        for (const req of data || []) {
+          const subs: SyncSubmission[] = req.sync_submissions || [];
+          const updatedSubs = await Promise.all(subs.map(async (sub: SyncSubmission) => {
+            if (sub.has_mp3 && sub.mp3_url) {
+              // Extract the path from the public URL (after the bucket name)
+              const match = sub.mp3_url.match(/sync-submissions\/(.+)$/);
+              const filePath = match ? `sync-submissions/${match[1]}` : undefined;
+              if (filePath) {
+                const { data: signedUrlData } = await supabase.storage
+                  .from('sync-submissions')
+                  .createSignedUrl(filePath.replace('sync-submissions/', ''), 3600);
+                if (signedUrlData?.signedUrl) {
+                  return { ...sub, signed_mp3_url: signedUrlData.signedUrl };
+                }
+              }
+            }
+            return sub;
+          }));
+          subMap[req.id] = updatedSubs;
+        }
         setSubmissions(subMap);
       }
       setLoading(false);
@@ -89,8 +107,8 @@ export default function CustomSyncRequestSubs() {
                     {submissions[req.id].map((sub) => (
                       <div key={sub.id} className="bg-blue-950/80 border border-blue-700/40 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
                         <div className="flex-1">
-                          {sub.has_mp3 && sub.mp3_url ? (
-                            <audio controls src={sub.mp3_url} className="w-full mb-2" />
+                          {sub.has_mp3 && sub.signed_mp3_url ? (
+                            <audio controls src={sub.signed_mp3_url} className="w-full mb-2" />
                           ) : (
                             <span className="text-gray-400">No mp3 uploaded</span>
                           )}
