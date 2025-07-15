@@ -1,4 +1,4 @@
-   // Trigger redeploy: trivial change
+//newdashuodate
 import React, { useState, useEffect } from 'react';
 import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,7 +20,6 @@ import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
-import { SyncRequestChatModal } from './SyncRequestChatModal';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -228,25 +227,304 @@ export function ClientDashboard() {
   const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
   const [syncProposalSortField, setSyncProposalSortField] = useState<'date' | 'title' | 'amount' | 'status'>('date');
   const [syncProposalSortOrder, setSyncProposalSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [customSyncRequests, setCustomSyncRequests] = useState<any[]>([]);
-  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
-  const [submissions, setSubmissions] = useState<{ [id: string]: any[] }>({});
-  const [selecting, setSelecting] = useState<string | null>(null);
-  const [selectedSubmissionId, setSelectedSubmissionId] = useState<{ [requestId: string]: string }>({});
-  const [paymentStatus, setPaymentStatus] = useState<{ [requestId: string]: string }>({});
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatSubmission, setChatSubmission] = useState<{ syncRequestId: string; submissionId: string } | null>(null);
-  const [mp3Urls, setMp3Urls] = useState<{ [submissionId: string]: string }>({});
 
-  // Move fetchSyncProposals here, before any useEffect or handler that uses it
+  useEffect(() => {
+    if (user) {
+      // Refresh membership info first to ensure we have the latest data
+      refreshMembership().then(() => {
+        fetchDashboardData();
+        fetchSyncProposals();
+      });
+    }
+  }, [user, membershipPlan]);
+
+  // Add a manual refresh function for testing
+  const handleManualRefresh = async () => {
+    if (user) {
+      setLoading(true);
+      try {
+        await refreshMembership();
+        await fetchDashboardData();
+        await fetchSyncProposals();
+      } catch (error) {
+        console.error('Error refreshing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, email, membership_plan')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData) {
+        setProfile(profileData);
+        setUserStats(prev => ({
+          ...prev,
+          membershipType: profileData.membership_plan as UserStats['membershipType']
+        }));
+      }
+
+      const { data: licensesData } = await supabase
+        .from('sales')
+        .select(`
+          id,
+          license_type,
+          created_at,
+          expiry_date,
+          track:tracks (
+            id,
+            title,
+            genres,
+            bpm,
+            audio_url,
+            image_url,
+            mp3_url,
+            trackouts_url,
+            split_sheet_url,
+            track_producer_id,
+            producer:profiles!tracks_track_producer_id_fkey (
+              id,
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('buyer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      console.log('Sales query result:', licensesData);
+      console.log('User ID:', user.id);
+
+      if (licensesData) {
+        const formattedLicenses = licensesData.map(license => ({
+          ...license,
+          expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData.membership_plan),
+          track: {
+            ...license.track,
+            genres: typeof license.track.genres === 'string' ? license.track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(license.track.genres) ? license.track.genres : []),
+            audioUrl: license.track.audio_url || '',
+            image: license.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            producerId: license.track.track_producer_id,
+            duration: license.track.duration || '3:30',
+            hasStingEnding: license.track.has_sting_ending || false,
+            isOneStop: license.track.is_one_stop || false,
+            mp3Url: license.track.mp3_url || '',
+            trackoutsUrl: license.track.trackouts_url || '',
+            splitSheetUrl: license.track.split_sheet_url || '',
+            hasVocals: license.track.has_vocals,
+            vocalsUsageType: license.track.vocals_usage_type,
+            subGenres: license.track.sub_genres ? (typeof license.track.sub_genres === 'string' ? license.track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(license.track.sub_genres) ? license.track.sub_genres : [])) : [],
+            moods: license.track.moods ? (typeof license.track.moods === 'string' ? license.track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(license.track.moods) ? license.track.moods : [])) : [],
+            artist: license.track.artist || '',
+            producer: license.track.producer ? {
+              id: license.track.producer.id,
+              firstName: license.track.producer.first_name || '',
+              lastName: license.track.producer.last_name || '',
+              email: license.track.producer.email,
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: ''
+          }
+        }));
+        setLicenses(formattedLicenses);
+      }
+
+      const { data: favoritesData } = await supabase
+        .from('favorites')
+        .select(`
+          track_id,
+          tracks (
+            id,
+            title,
+            artist,
+            genres,
+            moods,
+            duration,
+            bpm,
+            audio_url,
+            image_url,
+            has_sting_ending,
+            is_one_stop,
+            mp3_url,
+            trackouts_url,
+            has_vocals,
+            vocals_usage_type,
+            sub_genres,
+            track_producer_id,
+            producer:profiles!tracks_track_producer_id_fkey (
+              id,
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (favoritesData) {
+        const formattedFavorites = favoritesData.map(f => ({
+          id: f.tracks.id,
+          title: f.tracks.title,
+          artist: f.tracks.producer ? `${f.tracks.producer.first_name} ${f.tracks.producer.last_name}`.trim() : 'Unknown Artist',
+          genres: typeof f.tracks.genres === 'string' ? f.tracks.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.genres) ? f.tracks.genres : []),
+          moods: f.tracks.moods ? (typeof f.tracks.moods === 'string' ? f.tracks.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(f.tracks.moods) ? f.tracks.moods : [])) : [],
+          duration: f.tracks.duration || '3:30',
+          bpm: f.tracks.bpm,
+          audioUrl: f.tracks.audio_url,
+          image: f.tracks.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+          hasStingEnding: f.tracks.has_sting_ending,
+          isOneStop: f.tracks.is_one_stop,
+          mp3Url: f.tracks.mp3_url,
+          trackoutsUrl: f.tracks.trackouts_url,
+          hasVocals: f.tracks.has_vocals,
+          vocalsUsageType: f.tracks.vocals_usage_type,
+          subGenres: f.tracks.sub_genres ? (typeof f.tracks.sub_genres === 'string' ? f.tracks.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.sub_genres) ? f.tracks.sub_genres : [])) : [],
+          producerId: f.tracks.track_producer_id,
+          producer: f.tracks.producer ? {
+            id: f.tracks.producer.id,
+            firstName: f.tracks.producer.first_name || '',
+            lastName: f.tracks.producer.last_name || '',
+            email: f.tracks.producer.email
+          } : undefined,
+          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+          leaseAgreementUrl: ''
+        }));
+        setFavorites(formattedFavorites);
+      }
+
+      const { data: newTracksData } = await supabase
+        .from('tracks')
+        .select(`
+          id,
+          title,
+          genres,
+          bpm,
+          audio_url,
+          image_url,
+          has_vocals,
+          vocals_usage_type,
+          sub_genres,
+          moods,
+          duration,
+          artist,
+          has_sting_ending,
+          is_one_stop,
+          mp3_url,
+          trackouts_url,
+          split_sheet_url,
+          track_producer_id,
+          producer:profiles!tracks_track_producer_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (newTracksData) {
+        const formattedNewTracks = newTracksData.map(track => ({
+          id: track.id,
+          title: track.title,
+          artist: track.producer?.first_name 
+            ? `${track.producer.first_name} ${track.producer.last_name || ''}`.trim()
+            : track.artist || 'Unknown Artist',
+          genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
+          moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
+          bpm: track.bpm,
+          audioUrl: track.audio_url,
+          image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+          hasVocals: track.has_vocals,
+          vocalsUsageType: track.vocals_usage_type,
+          subGenres: track.sub_genres ? (typeof track.sub_genres === 'string' ? track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.sub_genres) ? track.sub_genres : [])) : [],
+          duration: track.duration || '3:30',
+          hasStingEnding: track.has_sting_ending || false,
+          isOneStop: track.is_one_stop || false,
+          mp3Url: track.mp3_url || '',
+          trackoutsUrl: track.trackouts_url || '',
+          splitSheetUrl: track.split_sheet_url || '',
+          producerId: track.track_producer_id,
+          producer: track.producer ? {
+            id: track.producer.id,
+            firstName: track.producer.first_name || '',
+            lastName: track.producer.last_name || '',
+            email: track.producer.email
+          } : undefined,
+          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+          leaseAgreementUrl: ''
+        }));
+        setNewTracks(formattedNewTracks);
+      }
+
+      const { data: syncRequestsData } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (syncRequestsData) {
+        setSyncRequests(syncRequestsData);
+      }
+
+      // Calculate remaining licenses for Gold Access
+      if (membershipPlan === 'Gold Access') {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count } = await supabase
+          .from('sales')
+          .select('id', { count: 'exact' })
+          .eq('buyer_id', user.id)
+          .gte('created_at', startOfMonth.toISOString());
+
+        const totalLicenses = count || 0;
+        const remainingLicenses = 10 - totalLicenses;
+
+        setUserStats(prev => ({
+          ...prev,
+          totalLicenses,
+          remainingLicenses,
+          currentPeriodStart: startOfMonth,
+          currentPeriodEnd: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0),
+          daysUntilReset: Math.ceil((new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        }));
+      }
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchSyncProposals = async () => {
     if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('sync_proposals')
         .select(`
           id,
           track_id,
+          client_id,
           project_type,
           duration,
           is_exclusive,
@@ -298,302 +576,27 @@ export function ClientDashboard() {
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
+        
       if (error) {
         console.error('Error fetching sync proposals:', error, error.message, error.details, error.hint);
         return;
       }
+      
       if (data) {
+        console.log('Sync proposals fetched:', data);
+        console.log('Proposal statuses:', data.map(p => ({
+          id: p.id,
+          status: p.status,
+          client_status: p.client_status,
+          producer_status: p.producer_status,
+          payment_status: p.payment_status,
+          negotiation_status: p.negotiation_status,
+          track_title: p.track?.title
+        })));
         setSyncProposals(data);
       }
     } catch (err) {
       console.error('Error in fetchSyncProposals:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      // Refresh membership info first to ensure we have the latest data
-      refreshMembership().then(() => {
-        fetchDashboardData();
-        fetchSyncProposals();
-      });
-    }
-  }, [user, membershipPlan]);
-
-  // Add a manual refresh function for testing
-  const handleManualRefresh = async () => {
-    if (user) {
-      setLoading(true);
-      try {
-        await refreshMembership();
-        await fetchDashboardData();
-        await fetchSyncProposals();
-      } catch (error) {
-        console.error('Error refreshing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const fetchDashboardData = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      setError('');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, email, membership_plan')
-        .eq('id', user.id)
-        .single();
-
-      if (profileData) {
-        setProfile({
-          first_name: profileData.first_name || '',
-          email: profileData.email || ''
-        });
-        setUserStats(prev => ({
-          ...prev,
-          membershipType: (profileData.membership_plan as UserStats['membershipType']) || null
-        }));
-      }
-
-      const { data: licensesData } = await supabase
-        .from('sales')
-        .select(`
-          id,
-          license_type,
-          created_at,
-          expiry_date,
-          track:tracks (
-            id,
-            title,
-            genres,
-            bpm,
-            audio_url,
-            image_url,
-            mp3_url,
-            trackouts_url,
-            split_sheet_url,
-            track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          )
-        `)
-        .eq('buyer_id', user.id)
-        .order('created_at', { ascending: false });
-
-      console.log('Sales query result:', licensesData);
-      console.log('User ID:', user.id);
-
-      if (licensesData) {
-        const formattedLicenses = (licensesData || []).map(license => {
-          const t = license.track || {};
-          const p = (Array.isArray(t.producer) ? t.producer[0] : t.producer) || {};
-          return {
-            ...license,
-            expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData?.membership_plan || ''),
-            track: {
-              ...t,
-              genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
-              audioUrl: t.audio_url || '',
-              image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-              producerId: t.track_producer_id || '',
-              duration: t.duration || '3:30',
-              producer: {
-                id: p.id || '',
-                first_name: p.first_name || '',
-                last_name: p.last_name || '',
-                email: p.email || '',
-              },
-            },
-          };
-        });
-        setLicenses(formattedLicenses);
-      }
-
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select(`
-          track_id,
-          tracks (
-            id,
-            title,
-            artist,
-            genres,
-            moods,
-            duration,
-            bpm,
-            audio_url,
-            image_url,
-            has_sting_ending,
-            is_one_stop,
-            mp3_url,
-            trackouts_url,
-            has_vocals,
-            vocals_usage_type,
-            sub_genres,
-            track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (favoritesData) {
-        const formattedFavorites = favoritesData.map(f => {
-          const t = f.tracks || {};
-          const p = t.producer || {};
-          return {
-            id: t.id || '',
-            title: t.title || '',
-            artist: p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Unknown Artist',
-            genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
-            moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
-            duration: t.duration || '3:30',
-            bpm: t.bpm || 0,
-            audioUrl: t.audio_url || '',
-            image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasStingEnding: t.has_sting_ending || false,
-            isOneStop: t.is_one_stop || false,
-            mp3Url: t.mp3_url || '',
-            trackoutsUrl: t.trackouts_url || '',
-            hasVocals: t.has_vocals || false,
-            vocalsUsageType: t.vocals_usage_type || '',
-            subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
-            producerId: t.track_producer_id || '',
-            producer: p.id ? {
-              id: p.id,
-              firstName: p.first_name || '',
-              lastName: p.last_name || '',
-              email: p.email || ''
-            } : undefined,
-            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: ''
-          };
-        });
-        setFavorites(formattedFavorites);
-      }
-
-      const { data: newTracksData } = await supabase
-        .from('tracks')
-        .select(`
-          id,
-          title,
-          genres,
-          bpm,
-          audio_url,
-          image_url,
-          has_vocals,
-          vocals_usage_type,
-          sub_genres,
-          moods,
-          duration,
-          artist,
-          has_sting_ending,
-          is_one_stop,
-          mp3_url,
-          trackouts_url,
-          split_sheet_url,
-          track_producer_id,
-          producer:profiles!tracks_track_producer_id_fkey (
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (newTracksData) {
-        const formattedNewTracks = newTracksData.map(track => {
-          const t = track || {};
-          const p = t.producer || {};
-          return {
-            id: t.id || '',
-            title: t.title || '',
-            artist: p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : t.artist || 'Unknown Artist',
-            genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
-            moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
-            bpm: t.bpm || 0,
-            audioUrl: t.audio_url || '',
-            image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasVocals: t.has_vocals || false,
-            vocalsUsageType: t.vocals_usage_type || '',
-            subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
-            duration: t.duration || '3:30',
-            hasStingEnding: t.has_sting_ending || false,
-            isOneStop: t.is_one_stop || false,
-            mp3Url: t.mp3_url || '',
-            trackoutsUrl: t.trackouts_url || '',
-            splitSheetUrl: t.split_sheet_url || '',
-            producerId: t.track_producer_id || '',
-            producer: p.id ? {
-              id: p.id,
-              firstName: p.first_name || '',
-              lastName: p.last_name || '',
-              email: p.email || ''
-            } : undefined,
-            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: ''
-          };
-        });
-        setNewTracks(formattedNewTracks);
-      }
-
-      const { data: syncRequestsData } = await supabase
-        .from('custom_sync_requests')
-        .select('*')
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (syncRequestsData) {
-        setSyncRequests(syncRequestsData);
-      }
-
-      // Calculate remaining licenses for Gold Access
-      if (membershipPlan === 'Gold Access') {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { count } = await supabase
-          .from('sales')
-          .select('id', { count: 'exact' })
-          .eq('buyer_id', user.id)
-          .gte('created_at', startOfMonth.toISOString());
-
-        const totalLicenses = count || 0;
-        const remainingLicenses = 10 - totalLicenses;
-
-        setUserStats(prev => ({
-          ...prev,
-          totalLicenses,
-          remainingLicenses,
-          currentPeriodStart: startOfMonth,
-          currentPeriodEnd: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0),
-          daysUntilReset: Math.ceil((new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-        }));
-      }
-
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -970,61 +973,6 @@ export function ClientDashboard() {
   const sortedPaidProposals = sortSyncProposals([...paidProposals]);
   const sortedDeclinedProposals = sortSyncProposals([...declinedProposals]);
 
-  // Fetch custom sync requests and their submissions
-  useEffect(() => {
-    const fetchRequests = async () => {
-      const { data: requests } = await supabase
-        .from('custom_sync_requests')
-        .select('*')
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
-      setCustomSyncRequests(requests || []);
-      // Fetch submissions for each request
-      const allSubs: { [id: string]: any[] } = {};
-      for (const req of requests || []) {
-        const { data: subs } = await supabase
-          .from('sync_submissions')
-          .select('*, producer:profiles!producer_id(first_name, last_name, email)')
-          .eq('sync_request_id', req.id);
-        allSubs[req.id] = subs || [];
-      }
-      setSubmissions(allSubs);
-    };
-    if (user) fetchRequests();
-  }, [user, selecting]);
-
-  useEffect(() => {
-    const fetchMp3Urls = async () => {
-      if (!user) return;
-      const allSubmissions = Object.values(submissions).flat();
-      const newMp3Urls: { [submissionId: string]: string } = {};
-      for (const submission of allSubmissions) {
-        if (submission.mp3_path) {
-          const { data, error } = await supabase.storage
-            .from('sync-submissions-audio')
-            .createSignedUrl(submission.mp3_path, 60 * 60); // 1 hour
-          if (!error && data?.signedUrl) {
-            newMp3Urls[submission.id] = data.signedUrl;
-          }
-        }
-      }
-      setMp3Urls(newMp3Urls);
-    };
-    fetchMp3Urls();
-  }, [submissions, user]);
-
-  // Helper to calculate due date
-  const getDueDate = (createdAt: string, paymentTerms: string) => {
-    const base = new Date(createdAt);
-    switch (paymentTerms) {
-      case 'net30': base.setDate(base.getDate() + 30); break;
-      case 'net60': base.setDate(base.getDate() + 60); break;
-      case 'net90': base.setDate(base.getDate() + 90); break;
-      default: break;
-    }
-    return base.toLocaleDateString();
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1118,9 +1066,9 @@ export function ClientDashboard() {
 
 
         {/* Custom Sync Requests Section */}
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 w-full">
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests (with Submissions)</h2>
+            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
             <Link
               to="/custom-sync-request"
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
@@ -1129,6 +1077,7 @@ export function ClientDashboard() {
               New Request
             </Link>
           </div>
+
           {syncRequests.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-400">No sync requests yet</p>
@@ -1148,12 +1097,18 @@ export function ClientDashboard() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">{request.project_title}</h3>
-                      <p className="text-gray-400 text-sm mb-2">{request.project_description}</p>
+                      <h3 className="text-lg font-semibold text-white mb-1">
+                        {request.project_title}
+                      </h3>
+                      <p className="text-gray-400 text-sm mb-2">
+                        {request.project_description}
+                      </p>
                       <div className="flex items-center space-x-4 text-sm">
                         <span className="text-purple-400">${request.sync_fee.toFixed(2)}</span>
                         <span className="text-gray-400">{request.genre}</span>
-                        <span className="text-gray-400">Due: {new Date(request.end_date).toLocaleDateString()}</span>
+                        <span className="text-gray-400">
+                          Due: {new Date(request.end_date).toLocaleDateString()}
+                        </span>
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                           request.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
@@ -1193,8 +1148,12 @@ export function ClientDashboard() {
                       </button>
                     </div>
                   </div>
-               
-      
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Sync Proposals Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-6">
@@ -2228,146 +2187,6 @@ export function ClientDashboard() {
           isOpen={showHistoryModal}
           onClose={() => setShowHistoryModal(false)}
           proposal={historyProposal}
-        />
-      )}
-
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold text-white mb-4 flex items-center">
-          <FileMusic className="w-6 h-6 mr-2 text-blue-400" />
-          Your Custom Sync Requests
-        </h2>
-        {customSyncRequests.length === 0 ? (
-          <div className="text-gray-400">You have no custom sync requests.</div>
-        ) : (
-          <>
-            {/* Scrollable List */}
-            <div className="max-h-64 overflow-y-auto border border-blue-500/20 rounded-lg mb-4 bg-blue-900/60">
-              {customSyncRequests.map((req) => (
-                <div
-                  key={req.id}
-                  className={`flex items-center justify-between px-4 py-3 border-b border-blue-500/10 cursor-pointer hover:bg-blue-800/40 ${expandedRequestId === req.id ? 'bg-blue-800/60' : ''}`}
-                  onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
-                >
-                  <div>
-                    <span className="text-white font-semibold">{req.project_title}</span>
-                    <span className="ml-2 text-blue-300 text-xs">{req.genre}</span>
-                    <span className="ml-2 text-gray-400 text-xs">Deadline: {new Date(req.end_date).toLocaleDateString()}</span>
-                  </div>
-                  <button
-                    className="text-blue-400 hover:text-blue-200 text-sm font-semibold"
-                    onClick={e => { e.stopPropagation(); setExpandedRequestId(expandedRequestId === req.id ? null : req.id); }}
-                  >
-                    {expandedRequestId === req.id ? 'Hide' : 'View Submissions'}
-                  </button>
-                </div>
-              ))}
-            </div>
-            {/* Expanded Details & Submissions */}
-            {customSyncRequests.map((req) => {
-              if (expandedRequestId !== req.id) return null;
-              const reqSubs = submissions[req.id] || [];
-              return (
-                <div key={req.id} className="bg-blue-800/80 border border-blue-500/20 rounded-xl p-6 mb-6">
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Project:</span> {req.project_title}
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Description:</span> {req.project_description}
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Genre:</span> <span className="text-blue-300">{req.genre}</span>
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Sync Fee:</span> ${req.price || req.sync_fee}
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Payment Terms:</span> {req.payment_terms || 'immediate'}
-                  </div>
-                  <div className="mb-2">
-                    <span className="text-white font-semibold">Payment Due Date:</span> {getDueDate(req.created_at, req.payment_terms)}
-                  </div>
-                  <div className="mb-4">
-                    <span className="text-white font-semibold">Submissions:</span>
-                    {reqSubs.length === 0 ? (
-                      <div className="text-gray-400 ml-2">No submissions yet.</div>
-                    ) : (
-                      reqSubs.map((sub) => (
-                        <div key={sub.id} className="bg-blue-900/60 border border-blue-500/10 rounded-lg p-4 my-2">
-                          <div className="mb-1 text-blue-200 font-semibold">{producer.first_name || 'Anonymous'} {producer.last_name || ''}</div>
-                          {submission.mp3_path && mp3Urls[submission.id] && (
-                            <audio controls src={mp3Urls[submission.id]} className="mt-2 w-full">
-                              Your browser does not support the audio element.
-                            </audio>
-                          )}
-                          <div className="text-gray-300 text-sm mb-2">{sub.notes}</div>
-                          {selectedSubmissionId[req.id] === sub.id ? (
-                            <div className="text-green-400 font-semibold">Selected for licensing</div>
-                          ) : (
-                            <button
-                              className="py-1 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold"
-                              disabled={!!selectedSubmissionId[req.id] || selecting === sub.id}
-                              onClick={async () => {
-                                setSelecting(sub.id);
-                                // Mark as selected in DB
-                                await supabase.from('sync_submissions').update({ status: 'selected' }).eq('id', sub.id);
-                                setSelectedSubmissionId((prev) => ({ ...prev, [req.id]: sub.id }));
-                                // Notify producer (could be email or in-app notification)
-                                // ... notification logic here ...
-                                setSelecting(null);
-                              }}
-                            >
-                              {selecting === sub.id ? 'Selecting...' : 'Select'}
-                            </button>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {/* Payment section for selected submission */}
-                  {selectedSubmissionId[req.id] && (
-                    <div className="mt-4 p-4 bg-blue-900/40 rounded-lg border border-blue-500/10">
-                      <div className="mb-2 text-white font-semibold">Payment Terms: {req.payment_terms || 'immediate'}</div>
-                      <div className="mb-2 text-white font-semibold">Payment Due Date: {getDueDate(req.created_at, req.payment_terms)}</div>
-                      {['net30', 'net60', 'net90'].includes(req.payment_terms) && (
-                        <div className="mb-2 text-yellow-400 text-sm">You must pay by the due date to complete your license. Payment is required through Stripe.</div>
-                      )}
-                      <button
-                        className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                        disabled={!!paymentStatus[req.id]}
-                        onClick={async () => {
-                          // Call backend to create Stripe Checkout session
-                          // (Assume a function createCustomSyncCheckout exists)
-                          const res = await createCustomSyncCheckout({
-                            sync_request_id: req.id,
-                            submission_id: selectedSubmissionId[req.id],
-                            producer_id: submissions[req.id].find(s => s.id === selectedSubmissionId[req.id])?.producer_id,
-                            amount: req.price || req.sync_fee,
-                            client_id: user.id,
-                          });
-                          if (res?.checkoutUrl) {
-                            window.location.href = res.checkoutUrl;
-                          }
-                        }}
-                      >
-                        {paymentStatus[req.id] ? 'Paid' : 'Proceed to Payment'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </>
-        )}
-      </div>
-      {/* Chat Modal */}
-      {chatSubmission && (
-        <SyncRequestChatModal
-          open={chatOpen}
-          onClose={() => setChatOpen(false)}
-          syncRequestId={chatSubmission.syncRequestId}
-          submissionId={chatSubmission.submissionId}
-          currentUserId={user.id}
-          currentUserRole="client"
         />
       )}
     </div>
