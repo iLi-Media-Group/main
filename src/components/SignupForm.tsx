@@ -81,10 +81,11 @@ export function SignupForm({ onClose }: SignupFormProps) {
       // Create user account
       await signUp(email, password);
 
-      // Update profile with additional details
+      // Upsert profile with additional details
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          email,
           first_name: firstName,
           last_name: lastName,
           company_name: companyName.trim() || null,
@@ -93,8 +94,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
           invitation_code: accountType === 'producer' ? invitationCode : null,
           ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
           performing_rights_org: accountType === 'producer' ? performingRightsOrg : null
-        })
-        .eq('email', email);
+        }, { onConflict: 'email' });
 
       if (profileError) throw profileError;
 
@@ -108,17 +108,9 @@ export function SignupForm({ onClose }: SignupFormProps) {
 
       onClose();
       
-      // For client accounts, always navigate to the welcome/pricing page first
+      // For client accounts, go directly to the dashboard
       if (accountType === 'client') {
-        navigate('/welcome', { 
-          state: { 
-            newUser: true,
-            email,
-            firstName,
-            redirectTo,
-            productId
-          } 
-        });
+        navigate('/dashboard');
         return;
       }
       
