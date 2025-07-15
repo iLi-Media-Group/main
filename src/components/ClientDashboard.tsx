@@ -1117,7 +1117,7 @@ export function ClientDashboard() {
 
 
         {/* Custom Sync Requests Section */}
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 w-full">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
             <Link
@@ -1128,7 +1128,6 @@ export function ClientDashboard() {
               New Request
             </Link>
           </div>
-
           {syncRequests.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-400">No sync requests yet</p>
@@ -1148,18 +1147,12 @@ export function ClientDashboard() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        {request.project_title}
-                      </h3>
-                      <p className="text-gray-400 text-sm mb-2">
-                        {request.project_description}
-                      </p>
+                      <h3 className="text-lg font-semibold text-white mb-1">{request.project_title}</h3>
+                      <p className="text-gray-400 text-sm mb-2">{request.project_description}</p>
                       <div className="flex items-center space-x-4 text-sm">
                         <span className="text-purple-400">${request.sync_fee.toFixed(2)}</span>
                         <span className="text-gray-400">{request.genre}</span>
-                        <span className="text-gray-400">
-                          Due: {new Date(request.end_date).toLocaleDateString()}
-                        </span>
+                        <span className="text-gray-400">Due: {new Date(request.end_date).toLocaleDateString()}</span>
                         <span className={`px-2 py-1 rounded-full text-xs ${
                           request.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                           request.status === 'in_progress' ? 'bg-blue-500/20 text-blue-400' :
@@ -1201,13 +1194,10 @@ export function ClientDashboard() {
                   </div>
                   <div className="mt-4">
                     {submissions[request.id] && submissions[request.id].length > 0 ? (
-                      <div className="space-y-2">
+                      <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
                         <h4 className="text-white font-semibold mb-2">Submissions</h4>
                         {submissions[request.id].map((submission: any) => {
                           const producer = (Array.isArray(submission.producer) ? submission.producer[0] : submission.producer) || {};
-                          const genres = typeof submission.genres === 'string' ? submission.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(submission.genres) ? submission.genres : []);
-                          const audioUrl = submission.audio_url || '';
-                          const imageUrl = submission.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
                           const isSelected = submission.status === 'selected';
                           return (
                             <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
@@ -1220,7 +1210,6 @@ export function ClientDashboard() {
                                   Your browser does not support the audio element.
                                 </audio>
                               )}
-                              <div className="text-gray-300 text-sm mb-2">{submission.notes}</div>
                               <div className="flex items-center space-x-2 mt-2 md:mt-0">
                                 <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
                                 <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
