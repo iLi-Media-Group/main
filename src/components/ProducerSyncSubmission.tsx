@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 
 export default function ProducerSyncSubmission() {
   const { user } = useAuth();
+  const location = useLocation();
   const [mp3File, setMp3File] = useState<File | null>(null);
   const [hasStems, setHasStems] = useState(false);
   const [hasTrackouts, setHasTrackouts] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get requestId from query string
+  const searchParams = new URLSearchParams(location.search);
+  const requestId = searchParams.get('requestId');
 
   const handleMp3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,6 +33,10 @@ export default function ProducerSyncSubmission() {
     if (!user) return;
     if (!mp3File) {
       setError('Please upload an mp3 file.');
+      return;
+    }
+    if (!requestId) {
+      setError('No custom sync request selected.');
       return;
     }
     setUploading(true);
@@ -46,6 +56,7 @@ export default function ProducerSyncSubmission() {
       // Insert submission row
       const { error: dbError } = await supabase.from('sync_submissions').insert({
         producer_id: user.id,
+        custom_sync_request_id: requestId,
         mp3_url: mp3Url,
         has_mp3: true,
         has_stems: hasStems,
@@ -68,6 +79,9 @@ export default function ProducerSyncSubmission() {
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-xl mx-auto px-4 bg-blue-800/80 border border-blue-500/40 rounded-xl p-8">
         <h1 className="text-2xl font-bold text-white mb-6">Submit Track for Custom Sync</h1>
+        {requestId && (
+          <div className="mb-4 text-blue-200 text-sm">Submitting to Request ID: <span className="font-mono">{requestId}</span></div>
+        )}
         {success && <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded text-green-400">Submission successful!</div>}
         {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400">{error}</div>}
         <form onSubmit={handleSubmit} className="space-y-6">

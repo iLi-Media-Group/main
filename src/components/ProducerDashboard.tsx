@@ -144,12 +144,32 @@ export function ProducerDashboard() {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
   const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'paid' | 'declined'>('pending');
+  const [openSyncRequests, setOpenSyncRequests] = useState<any[]>([]);
+  const [loadingSyncRequests, setLoadingSyncRequests] = useState(true);
+  const [syncRequestsError, setSyncRequestsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchDashboardData();
     }
   }, [user]);
+
+  useEffect(() => {
+    const fetchOpenSyncRequests = async () => {
+      setLoadingSyncRequests(true);
+      setSyncRequestsError(null);
+      const { data, error } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('status', 'open')
+        .gte('end_date', new Date().toISOString())
+        .order('created_at', { ascending: false });
+      if (error) setSyncRequestsError(error.message);
+      else setOpenSyncRequests(data || []);
+      setLoadingSyncRequests(false);
+    };
+    fetchOpenSyncRequests();
+  }, []);
 
   const fetchDashboardData = async () => {
     if (!user) return;
@@ -648,6 +668,42 @@ export function ProducerDashboard() {
             </div>
           </div>
         </div>
+
+        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 mb-8">
+  <h2 className="text-xl font-bold text-white mb-4">Open Custom Sync Requests</h2>
+  {loadingSyncRequests ? (
+    <div className="text-blue-300">Loading...</div>
+  ) : syncRequestsError ? (
+    <div className="text-red-400">{syncRequestsError}</div>
+  ) : openSyncRequests.length === 0 ? (
+    <div className="text-gray-400">No open custom sync requests at this time.</div>
+  ) : (
+    <div className="max-h-96 overflow-y-auto space-y-4">
+      {openSyncRequests.map((req) => (
+        <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+          <div className="flex-1">
+            <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+            <div className="text-gray-300 mb-1">{req.project_description}</div>
+            <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+              <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+              <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
+              <span><strong>Genre:</strong> {req.genre}</span>
+              <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+            </div>
+          </div>
+          <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
+            <Link
+              to={`/producer-sync-submission?requestId=${req.id}`}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              Submit Track
+            </Link>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
