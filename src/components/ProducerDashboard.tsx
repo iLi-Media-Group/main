@@ -150,6 +150,7 @@ export function ProducerDashboard() {
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submissionFields, setSubmissionFields] = useState<{ [id: string]: { trackUrl: string; notes: string } }>({});
+  const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
   // Fetch open custom sync requests and existing submissions
   useEffect(() => {
@@ -688,91 +689,117 @@ export function ProducerDashboard() {
     {openSyncRequests.length === 0 ? (
       <div className="text-gray-400">No open custom sync requests at this time.</div>
     ) : (
-      openSyncRequests.map((req) => {
-        const trackUrl = submissionFields[req.id]?.trackUrl || '';
-        const notes = submissionFields[req.id]?.notes || '';
-        return (
-          <div key={req.id} className="bg-blue-800/80 border border-blue-500/20 rounded-xl p-6 mb-6">
-            <div className="mb-2">
-              <span className="text-white font-semibold">Project:</span> {req.project_title}
-            </div>
-            <div className="mb-2">
-              <span className="text-white font-semibold">Description:</span> {req.project_description}
-            </div>
-            <div className="mb-2">
-              <span className="text-white font-semibold">Genre:</span> <span className="text-blue-300">{req.genre}</span>
-            </div>
-            <div className="mb-2">
-              <span className="text-white font-semibold">Sync Fee:</span> ${req.price || req.sync_fee}
-            </div>
-            <div className="mb-2">
-              <span className="text-white font-semibold">Deadline:</span> {new Date(req.end_date).toLocaleDateString()}
-            </div>
-            {hasSubmitted(req.id) ? (
-              <div className="text-green-400 font-semibold mt-4">You have already submitted a track for this request.</div>
-            ) : (
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!user) return;
-                  setSubmissionLoading(req.id);
-                  setSubmissionError(null);
-                  setSubmissionSuccess(null);
-                  try {
-                    const { error } = await supabase.from('sync_submissions').insert({
-                      sync_request_id: req.id,
-                      producer_id: user.id,
-                      track_url: trackUrl,
-                      notes,
-                    });
-                    if (error) throw error;
-                    setSubmissionSuccess(req.id);
-                    setSubmissionFields(f => ({ ...f, [req.id]: { trackUrl: '', notes: '' } }));
-                  } catch (err) {
-                    setSubmissionError('Failed to submit track.');
-                  } finally {
-                    setSubmissionLoading(null);
-                  }
-                }}
-                className="mt-4 space-y-4"
+      <>
+        {/* Scrollable List */}
+        <div className="max-h-64 overflow-y-auto border border-blue-500/20 rounded-lg mb-4 bg-blue-900/60">
+          {openSyncRequests.map((req) => (
+            <div
+              key={req.id}
+              className={`flex items-center justify-between px-4 py-3 border-b border-blue-500/10 cursor-pointer hover:bg-blue-800/40 ${expandedRequestId === req.id ? 'bg-blue-800/60' : ''}`}
+              onClick={() => setExpandedRequestId(expandedRequestId === req.id ? null : req.id)}
+            >
+              <div>
+                <span className="text-white font-semibold">{req.project_title}</span>
+                <span className="ml-2 text-blue-300 text-xs">{req.genre}</span>
+                <span className="ml-2 text-gray-400 text-xs">Deadline: {new Date(req.end_date).toLocaleDateString()}</span>
+              </div>
+              <button
+                className="text-blue-400 hover:text-blue-200 text-sm font-semibold"
+                onClick={e => { e.stopPropagation(); setExpandedRequestId(expandedRequestId === req.id ? null : req.id); }}
               >
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Track URL</label>
-                  <input
-                    type="url"
-                    value={trackUrl}
-                    onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], trackUrl: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                    placeholder="https://..."
-                    required
-                    disabled={submissionLoading === req.id}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Notes (optional)</label>
-                  <textarea
-                    value={notes}
-                    onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], notes: e.target.value } }))}
-                    className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                    rows={2}
-                    disabled={submissionLoading === req.id}
-                  />
-                </div>
-                {submissionError && <div className="text-red-400">{submissionError}</div>}
-                <button
-                  type="submit"
-                  className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                  disabled={submissionLoading === req.id}
+                {expandedRequestId === req.id ? 'Hide' : 'View & Submit'}
+              </button>
+            </div>
+          ))}
+        </div>
+        {/* Expanded Details & Submission Form */}
+        {openSyncRequests.map((req) => {
+          if (expandedRequestId !== req.id) return null;
+          const trackUrl = submissionFields[req.id]?.trackUrl || '';
+          const notes = submissionFields[req.id]?.notes || '';
+          return (
+            <div key={req.id} className="bg-blue-800/80 border border-blue-500/20 rounded-xl p-6 mb-6">
+              <div className="mb-2">
+                <span className="text-white font-semibold">Project:</span> {req.project_title}
+              </div>
+              <div className="mb-2">
+                <span className="text-white font-semibold">Description:</span> {req.project_description}
+              </div>
+              <div className="mb-2">
+                <span className="text-white font-semibold">Genre:</span> <span className="text-blue-300">{req.genre}</span>
+              </div>
+              <div className="mb-2">
+                <span className="text-white font-semibold">Sync Fee:</span> ${req.price || req.sync_fee}
+              </div>
+              <div className="mb-2">
+                <span className="text-white font-semibold">Deadline:</span> {new Date(req.end_date).toLocaleDateString()}
+              </div>
+              {hasSubmitted(req.id) ? (
+                <div className="text-green-400 font-semibold mt-4">You have already submitted a track for this request.</div>
+              ) : (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!user) return;
+                    setSubmissionLoading(req.id);
+                    setSubmissionError(null);
+                    setSubmissionSuccess(null);
+                    try {
+                      const { error } = await supabase.from('sync_submissions').insert({
+                        sync_request_id: req.id,
+                        producer_id: user.id,
+                        track_url: trackUrl,
+                        notes,
+                      });
+                      if (error) throw error;
+                      setSubmissionSuccess(req.id);
+                      setSubmissionFields(f => ({ ...f, [req.id]: { trackUrl: '', notes: '' } }));
+                    } catch (err) {
+                      setSubmissionError('Failed to submit track.');
+                    } finally {
+                      setSubmissionLoading(null);
+                    }
+                  }}
+                  className="mt-4 space-y-4"
                 >
-                  {submissionLoading === req.id ? 'Submitting...' : 'Submit Track'}
-                </button>
-              </form>
-            )}
-          </div>
-        );
-      })
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Track URL</label>
+                    <input
+                      type="url"
+                      value={trackUrl}
+                      onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], trackUrl: e.target.value } }))}
+                      className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="https://..."
+                      required
+                      disabled={submissionLoading === req.id}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Notes (optional)</label>
+                    <textarea
+                      value={notes}
+                      onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], notes: e.target.value } }))}
+                      className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      rows={2}
+                      disabled={submissionLoading === req.id}
+                    />
+                  </div>
+                  {submissionError && <div className="text-red-400">{submissionError}</div>}
+                  <button
+                    type="submit"
+                    className="py-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                    disabled={submissionLoading === req.id}
+                  >
+                    {submissionLoading === req.id ? 'Submitting...' : 'Submit Track'}
+                  </button>
+                </form>
+              )}
+            </div>
+          );
+        })}
+        {submissionSuccess && <div className="text-green-400 font-semibold mt-4">Track submitted successfully!</div>}
+      </>
     )}
-    {submissionSuccess && <div className="text-green-400 font-semibold mt-4">Track submitted successfully!</div>}
   </div>
 )}
 
