@@ -235,6 +235,7 @@ export function ClientDashboard() {
   const [paymentStatus, setPaymentStatus] = useState<{ [requestId: string]: string }>({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSubmission, setChatSubmission] = useState<{ syncRequestId: string; submissionId: string } | null>(null);
+  const [mp3Urls, setMp3Urls] = useState<{ [submissionId: string]: string }>({});
 
   // Move fetchSyncProposals here, before any useEffect or handler that uses it
   const fetchSyncProposals = async () => {
@@ -393,7 +394,7 @@ export function ClientDashboard() {
       if (licensesData) {
         const formattedLicenses = (licensesData || []).map(license => {
           const t = license.track || {};
-          const p = t.producer || {};
+          const p = (Array.isArray(t.producer) ? t.producer[0] : t.producer) || {};
           return {
             ...license,
             expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData?.membership_plan || ''),
@@ -404,26 +405,13 @@ export function ClientDashboard() {
               image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
               producerId: t.track_producer_id || '',
               duration: t.duration || '3:30',
-              hasStingEnding: t.has_sting_ending || false,
-              isOneStop: t.is_one_stop || false,
-              mp3Url: t.mp3_url || '',
-              trackoutsUrl: t.trackouts_url || '',
-              splitSheetUrl: t.split_sheet_url || '',
-              hasVocals: t.has_vocals || false,
-              vocalsUsageType: t.vocals_usage_type || '',
-              subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
-              moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
-              artist: t.artist || '',
-              producer: p.id ? {
-                id: p.id,
-                firstName: p.first_name || '',
-                lastName: p.last_name || '',
-                email: p.email || ''
-              } : undefined,
-              fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-              pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-              leaseAgreementUrl: ''
-            }
+              producer: {
+                id: p.id || '',
+                first_name: p.first_name || '',
+                last_name: p.last_name || '',
+                email: p.email || '',
+              },
+            },
           };
         });
         setLicenses(formattedLicenses);
@@ -1004,6 +992,26 @@ export function ClientDashboard() {
     if (user) fetchRequests();
   }, [user, selecting]);
 
+  useEffect(() => {
+    const fetchMp3Urls = async () => {
+      if (!user) return;
+      const allSubmissions = Object.values(submissions).flat();
+      const newMp3Urls: { [submissionId: string]: string } = {};
+      for (const submission of allSubmissions) {
+        if (submission.mp3_path) {
+          const { data, error } = await supabase.storage
+            .from('sync-submissions-audio')
+            .createSignedUrl(submission.mp3_path, 60 * 60); // 1 hour
+          if (!error && data?.signedUrl) {
+            newMp3Urls[submission.id] = data.signedUrl;
+          }
+        }
+      }
+      setMp3Urls(newMp3Urls);
+    };
+    fetchMp3Urls();
+  }, [submissions, user]);
+
   // Helper to calculate due date
   const getDueDate = (createdAt: string, paymentTerms: string) => {
     const base = new Date(createdAt);
@@ -1196,13 +1204,23 @@ export function ClientDashboard() {
                       <div className="space-y-2">
                         <h4 className="text-white font-semibold mb-2">Submissions</h4>
                         {submissions[request.id].map((submission: any) => {
+                          const producer = (Array.isArray(submission.producer) ? submission.producer[0] : submission.producer) || {};
+                          const genres = typeof submission.genres === 'string' ? submission.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(submission.genres) ? submission.genres : []);
+                          const audioUrl = submission.audio_url || '';
+                          const imageUrl = submission.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
                           const isSelected = submission.status === 'selected';
                           return (
                             <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
                               <div>
-                                <span className="text-white font-medium">{submission.producer?.first_name} {submission.producer?.last_name}</span>
+                                <span className="text-white font-medium">{producer.first_name || 'Anonymous'} {producer.last_name || ''}</span>
                                 <span className="text-gray-400 ml-2">{submission.notes}</span>
                               </div>
+                              {submission.mp3_path && mp3Urls[submission.id] && (
+                                <audio controls src={mp3Urls[submission.id]} className="mt-2 w-full">
+                                  Your browser does not support the audio element.
+                                </audio>
+                              )}
+                              <div className="text-gray-300 text-sm mb-2">{submission.notes}</div>
                               <div className="flex items-center space-x-2 mt-2 md:mt-0">
                                 <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
                                 <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
@@ -2331,8 +2349,12 @@ export function ClientDashboard() {
                     ) : (
                       reqSubs.map((sub) => (
                         <div key={sub.id} className="bg-blue-900/60 border border-blue-500/10 rounded-lg p-4 my-2">
-                          <div className="mb-1 text-blue-200 font-semibold">{sub.producer?.first_name || 'Anonymous'} {sub.producer?.last_name || ''}</div>
-                          <AudioPlayer src={sub.track_url} title="Preview" />
+                          <div className="mb-1 text-blue-200 font-semibold">{producer.first_name || 'Anonymous'} {producer.last_name || ''}</div>
+                          {submission.mp3_path && mp3Urls[submission.id] && (
+                            <audio controls src={mp3Urls[submission.id]} className="mt-2 w-full">
+                              Your browser does not support the audio element.
+                            </audio>
+                          )}
                           <div className="text-gray-300 text-sm mb-2">{sub.notes}</div>
                           {selectedSubmissionId[req.id] === sub.id ? (
                             <div className="text-green-400 font-semibold">Selected for licensing</div>

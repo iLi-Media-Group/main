@@ -14,6 +14,7 @@ import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
 import { SyncRequestChatModal } from './SyncRequestChatModal';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Track {
   id: string;
@@ -159,6 +160,10 @@ export function ProducerDashboard() {
   const [editFiletypeFields, setEditFiletypeFields] = useState<{ [reqId: string]: { has_mp3: boolean; has_stems: boolean; has_trackouts: boolean } }>({});
   const [chatOpen, setChatOpen] = useState(false);
   const [chatSubmission, setChatSubmission] = useState<{ syncRequestId: string; submissionId: string } | null>(null);
+  // Add state for MP3 file
+  const [mp3Files, setMp3Files] = useState<{ [reqId: string]: File | null }>({});
+  const [mp3UploadError, setMp3UploadError] = useState<string | null>(null);
+  const [mp3Uploading, setMp3Uploading] = useState<{ [reqId: string]: boolean }>({});
 
   // Fetch open custom sync requests and existing submissions
   useEffect(() => {
@@ -859,6 +864,25 @@ export function ProducerDashboard() {
                     setSubmissionError(null);
                     setSubmissionSuccess(null);
                     try {
+                      const mp3File = mp3Files[req.id];
+                      if (!mp3File) {
+                        setMp3UploadError('Please upload an MP3 file.');
+                        setSubmissionLoading(null);
+                        return;
+                      }
+                      setMp3Uploading(u => ({ ...u, [req.id]: true }));
+                      const fileExt = mp3File.name.split('.').pop();
+                      const fileName = `${user.id}_${req.id}_${uuidv4()}.${fileExt}`;
+                      const { data: uploadData, error: uploadError } = await supabase.storage
+                        .from('sync-submissions-audio')
+                        .upload(fileName, mp3File, { upsert: false });
+                      setMp3Uploading(u => ({ ...u, [req.id]: false }));
+                      if (uploadError) {
+                        setMp3UploadError('Failed to upload MP3.');
+                        setSubmissionLoading(null);
+                        return;
+                      }
+                      const mp3Path = uploadData?.path;
                       const { error } = await supabase.from('sync_submissions').insert({
                         sync_request_id: req.id,
                         producer_id: user.id,
@@ -867,11 +891,13 @@ export function ProducerDashboard() {
                         has_mp3,
                         has_stems,
                         has_trackouts,
+                        mp3_path: mp3Path,
                       });
                       if (error) throw error;
                       setSubmissionSuccess(req.id);
                       setSubmissionFields(f => ({ ...f, [req.id]: { trackUrl: '', notes: '' } }));
                       setFiletypeFields(f => ({ ...f, [req.id]: { has_mp3: false, has_stems: false, has_trackouts: false } }));
+                      setMp3Files(f => ({ ...f, [req.id]: null }));
                     } catch (err) {
                       setSubmissionError('Failed to submit track.');
                     } finally {
@@ -888,7 +914,6 @@ export function ProducerDashboard() {
                       onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], trackUrl: e.target.value } }))}
                       className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                       placeholder="https://..."
-                      required
                       disabled={submissionLoading === req.id}
                     />
                   </div>
@@ -901,6 +926,25 @@ export function ProducerDashboard() {
                       rows={2}
                       disabled={submissionLoading === req.id}
                     />
+                  </div>
+                  <div className="mt-2">
+                    <label className="block text-white font-medium mb-1">Upload MP3 (required)</label>
+                    <input
+                      type="file"
+                      accept="audio/mp3,audio/mpeg"
+                      onChange={e => {
+                        const file = e.target.files?.[0] || null;
+                        if (file && file.type !== 'audio/mp3' && file.type !== 'audio/mpeg') {
+                          setMp3UploadError('Only MP3 files are allowed.');
+                          setMp3Files(f => ({ ...f, [req.id]: null }));
+                        } else {
+                          setMp3UploadError(null);
+                          setMp3Files(f => ({ ...f, [req.id]: file }));
+                        }
+                      }}
+                      required
+                    />
+                    {mp3UploadError && <div className="text-red-500 text-sm mt-1">{mp3UploadError}</div>}
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">File Types Available <span className="text-red-400">*</span></label>
