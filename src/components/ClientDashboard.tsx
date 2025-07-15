@@ -233,303 +233,15 @@ export function ClientDashboard() {
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<{ [requestId: string]: string }>({});
   const [paymentStatus, setPaymentStatus] = useState<{ [requestId: string]: string }>({});
 
-  useEffect(() => {
-    if (user) {
-      // Refresh membership info first to ensure we have the latest data
-      refreshMembership().then(() => {
-        fetchDashboardData();
-        fetchSyncProposals();
-      });
-    }
-  }, [user, membershipPlan]);
-
-  // Add a manual refresh function for testing
-  const handleManualRefresh = async () => {
-    if (user) {
-      setLoading(true);
-      try {
-        await refreshMembership();
-        await fetchDashboardData();
-        await fetchSyncProposals();
-      } catch (error) {
-        console.error('Error refreshing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
-
-  const fetchDashboardData = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      setError('');
-
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('first_name, email, membership_plan')
-        .eq('id', user.id)
-        .single();
-
-      if (profileData) {
-        setProfile(profileData);
-        setUserStats(prev => ({
-          ...prev,
-          membershipType: profileData.membership_plan as UserStats['membershipType']
-        }));
-      }
-
-      const { data: licensesData } = await supabase
-        .from('sales')
-        .select(`
-          id,
-          license_type,
-          created_at,
-          expiry_date,
-          track:tracks (
-            id,
-            title,
-            genres,
-            bpm,
-            audio_url,
-            image_url,
-            mp3_url,
-            trackouts_url,
-            split_sheet_url,
-            track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          )
-        `)
-        .eq('buyer_id', user.id)
-        .order('created_at', { ascending: false });
-
-      console.log('Sales query result:', licensesData);
-      console.log('User ID:', user.id);
-
-      if (licensesData) {
-        const formattedLicenses = licensesData.map(license => ({
-          ...license,
-          expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData.membership_plan),
-          track: {
-            ...license.track,
-            genres: typeof license.track.genres === 'string' ? license.track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(license.track.genres) ? license.track.genres : []),
-            audioUrl: license.track.audio_url || '',
-            image: license.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            producerId: license.track.track_producer_id,
-            duration: license.track.duration || '3:30',
-            hasStingEnding: license.track.has_sting_ending || false,
-            isOneStop: license.track.is_one_stop || false,
-            mp3Url: license.track.mp3_url || '',
-            trackoutsUrl: license.track.trackouts_url || '',
-            splitSheetUrl: license.track.split_sheet_url || '',
-            hasVocals: license.track.has_vocals,
-            vocalsUsageType: license.track.vocals_usage_type,
-            subGenres: license.track.sub_genres ? (typeof license.track.sub_genres === 'string' ? license.track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(license.track.sub_genres) ? license.track.sub_genres : [])) : [],
-            moods: license.track.moods ? (typeof license.track.moods === 'string' ? license.track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(license.track.moods) ? license.track.moods : [])) : [],
-            artist: license.track.artist || '',
-            producer: license.track.producer ? {
-              id: license.track.producer.id,
-              firstName: license.track.producer.first_name || '',
-              lastName: license.track.producer.last_name || '',
-              email: license.track.producer.email,
-            } : undefined,
-            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: ''
-          }
-        }));
-        setLicenses(formattedLicenses);
-      }
-
-      const { data: favoritesData } = await supabase
-        .from('favorites')
-        .select(`
-          track_id,
-          tracks (
-            id,
-            title,
-            artist,
-            genres,
-            moods,
-            duration,
-            bpm,
-            audio_url,
-            image_url,
-            has_sting_ending,
-            is_one_stop,
-            mp3_url,
-            trackouts_url,
-            has_vocals,
-            vocals_usage_type,
-            sub_genres,
-            track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          )
-        `)
-        .eq('user_id', user.id);
-
-      if (favoritesData) {
-        const formattedFavorites = favoritesData.map(f => ({
-          id: f.tracks.id,
-          title: f.tracks.title,
-          artist: f.tracks.producer ? `${f.tracks.producer.first_name} ${f.tracks.producer.last_name}`.trim() : 'Unknown Artist',
-          genres: typeof f.tracks.genres === 'string' ? f.tracks.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.genres) ? f.tracks.genres : []),
-          moods: f.tracks.moods ? (typeof f.tracks.moods === 'string' ? f.tracks.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(f.tracks.moods) ? f.tracks.moods : [])) : [],
-          duration: f.tracks.duration || '3:30',
-          bpm: f.tracks.bpm,
-          audioUrl: f.tracks.audio_url,
-          image: f.tracks.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-          hasStingEnding: f.tracks.has_sting_ending,
-          isOneStop: f.tracks.is_one_stop,
-          mp3Url: f.tracks.mp3_url,
-          trackoutsUrl: f.tracks.trackouts_url,
-          hasVocals: f.tracks.has_vocals,
-          vocalsUsageType: f.tracks.vocals_usage_type,
-          subGenres: f.tracks.sub_genres ? (typeof f.tracks.sub_genres === 'string' ? f.tracks.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.sub_genres) ? f.tracks.sub_genres : [])) : [],
-          producerId: f.tracks.track_producer_id,
-          producer: f.tracks.producer ? {
-            id: f.tracks.producer.id,
-            firstName: f.tracks.producer.first_name || '',
-            lastName: f.tracks.producer.last_name || '',
-            email: f.tracks.producer.email
-          } : undefined,
-          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-          leaseAgreementUrl: ''
-        }));
-        setFavorites(formattedFavorites);
-      }
-
-      const { data: newTracksData } = await supabase
-        .from('tracks')
-        .select(`
-          id,
-          title,
-          genres,
-          bpm,
-          audio_url,
-          image_url,
-          has_vocals,
-          vocals_usage_type,
-          sub_genres,
-          moods,
-          duration,
-          artist,
-          has_sting_ending,
-          is_one_stop,
-          mp3_url,
-          trackouts_url,
-          split_sheet_url,
-          track_producer_id,
-          producer:profiles!tracks_track_producer_id_fkey (
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (newTracksData) {
-        const formattedNewTracks = newTracksData.map(track => ({
-          id: track.id,
-          title: track.title,
-          artist: track.producer?.first_name 
-            ? `${track.producer.first_name} ${track.producer.last_name || ''}`.trim()
-            : track.artist || 'Unknown Artist',
-          genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
-          moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
-          bpm: track.bpm,
-          audioUrl: track.audio_url,
-          image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-          hasVocals: track.has_vocals,
-          vocalsUsageType: track.vocals_usage_type,
-          subGenres: track.sub_genres ? (typeof track.sub_genres === 'string' ? track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.sub_genres) ? track.sub_genres : [])) : [],
-          duration: track.duration || '3:30',
-          hasStingEnding: track.has_sting_ending || false,
-          isOneStop: track.is_one_stop || false,
-          mp3Url: track.mp3_url || '',
-          trackoutsUrl: track.trackouts_url || '',
-          splitSheetUrl: track.split_sheet_url || '',
-          producerId: track.track_producer_id,
-          producer: track.producer ? {
-            id: track.producer.id,
-            firstName: track.producer.first_name || '',
-            lastName: track.producer.last_name || '',
-            email: track.producer.email
-          } : undefined,
-          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-          leaseAgreementUrl: ''
-        }));
-        setNewTracks(formattedNewTracks);
-      }
-
-      const { data: syncRequestsData } = await supabase
-        .from('custom_sync_requests')
-        .select('*')
-        .eq('client_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (syncRequestsData) {
-        setSyncRequests(syncRequestsData);
-      }
-
-      // Calculate remaining licenses for Gold Access
-      if (membershipPlan === 'Gold Access') {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-
-        const { count } = await supabase
-          .from('sales')
-          .select('id', { count: 'exact' })
-          .eq('buyer_id', user.id)
-          .gte('created_at', startOfMonth.toISOString());
-
-        const totalLicenses = count || 0;
-        const remainingLicenses = 10 - totalLicenses;
-
-        setUserStats(prev => ({
-          ...prev,
-          totalLicenses,
-          remainingLicenses,
-          currentPeriodStart: startOfMonth,
-          currentPeriodEnd: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0),
-          daysUntilReset: Math.ceil((new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-        }));
-      }
-
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Move fetchSyncProposals here, before any useEffect or handler that uses it
   const fetchSyncProposals = async () => {
     if (!user) return;
-    
     try {
       const { data, error } = await supabase
         .from('sync_proposals')
         .select(`
           id,
           track_id,
-          client_id,
           project_type,
           duration,
           is_exclusive,
@@ -581,27 +293,315 @@ export function ClientDashboard() {
         `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
-        
       if (error) {
         console.error('Error fetching sync proposals:', error, error.message, error.details, error.hint);
         return;
       }
-      
       if (data) {
-        console.log('Sync proposals fetched:', data);
-        console.log('Proposal statuses:', data.map(p => ({
-          id: p.id,
-          status: p.status,
-          client_status: p.client_status,
-          producer_status: p.producer_status,
-          payment_status: p.payment_status,
-          negotiation_status: p.negotiation_status,
-          track_title: p.track?.title
-        })));
         setSyncProposals(data);
       }
     } catch (err) {
       console.error('Error in fetchSyncProposals:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      // Refresh membership info first to ensure we have the latest data
+      refreshMembership().then(() => {
+        fetchDashboardData();
+        fetchSyncProposals();
+      });
+    }
+  }, [user, membershipPlan]);
+
+  // Add a manual refresh function for testing
+  const handleManualRefresh = async () => {
+    if (user) {
+      setLoading(true);
+      try {
+        await refreshMembership();
+        await fetchDashboardData();
+        await fetchSyncProposals();
+      } catch (error) {
+        console.error('Error refreshing dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('first_name, email, membership_plan')
+        .eq('id', user.id)
+        .single();
+
+      if (profileData) {
+        setProfile({
+          first_name: profileData.first_name || '',
+          email: profileData.email || ''
+        });
+        setUserStats(prev => ({
+          ...prev,
+          membershipType: (profileData.membership_plan as UserStats['membershipType']) || null
+        }));
+      }
+
+      const { data: licensesData } = await supabase
+        .from('sales')
+        .select(`
+          id,
+          license_type,
+          created_at,
+          expiry_date,
+          track:tracks (
+            id,
+            title,
+            genres,
+            bpm,
+            audio_url,
+            image_url,
+            mp3_url,
+            trackouts_url,
+            split_sheet_url,
+            track_producer_id,
+            producer:profiles!tracks_track_producer_id_fkey (
+              id,
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('buyer_id', user.id)
+        .order('created_at', { ascending: false });
+
+      console.log('Sales query result:', licensesData);
+      console.log('User ID:', user.id);
+
+      if (licensesData) {
+        const formattedLicenses = (licensesData || []).map(license => {
+          const t = license.track || {};
+          const p = t.producer || {};
+          return {
+            ...license,
+            expiry_date: license.expiry_date || calculateExpiryDate(license.created_at, profileData?.membership_plan || ''),
+            track: {
+              ...t,
+              genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
+              audioUrl: t.audio_url || '',
+              image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              producerId: t.track_producer_id || '',
+              duration: t.duration || '3:30',
+              hasStingEnding: t.has_sting_ending || false,
+              isOneStop: t.is_one_stop || false,
+              mp3Url: t.mp3_url || '',
+              trackoutsUrl: t.trackouts_url || '',
+              splitSheetUrl: t.split_sheet_url || '',
+              hasVocals: t.has_vocals || false,
+              vocalsUsageType: t.vocals_usage_type || '',
+              subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
+              moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
+              artist: t.artist || '',
+              producer: p.id ? {
+                id: p.id,
+                firstName: p.first_name || '',
+                lastName: p.last_name || '',
+                email: p.email || ''
+              } : undefined,
+              fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+              pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+              leaseAgreementUrl: ''
+            }
+          };
+        });
+        setLicenses(formattedLicenses);
+      }
+
+      const { data: favoritesData } = await supabase
+        .from('favorites')
+        .select(`
+          track_id,
+          tracks (
+            id,
+            title,
+            artist,
+            genres,
+            moods,
+            duration,
+            bpm,
+            audio_url,
+            image_url,
+            has_sting_ending,
+            is_one_stop,
+            mp3_url,
+            trackouts_url,
+            has_vocals,
+            vocals_usage_type,
+            sub_genres,
+            track_producer_id,
+            producer:profiles!tracks_track_producer_id_fkey (
+              id,
+              first_name,
+              last_name,
+              email
+            )
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (favoritesData) {
+        const formattedFavorites = favoritesData.map(f => {
+          const t = f.tracks || {};
+          const p = t.producer || {};
+          return {
+            id: t.id || '',
+            title: t.title || '',
+            artist: p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : 'Unknown Artist',
+            genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
+            moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
+            duration: t.duration || '3:30',
+            bpm: t.bpm || 0,
+            audioUrl: t.audio_url || '',
+            image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            hasStingEnding: t.has_sting_ending || false,
+            isOneStop: t.is_one_stop || false,
+            mp3Url: t.mp3_url || '',
+            trackoutsUrl: t.trackouts_url || '',
+            hasVocals: t.has_vocals || false,
+            vocalsUsageType: t.vocals_usage_type || '',
+            subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
+            producerId: t.track_producer_id || '',
+            producer: p.id ? {
+              id: p.id,
+              firstName: p.first_name || '',
+              lastName: p.last_name || '',
+              email: p.email || ''
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: ''
+          };
+        });
+        setFavorites(formattedFavorites);
+      }
+
+      const { data: newTracksData } = await supabase
+        .from('tracks')
+        .select(`
+          id,
+          title,
+          genres,
+          bpm,
+          audio_url,
+          image_url,
+          has_vocals,
+          vocals_usage_type,
+          sub_genres,
+          moods,
+          duration,
+          artist,
+          has_sting_ending,
+          is_one_stop,
+          mp3_url,
+          trackouts_url,
+          split_sheet_url,
+          track_producer_id,
+          producer:profiles!tracks_track_producer_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (newTracksData) {
+        const formattedNewTracks = newTracksData.map(track => {
+          const t = track || {};
+          const p = t.producer || {};
+          return {
+            id: t.id || '',
+            title: t.title || '',
+            artist: p.first_name || p.last_name ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : t.artist || 'Unknown Artist',
+            genres: typeof t.genres === 'string' ? t.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.genres) ? t.genres : []),
+            moods: t.moods ? (typeof t.moods === 'string' ? t.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(t.moods) ? t.moods : [])) : [],
+            bpm: t.bpm || 0,
+            audioUrl: t.audio_url || '',
+            image: t.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            hasVocals: t.has_vocals || false,
+            vocalsUsageType: t.vocals_usage_type || '',
+            subGenres: t.sub_genres ? (typeof t.sub_genres === 'string' ? t.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(t.sub_genres) ? t.sub_genres : [])) : [],
+            duration: t.duration || '3:30',
+            hasStingEnding: t.has_sting_ending || false,
+            isOneStop: t.is_one_stop || false,
+            mp3Url: t.mp3_url || '',
+            trackoutsUrl: t.trackouts_url || '',
+            splitSheetUrl: t.split_sheet_url || '',
+            producerId: t.track_producer_id || '',
+            producer: p.id ? {
+              id: p.id,
+              firstName: p.first_name || '',
+              lastName: p.last_name || '',
+              email: p.email || ''
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: ''
+          };
+        });
+        setNewTracks(formattedNewTracks);
+      }
+
+      const { data: syncRequestsData } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('client_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (syncRequestsData) {
+        setSyncRequests(syncRequestsData);
+      }
+
+      // Calculate remaining licenses for Gold Access
+      if (membershipPlan === 'Gold Access') {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        const { count } = await supabase
+          .from('sales')
+          .select('id', { count: 'exact' })
+          .eq('buyer_id', user.id)
+          .gte('created_at', startOfMonth.toISOString());
+
+        const totalLicenses = count || 0;
+        const remainingLicenses = 10 - totalLicenses;
+
+        setUserStats(prev => ({
+          ...prev,
+          totalLicenses,
+          remainingLicenses,
+          currentPeriodStart: startOfMonth,
+          currentPeriodEnd: new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 0),
+          daysUntilReset: Math.ceil((new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+        }));
+      }
+
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -1187,6 +1187,28 @@ export function ClientDashboard() {
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
+                  </div>
+                  <div className="mt-4">
+                    {submissions[request.id] && submissions[request.id].length > 0 ? (
+                      <div className="space-y-2">
+                        <h4 className="text-white font-semibold mb-2">Submissions</h4>
+                        {submissions[request.id].map((submission: any) => (
+                          <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <span className="text-white font-medium">{submission.producer?.first_name} {submission.producer?.last_name}</span>
+                              <span className="text-gray-400 ml-2">{submission.notes}</span>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-2 md:mt-0">
+                              <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
+                              <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
+                              <span className={`px-2 py-1 rounded ${submission.has_trackouts ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Trackouts</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-gray-400">No submissions yet.</div>
+                    )}
                   </div>
                 </div>
               ))}

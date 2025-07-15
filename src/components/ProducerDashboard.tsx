@@ -151,6 +151,11 @@ export function ProducerDashboard() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [submissionFields, setSubmissionFields] = useState<{ [id: string]: { trackUrl: string; notes: string } }>({});
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
+  // Add state for filetype checkboxes in the submission form
+  const [filetypeFields, setFiletypeFields] = useState<{ [reqId: string]: { has_mp3: boolean; has_stems: boolean; has_trackouts: boolean } }>({});
+  // Add state for editing filetypes
+  const [editingFiletypes, setEditingFiletypes] = useState<{ [reqId: string]: boolean }>({});
+  const [editFiletypeFields, setEditFiletypeFields] = useState<{ [reqId: string]: { has_mp3: boolean; has_stems: boolean; has_trackouts: boolean } }>({});
 
   // Fetch open custom sync requests and existing submissions
   useEffect(() => {
@@ -165,7 +170,7 @@ export function ProducerDashboard() {
       // Fetch submissions by this producer
       const { data: submissions, error: subError } = await supabase
         .from('sync_submissions')
-        .select('sync_request_id')
+        .select('sync_request_id, has_mp3, has_stems, has_trackouts')
         .eq('producer_id', user.id);
       if (!subError) setSyncSubmissions(submissions || []);
     };
@@ -735,12 +740,118 @@ export function ProducerDashboard() {
                 <span className="text-white font-semibold">Deadline:</span> {new Date(req.end_date).toLocaleDateString()}
               </div>
               {hasSubmitted(req.id) ? (
-                <div className="text-green-400 font-semibold mt-4">You have already submitted a track for this request.</div>
+                (() => {
+                  const submission = syncSubmissions.find(s => s.sync_request_id === req.id);
+                  if (!submission) return <div className="text-green-400 font-semibold mt-4">You have already submitted a track for this request.</div>;
+                  const filetypeDisplay = (
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-4">
+                        <span className="text-white font-semibold">File Types Available:</span>
+                        <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
+                        <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
+                        <span className={`px-2 py-1 rounded ${submission.has_trackouts ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Trackouts</span>
+                        <button
+                          className="ml-4 px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs"
+                          onClick={() => {
+                            setEditingFiletypes(f => ({ ...f, [req.id]: true }));
+                            setEditFiletypeFields(f => ({
+                              ...f,
+                              [req.id]: {
+                                has_mp3: !!submission.has_mp3,
+                                has_stems: !!submission.has_stems,
+                                has_trackouts: !!submission.has_trackouts,
+                              },
+                            }));
+                          }}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                      {editingFiletypes[req.id] && (
+                        <form
+                          className="mt-2 flex items-center space-x-4"
+                          onSubmit={async (e) => {
+                            e.preventDefault();
+                            const { has_mp3, has_stems, has_trackouts } = editFiletypeFields[req.id] || {};
+                            if (!has_mp3 && !has_stems && !has_trackouts) {
+                              setSubmissionError('Please select at least one file type available.');
+                              return;
+                            }
+                            setSubmissionLoading(req.id);
+                            setSubmissionError(null);
+                            try {
+                              const { error } = await supabase
+                                .from('sync_submissions')
+                                .update({ has_mp3, has_stems, has_trackouts })
+                                .eq('id', submission.id);
+                              if (error) throw error;
+                              setEditingFiletypes(f => ({ ...f, [req.id]: false }));
+                              setSubmissionSuccess(req.id);
+                            } catch (err) {
+                              setSubmissionError('Failed to update file types.');
+                            } finally {
+                              setSubmissionLoading(null);
+                            }
+                          }}
+                        >
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={editFiletypeFields[req.id]?.has_mp3 || false}
+                              onChange={e => setEditFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_mp3: e.target.checked } }))}
+                              className="form-checkbox h-5 w-5 text-blue-600"
+                            />
+                            <span className="text-white">MP3</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={editFiletypeFields[req.id]?.has_stems || false}
+                              onChange={e => setEditFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_stems: e.target.checked } }))}
+                              className="form-checkbox h-5 w-5 text-blue-600"
+                            />
+                            <span className="text-white">Stems</span>
+                          </label>
+                          <label className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={editFiletypeFields[req.id]?.has_trackouts || false}
+                              onChange={e => setEditFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_trackouts: e.target.checked } }))}
+                              className="form-checkbox h-5 w-5 text-blue-600"
+                            />
+                            <span className="text-white">Trackouts</span>
+                          </label>
+                          <button
+                            type="submit"
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs"
+                            disabled={submissionLoading === req.id}
+                          >
+                            {submissionLoading === req.id ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            type="button"
+                            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-xs"
+                            onClick={() => setEditingFiletypes(f => ({ ...f, [req.id]: false }))}
+                          >
+                            Cancel
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  );
+                  return filetypeDisplay;
+                })()
               ) : (
                 <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!user) return;
+                    // Validation: at least one filetype must be checked
+                    const { has_mp3, has_stems, has_trackouts } = filetypeFields[req.id] || {};
+                    if (!has_mp3 && !has_stems && !has_trackouts) {
+                      setSubmissionError('Please select at least one file type available.');
+                      return;
+                    }
                     setSubmissionLoading(req.id);
                     setSubmissionError(null);
                     setSubmissionSuccess(null);
@@ -750,10 +861,14 @@ export function ProducerDashboard() {
                         producer_id: user.id,
                         track_url: trackUrl,
                         notes,
+                        has_mp3,
+                        has_stems,
+                        has_trackouts,
                       });
                       if (error) throw error;
                       setSubmissionSuccess(req.id);
                       setSubmissionFields(f => ({ ...f, [req.id]: { trackUrl: '', notes: '' } }));
+                      setFiletypeFields(f => ({ ...f, [req.id]: { has_mp3: false, has_stems: false, has_trackouts: false } }));
                     } catch (err) {
                       setSubmissionError('Failed to submit track.');
                     } finally {
@@ -783,6 +898,39 @@ export function ProducerDashboard() {
                       rows={2}
                       disabled={submissionLoading === req.id}
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">File Types Available <span className="text-red-400">*</span></label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={filetypeFields[req.id]?.has_mp3 || false}
+                          onChange={e => setFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_mp3: e.target.checked } }))}
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                        />
+                        <span className="text-white">MP3</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={filetypeFields[req.id]?.has_stems || false}
+                          onChange={e => setFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_stems: e.target.checked } }))}
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                        />
+                        <span className="text-white">Stems</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={filetypeFields[req.id]?.has_trackouts || false}
+                          onChange={e => setFiletypeFields(f => ({ ...f, [req.id]: { ...f[req.id], has_trackouts: e.target.checked } }))}
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                        />
+                        <span className="text-white">Trackouts</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">At least one must be selected.</p>
                   </div>
                   {submissionError && <div className="text-red-400">{submissionError}</div>}
                   <button
