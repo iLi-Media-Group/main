@@ -14,9 +14,19 @@ interface CustomSyncRequest {
   created_at: string;
 }
 
+interface SyncSubmission {
+  id: string;
+  mp3_url?: string;
+  has_mp3?: boolean;
+  has_stems?: boolean;
+  has_trackouts?: boolean;
+  created_at?: string;
+}
+
 export default function CustomSyncRequestSubs() {
   const { user } = useAuth();
   const [requests, setRequests] = useState<CustomSyncRequest[]>([]);
+  const [submissions, setSubmissions] = useState<Record<string, SyncSubmission[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,11 +37,19 @@ export default function CustomSyncRequestSubs() {
       setError(null);
       const { data, error } = await supabase
         .from('custom_sync_requests')
-        .select('*')
+        .select('*, sync_submissions(*)')
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
       if (error) setError(error.message);
-      else setRequests(data || []);
+      else {
+        setRequests(data || []);
+        // Map submissions by request id
+        const subMap: Record<string, SyncSubmission[]> = {};
+        (data || []).forEach((req: any) => {
+          subMap[req.id] = req.sync_submissions || [];
+        });
+        setSubmissions(subMap);
+      }
       setLoading(false);
     };
     fetchRequests();
@@ -65,6 +83,33 @@ export default function CustomSyncRequestSubs() {
                 <div className="text-right">
                   <a href={`/custom-sync-request/${req.id}`} className="text-blue-400 hover:underline font-medium">View Details</a>
                 </div>
+                {submissions[req.id] && submissions[req.id].length > 0 && (
+                  <div className="mt-4 space-y-4">
+                    <h3 className="text-lg font-semibold text-blue-200 mb-2">Producer Submissions</h3>
+                    {submissions[req.id].map((sub) => (
+                      <div key={sub.id} className="bg-blue-950/80 border border-blue-700/40 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                        <div className="flex-1">
+                          {sub.has_mp3 && sub.mp3_url ? (
+                            <audio controls src={sub.mp3_url} className="w-full mb-2" />
+                          ) : (
+                            <span className="text-gray-400">No mp3 uploaded</span>
+                          )}
+                          <div className="flex space-x-4 mt-2">
+                            <span className={sub.has_stems ? 'text-green-400' : 'text-gray-400'}>
+                              {sub.has_stems ? '✓' : '✗'} Stems
+                            </span>
+                            <span className={sub.has_trackouts ? 'text-green-400' : 'text-gray-400'}>
+                              {sub.has_trackouts ? '✓' : '✗'} Trackouts
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 mt-2 md:mt-0 md:ml-6">
+                          Submitted: {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

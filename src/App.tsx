@@ -60,6 +60,7 @@ import { supabase } from './lib/supabase';
 import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
 import { WhiteLabelClientLogin } from './components/WhiteLabelClientLogin';
 import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
+import ProducerSyncSubmission from './components/ProducerSyncSubmission';
 
 
 const App = () => {
@@ -443,6 +444,8 @@ const App = () => {
             <WhiteLabelClientDashboard />
           </ProtectedRoute>
         } />
+
+        <Route path="/producer-sync-submission" element={<ProducerSyncSubmission />} />
 
         <Route path="*" element={
           <LayoutWrapper>

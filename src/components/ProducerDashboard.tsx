@@ -651,6 +651,14 @@ export function ProducerDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
+            <div className="flex justify-end mb-6">
+              <Link
+                to="/producer-sync-submission"
+                className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Submit Track for Custom Sync
+              </Link>
+            </div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Your Tracks</h2>
               <div className="flex items-center space-x-4">
