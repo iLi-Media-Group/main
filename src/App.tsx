@@ -61,6 +61,7 @@ import { SiteBrandingProvider } from './contexts/SiteBrandingContext';
 import { WhiteLabelClientLogin } from './components/WhiteLabelClientLogin';
 import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 import ProducerSyncSubmission from './components/ProducerSyncSubmission';
+import CustomSyncRequestSubs from './components/customsyncrequestsubs';
 
 
 const App = () => {
@@ -266,6 +267,8 @@ const App = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/custom-sync-request-subs" element={<LayoutWrapper><CustomSyncRequestSubs /></LayoutWrapper>} />
+
         <Route path="/open-sync-briefs" element={
           <ProtectedRoute>
             <LayoutWrapper>
@@ -445,7 +448,7 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/producer-sync-submission" element={<ProducerSyncSubmission />} />
+        <Route path="/producer-sync-submission" element={<LayoutWrapper><ProducerSyncSubmission /></LayoutWrapper>} />
 
         <Route path="*" element={
           <LayoutWrapper>
