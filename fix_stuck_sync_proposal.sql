@@ -69,3 +69,34 @@ SELECT
 FROM sync_proposals 
 WHERE payment_status = 'paid'
 ORDER BY updated_at DESC; 
+
+-- Retroactively insert missing stripe_orders for paid sync proposals
+-- This will ensure the trigger fires and producer_transactions are created
+
+INSERT INTO stripe_orders (
+  checkout_session_id,
+  payment_intent_id,
+  customer_id,
+  amount_subtotal,
+  amount_total,
+  currency,
+  payment_status,
+  status,
+  metadata,
+  created_at
+)
+SELECT
+  sp.stripe_checkout_session_id,
+  sp.invoice_id, -- or sp.stripe_payment_intent_id if that's the correct column
+  sp.client_id,
+  sp.sync_fee * 100 AS amount_subtotal, -- assuming sync_fee is in dollars
+  sp.sync_fee * 100 AS amount_total,
+  'usd', -- adjust if you support other currencies
+  'paid',
+  'completed',
+  jsonb_build_object('proposal_id', sp.id),
+  COALESCE(sp.payment_date, sp.updated_at, NOW())
+FROM sync_proposals sp
+LEFT JOIN stripe_orders so ON so.metadata->>'proposal_id' = sp.id::text
+WHERE sp.payment_status = 'paid'
+  AND so.id IS NULL; 

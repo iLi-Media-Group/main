@@ -109,15 +109,26 @@ export function SyncProposalSuccessPage() {
         console.log('Producer data:', proposal.track?.[0]?.producer);
 
         // Fix track data structure (Supabase returns arrays for joins)
-        const proposalData = {
-          ...proposal,
-          track: {
-            title: proposal.track?.[0]?.title || 'Unknown Track',
-            producer: {
-              first_name: proposal.track?.[0]?.producer?.[0]?.first_name || 'Unknown',
-              last_name: proposal.track?.[0]?.producer?.[0]?.last_name || 'Producer'
-            }
+        let trackObj: any = proposal.track;
+        if (Array.isArray(trackObj)) trackObj = trackObj[0] || {};
+        let producerObj: any = trackObj.producer;
+        if (Array.isArray(producerObj)) producerObj = producerObj[0] || {};
+        // Defensive: if still missing, fallback to empty object
+        if (!trackObj) trackObj = {};
+        if (!producerObj) producerObj = {};
+        const normalizedTrack = {
+          title: trackObj.title ?? 'Unknown Track',
+          producer: {
+            first_name: producerObj.first_name ?? 'Unknown',
+            last_name: producerObj.last_name ?? 'Producer'
           }
+        };
+        const proposalData: SyncProposalData = {
+          ...proposal,
+          track: normalizedTrack,
+          sync_fee: proposal.sync_fee,
+          payment_terms: proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms,
+          is_exclusive: proposal.is_exclusive
         };
 
         console.log('Processed proposal data:', proposalData);
@@ -316,7 +327,7 @@ export function SyncProposalSuccessPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300 text-lg">Payment Terms:</span>
                   <span className="text-blue-400 font-bold text-xl">
-                    {formatPaymentTerms(proposalData.final_payment_terms || proposalData.negotiated_payment_terms || proposalData.payment_terms)}
+                    {formatPaymentTerms(proposalData.payment_terms)}
                   </span>
                 </div>
               </div>
@@ -362,7 +373,7 @@ export function SyncProposalSuccessPage() {
                   <FileText className="w-5 h-5 text-purple-400 mr-2" />
                   <span className="text-white">Project Type:</span>
                 </div>
-                <span className="text-white font-medium">
+                <span className="text-white font-medium text-left">
                   {formatProjectType(proposalData.project_type)}
                 </span>
               </div>
@@ -383,7 +394,7 @@ export function SyncProposalSuccessPage() {
                   <span className="text-white">Payment Terms:</span>
                 </div>
                 <span className="text-white font-medium">
-                  {formatPaymentTerms(proposalData.final_payment_terms || proposalData.negotiated_payment_terms || proposalData.payment_terms)}
+                  {formatPaymentTerms(proposalData.payment_terms)}
                 </span>
               </div>
               

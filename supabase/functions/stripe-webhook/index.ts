@@ -41,6 +41,8 @@ async function sendWelcomeEmail(to: string, name: string, company: string) {
 }
 
 Deno.serve(async (req) => {
+  // Debug: Log all incoming headers
+  console.log('Incoming request headers:', Object.fromEntries(req.headers.entries()));
   // CORS headers
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -73,6 +75,9 @@ Deno.serve(async (req) => {
 
   // Log event to Supabase
   const metadata = (event.data.object as any)?.metadata || {};
+  // Debug log for received metadata
+  const objectId = (event.data.object as any)?.id || (event.data.object as any)?.payment_intent || 'N/A';
+  console.log('Webhook event:', event.type, 'Session/Payment ID:', objectId, 'Metadata:', metadata);
   await supabase.from('stripe_webhook_logs').insert({
     event_id: event.id,
     event_type: event.type,
@@ -287,6 +292,19 @@ Deno.serve(async (req) => {
                 console.error('Error updating proposal payment status:', updateError);
                 return new Response('Error updating proposal payment status', { status: 500, headers: corsHeaders });
               }
+              // Restore: Insert into stripe_orders for sync proposal payments
+              await supabase.from('stripe_orders').insert({
+                checkout_session_id: checkout_session_id,
+                payment_intent_id: payment_intent,
+                customer_id: customerId,
+                amount_subtotal: amount_subtotal,
+                amount_total: amount_total,
+                currency: currency,
+                payment_status: 'paid',
+                status: 'completed',
+                metadata: { proposal_id: metadata.proposal_id },
+                created_at: new Date().toISOString()
+              });
               
               // Generate license agreement for the sync proposal
               try {
@@ -328,6 +346,26 @@ Deno.serve(async (req) => {
               
               // Return after processing sync proposal payment
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+            }
+            // --- Single Track Purchase ---
+            if (metadata?.track_id) {
+              // Insert into stripe_orders for single track purchase
+              const { error: orderInsertError } = await supabase.from('stripe_orders').insert({
+                checkout_session_id: checkout_session_id,
+                payment_intent_id: payment_intent,
+                customer_id: customerId,
+                amount_subtotal: amount_subtotal,
+                amount_total: amount_total,
+                currency: currency,
+                payment_status: 'paid',
+                status: 'completed',
+                metadata,
+                created_at: new Date().toISOString()
+              });
+              if (orderInsertError) {
+                console.error('Error inserting single track order:', orderInsertError);
+                return new Response('Error inserting single track order', { status: 500, headers: corsHeaders });
+              }
             }
             // --- Track Purchase ---
             const trackId = metadata?.track_id;

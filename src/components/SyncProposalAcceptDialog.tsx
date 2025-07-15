@@ -20,6 +20,7 @@ export function SyncProposalAcceptDialog({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [waitingMessage, setWaitingMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -29,6 +30,7 @@ export function SyncProposalAcceptDialog({
     try {
       setLoading(true);
       setError('');
+      setWaitingMessage(null);
 
       // Call the backend RPC to finalize negotiation acceptance
       const { error: rpcError } = await supabase.rpc('handle_negotiation_acceptance', {
@@ -37,25 +39,40 @@ export function SyncProposalAcceptDialog({
       });
       if (rpcError) throw rpcError;
 
+      // Fetch the updated proposal to check the new status
+      const { data: updatedProposal, error: fetchError } = await supabase
+        .from('sync_proposals')
+        .select('status, client_status, producer_status, negotiation_status, sync_fee, payment_terms, track(title)')
+        .eq('id', proposal.id)
+        .single();
+      if (fetchError) throw fetchError;
+
       // Optionally, refresh proposals in parent/dashboard
       onAccept();
 
-      // Create a checkout session for the sync fee
-      const checkoutUrl = await createCheckoutSession(
-        'price_custom',
-        'payment',
-        undefined,
-        {
-          proposal_id: proposal.id,
-          amount: Math.round(proposal.sync_fee * 100),
-          description: `Sync license for "${proposal.track.title}"`,
-          payment_terms: proposal.payment_terms || 'immediate'
-        },
-        `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
-      );
-
-      // Redirect to checkout
-      window.location.href = checkoutUrl;
+      // Only redirect to Stripe if both parties have accepted
+      if (updatedProposal.status === 'accepted') {
+        // Create a checkout session for the sync fee
+        const checkoutUrl = await createCheckoutSession(
+          'price_custom',
+          'payment',
+          undefined,
+          {
+            proposal_id: proposal.id,
+            amount: Math.round(proposal.sync_fee * 100),
+            description: `Sync license for "${proposal.track.title}"`,
+            payment_terms: proposal.payment_terms || 'immediate'
+          },
+          `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
+        );
+        // Redirect to checkout
+        window.location.href = checkoutUrl;
+      } else {
+        // Show waiting message
+        setWaitingMessage('Your acceptance has been recorded. Waiting for the producer to accept the proposal. You will be notified when payment is ready.');
+        // Fallback: reload the page to ensure UI is up to date
+        setTimeout(() => window.location.reload(), 1500);
+      }
     } catch (err) {
       console.error('Error accepting proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to accept proposal');
@@ -119,6 +136,8 @@ export function SyncProposalAcceptDialog({
       });
 
       onClose();
+      // Fallback: reload the page to ensure UI is up to date after decline
+      setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       console.error('Error declining proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to decline proposal');
@@ -153,6 +172,12 @@ export function SyncProposalAcceptDialog({
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-red-400 text-center">{error}</p>
+          </div>
+        )}
+
+        {waitingMessage && (
+          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+            <p className="text-yellow-400 text-center">{waitingMessage}</p>
           </div>
         )}
 
