@@ -1,3 +1,4 @@
+   // Trigger redeploy: trivial change
 import React, { useState, useEffect } from 'react';
 import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
