@@ -1194,49 +1194,7 @@ export function ClientDashboard() {
                     </div>
                   </div>
                   {/* Improved submissions section */}
-                  <div className="mt-4">
-                    {submissions[request.id] && submissions[request.id].length > 0 ? (
-                      <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
-                        <h4 className="text-white font-semibold mb-2">Submissions</h4>
-                        {submissions[request.id].map((submission: any) => {
-                          const producer = (Array.isArray(submission.producer) ? submission.producer[0] : submission.producer) || {};
-                          const isSelected = submission.status === 'selected';
-                          return (
-                            <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
-                              <div>
-                                <span className="text-white font-medium">{producer.first_name || 'Anonymous'} {producer.last_name || ''}</span>
-                                <span className="text-gray-400 ml-2">{submission.notes}</span>
-                              </div>
-                              {submission.mp3_path && mp3Urls[submission.id] && (
-                                <audio controls src={mp3Urls[submission.id]} className="mt-2 w-full">
-                                  Your browser does not support the audio element.
-                                </audio>
-                              )}
-                              <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                                <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
-                                <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
-                                <span className={`px-2 py-1 rounded ${submission.has_trackouts ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Trackouts</span>
-                                {isSelected && (
-                                  <button
-                                    className="ml-4 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
-                                    onClick={() => {
-                                      setChatSubmission({ syncRequestId: request.id, submissionId: submission.id });
-                                      setChatOpen(true);
-                                    }}
-                                  >
-                                    Chat
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-gray-400">No submissions yet.</div>
-                    )}
-                  </div>
-                </div>
+                 
               ))}
             </div>
           )}
