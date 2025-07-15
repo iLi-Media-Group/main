@@ -1120,7 +1120,7 @@ export function ClientDashboard() {
         {/* Custom Sync Requests Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 w-full">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
+            <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests (with Submissions)</h2>
             <Link
               to="/custom-sync-request"
               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
@@ -1193,6 +1193,7 @@ export function ClientDashboard() {
                       </button>
                     </div>
                   </div>
+                  {/* Improved submissions section */}
                   <div className="mt-4">
                     {submissions[request.id] && submissions[request.id].length > 0 ? (
                       <div className="space-y-2 max-h-72 overflow-y-auto pr-2">
