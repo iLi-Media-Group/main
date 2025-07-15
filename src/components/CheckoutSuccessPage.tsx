@@ -104,6 +104,27 @@ export function CheckoutSuccessPage() {
     fetchData();
   }, [sessionId, navigate, user, refreshMembership]);
 
+  // Add helper to get license period
+  function getLicensePeriod(licenseType: string, purchaseDate: string) {
+    const start = new Date(purchaseDate);
+    let end: string;
+    switch (licenseType) {
+      case 'Ultimate Access':
+        end = 'Perpetual (No Expiration)';
+        break;
+      case 'Platinum Access':
+        start.setFullYear(start.getFullYear() + 3);
+        end = start.toLocaleDateString();
+        break;
+      case 'Gold Access':
+      case 'Single Track':
+      default:
+        start.setFullYear(start.getFullYear() + 1);
+        end = start.toLocaleDateString();
+    }
+    return end;
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -123,7 +144,7 @@ export function CheckoutSuccessPage() {
           </div>
 
           <h1 className="text-3xl font-bold text-white mb-4">
-            {licenseCreated
+            {licenseCreated && order
               ? 'License Purchased!'
               : subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
                 ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
@@ -133,9 +154,8 @@ export function CheckoutSuccessPage() {
                   ? 'Subscription Activated!'
                   : 'Payment Successful!'}
           </h1>
-          
           <p className="text-xl text-gray-300 mb-8">
-            {licenseCreated
+            {licenseCreated && order
               ? `Your license has been purchased and is ready to use. You can view it in your dashboard.`
               : subscription && ['Ultimate Access', 'Platinum Access', 'Gold Access'].includes(getMembershipPlanFromPriceId(subscription.price_id))
                 ? (subscription.subscription_status === 'active' && subscription.current_period_start === subscription.current_period_end
@@ -145,42 +165,10 @@ export function CheckoutSuccessPage() {
                   ? 'Your membership has been successfully activated. You now have access to all the features of your plan.'
                   : `Your payment has been processed successfully.`}
           </p>
-
           <div className="bg-white/5 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold text-white mb-4">Order Summary</h2>
-            
-            {paymentMethod === 'crypto' ? (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Music className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Payment Method:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    Cryptocurrency
-                  </span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Calendar className="w-5 h-5 text-purple-400 mr-2" />
-                    <span className="text-white">Date:</span>
-                  </div>
-                  <span className="text-white font-medium">
-                    {new Date().toLocaleDateString()}
-                  </span>
-                </div>
-                
-                {licenseCreated && (
-                  <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                    <p className="text-green-400 text-sm">
-                      Your license has been created successfully. You can view it in your dashboard.
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : licenseCreated && order ? (
-              // Single Track License Order
+            {licenseCreated && order ? (
+              // Track License Order
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
@@ -188,10 +176,9 @@ export function CheckoutSuccessPage() {
                     <span className="text-white">Plan:</span>
                   </div>
                   <span className="text-white font-medium">
-                    Single Track License
+                    {order.license_type || 'Single Track License'}
                   </span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
@@ -201,34 +188,31 @@ export function CheckoutSuccessPage() {
                     {formatCurrency(order.amount_total, order.currency)}
                   </span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
                     <span className="text-white">License Period:</span>
                   </div>
                   <span className="text-white font-medium">
-                    {new Date(order.order_date).toLocaleDateString()} - {new Date(new Date(order.order_date).getTime() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+                    {order.order_date ? `${new Date(order.order_date).toLocaleDateString()} - ${getLicensePeriod(order.license_type || 'Single Track', order.order_date)}` : 'N/A'}
                   </span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
                     <span className="text-white">Purchase Date:</span>
                   </div>
                   <span className="text-white font-medium">
-                    {new Date(order.order_date).toLocaleDateString()}
+                    {order.order_date ? new Date(order.order_date).toLocaleDateString() : 'N/A'}
                   </span>
                 </div>
-                
                 <div className="mt-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                   <p className="text-green-400 text-sm">
                     Your license has been created successfully. You can view it in your dashboard.
                   </p>
                 </div>
               </div>
-            ) : subscription && (
+            ) : subscription ? (
               // Subscription Order
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -240,7 +224,6 @@ export function CheckoutSuccessPage() {
                     {getMembershipPlanFromPriceId(subscription.price_id)}
                   </span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <Calendar className="w-5 h-5 text-purple-400 mr-2" />
@@ -250,7 +233,6 @@ export function CheckoutSuccessPage() {
                     {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
                   </span>
                 </div>
-                
                 <div className="flex justify-between items-center">
                   <div className="flex items-center">
                     <CreditCard className="w-5 h-5 text-purple-400 mr-2" />
@@ -265,7 +247,7 @@ export function CheckoutSuccessPage() {
                   </span>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           <div className="flex flex-col items-center space-y-4">
