@@ -149,6 +149,7 @@ export function ProducerDashboard() {
   const [submissionLoading, setSubmissionLoading] = useState<string | null>(null);
   const [submissionSuccess, setSubmissionSuccess] = useState<string | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [submissionFields, setSubmissionFields] = useState<{ [id: string]: { trackUrl: string; notes: string } }>({});
 
   // Fetch open custom sync requests and existing submissions
   useEffect(() => {
@@ -688,8 +689,8 @@ export function ProducerDashboard() {
       <div className="text-gray-400">No open custom sync requests at this time.</div>
     ) : (
       openSyncRequests.map((req) => {
-        const [trackUrl, setTrackUrl] = useState('');
-        const [notes, setNotes] = useState('');
+        const trackUrl = submissionFields[req.id]?.trackUrl || '';
+        const notes = submissionFields[req.id]?.notes || '';
         return (
           <div key={req.id} className="bg-blue-800/80 border border-blue-500/20 rounded-xl p-6 mb-6">
             <div className="mb-2">
@@ -726,8 +727,7 @@ export function ProducerDashboard() {
                     });
                     if (error) throw error;
                     setSubmissionSuccess(req.id);
-                    setTrackUrl('');
-                    setNotes('');
+                    setSubmissionFields(f => ({ ...f, [req.id]: { trackUrl: '', notes: '' } }));
                   } catch (err) {
                     setSubmissionError('Failed to submit track.');
                   } finally {
@@ -741,7 +741,7 @@ export function ProducerDashboard() {
                   <input
                     type="url"
                     value={trackUrl}
-                    onChange={(e) => setTrackUrl(e.target.value)}
+                    onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], trackUrl: e.target.value } }))}
                     className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     placeholder="https://..."
                     required
@@ -752,7 +752,7 @@ export function ProducerDashboard() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Notes (optional)</label>
                   <textarea
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={e => setSubmissionFields(f => ({ ...f, [req.id]: { ...f[req.id], notes: e.target.value } }))}
                     className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     rows={2}
                     disabled={submissionLoading === req.id}
