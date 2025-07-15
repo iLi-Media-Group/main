@@ -1194,11 +1194,7 @@ export function ClientDashboard() {
                     </div>
                   </div>
                
-              ))}
-            </div>
-          )}
-        </div>
-
+      
         {/* Sync Proposals Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
           <div className="flex items-center justify-between mb-6">
