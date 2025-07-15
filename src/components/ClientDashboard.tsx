@@ -1193,8 +1193,7 @@ export function ClientDashboard() {
                       </button>
                     </div>
                   </div>
-                  {/* Improved submissions section */}
-                 
+               
               ))}
             </div>
           )}
