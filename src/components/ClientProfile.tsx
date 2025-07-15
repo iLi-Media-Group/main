@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, X, MapPin, Upload, Loader2, Building2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
 interface ClientProfileProps {
   onClose: () => void;
@@ -20,8 +21,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [postalCode, setPostalCode] = useState('');
   const [country, setCountry] = useState('');
   const [avatarPath, setAvatarPath] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -69,7 +68,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
           const { data: { publicUrl } } = supabase.storage
             .from('profile-photos')
             .getPublicUrl(data.avatar_path.replace('profile-photos/', ''));
-          setAvatarPreview(publicUrl);
+          // setAvatarPreview(publicUrl); // This line is removed as per new_code
         }
       }
     } catch (err) {
@@ -81,25 +80,10 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
-      return;
-    }
-
-    // Validate file size (2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Image size must be less than 2MB');
-      return;
-    }
-
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-    setError('');
+  // Add handler for photo update
+  const handlePhotoUpdate = (newAvatarPath: string) => {
+    setAvatarPath(newAvatarPath);
+    fetchProfile(); // Refresh profile info and image
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,23 +95,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       setError('');
       setSuccess(false);
 
-      // Upload avatar if changed
-      let newAvatarPath = avatarPath;
-      if (avatarFile) {
-        const fileName = `${user.id}-${Date.now()}.jpg`;
-        const filePath = `profile-photos/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('profile-photos')
-          .upload(filePath, avatarFile, {
-            contentType: 'image/jpeg',
-            upsert: true
-          });
-
-        if (uploadError) throw uploadError;
-        newAvatarPath = filePath;
-      }
-
+      // Only update profile fields, not avatar_path
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -139,7 +107,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
           state: state.trim() || null,
           postal_code: postalCode.trim() || null,
           country: country.trim() || null,
-          avatar_path: newAvatarPath,
           ein: ein.trim() || null,
           business_structure: businessStructure || null,
           updated_at: new Date().toISOString()
@@ -195,31 +162,12 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
             )}
 
             <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-800 border-2 border-blue-500/20">
-                  {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-800">
-                      <User className="w-16 h-16 text-gray-600" />
-                    </div>
-                  )}
-                </div>
-                <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity cursor-pointer rounded-full">
-                  <Upload className="w-8 h-8 text-white" />
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    disabled={saving}
-                  />
-                </label>
-              </div>
+              <ProfilePhotoUpload
+                currentPhotoUrl={avatarPath}
+                onPhotoUpdate={handlePhotoUpdate}
+                size="md"
+                userId={user?.id}
+              />
             </div>
 
             <div>
