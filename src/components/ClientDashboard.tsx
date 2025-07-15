@@ -19,6 +19,7 @@ import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
+import { SyncRequestChatModal } from './SyncRequestChatModal';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -232,6 +233,8 @@ export function ClientDashboard() {
   const [selecting, setSelecting] = useState<string | null>(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState<{ [requestId: string]: string }>({});
   const [paymentStatus, setPaymentStatus] = useState<{ [requestId: string]: string }>({});
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSubmission, setChatSubmission] = useState<{ syncRequestId: string; submissionId: string } | null>(null);
 
   // Move fetchSyncProposals here, before any useEffect or handler that uses it
   const fetchSyncProposals = async () => {
@@ -1192,19 +1195,33 @@ export function ClientDashboard() {
                     {submissions[request.id] && submissions[request.id].length > 0 ? (
                       <div className="space-y-2">
                         <h4 className="text-white font-semibold mb-2">Submissions</h4>
-                        {submissions[request.id].map((submission: any) => (
-                          <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
-                            <div>
-                              <span className="text-white font-medium">{submission.producer?.first_name} {submission.producer?.last_name}</span>
-                              <span className="text-gray-400 ml-2">{submission.notes}</span>
+                        {submissions[request.id].map((submission: any) => {
+                          const isSelected = submission.status === 'selected';
+                          return (
+                            <div key={submission.id} className="bg-white/10 rounded p-3 flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <span className="text-white font-medium">{submission.producer?.first_name} {submission.producer?.last_name}</span>
+                                <span className="text-gray-400 ml-2">{submission.notes}</span>
+                              </div>
+                              <div className="flex items-center space-x-2 mt-2 md:mt-0">
+                                <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
+                                <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
+                                <span className={`px-2 py-1 rounded ${submission.has_trackouts ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Trackouts</span>
+                                {isSelected && (
+                                  <button
+                                    className="ml-4 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs"
+                                    onClick={() => {
+                                      setChatSubmission({ syncRequestId: request.id, submissionId: submission.id });
+                                      setChatOpen(true);
+                                    }}
+                                  >
+                                    Chat
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                              <span className={`px-2 py-1 rounded ${submission.has_mp3 ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>MP3</span>
-                              <span className={`px-2 py-1 rounded ${submission.has_stems ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Stems</span>
-                              <span className={`px-2 py-1 rounded ${submission.has_trackouts ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-400'}`}>Trackouts</span>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="text-gray-400">No submissions yet.</div>
@@ -2376,6 +2393,17 @@ export function ClientDashboard() {
           </>
         )}
       </div>
+      {/* Chat Modal */}
+      {chatSubmission && (
+        <SyncRequestChatModal
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          syncRequestId={chatSubmission.syncRequestId}
+          submissionId={chatSubmission.submissionId}
+          currentUserId={user.id}
+          currentUserRole="client"
+        />
+      )}
     </div>
   );
 }

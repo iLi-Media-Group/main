@@ -13,6 +13,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
+import { SyncRequestChatModal } from './SyncRequestChatModal';
 
 interface Track {
   id: string;
@@ -156,6 +157,8 @@ export function ProducerDashboard() {
   // Add state for editing filetypes
   const [editingFiletypes, setEditingFiletypes] = useState<{ [reqId: string]: boolean }>({});
   const [editFiletypeFields, setEditFiletypeFields] = useState<{ [reqId: string]: { has_mp3: boolean; has_stems: boolean; has_trackouts: boolean } }>({});
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatSubmission, setChatSubmission] = useState<{ syncRequestId: string; submissionId: string } | null>(null);
 
   // Fetch open custom sync requests and existing submissions
   useEffect(() => {
@@ -1514,6 +1517,17 @@ export function ProducerDashboard() {
           }}
           track={selectedTrack}
           onUpdate={fetchDashboardData}
+        />
+      )}
+
+      {chatSubmission && (
+        <SyncRequestChatModal
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+          syncRequestId={chatSubmission.syncRequestId}
+          submissionId={chatSubmission.submissionId}
+          currentUserId={user?.id || ''}
+          currentUserRole="producer"
         />
       )}
     </div>
