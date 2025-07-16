@@ -60,7 +60,7 @@ export default function ProducerSyncSubmission() {
     setError(null);
     try {
       // Upload mp3 to Supabase storage
-      const filePath = `sync_submissions/${user.id}/${Date.now()}_${mp3File.name}`;
+      const filePath = `${user.id}/${Date.now()}_${mp3File.name}`;
       const { data: storageData, error: storageError } = await supabase.storage
         .from('sync-submissions')
         .upload(filePath, mp3File, { upsert: false });
