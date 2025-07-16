@@ -148,7 +148,7 @@ export default function CustomSyncRequestSubs() {
           event: 'INSERT', 
           schema: 'public', 
           table: 'cust_sync_chat',
-          filter: `recipient_id=eq.${user.id}`
+          filter: `and(recipient_id=eq.${user.id},sync_request_id.in.(${requests.map(r => r.id).join(',')}))`
         }, 
         (payload) => {
           console.log('New message received:', payload);
@@ -378,6 +378,56 @@ export default function CustomSyncRequestSubs() {
     setShowChatDialog(true);
     // Fetch existing chat messages for this producer
     await fetchChatMessages();
+    
+    // Mark messages as read when opening chat dialog
+    try {
+      const { error } = await supabase
+        .from('cust_sync_chat')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('sync_request_id', selectedSubmission.reqId)
+        .eq('is_read', false);
+      
+      if (!error) {
+        // Reset unread count for this request
+        setUnreadCounts(prev => ({
+          ...prev,
+          [selectedSubmission.reqId]: 0
+        }));
+        // Reload chat history to update read status
+        const { data, error: reloadError } = await supabase
+          .from('cust_sync_chat')
+          .select(`
+            id,
+            message,
+            created_at,
+            is_read,
+            recipient_id,
+            sender:profiles!sender_id (
+              first_name,
+              last_name,
+              email
+            ),
+            recipient:profiles!recipient_id (
+              first_name,
+              last_name,
+              email
+            )
+          `)
+          .eq('sync_request_id', selectedSubmission.reqId)
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+          .order('created_at', { ascending: true });
+        
+        if (!reloadError && data) {
+          setChatHistory(prev => ({
+            ...prev,
+            [selectedSubmission.reqId]: data
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error marking messages as read:', err);
+    }
   };
 
   // Fetch chat messages with the producer
@@ -487,9 +537,61 @@ export default function CustomSyncRequestSubs() {
 
   // Open chat box for a specific request
   const openChatBox = async (request: CustomSyncRequest) => {
+    if (!user) return;
+    
     setSelectedRequestForChat(request);
     setShowChatBox(true);
     await fetchChatBoxMessages(request.id);
+    
+    // Mark messages as read when opening chat box
+    try {
+      const { error } = await supabase
+        .from('cust_sync_chat')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('sync_request_id', request.id)
+        .eq('is_read', false);
+      
+      if (!error) {
+        // Reset unread count for this request
+        setUnreadCounts(prev => ({
+          ...prev,
+          [request.id]: 0
+        }));
+        // Reload chat history to update read status
+        const { data, error: reloadError } = await supabase
+          .from('cust_sync_chat')
+          .select(`
+            id,
+            message,
+            created_at,
+            is_read,
+            recipient_id,
+            sender:profiles!sender_id (
+              first_name,
+              last_name,
+              email
+            ),
+            recipient:profiles!recipient_id (
+              first_name,
+              last_name,
+              email
+            )
+          `)
+          .eq('sync_request_id', request.id)
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+          .order('created_at', { ascending: true });
+        
+        if (!reloadError && data) {
+          setChatHistory(prev => ({
+            ...prev,
+            [request.id]: data
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error marking messages as read:', err);
+    }
   };
 
   // Fetch chat messages for the chat box
@@ -562,6 +664,14 @@ export default function CustomSyncRequestSubs() {
     } finally {
       setSendingChatBoxMessage(false);
     }
+  };
+
+  // Close chat box
+  const handleCloseChatBox = () => {
+    setShowChatBox(false);
+    setSelectedRequestForChat(null);
+    setChatBoxMessages([]);
+    setChatBoxMessage('');
   };
 
   return (
@@ -816,7 +926,7 @@ export default function CustomSyncRequestSubs() {
                 </p>
               </div>
               <button
-                onClick={() => setShowChatBox(false)}
+                onClick={handleCloseChatBox}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >
                 <X className="w-5 h-5" />
