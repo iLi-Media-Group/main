@@ -108,18 +108,27 @@ export default function CustomSyncRequestSubs() {
     fetchRequests();
   }, [user]);
 
-  // Persist favorite/unfavorite in DB
+  // Persist favorite/unfavorite in DB with optimistic UI update
   const handleFavorite = async (sub: SyncSubmission) => {
     if (!user) return;
+    // Optimistically update UI
+    setFavoriteIds(prev => {
+      const copy = new Set(prev);
+      if (copy.has(sub.id)) {
+        copy.delete(sub.id);
+      } else {
+        copy.add(sub.id);
+      }
+      return copy;
+    });
+    // Update DB
     if (favoriteIds.has(sub.id)) {
-      // Unfavorite: delete from DB
       await supabase
         .from('sync_submission_favorites')
         .delete()
         .eq('client_id', user.id)
         .eq('sync_submission_id', sub.id);
     } else {
-      // Favorite: insert into DB
       await supabase
         .from('sync_submission_favorites')
         .insert({ client_id: user.id, sync_submission_id: sub.id });
