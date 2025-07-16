@@ -347,6 +347,137 @@ Deno.serve(async (req) => {
               // Return after processing sync proposal payment
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
+            // --- Custom Sync Request Payment ---
+            if (metadata?.type === 'sync_payment') {
+              const syncRequestId = metadata.sync_request_id;
+              const syncSubmissionId = metadata.sync_submission_id;
+              const producerId = metadata.producer_id;
+              const clientId = metadata.client_id;
+              
+              try {
+                // Insert payment record
+                const { error: paymentError } = await supabase.from('payments').insert({
+                  sync_request_id: syncRequestId,
+                  sync_submission_id: syncSubmissionId,
+                  producer_id: producerId,
+                  client_id: clientId,
+                  amount: amount_total / 100,
+                  currency: currency,
+                  payment_intent_id: payment_intent,
+                  status: 'succeeded',
+                  payment_method: 'stripe',
+                  created_at: new Date().toISOString()
+                });
+                
+                if (paymentError) {
+                  console.error('Error inserting sync payment:', paymentError);
+                  return new Response('Error inserting sync payment', { status: 500, headers: corsHeaders });
+                }
+                
+                // Insert into stripe_orders for sync payment
+                await supabase.from('stripe_orders').insert({
+                  checkout_session_id: checkout_session_id,
+                  payment_intent_id: payment_intent,
+                  customer_id: customerId,
+                  amount_subtotal: amount_subtotal,
+                  amount_total: amount_total,
+                  currency: currency,
+                  payment_status: 'paid',
+                  status: 'completed',
+                  metadata: { 
+                    type: 'sync_payment',
+                    sync_request_id: syncRequestId,
+                    sync_submission_id: syncSubmissionId,
+                    producer_id: producerId,
+                    client_id: clientId
+                  },
+                  created_at: new Date().toISOString()
+                });
+                
+                // Update sync submission status to paid
+                const { error: submissionError } = await supabase
+                  .from('sync_submissions')
+                  .update({
+                    payment_status: 'paid',
+                    payment_date: new Date().toISOString(),
+                    selected: true
+                  })
+                  .eq('id', syncSubmissionId);
+                
+                if (submissionError) {
+                  console.error('Error updating sync submission:', submissionError);
+                }
+                
+                // Update custom sync request status
+                const { error: requestError } = await supabase
+                  .from('custom_sync_requests')
+                  .update({
+                    status: 'completed',
+                    selected_submission_id: syncSubmissionId,
+                    completed_at: new Date().toISOString()
+                  })
+                  .eq('id', syncRequestId);
+                
+                if (requestError) {
+                  console.error('Error updating sync request:', requestError);
+                }
+                
+                // Delete all other submissions for this request (decline them)
+                const { error: deleteError } = await supabase
+                  .from('sync_submissions')
+                  .delete()
+                  .eq('sync_request_id', syncRequestId)
+                  .neq('id', syncSubmissionId);
+                
+                if (deleteError) {
+                  console.error('Error deleting other submissions:', deleteError);
+                }
+                
+                // Update producer balance for payout
+                const { data: producerData } = await supabase
+                  .from('profiles')
+                  .select('balance')
+                  .eq('id', producerId)
+                  .single();
+                
+                const currentBalance = producerData?.balance || 0;
+                const paymentAmount = amount_total / 100;
+                const producerShare = paymentAmount * 0.7; // 70% to producer, 30% platform fee
+                
+                const { error: balanceError } = await supabase
+                  .from('profiles')
+                  .update({
+                    balance: currentBalance + producerShare
+                  })
+                  .eq('id', producerId);
+                
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+                
+                // Insert transaction record for producer
+                const { error: transactionError } = await supabase.from('transactions').insert({
+                  producer_id: producerId,
+                  type: 'sync_payment',
+                  amount: producerShare,
+                  description: `Sync license payment for ${metadata.description || 'track'}`,
+                  status: 'completed',
+                  sync_request_id: syncRequestId,
+                  sync_submission_id: syncSubmissionId,
+                  created_at: new Date().toISOString()
+                });
+                
+                if (transactionError) {
+                  console.error('Error inserting producer transaction:', transactionError);
+                }
+                
+                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId}`);
+                return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+              } catch (syncError) {
+                console.error('Error processing sync payment:', syncError);
+                return new Response('Error processing sync payment', { status: 500, headers: corsHeaders });
+              }
+            }
             // --- Single Track Purchase ---
             if (metadata?.track_id) {
               // Insert into stripe_orders for single track purchase

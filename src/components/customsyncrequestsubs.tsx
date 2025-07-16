@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass, MoreVertical } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard } from 'lucide-react';
 import { useRef } from 'react';
 
 interface CustomSyncRequest {
@@ -45,11 +45,17 @@ export default function CustomSyncRequestSubs() {
   const [hiddenSubmissions, setHiddenSubmissions] = useState<Record<string, Set<string>>>({});
   // Track selected submission per request
   const [selectedPerRequest, setSelectedPerRequest] = useState<Record<string, string | null>>({});
-  // Simulate payment status per request (replace with real payment logic)
+  // Payment status per request
   const [paidRequests, setPaidRequests] = useState<Record<string, boolean>>({});
+  const [processingPayment, setProcessingPayment] = useState<Record<string, boolean>>({});
   // Add dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  // Add chat dialog state
+  const [showChatDialog, setShowChatDialog] = useState(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -119,11 +125,33 @@ export default function CustomSyncRequestSubs() {
           .select('sync_submission_id')
           .eq('client_id', user.id);
         setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+        
+        // Check payment status for each request
+        await checkPaymentStatus(data || []);
       }
       setLoading(false);
     };
     fetchRequests();
   }, [user]);
+
+  // Check payment status for requests
+  const checkPaymentStatus = async (requestsData: CustomSyncRequest[]) => {
+    const paidStatus: Record<string, boolean> = {};
+    
+    for (const req of requestsData) {
+      // Check if there's a successful payment for this request
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('status')
+        .eq('sync_request_id', req.id)
+        .eq('status', 'succeeded')
+        .maybeSingle();
+      
+      paidStatus[req.id] = !!payments;
+    }
+    
+    setPaidRequests(paidStatus);
+  };
 
   // Persist favorite/unfavorite in DB and re-fetch after DB operation
   const handleFavorite = async (sub: SyncSubmission) => {
@@ -175,18 +203,49 @@ export default function CustomSyncRequestSubs() {
     alert('Track selected! All other submissions will be declined.');
   };
 
-  // Simulate payment (replace with real payment detection)
-  const handleMarkPaid = async (reqId: string) => {
-    setPaidRequests(prev => ({ ...prev, [reqId]: true }));
-    // Delete all unselected submissions from DB
-    const selectedId = selectedPerRequest[reqId];
-    const toDelete = (submissions[reqId] || []).filter(s => s.id !== selectedId);
-    for (const sub of toDelete) {
-      await supabase.from('sync_submissions').delete().eq('id', sub.id);
+  // Handle Stripe payment for selected submission
+  const handlePayment = async (reqId: string) => {
+    if (!user || !selectedPerRequest[reqId]) return;
+    
+    const selectedSub = submissions[reqId]?.find(s => s.id === selectedPerRequest[reqId]);
+    const request = requests.find(r => r.id === reqId);
+    
+    if (!selectedSub || !request) return;
+    
+    setProcessingPayment(prev => ({ ...prev, [reqId]: true }));
+    
+    try {
+      // Create Stripe checkout session
+      const { data, error } = await supabase.functions.invoke('stripe-checkout', {
+        body: {
+          price_id: 'price_custom',
+          custom_amount: Math.round(request.sync_fee * 100), // Convert to cents
+          mode: 'payment',
+          success_url: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/custom-sync-requests`,
+          metadata: {
+            sync_request_id: reqId,
+            sync_submission_id: selectedSub.id,
+            producer_id: selectedSub.producer_id,
+            client_id: user.id,
+            type: 'sync_payment',
+            description: `Sync License - ${request.project_title} - ${selectedSub.track_name || 'Untitled'}`
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      // Redirect to Stripe checkout
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      alert('Payment failed. Please try again.');
+    } finally {
+      setProcessingPayment(prev => ({ ...prev, [reqId]: false }));
     }
-    // Optionally, refresh submissions
-    // ...
-    alert('Unselected submissions deleted from database.');
   };
 
   const cancelSelect = () => setConfirmSelect(null);
@@ -206,12 +265,67 @@ export default function CustomSyncRequestSubs() {
     setSelectedSubmission(null);
   };
 
-  // Placeholder for chat room creation and navigation
+  // Open chat dialog with producer
   const handleMessageProducer = async () => {
     if (!selectedSubmission || !user) return;
-    // TODO: Implement chat room creation logic here
-    alert(`Open chat with producer: ${selectedSubmission.sub.producer_name || ''}`);
-    // Example: navigate(`/chat?room=...`)
+    setShowChatDialog(true);
+    // Fetch existing chat messages for this producer
+    await fetchChatMessages();
+  };
+
+  // Fetch chat messages with the producer
+  const fetchChatMessages = async () => {
+    if (!selectedSubmission || !user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select(`
+          id,
+          message,
+          created_at,
+          sender:profiles!sender_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedSubmission.sub.producer_id}),and(sender_id.eq.${selectedSubmission.sub.producer_id},recipient_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setChatMessages(data || []);
+    } catch (err) {
+      console.error('Error fetching chat messages:', err);
+    }
+  };
+
+  // Send a message to the producer
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedSubmission || !user || !chatMessage.trim()) return;
+    
+    setSendingMessage(true);
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          sender_id: user.id,
+          recipient_id: selectedSubmission.sub.producer_id,
+          message: chatMessage.trim(),
+          room_id: null // Direct message
+        });
+      
+      if (error) throw error;
+      
+      setChatMessage('');
+      // Refresh messages
+      await fetchChatMessages();
+    } catch (err) {
+      console.error('Error sending message:', err);
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   return (
@@ -349,9 +463,15 @@ export default function CustomSyncRequestSubs() {
                         <div className="mt-4 flex justify-end">
                           <button
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                            onClick={() => handleMarkPaid(req.id)}
+                            onClick={() => handlePayment(req.id)}
+                            disabled={processingPayment[req.id]}
                           >
-                            Mark as Paid (Demo)
+                            {processingPayment[req.id] ? (
+                              <Hourglass className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                              <CreditCard className="w-4 h-4 mr-2" />
+                            )}
+                            {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
                           </button>
                         </div>
                       )}
@@ -380,6 +500,89 @@ export default function CustomSyncRequestSubs() {
           )}
         </div>
       </div>
+      {/* Chat Dialog */}
+      {showChatDialog && selectedSubmission && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-blue-900/90 rounded-xl max-w-2xl w-full h-[600px] flex flex-col shadow-lg">
+            {/* Header */}
+            <div className="p-4 border-b border-blue-700/40 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Chat with {selectedSubmission.sub.producer_name}
+                </h3>
+                <p className="text-sm text-blue-300">
+                  Track: {selectedSubmission.sub.track_name || 'Untitled'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowChatDialog(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {chatMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-400">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                chatMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.sender.email === user?.email ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[70%] p-3 rounded-lg ${
+                        message.sender.email === user?.email
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-800/60 text-gray-300'
+                      }`}
+                    >
+                      <p className="text-sm font-medium mb-1">
+                        {message.sender.first_name} {message.sender.last_name}
+                      </p>
+                      <p>{message.message}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Message Input */}
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-blue-700/40">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 bg-blue-800/60 text-white border border-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  disabled={sendingMessage}
+                />
+                <button
+                  type="submit"
+                  disabled={!chatMessage.trim() || sendingMessage}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {sendingMessage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {/* Confirmation Dialog */}
       {confirmSelect && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
