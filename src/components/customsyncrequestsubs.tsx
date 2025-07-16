@@ -111,7 +111,6 @@ export default function CustomSyncRequestSubs() {
   // Persist favorite/unfavorite in DB with optimistic UI update
   const handleFavorite = async (sub: SyncSubmission) => {
     if (!user) return;
-    // Optimistically update UI
     setFavoriteIds(prev => {
       const copy = new Set(prev);
       if (copy.has(sub.id)) {
@@ -121,24 +120,31 @@ export default function CustomSyncRequestSubs() {
       }
       return copy;
     });
-    // Update DB
-    if (favoriteIds.has(sub.id)) {
-      await supabase
+    // Use a callback to get the latest state after optimistic update
+    setTimeout(async () => {
+      let isNowFavorite = false;
+      setFavoriteIds(current => {
+        isNowFavorite = current.has(sub.id);
+        return current;
+      });
+      if (isNowFavorite) {
+        await supabase
+          .from('sync_submission_favorites')
+          .insert({ client_id: user.id, sync_submission_id: sub.id });
+      } else {
+        await supabase
+          .from('sync_submission_favorites')
+          .delete()
+          .eq('client_id', user.id)
+          .eq('sync_submission_id', sub.id);
+      }
+      // Always re-fetch favorites after change
+      const { data: favs } = await supabase
         .from('sync_submission_favorites')
-        .delete()
-        .eq('client_id', user.id)
-        .eq('sync_submission_id', sub.id);
-    } else {
-      await supabase
-        .from('sync_submission_favorites')
-        .insert({ client_id: user.id, sync_submission_id: sub.id });
-    }
-    // Always re-fetch favorites after change
-    const { data: favs } = await supabase
-      .from('sync_submission_favorites')
-      .select('sync_submission_id')
-      .eq('client_id', user.id);
-    setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+        .select('sync_submission_id')
+        .eq('client_id', user.id);
+      setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+    }, 0);
   };
 
   const handleSelect = (reqId: string, subId: string) => {
