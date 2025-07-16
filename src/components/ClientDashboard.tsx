@@ -1844,8 +1844,16 @@ export function ClientDashboard() {
                               </button>
                               <div className="flex items-center space-x-2 mt-2 md:mt-0">
                                 <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs">
-                                  Sync License
+                                  Sync Proposal
                                 </span>
+                                <button
+                                  onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                                  className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                  title="View License Agreement"
+                                >
+                                  <FileText className="w-4 h-4 mr-1" />
+                                  View Agreement
+                                </button>
                                 <button
                                   onClick={() => handleShowHistory(proposal)}
                                   className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
@@ -1853,18 +1861,8 @@ export function ClientDashboard() {
                                   <FileText className="w-4 h-4 mr-1" />
                                   History
                                 </button>
-                                {proposal.payment_status === 'paid' && proposal.license_url && (
-                                  <button
-                                    onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                                    className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                    title="View License Agreement"
-                                  >
-                                    <FileText className="w-4 h-4 mr-1" />
-                                    View Agreement
-                                  </button>
-                                )}
                                 {proposal.payment_status === 'paid' && (proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
-                                  <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
+                                  <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}> 
                                     {proposal.track.mp3_url && (
                                       <button
                                         onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
