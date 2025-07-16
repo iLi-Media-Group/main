@@ -14,6 +14,7 @@ interface CustomSyncRequest {
   sub_genres: string[];
   status: string;
   created_at: string;
+  payment_terms?: string;
 }
 
 interface SyncSubmission {
@@ -229,6 +230,20 @@ export default function CustomSyncRequestSubs() {
           .eq('client_id', user.id);
         setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
         
+        // Load persistent track selections from database
+        const { data: selections } = await supabase
+          .from('sync_request_selections')
+          .select('sync_request_id, selected_submission_id')
+          .eq('client_id', user.id);
+        
+        if (selections) {
+          const selectionMap: Record<string, string> = {};
+          selections.forEach((sel: any) => {
+            selectionMap[sel.sync_request_id] = sel.selected_submission_id;
+          });
+          setSelectedPerRequest(selectionMap);
+        }
+        
         // Check payment status for each request
         await checkPaymentStatus(data || []);
       }
@@ -297,11 +312,31 @@ export default function CustomSyncRequestSubs() {
   };
 
   const confirmSelectSubmission = async () => {
-    if (!confirmSelect) return;
+    if (!confirmSelect || !user) return;
     const { reqId, subId } = confirmSelect;
     const sub = submissions[reqId]?.find(s => s.id === subId);
     setSelectedSubmission(sub ? { reqId, sub } : null);
     setSelectedPerRequest(prev => ({ ...prev, [reqId]: subId }));
+    
+    // Persist selection to database
+    try {
+      const { error } = await supabase
+        .from('sync_request_selections')
+        .upsert({
+          client_id: user.id,
+          sync_request_id: reqId,
+          selected_submission_id: subId
+        }, {
+          onConflict: 'client_id,sync_request_id'
+        });
+      
+      if (error) {
+        console.error('Error persisting selection:', error);
+      }
+    } catch (err) {
+      console.error('Error persisting selection:', err);
+    }
+    
     setConfirmSelect(null);
     alert('Track selected! All other submissions will be declined.');
   };
@@ -364,12 +399,27 @@ export default function CustomSyncRequestSubs() {
   };
 
   // De-select the chosen submission
-  const handleDeselect = () => {
-    if (!selectedSubmission) return;
+  const handleDeselect = async () => {
+    if (!selectedSubmission || !user) return;
     
     // Clear the selection for this specific request
     setSelectedPerRequest(prev => ({ ...prev, [selectedSubmission.reqId]: null }));
     setSelectedSubmission(null);
+    
+    // Remove selection from database
+    try {
+      const { error } = await supabase
+        .from('sync_request_selections')
+        .delete()
+        .eq('client_id', user.id)
+        .eq('sync_request_id', selectedSubmission.reqId);
+      
+      if (error) {
+        console.error('Error removing selection:', error);
+      }
+    } catch (err) {
+      console.error('Error removing selection:', err);
+    }
   };
 
   // Open chat dialog with producer
@@ -674,6 +724,39 @@ export default function CustomSyncRequestSubs() {
     setChatBoxMessage('');
   };
 
+  // Helper function to calculate payment due date based on payment terms
+  const calculatePaymentDueDate = (paymentTerms: string | undefined): Date => {
+    const today = new Date();
+    switch (paymentTerms) {
+      case 'immediate':
+        return today;
+      case 'net30':
+        return new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      case 'net60':
+        return new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+      case 'net90':
+        return new Date(today.getTime() + 90 * 24 * 60 * 60 * 1000);
+      default:
+        return new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // Default to net30
+    }
+  };
+
+  // Helper function to format payment terms for display
+  const formatPaymentTerms = (paymentTerms: string | undefined): string => {
+    switch (paymentTerms) {
+      case 'immediate':
+        return 'Immediate';
+      case 'net30':
+        return 'Net 30';
+      case 'net60':
+        return 'Net 60';
+      case 'net90':
+        return 'Net 90';
+      default:
+        return 'Net 30'; // Default
+    }
+  };
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
@@ -836,8 +919,8 @@ export default function CustomSyncRequestSubs() {
                           
                           {/* Payment Due Date Display */}
                           <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                            <div className="font-semibold">Payment Terms: Net 30</div>
-                            <div>Due Date: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                            <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
+                            <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
                             <div className="text-xs text-yellow-200 mt-1">
                               Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
                             </div>
