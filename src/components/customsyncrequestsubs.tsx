@@ -160,7 +160,6 @@ export default function CustomSyncRequestSubs() {
                 <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-6">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
                     <h2 className="text-xl font-semibold text-white mb-2 md:mb-0">{req.project_title}</h2>
-                    <span className="text-sm px-3 py-1 rounded-full bg-blue-600 text-white font-medium">{req.status}</span>
                   </div>
                   <p className="text-gray-300 mb-2">{req.project_description}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-2">
