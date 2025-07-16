@@ -159,6 +159,7 @@ export default function ProducerSyncSubmission() {
           <div className="w-full lg:w-80 flex-shrink-0">
             <div className="bg-blue-950/80 border border-yellow-500/40 rounded-xl p-4 mb-8">
               <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2"><Hourglass className="w-5 h-5" /> Active Submissions</h3>
+              <div className="mb-2 text-blue-200 font-semibold truncate" title={requestInfo?.project_title}>{requestInfo?.project_title || ''}</div>
               <div className="space-y-2">
                 {mySubmissions.map((sub) => (
                   <div key={sub.id} className="flex items-center justify-between bg-blue-900/80 rounded-lg p-2">
