@@ -16,6 +16,9 @@ export default function ProducerSyncSubmission() {
   const [requestInfo, setRequestInfo] = useState<any>(null);
   const [loadingRequest, setLoadingRequest] = useState(false);
   const [mySubmissions, setMySubmissions] = useState<any[]>([]);
+  const [trackName, setTrackName] = useState('');
+  const [trackBpm, setTrackBpm] = useState('');
+  const [trackKey, setTrackKey] = useState('');
 
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
@@ -72,6 +75,18 @@ export default function ProducerSyncSubmission() {
       setError('No custom sync request selected.');
       return;
     }
+    if (!trackName.trim()) {
+      setError('Please enter a track name.');
+      return;
+    }
+    if (!trackBpm.trim() || isNaN(Number(trackBpm))) {
+      setError('Please enter a valid BPM (number).');
+      return;
+    }
+    if (!trackKey.trim()) {
+      setError('Please enter a track key.');
+      return;
+    }
     setUploading(true);
     setError(null);
     try {
@@ -91,6 +106,9 @@ export default function ProducerSyncSubmission() {
         producer_id: user.id,
         sync_request_id: requestId,
         track_url: mp3Url,
+        track_name: trackName,
+        track_bpm: Number(trackBpm),
+        track_key: trackKey,
         has_mp3: true,
         has_stems: hasStems,
         has_trackouts: hasTrackouts,
@@ -101,6 +119,9 @@ export default function ProducerSyncSubmission() {
       setMp3File(null);
       setHasStems(false);
       setHasTrackouts(false);
+      setTrackName('');
+      setTrackBpm('');
+      setTrackKey('');
     } catch (err: any) {
       setError(err.message || 'Submission failed.');
     } finally {
@@ -134,6 +155,20 @@ export default function ProducerSyncSubmission() {
             {error && <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Track Name</label>
+                <input type="text" value={trackName} onChange={e => setTrackName(e.target.value)} className="w-full rounded px-3 py-2 bg-blue-900/60 text-white border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Track BPM</label>
+                  <input type="number" value={trackBpm} onChange={e => setTrackBpm(e.target.value)} className="w-full rounded px-3 py-2 bg-blue-900/60 text-white border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Track Key</label>
+                  <input type="text" value={trackKey} onChange={e => setTrackKey(e.target.value)} className="w-full rounded px-3 py-2 bg-blue-900/60 text-white border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">MP3 File</label>
                 <input type="file" accept="audio/mp3,audio/mpeg" onChange={handleMp3Change} className="w-full" />
               </div>
@@ -162,9 +197,13 @@ export default function ProducerSyncSubmission() {
               <div className="mb-2 text-blue-200 font-semibold truncate" title={requestInfo?.project_title}>{requestInfo?.project_title || ''}</div>
               <div className="space-y-2">
                 {mySubmissions.map((sub) => (
-                  <div key={sub.id} className="flex items-center justify-between bg-blue-900/80 rounded-lg p-2">
-                    <span className="font-semibold text-white truncate max-w-[120px]">{sub.track_url?.split('/').pop() || 'Track'}</span>
-                    <span className="ml-2 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1"><Hourglass className="w-3 h-3" /> In Consideration</span>
+                  <div key={sub.id} className="flex flex-col bg-blue-900/80 rounded-lg p-2 mb-2">
+                    <span className="font-semibold text-white truncate max-w-[120px]">{sub.track_name || sub.track_url?.split('/').pop() || 'Track'}</span>
+                    <div className="flex gap-2 text-xs text-blue-200 mt-1">
+                      <span>BPM: {sub.track_bpm || '-'}</span>
+                      <span>Key: {sub.track_key || '-'}</span>
+                    </div>
+                    <span className="mt-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1 w-max"><Hourglass className="w-3 h-3" /> In Consideration</span>
                   </div>
                 ))}
               </div>
