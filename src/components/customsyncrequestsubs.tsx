@@ -57,6 +57,7 @@ export default function CustomSyncRequestSubs() {
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatHistory, setChatHistory] = useState<Record<string, any[]>>({});
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -71,12 +72,13 @@ export default function CustomSyncRequestSubs() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [openDropdown]);
 
-  // Load chat history for all sync requests
+  // Load chat history and unread counts for all sync requests
   useEffect(() => {
     if (!user || requests.length === 0) return;
     
     const loadAllChatHistory = async () => {
       const history: Record<string, any[]> = {};
+      const unread: Record<string, number> = {};
       
       for (const req of requests) {
         try {
@@ -86,6 +88,8 @@ export default function CustomSyncRequestSubs() {
               id,
               message,
               created_at,
+              is_read,
+              recipient_id,
               sender:profiles!sender_id (
                 first_name,
                 last_name,
@@ -103,6 +107,11 @@ export default function CustomSyncRequestSubs() {
           
           if (!error && data) {
             history[req.id] = data;
+            // Count unread messages for this user
+            const unreadCount = data.filter(msg => 
+              msg.recipient_id === user.id && !msg.is_read
+            ).length;
+            unread[req.id] = unreadCount;
           }
         } catch (err) {
           console.error(`Error loading chat history for request ${req.id}:`, err);
@@ -110,9 +119,38 @@ export default function CustomSyncRequestSubs() {
       }
       
       setChatHistory(history);
+      setUnreadCounts(unread);
     };
     
     loadAllChatHistory();
+    
+    // Set up real-time subscription for new messages
+    const channel = supabase
+      .channel('cust_sync_chat_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'cust_sync_chat',
+          filter: `recipient_id=eq.${user.id}`
+        }, 
+        (payload) => {
+          console.log('New message received:', payload);
+          // Update unread count for the specific request
+          const newMessage = payload.new as any;
+          setUnreadCounts(prev => ({
+            ...prev,
+            [newMessage.sync_request_id]: (prev[newMessage.sync_request_id] || 0) + 1
+          }));
+          // Reload chat history
+          loadAllChatHistory();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, requests]);
 
   useEffect(() => {
@@ -559,7 +597,7 @@ export default function CustomSyncRequestSubs() {
                       </div>
                       {/* Mark as Paid button for demo/testing (replace with real payment logic) */}
                       {!paidRequests[req.id] && selectedPerRequest[req.id] && (
-                        <div className="mt-4 flex justify-end">
+                        <div className="mt-4 flex flex-col items-end gap-2">
                           <button
                             className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
                             onClick={() => handlePayment(req.id)}
@@ -572,34 +610,30 @@ export default function CustomSyncRequestSubs() {
                             )}
                             {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
                           </button>
+                          
+                          {/* Payment Due Date Display */}
+                          <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                            <div className="font-semibold">Payment Terms: Net 30</div>
+                            <div>Due Date: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</div>
+                            <div className="text-xs text-yellow-200 mt-1">
+                              Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   )}
-                  {/* Message Producer and De-select Buttons */}
-                  {selectedSubmission && selectedSubmission.reqId === req.id && (
-                    <div className="mt-4 flex justify-end gap-2">
-                      <button
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                        onClick={handleMessageProducer}
-                      >
-                        Message Producer
-                      </button>
-                      <button
-                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
-                        onClick={handleDeselect}
-                      >
-                        De-select
-                      </button>
-                    </div>
-                  )}
-                  
                   {/* Chat History Preview */}
                   {chatHistory[req.id] && chatHistory[req.id].length > 0 && (
                     <div className="mt-4 p-4 bg-blue-950/60 border border-blue-700/40 rounded-lg">
                       <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
                         <MessageCircle className="w-4 h-4" />
                         Chat History ({chatHistory[req.id].length} messages)
+                        {unreadCounts[req.id] > 0 && (
+                          <span className="ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                            {unreadCounts[req.id]} new
+                          </span>
+                        )}
                       </h4>
                       <div className="max-h-32 overflow-y-auto space-y-2">
                         {chatHistory[req.id].slice(-3).map((msg) => (
@@ -613,6 +647,9 @@ export default function CustomSyncRequestSubs() {
                             <span className="text-gray-500 ml-2">
                               {new Date(msg.created_at).toLocaleDateString()}
                             </span>
+                            {msg.recipient_id === user?.id && !msg.is_read && (
+                              <span className="ml-2 text-red-400 text-xs">●</span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -621,6 +658,29 @@ export default function CustomSyncRequestSubs() {
                           +{chatHistory[req.id].length - 3} more messages
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Message Producer and De-select Buttons */}
+                  {selectedSubmission && selectedSubmission.reqId === req.id && (
+                    <div className="mt-4 flex justify-end gap-2">
+                      <button
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow relative"
+                        onClick={handleMessageProducer}
+                      >
+                        Message Producer
+                        {unreadCounts[req.id] > 0 && (
+                          <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                            {unreadCounts[req.id]}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
+                        onClick={handleDeselect}
+                      >
+                        De-select
+                      </button>
                     </div>
                   )}
                 </div>

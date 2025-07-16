@@ -38,6 +38,7 @@ export default function ProducerSyncSubmission() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
@@ -55,6 +56,8 @@ export default function ProducerSyncSubmission() {
             id,
             message,
             created_at,
+            is_read,
+            recipient_id,
             sender:profiles!sender_id (
               first_name,
               last_name,
@@ -72,6 +75,11 @@ export default function ProducerSyncSubmission() {
         
         if (!error && data) {
           setChatHistory(data);
+          // Count unread messages for this producer
+          const unread = data.filter(msg => 
+            msg.recipient_id === user.id && !msg.is_read
+          ).length;
+          setUnreadCount(unread);
         }
       } catch (err) {
         console.error('Error loading chat history:', err);
@@ -79,6 +87,30 @@ export default function ProducerSyncSubmission() {
     };
     
     loadChatHistory();
+    
+    // Set up real-time subscription for new messages
+    const channel = supabase
+      .channel('producer_chat_changes')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'cust_sync_chat',
+          filter: `recipient_id=eq.${user.id}`
+        }, 
+        (payload) => {
+          console.log('Producer received new message:', payload);
+          // Update unread count
+          setUnreadCount(prev => prev + 1);
+          // Reload chat history
+          loadChatHistory();
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, requestId]);
 
   // Fetch custom sync request info if requestId is present
@@ -455,6 +487,11 @@ export default function ProducerSyncSubmission() {
             <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
               <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
                 <MessageCircle className="w-5 h-5" /> Client Messages
+                {unreadCount > 0 && (
+                  <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                    {unreadCount} new
+                  </span>
+                )}
               </h3>
               <button
                 onClick={async () => {
@@ -465,10 +502,15 @@ export default function ProducerSyncSubmission() {
                     alert('No client messages yet.');
                   }
                 }}
-                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 relative"
               >
                 <MessageCircle className="w-4 h-4" />
                 View Messages
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
               </button>
               
               {/* Chat History Preview */}
@@ -477,6 +519,9 @@ export default function ProducerSyncSubmission() {
                   <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
                     <MessageCircle className="w-3 h-3" />
                     Recent Messages ({chatHistory.length} total)
+                    {unreadCount > 0 && (
+                      <span className="text-red-400 text-xs">● {unreadCount} unread</span>
+                    )}
                   </h4>
                   <div className="max-h-24 overflow-y-auto space-y-1">
                     {chatHistory.slice(-2).map((msg) => (
@@ -490,6 +535,9 @@ export default function ProducerSyncSubmission() {
                         <div className="text-gray-500 text-xs">
                           {new Date(msg.created_at).toLocaleDateString()}
                         </div>
+                        {msg.recipient_id === user?.id && !msg.is_read && (
+                          <span className="text-red-400 text-xs">●</span>
+                        )}
                       </div>
                     ))}
                   </div>
