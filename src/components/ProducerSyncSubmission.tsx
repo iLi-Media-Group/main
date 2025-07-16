@@ -73,7 +73,7 @@ export default function ProducerSyncSubmission() {
       // Insert submission row
       const { error: dbError } = await supabase.from('sync_submissions').insert({
         producer_id: user.id,
-        custom_sync_request_id: requestId,
+        sync_request_id: requestId,
         mp3_url: mp3Url,
         has_mp3: true,
         has_stems: hasStems,
