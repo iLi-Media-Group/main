@@ -277,6 +277,11 @@ export default function CustomSyncRequestSubs() {
                                   {sub.producer_number && (
                                     <span className="ml-2 text-xs text-blue-300">({sub.producer_number})</span>
                                   )}
+                                  {favoriteIds.has(sub.id) && (
+                                    <span className="ml-2 flex items-center px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
+                                      <Star className="w-4 h-4 mr-1 fill-yellow-400" /> Favorited
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="relative" ref={el => (dropdownRefs.current[sub.id] = el)}>
