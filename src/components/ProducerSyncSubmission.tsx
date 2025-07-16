@@ -289,8 +289,8 @@ export default function ProducerSyncSubmission() {
       <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
         {editModalOpen && (
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-lg">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Edit Submission</h2>
+            <div className="bg-blue-900/90 rounded-xl p-8 max-w-md w-full shadow-lg">
+              <h2 className="text-xl font-bold mb-4 text-white">Edit Submission</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Track Name</label>
@@ -309,17 +309,17 @@ export default function ProducerSyncSubmission() {
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={editHasStems} onChange={e => setEditHasStems(e.target.checked)} />
-                    <span>Stems Available</span>
+                    <span className="text-blue-200">Stems Available</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={editHasTrackouts} onChange={e => setEditHasTrackouts(e.target.checked)} />
-                    <span>Trackouts Available</span>
+                    <span className="text-blue-200">Trackouts Available</span>
                   </label>
                 </div>
                 {editError && <div className="text-red-500 text-sm">{editError}</div>}
               </div>
               <div className="flex justify-end gap-4 mt-6">
-                <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+                <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
                 <button onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
               </div>
             </div>
