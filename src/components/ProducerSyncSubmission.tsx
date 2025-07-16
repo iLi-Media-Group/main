@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, BadgeCheck, Hourglass, Star } from 'lucide-react';
+import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Dialog } from './ui/dialog';
 
@@ -31,6 +31,12 @@ export default function ProducerSyncSubmission() {
   const [editError, setEditError] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessage, setChatMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<any>(null);
 
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
@@ -153,6 +159,120 @@ export default function ProducerSyncSubmission() {
       setError(err.message || 'Submission failed.');
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Fetch chat messages with a client
+  const fetchChatMessages = async (clientId: string) => {
+    if (!user) return;
+    
+    console.log('Producer fetching chat messages for:', {
+      user_id: user.id,
+      client_id: clientId
+    });
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select(`
+          id,
+          message,
+          created_at,
+          sender:profiles!sender_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .or(`and(sender_id.eq.${user.id},recipient_id.eq.${clientId}),and(sender_id.eq.${clientId},recipient_id.eq.${user.id})`)
+        .order('created_at', { ascending: true });
+      
+      console.log('Producer fetched chat messages:', { data, error });
+      
+      if (error) throw error;
+      setChatMessages(data || []);
+    } catch (err) {
+      console.error('Error fetching chat messages:', err);
+    }
+  };
+
+  // Send a message to a client
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedClient || !user || !chatMessage.trim()) return;
+    
+    console.log('Producer sending message:', {
+      sender_id: user.id,
+      recipient_id: selectedClient.id,
+      message: chatMessage.trim()
+    });
+    
+    setSendingMessage(true);
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .insert({
+          sender_id: user.id,
+          recipient_id: selectedClient.id,
+          message: chatMessage.trim(),
+          room_id: null // Direct message
+        })
+        .select();
+      
+      console.log('Producer message insert result:', { data, error });
+      
+      if (error) throw error;
+      
+      setChatMessage('');
+      // Refresh messages
+      await fetchChatMessages(selectedClient.id);
+    } catch (err) {
+      console.error('Error sending message:', err);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Open chat with a client
+  const handleOpenChat = async (clientId: string, clientName: string) => {
+    setSelectedClient({ id: clientId, name: clientName });
+    setShowChat(true);
+    await fetchChatMessages(clientId);
+  };
+
+  // Get clients who have messaged this producer
+  const getClientsWithMessages = async () => {
+    if (!user) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select(`
+          sender:profiles!sender_id (
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('recipient_id', user.id)
+        .not('sender_id', 'eq', user.id);
+      
+      if (error) throw error;
+      
+      // Get unique clients
+      const uniqueClients = data?.reduce((acc: any[], message: any) => {
+        const clientId = message.sender.id;
+        if (!acc.find(c => c.id === clientId)) {
+          acc.push(message.sender);
+        }
+        return acc;
+      }, []) || [];
+      
+      return uniqueClients;
+    } catch (err) {
+      console.error('Error getting clients with messages:', err);
+      return [];
     }
   };
 
@@ -286,6 +406,27 @@ export default function ProducerSyncSubmission() {
                 ))}
               </div>
             </div>
+            
+            {/* Chat Section */}
+            <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
+              <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
+                <MessageCircle className="w-5 h-5" /> Client Messages
+              </h3>
+              <button
+                onClick={async () => {
+                  const clients = await getClientsWithMessages();
+                  if (clients.length > 0) {
+                    handleOpenChat(clients[0].id, `${clients[0].first_name} ${clients[0].last_name}`);
+                  } else {
+                    alert('No client messages yet.');
+                  }
+                }}
+                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                View Messages
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -343,6 +484,97 @@ export default function ProducerSyncSubmission() {
           </div>
         </div>
       )}
+      
+      {/* Chat Dialog */}
+      {showChat && selectedClient && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-blue-900/90 rounded-xl max-w-2xl w-full h-[600px] flex flex-col shadow-lg">
+            {/* Header */}
+            <div className="p-4 border-b border-blue-700/40 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Chat with {selectedClient.name}
+                </h3>
+                <p className="text-sm text-blue-300">
+                  Sync Request: {requestInfo?.project_title || 'Custom Sync'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowChat(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {chatMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-400">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                chatMessages.map((message) => {
+                  console.log('Producer rendering message:', message);
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.sender.email === user?.email ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[70%] p-3 rounded-lg ${
+                          message.sender.email === user?.email
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-800/60 text-gray-300'
+                        }`}
+                      >
+                        <p className="text-sm font-medium mb-1">
+                          {message.sender.first_name} {message.sender.last_name}
+                        </p>
+                        <p>{message.message}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {new Date(message.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Message Input */}
+            <form onSubmit={handleSendMessage} className="p-4 border-t border-blue-700/40">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={chatMessage}
+                  onChange={(e) => setChatMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 bg-blue-800/60 text-white border border-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  disabled={sendingMessage}
+                />
+                <button
+                  type="submit"
+                  disabled={!chatMessage.trim() || sendingMessage}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {sendingMessage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Edit Submission Modal */}
     </div>
   );
 } 
