@@ -58,6 +58,22 @@ export default function CustomSyncRequestSubs() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [chatHistory, setChatHistory] = useState<Record<string, any[]>>({});
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  // Add persistent chat box state
+  const [showChatBox, setShowChatBox] = useState(false);
+  const [selectedRequestForChat, setSelectedRequestForChat] = useState<CustomSyncRequest | null>(null);
+  const [chatBoxMessage, setChatBoxMessage] = useState('');
+  const [chatBoxMessages, setChatBoxMessages] = useState<any[]>([]);
+  const [sendingChatBoxMessage, setSendingChatBoxMessage] = useState(false);
+
+  // Auto-scroll chat box to bottom when new messages arrive
+  useEffect(() => {
+    if (showChatBox && chatBoxMessages.length > 0) {
+      const chatBox = document.querySelector('.chat-box-messages');
+      if (chatBox) {
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    }
+  }, [chatBoxMessages, showChatBox]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -144,6 +160,10 @@ export default function CustomSyncRequestSubs() {
           }));
           // Reload chat history
           loadAllChatHistory();
+          // If chat box is open for this request, refresh its messages
+          if (selectedRequestForChat && selectedRequestForChat.id === newMessage.sync_request_id) {
+            fetchChatBoxMessages(newMessage.sync_request_id);
+          }
         }
       )
       .subscribe();
@@ -465,6 +485,85 @@ export default function CustomSyncRequestSubs() {
     }
   };
 
+  // Open chat box for a specific request
+  const openChatBox = async (request: CustomSyncRequest) => {
+    setSelectedRequestForChat(request);
+    setShowChatBox(true);
+    await fetchChatBoxMessages(request.id);
+  };
+
+  // Fetch chat messages for the chat box
+  const fetchChatBoxMessages = async (requestId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('cust_sync_chat')
+        .select(`
+          id,
+          message,
+          created_at,
+          sender:profiles!sender_id (
+            first_name,
+            last_name,
+            email
+          ),
+          recipient:profiles!recipient_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('sync_request_id', requestId)
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setChatBoxMessages(data || []);
+    } catch (err) {
+      console.error('Error fetching chat box messages:', err);
+    }
+  };
+
+  // Send message from chat box
+  const handleSendChatBoxMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRequestForChat || !user || !chatBoxMessage.trim()) return;
+    
+    setSendingChatBoxMessage(true);
+    try {
+      // Find the first producer for this request to send message to
+      const requestSubmissions = submissions[selectedRequestForChat.id] || [];
+      if (requestSubmissions.length === 0) {
+        alert('No producers found for this request.');
+        return;
+      }
+      
+      const firstProducer = requestSubmissions[0];
+      
+      const { data, error } = await supabase
+        .from('cust_sync_chat')
+        .insert({
+          sender_id: user.id,
+          recipient_id: firstProducer.producer_id,
+          sync_request_id: selectedRequestForChat.id,
+          message: chatBoxMessage.trim(),
+          room_id: null
+        })
+        .select();
+      
+      if (error) throw error;
+      
+      setChatBoxMessage('');
+      await fetchChatBoxMessages(selectedRequestForChat.id);
+    } catch (err) {
+      console.error('Error sending chat box message:', err);
+      alert('Failed to send message. Please try again.');
+    } finally {
+      setSendingChatBoxMessage(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
@@ -482,6 +581,20 @@ export default function CustomSyncRequestSubs() {
                 <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-6">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
                     <h2 className="text-xl font-semibold text-white mb-2 md:mb-0">{req.project_title}</h2>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-1"
+                        onClick={() => openChatBox(req)}
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Chat
+                        {unreadCounts[req.id] > 0 && (
+                          <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                            {unreadCounts[req.id]}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                   <p className="text-gray-300 mb-2">{req.project_description}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-2">
@@ -688,6 +801,88 @@ export default function CustomSyncRequestSubs() {
             </div>
           )}
         </div>
+        
+        {/* Persistent Chat Box */}
+        {showChatBox && selectedRequestForChat && (
+          <div className="w-80 lg:w-96 bg-blue-800/80 border border-blue-500/40 rounded-xl h-[calc(100vh-4rem)] flex flex-col shadow-lg">
+            {/* Chat Header */}
+            <div className="p-4 border-b border-blue-700/40 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Chat - {selectedRequestForChat.project_title}
+                </h3>
+                <p className="text-sm text-blue-300">
+                  {submissions[selectedRequestForChat.id]?.length || 0} producers
+                </p>
+              </div>
+              <button
+                onClick={() => setShowChatBox(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 chat-box-messages">
+              {chatBoxMessages.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-400 text-center">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                chatBoxMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      message.sender.email === user?.email ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] p-2 rounded-lg ${
+                        message.sender.email === user?.email
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-700/60 text-gray-300'
+                      }`}
+                    >
+                      <p className="text-xs font-medium mb-1">
+                        {message.sender.first_name} {message.sender.last_name}
+                      </p>
+                      <p className="text-sm">{message.message}</p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Chat Input */}
+            <form onSubmit={handleSendChatBoxMessage} className="p-4 border-t border-blue-700/40">
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={chatBoxMessage}
+                  onChange={(e) => setChatBoxMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 px-3 py-2 bg-blue-700/60 text-white border border-blue-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                  disabled={sendingChatBoxMessage}
+                />
+                <button
+                  type="submit"
+                  disabled={!chatBoxMessage.trim() || sendingChatBoxMessage}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {sendingChatBoxMessage ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
       {/* Chat Dialog */}
       {showChatDialog && selectedSubmission && (
