@@ -314,7 +314,17 @@ export default function CustomSyncRequestSubs() {
   // Send a message to the producer
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSubmission || !user || !chatMessage.trim()) return;
+    if (!selectedSubmission || !user || !chatMessage.trim()) {
+      console.log('Send message validation failed:', {
+        hasSelectedSubmission: !!selectedSubmission,
+        hasUser: !!user,
+        hasMessage: !!chatMessage.trim(),
+        selectedSubmission,
+        user,
+        chatMessage
+      });
+      return;
+    }
     
     console.log('Sending message:', {
       sender_id: user.id,
@@ -324,6 +334,20 @@ export default function CustomSyncRequestSubs() {
     
     setSendingMessage(true);
     try {
+      // First, let's check if the chat_messages table exists and we have access
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('chat_messages')
+        .select('id')
+        .limit(1);
+      
+      console.log('Table access check:', { tableCheck, tableError });
+      
+      if (tableError) {
+        console.error('Cannot access chat_messages table:', tableError);
+        alert('Chat system is not available. Please contact support.');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({
@@ -336,13 +360,19 @@ export default function CustomSyncRequestSubs() {
       
       console.log('Message insert result:', { data, error });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Failed to insert message:', error);
+        alert(`Failed to send message: ${error.message}`);
+        throw error;
+      }
       
+      console.log('Message sent successfully:', data);
       setChatMessage('');
       // Refresh messages
       await fetchChatMessages();
     } catch (err) {
       console.error('Error sending message:', err);
+      alert('Failed to send message. Please try again.');
     } finally {
       setSendingMessage(false);
     }
