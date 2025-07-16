@@ -185,13 +185,13 @@ export default function CustomSyncRequestSubs() {
                   {submissions[req.id] && submissions[req.id].length > 0 && (
                     <div className="mt-4">
                       <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
                         {submissions[req.id]
                           .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
                           .map((sub) => (
                             <div
                               key={sub.id}
-                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[320px] transition-transform hover:-translate-y-1 hover:shadow-2xl"
+                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-7 flex flex-col min-h-[340px] max-w-2xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl"
                             >
                               {/* Top Row: Producer info and actions */}
                               <div className="flex items-start justify-between mb-2">
@@ -224,7 +224,7 @@ export default function CustomSyncRequestSubs() {
                               {/* Audio Player */}
                               <div className="flex-1 flex flex-col justify-center items-center my-4">
                                 {sub.has_mp3 && sub.signed_mp3_url ? (
-                                  <audio controls src={sub.signed_mp3_url} className="w-full max-w-xs" />
+                                  <audio controls src={sub.signed_mp3_url} className="w-full max-w-sm" />
                                 ) : (
                                   <span className="text-gray-400">No mp3 uploaded</span>
                                 )}
@@ -245,7 +245,7 @@ export default function CustomSyncRequestSubs() {
                                 </span>
                               </div>
                               {/* Submission Date/Time */}
-                              <div className="absolute bottom-4 right-5 text-xs text-gray-400">
+                              <div className="absolute bottom-4 right-7 text-xs text-gray-400">
                                 {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
                               </div>
                             </div>
