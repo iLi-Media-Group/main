@@ -281,6 +281,11 @@ export default function CustomSyncRequestSubs() {
   const fetchChatMessages = async () => {
     if (!selectedSubmission || !user) return;
     
+    console.log('Fetching chat messages for:', {
+      user_id: user.id,
+      producer_id: selectedSubmission.sub.producer_id
+    });
+    
     try {
       const { data, error } = await supabase
         .from('chat_messages')
@@ -297,6 +302,8 @@ export default function CustomSyncRequestSubs() {
         .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedSubmission.sub.producer_id}),and(sender_id.eq.${selectedSubmission.sub.producer_id},recipient_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
       
+      console.log('Fetched chat messages:', { data, error });
+      
       if (error) throw error;
       setChatMessages(data || []);
     } catch (err) {
@@ -309,16 +316,25 @@ export default function CustomSyncRequestSubs() {
     e.preventDefault();
     if (!selectedSubmission || !user || !chatMessage.trim()) return;
     
+    console.log('Sending message:', {
+      sender_id: user.id,
+      recipient_id: selectedSubmission.sub.producer_id,
+      message: chatMessage.trim()
+    });
+    
     setSendingMessage(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('chat_messages')
         .insert({
           sender_id: user.id,
           recipient_id: selectedSubmission.sub.producer_id,
           message: chatMessage.trim(),
           room_id: null // Direct message
-        });
+        })
+        .select();
+      
+      console.log('Message insert result:', { data, error });
       
       if (error) throw error;
       
@@ -533,30 +549,33 @@ export default function CustomSyncRequestSubs() {
                   <p className="text-gray-400">No messages yet. Start the conversation!</p>
                 </div>
               ) : (
-                chatMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      message.sender.email === user?.email ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
+                chatMessages.map((message) => {
+                  console.log('Rendering message:', message);
+                  return (
                     <div
-                      className={`max-w-[70%] p-3 rounded-lg ${
-                        message.sender.email === user?.email
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-800/60 text-gray-300'
+                      key={message.id}
+                      className={`flex ${
+                        message.sender.email === user?.email ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      <p className="text-sm font-medium mb-1">
-                        {message.sender.first_name} {message.sender.last_name}
-                      </p>
-                      <p>{message.message}</p>
-                      <p className="text-xs opacity-70 mt-1">
-                        {new Date(message.created_at).toLocaleString()}
-                      </p>
+                      <div
+                        className={`max-w-[70%] p-3 rounded-lg ${
+                          message.sender.email === user?.email
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-800/60 text-gray-300'
+                        }`}
+                      >
+                        <p className="text-sm font-medium mb-1">
+                          {message.sender.first_name} {message.sender.last_name}
+                        </p>
+                        <p>{message.message}</p>
+                        <p className="text-xs opacity-70 mt-1">
+                          {new Date(message.created_at).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
