@@ -68,16 +68,18 @@ export default function ProducerSyncSubmission() {
 
   // Fetch favorite submission IDs for this sync request
   useEffect(() => {
-    if (!requestId) return;
+    if (!mySubmissions.length) return;
     const fetchFavorites = async () => {
+      const submissionIds = mySubmissions.map(sub => sub.id);
+      if (submissionIds.length === 0) return;
       const { data, error } = await supabase
         .from('sync_submission_favorites')
         .select('sync_submission_id')
-        .eq('sync_request_id', requestId);
+        .in('sync_submission_id', submissionIds);
       if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.sync_submission_id)));
     };
     fetchFavorites();
-  }, [requestId, success, editModalOpen]);
+  }, [mySubmissions, success, editModalOpen]);
 
   const handleMp3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
