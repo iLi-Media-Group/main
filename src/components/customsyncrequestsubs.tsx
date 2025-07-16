@@ -169,9 +169,6 @@ export default function CustomSyncRequestSubs() {
                     <span><strong>Genre:</strong> {req.genre}</span>
                     <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
                   </div>
-                  <div className="text-right">
-                    <a href={`/custom-sync-request/${req.id}`} className="text-blue-400 hover:underline font-medium">View Details</a>
-                  </div>
                   {/* Delete all except favorites button */}
                   <div className="flex justify-end mb-2">
                     <button
