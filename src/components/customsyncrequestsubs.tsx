@@ -145,9 +145,9 @@ export default function CustomSyncRequestSubs() {
 
   return (
     <div className="min-h-screen bg-blue-900 py-8">
-      <div className="max-w-6xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-white mb-6">Your Custom Sync Requests</h1>
+          <h1 className="text-3xl font-bold text-white mb-6">Your Custom Sync Request Submissions</h1>
           {loading ? (
             <div className="text-center text-blue-300">Loading...</div>
           ) : error ? (
@@ -181,13 +181,13 @@ export default function CustomSyncRequestSubs() {
                   {submissions[req.id] && submissions[req.id].length > 0 && (
                     <div className="mt-4">
                       <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-6">
                         {submissions[req.id]
                           .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
                           .map((sub) => (
                             <div
                               key={sub.id}
-                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-7 flex flex-col min-h-[340px] max-w-2xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl"
+                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[170px] max-w-4xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl"
                             >
                               {/* Top Row: Producer info and actions */}
                               <div className="flex items-start justify-between mb-2">
