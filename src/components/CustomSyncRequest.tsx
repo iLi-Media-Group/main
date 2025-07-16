@@ -1,5 +1,3 @@
-   // TEST-COMMIT: Forcing a change to test git commit and push.
-   // FORCE-COMMIT: This comment is added to ensure a new commit is created for testing favorite badge logic.
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
