@@ -40,11 +40,9 @@ export default function CustomSyncRequestSubs() {
   const [error, setError] = useState<string | null>(null);
   const [confirmSelect, setConfirmSelect] = useState<{ reqId: string; subId: string } | null>(null);
   const [favorites, setFavorites] = useState<{ [subId: string]: SyncSubmission }>(() => ({}));
-  // Change Set to array for favoriteIds
-  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedSubmission, setSelectedSubmission] = useState<{ reqId: string; sub: SyncSubmission } | null>(null);
-  // Change Set to array for hiddenSubmissions
-  const [hiddenSubmissions, setHiddenSubmissions] = useState<Record<string, string[]>>({});
+  const [hiddenSubmissions, setHiddenSubmissions] = useState<Record<string, Set<string>>>({});
   // Track selected submission per request
   const [selectedPerRequest, setSelectedPerRequest] = useState<Record<string, string | null>>({});
   // Simulate payment status per request (replace with real payment logic)
@@ -56,12 +54,10 @@ export default function CustomSyncRequestSubs() {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (
-        openDropdown &&
-        dropdownRefs.current[openDropdown] &&
-        !dropdownRefs.current[openDropdown]!.contains(e.target as Node)
-      ) {
-        setOpenDropdown(null);
+      if (openDropdown && dropdownRefs.current[openDropdown]) {
+        if (!dropdownRefs.current[openDropdown]?.contains(e.target as Node)) {
+          setOpenDropdown(null);
+        }
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -93,7 +89,7 @@ export default function CustomSyncRequestSubs() {
                 .from('profiles')
                 .select('first_name, last_name, producer_number')
                 .eq('id', sub.producer_id)
-                .single();
+                .maybeSingle();
               if (producerProfile) {
                 producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
                 producer_number = producerProfile.producer_number || '';
@@ -122,7 +118,7 @@ export default function CustomSyncRequestSubs() {
           .from('sync_submission_favorites')
           .select('sync_submission_id')
           .eq('client_id', user.id);
-        setFavoriteIds((favs || []).map((f: any) => f.sync_submission_id));
+        setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
       }
       setLoading(false);
     };
@@ -130,19 +126,20 @@ export default function CustomSyncRequestSubs() {
   }, [user]);
 
   // Persist favorite/unfavorite in DB and re-fetch after DB operation
-  // Optimistic favorite badge logic: update UI immediately, then re-fetch from DB to confirm state
   const handleFavorite = async (sub: SyncSubmission) => {
     if (!user) return;
     // Optimistically update local state
     setFavoriteIds(prev => {
-      if (prev.includes(sub.id)) {
-        return prev.filter(id => id !== sub.id);
+      const copy = new Set(prev);
+      if (copy.has(sub.id)) {
+        copy.delete(sub.id);
       } else {
-        return [...prev, sub.id];
+        copy.add(sub.id);
       }
+      return copy;
     });
     // Update DB
-    const isNowFavorite = favoriteIds.includes(sub.id);
+    const isNowFavorite = favoriteIds.has(sub.id);
     if (isNowFavorite) {
       await supabase
         .from('sync_submission_favorites')
@@ -160,7 +157,7 @@ export default function CustomSyncRequestSubs() {
         .from('sync_submission_favorites')
         .select('sync_submission_id')
         .eq('client_id', user.id);
-      setFavoriteIds((favs || []).map((f: any) => f.sync_submission_id));
+      setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
     }, 200);
   };
 
@@ -197,10 +194,10 @@ export default function CustomSyncRequestSubs() {
   // Hide all non-favorited submissions for a request
   const handleDeleteAllExceptFavorites = (reqId: string) => {
     setHiddenSubmissions((prev) => {
-      const favIds = favoriteIds;
+      const favIds = new Set(Object.keys(favorites));
       const allSubIds = (submissions[reqId] || []).map(s => s.id);
-      const toHide = allSubIds.filter(id => !favIds.includes(id));
-      return { ...prev, [reqId]: toHide };
+      const toHide = allSubIds.filter(id => !favIds.has(id));
+      return { ...prev, [reqId]: new Set(toHide) };
     });
   };
 
@@ -247,7 +244,7 @@ export default function CustomSyncRequestSubs() {
                     <button
                       className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
                       onClick={() => handleDeleteAllExceptFavorites(req.id)}
-                      disabled={favoriteIds.length === 0}
+                      disabled={Object.keys(favorites).length === 0}
                     >
                       Delete all except Favorites
                     </button>
@@ -264,7 +261,7 @@ export default function CustomSyncRequestSubs() {
                       <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
                       <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-6">
                         {submissions[req.id]
-                          .filter(sub => !hiddenSubmissions[req.id]?.includes(sub.id))
+                          .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
                           .map((sub) => (
                             <div
                               key={sub.id}
@@ -277,7 +274,7 @@ export default function CustomSyncRequestSubs() {
                                   {sub.producer_number && (
                                     <span className="ml-2 text-xs text-blue-300">({sub.producer_number})</span>
                                   )}
-                                  {favoriteIds.includes(sub.id) && (
+                                  {favoriteIds.has(sub.id) && (
                                     <span className="ml-2 flex items-center px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
                                       <Star className="w-4 h-4 mr-1 fill-yellow-400" /> Favorited
                                     </span>
@@ -297,7 +294,7 @@ export default function CustomSyncRequestSubs() {
                                           className="w-full text-left px-4 py-2 hover:bg-blue-800 text-white text-sm"
                                           onClick={() => { handleFavorite(sub); setOpenDropdown(null); }}
                                         >
-                                          {favoriteIds.includes(sub.id) ? 'Remove Favorite' : 'Set as Favorite'}
+                                          {favoriteIds.has(sub.id) ? 'Remove Favorite' : 'Set as Favorite'}
                                         </button>
                                       </div>
                                     )}
