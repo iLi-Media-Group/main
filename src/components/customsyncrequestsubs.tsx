@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle } from 'lucide-react';
 import { useRef } from 'react';
 
 interface CustomSyncRequest {
@@ -56,6 +56,7 @@ export default function CustomSyncRequestSubs() {
   const [chatMessage, setChatMessage] = useState('');
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [chatHistory, setChatHistory] = useState<Record<string, any[]>>({});
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -69,6 +70,50 @@ export default function CustomSyncRequestSubs() {
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [openDropdown]);
+
+  // Load chat history for all sync requests
+  useEffect(() => {
+    if (!user || requests.length === 0) return;
+    
+    const loadAllChatHistory = async () => {
+      const history: Record<string, any[]> = {};
+      
+      for (const req of requests) {
+        try {
+          const { data, error } = await supabase
+            .from('cust_sync_chat')
+            .select(`
+              id,
+              message,
+              created_at,
+              sender:profiles!sender_id (
+                first_name,
+                last_name,
+                email
+              ),
+              recipient:profiles!recipient_id (
+                first_name,
+                last_name,
+                email
+              )
+            `)
+            .eq('sync_request_id', req.id)
+            .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+            .order('created_at', { ascending: true });
+          
+          if (!error && data) {
+            history[req.id] = data;
+          }
+        } catch (err) {
+          console.error(`Error loading chat history for request ${req.id}:`, err);
+        }
+      }
+      
+      setChatHistory(history);
+    };
+    
+    loadAllChatHistory();
+  }, [user, requests]);
 
   useEffect(() => {
     if (!user) return;
@@ -546,6 +591,36 @@ export default function CustomSyncRequestSubs() {
                       >
                         De-select
                       </button>
+                    </div>
+                  )}
+                  
+                  {/* Chat History Preview */}
+                  {chatHistory[req.id] && chatHistory[req.id].length > 0 && (
+                    <div className="mt-4 p-4 bg-blue-950/60 border border-blue-700/40 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" />
+                        Chat History ({chatHistory[req.id].length} messages)
+                      </h4>
+                      <div className="max-h-32 overflow-y-auto space-y-2">
+                        {chatHistory[req.id].slice(-3).map((msg) => (
+                          <div key={msg.id} className="text-xs">
+                            <span className="text-blue-300 font-medium">
+                              {msg.sender.first_name} {msg.sender.last_name}:
+                            </span>
+                            <span className="text-gray-300 ml-2">
+                              {msg.message.length > 50 ? `${msg.message.substring(0, 50)}...` : msg.message}
+                            </span>
+                            <span className="text-gray-500 ml-2">
+                              {new Date(msg.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      {chatHistory[req.id].length > 3 && (
+                        <div className="text-xs text-blue-300 mt-2">
+                          +{chatHistory[req.id].length - 3} more messages
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

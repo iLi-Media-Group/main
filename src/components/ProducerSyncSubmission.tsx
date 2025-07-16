@@ -37,10 +37,49 @@ export default function ProducerSyncSubmission() {
   const [chatMessage, setChatMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [chatHistory, setChatHistory] = useState<any[]>([]);
 
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
   const requestId = searchParams.get('requestId');
+
+  // Load chat history for this sync request
+  useEffect(() => {
+    if (!user || !requestId) return;
+    
+    const loadChatHistory = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cust_sync_chat')
+          .select(`
+            id,
+            message,
+            created_at,
+            sender:profiles!sender_id (
+              first_name,
+              last_name,
+              email
+            ),
+            recipient:profiles!recipient_id (
+              first_name,
+              last_name,
+              email
+            )
+          `)
+          .eq('sync_request_id', requestId)
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+          .order('created_at', { ascending: true });
+        
+        if (!error && data) {
+          setChatHistory(data);
+        }
+      } catch (err) {
+        console.error('Error loading chat history:', err);
+      }
+    };
+    
+    loadChatHistory();
+  }, [user, requestId]);
 
   // Fetch custom sync request info if requestId is present
   useEffect(() => {
@@ -431,6 +470,36 @@ export default function ProducerSyncSubmission() {
                 <MessageCircle className="w-4 h-4" />
                 View Messages
               </button>
+              
+              {/* Chat History Preview */}
+              {chatHistory.length > 0 && (
+                <div className="mt-4 p-3 bg-blue-900/60 border border-blue-700/40 rounded-lg">
+                  <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
+                    <MessageCircle className="w-3 h-3" />
+                    Recent Messages ({chatHistory.length} total)
+                  </h4>
+                  <div className="max-h-24 overflow-y-auto space-y-1">
+                    {chatHistory.slice(-2).map((msg) => (
+                      <div key={msg.id} className="text-xs">
+                        <span className="text-blue-300 font-medium">
+                          {msg.sender.first_name} {msg.sender.last_name}:
+                        </span>
+                        <span className="text-gray-300 ml-1">
+                          {msg.message.length > 30 ? `${msg.message.substring(0, 30)}...` : msg.message}
+                        </span>
+                        <div className="text-gray-500 text-xs">
+                          {new Date(msg.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {chatHistory.length > 2 && (
+                    <div className="text-xs text-blue-300 mt-1">
+                      +{chatHistory.length - 2} more messages
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
