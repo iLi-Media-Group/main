@@ -269,10 +269,12 @@ export default function ProducerSyncSubmission() {
               <div className="space-y-2">
                 {mySubmissions.map((sub) => (
                   <div key={sub.id} className="flex flex-col bg-blue-900/80 rounded-lg p-2 mb-2 cursor-pointer hover:bg-blue-800/80" onClick={() => handleEditClick(sub)}>
-                    <span className="font-semibold text-white truncate max-w-[120px] flex items-center gap-2">
+                    <span className="font-semibold text-white flex items-center gap-2">
                       {sub.track_name || sub.track_url?.split('/').pop() || 'Track'}
                       {favoritedIds.has(sub.id) && (
-                        <span className="ml-2 px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-xs flex items-center gap-1"><Star className="w-3 h-3" fill="currentColor" /> Favorited</span>
+                        <span className="px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-xs flex items-center gap-1">
+                          <Star className="w-3 h-3" fill="currentColor" /> Favorited
+                        </span>
                       )}
                     </span>
                     <div className="flex gap-2 text-xs text-blue-200 mt-1">
