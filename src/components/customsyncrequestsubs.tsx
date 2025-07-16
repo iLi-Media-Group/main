@@ -17,7 +17,7 @@ interface CustomSyncRequest {
 
 interface SyncSubmission {
   id: string;
-  mp3_url?: string;
+  track_url?: string;
   has_mp3?: boolean;
   has_stems?: boolean;
   has_trackouts?: boolean;
@@ -74,8 +74,9 @@ export default function CustomSyncRequestSubs() {
                 producer_number = producerProfile.producer_number || '';
               }
             }
-            if (sub.has_mp3 && sub.mp3_url) {
-              const match = sub.mp3_url.match(/sync-submissions\/(.+)$/);
+            // Update signed URL logic to use track_url instead of mp3_url
+            if (sub.has_mp3 && sub.track_url) {
+              const match = sub.track_url.match(/sync-submissions\/(.+)$/);
               const filePath = match ? `sync-submissions/${match[1]}` : undefined;
               if (filePath) {
                 const { data: signedUrlData } = await supabase.storage
@@ -307,39 +308,6 @@ export default function CustomSyncRequestSubs() {
               ))}
             </div>
           )}
-        </div>
-        {/* Active Submissions Sidebar */}
-        <div className="w-full lg:w-80 flex-shrink-0">
-          <div className="bg-blue-950/80 border border-yellow-500/40 rounded-xl p-4 mb-8">
-            <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2"><Star className="w-5 h-5" fill="currentColor" /> Active Submissions</h3>
-            {requests.map((req) => (
-              <div key={req.id} className="mb-6">
-                <div className="font-semibold text-blue-200 mb-2">{req.project_title}</div>
-                {(submissions[req.id] || []).length === 0 ? (
-                  <div className="text-gray-400 text-sm">No submissions yet.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {submissions[req.id].map((sub) => {
-                      const isSelected = selectedPerRequest[req.id] === sub.id;
-                      return (
-                        <div key={sub.id} className={`flex items-center justify-between bg-blue-900/80 rounded-lg p-2 ${isSelected ? 'ring-2 ring-green-400' : ''}`}>
-                          <span className="font-semibold text-white truncate max-w-[120px]">{sub.producer_name}</span>
-                          {/* Badge logic */}
-                          {!selectedPerRequest[req.id] ? (
-                            <span className="ml-2 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1"><Hourglass className="w-3 h-3" /> In Selection Process</span>
-                          ) : isSelected ? (
-                            <span className="ml-2 px-2 py-1 bg-green-600/20 text-green-400 rounded-full text-xs flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> Selected</span>
-                          ) : (
-                            <span className="ml-2 px-2 py-1 bg-gray-600/20 text-gray-300 rounded-full text-xs flex items-center gap-1">Selection Completed</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
       {/* Confirmation Dialog */}
