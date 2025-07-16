@@ -293,17 +293,17 @@ export default function ProducerSyncSubmission() {
               <h2 className="text-xl font-bold mb-4 text-white">Edit Submission</h2>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Track Name</label>
-                  <input type="text" value={editTrackName} onChange={e => setEditTrackName(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <label className="block text-sm font-medium text-white mb-1">Track Name</label>
+                  <input type="text" value={editTrackName} onChange={e => setEditTrackName(e.target.value)} className="w-full rounded px-3 py-2 border border-blue-700 bg-blue-900/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                 </div>
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Track BPM</label>
-                    <input type="number" value={editTrackBpm} onChange={e => setEditTrackBpm(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    <label className="block text-sm font-medium text-white mb-1">Track BPM</label>
+                    <input type="number" value={editTrackBpm} onChange={e => setEditTrackBpm(e.target.value)} className="w-full rounded px-3 py-2 border border-blue-700 bg-blue-900/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Track Key</label>
-                    <input type="text" value={editTrackKey} onChange={e => setEditTrackKey(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    <label className="block text-sm font-medium text-white mb-1">Track Key</label>
+                    <input type="text" value={editTrackKey} onChange={e => setEditTrackKey(e.target.value)} className="w-full rounded px-3 py-2 border border-blue-700 bg-blue-900/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -316,7 +316,7 @@ export default function ProducerSyncSubmission() {
                     <span className="text-blue-200">Trackouts Available</span>
                   </label>
                 </div>
-                {editError && <div className="text-red-500 text-sm">{editError}</div>}
+                {editError && <div className="text-red-400 text-sm">{editError}</div>}
               </div>
               <div className="flex justify-end gap-4 mt-6">
                 <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
