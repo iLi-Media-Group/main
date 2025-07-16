@@ -164,16 +164,17 @@ export default function ProducerSyncSubmission() {
 
   // Fetch chat messages with a client
   const fetchChatMessages = async (clientId: string) => {
-    if (!user) return;
+    if (!user || !requestId) return;
     
     console.log('Producer fetching chat messages for:', {
       user_id: user.id,
-      client_id: clientId
+      client_id: clientId,
+      sync_request_id: requestId
     });
     
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .select(`
           id,
           message,
@@ -185,6 +186,7 @@ export default function ProducerSyncSubmission() {
           )
         `)
         .or(`and(sender_id.eq.${user.id},recipient_id.eq.${clientId}),and(sender_id.eq.${clientId},recipient_id.eq.${user.id})`)
+        .eq('sync_request_id', requestId)
         .order('created_at', { ascending: true });
       
       console.log('Producer fetched chat messages:', { data, error });
@@ -199,21 +201,23 @@ export default function ProducerSyncSubmission() {
   // Send a message to a client
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedClient || !user || !chatMessage.trim()) return;
+    if (!selectedClient || !user || !chatMessage.trim() || !requestId) return;
     
     console.log('Producer sending message:', {
       sender_id: user.id,
       recipient_id: selectedClient.id,
+      sync_request_id: requestId,
       message: chatMessage.trim()
     });
     
     setSendingMessage(true);
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .insert({
           sender_id: user.id,
           recipient_id: selectedClient.id,
+          sync_request_id: requestId,
           message: chatMessage.trim(),
           room_id: null // Direct message
         })
@@ -242,11 +246,11 @@ export default function ProducerSyncSubmission() {
 
   // Get clients who have messaged this producer
   const getClientsWithMessages = async () => {
-    if (!user) return [];
+    if (!user || !requestId) return [];
     
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .select(`
           sender:profiles!sender_id (
             id,
@@ -256,6 +260,7 @@ export default function ProducerSyncSubmission() {
           )
         `)
         .eq('recipient_id', user.id)
+        .eq('sync_request_id', requestId)
         .not('sender_id', 'eq', user.id);
       
       if (error) throw error;

@@ -283,12 +283,13 @@ export default function CustomSyncRequestSubs() {
     
     console.log('Fetching chat messages for:', {
       user_id: user.id,
-      producer_id: selectedSubmission.sub.producer_id
+      producer_id: selectedSubmission.sub.producer_id,
+      sync_request_id: selectedSubmission.reqId
     });
     
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .select(`
           id,
           message,
@@ -300,6 +301,7 @@ export default function CustomSyncRequestSubs() {
           )
         `)
         .or(`and(sender_id.eq.${user.id},recipient_id.eq.${selectedSubmission.sub.producer_id}),and(sender_id.eq.${selectedSubmission.sub.producer_id},recipient_id.eq.${user.id})`)
+        .eq('sync_request_id', selectedSubmission.reqId)
         .order('created_at', { ascending: true });
       
       console.log('Fetched chat messages:', { data, error });
@@ -329,30 +331,32 @@ export default function CustomSyncRequestSubs() {
     console.log('Sending message:', {
       sender_id: user.id,
       recipient_id: selectedSubmission.sub.producer_id,
+      sync_request_id: selectedSubmission.reqId,
       message: chatMessage.trim()
     });
     
     setSendingMessage(true);
     try {
-      // First, let's check if the chat_messages table exists and we have access
+      // First, let's check if the cust_sync_chat table exists and we have access
       const { data: tableCheck, error: tableError } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .select('id')
         .limit(1);
       
       console.log('Table access check:', { tableCheck, tableError });
       
       if (tableError) {
-        console.error('Cannot access chat_messages table:', tableError);
+        console.error('Cannot access cust_sync_chat table:', tableError);
         alert('Chat system is not available. Please contact support.');
         return;
       }
       
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('cust_sync_chat')
         .insert({
           sender_id: user.id,
           recipient_id: selectedSubmission.sub.producer_id,
+          sync_request_id: selectedSubmission.reqId,
           message: chatMessage.trim(),
           room_id: null // Direct message
         })
