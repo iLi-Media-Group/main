@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass } from 'lucide-react';
 
 interface CustomSyncRequest {
   id: string;
@@ -38,6 +38,10 @@ export default function CustomSyncRequestSubs() {
   const [favorites, setFavorites] = useState<{ [subId: string]: SyncSubmission }>(() => ({}));
   const [selectedSubmission, setSelectedSubmission] = useState<{ reqId: string; sub: SyncSubmission } | null>(null);
   const [hiddenSubmissions, setHiddenSubmissions] = useState<Record<string, Set<string>>>({});
+  // Track selected submission per request
+  const [selectedPerRequest, setSelectedPerRequest] = useState<Record<string, string | null>>({});
+  // Simulate payment status per request (replace with real payment logic)
+  const [paidRequests, setPaidRequests] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -109,13 +113,28 @@ export default function CustomSyncRequestSubs() {
     setConfirmSelect({ reqId, subId });
   };
 
-  const confirmSelectSubmission = () => {
+  const confirmSelectSubmission = async () => {
     if (!confirmSelect) return;
     const { reqId, subId } = confirmSelect;
     const sub = submissions[reqId]?.find(s => s.id === subId);
     setSelectedSubmission(sub ? { reqId, sub } : null);
+    setSelectedPerRequest(prev => ({ ...prev, [reqId]: subId }));
     setConfirmSelect(null);
     alert('Track selected! All other submissions will be declined.');
+  };
+
+  // Simulate payment (replace with real payment detection)
+  const handleMarkPaid = async (reqId: string) => {
+    setPaidRequests(prev => ({ ...prev, [reqId]: true }));
+    // Delete all unselected submissions from DB
+    const selectedId = selectedPerRequest[reqId];
+    const toDelete = (submissions[reqId] || []).filter(s => s.id !== selectedId);
+    for (const sub of toDelete) {
+      await supabase.from('sync_submissions').delete().eq('id', sub.id);
+    }
+    // Optionally, refresh submissions
+    // ...
+    alert('Unselected submissions deleted from database.');
   };
 
   const cancelSelect = () => setConfirmSelect(null);
@@ -178,6 +197,13 @@ export default function CustomSyncRequestSubs() {
                       Delete all except Favorites
                     </button>
                   </div>
+                  {paidRequests[req.id] && (
+                    <div className="mb-2 flex justify-end">
+                      <span className="px-3 py-1 bg-green-700 text-white rounded-full text-sm flex items-center gap-2">
+                        <BadgeCheck className="w-4 h-4" /> Paid - Unselected submissions deleted
+                      </span>
+                    </div>
+                  )}
                   {submissions[req.id] && submissions[req.id].length > 0 && (
                     <div className="mt-4">
                       <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
@@ -187,7 +213,7 @@ export default function CustomSyncRequestSubs() {
                           .map((sub) => (
                             <div
                               key={sub.id}
-                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[170px] max-w-4xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl"
+                              className={`relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[170px] max-w-4xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl ${selectedPerRequest[req.id] === sub.id ? 'ring-2 ring-green-400' : ''}`}
                             >
                               {/* Top Row: Producer info and actions */}
                               <div className="flex items-start justify-between mb-2">
@@ -211,7 +237,7 @@ export default function CustomSyncRequestSubs() {
                                   <button
                                     className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
                                     onClick={() => handleSelect(req.id, sub.id)}
-                                    disabled={!!selectedSubmission}
+                                    disabled={!!selectedPerRequest[req.id]}
                                   >
                                     Select
                                   </button>
@@ -247,6 +273,17 @@ export default function CustomSyncRequestSubs() {
                             </div>
                           ))}
                       </div>
+                      {/* Mark as Paid button for demo/testing (replace with real payment logic) */}
+                      {!paidRequests[req.id] && selectedPerRequest[req.id] && (
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
+                            onClick={() => handleMarkPaid(req.id)}
+                          >
+                            Mark as Paid (Demo)
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                   {/* Message Producer and De-select Buttons */}
@@ -271,25 +308,37 @@ export default function CustomSyncRequestSubs() {
             </div>
           )}
         </div>
-        {/* Favorites Sidebar */}
+        {/* Active Submissions Sidebar */}
         <div className="w-full lg:w-80 flex-shrink-0">
           <div className="bg-blue-950/80 border border-yellow-500/40 rounded-xl p-4 mb-8">
-            <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2"><Star className="w-5 h-5" fill="currentColor" /> Favorited Tracks</h3>
-            {Object.keys(favorites).length === 0 ? (
-              <div className="text-gray-400 text-sm">No favorites yet.</div>
-            ) : (
-              <div className="space-y-3">
-                {Object.values(favorites).map((sub) => (
-                  <div key={sub.id} className="bg-blue-900/80 rounded-lg p-3 flex flex-col gap-1">
-                    <span className="font-semibold text-white">{sub.producer_name}</span>
-                    {sub.producer_number && <span className="text-xs text-blue-300">({sub.producer_number})</span>}
-                    {sub.has_mp3 && sub.signed_mp3_url && (
-                      <audio controls src={sub.signed_mp3_url} className="w-full" />
-                    )}
+            <h3 className="text-lg font-bold text-yellow-400 mb-4 flex items-center gap-2"><Star className="w-5 h-5" fill="currentColor" /> Active Submissions</h3>
+            {requests.map((req) => (
+              <div key={req.id} className="mb-6">
+                <div className="font-semibold text-blue-200 mb-2">{req.project_title}</div>
+                {(submissions[req.id] || []).length === 0 ? (
+                  <div className="text-gray-400 text-sm">No submissions yet.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {submissions[req.id].map((sub) => {
+                      const isSelected = selectedPerRequest[req.id] === sub.id;
+                      return (
+                        <div key={sub.id} className={`flex items-center justify-between bg-blue-900/80 rounded-lg p-2 ${isSelected ? 'ring-2 ring-green-400' : ''}`}>
+                          <span className="font-semibold text-white truncate max-w-[120px]">{sub.producer_name}</span>
+                          {/* Badge logic */}
+                          {!selectedPerRequest[req.id] ? (
+                            <span className="ml-2 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1"><Hourglass className="w-3 h-3" /> In Selection Process</span>
+                          ) : isSelected ? (
+                            <span className="ml-2 px-2 py-1 bg-green-600/20 text-green-400 rounded-full text-xs flex items-center gap-1"><BadgeCheck className="w-3 h-3" /> Selected</span>
+                          ) : (
+                            <span className="ml-2 px-2 py-1 bg-gray-600/20 text-gray-300 rounded-full text-xs flex items-center gap-1">Selection Completed</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
