@@ -1,4 +1,3 @@
-//newdashuodate
 import React, { useState, useEffect } from 'react';
 import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -1725,8 +1724,7 @@ export function ClientDashboard() {
                                   View Agreement
                                 </button>
                                 {(license.track.mp3Url || license.track.trackoutsUrl || license.track.splitSheetUrl) && (
-                                  <div className="flex items-center space-x-1" key={`download-${license.id}`}>
-                                    {console.log('License track URLs:', { mp3Url: license.track.mp3Url, trackoutsUrl: license.track.trackoutsUrl, splitSheetUrl: license.track.splitSheetUrl })}
+                                  <div className="flex items-center space-x-1 mt-2" key={`download-${license.id}`}>
                                     {license.track.mp3Url && (
                                       <button
                                         onClick={() => handleDownload(license.track.id, `${license.track.title}_MP3.mp3`, 'mp3')}
