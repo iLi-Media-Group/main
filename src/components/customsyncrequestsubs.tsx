@@ -183,56 +183,74 @@ export default function CustomSyncRequestSubs() {
                     </button>
                   </div>
                   {submissions[req.id] && submissions[req.id].length > 0 && (
-                    <div className="mt-4 space-y-4">
-                      <h3 className="text-lg font-semibold text-blue-200 mb-2">Producer Submissions</h3>
-                      {submissions[req.id]
-                        .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
-                        .map((sub) => (
-                          <div key={sub.id} className="bg-blue-950/80 border border-blue-700/40 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
+                    <div className="mt-4">
+                      <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {submissions[req.id]
+                          .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
+                          .map((sub) => (
+                            <div
+                              key={sub.id}
+                              className="relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[320px] transition-transform hover:-translate-y-1 hover:shadow-2xl"
+                            >
+                              {/* Top Row: Producer info and actions */}
+                              <div className="flex items-start justify-between mb-2">
                                 <div>
-                                  <span className="font-semibold text-white">{sub.producer_name}</span>
+                                  <span className="font-semibold text-white text-base">{sub.producer_name}</span>
                                   {sub.producer_number && (
                                     <span className="ml-2 text-xs text-blue-300">({sub.producer_number})</span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button
-                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                                    className={
+                                      'rounded-full p-1 transition-colors ' +
+                                      (favorites[sub.id] ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400')
+                                    }
+                                    title={favorites[sub.id] ? 'Unfavorite' : 'Favorite'}
+                                    onClick={() => handleFavorite(sub)}
+                                  >
+                                    <Star className="w-6 h-6" fill={favorites[sub.id] ? 'currentColor' : 'none'} />
+                                  </button>
+                                  <button
+                                    className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
                                     onClick={() => handleSelect(req.id, sub.id)}
                                     disabled={!!selectedSubmission}
                                   >
                                     Select
                                   </button>
-                                  <button
-                                    className={favorites[sub.id] ? 'text-yellow-400' : 'text-gray-400'}
-                                    title={favorites[sub.id] ? 'Unfavorite' : 'Favorite'}
-                                    onClick={() => handleFavorite(sub)}
-                                  >
-                                    <Star className="w-5 h-5" fill={favorites[sub.id] ? 'currentColor' : 'none'} />
-                                  </button>
                                 </div>
                               </div>
-                              {sub.has_mp3 && sub.signed_mp3_url ? (
-                                <audio controls src={sub.signed_mp3_url} className="w-full mb-2" />
-                              ) : (
-                                <span className="text-gray-400">No mp3 uploaded</span>
-                              )}
-                              <div className="flex space-x-4 mt-2">
-                                <span className={sub.has_stems ? 'text-green-400' : 'text-gray-400'}>
-                                  {sub.has_stems ? '✓' : '✗'} Stems
+                              {/* Audio Player */}
+                              <div className="flex-1 flex flex-col justify-center items-center my-4">
+                                {sub.has_mp3 && sub.signed_mp3_url ? (
+                                  <audio controls src={sub.signed_mp3_url} className="w-full max-w-xs" />
+                                ) : (
+                                  <span className="text-gray-400">No mp3 uploaded</span>
+                                )}
+                              </div>
+                              {/* Badges */}
+                              <div className="flex gap-3 mb-2">
+                                <span className={
+                                  'px-2 py-1 rounded-full text-xs font-medium ' +
+                                  (sub.has_stems ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-400')
+                                }>
+                                  {sub.has_stems ? '✓ Stems' : '✗ Stems'}
                                 </span>
-                                <span className={sub.has_trackouts ? 'text-green-400' : 'text-gray-400'}>
-                                  {sub.has_trackouts ? '✓' : '✗'} Trackouts
+                                <span className={
+                                  'px-2 py-1 rounded-full text-xs font-medium ' +
+                                  (sub.has_trackouts ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-400')
+                                }>
+                                  {sub.has_trackouts ? '✓ Trackouts' : '✗ Trackouts'}
                                 </span>
                               </div>
+                              {/* Submission Date/Time */}
+                              <div className="absolute bottom-4 right-5 text-xs text-gray-400">
+                                {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
+                              </div>
                             </div>
-                            <div className="text-xs text-gray-400 mt-2 md:mt-0 md:ml-6">
-                              Submitted: {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                      </div>
                     </div>
                   )}
                   {/* Message Producer and De-select Buttons */}
