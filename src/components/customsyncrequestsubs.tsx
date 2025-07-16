@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass, MoreVertical } from 'lucide-react';
+import { useRef } from 'react';
 
 interface CustomSyncRequest {
   id: string;
@@ -46,6 +47,22 @@ export default function CustomSyncRequestSubs() {
   const [selectedPerRequest, setSelectedPerRequest] = useState<Record<string, string | null>>({});
   // Simulate payment status per request (replace with real payment logic)
   const [paidRequests, setPaidRequests] = useState<Record<string, boolean>>({});
+  // Add dropdown state
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (openDropdown && dropdownRefs.current[openDropdown]) {
+        if (!dropdownRefs.current[openDropdown]?.contains(e.target as Node)) {
+          setOpenDropdown(null);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [openDropdown]);
 
   useEffect(() => {
     if (!user) return;
@@ -262,16 +279,24 @@ export default function CustomSyncRequestSubs() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <button
-                                    className={
-                                      'rounded-full p-1 transition-colors ' +
-                                      (favoriteIds.has(sub.id) ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400')
-                                    }
-                                    title={favoriteIds.has(sub.id) ? 'Unfavorite' : 'Favorite'}
-                                    onClick={() => handleFavorite(sub)}
-                                  >
-                                    <Star className="w-6 h-6" fill={favoriteIds.has(sub.id) ? 'currentColor' : 'none'} />
-                                  </button>
+                                  <div className="relative" ref={el => (dropdownRefs.current[sub.id] = el)}>
+                                    <button
+                                      className="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm flex items-center gap-1"
+                                      onClick={() => setOpenDropdown(openDropdown === sub.id ? null : sub.id)}
+                                    >
+                                      Actions <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    {openDropdown === sub.id && (
+                                      <div className="absolute right-0 mt-2 w-40 bg-blue-950/90 border border-blue-700 rounded shadow-lg z-50">
+                                        <button
+                                          className="w-full text-left px-4 py-2 hover:bg-blue-800 text-white text-sm"
+                                          onClick={() => { handleFavorite(sub); setOpenDropdown(null); }}
+                                        >
+                                          {favoriteIds.has(sub.id) ? 'Remove Favorite' : 'Set as Favorite'}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                   <button
                                     className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
                                     onClick={() => handleSelect(req.id, sub.id)}
