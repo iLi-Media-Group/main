@@ -96,7 +96,7 @@ export default function ProducerSyncSubmission() {
           event: 'INSERT', 
           schema: 'public', 
           table: 'cust_sync_chat',
-          filter: `recipient_id=eq.${user.id}`
+          filter: `and(recipient_id=eq.${user.id},sync_request_id=eq.${requestId})`
         }, 
         (payload) => {
           console.log('Producer received new message:', payload);
@@ -310,9 +310,63 @@ export default function ProducerSyncSubmission() {
 
   // Open chat with a client
   const handleOpenChat = async (clientId: string, clientName: string) => {
+    if (!user) return;
+    
     setSelectedClient({ id: clientId, name: clientName });
     setShowChat(true);
     await fetchChatMessages(clientId);
+    
+    // Mark messages as read when opening chat
+    try {
+      const { error } = await supabase
+        .from('cust_sync_chat')
+        .update({ is_read: true })
+        .eq('recipient_id', user.id)
+        .eq('sync_request_id', requestId)
+        .eq('is_read', false);
+      
+      if (!error) {
+        // Reset unread count
+        setUnreadCount(0);
+        // Reload chat history to update read status
+        const { data, error: reloadError } = await supabase
+          .from('cust_sync_chat')
+          .select(`
+            id,
+            message,
+            created_at,
+            is_read,
+            recipient_id,
+            sender:profiles!sender_id (
+              first_name,
+              last_name,
+              email
+            ),
+            recipient:profiles!recipient_id (
+              first_name,
+              last_name,
+              email
+            )
+          `)
+          .eq('sync_request_id', requestId)
+          .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+          .order('created_at', { ascending: true });
+        
+        if (!reloadError && data) {
+          setChatHistory(data);
+        }
+      }
+    } catch (err) {
+      console.error('Error marking messages as read:', err);
+    }
+  };
+
+  // Close chat dialog
+  const handleCloseChat = () => {
+    setShowChat(false);
+    setSelectedClient(null);
+    setChatMessages([]);
+    setChatMessage('');
   };
 
   // Get clients who have messaged this producer
@@ -622,7 +676,7 @@ export default function ProducerSyncSubmission() {
                 </p>
               </div>
               <button
-                onClick={() => setShowChat(false)}
+                onClick={handleCloseChat}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
