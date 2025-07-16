@@ -262,6 +262,10 @@ export default function CustomSyncRequestSubs() {
 
   // De-select the chosen submission
   const handleDeselect = () => {
+    if (!selectedSubmission) return;
+    
+    // Clear the selection for this specific request
+    setSelectedPerRequest(prev => ({ ...prev, [selectedSubmission.reqId]: null }));
     setSelectedSubmission(null);
   };
 
