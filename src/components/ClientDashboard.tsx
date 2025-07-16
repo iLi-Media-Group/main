@@ -1071,7 +1071,7 @@ export function ClientDashboard() {
             <h2 className="text-2xl font-bold text-white">Your Custom Sync Requests</h2>
             <div className="flex gap-2">
               <Link
-                to="/customsyncrequestsubs"
+                to="/custom-sync-request-subs"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
               >
                 See Submissions
