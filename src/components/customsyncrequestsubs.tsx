@@ -26,6 +26,9 @@ interface SyncSubmission {
   producer_id?: string;
   producer_name?: string;
   producer_number?: string;
+  track_name?: string;
+  track_bpm?: string;
+  track_key?: string;
 }
 
 export default function CustomSyncRequestSubs() {
@@ -265,6 +268,12 @@ export default function CustomSyncRequestSubs() {
                               </div>
                               {/* Audio Player */}
                               <div className="flex-1 flex flex-col justify-center items-center my-4">
+                                {/* Track Info */}
+                                <div className="mb-2 flex gap-4 text-sm text-blue-200">
+                                  <span><strong>Name:</strong> {sub.track_name || sub.track_url?.split('/').pop() || '-'}</span>
+                                  <span><strong>BPM:</strong> {sub.track_bpm || '-'}</span>
+                                  <span><strong>Key:</strong> {sub.track_key || '-'}</span>
+                                </div>
                                 {sub.has_mp3 && sub.signed_mp3_url ? (
                                   <audio controls src={sub.signed_mp3_url} className="w-full max-w-sm" />
                                 ) : (
