@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, BadgeCheck, Hourglass } from 'lucide-react';
+import { Loader2, BadgeCheck, Hourglass, Star } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { Dialog } from './ui/dialog';
 
 export default function ProducerSyncSubmission() {
   const { user } = useAuth();
@@ -19,6 +20,17 @@ export default function ProducerSyncSubmission() {
   const [trackName, setTrackName] = useState('');
   const [trackBpm, setTrackBpm] = useState('');
   const [trackKey, setTrackKey] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editSubmission, setEditSubmission] = useState<any>(null);
+  const [editTrackName, setEditTrackName] = useState('');
+  const [editTrackBpm, setEditTrackBpm] = useState('');
+  const [editTrackKey, setEditTrackKey] = useState('');
+  const [editHasStems, setEditHasStems] = useState(false);
+  const [editHasTrackouts, setEditHasTrackouts] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
 
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
@@ -53,6 +65,19 @@ export default function ProducerSyncSubmission() {
     };
     fetchMySubs();
   }, [user, requestId, success]);
+
+  // Fetch favorite submission IDs for this sync request
+  useEffect(() => {
+    if (!requestId) return;
+    const fetchFavorites = async () => {
+      const { data, error } = await supabase
+        .from('sync_submission_favorites')
+        .select('sync_submission_id')
+        .eq('sync_request_id', requestId);
+      if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.sync_submission_id)));
+    };
+    fetchFavorites();
+  }, [requestId, success, editModalOpen]);
 
   const handleMp3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,6 +154,50 @@ export default function ProducerSyncSubmission() {
     }
   };
 
+  // Open edit modal with current submission data
+  const handleEditClick = (sub: any) => {
+    setEditSubmission(sub);
+    setEditTrackName(sub.track_name || '');
+    setEditTrackBpm(sub.track_bpm?.toString() || '');
+    setEditTrackKey(sub.track_key || '');
+    setEditHasStems(!!sub.has_stems);
+    setEditHasTrackouts(!!sub.has_trackouts);
+    setEditError(null);
+    setEditModalOpen(true);
+  };
+
+  // Save changes after confirmation
+  const handleEditSave = async () => {
+    if (!user) return;
+    setEditLoading(true);
+    setEditError(null);
+    try {
+      const { error } = await supabase.from('sync_submissions').update({
+        track_name: editTrackName,
+        track_bpm: Number(editTrackBpm),
+        track_key: editTrackKey,
+        has_stems: editHasStems,
+        has_trackouts: editHasTrackouts,
+      }).eq('id', editSubmission.id);
+      if (error) throw error;
+      setEditModalOpen(false);
+      setEditSubmission(null);
+      setShowConfirm(false);
+      // Refresh submissions
+      const { data, error: fetchError } = await supabase
+        .from('sync_submissions')
+        .select('*')
+        .eq('producer_id', user.id)
+        .eq('sync_request_id', requestId)
+        .order('created_at', { ascending: false });
+      if (!fetchError && data) setMySubmissions(data);
+    } catch (err: any) {
+      setEditError(err.message || 'Update failed.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
@@ -197,8 +266,13 @@ export default function ProducerSyncSubmission() {
               <div className="mb-2 text-blue-200 font-semibold truncate" title={requestInfo?.project_title}>{requestInfo?.project_title || ''}</div>
               <div className="space-y-2">
                 {mySubmissions.map((sub) => (
-                  <div key={sub.id} className="flex flex-col bg-blue-900/80 rounded-lg p-2 mb-2">
-                    <span className="font-semibold text-white truncate max-w-[120px]">{sub.track_name || sub.track_url?.split('/').pop() || 'Track'}</span>
+                  <div key={sub.id} className="flex flex-col bg-blue-900/80 rounded-lg p-2 mb-2 cursor-pointer hover:bg-blue-800/80" onClick={() => handleEditClick(sub)}>
+                    <span className="font-semibold text-white truncate max-w-[120px] flex items-center gap-2">
+                      {sub.track_name || sub.track_url?.split('/').pop() || 'Track'}
+                      {favoritedIds.has(sub.id) && (
+                        <span className="ml-2 px-2 py-1 bg-yellow-500/20 text-yellow-500 rounded-full text-xs flex items-center gap-1"><Star className="w-3 h-3" fill="currentColor" /> Favorited</span>
+                      )}
+                    </span>
                     <div className="flex gap-2 text-xs text-blue-200 mt-1">
                       <span>BPM: {sub.track_bpm || '-'}</span>
                       <span>Key: {sub.track_key || '-'}</span>
@@ -211,6 +285,60 @@ export default function ProducerSyncSubmission() {
           </div>
         )}
       </div>
+      {/* Edit Submission Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        {editModalOpen && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-lg">
+              <h2 className="text-xl font-bold mb-4 text-gray-900">Edit Submission</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Track Name</label>
+                  <input type="text" value={editTrackName} onChange={e => setEditTrackName(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Track BPM</label>
+                    <input type="number" value={editTrackBpm} onChange={e => setEditTrackBpm(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Track Key</label>
+                    <input type="text" value={editTrackKey} onChange={e => setEditTrackKey(e.target.value)} className="w-full rounded px-3 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={editHasStems} onChange={e => setEditHasStems(e.target.checked)} />
+                    <span>Stems Available</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={editHasTrackouts} onChange={e => setEditHasTrackouts(e.target.checked)} />
+                    <span>Trackouts Available</span>
+                  </label>
+                </div>
+                {editError && <div className="text-red-500 text-sm">{editError}</div>}
+              </div>
+              <div className="flex justify-end gap-4 mt-6">
+                <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+                <button onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Dialog>
+      {/* Confirmation Dialog */}
+      {showConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-md w-full shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Changes</h2>
+            <p className="mb-6 text-gray-700">Are you sure you want to save these changes to your submission?</p>
+            <div className="flex justify-end gap-4">
+              <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+              <button onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Yes, Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

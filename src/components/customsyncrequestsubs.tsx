@@ -36,6 +36,7 @@ export default function CustomSyncRequestSubs() {
   const [error, setError] = useState<string | null>(null);
   const [confirmSelect, setConfirmSelect] = useState<{ reqId: string; subId: string } | null>(null);
   const [favorites, setFavorites] = useState<{ [subId: string]: SyncSubmission }>(() => ({}));
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [selectedSubmission, setSelectedSubmission] = useState<{ reqId: string; sub: SyncSubmission } | null>(null);
   const [hiddenSubmissions, setHiddenSubmissions] = useState<Record<string, Set<string>>>({});
   // Track selected submission per request
@@ -92,22 +93,40 @@ export default function CustomSyncRequestSubs() {
           subMap[req.id] = updatedSubs;
         }
         setSubmissions(subMap);
+        // Fetch favorites from DB
+        const { data: favs } = await supabase
+          .from('sync_submission_favorites')
+          .select('sync_submission_id')
+          .eq('client_id', user.id);
+        setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
       }
       setLoading(false);
     };
     fetchRequests();
   }, [user]);
 
-  const handleFavorite = (sub: SyncSubmission) => {
-    setFavorites((prev) => {
-      if (prev[sub.id]) {
-        const copy = { ...prev };
-        delete copy[sub.id];
+  // Persist favorite/unfavorite in DB
+  const handleFavorite = async (sub: SyncSubmission) => {
+    if (!user) return;
+    if (favoriteIds.has(sub.id)) {
+      // Unfavorite: delete from DB
+      await supabase
+        .from('sync_submission_favorites')
+        .delete()
+        .eq('client_id', user.id)
+        .eq('sync_submission_id', sub.id);
+      setFavoriteIds(prev => {
+        const copy = new Set(prev);
+        copy.delete(sub.id);
         return copy;
-      } else {
-        return { ...prev, [sub.id]: sub };
-      }
-    });
+      });
+    } else {
+      // Favorite: insert into DB
+      await supabase
+        .from('sync_submission_favorites')
+        .insert({ client_id: user.id, sync_submission_id: sub.id });
+      setFavoriteIds(prev => new Set(prev).add(sub.id));
+    }
   };
 
   const handleSelect = (reqId: string, subId: string) => {
@@ -228,12 +247,12 @@ export default function CustomSyncRequestSubs() {
                                   <button
                                     className={
                                       'rounded-full p-1 transition-colors ' +
-                                      (favorites[sub.id] ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400')
+                                      (favoriteIds.has(sub.id) ? 'bg-yellow-500/20 text-yellow-400' : 'bg-white/10 text-gray-400 hover:bg-yellow-500/10 hover:text-yellow-400')
                                     }
-                                    title={favorites[sub.id] ? 'Unfavorite' : 'Favorite'}
+                                    title={favoriteIds.has(sub.id) ? 'Unfavorite' : 'Favorite'}
                                     onClick={() => handleFavorite(sub)}
                                   >
-                                    <Star className="w-6 h-6" fill={favorites[sub.id] ? 'currentColor' : 'none'} />
+                                    <Star className="w-6 h-6" fill={favoriteIds.has(sub.id) ? 'currentColor' : 'none'} />
                                   </button>
                                   <button
                                     className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
