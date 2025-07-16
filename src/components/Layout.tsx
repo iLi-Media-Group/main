@@ -168,66 +168,37 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   <Link to="/catalog" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Library className="w-4 h-4 mr-2" />Browse Catalog
                   </Link>
-                  
                   <Link to="/vocals" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Mic className="w-4 h-4 mr-2" />Full Tracks with Vocals
                   </Link>
-                  
-                  {/* Client-specific menu items */}
-                  {(accountType === 'client' || !user) && (
-                    <Link 
-                      to={user ? "/custom-sync-request" : "#"} 
-                      className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" 
-                      onClick={(e) => {
-                        setIsMenuOpen(false);
-                        if (!user) {
-                          e.preventDefault();
-                          alert('Log In is required to access this feature. Please sign in or create an account.');
-                          navigate('/login');
-                        }
-                      }}>
-                      <FileText className="w-4 h-4 mr-2" />Custom Sync Request
-                    </Link>
-                  )}
-                  
+                  {/* Removed Open Sync Briefs and Custom Sync Request from main menu */}
                   {/* Admin-specific menu items */}
                   {isAdmin && (
                     <>
-                      <Link to="/open-sync-briefs" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <Briefcase className="w-4 h-4 mr-2" />Open Sync Briefs
-                      </Link>
-                      <Link to="/custom-sync-request" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <FileText className="w-4 h-4 mr-2" />Custom Sync Request
-                      </Link>
+                      {/* <Link to="/open-sync-briefs" ... /> */}
+                      {/* <Link to="/custom-sync-request" ... /> */}
                     </>
                   )}
-                  
                   {/* Common menu items continued */}
                   <Link to="/pricing" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
                   </Link>
-                  
                   <div className="border-t border-blue-500/20 my-1"></div>
-                  
                   <Link to="/about" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Info className="w-4 h-4 mr-2" />About Us
                   </Link>
-                  
                   <Link to="/contact" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Mail className="w-4 h-4 mr-2" />Contact Us
                   </Link>
-                  
                   <Link to="/announcements" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Bell className="w-4 h-4 mr-2" />Announcements
                   </Link>
-                  
                   {/* Producer and Admin specific items */}
                   {(accountType === 'producer' || isAdmin) && (
                     <Link to="/chat" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <MessageSquare className="w-4 h-4 mr-2" />Internal Chat
                     </Link>
                   )}
-                  
                   {/* Admin specific items */}
                   {isAdmin && (
                     <>
@@ -239,7 +210,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       </Link>
                     </>
                   )}
-                  
                   {/* Producer specific items */}
                   {accountType === 'producer' && (
                     <>
@@ -254,7 +224,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       </Link>
                     </>
                   )}
-                  
                   {/* Dashboard links */}
                   {user && (
                     <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
@@ -262,7 +231,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       {getDashboardLabel()}
                     </Link>
                   )}
-                  
                   {/* Authentication links */}
                   {user ? (
                     <button onClick={handleSignOut} className="w-full flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
@@ -278,6 +246,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                       </Link>
                       <Link to="/producer/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <LogIn className="w-4 h-4 mr-2" />Producer Login
+                      </Link>
+                      <Link to="/white-label-login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <LogIn className="w-4 h-4 mr-2" />White Label Client Login
                       </Link>
                     </>
                   )}

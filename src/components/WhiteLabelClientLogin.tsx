@@ -17,8 +17,15 @@ export function WhiteLabelClientLogin() {
     setError('');
     setLoading(true);
     try {
-      // Check if this is a white label client (lookup in white_label_clients)
       const emailLower = email.toLowerCase();
+      // Always attempt to sign in
+      const { error: signInError } = await signIn(emailLower, password);
+      if (signInError) {
+        setError('Invalid email or password.');
+        setLoading(false);
+        return;
+      }
+      // After login, check if password setup is required
       const { data: client, error: clientError } = await supabase
         .from('white_label_clients')
         .select('id, owner_email, password_setup_required')
@@ -34,16 +41,8 @@ export function WhiteLabelClientLogin() {
         setLoading(false);
         return;
       }
-      // If password setup is required, redirect BEFORE sign in
       if (client.password_setup_required) {
         navigate('/white-label-password-setup', { state: { email: emailLower } });
-        setLoading(false);
-        return;
-      }
-      // Otherwise, try to sign in
-      const { error: signInError } = await signIn(emailLower, password);
-      if (signInError) {
-        setError('Invalid email or password.');
         setLoading(false);
         return;
       }

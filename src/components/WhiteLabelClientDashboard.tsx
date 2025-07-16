@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface WhiteLabelClient {
   id: string;
@@ -21,10 +22,12 @@ interface WhiteLabelClient {
   ai_search_assistance_paid?: boolean;
   producer_onboarding_paid?: boolean;
   deep_media_search_paid?: boolean;
+  password_setup_required?: boolean;
 }
 
 export default function WhiteLabelClientDashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [client, setClient] = useState<WhiteLabelClient | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +44,13 @@ export default function WhiteLabelClientDashboard() {
     }
     // eslint-disable-next-line
   }, [user]);
+
+  // Redirect to password setup if required
+  useEffect(() => {
+    if (client && client.password_setup_required) {
+      navigate('/white-label-password-setup');
+    }
+  }, [client, navigate]);
 
   useEffect(() => {
     if (!user || !client) return;
