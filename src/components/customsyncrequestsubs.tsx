@@ -118,18 +118,18 @@ export default function CustomSyncRequestSubs() {
         .delete()
         .eq('client_id', user.id)
         .eq('sync_submission_id', sub.id);
-      setFavoriteIds(prev => {
-        const copy = new Set(prev);
-        copy.delete(sub.id);
-        return copy;
-      });
     } else {
       // Favorite: insert into DB
       await supabase
         .from('sync_submission_favorites')
         .insert({ client_id: user.id, sync_submission_id: sub.id });
-      setFavoriteIds(prev => new Set(prev).add(sub.id));
     }
+    // Always re-fetch favorites after change
+    const { data: favs } = await supabase
+      .from('sync_submission_favorites')
+      .select('sync_submission_id')
+      .eq('client_id', user.id);
+    setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
   };
 
   const handleSelect = (reqId: string, subId: string) => {
