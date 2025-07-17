@@ -1890,6 +1890,15 @@ function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Report Background Picker for PDF Reports */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-white mb-2">Report PDF Background</h2>
+        <ReportBackgroundPicker
+          selected={selectedBackground}
+          onChange={setSelectedBackground}
+        />
+      </div>
     </div>
   );
 }
