@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
 
-export function CustomSyncRequest() {
+export default function CustomSyncRequest() {
   const { user } = useAuth();
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
