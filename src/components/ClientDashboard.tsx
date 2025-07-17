@@ -1055,8 +1055,10 @@ export function ClientDashboard() {
               {pendingDowngrade && downgradeEffectiveDate && (
                 <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center">
                   <AlertCircle className="w-5 h-5 mr-2" />
-                  Your account will be downgraded to <b>Single Track</b> on{' '}
-                  <b>{new Date(downgradeEffectiveDate).toLocaleDateString()}</b>. You will retain your current plan until then.
+                  <span>
+                    Your account will be downgraded to <b>Single Track</b> on{' '}
+                    <b>{new Date(new Date(downgradeEffectiveDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</b>. You will retain your current plan until then.
+                  </span>
                 </div>
               )}
             </div>
