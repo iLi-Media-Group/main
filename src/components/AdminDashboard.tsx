@@ -103,7 +103,7 @@ const getBase64ImageFromURL = (url: string) =>
     img.src = url;
   });
 
-export function AdminDashboardWrapper() {
+const AdminDashboardWrapper = () => {
   // TODO: Replace with your actual main company clientId
   const MAIN_COMPANY_CLIENT_ID = 'YOUR_MYBEATFI_CLIENT_ID';
   return (
@@ -111,7 +111,7 @@ export function AdminDashboardWrapper() {
       <AdminDashboard />
     </ReportBackgroundProvider>
   );
-}
+};
 
 function AdminDashboard() {
   const { user } = useAuth();
@@ -1894,3 +1894,5 @@ function AdminDashboard() {
     </div>
   );
 }
+
+export { AdminDashboard, AdminDashboardWrapper };
