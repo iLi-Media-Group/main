@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ReportBackgroundProvider, useReportBackground } from '../contexts/ReportBackgroundContext';
+import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface WhiteLabelClient {
   id: string;
@@ -321,6 +323,65 @@ export default function WhiteLabelClientDashboard() {
   }
 
   const enabledFeatures = getEnabledFeatures();
+  const { selectedBackground, setSelectedBackground } = useReportBackground();
+
+  return (
+    <ReportBackgroundProvider clientId={client.id}>
+      <WhiteLabelClientDashboardContent
+        client={client}
+        displayName={displayName}
+        setDisplayName={setDisplayName}
+        domain={domain}
+        setDomain={setDomain}
+        logoUrl={logoUrl}
+        handleLogoUpload={handleLogoUpload}
+        primaryColor={primaryColor}
+        setPrimaryColor={setPrimaryColor}
+        secondaryColor={secondaryColor}
+        setSecondaryColor={setSecondaryColor}
+        handleSave={handleSave}
+        handleSignOut={handleSignOut}
+        loading={loading}
+        success={success}
+        getEnabledFeatures={getEnabledFeatures}
+        getAvailableFeatures={getAvailableFeatures}
+        getBundlePricing={getBundlePricing}
+        handleBuyFeature={handleBuyFeature}
+        handleBuyBundle={handleBuyBundle}
+        selectedBackground={selectedBackground}
+        setSelectedBackground={setSelectedBackground}
+      />
+    </ReportBackgroundProvider>
+  );
+}
+
+interface WhiteLabelClientDashboardContentProps {
+  client: WhiteLabelClient;
+  displayName: string;
+  setDisplayName: React.Dispatch<React.SetStateAction<string>>;
+  domain: string;
+  setDomain: React.Dispatch<React.SetStateAction<string>>;
+  logoUrl?: string;
+  handleLogoUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  primaryColor: string;
+  setPrimaryColor: React.Dispatch<React.SetStateAction<string>>;
+  secondaryColor: string;
+  setSecondaryColor: React.Dispatch<React.SetStateAction<string>>;
+  handleSave: () => void;
+  handleSignOut: () => void;
+  loading: boolean;
+  success: boolean;
+  getEnabledFeatures: () => any[];
+  getAvailableFeatures: () => any[];
+  getBundlePricing: () => any;
+  handleBuyFeature: (feature: any) => void;
+  handleBuyBundle: (bundleType: string | undefined) => void;
+  selectedBackground: string;
+  setSelectedBackground: (bg: string) => void;
+}
+
+function WhiteLabelClientDashboardContent(props: WhiteLabelClientDashboardContentProps) {
+  const { client, displayName, setDisplayName, domain, setDomain, logoUrl, handleLogoUpload, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor, handleSave, handleSignOut, loading, success, getEnabledFeatures, getAvailableFeatures, getBundlePricing, handleBuyFeature, handleBuyBundle, selectedBackground, setSelectedBackground } = props;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -333,8 +394,8 @@ export default function WhiteLabelClientDashboard() {
               <p className="text-gray-300">Manage your white label platform settings and branding</p>
             </div>
             <div className="flex items-center space-x-4">
-              {logoUrl && (
-                <img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
+              {client.logo_url && (
+                <img src={client.logo_url} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
               )}
               <button
                 onClick={handleSignOut}
@@ -363,7 +424,7 @@ export default function WhiteLabelClientDashboard() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Company Name</label>
                   <input
                     type="text"
-                    value={displayName}
+                    value={client.display_name}
                     onChange={e => setDisplayName(e.target.value)}
                     className="w-full px-3 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     placeholder="Enter your company name"
@@ -374,7 +435,7 @@ export default function WhiteLabelClientDashboard() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">Domain</label>
                   <input
                     type="text"
-                    value={domain}
+                    value={client.domain}
                     onChange={e => setDomain(e.target.value)}
                     className="w-full px-3 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                     placeholder="yourdomain.com"
@@ -385,8 +446,8 @@ export default function WhiteLabelClientDashboard() {
               <div className="mt-6">
                 <label className="block text-sm font-medium text-gray-300 mb-2">Logo</label>
                 <div className="flex items-center space-x-4">
-                  {logoUrl && (
-                    <img src={logoUrl} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
+                  {client.logo_url && (
+                    <img src={client.logo_url} alt="Logo" className="w-16 h-16 rounded-lg object-cover border border-blue-500/30" />
                   )}
                   <div className="flex-1">
                     <input 
@@ -406,13 +467,13 @@ export default function WhiteLabelClientDashboard() {
                   <div className="flex items-center space-x-3">
                     <input
                       type="color"
-                      value={primaryColor}
+                      value={client.primary_color}
                       onChange={e => setPrimaryColor(e.target.value)}
                       className="w-12 h-10 rounded border border-blue-500/20"
                     />
                     <input
                       type="text"
-                      value={primaryColor}
+                      value={client.primary_color}
                       onChange={e => setPrimaryColor(e.target.value)}
                       className="flex-1 px-3 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white text-sm"
                     />
@@ -424,13 +485,13 @@ export default function WhiteLabelClientDashboard() {
                   <div className="flex items-center space-x-3">
                     <input
                       type="color"
-                      value={secondaryColor}
+                      value={client.secondary_color}
                       onChange={e => setSecondaryColor(e.target.value)}
                       className="w-12 h-10 rounded border border-blue-500/20"
                     />
                     <input
                       type="text"
-                      value={secondaryColor}
+                      value={client.secondary_color}
                       onChange={e => setSecondaryColor(e.target.value)}
                       className="flex-1 px-3 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white text-sm"
                     />
@@ -455,6 +516,15 @@ export default function WhiteLabelClientDashboard() {
                 </div>
               )}
             </div>
+
+            {/* PDF Report Background */}
+            <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+              <div className="flex items-center mb-6">
+                <Palette className="w-6 h-6 text-blue-400 mr-3" />
+                <h2 className="text-xl font-semibold text-white">PDF Report Background</h2>
+              </div>
+              <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -478,9 +548,9 @@ export default function WhiteLabelClientDashboard() {
                 <h3 className="text-lg font-semibold text-white">Enabled Features</h3>
               </div>
               
-              {enabledFeatures.length > 0 ? (
+              {getEnabledFeatures().length > 0 ? (
                 <div className="space-y-3">
-                  {enabledFeatures.map((feature, index) => {
+                  {getEnabledFeatures().map((feature, index) => {
                     const Icon = feature.icon;
                     return (
                       <div key={index} className="bg-white/10 rounded-lg p-3">
@@ -585,11 +655,11 @@ export default function WhiteLabelClientDashboard() {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-sm">Domain</span>
-                  <span className="text-blue-400 text-sm">{domain || 'Not set'}</span>
+                  <span className="text-blue-400 text-sm">{client.domain || 'Not set'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-300 text-sm">Features</span>
-                  <span className="text-white text-sm font-medium">{enabledFeatures.length}</span>
+                  <span className="text-white text-sm font-medium">{getEnabledFeatures().length}</span>
                 </div>
               </div>
             </div>
