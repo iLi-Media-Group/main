@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
-import { createCheckoutSession, getUserSubscription } from '../lib/stripe';
+import { createCheckoutSession, getUserSubscription, cancelUserSubscription } from '../lib/stripe';
 
 interface EmailCheckDialogProps {
   isOpen: boolean;
@@ -114,13 +114,16 @@ function EmailCheckDialog({ isOpen, onClose, onContinue, product }: EmailCheckDi
 
 export function PricingCarousel() {
   const navigate = useNavigate();
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership, membershipPlan } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   const [showEmailCheck, setShowEmailCheck] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<typeof PRODUCTS[0] | null>(null);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const [downgradeError, setDowngradeError] = useState<string | null>(null);
+  const [downgradeSuccess, setDowngradeSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -229,46 +232,91 @@ export function PricingCarousel() {
           </div>
         )}
 
-        {PRODUCTS.map((product) => (
-          <div
-            key={product.id}
-            className="bg-white/5 backdrop-blur-sm rounded-2xl border p-8 h-full hover:border-blue-500/40 transition-colors relative flex flex-col"
-          >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
-              <p className="text-gray-400 mb-4">{product.description}</p>
-              <div className="flex items-baseline justify-center">
-                <span className="text-4xl font-bold text-white">
-                  ${(product.price).toFixed(2)}
-                </span>
-                <span className="text-gray-400 ml-2">
-                  {product.name === 'Ultimate Access' ? '/year' : product.mode === 'subscription' ? '/month' : ''}
-                </span>
+        {PRODUCTS.map((product) => {
+          const isCurrentPlan =
+            (membershipPlan === product.name) ||
+            (product.name === 'Single Track' && (!membershipPlan || membershipPlan === 'Single Track'));
+          const isHigherPlan =
+            user && membershipPlan &&
+            product.name === 'Single Track' &&
+            ['Gold Access', 'Platinum Access', 'Ultimate Access'].includes(membershipPlan);
+          return (
+            <div
+              key={product.id}
+              className={`bg-white/5 backdrop-blur-sm rounded-2xl border p-8 h-full hover:border-blue-500/40 transition-colors relative flex flex-col ${isCurrentPlan ? 'border-green-500/40' : ''}`}
+            >
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
+                <p className="text-gray-400 mb-4">{product.description}</p>
+                <div className="flex items-baseline justify-center">
+                  <span className="text-4xl font-bold text-white">
+                    ${(product.price).toFixed(2)}
+                  </span>
+                  <span className="text-gray-400 ml-2">
+                    {product.name === 'Ultimate Access' ? '/year' : product.mode === 'subscription' ? '/month' : ''}
+                  </span>
+                </div>
+              </div>
+              <ul className="space-y-4 mb-8">
+                {product.features.map((feature, i) => (
+                  <li key={i} className="flex items-center text-gray-300">
+                    <Check className="w-5 h-5 text-white mr-2 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-auto pt-8 flex flex-col gap-2 items-center">
+                {isCurrentPlan && (
+                  <span className="mb-2 px-3 py-1 bg-green-600/20 text-green-400 rounded-full text-xs font-semibold">Current Plan</span>
+                )}
+                {isHigherPlan ? (
+                  <button
+                    onClick={async () => {
+                      setDowngradeLoading(true);
+                      setDowngradeError(null);
+                      setDowngradeSuccess(false);
+                      try {
+                        await cancelUserSubscription();
+                        setDowngradeSuccess(true);
+                        await fetchSubscription();
+                        await refreshMembership();
+                      } catch (err: any) {
+                        setDowngradeError(err.message || 'Failed to downgrade.');
+                      } finally {
+                        setDowngradeLoading(false);
+                      }
+                    }}
+                    disabled={downgradeLoading}
+                    className="w-full py-3 px-6 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-all flex items-center justify-center disabled:opacity-50"
+                  >
+                    {downgradeLoading ? 'Processing...' : 'Downgrade to Single Track (Pay as You Go)'}
+                  </button>
+                ) : isCurrentPlan ? (
+                  <button
+                    disabled
+                    className="w-full py-3 px-6 rounded-lg bg-green-600/60 text-white font-semibold flex items-center justify-center opacity-80 cursor-not-allowed"
+                  >
+                    Subscribed
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSubscribe(product)}
+                    disabled={loading}
+                    className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center"
+                  >
+                    {loadingProductId === product.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    ) : (
+                      <>Get Started</>
+                    )}
+                  </button>
+                )}
+                {isHigherPlan && downgradeError && <div className="text-red-400 text-sm mt-2">{downgradeError}</div>}
+                {isHigherPlan && downgradeSuccess && <div className="text-green-400 text-sm mt-2">Your subscription will be cancelled at the end of the current period. You will be downgraded to Single Track after that.</div>}
               </div>
             </div>
-            <ul className="space-y-4 mb-8">
-              {product.features.map((feature, i) => (
-                <li key={i} className="flex items-center text-gray-300">
-                  <Check className="w-5 h-5 text-white mr-2 flex-shrink-0" />
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-auto pt-8">
-              <button
-                onClick={() => handleSubscribe(product)}
-                disabled={loading}
-                className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center"
-              >
-                {loadingProductId === product.id ? (
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                ) : (
-                  <>Get Started</>
-                )}
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       {/* Proration note: only show for logged-in clients with an active subscription */}
       {user && currentSubscription?.subscription_id && currentSubscription?.status === 'active' && (
