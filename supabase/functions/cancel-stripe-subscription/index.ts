@@ -5,11 +5,18 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!);
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Or 'https://mybeatfi.io' for production
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
   try {
-    if (req.method === 'OPTIONS') {
-      return new Response(null, { status: 204 });
-    }
     if (req.method !== 'POST') {
       return new Response('Method not allowed', { status: 405 });
     }
@@ -52,9 +59,9 @@ Deno.serve(async (req) => {
       .update({ status: 'cancelling', cancel_at_period_end: true })
       .eq('subscription_id', subscription.id);
 
-    return new Response(JSON.stringify({ success: true, cancel_at: canceled.cancel_at, current_period_end: canceled.current_period_end }), { status: 200 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   } catch (error: any) {
-    console.error('Cancel subscription error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Unknown error' }), { status: 500 });
+    console.error('Error cancelling subscription:', error);
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
   }
 }); 
