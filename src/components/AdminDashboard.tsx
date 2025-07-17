@@ -351,17 +351,14 @@ export function AdminDashboard() {
         // Fetch white label client purchases (setup fees and subscriptions)
         const { data: whiteLabelOrdersData, error: whiteLabelOrdersError } = await supabase
           .from('stripe_orders')
-          .select('id, amount_total, payment_status, status, metadata, created_at')
-          .eq('payment_status', 'paid')
-          .eq('status', 'completed')
-          .not('metadata', 'is', null);
+          .select('*');
         
         if (whiteLabelOrdersError) {
           console.error('Error fetching white label orders:', whiteLabelOrdersError);
         }
         
-        // DEBUG: Log all raw orders fetched from Supabase
-        console.log('DEBUG: Raw whiteLabelOrdersData:', whiteLabelOrdersData);
+        // DEBUG: Log all raw orders fetched from Supabase (no filters)
+        console.log('DEBUG: Raw whiteLabelOrdersData (no filters):', whiteLabelOrdersData);
         const whiteLabelOrders = whiteLabelOrdersData || [];
         // DEBUG: Log all white_label_setup records and their amounts
         const whiteLabelSetupFees = whiteLabelOrders.filter(order => {
