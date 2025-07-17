@@ -88,7 +88,8 @@ export async function cancelUserSubscription() {
     if (sessionError || !session) {
       throw new Error('You must be logged in to cancel your subscription');
     }
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/cancel-stripe-subscription`, {
+    const baseUrl = import.meta.env.VITE_SUPABASE_FUNCTION_URL.replace(/\/$/, '');
+    const response = await fetch(`${baseUrl}/cancel-stripe-subscription`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
