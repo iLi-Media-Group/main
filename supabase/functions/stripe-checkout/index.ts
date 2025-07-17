@@ -232,6 +232,27 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Check if this is a subscription upgrade for an existing customer
+    let activeSubscription = null;
+    if (mode === 'subscription') {
+      const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'active', limit: 1 });
+      if (subscriptions.data.length > 0) {
+        activeSubscription = subscriptions.data[0];
+      }
+    }
+
+    if (mode === 'subscription' && activeSubscription) {
+      // User is upgrading: update the existing subscription with proration
+      const updatedSubscription = await stripe.subscriptions.update(activeSubscription.id, {
+        items: [{ id: activeSubscription.items.data[0].id, price: price_id }],
+        proration_behavior: 'create_prorations',
+      });
+      // Create a Stripe invoice for the prorated amount
+      const invoice = await stripe.invoices.create({ customer: customerId, subscription: updatedSubscription.id });
+      // Return the hosted invoice URL for payment
+      return corsResponse({ url: invoice.hosted_invoice_url });
+    }
+
     let session;
     
     // Handle custom price for sync proposals
