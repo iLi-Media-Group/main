@@ -197,8 +197,15 @@ export function PricingCarousel() {
       setLoadingProductId(product.id);
       setError(null);
 
-      if (currentSubscription?.subscription_id && product.mode === 'subscription') {
-        navigate('/dashboard');
+      // Block checkout if user is already subscribed to this plan
+      if (
+        currentSubscription?.subscription_id &&
+        product.mode === 'subscription' &&
+        currentSubscription?.price_id === product.priceId
+      ) {
+        setError('You are already subscribed to this plan.');
+        setLoading(false);
+        setLoadingProductId(null);
         return;
       }
 
