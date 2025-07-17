@@ -10,20 +10,23 @@ interface ReportBackgroundContextType {
 
 const ReportBackgroundContext = createContext<ReportBackgroundContextType | undefined>(undefined);
 
-export const ReportBackgroundProvider: React.FC<{ clientId: string; children: React.ReactNode }> = ({ clientId, children }) => {
-  // Set the default background based on clientId
-  const MYBEATFI_CLIENT_ID = 'YOUR_MYBEATFI_CLIENT_ID'; // TODO: Replace with your actual client ID
-  const defaultBackground =
-    clientId === MYBEATFI_CLIENT_ID
-      ? '/report-backgrounds/option-mybeatfi.png'
-      : '/report-backgrounds/option-neutral.png';
+export const ReportBackgroundProvider: React.FC<{ clientId?: string | null; children: React.ReactNode }> = ({ clientId, children }) => {
+  // Set the default background for main admin or white label
+  const defaultBackground = !clientId
+    ? '/report-backgrounds/option-mybeatfi.png'
+    : '/report-backgrounds/option-neutral.png';
 
   const [selectedBackground, setSelectedBackground] = useState(defaultBackground);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!clientId) {
+      setSelectedBackground(defaultBackground);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     async function fetchBackground() {
-      setLoading(true);
       const { data } = await supabase
         .from('white_label_clients')
         .select('report_background')
@@ -32,16 +35,18 @@ export const ReportBackgroundProvider: React.FC<{ clientId: string; children: Re
       if (data?.report_background) setSelectedBackground(data.report_background);
       setLoading(false);
     }
-    if (clientId) fetchBackground();
+    fetchBackground();
   }, [clientId]);
 
-  // Save to DB when changed
+  // Save to DB when changed (only for white label clients)
   const handleSetBackground = async (bg: string) => {
     setSelectedBackground(bg);
-    await supabase
-      .from('white_label_clients')
-      .update({ report_background: bg })
-      .eq('id', clientId);
+    if (clientId) {
+      await supabase
+        .from('white_label_clients')
+        .update({ report_background: bg })
+        .eq('id', clientId);
+    }
   };
 
   return (

@@ -104,10 +104,8 @@ const getBase64ImageFromURL = (url: string) =>
   });
 
 const AdminDashboardWrapper = () => {
-  // TODO: Replace with your actual main company clientId
-  const MAIN_COMPANY_CLIENT_ID = 'YOUR_MYBEATFI_CLIENT_ID';
   return (
-    <ReportBackgroundProvider clientId={MAIN_COMPANY_CLIENT_ID}>
+    <ReportBackgroundProvider clientId={null}>
       <AdminDashboard />
     </ReportBackgroundProvider>
   );
