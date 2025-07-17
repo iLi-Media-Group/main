@@ -222,10 +222,6 @@ export function PricingCarousel() {
           </div>
         )}
 
-        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-300 text-sm">
-          <strong>Note:</strong> If you upgrade your plan, you’ll only be charged the difference for the remainder of your current billing period. Stripe will automatically calculate and display the prorated amount at checkout.
-        </div>
-
         {PRODUCTS.map((product) => (
           <div
             key={product.id}
@@ -267,6 +263,12 @@ export function PricingCarousel() {
           </div>
         ))}
       </div>
+      {/* Proration note: only show for logged-in clients with an active subscription */}
+      {user && currentSubscription?.subscription_id && currentSubscription?.status === 'active' && (
+        <div className="mt-8 mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-300 text-sm max-w-7xl mx-auto">
+          <strong>Note:</strong> If you upgrade your plan, you’ll only be charged the difference for the remainder of your current billing period. Stripe will automatically calculate and display the prorated amount at checkout.
+        </div>
+      )}
       {showEmailCheck && selectedProduct && (
         <EmailCheckDialog
           isOpen={showEmailCheck}
