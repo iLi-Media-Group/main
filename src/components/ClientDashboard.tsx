@@ -226,6 +226,9 @@ export function ClientDashboard() {
   const [syncProposalSuccess, setSyncProposalSuccess] = useState(false);
   const [syncProposalSortField, setSyncProposalSortField] = useState<'date' | 'title' | 'amount' | 'status'>('date');
   const [syncProposalSortOrder, setSyncProposalSortOrder] = useState<'asc' | 'desc'>('desc');
+  // Add state for pending downgrade
+  const [pendingDowngrade, setPendingDowngrade] = useState(false);
+  const [downgradeEffectiveDate, setDowngradeEffectiveDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -260,9 +263,10 @@ export function ClientDashboard() {
       setLoading(true);
       setError('');
 
+      // Fetch profile with downgrade info
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('first_name, email, membership_plan')
+        .select('first_name, email, membership_plan, subscription_cancel_at_period_end, subscription_current_period_end')
         .eq('id', user.id)
         .single();
 
@@ -272,6 +276,9 @@ export function ClientDashboard() {
           ...prev,
           membershipType: profileData.membership_plan as UserStats['membershipType']
         }));
+        // Set pending downgrade state
+        setPendingDowngrade(!!profileData.subscription_cancel_at_period_end);
+        setDowngradeEffectiveDate(profileData.subscription_current_period_end || null);
       }
 
       const { data: licensesData } = await supabase
@@ -1044,6 +1051,13 @@ export function ClientDashboard() {
                     </span>
                   )}
                 </p>
+              )}
+              {pendingDowngrade && downgradeEffectiveDate && (
+                <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  Your account will be downgraded to <b>Single Track</b> on{' '}
+                  <b>{new Date(downgradeEffectiveDate).toLocaleDateString()}</b>. You will retain your current plan until then.
+                </div>
               )}
             </div>
             {membershipPlan === 'Gold Access' && userStats.remainingLicenses < 3 && (
