@@ -166,9 +166,6 @@ export function WhiteLabelSuccessPage() {
               Go to Your Dashboard
             </button>
             
-            <div className="text-sm text-gray-400">
-              Session ID: {sessionId || 'N/A'}
-            </div>
           </div>
         </div>
       </div>
