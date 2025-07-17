@@ -577,10 +577,11 @@ Deno.serve(async (req) => {
           }, { onConflict: 'customer_id' });
         } else {
           const subscription = subscriptions.data[0];
+          const priceId = subscription.items.data[0].price.id;
           await supabase.from('stripe_subscriptions').upsert({
             customer_id: customerId,
             subscription_id: subscription.id,
-            price_id: subscription.items.data[0].price.id,
+            price_id: priceId,
             current_period_start: subscription.current_period_start,
             current_period_end: subscription.current_period_end,
             cancel_at_period_end: subscription.cancel_at_period_end,
@@ -588,6 +589,48 @@ Deno.serve(async (req) => {
             payment_method_last4: subscription.default_payment_method?.card?.last4 ?? null,
             status: subscription.status,
           }, { onConflict: 'customer_id' });
+
+          // --- NEW: Update membership_plan in profiles ---
+          // Map price_id to plan name
+          let planName = 'Unknown';
+          switch (priceId) {
+            case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
+              planName = 'Ultimate Access';
+              break;
+            case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
+              planName = 'Platinum Access';
+              break;
+            case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
+              planName = 'Gold Access';
+              break;
+            case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
+              planName = 'Single Track';
+              break;
+            default:
+              planName = 'Unknown';
+          }
+          // Find user_id from stripe_customers
+          const { data: customerRecord, error: customerLookupError } = await supabase
+            .from('stripe_customers')
+            .select('user_id')
+            .eq('customer_id', customerId)
+            .maybeSingle();
+          if (customerLookupError) {
+            console.error('Error looking up user_id for customer:', customerId, customerLookupError);
+          }
+          if (customerRecord && customerRecord.user_id) {
+            // Update membership_plan in profiles
+            const { error: updateProfileError } = await supabase
+              .from('profiles')
+              .update({ membership_plan: planName })
+              .eq('id', customerRecord.user_id);
+            if (updateProfileError) {
+              console.error('Error updating membership_plan in profiles:', updateProfileError);
+            } else {
+              console.log(`Updated membership_plan to ${planName} for user ${customerRecord.user_id}`);
+            }
+          }
+          // --- END NEW ---
         }
       } catch (subError) {
         console.error('Error syncing subscription:', subError);
