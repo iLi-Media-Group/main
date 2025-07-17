@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle } from 'lucide-react';
-import { useRef } from 'react';
 
 interface CustomSyncRequest {
   id: string;
@@ -65,6 +64,7 @@ export default function CustomSyncRequestSubs() {
   const [chatBoxMessage, setChatBoxMessage] = useState('');
   const [chatBoxMessages, setChatBoxMessages] = useState<any[]>([]);
   const [sendingChatBoxMessage, setSendingChatBoxMessage] = useState(false);
+  const chatDialogMessagesRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll chat box to bottom when new messages arrive
   useEffect(() => {
@@ -75,6 +75,16 @@ export default function CustomSyncRequestSubs() {
       }
     }
   }, [chatBoxMessages, showChatBox]);
+
+  // Auto-scroll modal chat dialog to bottom when new messages arrive
+  useEffect(() => {
+    if (showChatDialog && chatMessages.length > 0) {
+      const node = chatDialogMessagesRef.current;
+      if (node) {
+        node.scrollTop = node.scrollHeight;
+      }
+    }
+  }, [chatMessages, showChatDialog]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -1109,7 +1119,7 @@ export default function CustomSyncRequestSubs() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div ref={chatDialogMessagesRef} className="flex-1 overflow-y-auto p-4 space-y-4">
               {chatMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <p className="text-gray-400">No messages yet. Start the conversation!</p>
