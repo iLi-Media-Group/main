@@ -170,7 +170,7 @@ export default function WhiteLabelAdminPage() {
   }
 
   // Assume only one client is managed at a time, use first client id or selected client id
-  const clientId = clients[0]?.id || '';
+  const clientId = clients[0]?.id || null;
   return (
     <ReportBackgroundProvider clientId={clientId}>
       <WhiteLabelAdminContent
