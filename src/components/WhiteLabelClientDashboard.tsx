@@ -97,8 +97,18 @@ export default function WhiteLabelClientDashboard() {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please upload an image file');
+      return;
+    }
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('File size must be less than 2MB');
+      return;
+    }
     const fileExt = file.name.split('.').pop();
-    const filePath = `white_label_logos/${user?.id}.${fileExt}`;
+    const filePath = `white-label-logos/${user?.id}.${fileExt}`;
     setLoading(true);
     setError(null);
     try {
@@ -107,9 +117,10 @@ export default function WhiteLabelClientDashboard() {
         .upload(filePath, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from('public').getPublicUrl(filePath);
+      if (!urlData || !urlData.publicUrl) throw new Error('Failed to get public URL for logo.');
       setLogoUrl(urlData.publicUrl);
-    } catch (err) {
-      setError('Failed to upload logo.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload logo.');
     } finally {
       setLoading(false);
     }
