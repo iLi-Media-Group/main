@@ -3,6 +3,7 @@ import { X, DollarSign, Download, PieChart, Calendar, FileText, Loader2, Clock }
 import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { useReportBackground } from '../contexts/ReportBackgroundContext';
 
 interface RevenueBreakdownDialogProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ export function RevenueBreakdownDialog({
   const [totalPendingRevenue, setTotalPendingRevenue] = useState(0);
   const [timeframe, setTimeframe] = useState<'month' | 'quarter' | 'year' | 'all'>('month');
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const { selectedBackground } = useReportBackground();
 
   useEffect(() => {
     if (isOpen) {
@@ -533,12 +535,43 @@ export function RevenueBreakdownDialog({
     }
   };
 
+  // Helper to load a background image as base64
+  const getBase64ImageFromURL = (url: string) =>
+    new Promise<string>((resolve, reject) => {
+      const img = new window.Image();
+      img.setAttribute('crossOrigin', 'anonymous');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        } else {
+          reject(new Error('Could not get canvas context'));
+        }
+      };
+      img.onerror = (error) => reject(error);
+      img.src = url;
+    });
+
   const generatePDF = async () => {
     try {
       setPdfGenerating(true);
       // Create a new PDF document
       const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      // === Add background image ===
+      const backgroundPath = selectedBackground || '/report-backgrounds/option-mybeatfi.png'; // Use selected or default
+      try {
+        const bgBase64 = await getBase64ImageFromURL(backgroundPath);
+        doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
+      } catch (err) {
+        // If background fails to load, continue without it
+        console.warn('Failed to load report background:', err);
+      }
       // === Modern Dark-Themed Header ===
       doc.setFillColor(24, 26, 48); // Deep navy background
       doc.rect(0, 0, pageWidth, 180, 'F');

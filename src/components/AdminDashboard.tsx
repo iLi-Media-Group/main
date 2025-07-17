@@ -17,6 +17,9 @@ import { LogoUpload } from './LogoUpload';
 import { GenreManagement } from './GenreManagement';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { useReportBackground } from '../contexts/ReportBackgroundContext';
+import { ReportBackgroundPicker } from './ReportBackgroundPicker';
+import { ReportBackgroundProvider } from '../contexts/ReportBackgroundContext';
 
 interface UserStats {
   total_clients: number;
@@ -79,7 +82,38 @@ interface WhiteLabelClient {
   features_amount_paid?: number;
 }
 
-export function AdminDashboard() {
+// Helper to load a background image as base64
+const getBase64ImageFromURL = (url: string) =>
+  new Promise<string>((resolve, reject) => {
+    const img = new window.Image();
+    img.setAttribute('crossOrigin', 'anonymous');
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        reject(new Error('Could not get canvas context'));
+      }
+    };
+    img.onerror = (error) => reject(error);
+    img.src = url;
+  });
+
+export function AdminDashboardWrapper() {
+  // TODO: Replace with your actual main company clientId
+  const MAIN_COMPANY_CLIENT_ID = 'YOUR_MYBEATFI_CLIENT_ID';
+  return (
+    <ReportBackgroundProvider clientId={MAIN_COMPANY_CLIENT_ID}>
+      <AdminDashboard />
+    </ReportBackgroundProvider>
+  );
+}
+
+function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
@@ -150,6 +184,7 @@ export function AdminDashboard() {
     primary_color: '#6366f1',
     secondary_color: '#8b5cf6'
   });
+  const { selectedBackground, setSelectedBackground, loading: bgLoading } = useReportBackground();
 
   useEffect(() => {
     if (user) {
@@ -806,16 +841,31 @@ export function AdminDashboard() {
     });
 
   const handleDownloadRevenuePDF = async () => {
-    // Fetch logo from site_settings (same as header)
+    // Fetch logo from white_label_clients first, fallback to site_settings
     let logoUrl = null;
     try {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'logo_url')
-        .single();
-      if (!error && data) {
-        logoUrl = data.value;
+      let clientLogo = null;
+      if (editingClient?.id) {
+        const { data: clientData, error: clientError } = await supabase
+          .from('white_label_clients')
+          .select('logo_url')
+          .eq('id', editingClient.id)
+          .single();
+        if (!clientError && clientData && clientData.logo_url) {
+          clientLogo = clientData.logo_url;
+        }
+      }
+      if (clientLogo) {
+        logoUrl = clientLogo;
+      } else {
+        const { data: siteData, error: siteError } = await supabase
+          .from('site_settings')
+          .select('value')
+          .eq('key', 'logo_url')
+          .single();
+        if (!siteError && siteData) {
+          logoUrl = siteData.value;
+        }
       }
     } catch (e) {
       // fallback: no logo
@@ -827,6 +877,15 @@ export function AdminDashboard() {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    // === Add background image ===
+    const backgroundPath = selectedBackground || '/report-backgrounds/option1.png';
+    try {
+      const bgBase64 = await getBase64ImageFromURL(backgroundPath);
+      doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
+    } catch (err) {
+      // If background fails to load, continue without it
+      console.warn('Failed to load report background:', err);
+    }
     const margin = 40;
     const contentWidth = pageWidth - (margin * 2);
     let y = 0;
@@ -1584,6 +1643,8 @@ export function AdminDashboard() {
       <RevenueBreakdownDialog
         isOpen={showRevenueBreakdown}
         onClose={() => setShowRevenueBreakdown(false)}
+        producerId={selectedProducer?.id}
+        email={profile?.email}
       />
 
       {/* Add White Label Client Modal */}
