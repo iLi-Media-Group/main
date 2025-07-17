@@ -59,6 +59,15 @@ Deno.serve(async (req) => {
       .update({ status: 'cancelling', cancel_at_period_end: true })
       .eq('subscription_id', subscription.id);
 
+    // Update user's profile with pending downgrade info
+    await supabase
+      .from('profiles')
+      .update({
+        subscription_cancel_at_period_end: true,
+        subscription_current_period_end: new Date(canceled.current_period_end * 1000).toISOString()
+      })
+      .eq('id', user.id);
+
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   } catch (error: any) {
     console.error('Error cancelling subscription:', error);
