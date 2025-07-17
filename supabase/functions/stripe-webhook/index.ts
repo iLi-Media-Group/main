@@ -638,6 +638,37 @@ Deno.serve(async (req) => {
       }
       return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
     }
+    // --- Handle subscription cancellation (downgrade to Single Track) ---
+    if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.canceled') {
+      try {
+        const stripeData = event.data.object as any;
+        const customerId = stripeData.customer;
+        // Find user_id from stripe_customers
+        const { data: customerRecord, error: customerLookupError } = await supabase
+          .from('stripe_customers')
+          .select('user_id')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+        if (customerLookupError) {
+          console.error('Error looking up user_id for customer:', customerId, customerLookupError);
+        }
+        if (customerRecord && customerRecord.user_id) {
+          // Update membership_plan in profiles to 'Single Track'
+          const { error: updateProfileError } = await supabase
+            .from('profiles')
+            .update({ membership_plan: 'Single Track' })
+            .eq('id', customerRecord.user_id);
+          if (updateProfileError) {
+            console.error('Error updating membership_plan to Single Track:', updateProfileError);
+          } else {
+            console.log(`Downgraded user ${customerRecord.user_id} to Single Track after subscription cancellation.`);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling subscription cancellation event:', error);
+      }
+      return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+    }
     // --- Fallback: event received ---
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
   } catch (error: any) {
