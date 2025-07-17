@@ -169,6 +169,10 @@ export default function WhiteLabelAdminPage() {
     return <AdminPasswordPrompt onPasswordSet={setApiToken} />;
   }
 
+  if (loading) {
+    return <div className="p-8 text-white text-center">Loading...</div>;
+  }
+
   // Assume only one client is managed at a time, use first client id or selected client id
   const clientId = clients[0]?.id || null;
   return (
