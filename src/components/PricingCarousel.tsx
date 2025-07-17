@@ -229,4 +229,52 @@ export function PricingCarousel() {
         {PRODUCTS.map((product) => (
           <div
             key={product.id}
-            className={`
+            className="bg-white/5 backdrop-blur-sm rounded-2xl border p-8 h-full hover:border-blue-500/40 transition-colors relative flex flex-col"
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-2">{product.name}</h3>
+              <p className="text-gray-400 mb-4">{product.description}</p>
+              <div className="flex items-baseline justify-center">
+                <span className="text-4xl font-bold text-white">
+                  ${(product.price).toFixed(2)}
+                </span>
+                <span className="text-gray-400 ml-2">
+                  {product.name === 'Ultimate Access' ? '/year' : product.mode === 'subscription' ? '/month' : ''}
+                </span>
+              </div>
+            </div>
+            <ul className="space-y-4 mb-8">
+              {product.features.map((feature, i) => (
+                <li key={i} className="flex items-center text-gray-300">
+                  <Check className="w-5 h-5 text-white mr-2 flex-shrink-0" />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-auto pt-8">
+              <button
+                onClick={() => handleSubscribe(product)}
+                disabled={loading}
+                className="w-full py-3 px-6 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold transition-all flex items-center justify-center"
+              >
+                {loadingProductId === product.id ? (
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                ) : (
+                  <>Get Started</>
+                )}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+      {showEmailCheck && selectedProduct && (
+        <EmailCheckDialog
+          isOpen={showEmailCheck}
+          onClose={() => setShowEmailCheck(false)}
+          onContinue={handleEmailContinue}
+          product={selectedProduct}
+        />
+      )}
+    </>
+  );
+}
