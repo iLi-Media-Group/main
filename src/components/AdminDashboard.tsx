@@ -1891,8 +1891,8 @@ function AdminDashboard() {
         </div>
       )}
 
-      {/* Report Background Picker for PDF Reports */}
-      <div className="mb-8">
+      {/* Report Background Picker for PDF Reports (bottom left aligned) */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-8 max-w-xs">
         <h2 className="text-lg font-semibold text-white mb-2">Report PDF Background</h2>
         <ReportBackgroundPicker
           selected={selectedBackground}
