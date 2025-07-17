@@ -570,6 +570,7 @@ export default function ProducerSyncSubmission() {
                 {/* Chat History Preview */}
               </div>
               {/* New Message Envelope Icon (outside top-right) */}
+              {(() => { console.log('Unread count:', unreadCount); return null; })()}
               {unreadCount > 0 && (
                 <img
                   src="/icons/new-message.png"
