@@ -361,18 +361,22 @@ export function AdminDashboard() {
         }
         
         const whiteLabelOrders = whiteLabelOrdersData || [];
-        console.log('White Label Orders found:', whiteLabelOrders.length);
-        console.log('White Label Orders data:', whiteLabelOrders);
-        
-        const whiteLabelSetupFees = whiteLabelOrders.filter(order => 
-          order.metadata?.type === 'white_label_setup'
-        );
-        console.log('White Label Setup Fees found:', whiteLabelSetupFees.length);
-        console.log('White Label Setup Fees data:', whiteLabelSetupFees);
-        
+        // DEBUG: Log all white_label_setup records and their amounts
+        const whiteLabelSetupFees = whiteLabelOrders.filter(order => {
+          let meta = order.metadata;
+          if (typeof meta === 'string') {
+            try {
+              meta = JSON.parse(meta);
+            } catch {
+              meta = {};
+            }
+          }
+          return meta?.type === 'white_label_setup';
+        });
+        console.log('DEBUG: All white_label_setup records:', whiteLabelSetupFees);
         const white_label_setup_count = whiteLabelSetupFees.length;
         const white_label_setup_amount = whiteLabelSetupFees.reduce((sum, order) => sum + (order.amount_total || 0), 0) / 100; // Convert from cents
-
+        
         // Fetch white label subscriptions (monthly fees)
         const { data: whiteLabelSubscriptionsData, error: whiteLabelSubscriptionsError } = await supabase
           .from('stripe_subscriptions')
