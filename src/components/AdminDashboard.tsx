@@ -360,6 +360,8 @@ export function AdminDashboard() {
           console.error('Error fetching white label orders:', whiteLabelOrdersError);
         }
         
+        // DEBUG: Log all raw orders fetched from Supabase
+        console.log('DEBUG: Raw whiteLabelOrdersData:', whiteLabelOrdersData);
         const whiteLabelOrders = whiteLabelOrdersData || [];
         // DEBUG: Log all white_label_setup records and their amounts
         const whiteLabelSetupFees = whiteLabelOrders.filter(order => {
