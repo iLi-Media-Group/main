@@ -876,7 +876,8 @@ function AdminDashboard() {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     // === Add background image ===
-    const backgroundPath = selectedBackground || '/report-backgrounds/option1.png';
+    console.log('PDF background path:', selectedBackground);
+    const backgroundPath = selectedBackground;
     try {
       const bgBase64 = await getBase64ImageFromURL(backgroundPath);
       doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
