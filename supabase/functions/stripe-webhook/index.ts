@@ -638,6 +638,48 @@ Deno.serve(async (req) => {
       }
       return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
     }
+    // --- Handle subscription update (cancel_at_period_end toggled, upgrade, etc.) ---
+    if (event.type === 'customer.subscription.updated') {
+      try {
+        const stripeData = event.data.object as any;
+        const customerId = stripeData.customer;
+        const cancelAtPeriodEnd = stripeData.cancel_at_period_end;
+        const currentPeriodEnd = stripeData.current_period_end;
+        // Find user_id from stripe_customers
+        const { data: customerRecord, error: customerLookupError } = await supabase
+          .from('stripe_customers')
+          .select('user_id')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+        if (customerLookupError) {
+          console.error('Error looking up user_id for customer:', customerId, customerLookupError);
+        }
+        if (customerRecord && customerRecord.user_id) {
+          if (cancelAtPeriodEnd) {
+            // Set pending downgrade fields
+            await supabase
+              .from('profiles')
+              .update({
+                subscription_cancel_at_period_end: true,
+                subscription_current_period_end: new Date(currentPeriodEnd * 1000).toISOString()
+              })
+              .eq('id', customerRecord.user_id);
+          } else {
+            // Clear pending downgrade fields
+            await supabase
+              .from('profiles')
+              .update({
+                subscription_cancel_at_period_end: false,
+                subscription_current_period_end: null
+              })
+              .eq('id', customerRecord.user_id);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling subscription update event:', error);
+      }
+      return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+    }
     // --- Handle subscription cancellation (downgrade to Single Track) ---
     if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.canceled') {
       try {
@@ -653,10 +695,14 @@ Deno.serve(async (req) => {
           console.error('Error looking up user_id for customer:', customerId, customerLookupError);
         }
         if (customerRecord && customerRecord.user_id) {
-          // Update membership_plan in profiles to 'Single Track'
+          // Update membership_plan in profiles to 'Single Track' and clear pending downgrade fields
           const { error: updateProfileError } = await supabase
             .from('profiles')
-            .update({ membership_plan: 'Single Track' })
+            .update({ 
+              membership_plan: 'Single Track',
+              subscription_cancel_at_period_end: false,
+              subscription_current_period_end: null
+            })
             .eq('id', customerRecord.user_id);
           if (updateProfileError) {
             console.error('Error updating membership_plan to Single Track:', updateProfileError);
