@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PricingCarousel } from './PricingCarousel';
-import { getUserSubscription, getMembershipPlanFromPriceId, formatDate } from '../lib/stripe';
+import { getUserSubscription, getMembershipPlanFromPriceId, formatDate, cancelUserSubscription } from '../lib/stripe';
 import { useAuth } from '../contexts/AuthContext';
 import { CreditCard, Calendar, CheckCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -9,6 +9,9 @@ export function PricingPage() {
   const { user, refreshMembership } = useAuth();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const [downgradeError, setDowngradeError] = useState<string | null>(null);
+  const [downgradeSuccess, setDowngradeSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -62,7 +65,7 @@ export function PricingPage() {
                   </div>
                 )}
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex flex-col gap-2">
                 <Link
                   to="/dashboard"
                   className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors"
@@ -70,6 +73,29 @@ export function PricingPage() {
                   Go to Dashboard
                   <ArrowRight className="w-4 h-4 ml-1" />
                 </Link>
+                <button
+                  className="mt-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold disabled:opacity-50"
+                  disabled={downgradeLoading}
+                  onClick={async () => {
+                    setDowngradeLoading(true);
+                    setDowngradeError(null);
+                    setDowngradeSuccess(false);
+                    try {
+                      await cancelUserSubscription();
+                      setDowngradeSuccess(true);
+                      await fetchSubscription();
+                      await refreshMembership();
+                    } catch (err: any) {
+                      setDowngradeError(err.message || 'Failed to downgrade.');
+                    } finally {
+                      setDowngradeLoading(false);
+                    }
+                  }}
+                >
+                  {downgradeLoading ? 'Processing...' : 'Downgrade to Single Track (Pay as You Go)'}
+                </button>
+                {downgradeError && <div className="text-red-400 text-sm mt-2">{downgradeError}</div>}
+                {downgradeSuccess && <div className="text-green-400 text-sm mt-2">Your subscription will be cancelled at the end of the current period. You will be downgraded to Single Track after that.</div>}
               </div>
             </div>
           </div>

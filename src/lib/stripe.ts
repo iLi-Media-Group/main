@@ -82,6 +82,30 @@ export async function getUserOrders() {
   }
 }
 
+export async function cancelUserSubscription() {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to cancel your subscription');
+    }
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cancel-stripe-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to cancel subscription');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
+    throw error;
+  }
+}
+
 export function formatCurrency(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
