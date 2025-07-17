@@ -538,69 +538,44 @@ export default function ProducerSyncSubmission() {
             </div>
             
             {/* Chat Section */}
-            <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
-              <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
-                <MessageCircle className="w-5 h-5" /> Client Messages
-                {unreadCount > 0 && (
-                  <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                    {unreadCount} new
-                  </span>
-                )}
-              </h3>
-              <button
-                onClick={async () => {
-                  const clients = await getClientsWithMessages();
-                  if (clients.length > 0) {
-                    handleOpenChat(clients[0].id, `${clients[0].first_name} ${clients[0].last_name}`);
-                  } else {
-                    alert('No client messages yet.');
-                  }
-                }}
-                className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 relative"
-              >
-                <MessageCircle className="w-4 h-4" />
-                View Messages
-                {unreadCount > 0 && (
-                  <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              
-              {/* Chat History Preview */}
-              {chatHistory.length > 0 && (
-                <div className="mt-4 p-3 bg-blue-900/60 border border-blue-700/40 rounded-lg">
-                  <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
-                    <MessageCircle className="w-3 h-3" />
-                    Recent Messages ({chatHistory.length} total)
-                    {unreadCount > 0 && (
-                      <span className="text-red-400 text-xs">● {unreadCount} unread</span>
-                    )}
-                  </h4>
-                  <div className="max-h-24 overflow-y-auto space-y-1">
-                    {chatHistory.slice(-2).map((msg) => (
-                      <div key={msg.id} className="text-xs">
-                        <span className="text-blue-300 font-medium">
-                          {msg.sender.first_name} {msg.sender.last_name}:
-                        </span>
-                        <span className="text-gray-300 ml-1">
-                          {msg.message.length > 30 ? `${msg.message.substring(0, 30)}...` : msg.message}
-                        </span>
-                        <div className="text-gray-500 text-xs">
-                          {new Date(msg.created_at).toLocaleDateString()}
-                        </div>
-                        {msg.recipient_id === user?.id && !msg.is_read && (
-                          <span className="text-red-400 text-xs">●</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {chatHistory.length > 2 && (
-                    <div className="text-xs text-blue-300 mt-1">
-                      +{chatHistory.length - 2} more messages
-                    </div>
+            <div className="relative">
+              <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
+                <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5" /> Client Messages
+                  {unreadCount > 0 && (
+                    <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                      {unreadCount} new
+                    </span>
                   )}
-                </div>
+                </h3>
+                <button
+                  onClick={async () => {
+                    const clients = await getClientsWithMessages();
+                    if (clients.length > 0) {
+                      handleOpenChat(clients[0].id, `${clients[0].first_name} ${clients[0].last_name}`);
+                    } else {
+                      alert('No client messages yet.');
+                    }
+                  }}
+                  className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 relative"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  View Messages
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+                {/* Chat History Preview */}
+              </div>
+              {/* New Message Envelope Icon (outside top-right) */}
+              {unreadCount > 0 && (
+                <img
+                  src="/icons/new-message.png"
+                  alt="New message"
+                  className="absolute -top-6 -right-6 w-10 h-10 z-20 drop-shadow-lg animate-bounce"
+                />
               )}
             </div>
           </div>

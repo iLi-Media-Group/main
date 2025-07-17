@@ -774,7 +774,7 @@ export default function CustomSyncRequestSubs() {
                 <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-6">
                   <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2">
                     <h2 className="text-xl font-semibold text-white mb-2 md:mb-0">{req.project_title}</h2>
-                    <div className="flex items-center gap-2">
+                    <div className="relative flex items-center gap-2">
                       <button
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-1"
                         onClick={() => openChatBox(req)}
@@ -787,6 +787,15 @@ export default function CustomSyncRequestSubs() {
                           </span>
                         )}
                       </button>
+                      {/* New Message Envelope Icon (outside chat button, never blocks clicks) */}
+                      {unreadCounts[req.id] > 0 && (
+                        <img
+                          src="/icons/new-message.png"
+                          alt="New message"
+                          className="absolute -top-4 -right-10 w-8 h-8 z-20 pointer-events-none"
+                          style={{ filter: 'drop-shadow(0 0 6px #0f0)' }}
+                        />
+                      )}
                     </div>
                   </div>
                   <p className="text-gray-300 mb-2">{req.project_description}</p>
