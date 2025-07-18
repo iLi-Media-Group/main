@@ -4,13 +4,14 @@ import { v4 as uuidv4 } from 'uuid';
 export async function uploadFile(
   file: File, 
   bucket: string,
-  onProgress?: (progress: number) => void
+  onProgress?: (progress: number) => void,
+  pathPrefix?: string // optional, for producer/track association
 ): Promise<string> {
   try {
     // Generate unique file path
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     const fileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
 
     // Upload file
     const { data, error } = await supabase.storage
@@ -22,15 +23,11 @@ export async function uploadFile(
 
     if (error) throw error;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-
-    return publicUrl;
+    // Return the storage path (not a public URL)
+    return filePath;
   } catch (error) {
     console.error('Upload error:', error);
-    throw new Error(`Failed to upload file: ${error.message}`);
+    throw new Error(`Failed to upload file: ${(error as Error).message}`);
   }
 }
 
