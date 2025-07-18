@@ -502,23 +502,22 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
       const { Document, Page, Text, View, StyleSheet, Image } = await import('@react-pdf/renderer');
       
       const styles = StyleSheet.create({
-        page: { position: 'relative', padding: 30, fontSize: 12 },
+        page: { position: 'relative', width: '100%', height: '100%' },
         background: {
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: '100%',
-          height: '100%',
-          zIndex: 0,
+          position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 0,
         },
-        content: { position: 'relative', zIndex: 1 },
-        title: { fontSize: 18, marginBottom: 20, textAlign: 'center' },
-        section: { marginBottom: 15 },
-        sectionTitle: { fontSize: 14, marginBottom: 10, fontWeight: 'bold' },
-        row: { flexDirection: 'row', marginBottom: 5 },
-        cell: { flex: 1, padding: 5 },
-        header: { fontWeight: 'bold', backgroundColor: '#f0f0f0' },
-        summary: { marginBottom: 10 }
+        content: {
+          position: 'relative', zIndex: 1, padding: 40, color: '#222', fontSize: 12, width: '100%', height: '100%',
+        },
+        title: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#222' },
+        section: { marginBottom: 18 },
+        sectionTitle: { fontSize: 14, marginBottom: 10, fontWeight: 'bold', color: '#333' },
+        table: { display: 'flex', width: '100%', marginTop: 8, marginBottom: 12 },
+        tableRow: { flexDirection: 'row' },
+        tableCell: { flex: 1, padding: 4, borderBottom: '1pt solid #eee', fontSize: 11 },
+        header: { fontWeight: 'bold', backgroundColor: '#f0f0f0', color: '#222' },
+        summaryRow: { flexDirection: 'row', marginBottom: 4 },
+        summaryCell: { flex: 1, fontSize: 12, color: '#222' },
       });
 
       const ReportPDF = () => (
@@ -529,46 +528,64 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
             )}
             <View style={styles.content}>
               <Text style={styles.title}>Sales Report</Text>
-              <Text style={styles.summary}>
+              <Text style={{ textAlign: 'center', marginBottom: 12, fontSize: 11 }}>
                 Date Range: {reportData.dateRange.start} to {reportData.dateRange.end}
               </Text>
-              {/* Summary */}
+              {/* Summary Table */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Summary</Text>
-                <View style={styles.row}>
-                  <Text style={styles.cell}>Total Sales: {reportData.summary.totalSales}</Text>
-                  <Text style={styles.cell}>Total Revenue: ${reportData.summary.totalRevenue.toFixed(2)}</Text>
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.cell}>Track Licenses: {reportData.summary.trackLicenses}</Text>
-                  <Text style={styles.cell}>Sync Proposals: {reportData.summary.syncProposals}</Text>
-                </View>
-                <View style={styles.row}>
-                  <Text style={styles.cell}>Custom Sync: {reportData.summary.customSyncRequests}</Text>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.header]}>
+                    <Text style={styles.tableCell}>Total Sales</Text>
+                    <Text style={styles.tableCell}>Total Revenue</Text>
+                    <Text style={styles.tableCell}>Track Licenses</Text>
+                    <Text style={styles.tableCell}>Sync Proposals</Text>
+                  </View>
+                  <View style={styles.tableRow}>
+                    <Text style={styles.tableCell}>{reportData.summary.totalSales}</Text>
+                    <Text style={styles.tableCell}>${reportData.summary.totalRevenue.toFixed(2)}</Text>
+                    <Text style={styles.tableCell}>{reportData.summary.trackLicenses}</Text>
+                    <Text style={styles.tableCell}>{reportData.summary.syncProposals}</Text>
+                  </View>
                 </View>
               </View>
-              {/* Sales by Type */}
+              {/* Sales by Type Table */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Sales by Type</Text>
-                {reportData.salesByType.map((type, index) => (
-                  <View key={index} style={styles.row}>
-                    <Text style={styles.cell}>{type.type}</Text>
-                    <Text style={styles.cell}>{type.count}</Text>
-                    <Text style={styles.cell}>${type.revenue.toFixed(2)}</Text>
-                    <Text style={styles.cell}>{type.percentage.toFixed(1)}%</Text>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.header]}>
+                    <Text style={styles.tableCell}>Type</Text>
+                    <Text style={styles.tableCell}>Count</Text>
+                    <Text style={styles.tableCell}>Revenue</Text>
+                    <Text style={styles.tableCell}>%</Text>
                   </View>
-                ))}
+                  {reportData.salesByType.map((type, i) => (
+                    <View style={styles.tableRow} key={i}>
+                      <Text style={styles.tableCell}>{type.type}</Text>
+                      <Text style={styles.tableCell}>{type.count}</Text>
+                      <Text style={styles.tableCell}>${type.revenue.toFixed(2)}</Text>
+                      <Text style={styles.tableCell}>{type.percentage.toFixed(1)}%</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
-              {/* Top Producers */}
+              {/* Top Producers Table */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Top Producers</Text>
-                {reportData.salesByProducer.slice(0, 10).map((producer, index) => (
-                  <View key={index} style={styles.row}>
-                    <Text style={styles.cell}>{producer.producerName}</Text>
-                    <Text style={styles.cell}>{producer.totalSales}</Text>
-                    <Text style={styles.cell}>${producer.totalRevenue.toFixed(2)}</Text>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.header]}>
+                    <Text style={styles.tableCell}>Producer</Text>
+                    <Text style={styles.tableCell}>Total Sales</Text>
+                    <Text style={styles.tableCell}>Total Revenue</Text>
                   </View>
-                ))}
+                  {reportData.salesByProducer.slice(0, 10).map((producer, i) => (
+                    <View style={styles.tableRow} key={i}>
+                      <Text style={styles.tableCell}>{producer.producerName}</Text>
+                      <Text style={styles.tableCell}>{producer.totalSales}</Text>
+                      <Text style={styles.tableCell}>${producer.totalRevenue.toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             </View>
           </Page>
