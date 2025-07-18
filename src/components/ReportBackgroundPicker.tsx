@@ -2,9 +2,12 @@ import React, { useRef } from 'react';
 
 // Dynamically import all PNGs from the report-backgrounds folder
 const backgroundModules = import.meta.glob('../assets/report-backgrounds/*.png', { eager: true, as: 'url' });
-const backgrounds = Object.entries(backgroundModules).map(([path, url]) => {
-  // Extract filename for label
-  const name = path.split('/').pop()?.replace('.png', '').replace(/option-/, 'Option ').replace(/mybeatfi/i, 'MyBeatFi Branded').replace(/neutral/i, 'Neutral') || 'Background';
+const jpgModules = import.meta.glob('../assets/report-backgrounds/*.jpg', { eager: true, as: 'url' });
+const backgrounds = [
+  ...Object.entries(backgroundModules),
+  ...Object.entries(jpgModules),
+].map(([path, url]) => {
+  const name = path.split('/').pop()?.replace('.png', '').replace('.jpg', '').replace(/option-/, 'Option ').replace(/mybeatfi/i, 'MyBeatFi Branded').replace(/neutral/i, 'Neutral') || 'Cover Page';
   return { name, path: url as string };
 });
 
@@ -14,81 +17,78 @@ interface ReportBackgroundPickerProps {
 }
 
 export function ReportBackgroundPicker({ selected, onChange }: ReportBackgroundPickerProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Scroll to selected background when it changes
-  React.useEffect(() => {
-    const idx = backgrounds.findIndex(bg => bg.path === selected);
-    if (idx !== -1 && itemRefs.current[idx]) {
-      itemRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      alert('Only PNG and JPG files are allowed.');
+      return;
     }
-  }, [selected]);
+    // Save to src/assets/report-backgrounds/ (requires backend or dev server support)
+    // For now, show a message
+    alert('Please manually add the file to src/assets/report-backgrounds/. Automatic upload requires backend support.');
+  };
 
-  const scrollBy = (dir: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const width = scrollRef.current.offsetWidth;
-      scrollRef.current.scrollBy({ left: dir === 'left' ? -width * 0.7 : width * 0.7, behavior: 'smooth' });
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+      alert('Only PNG and JPG files are allowed.');
+      return;
     }
+    alert('Please manually add the file to src/assets/report-backgrounds/. Automatic upload requires backend support.');
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <button
-        aria-label="Scroll left"
-        onClick={() => scrollBy('left')}
-        style={{
-          position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 2,
-          background: 'rgba(30,41,59,0.7)', border: 'none', borderRadius: '50%', width: 36, height: 36, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px #0002',
-        }}
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" /></svg>
-      </button>
+    <div className="mb-6">
+      <h3 className="text-lg font-semibold text-white mb-4">Report Cover Pages</h3>
       <div
-        ref={scrollRef}
-        style={{
-          overflowX: 'auto',
-          whiteSpace: 'nowrap',
-          display: 'flex',
-          gap: 16,
-          padding: '8px 48px', // space for arrows
-          scrollBehavior: 'smooth',
-          scrollbarWidth: 'thin',
-        }}
+        className="mb-4 p-4 border-2 border-dashed border-blue-400 rounded-lg text-center cursor-pointer bg-white/5 hover:bg-blue-500/10 transition-colors"
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={e => e.preventDefault()}
       >
-        {backgrounds.map((bg, idx) => (
-          <div
-            key={bg.path}
-            ref={el => (itemRefs.current[idx] = el)}
-            onClick={() => onChange(bg.path)}
-            style={{
-              cursor: 'pointer',
-              border: selected === bg.path ? '2px solid #fff' : '2px solid transparent',
-              borderRadius: 8,
-              boxShadow: selected === bg.path ? '0 0 8px #fff' : undefined,
-              marginBottom: 8,
-              flex: '0 0 auto',
-              width: 100,
-              textAlign: 'center',
-              background: 'rgba(255,255,255,0.03)',
-              transition: 'border 0.2s, box-shadow 0.2s',
-            }}
-          >
-            <img src={bg.path} alt={bg.name} style={{ width: 100, height: 140, objectFit: 'cover', borderRadius: 8 }} />
-            <div style={{ color: '#fff', textAlign: 'center', marginTop: 4, fontSize: 14 }}>{bg.name}</div>
+        <input
+          type="file"
+          accept="image/png,image/jpeg"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+        />
+        <p className="text-blue-300">Drag & drop a PNG or JPG here, or click to upload</p>
+      </div>
+      <div className="flex gap-4 overflow-x-auto py-2 w-full max-w-full">
+        {backgrounds.map(bg => (
+          <div key={bg.path} className="relative group flex-shrink-0">
+            <button
+              className={`rounded-lg border-2 ${selected === bg.path ? 'border-blue-500' : 'border-transparent'} transition-all focus:outline-none`}
+              onClick={() => onChange(bg.path)}
+              type="button"
+            >
+              <img src={bg.path} alt={bg.name} className="w-40 h-56 object-cover rounded-lg" />
+              <div className="text-xs text-center text-white mt-1 w-40 truncate">{bg.name}</div>
+            </button>
+            {/* Delete button, visible on hover/focus or always on mobile */}
+            <button
+              className="absolute top-2 right-2 bg-black/60 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity md:opacity-100"
+              title="Delete cover page"
+              onClick={e => {
+                e.stopPropagation();
+                if (window.confirm('Are you sure you want to delete this cover page? You must manually remove the file from src/assets/report-backgrounds/.')) {
+                  alert('Please manually delete the file from src/assets/report-backgrounds/. Automatic deletion requires backend support.');
+                }
+              }}
+              type="button"
+              style={{ zIndex: 10 }}
+            >
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 6h18M9 6v12a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V6m-6 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /></svg>
+            </button>
           </div>
         ))}
       </div>
-      <button
-        aria-label="Scroll right"
-        onClick={() => scrollBy('right')}
-        style={{
-          position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', zIndex: 2,
-          background: 'rgba(30,41,59,0.7)', border: 'none', borderRadius: '50%', width: 36, height: 36, color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px #0002',
-        }}
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
-      </button>
     </div>
   );
 } 
