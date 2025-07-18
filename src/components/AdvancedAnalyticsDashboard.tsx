@@ -536,7 +536,7 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else if (format === 'pdf') {
-        // === Professional PDF Export: Clean, Card-Based Layout ===
+        // === Minimalist, Professional PDF Export ===
         let chartImages = { revenue: '', licenses: '', genres: '' };
         if (chartImagesRef.current) {
           chartImages = await chartImagesRef.current.getImages();
@@ -555,129 +555,131 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
           doc.addImage(base64, 'PNG', 0, 0, pageWidth, pageHeight);
           doc.addPage();
         }
-        let y = 40;
-        const cardPad = 24;
-        const cardWidth = pageWidth - 2 * cardPad;
-        const cardRadius = 12;
-        const cardShadow = [220, 220, 220];
-        // --- Key Metrics Card ---
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(cardPad, y, cardWidth, 90, cardRadius, cardRadius, 'F');
-        doc.setDrawColor(220, 220, 220);
-        doc.roundedRect(cardPad, y, cardWidth, 90, cardRadius, cardRadius);
+        let y = 48;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(20);
+        doc.setFontSize(22);
         doc.setTextColor(30, 41, 59);
-        doc.text('Key Metrics', cardPad + 24, y + 32);
-        doc.setFontSize(14);
+        doc.text('Analytics Report', 40, y);
+        y += 18;
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Total Revenue: $${analyticsData.keyMetrics.totalRevenue.toLocaleString()}`, cardPad + 24, y + 60);
-        doc.text(`Active Clients: ${analyticsData.keyMetrics.activeClients}`, cardPad + 250, y + 60);
-        doc.text(`Retention Rate: ${analyticsData.keyMetrics.retentionRate}%`, cardPad + 400, y + 60);
-        y += 110;
-        // --- Revenue Over Time Card ---
-        if (chartImages.revenue) {
-          doc.setFillColor(255, 255, 255);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius, 'F');
-          doc.setDrawColor(220, 220, 220);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(18);
-          doc.setTextColor(30, 41, 59);
-          doc.text('Monthly Revenue', cardPad + 24, y + 36);
-          doc.addImage(chartImages.revenue, 'PNG', cardPad + 24, y + 50, cardWidth - 48, 120);
-          // Table below chart
-          (doc as any).autoTable({
-            startY: y + 180,
-            head: [['Month', 'Total']],
-            body: analyticsData.revenueData.map(row => [row.month, `$${row.total.toLocaleString()}`]),
-            margin: { left: cardPad + 24, right: cardPad + 24 },
-            tableWidth: cardWidth - 48,
-            theme: 'grid',
-            headStyles: { fillColor: [240, 245, 255], textColor: 30, fontStyle: 'bold' },
-            alternateRowStyles: { fillColor: [250, 250, 250] },
-            styles: { textColor: 30, font: 'helvetica', fontSize: 12 },
-          });
-          y = (doc as any).lastAutoTable.finalY + 24;
-        }
-        // --- Licenses Per Client Card ---
-        if (chartImages.licenses) {
-          doc.setFillColor(255, 255, 255);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius, 'F');
-          doc.setDrawColor(220, 220, 220);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(18);
-          doc.setTextColor(30, 41, 59);
-          doc.text('Licenses Per Client', cardPad + 24, y + 36);
-          doc.addImage(chartImages.licenses, 'PNG', cardPad + 24, y + 50, cardWidth - 48, 120);
-          (doc as any).autoTable({
-            startY: y + 180,
-            head: [['Client Name', 'Licenses', 'Revenue']],
-            body: analyticsData.licenseData.map(row => [row.name, row.licenses, `$${row.revenue.toLocaleString()}`]),
-            margin: { left: cardPad + 24, right: cardPad + 24 },
-            tableWidth: cardWidth - 48,
-            theme: 'grid',
-            headStyles: { fillColor: [240, 245, 255], textColor: 30, fontStyle: 'bold' },
-            alternateRowStyles: { fillColor: [250, 250, 250] },
-            styles: { textColor: 30, font: 'helvetica', fontSize: 12 },
-          });
-          y = (doc as any).lastAutoTable.finalY + 24;
-        }
-        // --- Churn Risk Card ---
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(cardPad, y, cardWidth, 120, cardRadius, cardRadius, 'F');
-        doc.setDrawColor(220, 220, 220);
-        doc.roundedRect(cardPad, y, cardWidth, 120, cardRadius, cardRadius);
+        doc.setTextColor(100);
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 40, y);
+        y += 32;
+        // --- Key Metrics Summary ---
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
+        doc.setFontSize(14);
         doc.setTextColor(30, 41, 59);
-        doc.text('Churn Risk', cardPad + 24, y + 36);
+        doc.text('Summary', 40, y);
+        y += 12;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(30, 41, 59);
         (doc as any).autoTable({
-          startY: y + 50,
+          startY: y,
+          head: [['Total Revenue', 'Active Clients', 'Retention Rate']],
+          body: [[
+            `$${analyticsData.keyMetrics.totalRevenue.toLocaleString()}`,
+            analyticsData.keyMetrics.activeClients,
+            `${analyticsData.keyMetrics.retentionRate}%`
+          ]],
+          margin: { left: 40, right: 40 },
+          tableWidth: pageWidth - 80,
+          theme: 'grid',
+          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 24;
+        // --- Revenue Over Time ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Monthly Revenue', 40, y);
+        y += 10;
+        if (chartImages.revenue) {
+          doc.addImage(chartImages.revenue, 'PNG', 40, y, pageWidth - 80, 120);
+          y += 130;
+        }
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Month', 'Total']],
+          body: analyticsData.revenueData.map(row => [row.month, `$${row.total.toLocaleString()}`]),
+          margin: { left: 40, right: 40 },
+          tableWidth: pageWidth - 80,
+          theme: 'grid',
+          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 24;
+        // --- Licenses Per Client ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Licenses Per Client', 40, y);
+        y += 10;
+        if (chartImages.licenses) {
+          doc.addImage(chartImages.licenses, 'PNG', 40, y, pageWidth - 80, 120);
+          y += 130;
+        }
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Client Name', 'Licenses', 'Revenue']],
+          body: analyticsData.licenseData.map(row => [row.name, row.licenses, `$${row.revenue.toLocaleString()}`]),
+          margin: { left: 40, right: 40 },
+          tableWidth: pageWidth - 80,
+          theme: 'grid',
+          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 24;
+        // --- Churn Risk ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Churn Risk', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
           head: [['Name', 'Churn Risk (%)', 'Last Activity']],
           body: analyticsData.churnData.map(row => [row.name, row.churnRisk.toFixed(1), row.lastActivity]),
-          margin: { left: cardPad + 24, right: cardPad + 24 },
-          tableWidth: cardWidth - 48,
+          margin: { left: 40, right: 40 },
+          tableWidth: pageWidth - 80,
           theme: 'grid',
-          headStyles: { fillColor: [240, 245, 255], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [250, 250, 250] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12 },
+          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
         });
         y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Top Tracks Card ---
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(cardPad, y, cardWidth, 120, cardRadius, cardRadius, 'F');
-        doc.setDrawColor(220, 220, 220);
-        doc.roundedRect(cardPad, y, cardWidth, 120, cardRadius, cardRadius);
+        // --- Top Tracks ---
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(18);
+        doc.setFontSize(14);
         doc.setTextColor(30, 41, 59);
-        doc.text('Top Performing Tracks', cardPad + 24, y + 36);
+        doc.text('Top Performing Tracks', 40, y);
+        y += 10;
         (doc as any).autoTable({
-          startY: y + 50,
+          startY: y,
           head: [['Title', 'Plays', 'Licenses', 'Revenue']],
           body: analyticsData.topTracks.map(row => [row.title, row.plays, row.licenses, `$${row.revenue.toLocaleString()}`]),
-          margin: { left: cardPad + 24, right: cardPad + 24 },
-          tableWidth: cardWidth - 48,
+          margin: { left: 40, right: 40 },
+          tableWidth: pageWidth - 80,
           theme: 'grid',
-          headStyles: { fillColor: [240, 245, 255], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [250, 250, 250] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12 },
+          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [255, 255, 255] },
+          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
         });
         y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Genre Distribution Card ---
+        // --- Genre Distribution ---
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(30, 41, 59);
+        doc.text('Genre Distribution', 40, y);
+        y += 10;
         if (chartImages.genres) {
-          doc.setFillColor(255, 255, 255);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius, 'F');
-          doc.setDrawColor(220, 220, 220);
-          doc.roundedRect(cardPad, y, cardWidth, 260, cardRadius, cardRadius);
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(18);
-          doc.setTextColor(30, 41, 59);
-          doc.text('Genre Distribution', cardPad + 24, y + 36);
-          doc.addImage(chartImages.genres, 'PNG', cardPad + 24, y + 50, cardWidth - 48, 120);
-          y += 210;
+          doc.addImage(chartImages.genres, 'PNG', 40, y, pageWidth - 80, 120);
+          y += 130;
         }
         // --- Footer: Page Number Only ---
         const pageCount = doc.internal.getNumberOfPages();
