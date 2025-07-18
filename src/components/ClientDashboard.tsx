@@ -183,6 +183,25 @@ const handleFinalAcceptance = async (proposal: any) => {
   }
 };
 
+// Add this function near the other handlers
+const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
+    if (data?.signedUrl) {
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert('Download failed. Please check your license or contact support.');
+    }
+  } catch (err) {
+    alert('Download failed. Please contact support.');
+  }
+};
+
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -1457,12 +1476,12 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.trackouts_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip', proposal.track.trackouts_url)}
-                              className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                              onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                              className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
                               title="Download Trackouts"
                             >
                               <Download className="w-3 h-3 mr-1" />
-                              Stems
+                              Trackouts
                             </button>
                           )}
                           {proposal.track.split_sheet_url && (
@@ -1786,12 +1805,12 @@ export function ClientDashboard() {
                                     )}
                                     {license.track.trackoutsUrl && (
                                       <button
-                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_Stems.zip`, 'zip')}
-                                        className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackouts_url, `${license.track.title}_Trackouts.zip`)}
+                                        className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
-                                        Stems
+                                        Trackouts
                                       </button>
                                     )}
                                     {license.track.splitSheetUrl && (
@@ -1922,12 +1941,12 @@ export function ClientDashboard() {
                                     )}
                                     {proposal.track.trackouts_url && (
                                       <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_Stems.zip`, 'zip', proposal.track.trackouts_url)}
-                                        className="flex items-center px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                        onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                        className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
                                         title="Download Trackouts"
                                       >
                                         <Download className="w-3 h-3 mr-1" />
-                                        Stems
+                                        Trackouts
                                       </button>
                                     )}
                                     {proposal.track.split_sheet_url && (
