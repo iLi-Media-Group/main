@@ -53,23 +53,41 @@ ALTER TABLE genres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sub_genres ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for admin access only
-CREATE POLICY "Admins can manage genres" ON genres
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.account_type = 'admin'
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can manage genres' AND tablename = 'genres'
+  ) THEN
+    EXECUTE $policy$
+      CREATE POLICY "Admins can manage genres" ON genres
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE profiles.id = auth.uid() 
+            AND profiles.account_type = 'admin'
+          )
+        )
+    $policy$;
+  END IF;
+END $$;
 
-CREATE POLICY "Admins can manage sub_genres" ON sub_genres
-  FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.account_type = 'admin'
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE policyname = 'Admins can manage sub_genres' AND tablename = 'sub_genres'
+  ) THEN
+    EXECUTE $policy$
+      CREATE POLICY "Admins can manage sub_genres" ON sub_genres
+        FOR ALL USING (
+          EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE profiles.id = auth.uid() 
+            AND profiles.account_type = 'admin'
+          )
+        )
+    $policy$;
+  END IF;
+END $$;
 
 -- Create trigger for updated_at
 CREATE OR REPLACE FUNCTION update_genres_updated_at()
@@ -80,15 +98,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_genres_updated_at
-  BEFORE UPDATE ON genres
-  FOR EACH ROW
-  EXECUTE FUNCTION update_genres_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_genres_updated_at'
+  ) THEN
+    CREATE TRIGGER update_genres_updated_at
+      BEFORE UPDATE ON genres
+      FOR EACH ROW
+      EXECUTE FUNCTION update_genres_updated_at();
+  END IF;
+END $$;
 
-CREATE TRIGGER update_sub_genres_updated_at
-  BEFORE UPDATE ON sub_genres
-  FOR EACH ROW
-  EXECUTE FUNCTION update_genres_updated_at();
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'update_sub_genres_updated_at'
+  ) THEN
+    CREATE TRIGGER update_sub_genres_updated_at
+      BEFORE UPDATE ON sub_genres
+      FOR EACH ROW
+      EXECUTE FUNCTION update_genres_updated_at();
+  END IF;
+END $$;
 
 -- Insert default genres and sub-genres
 INSERT INTO genres (name, display_name) VALUES

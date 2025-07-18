@@ -1,8 +1,15 @@
 -- Add is_sync_only column to tracks table
 -- This column indicates that the track is only available for sync proposals, not for regular licensing
 
-ALTER TABLE tracks 
-ADD COLUMN is_sync_only BOOLEAN DEFAULT FALSE;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name='tracks' AND column_name='is_sync_only'
+  ) THEN
+    ALTER TABLE tracks ADD COLUMN is_sync_only BOOLEAN DEFAULT FALSE;
+  END IF;
+END $$;
 
 -- Add comment to explain the column
 COMMENT ON COLUMN tracks.is_sync_only IS 'Indicates that this track is only available for sync proposals, not for regular licensing';
