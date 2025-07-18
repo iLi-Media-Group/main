@@ -563,26 +563,11 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
 
       const ReportPDF = () => (
         <Document>
-          {/* Cover page: full-bleed background and client name overlay */}
+          {/* Cover page: only background image, no overlays */}
           <Page size="A4" style={{ position: 'relative', width: '100%', height: '100%' }}>
             {background && (
               <Image src={background} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
             )}
-            <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', width: '100%', height: '100%' }}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  color: '#fff',
-                  backgroundColor: 'rgba(0,0,0,0.4)',
-                  padding: 8,
-                  borderRadius: 6,
-                  fontWeight: 'bold',
-                  margin: 40,
-                }}
-              >
-                {clientName}
-              </Text>
-            </View>
           </Page>
           {/* Sales data: allow content to flow across as many pages as needed */}
           <Page size="A4" style={styles.page} wrap>
