@@ -1121,11 +1121,11 @@ function AdminDashboard() {
                 <p className="text-3xl font-bold text-white flex items-center gap-2">
                   ${stats.total_revenue.toFixed(2)}
                   <button
-                    onClick={handleDownloadRevenuePDF}
-                    title="Download PDF"
-                    className="ml-2 p-1 rounded hover:bg-blue-600/30 transition-colors"
+                    onClick={openReportModal}
+                    title="Open Report Generator"
+                    className="ml-2 p-1 rounded hover:bg-purple-600/30 transition-colors flex items-center gap-2"
                   >
-                    <Download className="w-5 h-5 text-blue-400" />
+                    <FileText className="w-5 h-5 text-purple-400" />
                   </button>
                 </p>
               </div>
@@ -1149,13 +1149,7 @@ function AdminDashboard() {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Comprehensive Revenue Report</h2>
             <div className="flex gap-2">
-              <button
-                onClick={handleDownloadRevenuePDF}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Download className="w-4 h-4" />
-                Download PDF
-              </button>
+              {/* Removed Download PDF button */}
               <button
                 onClick={openReportModal}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
@@ -1233,7 +1227,6 @@ function AdminDashboard() {
           {/* Move and restyle the ReportBackgroundPicker here */}
           <div className="flex justify-center mb-6">
             <div className="bg-white/10 rounded-xl p-4 border border-blue-500/20 w-full max-w-md">
-              <h3 className="text-lg font-semibold text-white mb-2 text-center">Report PDF Background</h3>
               <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
             </div>
           </div>

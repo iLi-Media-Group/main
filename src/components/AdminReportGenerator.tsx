@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, FileText, Calendar, BarChart3, DollarSign, Users, Filter, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { saveAs } from 'file-saver';
-import { Page, Image, View } from '@react-pdf/renderer';
+import { Page, Image, View, Text } from '@react-pdf/renderer';
 
 interface ReportData {
   dateRange: {
@@ -542,8 +542,9 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
 
       const ReportPDF = () => (
         <Document>
-          {/* Cover page: full-bleed image, no text */}
-          <CustomPage size="A4" background={background}>{/* No content on cover page */}</CustomPage>
+          <CustomPage size="A4" background={background}>
+            <Text style={{ opacity: 0, fontSize: 1 }}>cover</Text>
+          </CustomPage>
           {/* Report content starts on second page, no background */}
           <Page size="A4" style={styles.page}>
             <View style={styles.content}>
