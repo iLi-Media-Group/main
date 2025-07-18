@@ -55,9 +55,10 @@ interface ReportData {
 interface AdminReportGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
+  background?: string; // Add background prop
 }
 
-export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorProps) {
+export function AdminReportGenerator({ isOpen, onClose, background }: AdminReportGeneratorProps) {
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
@@ -498,10 +499,19 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
     if (!reportData) return;
 
     try {
-      const { Document, Page, Text, View, StyleSheet } = await import('@react-pdf/renderer');
+      const { Document, Page, Text, View, StyleSheet, Image } = await import('@react-pdf/renderer');
       
       const styles = StyleSheet.create({
-        page: { padding: 30, fontSize: 12 },
+        page: { position: 'relative', padding: 30, fontSize: 12 },
+        background: {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0,
+        },
+        content: { position: 'relative', zIndex: 1 },
         title: { fontSize: 18, marginBottom: 20, textAlign: 'center' },
         section: { marginBottom: 15 },
         sectionTitle: { fontSize: 14, marginBottom: 10, fontWeight: 'bold' },
@@ -513,51 +523,53 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
 
       const ReportPDF = () => (
         <Document>
-          <Page size="A4" style={styles.page}>
-            <Text style={styles.title}>Sales Report</Text>
-            <Text style={styles.summary}>
-              Date Range: {reportData.dateRange.start} to {reportData.dateRange.end}
-            </Text>
-            
-            {/* Summary */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Summary</Text>
-              <View style={styles.row}>
-                <Text style={styles.cell}>Total Sales: {reportData.summary.totalSales}</Text>
-                <Text style={styles.cell}>Total Revenue: ${reportData.summary.totalRevenue.toFixed(2)}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.cell}>Track Licenses: {reportData.summary.trackLicenses}</Text>
-                <Text style={styles.cell}>Sync Proposals: {reportData.summary.syncProposals}</Text>
-              </View>
-              <View style={styles.row}>
-                <Text style={styles.cell}>Custom Sync: {reportData.summary.customSyncRequests}</Text>
-              </View>
-            </View>
-
-            {/* Sales by Type */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Sales by Type</Text>
-              {reportData.salesByType.map((type, index) => (
-                <View key={index} style={styles.row}>
-                  <Text style={styles.cell}>{type.type}</Text>
-                  <Text style={styles.cell}>{type.count}</Text>
-                  <Text style={styles.cell}>${type.revenue.toFixed(2)}</Text>
-                  <Text style={styles.cell}>{type.percentage.toFixed(1)}%</Text>
+          <Page size="A4" style={styles.page} wrap>
+            {background && (
+              <Image src={background} style={styles.background} />
+            )}
+            <View style={styles.content}>
+              <Text style={styles.title}>Sales Report</Text>
+              <Text style={styles.summary}>
+                Date Range: {reportData.dateRange.start} to {reportData.dateRange.end}
+              </Text>
+              {/* Summary */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Summary</Text>
+                <View style={styles.row}>
+                  <Text style={styles.cell}>Total Sales: {reportData.summary.totalSales}</Text>
+                  <Text style={styles.cell}>Total Revenue: ${reportData.summary.totalRevenue.toFixed(2)}</Text>
                 </View>
-              ))}
-            </View>
-
-            {/* Top Producers */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Top Producers</Text>
-              {reportData.salesByProducer.slice(0, 10).map((producer, index) => (
-                <View key={index} style={styles.row}>
-                  <Text style={styles.cell}>{producer.producerName}</Text>
-                  <Text style={styles.cell}>{producer.totalSales}</Text>
-                  <Text style={styles.cell}>${producer.totalRevenue.toFixed(2)}</Text>
+                <View style={styles.row}>
+                  <Text style={styles.cell}>Track Licenses: {reportData.summary.trackLicenses}</Text>
+                  <Text style={styles.cell}>Sync Proposals: {reportData.summary.syncProposals}</Text>
                 </View>
-              ))}
+                <View style={styles.row}>
+                  <Text style={styles.cell}>Custom Sync: {reportData.summary.customSyncRequests}</Text>
+                </View>
+              </View>
+              {/* Sales by Type */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Sales by Type</Text>
+                {reportData.salesByType.map((type, index) => (
+                  <View key={index} style={styles.row}>
+                    <Text style={styles.cell}>{type.type}</Text>
+                    <Text style={styles.cell}>{type.count}</Text>
+                    <Text style={styles.cell}>${type.revenue.toFixed(2)}</Text>
+                    <Text style={styles.cell}>{type.percentage.toFixed(1)}%</Text>
+                  </View>
+                ))}
+              </View>
+              {/* Top Producers */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Top Producers</Text>
+                {reportData.salesByProducer.slice(0, 10).map((producer, index) => (
+                  <View key={index} style={styles.row}>
+                    <Text style={styles.cell}>{producer.producerName}</Text>
+                    <Text style={styles.cell}>{producer.totalSales}</Text>
+                    <Text style={styles.cell}>${producer.totalRevenue.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </Page>
         </Document>

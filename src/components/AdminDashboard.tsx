@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -20,6 +20,7 @@ import 'jspdf-autotable';
 import { useReportBackground } from '../contexts/ReportBackgroundContext';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 import { ReportBackgroundProvider } from '../contexts/ReportBackgroundContext';
+import { AdminReportGenerator } from './AdminReportGenerator';
 
 interface UserStats {
   total_clients: number;
@@ -183,6 +184,7 @@ function AdminDashboard() {
     secondary_color: '#8b5cf6'
   });
   const { selectedBackground, setSelectedBackground, loading: bgLoading } = useReportBackground();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -1039,6 +1041,10 @@ function AdminDashboard() {
     doc.save('comprehensive-revenue-report.pdf');
   };
 
+  // Add a handler to open/close the modal
+  const openReportModal = () => setIsReportModalOpen(true);
+  const closeReportModal = () => setIsReportModalOpen(false);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1142,13 +1148,22 @@ function AdminDashboard() {
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-white">Comprehensive Revenue Report</h2>
-            <button
-              onClick={handleDownloadRevenuePDF}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Download PDF
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDownloadRevenuePDF}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download PDF
+              </button>
+              <button
+                onClick={openReportModal}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Open Report Generator
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto mb-6">
             <table className="w-full text-sm">
@@ -1881,6 +1896,8 @@ function AdminDashboard() {
           </div>
         </div>
       )}
+      {/* AdminReportGenerator Modal */}
+      <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} background={selectedBackground} />
     </div>
   );
 }
