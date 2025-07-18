@@ -563,28 +563,28 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
 
       const ReportPDF = () => (
         <Document>
-          <CustomPage size="A4" background={background}>
-            {/* Cover page with client name in bottom right */}
-            <View style={{ flex: 1, width: '100%', height: '100%' }}>
-              {/* Absolutely position the client name in the bottom right */}
+          <Page size="A4" style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {/* Full-bleed cover image */}
+            {background && (
+              <Image src={background} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
+            )}
+            {/* Bottom-right client name overlay, ensure page is not blank */}
+            <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', width: '100%', height: '100%' }}>
               <Text
                 style={{
-                  position: 'absolute',
-                  right: 40,
-                  bottom: 40,
                   fontSize: 18,
                   color: '#fff',
                   backgroundColor: 'rgba(0,0,0,0.4)',
                   padding: 8,
                   borderRadius: 6,
                   fontWeight: 'bold',
-                  zIndex: 10,
+                  margin: 40,
                 }}
               >
                 {clientName}
               </Text>
             </View>
-          </CustomPage>
+          </Page>
           {/* Report content starts on second page, no background */}
           <Page size="A4" style={styles.page}>
             <View style={styles.content}>
