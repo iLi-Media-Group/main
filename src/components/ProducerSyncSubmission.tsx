@@ -40,6 +40,10 @@ export default function ProducerSyncSubmission() {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // --- Persistent notification logic ---
+  const getLastViewed = (reqId: string | null) => reqId ? localStorage.getItem(`cust_sync_last_viewed_${reqId}`) : null;
+  const setLastViewed = (reqId: string | null, timestamp: string) => { if (reqId) localStorage.setItem(`cust_sync_last_viewed_${reqId}`, timestamp); };
+
   // Get requestId from query string
   const searchParams = new URLSearchParams(location.search);
   const requestId = searchParams.get('requestId');
@@ -354,6 +358,10 @@ export default function ProducerSyncSubmission() {
         
         if (!reloadError && data) {
           setChatHistory(data);
+          // Set last viewed timestamp to latest message
+          if (data.length > 0) {
+            setLastViewed(requestId, data[data.length - 1].created_at);
+          }
         }
       }
     } catch (err) {
@@ -542,11 +550,16 @@ export default function ProducerSyncSubmission() {
               <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
                 <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5" /> Client Messages
-                  {unreadCount > 0 && (
-                    <span className="px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                      {unreadCount} new
-                    </span>
-                  )}
+                  {(() => {
+                    const history = chatHistory || [];
+                    const lastViewed = getLastViewed(requestId);
+                    const hasUnviewed = history.length > 0 && (!lastViewed || new Date(history[history.length - 1].created_at) > new Date(lastViewed));
+                    return hasUnviewed ? (
+                      <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse" title="New messages">
+                        New
+                      </span>
+                    ) : null;
+                  })()}
                 </h3>
                 <button
                   onClick={async () => {

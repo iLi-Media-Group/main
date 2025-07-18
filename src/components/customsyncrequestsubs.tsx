@@ -66,6 +66,10 @@ export default function CustomSyncRequestSubs() {
   const [sendingChatBoxMessage, setSendingChatBoxMessage] = useState(false);
   const chatDialogMessagesRef = useRef<HTMLDivElement>(null);
 
+  // --- Persistent notification logic ---
+  const getLastViewed = (reqId: string) => localStorage.getItem(`cust_sync_last_viewed_${reqId}`);
+  const setLastViewed = (reqId: string, timestamp: string) => localStorage.setItem(`cust_sync_last_viewed_${reqId}`, timestamp);
+
   // Auto-scroll chat box to bottom when new messages arrive
   useEffect(() => {
     if (showChatBox && chatBoxMessages.length > 0) {
@@ -647,6 +651,10 @@ export default function CustomSyncRequestSubs() {
             ...prev,
             [request.id]: data
           }));
+          // Set last viewed timestamp to latest message
+          if (data.length > 0) {
+            setLastViewed(request.id, data[data.length - 1].created_at);
+          }
         }
       }
     } catch (err) {
@@ -791,11 +799,16 @@ export default function CustomSyncRequestSubs() {
                       >
                         <MessageCircle className="w-4 h-4" />
                         Chat
-                        {unreadCounts[req.id] > 0 && (
-                          <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                            {unreadCounts[req.id]}
-                          </span>
-                        )}
+                        {(() => {
+                          const history = chatHistory[req.id] || [];
+                          const lastViewed = getLastViewed(req.id);
+                          const hasUnviewed = history.length > 0 && (!lastViewed || new Date(history[history.length - 1].created_at) > new Date(lastViewed));
+                          return hasUnviewed ? (
+                            <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse" title="New messages">
+                              New
+                            </span>
+                          ) : null;
+                        })()}
                       </button>
                       {/* New Message Envelope Icon (outside chat button, never blocks clicks) */}
                       {unreadCounts[req.id] > 0 && (

@@ -191,6 +191,46 @@ export function ChatSystem() {
   const [subscription, setSubscription] = useState<any>(null);
   const [roomSubscription, setRoomSubscription] = useState<any>(null);
   const [roomJustSelected, setRoomJustSelected] = useState(false);
+  // --- Notification logic ---
+  const [roomUnread, setRoomUnread] = useState<Record<string, boolean>>({});
+
+  // Helper: get last viewed timestamp for a room
+  const getLastViewed = (roomId: string) => {
+    return localStorage.getItem(`chat_last_viewed_${roomId}`);
+  };
+  // Helper: set last viewed timestamp for a room
+  const setLastViewed = (roomId: string, timestamp: string) => {
+    localStorage.setItem(`chat_last_viewed_${roomId}`, timestamp);
+  };
+
+  // When messages change (i.e., after fetching or receiving new), update unread state for all rooms
+  useEffect(() => {
+    if (!rooms.length) return;
+    const unread: Record<string, boolean> = {};
+    rooms.forEach(room => {
+      // Find the latest message for this room
+      if (selectedRoom && selectedRoom.id === room.id && messages.length > 0) {
+        // If this is the selected room, use the loaded messages
+        const lastMsg = messages[messages.length - 1];
+        const lastViewed = getLastViewed(room.id);
+        unread[room.id] = lastViewed ? new Date(lastMsg.created_at) > new Date(lastViewed) : true;
+      } else {
+        // For other rooms, we don't have messages loaded, so skip (could be improved with a summary query)
+        // For now, keep previous value or false
+        unread[room.id] = roomUnread[room.id] || false;
+      }
+    });
+    setRoomUnread(unread);
+  }, [rooms, messages, selectedRoom]);
+
+  // When a room is selected, mark all messages as viewed
+  useEffect(() => {
+    if (selectedRoom && messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      setLastViewed(selectedRoom.id, lastMsg.created_at);
+      setRoomUnread(prev => ({ ...prev, [selectedRoom.id]: false }));
+    }
+  }, [selectedRoom, messages]);
 
   useEffect(() => {
     if (user) {
@@ -298,7 +338,14 @@ export function ChatSystem() {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      if (data) setMessages(data);
+      if (data) {
+        // Normalize sender: if sender is an array, take the first element
+        const normalized = data.map((msg: any) => ({
+          ...msg,
+          sender: Array.isArray(msg.sender) ? msg.sender[0] : msg.sender
+        }));
+        setMessages(normalized);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -354,7 +401,11 @@ export function ChatSystem() {
 
       if (error) throw error;
       if (data) {
-        setMessages(prev => [...prev, data]);
+        const normalized = {
+          ...data,
+          sender: Array.isArray(data.sender) ? data.sender[0] : data.sender
+        };
+        setMessages(prev => [...prev, normalized]);
       }
     } catch (error) {
       console.error('Error fetching new message:', error);
@@ -454,7 +505,11 @@ export function ChatSystem() {
       
       // Immediately add the new message to the state
       if (data) {
-        setMessages(prev => [...prev, data]);
+        const normalized = {
+          ...data,
+          sender: Array.isArray(data.sender) ? data.sender[0] : data.sender
+        };
+        setMessages(prev => [...prev, normalized]);
       }
       
       setNewMessage('');
@@ -510,6 +565,10 @@ export function ChatSystem() {
                       <div className="flex items-center">
                         <Users className="w-4 h-4 mr-2" />
                         <span className="truncate">{room.name}</span>
+                        {/* Notification badge */}
+                        {roomUnread[room.id] && (
+                          <span className="ml-2 inline-block w-2 h-2 rounded-full bg-red-500" title="New messages"></span>
+                        )}
                       </div>
                       {canManageRoom(room) && selectedRoom?.id === room.id && (
                         <div className="relative group">
