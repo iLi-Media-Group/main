@@ -507,7 +507,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
           position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 0,
         },
         content: {
-          position: 'relative', zIndex: 1, padding: 20, color: '#222', fontSize: 12, width: '100%', height: '100%',
+          position: 'relative', zIndex: 1, padding: 20, color: '#222', fontSize: 12, width: '100%',
         },
         title: { fontSize: 18, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', color: '#222' },
         section: { marginBottom: 18 },
@@ -522,7 +522,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
 
       const ReportPDF = () => (
         <Document>
-          <Page size="A4" style={styles.page} wrap={false}>
+          <Page size="A4" style={styles.page}>
             {background && (
               <Image src={background} style={styles.background} />
             )}
