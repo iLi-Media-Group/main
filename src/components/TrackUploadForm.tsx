@@ -492,20 +492,6 @@ export function TrackUploadForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  MP3 Only Link
-                </label>
-                <input
-                  type="url"
-                  value={mp3Url}
-                  onChange={(e) => setMp3Url(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="https://..."
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
                   Full Trackouts Link
                 </label>
                 <input
