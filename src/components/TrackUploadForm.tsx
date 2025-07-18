@@ -89,6 +89,8 @@ export function TrackUploadForm() {
   const { currentPlan } = useCurrentPlan();
   const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
   const [stemsFile, setStemsFile] = useState<File | null>(null);
+  // Add state for expanded moods
+  const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
 
   // Fetch genres from database
   useEffect(() => {
@@ -703,36 +705,41 @@ export function TrackUploadForm() {
           {/* Moods Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
-            
-            <div className="space-y-6">
-              {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
-                <div key={category} className="bg-white/5 rounded-lg p-4">
-                  <h3 className="text-white font-medium mb-3">{category}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {moods.map((mood) => (
-                      <label
-                        key={mood}
-                        className="flex items-center space-x-2 text-gray-300"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedMoods.includes(mood)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedMoods([...selectedMoods, mood]);
-                            } else {
-                              setSelectedMoods(
-                                selectedMoods.filter((m) => m !== mood)
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                          disabled={isSubmitting}
-                        />
-                        <span>{mood}</span>
-                      </label>
-                    ))}
-                  </div>
+            <div className="space-y-2">
+              {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => (
+                <div key={mainMood} className="border-b border-blue-700 pb-2 mb-2">
+                  <button
+                    type="button"
+                    className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
+                    onClick={() => setExpandedMoods(expandedMoods.includes(mainMood)
+                      ? expandedMoods.filter(m => m !== mainMood)
+                      : [...expandedMoods, mainMood])}
+                  >
+                    <span>{mainMood}</span>
+                    <span>{expandedMoods.includes(mainMood) ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedMoods.includes(mainMood) && (
+                    <div className="pl-4 pt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {subMoods.map((subMood: string) => (
+                        <label key={subMood} className="flex items-center space-x-2 text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={selectedMoods.includes(subMood)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedMoods([...selectedMoods, subMood]);
+                              } else {
+                                setSelectedMoods(selectedMoods.filter((m) => m !== subMood));
+                              }
+                            }}
+                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                            disabled={isSubmitting}
+                          />
+                          <span className="text-sm">{subMood}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
