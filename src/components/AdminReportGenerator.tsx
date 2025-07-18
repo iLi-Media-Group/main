@@ -543,7 +543,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
       const ReportPDF = () => (
         <Document>
           <CustomPage size="A4" background={background}>
-            <Text style={{ opacity: 0, fontSize: 1 }}>cover</Text>
+            <View style={{ height: 1 }} />
           </CustomPage>
           {/* Report content starts on second page, no background */}
           <Page size="A4" style={styles.page}>
