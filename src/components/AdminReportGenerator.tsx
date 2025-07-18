@@ -584,8 +584,8 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
               </Text>
             </View>
           </Page>
-          {/* Sales data page: no background, just data */}
-          <Page size="A4" style={styles.page}>
+          {/* Sales data: allow content to flow across as many pages as needed */}
+          <Page size="A4" style={styles.page} wrap>
             <View style={styles.content}>
               <Text style={styles.title}>Sales Report</Text>
               <Text style={{ textAlign: 'center', marginBottom: 12, fontSize: 11 }}>
@@ -620,7 +620,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
                     <Text style={styles.tableCell}>%</Text>
                   </View>
                   {reportData.salesByType.map((type, i) => (
-                    <View style={styles.tableRow} key={i}>
+                    <View style={styles.tableRow} key={i} wrap={false}>
                       <Text style={styles.tableCell}>{type.type}</Text>
                       <Text style={styles.tableCell}>{type.count}</Text>
                       <Text style={styles.tableCell}>${type.revenue.toFixed(2)}</Text>
@@ -638,11 +638,39 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
                     <Text style={styles.tableCell}>Total Sales</Text>
                     <Text style={styles.tableCell}>Total Revenue</Text>
                   </View>
-                  {reportData.salesByProducer.slice(0, 10).map((producer, i) => (
-                    <View style={styles.tableRow} key={i}>
+                  {reportData.salesByProducer.map((producer, i) => (
+                    <View style={styles.tableRow} key={i} wrap={false}>
                       <Text style={styles.tableCell}>{producer.producerName}</Text>
                       <Text style={styles.tableCell}>{producer.totalSales}</Text>
                       <Text style={styles.tableCell}>${producer.totalRevenue.toFixed(2)}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              {/* Daily Sales Table */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Daily Sales Breakdown</Text>
+                <View style={styles.table}>
+                  <View style={[styles.tableRow, styles.header]}>
+                    <Text style={styles.tableCell}>Date</Text>
+                    <Text style={styles.tableCell}>Track Licenses</Text>
+                    <Text style={styles.tableCell}>Sync Proposals</Text>
+                    <Text style={styles.tableCell}>Custom Sync</Text>
+                    <Text style={styles.tableCell}>White Label Setup</Text>
+                    <Text style={styles.tableCell}>White Label Monthly</Text>
+                    <Text style={styles.tableCell}>Total Sales</Text>
+                    <Text style={styles.tableCell}>Total Revenue</Text>
+                  </View>
+                  {reportData.dailySales.map((day, i) => (
+                    <View style={styles.tableRow} key={i} wrap={false}>
+                      <Text style={styles.tableCell}>{day.date}</Text>
+                      <Text style={styles.tableCell}>{day.trackLicenses}</Text>
+                      <Text style={styles.tableCell}>{day.syncProposals}</Text>
+                      <Text style={styles.tableCell}>{day.customSyncRequests}</Text>
+                      <Text style={styles.tableCell}>{day.whiteLabelSetup}</Text>
+                      <Text style={styles.tableCell}>{day.whiteLabelMonthly}</Text>
+                      <Text style={styles.tableCell}>{day.totalSales}</Text>
+                      <Text style={styles.tableCell}>${day.totalRevenue.toFixed(2)}</Text>
                     </View>
                   ))}
                 </View>
