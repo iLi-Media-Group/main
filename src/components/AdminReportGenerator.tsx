@@ -67,12 +67,33 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
   });
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [error, setError] = useState('');
+  const [clientName, setClientName] = useState<string>('MyBeatFi');
 
   useEffect(() => {
     if (isOpen) {
       generateReport();
+      fetchClientName();
     }
   }, [isOpen, dateRange]);
+
+  // Fetch the white label client display_name
+  const fetchClientName = async () => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData?.user;
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('white_label_clients')
+        .select('display_name')
+        .eq('owner_id', user.id)
+        .maybeSingle();
+      if (data && data.display_name) {
+        setClientName(data.display_name);
+      }
+    } catch (err) {
+      // fallback to default
+    }
+  };
 
   const generateReport = async () => {
     try {
@@ -543,7 +564,26 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
       const ReportPDF = () => (
         <Document>
           <CustomPage size="A4" background={background}>
-            <Text style={{ fontSize: 1, opacity: 0.01 }}>.</Text>
+            {/* Cover page with client name in bottom right */}
+            <View style={{ flex: 1, width: '100%', height: '100%' }}>
+              {/* Absolutely position the client name in the bottom right */}
+              <Text
+                style={{
+                  position: 'absolute',
+                  right: 40,
+                  bottom: 40,
+                  fontSize: 18,
+                  color: '#fff',
+                  backgroundColor: 'rgba(0,0,0,0.4)',
+                  padding: 8,
+                  borderRadius: 6,
+                  fontWeight: 'bold',
+                  zIndex: 10,
+                }}
+              >
+                {clientName}
+              </Text>
+            </View>
           </CustomPage>
           {/* Report content starts on second page, no background */}
           <Page size="A4" style={styles.page}>
