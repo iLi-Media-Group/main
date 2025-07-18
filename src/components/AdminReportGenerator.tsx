@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Download, FileText, Calendar, BarChart3, DollarSign, Users, Filter, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { saveAs } from 'file-saver';
+import { Page, Image, View } from '@react-pdf/renderer';
 
 interface ReportData {
   dateRange: {
@@ -499,7 +500,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
     if (!reportData) return;
 
     try {
-      const { Document, Page, Text, View, StyleSheet, Image } = await import('@react-pdf/renderer');
+      const { Document, StyleSheet, Text } = await import('@react-pdf/renderer');
       
       const styles = StyleSheet.create({
         page: { position: 'relative', width: '100%', height: '100%' },
@@ -527,7 +528,6 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
         [key: string]: any;
       }
       const CustomPage = ({ background, children, ...props }: CustomPageProps) => {
-        const { Page, Image, View } = require('@react-pdf/renderer');
         return (
           <Page {...props}>
             {background && (
