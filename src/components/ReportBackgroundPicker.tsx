@@ -90,7 +90,7 @@ export function ReportBackgroundPicker({ selected, onChange }: ReportBackgroundP
   return (
     <div className="mb-6">
       <div
-        className="mb-4 p-2 border-2 border-dashed border-blue-400 rounded-lg text-center cursor-pointer bg-white/5 hover:bg-blue-500/10 transition-colors w-full max-w-full"
+        className="mb-4 p-2 border-2 border-dashed border-blue-400 rounded-lg text-center cursor-pointer bg-white/5 hover:bg-blue-500/10 transition-colors w-full"
         onClick={() => fileInputRef.current?.click()}
         onDrop={handleDrop}
         onDragOver={e => e.preventDefault()}
@@ -105,7 +105,7 @@ export function ReportBackgroundPicker({ selected, onChange }: ReportBackgroundP
         />
         <p className="text-blue-300 text-sm">Drag & drop a PNG or JPG here, or click to upload</p>
       </div>
-      <div className="flex gap-4 overflow-x-auto py-2 w-full max-w-full">
+      <div className="flex gap-4 overflow-x-auto py-2 w-full" style={{ maxWidth: 1200 }}>
         {coverImages.map(img => (
           <div key={img.url} className="relative group flex-shrink-0">
             <button
