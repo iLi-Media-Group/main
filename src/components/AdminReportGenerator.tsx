@@ -520,75 +520,90 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
         summaryCell: { flex: 1, fontSize: 12, color: '#222' },
       });
 
+      // CustomPage component for background on every page
+      interface CustomPageProps {
+        background?: string;
+        children: React.ReactNode;
+        [key: string]: any;
+      }
+      const CustomPage = ({ background, children, ...props }: CustomPageProps) => {
+        const { Page, Image, View } = require('@react-pdf/renderer');
+        return (
+          <Page {...props}>
+            {background && (
+              <Image src={background} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%', zIndex: 0 }} />
+            )}
+            <View style={{ position: 'relative', zIndex: 1, padding: 20, width: '100%' }}>
+              {children}
+            </View>
+          </Page>
+        );
+      };
+
       const ReportPDF = () => (
         <Document>
-          <Page size="A4" style={styles.page}>
-            {background && (
-              <Image src={background} style={styles.background} />
-            )}
-            <View style={styles.content}>
-              <Text style={styles.title}>Sales Report</Text>
-              <Text style={{ textAlign: 'center', marginBottom: 12, fontSize: 11 }}>
-                Date Range: {reportData.dateRange.start} to {reportData.dateRange.end}
-              </Text>
-              {/* Summary Table */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Summary</Text>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.header]}>
-                    <Text style={styles.tableCell}>Total Sales</Text>
-                    <Text style={styles.tableCell}>Total Revenue</Text>
-                    <Text style={styles.tableCell}>Track Licenses</Text>
-                    <Text style={styles.tableCell}>Sync Proposals</Text>
-                  </View>
-                  <View style={styles.tableRow}>
-                    <Text style={styles.tableCell}>{reportData.summary.totalSales}</Text>
-                    <Text style={styles.tableCell}>${reportData.summary.totalRevenue.toFixed(2)}</Text>
-                    <Text style={styles.tableCell}>{reportData.summary.trackLicenses}</Text>
-                    <Text style={styles.tableCell}>{reportData.summary.syncProposals}</Text>
-                  </View>
+          <CustomPage size="A4" background={background}>
+            <Text style={styles.title}>Sales Report</Text>
+            <Text style={{ textAlign: 'center', marginBottom: 12, fontSize: 11 }}>
+              Date Range: {reportData.dateRange.start} to {reportData.dateRange.end}
+            </Text>
+            {/* Summary Table */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Summary</Text>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.header]}>
+                  <Text style={styles.tableCell}>Total Sales</Text>
+                  <Text style={styles.tableCell}>Total Revenue</Text>
+                  <Text style={styles.tableCell}>Track Licenses</Text>
+                  <Text style={styles.tableCell}>Sync Proposals</Text>
                 </View>
-              </View>
-              {/* Sales by Type Table */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Sales by Type</Text>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.header]}>
-                    <Text style={styles.tableCell}>Type</Text>
-                    <Text style={styles.tableCell}>Count</Text>
-                    <Text style={styles.tableCell}>Revenue</Text>
-                    <Text style={styles.tableCell}>%</Text>
-                  </View>
-                  {reportData.salesByType.map((type, i) => (
-                    <View style={styles.tableRow} key={i}>
-                      <Text style={styles.tableCell}>{type.type}</Text>
-                      <Text style={styles.tableCell}>{type.count}</Text>
-                      <Text style={styles.tableCell}>${type.revenue.toFixed(2)}</Text>
-                      <Text style={styles.tableCell}>{type.percentage.toFixed(1)}%</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              {/* Top Producers Table */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Top Producers</Text>
-                <View style={styles.table}>
-                  <View style={[styles.tableRow, styles.header]}>
-                    <Text style={styles.tableCell}>Producer</Text>
-                    <Text style={styles.tableCell}>Total Sales</Text>
-                    <Text style={styles.tableCell}>Total Revenue</Text>
-                  </View>
-                  {reportData.salesByProducer.slice(0, 10).map((producer, i) => (
-                    <View style={styles.tableRow} key={i}>
-                      <Text style={styles.tableCell}>{producer.producerName}</Text>
-                      <Text style={styles.tableCell}>{producer.totalSales}</Text>
-                      <Text style={styles.tableCell}>${producer.totalRevenue.toFixed(2)}</Text>
-                    </View>
-                  ))}
+                <View style={styles.tableRow}>
+                  <Text style={styles.tableCell}>{reportData.summary.totalSales}</Text>
+                  <Text style={styles.tableCell}>${reportData.summary.totalRevenue.toFixed(2)}</Text>
+                  <Text style={styles.tableCell}>{reportData.summary.trackLicenses}</Text>
+                  <Text style={styles.tableCell}>{reportData.summary.syncProposals}</Text>
                 </View>
               </View>
             </View>
-          </Page>
+            {/* Sales by Type Table */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Sales by Type</Text>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.header]}>
+                  <Text style={styles.tableCell}>Type</Text>
+                  <Text style={styles.tableCell}>Count</Text>
+                  <Text style={styles.tableCell}>Revenue</Text>
+                  <Text style={styles.tableCell}>%</Text>
+                </View>
+                {reportData.salesByType.map((type, i) => (
+                  <View style={styles.tableRow} key={i}>
+                    <Text style={styles.tableCell}>{type.type}</Text>
+                    <Text style={styles.tableCell}>{type.count}</Text>
+                    <Text style={styles.tableCell}>${type.revenue.toFixed(2)}</Text>
+                    <Text style={styles.tableCell}>{type.percentage.toFixed(1)}%</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+            {/* Top Producers Table */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Top Producers</Text>
+              <View style={styles.table}>
+                <View style={[styles.tableRow, styles.header]}>
+                  <Text style={styles.tableCell}>Producer</Text>
+                  <Text style={styles.tableCell}>Total Sales</Text>
+                  <Text style={styles.tableCell}>Total Revenue</Text>
+                </View>
+                {reportData.salesByProducer.slice(0, 10).map((producer, i) => (
+                  <View style={styles.tableRow} key={i}>
+                    <Text style={styles.tableCell}>{producer.producerName}</Text>
+                    <Text style={styles.tableCell}>{producer.totalSales}</Text>
+                    <Text style={styles.tableCell}>${producer.totalRevenue.toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </CustomPage>
         </Document>
       );
 
