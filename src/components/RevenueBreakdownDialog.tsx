@@ -614,9 +614,6 @@ export function RevenueBreakdownDialog({
       const subtitle = 'This report provides an in-depth analysis of revenue performance.';
       const subtitleLines = doc.splitTextToSize(subtitle, maxTitleWidth);
       doc.text(subtitleLines, titleX, y + 60);
-      doc.setFontSize(12);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, titleX, y + 80);
       y += 110;
       // Total Revenue
       doc.setFont('helvetica', 'bold');
@@ -688,6 +685,11 @@ export function RevenueBreakdownDialog({
       doc.setTextColor(80, 80, 80);
       doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
       doc.text(`Email: ${email || ''}`, 50, footerY + 65);
+      // Add generated date at the very bottom left
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, 50, pageHeight - 20);
       doc.save('revenue-report.pdf');
     } catch (err) {
       console.error('Error generating PDF:', err);
