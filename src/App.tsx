@@ -9,7 +9,7 @@ import { ProducerDashboard } from './components/ProducerDashboard';
 import { TrackUploadForm } from './components/TrackUploadForm';
 import { ClientSignupDialog } from './components/ClientSignupDialog';
 import { ClientDashboard } from './components/ClientDashboard';
-import { AdminDashboardWrapper } from './components/AdminDashboard';
+import { AdminDashboard } from './components/AdminDashboard';
 import { ProducerInvitation } from './components/ProducerInvitation';
 import { CatalogPage } from './components/CatalogPage';
 import { VocalsPage } from './components/VocalsPage';
@@ -376,7 +376,7 @@ const App = () => {
         <Route path="/admin" element={
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
-              <AdminDashboardWrapper />
+              <AdminDashboard />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
