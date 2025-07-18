@@ -615,19 +615,6 @@ export function RevenueBreakdownDialog({
       const subtitleLines = doc.splitTextToSize(subtitle, maxTitleWidth);
       doc.text(subtitleLines, titleX, y + 60);
       y += 110;
-      // Total Revenue
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(22);
-      doc.setTextColor(30, 30, 30);
-      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 50, y);
-      y += 30;
-      if (totalPendingRevenue > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(14);
-        doc.setTextColor(200, 120, 0);
-        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, y);
-        y += 25;
-      }
       // Revenue by Source Table
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
@@ -670,7 +657,20 @@ export function RevenueBreakdownDialog({
         styles: { textColor: [30, 30, 30], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
-      y = (doc as any).lastAutoTable.finalY + 20;
+      y = (doc as any).lastAutoTable.finalY + 30;
+      // Total Revenue (moved below tables)
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 50, y);
+      y += 30;
+      if (totalPendingRevenue > 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(14);
+        doc.setTextColor(200, 120, 0);
+        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, y);
+        y += 25;
+      }
       // Footer with Brand Info
       const footerY = doc.internal.pageSize.getHeight() - 80;
       doc.setDrawColor(90, 90, 180);
