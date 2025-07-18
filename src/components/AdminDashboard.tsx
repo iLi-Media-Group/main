@@ -101,14 +101,6 @@ const getBase64ImageFromURL = (url: string) =>
     img.src = url;
   });
 
-const AdminDashboardWrapper = () => {
-  return (
-    <ReportBackgroundProvider clientId={null}>
-      <AdminDashboard />
-    </ReportBackgroundProvider>
-  );
-};
-
 function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -1891,4 +1883,4 @@ function AdminDashboard() {
   );
 }
 
-export { AdminDashboard, AdminDashboardWrapper };
+export { AdminDashboard };
