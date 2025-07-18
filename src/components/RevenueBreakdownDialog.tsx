@@ -650,10 +650,10 @@ export function RevenueBreakdownDialog({
         styles: { textColor: [30, 30, 30], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
-      y = (doc as any).lastAutoTable.finalY + 20;
+      y = (doc as any).lastAutoTable.finalY + 40; // Add extra space after table
       // Monthly Revenue Table
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
+      doc.setFontSize(16); // Match previous section
       doc.setTextColor(30, 30, 30);
       doc.text('Monthly Revenue', 50, y);
       const monthlyTableData = monthlyRevenue.map(item => [
