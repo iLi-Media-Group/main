@@ -582,6 +582,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           body: analyticsData.revenueData.map(row => [row.month, row.total]),
           margin: { left: 40, right: 40 },
           theme: 'grid',
+          headStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0] },
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // License Data Table
@@ -593,6 +594,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           body: analyticsData.licenseData.map(row => [row.name, row.licenses, row.revenue]),
           margin: { left: 40, right: 40 },
           theme: 'grid',
+          headStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0] },
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Churn Data Table
@@ -604,6 +606,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           body: analyticsData.churnData.map(row => [row.name, row.churnRisk, row.lastActivity]),
           margin: { left: 40, right: 40 },
           theme: 'grid',
+          headStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0] },
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Top Tracks Table
@@ -615,6 +618,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           body: analyticsData.topTracks.map(row => [row.title, row.plays, row.licenses, row.revenue]),
           margin: { left: 40, right: 40 },
           theme: 'grid',
+          headStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0] },
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Key Metrics Table
@@ -626,6 +630,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           body: [[analyticsData.keyMetrics.totalRevenue, analyticsData.keyMetrics.activeClients, analyticsData.keyMetrics.retentionRate]],
           margin: { left: 40, right: 40 },
           theme: 'grid',
+          headStyles: { fillColor: [229, 231, 235], textColor: [0, 0, 0] },
         });
         // Footer with branding
         const footerY = doc.internal.pageSize.getHeight() - 80;
