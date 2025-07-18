@@ -876,8 +876,8 @@ function AdminDashboard() {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     // === Add background image ===
-    console.log('PDF background path:', selectedBackground);
-    const backgroundPath = selectedBackground;
+    const backgroundPath = selectedBackground || '/report-backgrounds/option-mybeatfi.png';
+    console.log('PDF background path:', backgroundPath);
     try {
       const bgBase64 = await getBase64ImageFromURL(backgroundPath);
       doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
@@ -1150,8 +1150,7 @@ function AdminDashboard() {
               Download PDF
             </button>
           </div>
-          
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto mb-6">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-blue-500/20">
@@ -1203,32 +1202,24 @@ function AdminDashboard() {
                   <td className="py-3 px-4 text-right text-white font-semibold">
                     {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count}
                   </td>
-                  <td className="py-3 px-4 text-right text-green-400 font-semibold">
+                  <td className="py-3 px-4 text-right text-white font-semibold">
                     ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount).toFixed(2)}
                   </td>
-                  <td className="py-3 px-4 text-right text-yellow-400 font-semibold">
+                  <td className="py-3 px-4 text-right text-white font-semibold">
                     {stats.sync_proposals_pending_count + stats.custom_syncs_pending_count}
                   </td>
-                  <td className="py-3 px-4 text-right text-yellow-400 font-semibold">
+                  <td className="py-3 px-4 text-right text-white font-semibold">
                     ${(stats.sync_proposals_pending_amount + stats.custom_syncs_pending_amount).toFixed(2)}
                   </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6 pt-6 border-t border-blue-500/20">
-            <div className="text-center">
-              <p className="text-gray-400 text-sm">Total Producers</p>
-              <p className="text-2xl font-bold text-white">{stats.total_producers}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm">Total Clients</p>
-              <p className="text-2xl font-bold text-white">{stats.total_clients}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-400 text-sm">New Memberships (This Period)</p>
-              <p className="text-2xl font-bold text-white">{stats.new_memberships_count || 0}</p>
+          {/* Move and restyle the ReportBackgroundPicker here */}
+          <div className="flex justify-center mb-6">
+            <div className="bg-white/10 rounded-xl p-4 border border-blue-500/20 w-full max-w-md">
+              <h3 className="text-lg font-semibold text-white mb-2 text-center">Report PDF Background</h3>
+              <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
             </div>
           </div>
         </div>
@@ -1890,15 +1881,6 @@ function AdminDashboard() {
           </div>
         </div>
       )}
-
-      {/* Report Background Picker for PDF Reports (bottom left aligned) */}
-      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-8 max-w-xs">
-        <h2 className="text-lg font-semibold text-white mb-2">Report PDF Background</h2>
-        <ReportBackgroundPicker
-          selected={selectedBackground}
-          onChange={setSelectedBackground}
-        />
-      </div>
     </div>
   );
 }
