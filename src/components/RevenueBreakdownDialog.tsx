@@ -3,6 +3,7 @@ import { X, DollarSign, Download, PieChart, Calendar, FileText, Loader2, Clock }
 import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface RevenueBreakdownDialogProps {
   isOpen: boolean;
@@ -54,6 +55,20 @@ export function RevenueBreakdownDialog({
   const [totalPendingRevenue, setTotalPendingRevenue] = useState(0);
   const [timeframe, setTimeframe] = useState<'month' | 'quarter' | 'year' | 'all'>('month');
   const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [selectedCover, setSelectedCover] = useState<string>("");
+  const [defaultCover, setDefaultCover] = useState<string>("");
+
+  // Fetch default cover from report_settings on mount
+  useEffect(() => {
+    const fetchDefaultCover = async () => {
+      const { data, error } = await supabase.from('report_settings').select('default_cover_url').eq('id', 1).single();
+      if (data && data.default_cover_url) {
+        setDefaultCover(data.default_cover_url);
+        setSelectedCover(data.default_cover_url);
+      }
+    };
+    if (isOpen) fetchDefaultCover();
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -562,7 +577,7 @@ export function RevenueBreakdownDialog({
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
       // === Add background image ===
-      const backgroundPath = '/report-backgrounds/option-mybeatfi.png'; // Use selected or default
+      const backgroundPath = selectedCover || defaultCover || '/report-backgrounds/option-mybeatfi.png'; // Use selected or default
       try {
         const bgBase64 = await getBase64ImageFromURL(backgroundPath);
         doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
@@ -959,6 +974,7 @@ export function RevenueBreakdownDialog({
                 </table>
               </div>
             </div>
+            <ReportBackgroundPicker selected={selectedCover} onChange={setSelectedCover} />
           </div>
         )}
         </div>
