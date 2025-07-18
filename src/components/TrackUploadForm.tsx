@@ -224,21 +224,37 @@ export function TrackUploadForm() {
 
       const audioUrl = await uploadFile(audioFile, 'track-audio', (progress) => {
         setUploadProgress(progress);
-      });
+      }, `${user.id}/${title}`);
 
       setUploadedUrl(audioUrl);
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
-        imageUrl = await uploadFile(imageFile, 'track-images');
+        imageUrl = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
-        splitSheetUploadedUrl = await uploadFile(splitSheetFile, 'split-sheets');
+        splitSheetUploadedUrl = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
 
+      // --- New logic for trackouts and stems ---
+      let trackoutsStoragePath = trackoutsUrl;
+      if (trackoutsFile) {
+        // If editing and old file exists, delete it first (not shown here, but should be handled)
+        trackoutsStoragePath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
+        setTrackoutsUrl(trackoutsStoragePath);
+      }
+      let stemsStoragePath = stemsUrl;
+      if (stemsFile) {
+        // If editing and old file exists, delete it first (not shown here, but should be handled)
+        stemsStoragePath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
+        setStemsUrl(stemsStoragePath);
+      }
+      // --- End new logic ---
+
+      // Insert or update track in DB
       const { error: trackError } = await supabase
         .from('tracks')
         .insert({
@@ -256,8 +272,8 @@ export function TrackUploadForm() {
           audio_url: audioUrl,
           image_url: imageUrl,
           mp3_url: mp3Url || null,
-          trackouts_url: trackoutsUrl || null,
-          stems_url: stemsUrl || null,
+          trackouts_url: trackoutsStoragePath || null,
+          stems_url: stemsStoragePath || null,
           split_sheet_url: splitSheetUploadedUrl || null,
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? vocalsUsageType : null,
@@ -268,7 +284,7 @@ export function TrackUploadForm() {
 
       if (trackError) throw trackError;
 
-      // Get the inserted track ID
+      // Get the inserted track ID (if needed for further logic)
       const { data: trackData, error: trackFetchError } = await supabase
         .from('tracks')
         .select('id')
