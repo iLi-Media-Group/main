@@ -87,6 +87,8 @@ export function TrackUploadForm() {
   const [genresLoading, setGenresLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
+  const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
+  const [stemsFile, setStemsFile] = useState<File | null>(null);
 
   // Fetch genres from database
   useEffect(() => {
@@ -491,13 +493,30 @@ export function TrackUploadForm() {
                   Full Trackouts Link
                 </label>
                 <input
-                  type="url"
-                  value={trackoutsUrl}
-                  onChange={(e) => setTrackoutsUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="https://..."
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setTrackoutsFile(file);
+                      setTrackoutsUrl(URL.createObjectURL(file)); // Preview for now
+                    } else {
+                      setTrackoutsFile(null);
+                      setTrackoutsUrl('');
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   disabled={isSubmitting}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload a ZIP file containing trackouts.
+                </p>
+                {trackoutsFile && (
+                  <div className="bg-white/5 rounded-lg p-4 mt-2">
+                    <h3 className="text-white font-medium mb-2">Preview</h3>
+                    <p className="text-gray-400 text-sm">{trackoutsFile.name}</p>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -505,13 +524,30 @@ export function TrackUploadForm() {
                   Stems Link
                 </label>
                 <input
-                  type="url"
-                  value={stemsUrl}
-                  onChange={(e) => setStemsUrl(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="https://..."
+                  type="file"
+                  accept=".zip"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setStemsFile(file);
+                      setStemsUrl(URL.createObjectURL(file)); // Preview for now
+                    } else {
+                      setStemsFile(null);
+                      setStemsUrl('');
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   disabled={isSubmitting}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload a ZIP file containing stems.
+                </p>
+                {stemsFile && (
+                  <div className="bg-white/5 rounded-lg p-4 mt-2">
+                    <h3 className="text-white font-medium mb-2">Preview</h3>
+                    <p className="text-gray-400 text-sm">{stemsFile.name}</p>
+                  </div>
+                )}
               </div>
 
               <div>
