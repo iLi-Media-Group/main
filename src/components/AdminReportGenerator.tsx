@@ -187,26 +187,26 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
 
       if (whiteLabelSetupError) throw whiteLabelSetupError;
 
-      // Fetch white label monthly subscriptions
-      const { data: whiteLabelMonthly, error: whiteLabelMonthlyError } = await supabase
-        .from('white_label_clients')
-        .select(`
-          id, monthly_fee, created_at,
-          owner:profiles!inner(id, first_name, last_name, email)
-        `)
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString())
-        .not('monthly_fee', 'is', null);
+      // Fetch white label monthly payments (paid and pending)
+      const { data: whiteLabelMonthlyPayments, error: whiteLabelMonthlyPaymentsError } = await supabase
+        .from('white_label_monthly_payments')
+        .select('id, client_id, amount, due_date, paid_date, status, created_at')
+        .gte('due_date', startDate.toISOString().split('T')[0])
+        .lte('due_date', endDate.toISOString().split('T')[0]);
+      if (whiteLabelMonthlyPaymentsError) throw whiteLabelMonthlyPaymentsError;
 
-      if (whiteLabelMonthlyError) throw whiteLabelMonthlyError;
+      // Split into paid and pending
+      const paidMonthly = (whiteLabelMonthlyPayments || []).filter(p => p.status === 'paid');
+      const pendingMonthly = (whiteLabelMonthlyPayments || []).filter(p => p.status === 'pending');
 
       // Process data
       const processedData = processReportData(
-        trackSales || [], 
-        syncProposals || [], 
+        trackSales || [],
+        syncProposals || [],
         customSyncRequests || [],
         whiteLabelSetup || [],
-        whiteLabelMonthly || []
+        paidMonthly,
+        pendingMonthly
       );
       setReportData(processedData);
 
@@ -239,17 +239,18 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
     syncProposals: any[], 
     customSyncRequests: any[],
     whiteLabelSetup: any[],
-    whiteLabelMonthly: any[]
+    paidMonthly: any[],
+    pendingMonthly: any[]
   ): ReportData => {
     // Calculate summary
     const trackLicenseRevenue = trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
     const syncProposalRevenue = syncProposals.reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0);
     const customSyncRevenue = customSyncRequests.reduce((sum, request) => sum + (request.final_amount || request.negotiated_amount || request.sync_fee || 0), 0);
     const whiteLabelSetupRevenue = whiteLabelSetup.reduce((sum, setup) => sum + (setup.setup_fee || 0), 0);
-    const whiteLabelMonthlyRevenue = whiteLabelMonthly.reduce((sum, monthly) => sum + (monthly.monthly_fee || 0), 0);
+    const whiteLabelMonthlyRevenue = (paidMonthly.reduce((sum, p) => sum + (p.amount || 0), 0) + pendingMonthly.reduce((sum, p) => sum + (p.amount || 0), 0));
     
     const totalRevenue = trackLicenseRevenue + syncProposalRevenue + customSyncRevenue + whiteLabelSetupRevenue + whiteLabelMonthlyRevenue;
-    const totalSales = trackSales.length + syncProposals.length + customSyncRequests.length + whiteLabelSetup.length + whiteLabelMonthly.length;
+    const totalSales = trackSales.length + syncProposals.length + customSyncRequests.length + whiteLabelSetup.length + paidMonthly.length + pendingMonthly.length;
 
     // Sales by type
     const salesByType = [
@@ -279,7 +280,7 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       },
       {
         type: 'White Label Monthly',
-        count: whiteLabelMonthly.length,
+        count: paidMonthly.length + pendingMonthly.length,
         revenue: whiteLabelMonthlyRevenue,
         percentage: totalRevenue > 0 ? (whiteLabelMonthlyRevenue / totalRevenue) * 100 : 0
       }
@@ -380,14 +381,14 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       producer.totalRevenue += setup.setup_fee || 0;
     });
 
-    // Process white label monthly subscriptions
-    whiteLabelMonthly.forEach(monthly => {
-      const producerId = monthly.owner.id;
+    // Process white label monthly payments
+    paidMonthly.forEach(p => {
+      const producerId = p.client_id; // Assuming client_id is the producer_id for monthly payments
       if (!producerMap.has(producerId)) {
         producerMap.set(producerId, {
           producerId,
-          producerName: `${monthly.owner.first_name} ${monthly.owner.last_name}`,
-          producerEmail: monthly.owner.email,
+          producerName: `${p.client_id} (White Label)`, // Placeholder, needs actual client name lookup
+          producerEmail: 'info@mybeatfi.com', // Placeholder
           trackLicenses: 0,
           syncProposals: 0,
           customSyncRequests: 0,
@@ -400,7 +401,29 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       const producer = producerMap.get(producerId);
       producer.whiteLabelMonthly++;
       producer.totalSales++;
-      producer.totalRevenue += monthly.monthly_fee || 0;
+      producer.totalRevenue += p.amount || 0;
+    });
+
+    pendingMonthly.forEach(p => {
+      const producerId = p.client_id; // Assuming client_id is the producer_id for monthly payments
+      if (!producerMap.has(producerId)) {
+        producerMap.set(producerId, {
+          producerId,
+          producerName: `${p.client_id} (White Label)`, // Placeholder, needs actual client name lookup
+          producerEmail: 'info@mybeatfi.com', // Placeholder
+          trackLicenses: 0,
+          syncProposals: 0,
+          customSyncRequests: 0,
+          whiteLabelSetup: 0,
+          whiteLabelMonthly: 0,
+          totalSales: 0,
+          totalRevenue: 0
+        });
+      }
+      const producer = producerMap.get(producerId);
+      producer.whiteLabelMonthly++;
+      producer.totalSales++;
+      producer.totalRevenue += p.amount || 0;
     });
 
     const salesByProducer = Array.from(producerMap.values())
@@ -413,7 +436,8 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       ...syncProposals.map(proposal => ({ ...proposal, type: 'sync_proposal' })),
       ...customSyncRequests.map(request => ({ ...request, type: 'custom_sync' })),
       ...whiteLabelSetup.map(setup => ({ ...setup, type: 'white_label_setup' })),
-      ...whiteLabelMonthly.map(monthly => ({ ...monthly, type: 'white_label_monthly' }))
+      ...paidMonthly.map(p => ({ ...p, type: 'white_label_monthly_paid' })),
+      ...pendingMonthly.map(p => ({ ...p, type: 'white_label_monthly_pending' }))
     ];
 
     allSales.forEach(sale => {
@@ -445,9 +469,12 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       } else if (sale.type === 'white_label_setup') {
         day.whiteLabelSetup++;
         day.totalRevenue += sale.setup_fee || 0;
-      } else if (sale.type === 'white_label_monthly') {
+      } else if (sale.type === 'white_label_monthly_paid') {
         day.whiteLabelMonthly++;
-        day.totalRevenue += sale.monthly_fee || 0;
+        day.totalRevenue += sale.amount || 0;
+      } else if (sale.type === 'white_label_monthly_pending') {
+        day.whiteLabelMonthly++;
+        day.totalRevenue += sale.amount || 0;
       }
     });
 
@@ -463,7 +490,7 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
         syncProposals: syncProposals.length,
         customSyncRequests: customSyncRequests.length,
         whiteLabelSetup: whiteLabelSetup.length,
-        whiteLabelMonthly: whiteLabelMonthly.length,
+        whiteLabelMonthly: paidMonthly.length + pendingMonthly.length,
         trackLicenseRevenue,
         syncProposalRevenue,
         customSyncRevenue,
