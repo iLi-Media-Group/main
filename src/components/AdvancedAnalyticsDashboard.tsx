@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
@@ -12,7 +12,6 @@ import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
-import { AnalyticsChartImages, AnalyticsChartImagesHandles } from './AnalyticsChartImages';
 
 interface AnalyticsData {
   revenueData: Array<{
@@ -63,7 +62,7 @@ interface AdvancedAnalyticsDashboardProps {
   email?: string;
 }
 
-export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProps) {
+export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email }: AdvancedAnalyticsDashboardProps) {
   const { user, accountType } = useAuth();
   const { isEnabled: hasAnalyticsAccess, loading: featureLoading } = useFeatureFlag('advanced_analytics');
   const [selectedGenre, setSelectedGenre] = useState('all');
@@ -75,7 +74,6 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
   const [selectedCover, setSelectedCover] = useState<string>("");
   const [defaultCover, setDefaultCover] = useState<string>("");
   const [settingDefault, setSettingDefault] = useState(false);
-  const chartImagesRef = useRef<AnalyticsChartImagesHandles>(null);
 
   // Fetch default cover from report_settings on mount
   useEffect(() => {
@@ -536,15 +534,11 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else if (format === 'pdf') {
-        // === Minimalist, Professional PDF Export ===
-        let chartImages = { revenue: '', licenses: '', genres: '' };
-        if (chartImagesRef.current) {
-          chartImages = await chartImagesRef.current.getImages();
-        }
+        // === PDF Export with Cover ===
         const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
-        // Cover page with selected or default cover (unchanged)
+        // Cover page with selected or default cover
         if (selectedCover) {
           const img = await fetch(selectedCover).then(r => r.blob());
           const reader = new FileReader();
@@ -555,140 +549,99 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
           doc.addImage(base64, 'PNG', 0, 0, pageWidth, pageHeight);
           doc.addPage();
         }
-        let y = 48;
+        let y = 40;
+        // Add logo if provided
+        if (logoUrl) {
+          const img = await fetch(logoUrl).then(r => r.blob());
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(img);
+          });
+          doc.addImage(base64, 'PNG', 40, y, 100, 40, undefined, 'FAST');
+        }
+        // Title and subtitle
+        y += logoUrl ? 60 : 0;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Analytics Report', 40, y);
-        y += 18;
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100);
-        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 40, y);
-        y += 32;
-        // --- Key Metrics Summary ---
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Summary', 40, y);
-        y += 12;
+        doc.setTextColor(180, 180, 180); // light gray
+        doc.text('Advanced Analytics Report', 160, y, { align: 'left' });
+        y += 30;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
-        doc.setTextColor(30, 41, 59);
-        (doc as any).autoTable({
-          startY: y,
-          head: [['Total Revenue', 'Active Clients', 'Retention Rate']],
-          body: [[
-            `$${analyticsData.keyMetrics.totalRevenue.toLocaleString()}`,
-            analyticsData.keyMetrics.activeClients,
-            `${analyticsData.keyMetrics.retentionRate}%`
-          ]],
-          margin: { left: 40, right: 40 },
-          tableWidth: pageWidth - 80,
-          theme: 'grid',
-          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
-        });
-        y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Revenue Over Time ---
+        doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, y, { align: 'left' });
+        y += 20;
+        // Monthly Revenue Table
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
         doc.text('Monthly Revenue', 40, y);
         y += 10;
-        if (chartImages.revenue) {
-          doc.addImage(chartImages.revenue, 'PNG', 40, y, pageWidth - 80, 120);
-          y += 130;
-        }
         (doc as any).autoTable({
           startY: y,
           head: [['Month', 'Total']],
-          body: analyticsData.revenueData.map(row => [row.month, `$${row.total.toLocaleString()}`]),
+          body: analyticsData.revenueData.map(row => [row.month, row.total]),
           margin: { left: 40, right: 40 },
-          tableWidth: pageWidth - 80,
           theme: 'grid',
-          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
         });
-        y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Licenses Per Client ---
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Licenses Per Client', 40, y);
-        y += 10;
-        if (chartImages.licenses) {
-          doc.addImage(chartImages.licenses, 'PNG', 40, y, pageWidth - 80, 120);
-          y += 130;
-        }
-        (doc as any).autoTable({
-          startY: y,
-          head: [['Client Name', 'Licenses', 'Revenue']],
-          body: analyticsData.licenseData.map(row => [row.name, row.licenses, `$${row.revenue.toLocaleString()}`]),
-          margin: { left: 40, right: 40 },
-          tableWidth: pageWidth - 80,
-          theme: 'grid',
-          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
-        });
-        y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Churn Risk ---
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Churn Risk', 40, y);
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // License Data Table
+        doc.text('License Data', 40, y);
         y += 10;
         (doc as any).autoTable({
           startY: y,
-          head: [['Name', 'Churn Risk (%)', 'Last Activity']],
-          body: analyticsData.churnData.map(row => [row.name, row.churnRisk.toFixed(1), row.lastActivity]),
+          head: [['Name', 'Licenses', 'Revenue']],
+          body: analyticsData.licenseData.map(row => [row.name, row.licenses, row.revenue]),
           margin: { left: 40, right: 40 },
-          tableWidth: pageWidth - 80,
           theme: 'grid',
-          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
         });
-        y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Top Tracks ---
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Top Performing Tracks', 40, y);
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Churn Data Table
+        doc.text('Churn Data', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Name', 'Churn Risk', 'Last Activity']],
+          body: analyticsData.churnData.map(row => [row.name, row.churnRisk, row.lastActivity]),
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Top Tracks Table
+        doc.text('Top Tracks', 40, y);
         y += 10;
         (doc as any).autoTable({
           startY: y,
           head: [['Title', 'Plays', 'Licenses', 'Revenue']],
-          body: analyticsData.topTracks.map(row => [row.title, row.plays, row.licenses, `$${row.revenue.toLocaleString()}`]),
+          body: analyticsData.topTracks.map(row => [row.title, row.plays, row.licenses, row.revenue]),
           margin: { left: 40, right: 40 },
-          tableWidth: pageWidth - 80,
           theme: 'grid',
-          headStyles: { fillColor: [240, 240, 240], textColor: 30, fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [255, 255, 255] },
-          styles: { textColor: 30, font: 'helvetica', fontSize: 12, cellPadding: 6 },
         });
-        y = (doc as any).lastAutoTable.finalY + 24;
-        // --- Genre Distribution ---
+        y = (doc as any).lastAutoTable.finalY + 20;
+        // Key Metrics Table
+        doc.text('Key Metrics', 40, y);
+        y += 10;
+        (doc as any).autoTable({
+          startY: y,
+          head: [['Total Revenue', 'Active Clients', 'Retention Rate']],
+          body: [[analyticsData.keyMetrics.totalRevenue, analyticsData.keyMetrics.activeClients, analyticsData.keyMetrics.retentionRate]],
+          margin: { left: 40, right: 40 },
+          theme: 'grid',
+        });
+        // Footer with branding
+        const footerY = doc.internal.pageSize.getHeight() - 80;
+        doc.setDrawColor(90, 90, 180);
+        doc.setLineWidth(1);
+        doc.line(40, footerY, pageWidth - 40, footerY);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
-        doc.setTextColor(30, 41, 59);
-        doc.text('Genre Distribution', 40, y);
-        y += 10;
-        if (chartImages.genres) {
-          doc.addImage(chartImages.genres, 'PNG', 40, y, pageWidth - 80, 120);
-          y += 130;
-        }
-        // --- Footer: Page Number Only ---
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-          doc.setPage(i);
-          doc.setFontSize(10);
-          doc.setTextColor(180);
-          doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 20, { align: 'center' });
-        }
+        doc.setTextColor(90, 90, 180);
+        doc.text(companyName || '', 50, footerY + 25);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        doc.setTextColor(90, 90, 180);
+        doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
+        doc.text(`Email: ${email || ''}`, 50, footerY + 65);
+        // Download PDF
         doc.save('advanced-analytics.pdf');
       }
     } catch (err) {
@@ -1128,14 +1081,6 @@ export function AdvancedAnalyticsDashboard(props: AdvancedAnalyticsDashboardProp
           />
         </div>
       </div>
-      {analyticsData && (
-        <AnalyticsChartImages
-          ref={chartImagesRef}
-          revenueData={analyticsData.revenueData}
-          licenseData={analyticsData.licenseData}
-          genreData={analyticsData.genreData}
-        />
-      )}
     </div>
   );
 } 
