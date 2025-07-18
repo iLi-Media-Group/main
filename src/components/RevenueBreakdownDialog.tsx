@@ -680,11 +680,6 @@ export function RevenueBreakdownDialog({
       doc.setFontSize(14);
       doc.setTextColor(80, 80, 80);
       doc.text(companyName || '', 50, footerY + 25);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(12);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
-      doc.text(`Email: ${email || ''}`, 50, footerY + 65);
       // Add generated date at the very bottom left
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
