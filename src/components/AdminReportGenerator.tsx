@@ -563,12 +563,11 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
 
       const ReportPDF = () => (
         <Document>
+          {/* Cover page: full-bleed background and client name overlay */}
           <Page size="A4" style={{ position: 'relative', width: '100%', height: '100%' }}>
-            {/* Full-bleed cover image */}
             {background && (
               <Image src={background} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
             )}
-            {/* Bottom-right client name overlay, ensure page is not blank */}
             <View style={{ flex: 1, justifyContent: 'flex-end', alignItems: 'flex-end', width: '100%', height: '100%' }}>
               <Text
                 style={{
@@ -585,7 +584,7 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
               </Text>
             </View>
           </Page>
-          {/* Report content starts on second page, no background */}
+          {/* Sales data page: no background, just data */}
           <Page size="A4" style={styles.page}>
             <View style={styles.content}>
               <Text style={styles.title}>Sales Report</Text>
