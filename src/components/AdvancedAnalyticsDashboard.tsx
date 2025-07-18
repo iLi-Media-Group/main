@@ -564,16 +564,18 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         y += logoUrl ? 60 : 0;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
-        doc.setTextColor(180, 180, 180); // light gray
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('Advanced Analytics Report', 160, y, { align: 'left' });
         y += 30;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text(`Generated: ${new Date().toLocaleDateString()}`, 160, y, { align: 'left' });
         y += 20;
         // Monthly Revenue Table
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(14);
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('Monthly Revenue', 40, y);
         y += 10;
         (doc as any).autoTable({
@@ -586,6 +588,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // License Data Table
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('License Data', 40, y);
         y += 10;
         (doc as any).autoTable({
@@ -598,6 +601,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Churn Data Table
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('Churn Data', 40, y);
         y += 10;
         (doc as any).autoTable({
@@ -610,6 +614,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Top Tracks Table
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('Top Tracks', 40, y);
         y += 10;
         (doc as any).autoTable({
@@ -622,6 +627,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         });
         y = (doc as any).lastAutoTable.finalY + 20;
         // Key Metrics Table
+        doc.setTextColor(30, 30, 30); // dark gray/black
         doc.text('Key Metrics', 40, y);
         y += 10;
         (doc as any).autoTable({
