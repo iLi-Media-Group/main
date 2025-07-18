@@ -11,9 +11,10 @@ interface CoverImage {
 interface ReportBackgroundPickerProps {
   selected: string;
   onChange: (url: string) => void;
+  renderActions?: (imgUrl: string) => React.ReactNode;
 }
 
-export function ReportBackgroundPicker({ selected, onChange }: ReportBackgroundPickerProps) {
+export function ReportBackgroundPicker({ selected, onChange, renderActions }: ReportBackgroundPickerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [coverImages, setCoverImages] = useState<CoverImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -116,6 +117,9 @@ export function ReportBackgroundPicker({ selected, onChange }: ReportBackgroundP
               <img src={img.url} alt={img.name} className="w-32 h-28 object-cover rounded-lg" />
               <div className="text-xs text-center text-white mt-1 w-32 truncate">{img.name}</div>
             </button>
+            {renderActions && (
+              <div className="flex justify-center">{renderActions(img.url)}</div>
+            )}
             <button
               className="absolute top-2 right-2 bg-black/60 hover:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity md:opacity-100"
               title="Delete cover page"

@@ -3,6 +3,7 @@ import { Download, FileText, Calendar, BarChart3, DollarSign, Users, Filter, X }
 import { supabase } from '../lib/supabase';
 import { saveAs } from 'file-saver';
 import { Page, Image, View, Text } from '@react-pdf/renderer';
+import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface ReportData {
   dateRange: {
@@ -59,7 +60,7 @@ interface AdminReportGeneratorProps {
   background?: string; // Add background prop
 }
 
-export function AdminReportGenerator({ isOpen, onClose, background }: AdminReportGeneratorProps) {
+export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorProps) {
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
@@ -68,11 +69,33 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [error, setError] = useState('');
   const [clientName, setClientName] = useState<string>('MyBeatFi');
+  const [selectedCover, setSelectedCover] = useState<string>("");
+  const [defaultCover, setDefaultCover] = useState<string>("");
+  const [settingDefault, setSettingDefault] = useState(false);
+
+  // Fetch default cover from report_settings on mount
+  const fetchDefaultCover = async () => {
+    const { data, error } = await supabase.from('report_settings').select('default_cover_url').eq('id', 1).single();
+    if (data && data.default_cover_url) {
+      setDefaultCover(data.default_cover_url);
+      setSelectedCover(data.default_cover_url);
+    }
+  };
+
+  // Set a new default cover in the database
+  const handleSetDefaultCover = async (url: string) => {
+    setSettingDefault(true);
+    await supabase.from('report_settings').update({ default_cover_url: url, updated_at: new Date().toISOString() }).eq('id', 1);
+    setDefaultCover(url);
+    setSelectedCover(url);
+    setSettingDefault(false);
+  };
 
   useEffect(() => {
     if (isOpen) {
       generateReport();
       fetchClientName();
+      fetchDefaultCover();
     }
   }, [isOpen, dateRange]);
 
@@ -565,8 +588,8 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
         <Document>
           {/* Cover page: only background image, no overlays */}
           <Page size="A4" style={{ position: 'relative', width: '100%', height: '100%' }}>
-            {background && (
-              <Image src={background} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
+            {selectedCover && (
+              <Image src={selectedCover} style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }} />
             )}
           </Page>
           {/* Sales data: allow content to flow across as many pages as needed */}
@@ -687,6 +710,25 @@ export function AdminReportGenerator({ isOpen, onClose, background }: AdminRepor
           >
             <X className="w-6 h-6" />
           </button>
+        </div>
+
+        {/* Cover Picker */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Report Cover Pages</h3>
+          <ReportBackgroundPicker
+            selected={selectedCover}
+            onChange={setSelectedCover}
+            renderActions={(imgUrl: string) => (
+              <button
+                className={`mt-2 px-2 py-1 rounded text-xs ${defaultCover === imgUrl ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-300 hover:bg-blue-500/20'}`}
+                disabled={settingDefault || defaultCover === imgUrl}
+                onClick={() => handleSetDefaultCover(imgUrl)}
+                type="button"
+              >
+                {defaultCover === imgUrl ? 'Default' : 'Set as Default'}
+              </button>
+            )}
+          />
         </div>
 
         {error && (
