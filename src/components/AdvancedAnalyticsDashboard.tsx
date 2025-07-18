@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
+import { AnalyticsChartImages, AnalyticsChartImagesHandles } from './AnalyticsChartImages';
 
 interface AnalyticsData {
   revenueData: Array<{
@@ -74,6 +75,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
   const [selectedCover, setSelectedCover] = useState<string>("");
   const [defaultCover, setDefaultCover] = useState<string>("");
   const [settingDefault, setSettingDefault] = useState(false);
+  const chartImagesRef = useRef<AnalyticsChartImagesHandles>(null);
 
   // Fetch default cover from report_settings on mount
   useEffect(() => {
@@ -534,7 +536,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else if (format === 'pdf') {
-        // === Modern PDF Export with Cover ===
+        // === Modern PDF Export with Cover and Chart Images ===
+        // 1. Get chart images from AnalyticsChartImages
+        let chartImages = { revenue: '', licenses: '', genres: '' };
+        if (chartImagesRef.current) {
+          chartImages = await chartImagesRef.current.getImages();
+        }
         const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -550,7 +557,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           doc.addPage();
         }
         let y = 40;
-        // Key Metrics Bar
+        // Key Metrics Bar (as before)
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
         doc.setFillColor(30, 41, 59); // Deep blue
@@ -563,6 +570,35 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         doc.text('🔄 Retention Rate', 560, y + 30);
         doc.text(`${analyticsData.keyMetrics.retentionRate}%`, 720, y + 30);
         y += 70;
+        // --- Modern Card-Based Chart Images ---
+        // Revenue Over Time Chart
+        if (chartImages.revenue) {
+          doc.setFontSize(16);
+          doc.setTextColor(30, 41, 59);
+          doc.text('💰 Revenue Over Time', 40, y + 22);
+          y += 10;
+          doc.addImage(chartImages.revenue, 'PNG', 40, y + 20, pageWidth - 80, 180);
+          y += 210;
+        }
+        // Licenses Per Client Chart
+        if (chartImages.licenses) {
+          doc.setFontSize(16);
+          doc.setTextColor(30, 41, 59);
+          doc.text('👤 Licenses Per Client', 40, y + 22);
+          y += 10;
+          doc.addImage(chartImages.licenses, 'PNG', 40, y + 20, pageWidth - 80, 180);
+          y += 210;
+        }
+        // Genre Distribution Chart
+        if (chartImages.genres) {
+          doc.setFontSize(16);
+          doc.setTextColor(30, 41, 59);
+          doc.text('🎵 Genre Distribution', 40, y + 22);
+          y += 10;
+          doc.addImage(chartImages.genres, 'PNG', 40, y + 20, pageWidth - 80, 180);
+          y += 210;
+        }
+        // --- Tables and Data Sections (as before) ---
         // Section: Monthly Revenue
         doc.setFontSize(16);
         doc.setTextColor(30, 41, 59);
@@ -1111,6 +1147,14 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           />
         </div>
       </div>
+      {analyticsData && (
+        <AnalyticsChartImages
+          ref={chartImagesRef}
+          revenueData={analyticsData.revenueData}
+          licenseData={analyticsData.licenseData}
+          genreData={analyticsData.genreData}
+        />
+      )}
     </div>
   );
 } 
