@@ -866,15 +866,13 @@ function AdminDashboard() {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     // === Add background image ===
-    console.log('PDF selectedBackground:', selectedBackground);
-    const backgroundPath = selectedBackground;
-    try {
-      const bgBase64 = await getBase64ImageFromURL(backgroundPath);
-      doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
-    } catch (err) {
-      // If background fails to load, continue without it
-      console.warn('Failed to load report background:', err);
-    }
+    // try {
+    //   const bgBase64 = await getBase64ImageFromURL(selectedBackground);
+    //   doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
+    // } catch (err) {
+    //   // If background fails to load, continue without it
+    //   console.warn('Failed to load report background:', err);
+    // }
     const margin = 40;
     const contentWidth = pageWidth - (margin * 2);
     let y = 0;
@@ -1211,12 +1209,6 @@ function AdminDashboard() {
                 </tr>
               </tbody>
             </table>
-          </div>
-          {/* Move and restyle the ReportBackgroundPicker here */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-white/10 rounded-xl p-4 border border-blue-500/20 w-full max-w-md">
-              <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
-            </div>
           </div>
         </div>
 
@@ -1878,7 +1870,7 @@ function AdminDashboard() {
         </div>
       )}
       {/* AdminReportGenerator Modal */}
-      <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} background={selectedBackground} />
+      <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} />
     </div>
   );
 }
