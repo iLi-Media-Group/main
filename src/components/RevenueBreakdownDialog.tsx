@@ -583,12 +583,10 @@ export function RevenueBreakdownDialog({
       } catch (err) {
         console.warn('Failed to load report background:', err);
       }
-      // No text or branding on cover page
       doc.addPage();
       // === Page 2: Data (no background) ===
-      // Modern Dark-Themed Header
-      doc.setFillColor(24, 26, 48);
-      doc.rect(0, 0, pageWidth, 180, 'F');
+      // Header (no blue fill, just text)
+      let y = 60;
       if (logoUrl) {
         const img = await fetch(logoUrl).then(r => r.blob());
         const reader = new FileReader();
@@ -596,7 +594,7 @@ export function RevenueBreakdownDialog({
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(img);
         });
-        doc.addImage(base64, 'PNG', 40, 32, 60, 60, undefined, 'FAST');
+        doc.addImage(base64, 'PNG', 40, y, 60, 60, undefined, 'FAST');
       }
       let titleFontSize = 32;
       let title = 'Monthly Revenue Report';
@@ -608,36 +606,36 @@ export function RevenueBreakdownDialog({
         titleFontSize -= 2;
         doc.setFontSize(titleFontSize);
       }
-      doc.setTextColor(230, 230, 255);
-      doc.text(title, titleX, 70, { maxWidth: maxTitleWidth });
+      doc.setTextColor(30, 30, 30); // dark text
+      doc.text(title, titleX, y + 30, { maxWidth: maxTitleWidth });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(16);
-      doc.setTextColor(180, 180, 220);
+      doc.setTextColor(80, 80, 80);
       const subtitle = 'This report provides an in-depth analysis of revenue performance.';
       const subtitleLines = doc.splitTextToSize(subtitle, maxTitleWidth);
-      doc.text(subtitleLines, titleX, 100);
+      doc.text(subtitleLines, titleX, y + 60);
       doc.setFontSize(12);
-      doc.setTextColor(180, 180, 220);
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, titleX, 120);
-      doc.setDrawColor(90, 90, 180);
-      doc.setLineWidth(2);
-      doc.line(40, 150, pageWidth - 40, 150);
-      // Revenue Summary
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, titleX, y + 80);
+      y += 110;
+      // Total Revenue
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(20);
-      doc.setTextColor(230, 230, 255);
-      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 50, 190);
+      doc.setFontSize(22);
+      doc.setTextColor(30, 30, 30);
+      doc.text(`Total Revenue: $${totalRevenue.toFixed(2)}`, 50, y);
+      y += 30;
       if (totalPendingRevenue > 0) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(14);
-        doc.setTextColor(255, 180, 80);
-        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, 215);
+        doc.setTextColor(200, 120, 0);
+        doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, y);
+        y += 25;
       }
       // Revenue by Source Table
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.setTextColor(180, 180, 220);
-      doc.text('Revenue by Source', 50, 250);
+      doc.setTextColor(30, 30, 30);
+      doc.text('Revenue by Source', 50, y + 20);
       const sourceTableData = revenueSources.map(source => [
         source.source,
         `$${source.amount.toFixed(2)}`,
@@ -646,35 +644,36 @@ export function RevenueBreakdownDialog({
         source.type === 'pending' ? 'Pending' : 'Completed'
       ]);
       (doc as any).autoTable({
-        startY: 260,
+        startY: y + 30,
         head: [['Source', 'Amount', 'Count', 'Percentage', 'Status']],
         body: sourceTableData,
         theme: 'grid',
-        headStyles: { fillColor: [75, 75, 200], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [40, 40, 60] },
-        styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
+        headStyles: { fillColor: [229, 231, 235], textColor: [30, 30, 30], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        styles: { textColor: [30, 30, 30], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
+      y = (doc as any).lastAutoTable.finalY + 20;
       // Monthly Revenue Table
-      const tableEndY = (doc as any).lastAutoTable.finalY + 20;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.setTextColor(180, 180, 220);
-      doc.text('Monthly Revenue', 50, tableEndY);
+      doc.setTextColor(30, 30, 30);
+      doc.text('Monthly Revenue', 50, y);
       const monthlyTableData = monthlyRevenue.map(item => [
         item.month,
         `$${item.amount.toFixed(2)}`
       ]);
       (doc as any).autoTable({
-        startY: tableEndY + 10,
+        startY: y + 10,
         head: [['Month', 'Revenue']],
         body: monthlyTableData,
         theme: 'grid',
-        headStyles: { fillColor: [75, 75, 200], textColor: 255, fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [40, 40, 60] },
-        styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
+        headStyles: { fillColor: [229, 231, 235], textColor: [30, 30, 30], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        styles: { textColor: [30, 30, 30], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
+      y = (doc as any).lastAutoTable.finalY + 20;
       // Footer with Brand Info
       const footerY = doc.internal.pageSize.getHeight() - 80;
       doc.setDrawColor(90, 90, 180);
@@ -682,11 +681,11 @@ export function RevenueBreakdownDialog({
       doc.line(40, footerY, pageWidth - 40, footerY);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(14);
-      doc.setTextColor(180, 180, 220);
+      doc.setTextColor(80, 80, 80);
       doc.text(companyName || '', 50, footerY + 25);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(12);
-      doc.setTextColor(180, 180, 220);
+      doc.setTextColor(80, 80, 80);
       doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
       doc.text(`Email: ${email || ''}`, 50, footerY + 65);
       doc.save('revenue-report.pdf');
