@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ReportBackgroundProvider, useReportBackground } from '../contexts/ReportBackgroundContext';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface WhiteLabelClient {
@@ -323,35 +322,30 @@ export default function WhiteLabelClientDashboard() {
   }
 
   const enabledFeatures = getEnabledFeatures();
-  const { selectedBackground, setSelectedBackground } = useReportBackground();
 
   return (
-    <ReportBackgroundProvider clientId={client.id}>
-      <WhiteLabelClientDashboardContent
-        client={client}
-        displayName={displayName}
-        setDisplayName={setDisplayName}
-        domain={domain}
-        setDomain={setDomain}
-        logoUrl={logoUrl}
-        handleLogoUpload={handleLogoUpload}
-        primaryColor={primaryColor}
-        setPrimaryColor={setPrimaryColor}
-        secondaryColor={secondaryColor}
-        setSecondaryColor={setSecondaryColor}
-        handleSave={handleSave}
-        handleSignOut={handleSignOut}
-        loading={loading}
-        success={success}
-        getEnabledFeatures={getEnabledFeatures}
-        getAvailableFeatures={getAvailableFeatures}
-        getBundlePricing={getBundlePricing}
-        handleBuyFeature={handleBuyFeature}
-        handleBuyBundle={handleBuyBundle}
-        selectedBackground={selectedBackground}
-        setSelectedBackground={setSelectedBackground}
-      />
-    </ReportBackgroundProvider>
+    <WhiteLabelClientDashboardContent
+      client={client}
+      displayName={displayName}
+      setDisplayName={setDisplayName}
+      domain={domain}
+      setDomain={setDomain}
+      logoUrl={logoUrl}
+      handleLogoUpload={handleLogoUpload}
+      primaryColor={primaryColor}
+      setPrimaryColor={setPrimaryColor}
+      secondaryColor={secondaryColor}
+      setSecondaryColor={setSecondaryColor}
+      handleSave={handleSave}
+      handleSignOut={handleSignOut}
+      loading={loading}
+      success={success}
+      getEnabledFeatures={getEnabledFeatures}
+      getAvailableFeatures={getAvailableFeatures}
+      getBundlePricing={getBundlePricing}
+      handleBuyFeature={handleBuyFeature}
+      handleBuyBundle={handleBuyBundle}
+    />
   );
 }
 
@@ -376,12 +370,10 @@ interface WhiteLabelClientDashboardContentProps {
   getBundlePricing: () => any;
   handleBuyFeature: (feature: any) => void;
   handleBuyBundle: (bundleType: string | undefined) => void;
-  selectedBackground: string;
-  setSelectedBackground: (bg: string) => void;
 }
 
 function WhiteLabelClientDashboardContent(props: WhiteLabelClientDashboardContentProps) {
-  const { client, displayName, setDisplayName, domain, setDomain, logoUrl, handleLogoUpload, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor, handleSave, handleSignOut, loading, success, getEnabledFeatures, getAvailableFeatures, getBundlePricing, handleBuyFeature, handleBuyBundle, selectedBackground, setSelectedBackground } = props;
+  const { client, displayName, setDisplayName, domain, setDomain, logoUrl, handleLogoUpload, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor, handleSave, handleSignOut, loading, success, getEnabledFeatures, getAvailableFeatures, getBundlePricing, handleBuyFeature, handleBuyBundle } = props;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -523,7 +515,7 @@ function WhiteLabelClientDashboardContent(props: WhiteLabelClientDashboardConten
                 <Palette className="w-6 h-6 text-blue-400 mr-3" />
                 <h2 className="text-xl font-semibold text-white">PDF Report Background</h2>
               </div>
-              <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
+              <ReportBackgroundPicker selected={''} onChange={() => {}} />
             </div>
           </div>
 

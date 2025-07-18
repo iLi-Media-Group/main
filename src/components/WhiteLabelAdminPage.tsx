@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { AdminPasswordPrompt } from './AdminPasswordPrompt';
 import { FeatureManagement } from './FeatureManagement';
 import { Layout } from './Layout';
-import { ReportBackgroundProvider, useReportBackground } from '../contexts/ReportBackgroundContext';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface WhiteLabelClient {
@@ -176,35 +175,32 @@ export default function WhiteLabelAdminPage() {
   // Assume only one client is managed at a time, use first client id or selected client id
   const clientId = clients[0]?.id || null;
   return (
-    <ReportBackgroundProvider clientId={clientId}>
-      <WhiteLabelAdminContent
-        clients={clients}
-        loading={loading}
-        error={error}
-        handleAdd={handleAdd}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-        showForm={showForm}
-        setShowForm={setShowForm}
-        editingClient={editingClient}
-        handleFormSubmit={handleFormSubmit}
-        form={form}
-        handleFormChange={handleFormChange}
-        deletingClient={deletingClient}
-        setDeletingClient={setDeletingClient}
-        confirmDelete={confirmDelete}
-        apiToken={apiToken}
-        setApiToken={setApiToken}
-        savingFeature={savingFeature}
-        toggleAIRecommendation={toggleAIRecommendation}
-      />
-    </ReportBackgroundProvider>
+    <WhiteLabelAdminContent
+      clients={clients}
+      loading={loading}
+      error={error}
+      handleAdd={handleAdd}
+      handleEdit={handleEdit}
+      handleDelete={handleDelete}
+      showForm={showForm}
+      setShowForm={setShowForm}
+      editingClient={editingClient}
+      handleFormSubmit={handleFormSubmit}
+      form={form}
+      handleFormChange={handleFormChange}
+      deletingClient={deletingClient}
+      setDeletingClient={setDeletingClient}
+      confirmDelete={confirmDelete}
+      apiToken={apiToken}
+      setApiToken={setApiToken}
+      savingFeature={savingFeature}
+      toggleAIRecommendation={toggleAIRecommendation}
+    />
   );
 }
 
 function WhiteLabelAdminContent(props: any) {
   const { clients, loading, error, handleAdd, handleEdit, handleDelete, showForm, setShowForm, editingClient, handleFormSubmit, form, handleFormChange, deletingClient, setDeletingClient, confirmDelete, apiToken, setApiToken, savingFeature, toggleAIRecommendation } = props;
-  const { selectedBackground, setSelectedBackground } = useReportBackground();
   return (
     <Layout>
       <div className="p-6 text-white max-w-5xl mx-auto">
@@ -341,7 +337,7 @@ function WhiteLabelAdminContent(props: any) {
 
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-white mb-2">PDF Report Background</h3>
-          <ReportBackgroundPicker selected={selectedBackground} onChange={setSelectedBackground} />
+          <ReportBackgroundPicker selected={''} onChange={() => {}} />
         </div>
       </div>
     </Layout>
