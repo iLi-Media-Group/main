@@ -572,41 +572,37 @@ export function RevenueBreakdownDialog({
   const generatePDF = async () => {
     try {
       setPdfGenerating(true);
-      // Create a new PDF document
       const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
       const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
-      // === Add background image ===
-      const backgroundPath = selectedCover || defaultCover || '/report-backgrounds/option-mybeatfi.png'; // Use selected or default
+      // === Page 1: Cover ONLY ===
+      const backgroundPath = selectedCover || defaultCover || '/report-backgrounds/option-mybeatfi.png';
       try {
         const bgBase64 = await getBase64ImageFromURL(backgroundPath);
         doc.addImage(bgBase64, 'PNG', 0, 0, pageWidth, pageHeight);
       } catch (err) {
-        // If background fails to load, continue without it
         console.warn('Failed to load report background:', err);
       }
-      // === Modern Dark-Themed Header ===
-      doc.setFillColor(24, 26, 48); // Deep navy background
+      // No text or branding on cover page
+      doc.addPage();
+      // === Page 2: Data (no background) ===
+      // Modern Dark-Themed Header
+      doc.setFillColor(24, 26, 48);
       doc.rect(0, 0, pageWidth, 180, 'F');
-      // Add logo if provided
       if (logoUrl) {
-        // Fetch and convert logo to base64
         const img = await fetch(logoUrl).then(r => r.blob());
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve) => {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(img);
         });
-        // Render logo as a square (max 60x60)
         doc.addImage(base64, 'PNG', 40, 32, 60, 60, undefined, 'FAST');
       }
-      // Title
-      doc.setFont('helvetica', 'bold');
       let titleFontSize = 32;
       let title = 'Monthly Revenue Report';
       let titleX = 120;
       let maxTitleWidth = pageWidth - 180;
-      // Reduce font size if title is too wide
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(titleFontSize);
       while (doc.getTextWidth(title) > maxTitleWidth && titleFontSize > 16) {
         titleFontSize -= 2;
@@ -617,18 +613,16 @@ export function RevenueBreakdownDialog({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(16);
       doc.setTextColor(180, 180, 220);
-      // Wrap subtitle if needed
       const subtitle = 'This report provides an in-depth analysis of revenue performance.';
       const subtitleLines = doc.splitTextToSize(subtitle, maxTitleWidth);
       doc.text(subtitleLines, titleX, 100);
       doc.setFontSize(12);
       doc.setTextColor(180, 180, 220);
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, titleX, 120);
-      // === Section Divider ===
       doc.setDrawColor(90, 90, 180);
       doc.setLineWidth(2);
       doc.line(40, 150, pageWidth - 40, 150);
-      // === Revenue Summary ===
+      // Revenue Summary
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.setTextColor(230, 230, 255);
@@ -639,7 +633,7 @@ export function RevenueBreakdownDialog({
         doc.setTextColor(255, 180, 80);
         doc.text(`Pending Revenue: $${totalPendingRevenue.toFixed(2)}`, 50, 215);
       }
-      // === Revenue by Source Table ===
+      // Revenue by Source Table
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
       doc.setTextColor(180, 180, 220);
@@ -661,7 +655,7 @@ export function RevenueBreakdownDialog({
         styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
-      // === Monthly Revenue Table ===
+      // Monthly Revenue Table
       const tableEndY = (doc as any).lastAutoTable.finalY + 20;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
@@ -681,7 +675,7 @@ export function RevenueBreakdownDialog({
         styles: { textColor: [230, 230, 255], font: 'helvetica', fontSize: 11 },
         margin: { left: 40, right: 40 }
       });
-      // === Footer with Brand Info ===
+      // Footer with Brand Info
       const footerY = doc.internal.pageSize.getHeight() - 80;
       doc.setDrawColor(90, 90, 180);
       doc.setLineWidth(1);
@@ -695,7 +689,6 @@ export function RevenueBreakdownDialog({
       doc.setTextColor(180, 180, 220);
       doc.text(`Website: ${domain || ''}`, 50, footerY + 45);
       doc.text(`Email: ${email || ''}`, 50, footerY + 65);
-      // Save the PDF
       doc.save('revenue-report.pdf');
     } catch (err) {
       console.error('Error generating PDF:', err);
