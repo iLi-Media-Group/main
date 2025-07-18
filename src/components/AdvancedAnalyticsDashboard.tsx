@@ -11,6 +11,7 @@ import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 
 interface AnalyticsData {
   revenueData: Array<{
@@ -70,6 +71,31 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [selectedCover, setSelectedCover] = useState<string>("");
+  const [defaultCover, setDefaultCover] = useState<string>("");
+  const [settingDefault, setSettingDefault] = useState(false);
+
+  // Fetch default cover from report_settings on mount
+  useEffect(() => {
+    fetchDefaultCover();
+  }, []);
+
+  const fetchDefaultCover = async () => {
+    const { data, error } = await supabase.from('report_settings').select('default_cover_url').eq('id', 1).single();
+    if (data && data.default_cover_url) {
+      setDefaultCover(data.default_cover_url);
+      setSelectedCover(data.default_cover_url);
+    }
+  };
+
+  // Set a new default cover in the database
+  const handleSetDefaultCover = async (url: string) => {
+    setSettingDefault(true);
+    await supabase.from('report_settings').update({ default_cover_url: url, updated_at: new Date().toISOString() }).eq('id', 1);
+    setDefaultCover(url);
+    setSelectedCover(url);
+    setSettingDefault(false);
+  };
 
   // Check if user has access to advanced analytics
   const hasAccess = accountType === 'admin' || hasAnalyticsAccess;
@@ -508,9 +534,21 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } else if (format === 'pdf') {
-        // === PDF Export with Logo and Branding ===
+        // === PDF Export with Cover ===
         const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
         const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        // Cover page with selected or default cover
+        if (selectedCover) {
+          const img = await fetch(selectedCover).then(r => r.blob());
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(img);
+          });
+          doc.addImage(base64, 'PNG', 0, 0, pageWidth, pageHeight);
+          doc.addPage();
+        }
         let y = 40;
         // Add logo if provided
         if (logoUrl) {
@@ -1022,6 +1060,24 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
               </div>
             </CardContent>
           </Card>
+        </div>
+        {/* Cover Picker - at the bottom */}
+        <div className="mt-8 mb-2">
+          <h3 className="text-lg font-semibold text-white mb-2">Report Cover Pages</h3>
+          <ReportBackgroundPicker
+            selected={selectedCover}
+            onChange={setSelectedCover}
+            renderActions={(imgUrl: string) => (
+              <button
+                className={`mt-2 px-2 py-1 rounded text-xs ${defaultCover === imgUrl ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-300 hover:bg-blue-500/20'}`}
+                disabled={settingDefault || defaultCover === imgUrl}
+                onClick={() => handleSetDefaultCover(imgUrl)}
+                type="button"
+              >
+                {defaultCover === imgUrl ? 'Default' : 'Set as Default'}
+              </button>
+            )}
+          />
         </div>
       </div>
     </div>

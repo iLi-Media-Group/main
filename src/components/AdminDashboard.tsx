@@ -17,9 +17,6 @@ import { LogoUpload } from './LogoUpload';
 import { GenreManagement } from './GenreManagement';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { useReportBackground } from '../contexts/ReportBackgroundContext';
-import { ReportBackgroundPicker } from './ReportBackgroundPicker';
-import { ReportBackgroundProvider } from '../contexts/ReportBackgroundContext';
 import { AdminReportGenerator } from './AdminReportGenerator';
 
 interface UserStats {
@@ -183,7 +180,6 @@ function AdminDashboard() {
     primary_color: '#6366f1',
     secondary_color: '#8b5cf6'
   });
-  const { selectedBackground, setSelectedBackground, loading: bgLoading } = useReportBackground();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useEffect(() => {

@@ -712,25 +712,6 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
           </button>
         </div>
 
-        {/* Cover Picker */}
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">Report Cover Pages</h3>
-          <ReportBackgroundPicker
-            selected={selectedCover}
-            onChange={setSelectedCover}
-            renderActions={(imgUrl: string) => (
-              <button
-                className={`mt-2 px-2 py-1 rounded text-xs ${defaultCover === imgUrl ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-300 hover:bg-blue-500/20'}`}
-                disabled={settingDefault || defaultCover === imgUrl}
-                onClick={() => handleSetDefaultCover(imgUrl)}
-                type="button"
-              >
-                {defaultCover === imgUrl ? 'Default' : 'Set as Default'}
-              </button>
-            )}
-          />
-        </div>
-
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
             <p className="text-red-400 text-center">{error}</p>
@@ -891,6 +872,25 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
             <span className="ml-3 text-white">Generating report...</span>
           </div>
         )}
+
+        {/* Cover Picker - now at the bottom */}
+        <div className="mt-8 mb-2">
+          <h3 className="text-lg font-semibold text-white mb-2">Report Cover Pages</h3>
+          <ReportBackgroundPicker
+            selected={selectedCover}
+            onChange={setSelectedCover}
+            renderActions={(imgUrl: string) => (
+              <button
+                className={`mt-2 px-2 py-1 rounded text-xs ${defaultCover === imgUrl ? 'bg-blue-600 text-white' : 'bg-white/10 text-blue-300 hover:bg-blue-500/20'}`}
+                disabled={settingDefault || defaultCover === imgUrl}
+                onClick={() => handleSetDefaultCover(imgUrl)}
+                type="button"
+              >
+                {defaultCover === imgUrl ? 'Default' : 'Set as Default'}
+              </button>
+            )}
+          />
+        </div>
       </div>
     </div>
   );
