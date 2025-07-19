@@ -173,6 +173,47 @@ export function RevenueBreakdownDialog({
 
       if (customSyncError) throw customSyncError;
 
+      // Fetch white label setup fees
+      let whiteLabelSetupQuery = supabase
+        .from('white_label_clients')
+        .select(`
+          id,
+          setup_fee,
+          created_at,
+          owner:profiles!inner(id, first_name, last_name, email)
+        `)
+        .not('setup_fee', 'is', null)
+        .gte('created_at', startDate.toISOString());
+
+      // Filter by producer if specified (for white label setup, this would be the owner)
+      if (producerId) {
+        whiteLabelSetupQuery = whiteLabelSetupQuery.eq('owner.id', producerId);
+      }
+
+      const { data: whiteLabelSetupData, error: whiteLabelSetupError } = await whiteLabelSetupQuery;
+
+      if (whiteLabelSetupError) throw whiteLabelSetupError;
+
+      // Fetch white label monthly payments (paid and pending)
+      let whiteLabelMonthlyQuery = supabase
+        .from('white_label_monthly_payments')
+        .select('id, client_id, amount, due_date, paid_date, status, created_at')
+        .gte('due_date', startDate.toISOString().split('T')[0])
+        .lte('due_date', endDate.toISOString().split('T')[0]);
+
+      // Filter by producer if specified (for monthly payments, this would be the client_id)
+      if (producerId) {
+        whiteLabelMonthlyQuery = whiteLabelMonthlyQuery.eq('client_id', producerId);
+      }
+
+      const { data: whiteLabelMonthlyData, error: whiteLabelMonthlyError } = await whiteLabelMonthlyQuery;
+
+      if (whiteLabelMonthlyError) throw whiteLabelMonthlyError;
+
+      // Split into paid and pending
+      const paidMonthly = (whiteLabelMonthlyData || []).filter(p => p.status === 'paid');
+      const pendingMonthly = (whiteLabelMonthlyData || []).filter(p => p.status === 'pending');
+
       // Fetch pending sync proposals
       let pendingSyncProposalsQuery = supabase
         .from('sync_proposals')
@@ -363,6 +404,18 @@ export function RevenueBreakdownDialog({
         amount: customSyncData?.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
       };
 
+      // Process white label setup fees
+      const whiteLabelSetupRevenue = {
+        count: whiteLabelSetupData?.length || 0,
+        amount: whiteLabelSetupData?.reduce((sum, setup) => sum + (setup.setup_fee || 0), 0) || 0
+      };
+
+      // Process white label monthly payments
+      const whiteLabelMonthlyRevenue = {
+        count: (paidMonthly.length + pendingMonthly.length),
+        amount: (paidMonthly.reduce((sum, p) => sum + (p.amount || 0), 0) + pendingMonthly.reduce((sum, p) => sum + (p.amount || 0), 0))
+      };
+
       // Combine all revenue sources
       const completedSources = [
         ...Object.entries(salesByLicenseType).map(([source, data]) => ({
@@ -389,6 +442,26 @@ export function RevenueBreakdownDialog({
           source: 'Custom Sync Requests',
           amount: customSyncRevenue.amount,
           count: customSyncRevenue.count,
+          type: 'completed',
+          percentage: 0 // Will be calculated later
+        });
+      }
+
+      if (whiteLabelSetupRevenue.count > 0) {
+        completedSources.push({
+          source: 'White Label Setup',
+          amount: whiteLabelSetupRevenue.amount,
+          count: whiteLabelSetupRevenue.count,
+          type: 'completed',
+          percentage: 0 // Will be calculated later
+        });
+      }
+
+      if (whiteLabelMonthlyRevenue.count > 0) {
+        completedSources.push({
+          source: 'White Label Monthly',
+          amount: whiteLabelMonthlyRevenue.amount,
+          count: whiteLabelMonthlyRevenue.count,
           type: 'completed',
           percentage: 0 // Will be calculated later
         });
@@ -462,6 +535,9 @@ export function RevenueBreakdownDialog({
       console.log('Sales data count:', salesData?.length || 0);
       console.log('Sync proposals count:', syncProposalsData?.length || 0);
       console.log('Custom sync count:', customSyncData?.length || 0);
+      console.log('White Label Setup count:', whiteLabelSetupData?.length || 0);
+      console.log('White Label Monthly (paid) count:', paidMonthly.length);
+      console.log('White Label Monthly (pending) count:', pendingMonthly.length);
       
       // Helper function to get month key
       const getMonthKey = (date: Date) => {
@@ -495,6 +571,35 @@ export function RevenueBreakdownDialog({
         console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.final_amount || req.sync_fee}`);
         if (months[monthKey] !== undefined) {
           months[monthKey] += (req.final_amount || req.sync_fee) || 0;
+        }
+      });
+
+      // Add white label setup fees to months
+      whiteLabelSetupData?.forEach(setup => {
+        const date = new Date(setup.created_at);
+        const monthKey = getMonthKey(date);
+        console.log(`White Label Setup: ${date.toISOString()} -> ${monthKey}, amount: ${setup.setup_fee}`);
+        if (months[monthKey] !== undefined) {
+          months[monthKey] += (setup.setup_fee || 0);
+        }
+      });
+
+      // Add white label monthly payments to months
+      paidMonthly.forEach(payment => {
+        const date = new Date(payment.paid_date || payment.due_date);
+        const monthKey = getMonthKey(date);
+        console.log(`White Label Monthly (Paid): ${date.toISOString()} -> ${monthKey}, amount: ${payment.amount}`);
+        if (months[monthKey] !== undefined) {
+          months[monthKey] += (payment.amount || 0);
+        }
+      });
+
+      pendingMonthly.forEach(payment => {
+        const date = new Date(payment.due_date);
+        const monthKey = getMonthKey(date);
+        console.log(`White Label Monthly (Pending): ${date.toISOString()} -> ${monthKey}, amount: ${payment.amount}`);
+        if (months[monthKey] !== undefined) {
+          months[monthKey] += (payment.amount || 0);
         }
       });
       
