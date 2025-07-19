@@ -344,6 +344,8 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       console.log('Decoded path:', path);
       console.log('Bucket:', bucket);
       
+      // The path should include the full folder structure, not just the filename
+      // Files are stored in folders like: split-sheets/Oil Money/filename.pdf
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
       if (data?.signedUrl) {
         const link = document.createElement('a');
@@ -355,27 +357,39 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         console.log("Sync proposal download completed for:", filename);
       } else {
         console.error('Supabase storage error:', error);
-        // Try alternative approach - the file might be stored with a different path structure
-        console.log('Trying alternative path approach...');
+        console.log('Trying alternative approaches...');
         
-        // Try to extract just the filename from the path
-        const pathParts = path.split('/');
-        const fileName = pathParts[pathParts.length - 1];
-        console.log('Trying with just filename:', fileName);
+        // Try different path variations since files are in nested folders
+        const pathVariations = [
+          path, // Original path
+          path.replace(/%20/g, ' '), // Replace %20 with spaces
+          path.split('/').slice(-2).join('/'), // Last two path segments (folder/filename)
+          path.split('/').slice(-3).join('/'), // Last three path segments
+          path.split('/').pop() || '' // Just filename
+        ];
         
-        const { data: altData, error: altError } = await supabase.storage.from(bucket).createSignedUrl(fileName, 60);
-        if (altData?.signedUrl) {
-          const link = document.createElement('a');
-          link.href = altData.signedUrl;
-          link.download = filename;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          console.log("Sync proposal download completed with alternative approach for:", filename);
-        } else {
-          console.error('Alternative approach also failed:', altError);
-          alert('Download failed. Please check your license or contact support.');
+        console.log('Trying path variations:', pathVariations);
+        
+        for (const pathVariation of pathVariations) {
+          console.log('Trying path variation:', pathVariation);
+          const { data: altData, error: altError } = await supabase.storage.from(bucket).createSignedUrl(pathVariation, 60);
+          if (altData?.signedUrl) {
+            const link = document.createElement('a');
+            link.href = altData.signedUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            console.log("Sync proposal download completed with path variation:", pathVariation);
+            return; // Success, exit the function
+          } else {
+            console.log('Path variation failed:', pathVariation, altError);
+          }
         }
+        
+        // If all variations failed, show error
+        console.error('All path variations failed');
+        alert('Download failed. Please check your license or contact support.');
       }
     } else {
       // Fallback to the secure download endpoint for external URLs
