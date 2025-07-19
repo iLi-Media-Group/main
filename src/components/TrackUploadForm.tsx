@@ -87,6 +87,7 @@ export function TrackUploadForm() {
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [uploadedTrackId, setUploadedTrackId] = useState<string | null>(null);
+  const [successCountdown, setSuccessCountdown] = useState(10);
   const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
@@ -95,6 +96,23 @@ export function TrackUploadForm() {
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   // Add state for expanded moods
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
+
+  // Handle success modal countdown
+  useEffect(() => {
+    if (showSuccessModal && successCountdown > 0) {
+      const timer = setTimeout(() => {
+        setSuccessCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (showSuccessModal && successCountdown === 0) {
+      // Auto-dismiss after countdown reaches 0
+      setTimeout(() => {
+        setShowSuccessModal(false);
+        setSuccessCountdown(10);
+        navigate('/producer/dashboard?refresh=true');
+      }, 1000);
+    }
+  }, [showSuccessModal, successCountdown, navigate]);
 
   // Fetch genres from database
   useEffect(() => {
@@ -317,6 +335,7 @@ export function TrackUploadForm() {
 
       // Set success state
       setUploadedTrackId(trackData?.id || null);
+      setSuccessCountdown(10); // Reset countdown
       setShowSuccessModal(true);
       clearSavedFormData();
       
@@ -386,37 +405,59 @@ export function TrackUploadForm() {
 
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-green-900/90 rounded-xl p-8 max-w-md w-full mx-4 shadow-lg border border-green-500/40">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-50">
+          <div className="bg-gradient-to-br from-green-900/95 to-green-800/95 rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl border-2 border-green-400/50 relative overflow-hidden">
+            {/* Animated background effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-green-400/10 to-blue-400/10 animate-pulse"></div>
+            
+            <div className="relative text-center">
+              {/* Success icon with animation */}
+              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Upload Successful!</h3>
-              <p className="text-green-300 mb-6">Your track has been uploaded and saved successfully.</p>
+              
+              <h3 className="text-2xl font-bold text-white mb-3">🎉 Upload Successful!</h3>
+              <p className="text-green-200 mb-2 text-lg">Your track has been uploaded and saved successfully.</p>
+              <p className="text-green-300 mb-6 text-sm">Track: <span className="font-semibold">{title}</span></p>
+              
+              {/* Countdown timer */}
+              <div className="mb-6">
+                <p className="text-yellow-300 text-sm mb-2">Auto-redirecting to dashboard in:</p>
+                <div className="text-3xl font-bold text-yellow-400">{successCountdown}s</div>
+              </div>
               
               <div className="space-y-3">
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
+                    setSuccessCountdown(10);
                     navigate('/producer/dashboard?refresh=true');
                   }}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
-                  Go to Dashboard
+                  🏠 Go to Dashboard Now
                 </button>
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
+                    setSuccessCountdown(10);
                     // Reset form for another upload
                     window.location.reload();
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
-                  Upload Another Track
+                  ➕ Upload Another Track
                 </button>
+              </div>
+              
+              {/* Progress bar for countdown */}
+              <div className="mt-4 w-full bg-green-800/50 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 h-2 rounded-full transition-all duration-1000 ease-linear"
+                  style={{ width: `${((10 - successCountdown) / 10) * 100}%` }}
+                />
               </div>
             </div>
           </div>
