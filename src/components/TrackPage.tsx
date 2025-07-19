@@ -142,9 +142,9 @@ export function TrackPage() {
       
       if (trackData) {
         // Convert comma-separated strings to arrays
-        const genres = trackData.genres ? trackData.genres.split(',').map(g => g.trim()) : [];
-        const moods = trackData.moods ? trackData.moods.split(',').map(m => m.trim()) : [];
-        const subGenres = trackData.sub_genres ? trackData.sub_genres.split(',').map(g => g.trim()) : [];
+        const genres = trackData.genres ? trackData.genres.split(',').map((g: string) => g.trim()) : [];
+        const moods = trackData.moods ? trackData.moods.split(',').map((m: string) => m.trim()) : [];
+        const subGenres = trackData.sub_genres ? trackData.sub_genres.split(',').map((g: string) => g.trim()) : [];
 
         // Map the database fields to the Track interface
         const mappedTrack: Track = {
@@ -273,14 +273,19 @@ export function TrackPage() {
 
     if (!track) return;
 
-    // For sync-only tracks, show the proposal dialog
-    if (track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only')) {
+    // For sync-only tracks (with or without vocals), show the proposal dialog
+    if (track.isSyncOnly) {
       setShowProposalDialog(true);
       return;
     }
     
-    // Show the license dialog for all users
-    // The LicenseTermsSummary component will handle the Stripe checkout if needed
+    // For tracks with vocals but not sync-only, show the license dialog
+    if (track.hasVocals && !track.isSyncOnly) {
+      setShowLicenseDialog(true);
+      return;
+    }
+    
+    // For regular tracks (no vocals, not sync-only), show the license dialog
     setShowLicenseDialog(true);
   };
 
@@ -309,7 +314,9 @@ export function TrackPage() {
     );
   }
 
-  const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
+  // Determine button type based on track properties
+  const isSyncOnlyTrack = track.isSyncOnly;
+  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -381,13 +388,15 @@ export function TrackPage() {
                   {track.hasVocals && (
                     <div className="flex items-center text-gray-300">
                       <Mic className="w-5 h-5 mr-2 text-purple-400" />
-                      <span>
-                        Full Track with Vocals
-                        {track.vocalsUsageType === 'sync_only' && (
-                          <span className="ml-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-xs">
-                            Sync Only
-                          </span>
-                        )}
+                      <span>Full Track with Vocals</span>
+                    </div>
+                  )}
+                  
+                  {track.isSyncOnly && (
+                    <div className="flex items-center text-gray-300">
+                      <Music className="w-5 h-5 mr-2 text-purple-400" />
+                      <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-xs">
+                        Sync Only
                       </span>
                     </div>
                   )}
@@ -429,7 +438,7 @@ export function TrackPage() {
                   onClick={handleActionClick}
                   disabled={checkoutLoading}
                   className={`py-3 px-6 rounded-lg text-white font-semibold transition-colors flex items-center ${
-                    isSyncOnly 
+                    isSyncOnlyTrack 
                       ? 'bg-purple-600 hover:bg-purple-700' 
                       : 'bg-blue-600 hover:bg-blue-700'
                   } disabled:opacity-50`}
@@ -442,10 +451,12 @@ export function TrackPage() {
                   ) : (
                     <>
                       <DollarSign className="w-5 h-5 mr-2" />
-                      {isSyncOnly ? 'Submit Sync Proposal' : (
-                        membershipPlan === 'Single Track' 
-                          ? 'Purchase License ($9.99)' 
-                          : 'License This Track'
+                      {isSyncOnlyTrack ? 'Submit Proposal' : (
+                        hasVocalsOnly ? 'License Track' : (
+                          membershipPlan === 'Single Track' 
+                            ? 'Purchase License ($9.99)' 
+                            : 'License This Track'
+                        )
                       )}
                     </>
                   )}
