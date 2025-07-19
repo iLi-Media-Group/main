@@ -2048,35 +2048,37 @@ export function ClientDashboard() {
                             onClick={() => navigate(`/track/${proposal.track.id}`)}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <button
-                                onClick={() => navigate(`/track/${proposal.track.id}`)}
-                                className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
-                              >
-                                {proposal.track.title}
-                              </button>
-                              <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                                <span className="px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full text-xs">
+                            <div className="flex flex-col space-y-3">
+                              <div className="flex items-center justify-between">
+                                <button
+                                  onClick={() => navigate(`/track/${proposal.track.id}`)}
+                                  className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                                >
+                                  {proposal.track.title}
+                                </button>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <span className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
                                   Sync Proposal
                                 </span>
                                 <button
                                   onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                                  className="flex items-center px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium"
                                   title="View License Agreement"
                                 >
-                                  <FileText className="w-4 h-4 mr-1" />
+                                  <FileText className="w-4 h-4 mr-2" />
                                   View Agreement
                                 </button>
                                 <button
                                   onClick={() => handleShowHistory(proposal)}
-                                  className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium"
                                 >
-                                  <FileText className="w-4 h-4 mr-1" />
+                                  <FileText className="w-4 h-4 mr-2" />
                                   History
                                 </button>
                                 {proposal.payment_status === 'paid' && (
-                                  <div className="flex flex-col space-y-2 mt-3">
-                                    <div className="text-sm font-medium text-gray-300">Download Files:</div>
+                                  <div className="flex flex-col space-y-3 mt-4">
+                                    <div className="text-sm font-medium text-gray-300 border-b border-gray-600 pb-1">Download Files</div>
                                     <div className="flex items-center space-x-2">
                                       {proposal.track.mp3_url && (
                                         <button
