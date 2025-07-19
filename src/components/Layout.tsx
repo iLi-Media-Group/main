@@ -171,6 +171,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   <Link to="/vocals" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Mic className="w-4 h-4 mr-2" />Full Tracks with Vocals
                   </Link>
+                  <Link to="/sync-only" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                    <Music className="w-4 h-4 mr-2" />Sync Only Tracks
+                  </Link>
                   {/* Removed Open Sync Briefs and Custom Sync Request from main menu */}
                   {/* Admin-specific menu items */}
                   {isAdmin && (

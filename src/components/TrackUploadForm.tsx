@@ -42,7 +42,6 @@ interface FormData {
   mp3Url: string;
   trackoutsUrl: string;
   hasVocals: boolean;
-  vocalsUsageType: 'normal' | 'sync_only';
   isSyncOnly: boolean;
   stemsUrl: string;
   splitSheetUrl: string;
@@ -78,7 +77,7 @@ export function TrackUploadForm() {
   const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
   const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
   const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
-  const [vocalsUsageType, setVocalsUsageType] = useState<'normal' | 'sync_only'>(savedData?.vocalsUsageType || 'normal');
+
   const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
   const [stemsUrl, setStemsUrl] = useState(savedData?.stemsUrl || '');
   const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
@@ -155,7 +154,6 @@ export function TrackUploadForm() {
       mp3Url,
       trackoutsUrl,
       hasVocals,
-      vocalsUsageType,
       isSyncOnly,
       stemsUrl,
       splitSheetUrl
@@ -173,7 +171,6 @@ export function TrackUploadForm() {
     mp3Url,
     trackoutsUrl,
     hasVocals,
-    vocalsUsageType,
     isSyncOnly,
     stemsUrl,
     splitSheetUrl
@@ -313,7 +310,7 @@ export function TrackUploadForm() {
           stems_url: stemsStoragePath || null,
           split_sheet_url: splitSheetUploadedUrl || null,
           has_vocals: hasVocals,
-          vocals_usage_type: hasVocals ? vocalsUsageType : null,
+          vocals_usage_type: hasVocals ? 'normal' : null,
           is_sync_only: isSyncOnly,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -742,22 +739,7 @@ export function TrackUploadForm() {
                 <span>Track contains vocals</span>
               </label>
 
-              {hasVocals && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Vocals Usage Type
-                  </label>
-                  <select
-                    value={vocalsUsageType}
-                    onChange={(e) => setVocalsUsageType(e.target.value as 'normal' | 'sync_only')}
-                    className="block w-full"
-                    disabled={isSubmitting}
-                  >
-                    <option value="normal">Allow use in normal memberships</option>
-                    <option value="sync_only">Only allow for sync briefs</option>
-                  </select>
-                </div>
-              )}
+
 
               <label className="flex items-center space-x-2 text-gray-300">
                 <input

@@ -13,6 +13,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { ProducerInvitation } from './components/ProducerInvitation';
 import { CatalogPage } from './components/CatalogPage';
 import { VocalsPage } from './components/VocalsPage';
+import { SyncOnlyPage } from './components/SyncOnlyPage';
 import { LicensePage } from './components/LicensePage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
@@ -225,6 +226,7 @@ const App = () => {
 
         <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
         <Route path="/vocals" element={<LayoutWrapper><VocalsPage /></LayoutWrapper>} />
+        <Route path="/sync-only" element={<LayoutWrapper><SyncOnlyPage /></LayoutWrapper>} />
         <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
