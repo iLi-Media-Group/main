@@ -4,7 +4,31 @@ import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, Arr
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseArrayField } from '../lib/utils';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+
+// Component to handle signed URL generation for track audio
+function TrackAudioPlayer({ track }: { track: Track }) {
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
+  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+}
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
@@ -842,7 +866,7 @@ export function ProducerDashboard() {
                       </div>
                     </div>
                     <div className="w-64 flex-shrink-0">
-                      <AudioPlayer src={track.audio_url} title={track.title} />
+                      <TrackAudioPlayer track={track} />
                     </div>
                   </div>
                 </div>

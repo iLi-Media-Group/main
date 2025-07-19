@@ -4,7 +4,62 @@ import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, 
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+
+// Component to handle signed URL generation for track audio
+function TrackAudioPlayer({ track }: { track: Track }) {
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
+  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+}
+
+// Component to handle signed URL generation for track images
+function TrackImage({ track }: { track: Track }) {
+  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+
+  if (loading) {
+    return (
+      <div className="w-full h-full bg-white/5 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <img
+        src="https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg"
+        alt={track.title}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={signedUrl}
+      alt={track.title}
+      className="w-full h-full object-cover"
+    />
+  );
+}
 import { LicenseDialog } from './LicenseDialog';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
@@ -252,11 +307,7 @@ export function TrackPage() {
             {/* Left Column - Image */}
             <div className="md:col-span-1">
               <div className="relative aspect-square rounded-lg overflow-hidden">
-                <img
-                  src={track.image}
-                  alt={track.title}
-                  className="w-full h-full object-cover"
-                />
+                <TrackImage track={track} />
                 {user && (
                   <button
                     onClick={toggleFavorite}
@@ -291,7 +342,7 @@ export function TrackPage() {
               )}
 
               <div className="mb-6">
-                <AudioPlayer src={track.audioUrl} title={track.title} />
+                <TrackAudioPlayer track={track} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">

@@ -4,7 +4,7 @@ import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { uploadFile, validateAudioFile, validateArchiveFile, getPublicUrl } from '../lib/storage';
+import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -254,21 +254,20 @@ export function TrackUploadForm() {
         setUploadProgress(progress);
       }, `${user.id}/${title}`);
 
-      const audioUrl = getPublicUrl('track-audio', audioPath);
-      setUploadedUrl(audioUrl);
+      setUploadedUrl(audioPath); // Store the file path, not URL
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
         setUploadStatus('Uploading image file...');
         const imagePath = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
-        imageUrl = getPublicUrl('track-images', imagePath);
+        imageUrl = imagePath; // Store the file path, not URL
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
         setUploadStatus('Uploading split sheet...');
         const splitSheetPath = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
-        splitSheetUploadedUrl = getPublicUrl('split-sheets', splitSheetPath);
+        splitSheetUploadedUrl = splitSheetPath; // Store the file path, not URL
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
 
@@ -278,7 +277,7 @@ export function TrackUploadForm() {
         setUploadStatus('Uploading trackouts file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
         const trackoutsPath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
-        trackoutsStoragePath = getPublicUrl('trackouts', trackoutsPath);
+        trackoutsStoragePath = trackoutsPath; // Store the file path, not URL
         setTrackoutsUrl(trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
@@ -286,7 +285,7 @@ export function TrackUploadForm() {
         setUploadStatus('Uploading stems file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
         const stemsPath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
-        stemsStoragePath = getPublicUrl('stems', stemsPath);
+        stemsStoragePath = stemsPath; // Store the file path, not URL
         setStemsUrl(stemsStoragePath);
       }
       // --- End new logic ---
@@ -307,8 +306,8 @@ export function TrackUploadForm() {
           key,
           has_sting_ending: hasStingEnding,
           is_one_stop: isOneStop,
-          audio_url: audioUrl, // This is now a public URL
-          image_url: imageUrl, // This is now a public URL
+          audio_url: audioPath, // This is now a file path
+          image_url: imageUrl, // This is now a file path
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsStoragePath || null,
           stems_url: stemsStoragePath || null,
@@ -331,7 +330,7 @@ export function TrackUploadForm() {
         .select('id')
         .eq('track_producer_id', user.id)
         .eq('title', title)
-        .eq('audio_url', audioUrl)
+        .eq('audio_url', audioPath)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
