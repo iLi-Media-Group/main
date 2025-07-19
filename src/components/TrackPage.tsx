@@ -32,6 +32,18 @@ function TrackAudioPlayer({ track }: { track: Track }) {
 
 // Component to handle signed URL generation for track images
 function TrackImage({ track }: { track: Track }) {
+  // If it's already a public URL (like Unsplash), use it directly
+  if (track.image && track.image.startsWith('https://')) {
+    return (
+      <img
+        src={track.image}
+        alt={track.title}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  // For file paths, use signed URL
   const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
 
   if (loading) {

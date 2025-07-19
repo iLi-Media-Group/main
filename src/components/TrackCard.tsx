@@ -6,10 +6,54 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 
 interface TrackCardProps {
   track: Track;
   onSelect: (track: Track) => void;
+}
+
+// Component to handle signed URL generation for track images
+function TrackImage({ track }: { track: Track }) {
+  // If it's already a public URL (like Unsplash), use it directly
+  if (track.image && track.image.startsWith('https://')) {
+    return (
+      <img
+        src={track.image}
+        alt={track.title}
+        className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+      />
+    );
+  }
+
+  // For file paths, use signed URL
+  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+
+  if (loading) {
+    return (
+      <div className="w-full h-full bg-white/5 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <img
+        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
+        alt={track.title}
+        className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={signedUrl}
+      alt={track.title}
+      className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+    />
+  );
 }
 
 export function TrackCard({ track, onSelect }: TrackCardProps) {
@@ -125,11 +169,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
       >
         {/* Image Section */}
         <div className="relative aspect-square overflow-hidden">
-          <img
-            src={track.image}
-            alt={track.title}
-            className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-          />
+          <TrackImage track={track} />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-60 transition-opacity duration-300" />
           
           {/* Favorite Button */}

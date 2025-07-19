@@ -29,6 +29,49 @@ function TrackAudioPlayer({ track }: { track: Track }) {
 
   return <AudioPlayer src={signedUrl || ''} title={track.title} />;
 }
+
+// Component to handle signed URL generation for track images
+function TrackImage({ track }: { track: Track }) {
+  // If it's already a public URL (like Unsplash), use it directly
+  if (track.image_url && track.image_url.startsWith('https://')) {
+    return (
+      <img
+        src={track.image_url}
+        alt={track.title}
+        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+      />
+    );
+  }
+
+  // For file paths, use signed URL
+  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image_url);
+
+  if (loading) {
+    return (
+      <div className="w-16 h-16 bg-white/5 flex items-center justify-center rounded-lg flex-shrink-0">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <img
+        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
+        alt={track.title}
+        className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={signedUrl}
+      alt={track.title}
+      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+    />
+  );
+}
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
@@ -804,11 +847,7 @@ export function ProducerDashboard() {
                   className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
                 >
                   <div className="flex items-start space-x-4">
-                    <img
-                      src={track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                      alt={track.title}
-                      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
-                    />
+                    <TrackImage track={track} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
