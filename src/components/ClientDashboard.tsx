@@ -62,6 +62,51 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   );
 };
 
+// Audio Player Component with Signed URL
+const AudioPlayerWithSignedUrl = ({ 
+  audioUrl, 
+  title, 
+  isPlaying, 
+  onToggle, 
+  size = "md" 
+}: { 
+  audioUrl: string; 
+  title: string; 
+  isPlaying: boolean; 
+  onToggle: () => void; 
+  size?: "sm" | "md" | "lg";
+}) => {
+  // Extract bucket and path from audioUrl
+  const getBucketAndPath = (url: string) => {
+    if (!url || url.startsWith('http')) return { bucket: '', path: '' };
+    
+    // Remove leading slash if present
+    const cleanPath = url.startsWith('/') ? url.slice(1) : url;
+    
+    // Split by first slash to get bucket and path
+    const parts = cleanPath.split('/');
+    if (parts.length < 2) return { bucket: '', path: '' };
+    
+    const bucket = parts[0];
+    const path = parts.slice(1).join('/');
+    
+    return { bucket, path };
+  };
+
+  const { bucket, path } = getBucketAndPath(audioUrl);
+  const { signedUrl } = useSignedUrl(bucket, path);
+  
+  return (
+    <AudioPlayer
+      src={signedUrl || audioUrl}
+      title={title}
+      isPlaying={isPlaying}
+      onToggle={onToggle}
+      size={size}
+    />
+  );
+};
+
 interface License {
   id: string;
   track: Track;
@@ -1901,8 +1946,8 @@ export function ClientDashboard() {
                                 </span>
                               </div>
                               {license.track.audioUrl && (
-                                <AudioPlayer
-                                  src={license.track.audioUrl}
+                                <AudioPlayerWithSignedUrl
+                                  audioUrl={license.track.audioUrl}
                                   title={license.track.title}
                                   isPlaying={currentlyPlaying === license.track.id}
                                   onToggle={() => {
@@ -2024,8 +2069,8 @@ export function ClientDashboard() {
                                 </span>
                               </div>
                               {proposal.track.audioUrl && (
-                                <AudioPlayer
-                                  src={proposal.track.audioUrl}
+                                <AudioPlayerWithSignedUrl
+                                  audioUrl={proposal.track.audioUrl}
                                   title={proposal.track.title}
                                   isPlaying={currentlyPlaying === proposal.track.id}
                                   onToggle={() => {
@@ -2091,8 +2136,8 @@ export function ClientDashboard() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {track.audioUrl && (
-                            <AudioPlayer
-                              src={track.audioUrl}
+                            <AudioPlayerWithSignedUrl
+                              audioUrl={track.audioUrl}
                               title={track.title}
                               isPlaying={currentlyPlayingFavorite === track.id}
                               onToggle={() => togglePlayFavorite(track.id)}
@@ -2168,8 +2213,8 @@ export function ClientDashboard() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {track.audioUrl && (
-                            <AudioPlayer
-                              src={track.audioUrl}
+                            <AudioPlayerWithSignedUrl
+                              audioUrl={track.audioUrl}
                               title={track.title}
                               isPlaying={currentlyPlayingNew === track.id}
                               onToggle={() => togglePlayNew(track.id)}
