@@ -245,22 +245,43 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
 
           {/* Features */}
           <div className="flex flex-wrap gap-1.5 text-xs">
-            {track.hasVocals && (
-              <div className="flex items-center text-purple-400">
-                <Mic className="w-3 h-3 mr-0.5" />
-                <span>{isSyncOnly ? 'Sync Only' : 'Vocals'}</span>
+            {/* Sync Only Badge */}
+            {isSyncOnly && (
+              <div className="flex items-center text-purple-400 bg-purple-500/20 px-2 py-0.5 rounded-full">
+                <Music className="w-3 h-3 mr-0.5" />
+                <span>Sync Only</span>
               </div>
             )}
+            
+            {/* Vocals Badge */}
+            {track.hasVocals && !isSyncOnly && (
+              <div className="flex items-center text-purple-400">
+                <Mic className="w-3 h-3 mr-0.5" />
+                <span>Vocals</span>
+              </div>
+            )}
+            
+            {/* MP3 Badge */}
             {track.mp3Url && (
               <div className="flex items-center text-green-400">
                 <FileMusic className="w-3 h-3 mr-0.5" />
                 <span>MP3</span>
               </div>
             )}
+            
+            {/* Trackouts/Stems Badge */}
             {track.trackoutsUrl && (
               <div className="flex items-center text-blue-400">
                 <Layers className="w-3 h-3 mr-0.5" />
-                <span>Stems</span>
+                <span>Trackouts</span>
+              </div>
+            )}
+            
+            {/* Sting Ending Badge */}
+            {track.hasStingEnding && (
+              <div className="flex items-center text-orange-400">
+                <Music className="w-3 h-3 mr-0.5" />
+                <span>Sting Ending</span>
               </div>
             )}
           </div>
