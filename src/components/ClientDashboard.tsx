@@ -2078,8 +2078,8 @@ export function ClientDashboard() {
                       key={proposal.id}
                       className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
                     >
-                      <div className="flex flex-col space-y-3">
-                        <div className="flex items-start space-x-4">
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-start space-x-4 flex-1">
                           <TrackImage
                             imageUrl={proposal.track.image_url || ''}
                             title={proposal.track.title}
@@ -2088,7 +2088,7 @@ export function ClientDashboard() {
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col space-y-3">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between mb-2">
                                 <button
                                   onClick={() => navigate(`/track/${proposal.track.id}`)}
                                   className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
@@ -2096,120 +2096,120 @@ export function ClientDashboard() {
                                   {proposal.track.title}
                                 </button>
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <span className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
-                                  Sync Proposal
+                              <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
+                                <span className="flex items-center">
+                                  <Tag className="w-4 h-4 mr-1" />
+                                  {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
                                 </span>
-                                <button
-                                  onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium"
-                                  title="View License Agreement"
-                                >
-                                  <FileText className="w-4 h-4 mr-2" />
-                                  View Agreement
-                                </button>
-                                <button
-                                  onClick={() => handleShowHistory(proposal)}
-                                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium"
-                                >
-                                  <FileText className="w-4 h-4 mr-2" />
-                                  History
-                                </button>
-                                {proposal.payment_status === 'paid' && (
-                                  <div className="flex flex-col space-y-3 mt-4">
-                                    <div className="text-sm font-medium text-gray-300 border-b border-gray-600 pb-1">Download Files</div>
-                                    <div className="flex items-center space-x-2">
-                                      {proposal.track.mp3_url && (
-                                        <button
-                                          onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
-                                          className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                          title="Download MP3"
-                                        >
-                                          <Download className="w-4 h-4 mr-2" />
-                                          MP3
-                                        </button>
-                                      )}
-                                      {proposal.track.trackouts_url && (
-                                        <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
-                                          className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                          title="Download Trackouts"
-                                        >
-                                          <Download className="w-4 h-4 mr-2" />
-                                          Trackouts
-                                        </button>
-                                      )}
-                                      {proposal.track.trackouts_url && (
-                                        <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url)}
-                                          className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                          title="Download Stems"
-                                        >
-                                          <Download className="w-4 h-4 mr-2" />
-                                          Stems
-                                        </button>
-                                      )}
-                                      {proposal.track.split_sheet_url && (
-                                        <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
-                                          className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                                          title="Download Split Sheet"
-                                        >
-                                          <Download className="w-4 h-4 mr-2" />
-                                          Split Sheet
-                                        </button>
-                                      )}
-                                      {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
-                                        <span className="text-sm text-gray-400 italic">No files available for download</span>
-                                      )}
-                                    </div>
+                                <span className="flex items-center">
+                                  <Hash className="w-4 h-4 mr-1" />
+                                  {proposal.track.bpm} BPM
+                                </span>
+                                <span className="flex items-center">
+                                  <DollarSign className="w-4 h-4 mr-1" />
+                                  ${(proposal.final_amount || proposal.sync_fee).toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                                    Paid
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {proposal.track.audioUrl && (
+                                  <AudioPlayerWithSignedUrl
+                                    audioUrl={proposal.track.audioUrl}
+                                    title={proposal.track.title}
+                                    isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
+                                    onToggle={() => {
+                                      if (currentlyPlaying === `proposal-${proposal.id}`) {
+                                        setCurrentlyPlaying(null);
+                                      } else {
+                                        setCurrentlyPlaying(`proposal-${proposal.id}`);
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {!proposal.track.audioUrl && (
+                                  <div className="text-xs text-gray-400 italic">
+                                    No audio preview available
                                   </div>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
-                              <span className="flex items-center">
-                                <Tag className="w-4 h-4 mr-1" />
-                                {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
-                              </span>
-                              <span className="flex items-center">
-                                <Hash className="w-4 h-4 mr-1" />
-                                {proposal.track.bpm} BPM
-                              </span>
-                              <span className="flex items-center">
-                                <DollarSign className="w-4 h-4 mr-1" />
-                                ${(proposal.final_amount || proposal.sync_fee).toFixed(2)}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <div className="flex items-center space-x-2">
-                                <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                                  Paid
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {proposal.track.audioUrl && (
-                                <AudioPlayerWithSignedUrl
-                                  audioUrl={proposal.track.audioUrl}
-                                  title={proposal.track.title}
-                                  isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
-                                  onToggle={() => {
-                                    if (currentlyPlaying === `proposal-${proposal.id}`) {
-                                      setCurrentlyPlaying(null);
-                                    } else {
-                                      setCurrentlyPlaying(`proposal-${proposal.id}`);
-                                    }
-                                  }}
-                                />
-                              )}
-                              {!proposal.track.audioUrl && (
-                                <div className="text-xs text-gray-400 italic">
-                                  No audio preview available
-                                </div>
-                              )}
-                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
+                              Sync Proposal
+                            </span>
+                            <button
+                              onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                              className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium"
+                              title="View License Agreement"
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              View Agreement
+                            </button>
+                            <button
+                              onClick={() => handleShowHistory(proposal)}
+                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium"
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              History
+                            </button>
+                            {proposal.payment_status === 'paid' && (
+                              <>
+                                <div className="text-sm font-medium text-gray-300 border-l border-gray-600 pl-3 ml-3">Download Files:</div>
+                                {proposal.track.mp3_url && (
+                                  <button
+                                    onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
+                                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download MP3"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    MP3
+                                  </button>
+                                )}
+                                {proposal.track.trackouts_url && (
+                                  <button
+                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
+                                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Trackouts"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Trackouts
+                                  </button>
+                                )}
+                                {proposal.track.trackouts_url && (
+                                  <button
+                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url)}
+                                    className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Stems"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Stems
+                                  </button>
+                                )}
+                                {proposal.track.split_sheet_url && (
+                                  <button
+                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
+                                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Split Sheet"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Split Sheet
+                                  </button>
+                                )}
+                                {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
+                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
