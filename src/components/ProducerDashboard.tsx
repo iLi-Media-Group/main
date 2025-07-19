@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -117,6 +117,7 @@ const getPaymentTermsDisplay = (paymentTerms: string): string => {
 export function ProducerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [pendingProposals, setPendingProposals] = useState<Proposal[]>([]);
@@ -151,7 +152,24 @@ export function ProducerDashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      
+      // If coming from upload with refresh parameter, clear it from URL
+      if (searchParams.get('refresh') === 'true') {
+        navigate('/producer/dashboard', { replace: true });
+      }
     }
+  }, [user, searchParams]);
+
+  // Refresh data when component comes into focus (e.g., after upload)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (user) {
+        fetchDashboardData();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [user]);
 
   useEffect(() => {
@@ -610,6 +628,13 @@ export function ProducerDashboard() {
             >
               <UserCog className="w-5 h-5 mr-2" />
               Edit Profile
+            </button>
+            <button
+              onClick={fetchDashboardData}
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              <Loader2 className="w-5 h-5 mr-2" />
+              Refresh
             </button>
             <Link
               to="/producer/upload"
