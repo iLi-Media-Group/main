@@ -65,6 +65,8 @@ export function TrackUploadForm() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
   const [bpm, setBpm] = useState(savedData?.bpm || '');
   const [key, setKey] = useState(savedData?.key || '');
   const [hasStingEnding, setHasStingEnding] = useState(savedData?.hasStingEnding || false);
@@ -201,7 +203,10 @@ export function TrackUploadForm() {
 
     try {
       setIsSubmitting(true);
+      setIsUploading(true);
       setError('');
+      setUploadProgress(0);
+      setUploadStatus('Starting upload...');
 
       const bpmNumber = parseInt(bpm);
       if (isNaN(bpmNumber) || bpmNumber < 1 || bpmNumber > 999) {
@@ -224,6 +229,7 @@ export function TrackUploadForm() {
         throw new Error('At least one valid genre is required');
       }
 
+      setUploadStatus('Uploading audio file...');
       const audioUrl = await uploadFile(audioFile, 'track-audio', (progress) => {
         setUploadProgress(progress);
       }, `${user.id}/${title}`);
@@ -232,11 +238,13 @@ export function TrackUploadForm() {
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
+        setUploadStatus('Uploading image file...');
         imageUrl = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
+        setUploadStatus('Uploading split sheet...');
         splitSheetUploadedUrl = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
@@ -244,18 +252,21 @@ export function TrackUploadForm() {
       // --- New logic for trackouts and stems ---
       let trackoutsStoragePath = trackoutsUrl;
       if (trackoutsFile) {
+        setUploadStatus('Uploading trackouts file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
         trackoutsStoragePath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
         setTrackoutsUrl(trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
+        setUploadStatus('Uploading stems file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
         stemsStoragePath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
         setStemsUrl(stemsStoragePath);
       }
       // --- End new logic ---
 
+      setUploadStatus('Saving track to database...');
       // Insert or update track in DB
       const { error: trackError } = await supabase
         .from('tracks')
@@ -306,6 +317,9 @@ export function TrackUploadForm() {
       setError(err instanceof Error ? err.message : 'Failed to save track. Please try again.');
     } finally {
       setIsSubmitting(false);
+      setIsUploading(false);
+      setUploadProgress(0);
+      setUploadStatus('');
     }
   };
 
@@ -322,6 +336,34 @@ export function TrackUploadForm() {
 
   return (
     <div className="min-h-screen bg-blue-900 py-8">
+      {/* Upload Progress Overlay */}
+      {isUploading && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-blue-900/90 rounded-xl p-8 max-w-md w-full mx-4 shadow-lg border border-blue-500/40">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Uploading Track</h3>
+              <p className="text-blue-300 mb-6">{uploadStatus}</p>
+              
+              {/* Progress Bar */}
+              <div className="w-full bg-blue-800/60 rounded-full h-3 mb-4">
+                <div 
+                  className="bg-blue-500 h-3 rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              
+              <p className="text-sm text-gray-400">
+                {uploadProgress > 0 ? `${uploadProgress.toFixed(0)}% complete` : 'Preparing upload...'}
+              </p>
+              
+              <p className="text-xs text-gray-500 mt-4">
+                Please don't close this page while uploading
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="max-w-4xl mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Upload New Track</h1>

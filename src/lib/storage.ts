@@ -13,6 +13,18 @@ export async function uploadFile(
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
 
+    // Check if bucket exists first
+    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+    if (bucketError) {
+      console.error('Error checking buckets:', bucketError);
+      throw new Error('Unable to verify storage buckets');
+    }
+
+    const bucketExists = buckets?.some(b => b.name === bucket);
+    if (!bucketExists) {
+      throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
+    }
+
     // Upload file
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -21,12 +33,21 @@ export async function uploadFile(
         upsert: false
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Upload error:', error);
+      if (error.message.includes('Bucket not found')) {
+        throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
+      }
+      throw error;
+    }
 
     // Return the storage path (not a public URL)
     return filePath;
   } catch (error) {
     console.error('Upload error:', error);
+    if (error instanceof Error && error.message.includes('Bucket not found')) {
+      throw error;
+    }
     throw new Error(`Failed to upload file: ${(error as Error).message}`);
   }
 }
