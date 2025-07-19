@@ -30,13 +30,28 @@ export async function uploadFile(
       .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: true // Allow overwriting if file already exists
       });
 
     if (error) {
       console.error('Upload error:', error);
       if (error.message.includes('Bucket not found')) {
         throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
+      }
+      if (error.message.includes('already exists')) {
+        // File already exists, try to overwrite
+        const { data: overwriteData, error: overwriteError } = await supabase.storage
+          .from(bucket)
+          .update(filePath, file, {
+            cacheControl: '3600'
+          });
+        
+        if (overwriteError) {
+          console.error('Overwrite error:', overwriteError);
+          throw new Error(`Failed to upload file: ${overwriteError.message}`);
+        }
+        
+        return filePath;
       }
       throw error;
     }
