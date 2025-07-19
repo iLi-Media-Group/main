@@ -19,11 +19,11 @@ export async function uploadFile(
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
 
-    // Try to get bucket list for debugging
+    // Try to list buckets for debugging, but don't treat failure as fatal
     const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
     if (bucketError) {
-      console.error('Error checking buckets:', bucketError);
-      // Continue anyway - the bucket might exist even if we can't list buckets
+      console.warn('Could not list buckets (this is expected on the client):', bucketError.message);
+      // Proceed to upload anyway - client doesn't have permission to list buckets
     } else {
       const bucketExists = buckets?.some(b => b.name === bucket);
       if (!bucketExists) {
