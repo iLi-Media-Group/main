@@ -335,7 +335,14 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         bucket = 'track-audio';
       }
       
-      const path = fileUrl;
+      // Decode the URL to handle spaces and special characters
+      let path = decodeURIComponent(fileUrl);
+      
+      // If the path contains spaces or special characters, we need to handle it differently
+      // The path might be stored as a URL-encoded string, so we need to decode it first
+      console.log('Original fileUrl:', fileUrl);
+      console.log('Decoded path:', path);
+      console.log('Bucket:', bucket);
       
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
       if (data?.signedUrl) {
@@ -348,7 +355,27 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         console.log("Sync proposal download completed for:", filename);
       } else {
         console.error('Supabase storage error:', error);
-        alert('Download failed. Please check your license or contact support.');
+        // Try alternative approach - the file might be stored with a different path structure
+        console.log('Trying alternative path approach...');
+        
+        // Try to extract just the filename from the path
+        const pathParts = path.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+        console.log('Trying with just filename:', fileName);
+        
+        const { data: altData, error: altError } = await supabase.storage.from(bucket).createSignedUrl(fileName, 60);
+        if (altData?.signedUrl) {
+          const link = document.createElement('a');
+          link.href = altData.signedUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          console.log("Sync proposal download completed with alternative approach for:", filename);
+        } else {
+          console.error('Alternative approach also failed:', altError);
+          alert('Download failed. Please check your license or contact support.');
+        }
       }
     } else {
       // Fallback to the secure download endpoint for external URLs
