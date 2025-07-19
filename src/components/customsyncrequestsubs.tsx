@@ -65,6 +65,7 @@ export default function CustomSyncRequestSubs() {
   const [chatBoxMessages, setChatBoxMessages] = useState<any[]>([]);
   const [sendingChatBoxMessage, setSendingChatBoxMessage] = useState(false);
   const chatDialogMessagesRef = useRef<HTMLDivElement>(null);
+  const chatBoxMessagesRef = useRef<HTMLDivElement>(null);
 
   // --- Persistent notification logic ---
   const getLastViewed = (reqId: string) => localStorage.getItem(`cust_sync_last_viewed_${reqId}`);
@@ -72,11 +73,8 @@ export default function CustomSyncRequestSubs() {
 
   // Auto-scroll chat box to bottom when new messages arrive
   useEffect(() => {
-    if (showChatBox && chatBoxMessages.length > 0) {
-      const chatBox = document.querySelector('.chat-box-messages');
-      if (chatBox) {
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
+    if (showChatBox && chatBoxMessagesRef.current) {
+      chatBoxMessagesRef.current.scrollTop = chatBoxMessagesRef.current.scrollHeight;
     }
   }, [chatBoxMessages, showChatBox]);
 
@@ -1031,7 +1029,7 @@ export default function CustomSyncRequestSubs() {
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 chat-box-messages">
+            <div ref={chatBoxMessagesRef} className="flex-1 overflow-y-auto p-4 space-y-3 chat-box-messages">
               {chatBoxMessages.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <p className="text-gray-400 text-center">No messages yet. Start the conversation!</p>

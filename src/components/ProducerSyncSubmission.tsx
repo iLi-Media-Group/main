@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucide-react';
@@ -39,6 +39,7 @@ export default function ProducerSyncSubmission() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [chatHistory, setChatHistory] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- Persistent notification logic ---
   const getLastViewed = (reqId: string | null) => reqId ? localStorage.getItem(`cust_sync_last_viewed_${reqId}`) : null;
@@ -371,6 +372,18 @@ export default function ProducerSyncSubmission() {
     }
   };
 
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Auto-scroll when messages change
+  useEffect(() => {
+    if (showChat) {
+      scrollToBottom();
+    }
+  }, [chatMessages, showChat]);
+
   // Close chat dialog
   const handleCloseChat = () => {
     setShowChat(false);
@@ -695,6 +708,7 @@ export default function ProducerSyncSubmission() {
                   );
                 })
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
