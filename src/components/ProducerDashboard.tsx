@@ -849,9 +849,28 @@ export function ProducerDashboard() {
                   <div className="flex items-start space-x-4">
                     <TrackImage track={track} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
                         <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                        <div className="flex items-center space-x-2">
+                        <div className="text-sm text-gray-400 space-y-1">
+                          <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                          <div className="flex items-center space-x-4">
+                            <span className="flex items-center">
+                              <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                              ${track.revenue.toFixed(2)}
+                            </span>
+                            <span className="flex items-center">
+                              <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                              {track.sales_count} sales
+                            </span>
+                            {track.has_vocals && (
+                              <span className="flex items-center">
+                                <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2 mt-3">
                           <button
                             onClick={() => {
                               setSelectedTrack(track);
@@ -882,25 +901,6 @@ export function ProducerDashboard() {
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-400 space-y-1">
-                        <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
-                        <div className="flex items-center space-x-4">
-                          <span className="flex items-center">
-                            <DollarSign className="w-4 h-4 mr-1 text-green-400" />
-                            ${track.revenue.toFixed(2)}
-                          </span>
-                          <span className="flex items-center">
-                            <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
-                            {track.sales_count} sales
-                          </span>
-                          {track.has_vocals && (
-                            <span className="flex items-center">
-                              <Mic className="w-4 h-4 mr-1 text-purple-400" />
-                              {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>

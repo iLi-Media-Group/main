@@ -319,7 +319,7 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
   }
 };
 
-const handleSyncProposalDownload = async (proposalId: string, filename: string, fileType: string, fileUrl: string) => {
+const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string) => {
   try {
     // Get the user's JWT
     const { data: { session } } = await supabase.auth.getSession();
@@ -331,7 +331,7 @@ const handleSyncProposalDownload = async (proposalId: string, filename: string, 
 
     // Use the secure download endpoint for sync proposals
     const projectRef = 'yciqkebqlajqbpwlujma';
-    const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}&fileUrl=${encodeURIComponent(fileUrl)}`;
+    const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}&fileUrl=${encodeURIComponent(fileUrl)}`;
     
     const res = await fetch(url, {
       headers: { Authorization: `Bearer ${jwt}` }
@@ -2134,7 +2134,7 @@ export function ClientDashboard() {
                                       )}
                                       {proposal.track.trackouts_url && (
                                         <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
+                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
                                           className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                           title="Download Trackouts"
                                         >
@@ -2144,7 +2144,7 @@ export function ClientDashboard() {
                                       )}
                                       {proposal.track.trackouts_url && (
                                         <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url)}
+                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url)}
                                           className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
                                           title="Download Stems"
                                         >
@@ -2154,7 +2154,7 @@ export function ClientDashboard() {
                                       )}
                                       {proposal.track.split_sheet_url && (
                                         <button
-                                          onClick={() => handleSyncProposalDownload(proposal.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
+                                          onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
                                           className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                           title="Download Split Sheet"
                                         >
