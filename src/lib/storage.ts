@@ -19,26 +19,28 @@ export async function uploadFile(
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
 
-    // Check if bucket exists first
+    // Try to get bucket list for debugging
     const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
     if (bucketError) {
       console.error('Error checking buckets:', bucketError);
-      throw new Error('Unable to verify storage buckets');
-    }
+      // Continue anyway - the bucket might exist even if we can't list buckets
+    } else {
+      const bucketExists = buckets?.some(b => b.name === bucket);
+      if (!bucketExists) {
+        console.error('Bucket not found in list:', bucket);
+        console.log('Available buckets:', buckets?.map(b => b.name));
+        throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
+      }
 
-    const bucketExists = buckets?.some(b => b.name === bucket);
-    if (!bucketExists) {
-      throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
+      // Debug: Log bucket details
+      const bucketDetails = buckets?.find(b => b.name === bucket);
+      console.log('Bucket details:', {
+        name: bucketDetails?.name,
+        public: bucketDetails?.public,
+        fileSizeLimit: bucketDetails?.file_size_limit,
+        allowedMimeTypes: bucketDetails?.allowed_mime_types
+      });
     }
-
-    // Debug: Log bucket details
-    const bucketDetails = buckets?.find(b => b.name === bucket);
-    console.log('Bucket details:', {
-      name: bucketDetails?.name,
-      public: bucketDetails?.public,
-      fileSizeLimit: bucketDetails?.file_size_limit,
-      allowedMimeTypes: bucketDetails?.allowed_mime_types
-    });
 
     // Upload file
     const { data, error } = await supabase.storage
