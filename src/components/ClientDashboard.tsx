@@ -1937,8 +1937,8 @@ export function ClientDashboard() {
                         'border-purple-500/20'
                       }`}
                     >
-                      <div className="flex flex-col space-y-3">
-                        <div className="flex items-start space-x-4">
+                      <div className="flex flex-col h-full">
+                        <div className="flex items-start space-x-4 flex-1">
                           <TrackImage
                             imageUrl={license.track.image}
                             title={license.track.title}
@@ -1946,128 +1946,125 @@ export function ClientDashboard() {
                             onClick={() => navigate(`/track/${license.track.id}`)}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
                               <button
                                 onClick={() => navigate(`/track/${license.track.id}`)}
-                                className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                                className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left mb-2"
                               >
                                 {license.track.title}
                               </button>
-                              <div className="flex items-center space-x-2 mt-2 md:mt-0">
-                                <button
-                                  onClick={() => handleViewLicenseAgreement(license.id)}
-                                  className="flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                >
-                                  <FileText className="w-4 h-4 mr-1" />
-                                  View Agreement
-                                </button>
-                                <div className="flex flex-col space-y-2 mt-3">
-                                  <div className="text-sm font-medium text-gray-300">Download Files:</div>
-                                  <div className="flex items-center space-x-2">
-                                    {license.track.mp3Url && (
-                                      <button
-                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_MP3.mp3`, 'mp3')}
-                                        className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                        title="Download MP3"
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        MP3
-                                      </button>
-                                    )}
-                                    {license.track.trackoutsUrl && (
-                                      <button
-                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Trackouts.zip`)}
-                                        className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                        title="Download Trackouts"
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Trackouts
-                                      </button>
-                                    )}
-                                    {license.track.trackoutsUrl && (
-                                      <button
-                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Stems.zip`)}
-                                        className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                        title="Download Stems"
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Stems
-                                      </button>
-                                    )}
-                                    {license.track.splitSheetUrl && (
-                                      <button
-                                        onClick={() => handleDownload(license.track.id, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
-                                        className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                                        title="Download Split Sheet"
-                                      >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Split Sheet
-                                      </button>
-                                    )}
-                                    {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
-                                      <span className="text-sm text-gray-400 italic">No files available for download</span>
-                                    )}
+                              <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
+                                <span className="flex items-center">
+                                  <Tag className="w-4 h-4 mr-1" />
+                                  {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
+                                </span>
+                                <span className="flex items-center">
+                                  <Hash className="w-4 h-4 mr-1" />
+                                  {license.track.bpm} BPM
+                                </span>
+                                <span className="flex items-center">
+                                  <Layers className="w-4 h-4 mr-1" />
+                                  {license.license_type}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs ${
+                                    expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
+                                    expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
+                                    'bg-green-500/20 text-green-400'
+                                  }`}>
+                                    {expiryStatus === 'expired' ? 'Expired' :
+                                     expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
+                                     'Active'}
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                {license.track.audioUrl && (
+                                  <AudioPlayerWithSignedUrl
+                                    audioUrl={license.track.audioUrl}
+                                    title={license.track.title}
+                                    isPlaying={currentlyPlaying === `license-${license.id}`}
+                                    onToggle={() => {
+                                      if (currentlyPlaying === `license-${license.id}`) {
+                                        setCurrentlyPlaying(null);
+                                      } else {
+                                        setCurrentlyPlaying(`license-${license.id}`);
+                                      }
+                                    }}
+                                  />
+                                )}
+                                {!license.track.audioUrl && (
+                                  <div className="text-xs text-gray-400 italic">
+                                    No audio preview available
                                   </div>
-                                </div>
-                                <button
-                                  onClick={() => setSelectedLicenseToDelete(license)}
-                                  className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  Delete
-                                </button>
+                                )}
                               </div>
-                            </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-400 mt-2">
-                              <span className="flex items-center">
-                                <Tag className="w-4 h-4 mr-1" />
-                                {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
-                              </span>
-                              <span className="flex items-center">
-                                <Hash className="w-4 h-4 mr-1" />
-                                {license.track.bpm} BPM
-                              </span>
-                              <span className="flex items-center">
-                                <Layers className="w-4 h-4 mr-1" />
-                                {license.license_type}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between mt-3">
-                              <div className="flex items-center space-x-2">
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
-                                  expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
-                                  'bg-green-500/20 text-green-400'
-                                }`}>
-                                  {expiryStatus === 'expired' ? 'Expired' :
-                                   expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
-                                   'Active'}
-                                </span>
-                                <span className="text-xs text-gray-400">
-                                  {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
-                                </span>
-                              </div>
-                              {license.track.audioUrl && (
-                                <AudioPlayerWithSignedUrl
-                                  audioUrl={license.track.audioUrl}
-                                  title={license.track.title}
-                                  isPlaying={currentlyPlaying === `license-${license.id}`}
-                                  onToggle={() => {
-                                    if (currentlyPlaying === `license-${license.id}`) {
-                                      setCurrentlyPlaying(null);
-                                    } else {
-                                      setCurrentlyPlaying(`license-${license.id}`);
-                                    }
-                                  }}
-                                />
-                              )}
-                              {!license.track.audioUrl && (
-                                <div className="text-xs text-gray-400 italic">
-                                  No audio preview available
-                                </div>
-                              )}
                             </div>
                           </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleViewLicenseAgreement(license.id)}
+                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                            >
+                              <FileText className="w-4 h-4 mr-2" />
+                              View Agreement
+                            </button>
+                            {license.track.mp3Url && (
+                              <button
+                                onClick={() => handleDownload(license.track.id, `${license.track.title}_MP3.mp3`, 'mp3')}
+                                className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download MP3"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                MP3
+                              </button>
+                            )}
+                            {license.track.trackoutsUrl && (
+                              <button
+                                onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Trackouts.zip`)}
+                                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download Trackouts"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Trackouts
+                              </button>
+                            )}
+                            {license.track.trackoutsUrl && (
+                              <button
+                                onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Stems.zip`)}
+                                className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download Stems"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Stems
+                              </button>
+                            )}
+                            {license.track.splitSheetUrl && (
+                              <button
+                                onClick={() => handleDownload(license.track.id, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
+                                className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download Split Sheet"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Split Sheet
+                              </button>
+                            )}
+                            {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
+                              <span className="text-sm text-gray-400 italic">No files available for download</span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setSelectedLicenseToDelete(license)}
+                            className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </button>
                         </div>
                       </div>
                     </div>
