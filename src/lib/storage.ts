@@ -68,7 +68,7 @@ export async function uploadFile(
 }
 
 export async function validateAudioFile(file: File): Promise<string | null> {
-  // Check file size (50MB limit)
+  // Check file size (50MB limit for audio files)
   const MAX_SIZE = 50 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
     return 'File size must be less than 50MB';
@@ -83,6 +83,21 @@ export async function validateAudioFile(file: File): Promise<string | null> {
   const supportedFormats = ['audio/mpeg', 'audio/mp3', 'audio/wav'];
   if (!supportedFormats.includes(file.type)) {
     return 'Please upload an MP3 or WAV file';
+  }
+
+  return null;
+}
+
+export async function validateZipFile(file: File): Promise<string | null> {
+  // Check file size (500MB limit for zip files)
+  const MAX_SIZE = 500 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    return 'File size must be less than 500MB';
+  }
+
+  // Check file type
+  if (file.type !== 'application/zip') {
+    return 'Please upload a ZIP file';
   }
 
   return null;

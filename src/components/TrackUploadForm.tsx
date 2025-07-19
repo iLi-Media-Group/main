@@ -4,7 +4,7 @@ import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { uploadFile, validateAudioFile } from '../lib/storage';
+import { uploadFile, validateAudioFile, validateZipFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -541,9 +541,15 @@ export function TrackUploadForm() {
                 <input
                   type="file"
                   accept=".zip"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      const validationError = await validateZipFile(file);
+                      if (validationError) {
+                        alert(validationError);
+                        e.target.value = '';
+                        return;
+                      }
                       setTrackoutsFile(file);
                       setTrackoutsUrl(URL.createObjectURL(file)); // Preview for now
                     } else {
@@ -572,9 +578,15 @@ export function TrackUploadForm() {
                 <input
                   type="file"
                   accept=".zip"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
+                      const validationError = await validateZipFile(file);
+                      if (validationError) {
+                        alert(validationError);
+                        e.target.value = '';
+                        return;
+                      }
                       setStemsFile(file);
                       setStemsUrl(URL.createObjectURL(file)); // Preview for now
                     } else {
