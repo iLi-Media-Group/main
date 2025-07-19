@@ -138,9 +138,11 @@ export default function CustomSyncRequestSubs() {
           
           if (!error && data) {
             history[req.id] = data;
-            // Count unread messages for this user
+            // Count unread messages based on last viewed timestamp
+            const lastViewed = getLastViewed(req.id);
             const unreadCount = data.filter(msg => 
-              msg.recipient_id === user.id && !msg.is_read
+              msg.recipient_id === user.id && 
+              (!lastViewed || new Date(msg.created_at) > new Date(lastViewed))
             ).length;
             unread[req.id] = unreadCount;
           }

@@ -79,9 +79,11 @@ export default function ProducerSyncSubmission() {
         
         if (!error && data) {
           setChatHistory(data);
-          // Count unread messages for this producer
+          // Count unread messages based on last viewed timestamp
+          const lastViewed = getLastViewed(requestId);
           const unread = data.filter(msg => 
-            msg.recipient_id === user.id && !msg.is_read
+            msg.recipient_id === user.id && 
+            (!lastViewed || new Date(msg.created_at) > new Date(lastViewed))
           ).length;
           setUnreadCount(unread);
         }
