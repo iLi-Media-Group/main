@@ -19,11 +19,48 @@ import { SyncProposalAcceptDialog } from './SyncProposalAcceptDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 
-// Inside your page component:
-<AIRecommendationWidget />
+// Track Image Component with Signed URL
+const TrackImage = ({ imageUrl, title, className, onClick }: { 
+  imageUrl: string; 
+  title: string; 
+  className: string; 
+  onClick?: () => void;
+}) => {
+  // Extract bucket and path from imageUrl
+  const getBucketAndPath = (url: string) => {
+    if (!url || url.startsWith('http')) return { bucket: '', path: '' };
+    
+    // Remove leading slash if present
+    const cleanPath = url.startsWith('/') ? url.slice(1) : url;
+    
+    // Split by first slash to get bucket and path
+    const parts = cleanPath.split('/');
+    if (parts.length < 2) return { bucket: '', path: '' };
+    
+    const bucket = parts[0];
+    const path = parts.slice(1).join('/');
+    
+    return { bucket, path };
+  };
 
-
+  const { bucket, path } = getBucketAndPath(imageUrl);
+  const { signedUrl } = useSignedUrl(bucket, path);
+  
+  return (
+    <img
+      src={signedUrl || imageUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
+      alt={title}
+      className={className}
+      onClick={onClick}
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+      }}
+    />
+  );
+};
 
 interface License {
   id: string;
@@ -1769,9 +1806,9 @@ export function ClientDashboard() {
                     >
                       <div className="flex flex-col space-y-3">
                         <div className="flex items-start space-x-4">
-                          <img
-                            src={license.track.image}
-                            alt={license.track.title}
+                          <TrackImage
+                            imageUrl={license.track.image}
+                            title={license.track.title}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                             onClick={() => navigate(`/track/${license.track.id}`)}
                           />
@@ -1894,9 +1931,9 @@ export function ClientDashboard() {
                     >
                       <div className="flex flex-col space-y-3">
                         <div className="flex items-start space-x-4">
-                          <img
-                            src={proposal.track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                            alt={proposal.track.title}
+                          <TrackImage
+                            imageUrl={proposal.track.image_url || ''}
+                            title={proposal.track.title}
                             className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                             onClick={() => navigate(`/track/${proposal.track.id}`)}
                           />
@@ -2110,9 +2147,9 @@ export function ClientDashboard() {
                       className="bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-purple-500/20"
                     >
                       <div className="flex items-center space-x-3">
-                        <img
-                          src={track.image}
-                          alt={track.title}
+                        <TrackImage
+                          imageUrl={track.image}
+                          title={track.title}
                           className="w-12 h-12 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                           onClick={() => navigate(`/track/${track.id}`)}
                         />
