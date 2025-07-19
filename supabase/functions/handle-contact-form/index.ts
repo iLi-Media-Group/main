@@ -20,18 +20,33 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Insert into contact_messages table
-    const { error: insertError } = await supabaseClient
-      .from('contact_messages')
-      .insert({
-        name,
-        email,
-        subject,
-        message,
-        status: 'unread'
-      });
+    // Try to insert into contact_messages table (optional - table might not exist yet)
+    try {
+      const { error: insertError } = await supabaseClient
+        .from('contact_messages')
+        .insert({
+          name,
+          email,
+          subject,
+          message,
+          status: 'unread'
+        });
 
-    if (insertError) throw insertError;
+      if (insertError) {
+        console.warn("Could not insert into contact_messages table:", insertError);
+        // Continue with email sending even if database insert fails
+      }
+    } catch (dbError) {
+      console.warn("Database insert failed:", dbError);
+      // Continue with email sending even if database insert fails
+    }
+
+    // Check if RESEND_API_KEY is configured
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error("RESEND_API_KEY not configured");
+      throw new Error("Email service not configured. Please contact support.");
+    }
 
     // Send email notification using Resend
     const html = `<!DOCTYPE html>
@@ -117,10 +132,15 @@ serve(async (req) => {
   </body>
 </html>`;
 
+    console.log("Attempting to send email...");
+    console.log("From: MyBeatFi <contact@mybeatfi.com>");
+    console.log("To: contactmybeatfi@gmail.com");
+    console.log("Subject:", `New Contact Form: ${subject}`);
+    
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+        Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -131,10 +151,21 @@ serve(async (req) => {
         tags: [{ name: "contact_form", value: "new_submission" }]
       }),
     });
+    
+    console.log("Email response status:", emailResponse.status);
 
     if (!emailResponse.ok) {
-      console.error("Email send failed:", await emailResponse.text());
-      throw new Error("Failed to send email notification");
+      const errorText = await emailResponse.text();
+      console.error("Email send failed:", errorText);
+      console.error("Response status:", emailResponse.status);
+      console.error("Response headers:", Object.fromEntries(emailResponse.headers.entries()));
+      
+      // Check if it's a Resend API key issue
+      if (emailResponse.status === 401) {
+        throw new Error("Email service not configured. Please contact support.");
+      } else {
+        throw new Error(`Failed to send email notification: ${emailResponse.status}`);
+      }
     }
 
     return new Response(
