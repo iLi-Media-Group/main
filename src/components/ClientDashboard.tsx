@@ -30,23 +30,33 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
 }) => {
   // Extract bucket and path from imageUrl
   const getBucketAndPath = (url: string) => {
-    if (!url || url.startsWith('http')) return { bucket: '', path: '' };
+    console.log('TrackImage getBucketAndPath input:', url);
+    if (!url || url.startsWith('http')) {
+      console.log('TrackImage: URL is external or empty, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
     
     // Remove leading slash if present
     const cleanPath = url.startsWith('/') ? url.slice(1) : url;
     
     // Split by first slash to get bucket and path
     const parts = cleanPath.split('/');
-    if (parts.length < 2) return { bucket: '', path: '' };
+    if (parts.length < 2) {
+      console.log('TrackImage: URL has less than 2 parts, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
     
     const bucket = parts[0];
     const path = parts.slice(1).join('/');
     
+    console.log('TrackImage: Extracted bucket:', bucket, 'path:', path);
     return { bucket, path };
   };
 
   const { bucket, path } = getBucketAndPath(imageUrl);
   const { signedUrl } = useSignedUrl(bucket, path);
+  
+  console.log('TrackImage final src:', signedUrl || imageUrl || 'fallback');
   
   return (
     <img
@@ -545,37 +555,41 @@ export function ClientDashboard() {
         .limit(5);
 
       if (newTracksData) {
-        const formattedNewTracks = newTracksData.map(track => ({
-          id: track.id,
-          title: track.title,
-          artist: track.producer?.first_name 
-            ? `${track.producer.first_name} ${track.producer.last_name || ''}`.trim()
-            : track.artist || 'Unknown Artist',
-          genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
-          moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
-          bpm: track.bpm,
-          audioUrl: track.audio_url,
-          image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-          hasVocals: track.has_vocals,
-          vocalsUsageType: track.vocals_usage_type,
-          subGenres: track.sub_genres ? (typeof track.sub_genres === 'string' ? track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.sub_genres) ? track.sub_genres : [])) : [],
-          duration: track.duration || '3:30',
-          hasStingEnding: track.has_sting_ending || false,
-          isOneStop: track.is_one_stop || false,
-          mp3Url: track.mp3_url || '',
-          trackoutsUrl: track.trackouts_url || '',
-          splitSheetUrl: track.split_sheet_url || '',
-          producerId: track.track_producer_id,
-          producer: track.producer ? {
-            id: track.producer.id,
-            firstName: track.producer.first_name || '',
-            lastName: track.producer.last_name || '',
-            email: track.producer.email
-          } : undefined,
-          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-          leaseAgreementUrl: ''
-        }));
+        console.log('New tracks data:', newTracksData);
+        const formattedNewTracks = newTracksData.map(track => {
+          console.log(`Track ${track.title} image_url:`, track.image_url);
+          return {
+            id: track.id,
+            title: track.title,
+            artist: track.producer?.first_name 
+              ? `${track.producer.first_name} ${track.producer.last_name || ''}`.trim()
+              : track.artist || 'Unknown Artist',
+            genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
+            moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
+            bpm: track.bpm,
+            audioUrl: track.audio_url,
+            image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            hasVocals: track.has_vocals,
+            vocalsUsageType: track.vocals_usage_type,
+            subGenres: track.sub_genres ? (typeof track.sub_genres === 'string' ? track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.sub_genres) ? track.sub_genres : [])) : [],
+            duration: track.duration || '3:30',
+            hasStingEnding: track.has_sting_ending || false,
+            isOneStop: track.is_one_stop || false,
+            mp3Url: track.mp3_url || '',
+            trackoutsUrl: track.trackouts_url || '',
+            splitSheetUrl: track.split_sheet_url || '',
+            producerId: track.track_producer_id,
+            producer: track.producer ? {
+              id: track.producer.id,
+              firstName: track.producer.first_name || '',
+              lastName: track.producer.last_name || '',
+              email: track.producer.email
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: ''
+          };
+        });
         setNewTracks(formattedNewTracks);
       }
 
