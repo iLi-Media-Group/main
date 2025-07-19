@@ -340,9 +340,14 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       
       // If the path contains spaces or special characters, we need to handle it differently
       // The path might be stored as a URL-encoded string, so we need to decode it first
+      console.log('=== DOWNLOAD DEBUG INFO ===');
       console.log('Original fileUrl:', fileUrl);
       console.log('Decoded path:', path);
       console.log('Bucket:', bucket);
+      console.log('Filename:', filename);
+      console.log('File type:', fileType);
+      console.log('Proposal ID:', proposalId);
+      console.log('Track ID:', trackId);
       
       // The path should include the full folder structure, not just the filename
       // Files are stored in folders like: split-sheets/Oil Money/filename.pdf
@@ -354,24 +359,38 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        console.log("Sync proposal download completed for:", filename);
+        console.log("✅ Sync proposal download completed for:", filename);
       } else {
-        console.error('Supabase storage error:', error);
-        console.log('Trying alternative approaches...');
+        console.error('❌ Supabase storage error:', error);
+        console.log('🔄 Trying alternative approaches...');
         
         // Try different path variations since files are in nested folders
+        // Based on the Supabase storage screenshot, try these variations:
         const pathVariations = [
           path, // Original path
           path.replace(/%20/g, ' '), // Replace %20 with spaces
           path.split('/').slice(-2).join('/'), // Last two path segments (folder/filename)
           path.split('/').slice(-3).join('/'), // Last three path segments
-          path.split('/').pop() || '' // Just filename
+          path.split('/').pop() || '', // Just filename
+          // Try without the UUID prefix
+          path.replace(/^[^\/]+\//, ''), // Remove first segment (UUID)
+          path.replace(/^[^\/]+\/[^\/]+\//, ''), // Remove first two segments
+          // Try with just the track title as folder
+          `Oil Money/${path.split('/').pop() || ''}`, // Based on screenshot
+          `Oil Money/${filename}`, // Direct filename in Oil Money folder
+          // Try different filename variations
+          filename,
+          filename.replace(/_/g, ' '), // Replace underscores with spaces
+          filename.toLowerCase(),
+          filename.replace(/\.(pdf|zip|mp3)$/i, ''), // Remove extension
         ];
         
-        console.log('Trying path variations:', pathVariations);
+        console.log('🔄 Trying path variations:', pathVariations);
         
         for (const pathVariation of pathVariations) {
-          console.log('Trying path variation:', pathVariation);
+          if (!pathVariation) continue; // Skip empty paths
+          
+          console.log('🔄 Trying path variation:', pathVariation);
           const { data: altData, error: altError } = await supabase.storage.from(bucket).createSignedUrl(pathVariation, 60);
           if (altData?.signedUrl) {
             const link = document.createElement('a');
@@ -380,15 +399,16 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            console.log("Sync proposal download completed with path variation:", pathVariation);
+            console.log("✅ Sync proposal download completed with path variation:", pathVariation);
             return; // Success, exit the function
           } else {
-            console.log('Path variation failed:', pathVariation, altError);
+            console.log('❌ Path variation failed:', pathVariation, altError);
           }
         }
         
         // If all variations failed, show error
-        console.error('All path variations failed');
+        console.error('❌ All path variations failed');
+        console.log('💡 Suggestion: Check if the file actually exists in the bucket with the correct path');
         alert('Download failed. Please check your license or contact support.');
       }
     } else {
