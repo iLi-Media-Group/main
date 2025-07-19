@@ -290,8 +290,13 @@ const handleFinalAcceptance = async (proposal: any) => {
     await fetchSyncProposals();
     alert('Final acceptance recorded.');
   } catch (err) {
-    alert('Failed to record final acceptance.');
-    console.error(err);
+    console.error('Error in handleFinalAcceptance:', err);
+    // Check if this is a case where the client accepted but producer hasn't
+    if (err instanceof Error && err.message.includes('producer')) {
+      alert('Your acceptance has been recorded. Waiting for the producer to accept the proposal.');
+    } else {
+      alert('Failed to record final acceptance. Please try again.');
+    }
   }
 };
 

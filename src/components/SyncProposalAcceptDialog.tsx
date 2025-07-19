@@ -75,7 +75,12 @@ export function SyncProposalAcceptDialog({
       }
     } catch (err) {
       console.error('Error accepting proposal:', err);
-      setError(err instanceof Error ? err.message : 'Failed to accept proposal');
+      // Check if this is a case where the client accepted but producer hasn't
+      if (err instanceof Error && err.message.includes('producer')) {
+        setWaitingMessage('Your acceptance has been recorded. Waiting for the producer to accept the proposal. You will be notified when payment is ready.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to accept proposal. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
