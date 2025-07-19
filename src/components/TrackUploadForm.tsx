@@ -4,7 +4,7 @@ import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
+import { uploadFile, validateAudioFile, validateArchiveFile, getPublicUrl } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -250,22 +250,25 @@ export function TrackUploadForm() {
       }
 
       setUploadStatus('Uploading audio file...');
-      const audioUrl = await uploadFile(audioFile, 'track-audio', (progress) => {
+      const audioPath = await uploadFile(audioFile, 'track-audio', (progress) => {
         setUploadProgress(progress);
       }, `${user.id}/${title}`);
 
+      const audioUrl = getPublicUrl('track-audio', audioPath);
       setUploadedUrl(audioUrl);
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
         setUploadStatus('Uploading image file...');
-        imageUrl = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
+        const imagePath = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
+        imageUrl = getPublicUrl('track-images', imagePath);
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
         setUploadStatus('Uploading split sheet...');
-        splitSheetUploadedUrl = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
+        const splitSheetPath = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
+        splitSheetUploadedUrl = getPublicUrl('split-sheets', splitSheetPath);
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
 
@@ -274,14 +277,16 @@ export function TrackUploadForm() {
       if (trackoutsFile) {
         setUploadStatus('Uploading trackouts file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
-        trackoutsStoragePath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
+        const trackoutsPath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
+        trackoutsStoragePath = getPublicUrl('trackouts', trackoutsPath);
         setTrackoutsUrl(trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
         setUploadStatus('Uploading stems file...');
         // If editing and old file exists, delete it first (not shown here, but should be handled)
-        stemsStoragePath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
+        const stemsPath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
+        stemsStoragePath = getPublicUrl('stems', stemsPath);
         setStemsUrl(stemsStoragePath);
       }
       // --- End new logic ---
@@ -302,8 +307,8 @@ export function TrackUploadForm() {
           key,
           has_sting_ending: hasStingEnding,
           is_one_stop: isOneStop,
-          audio_url: audioUrl,
-          image_url: imageUrl,
+          audio_url: audioUrl, // This is now a public URL
+          image_url: imageUrl, // This is now a public URL
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsStoragePath || null,
           stems_url: stemsStoragePath || null,

@@ -156,6 +156,11 @@ export async function validateSplitSheetFile(file: File): Promise<string | null>
   return null;
 }
 
+export function getPublicUrl(bucket: string, path: string): string {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 export async function validateArchiveFile(file: File): Promise<string | null> {
   // Check file size (500MB limit for archive files)
   const MAX_SIZE = 500 * 1024 * 1024;
