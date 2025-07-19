@@ -315,8 +315,8 @@ export function TrackPage() {
   }
 
   // Determine button type based on track properties
-  const isSyncOnlyTrack = track.isSyncOnly;
-  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly;
+  const isSyncOnlyTrack = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
+  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly && track.vocalsUsageType !== 'sync_only';
 
   return (
     <div className="container mx-auto px-4 py-8">
