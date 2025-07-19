@@ -1574,14 +1574,16 @@ export function ClientDashboard() {
                         Complete Payment
                       </button>
                       
-                      <button
-                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                        title="Generate License Agreement PDF"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        View Agreement
-                      </button>
+                      {proposal.payment_status === 'paid' && (
+                        <button
+                          onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Generate License Agreement PDF"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          View Agreement
+                        </button>
+                      )}
                       {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
                         <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
                           {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
@@ -1662,14 +1664,16 @@ export function ClientDashboard() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-4">
-                      <button
-                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                        title="Generate License Agreement PDF"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        View Agreement
-                      </button>
+                      {proposal.payment_status === 'paid' && (
+                        <button
+                          onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Generate License Agreement PDF"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          View Agreement
+                        </button>
+                      )}
                       
                       <button
                         onClick={() => handleShowHistory(proposal)}
@@ -1713,14 +1717,16 @@ export function ClientDashboard() {
                     </div>
                     
                     <div className="flex flex-wrap gap-2 mt-4">
-                      <button
-                        onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
-                        title="Generate License Agreement PDF"
-                      >
-                        <FileText className="w-3 h-3 mr-1" />
-                        View Agreement
-                      </button>
+                      {proposal.payment_status === 'paid' && (
+                        <button
+                          onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Generate License Agreement PDF"
+                        >
+                          <FileText className="w-3 h-3 mr-1" />
+                          View Agreement
+                        </button>
+                      )}
                       
                       <button
                         onClick={() => handleShowHistory(proposal)}
