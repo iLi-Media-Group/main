@@ -321,40 +321,70 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string) => {
   try {
-    // Get the user's JWT
-    const { data: { session } } = await supabase.auth.getSession();
-    const jwt = session?.access_token;
-    if (!jwt) {
-      alert("You must be logged in to download.");
-      return;
+    // Check if the fileUrl is a Supabase storage path
+    if (fileUrl && !fileUrl.startsWith('http')) {
+      // This is a Supabase storage path, use the Supabase storage approach
+      let bucket = 'track-files'; // Default bucket
+      
+      // Determine the correct bucket based on file type
+      if (fileType === 'pdf') {
+        bucket = 'split-sheets';
+      } else if (fileType === 'trackouts' || fileType === 'stems') {
+        bucket = 'trackouts';
+      } else if (fileType === 'mp3') {
+        bucket = 'track-audio';
+      }
+      
+      const path = fileUrl;
+      
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
+      if (data?.signedUrl) {
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log("Sync proposal download completed for:", filename);
+      } else {
+        console.error('Supabase storage error:', error);
+        alert('Download failed. Please check your license or contact support.');
+      }
+    } else {
+      // Fallback to the secure download endpoint for external URLs
+      const { data: { session } } = await supabase.auth.getSession();
+      const jwt = session?.access_token;
+      if (!jwt) {
+        alert("You must be logged in to download.");
+        return;
+      }
+
+      const projectRef = 'yciqkebqlajqbpwlujma';
+      const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}&fileUrl=${encodeURIComponent(fileUrl)}`;
+      
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Download error response:', errorText);
+        alert("Download failed. Please check your license or contact support.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      console.log("Sync proposal download completed for:", filename);
     }
-
-    // Use the secure download endpoint for sync proposals
-    const projectRef = 'yciqkebqlajqbpwlujma';
-    const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}&fileUrl=${encodeURIComponent(fileUrl)}`;
-    
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${jwt}` }
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error('Download error response:', errorText);
-      alert("Download failed. Please check your license or contact support.");
-      return;
-    }
-
-    const blob = await res.blob();
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = downloadUrl;
-    link.download = filename;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-    console.log("Sync proposal download completed for:", filename);
   } catch (error) {
     console.error("Sync proposal download error:", error);
     alert("Download failed. Please contact support.");
