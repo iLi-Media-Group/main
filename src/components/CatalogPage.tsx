@@ -16,7 +16,7 @@ import AIRecommendationWidget from './AIRecommendationWidget';
 const TRACKS_PER_PAGE = 20;
 
 export function CatalogPage() {
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -287,7 +287,7 @@ export function CatalogPage() {
         </div>
       )}
 
-      {user && !membershipActive && (
+      {user && accountType === 'client' && !membershipActive && (
         <div className="mb-8 p-4 glass-card rounded-lg">
           <p className="text-yellow-400">
             Your membership has expired. Please{' '}

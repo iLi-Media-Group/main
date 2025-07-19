@@ -11,7 +11,7 @@ import { SearchBox } from './SearchBox';
 const TRACKS_PER_PAGE = 20;
 
 export function SyncOnlyPage() {
-  const { user, membershipPlan } = useAuth();
+  const { user, membershipPlan, accountType } = useAuth();
   const navigate = useNavigate();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,14 +22,14 @@ export function SyncOnlyPage() {
   const [membershipActive, setMembershipActive] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user && accountType === 'client') {
       checkMembershipStatus();
     }
     fetchTracks();
-  }, [user]);
+  }, [user, accountType]);
 
   const checkMembershipStatus = async () => {
-    if (!user) return;
+    if (!user || accountType !== 'client') return;
 
     try {
       const { data: membership } = await supabase
@@ -229,7 +229,7 @@ export function SyncOnlyPage() {
         </div>
       )}
 
-      {user && !membershipActive && (
+      {user && accountType === 'client' && !membershipActive && (
         <div className="mb-8 p-4 glass-card rounded-lg">
           <p className="text-yellow-400">
             Your membership has expired. Please{' '}
