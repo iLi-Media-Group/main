@@ -16,14 +16,14 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES ('split-sheets', 'split-sheets', false, 10485760, ARRAY['application/pdf', 'image/jpeg', 'image/png'])
 ON CONFLICT (id) DO NOTHING;
 
--- Create trackouts bucket if it doesn't exist (500MB for large zip files)
+-- Create trackouts bucket if it doesn't exist (500MB for large archive files)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('trackouts', 'trackouts', false, 524288000, ARRAY['audio/mpeg', 'audio/mp3', 'audio/wav', 'application/zip'])
+VALUES ('trackouts', 'trackouts', false, 524288000, ARRAY['audio/mpeg', 'audio/mp3', 'audio/wav', 'application/zip', 'application/x-rar-compressed', 'application/vnd.rar'])
 ON CONFLICT (id) DO NOTHING;
 
--- Create stems bucket if it doesn't exist (500MB for large zip files)
+-- Create stems bucket if it doesn't exist (500MB for large archive files)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('stems', 'stems', false, 524288000, ARRAY['audio/mpeg', 'audio/mp3', 'audio/wav', 'application/zip'])
+VALUES ('stems', 'stems', false, 524288000, ARRAY['audio/mpeg', 'audio/mp3', 'audio/wav', 'application/zip', 'application/x-rar-compressed', 'application/vnd.rar'])
 ON CONFLICT (id) DO NOTHING;
 
 -- RLS Policies for track-audio bucket

@@ -88,16 +88,17 @@ export async function validateAudioFile(file: File): Promise<string | null> {
   return null;
 }
 
-export async function validateZipFile(file: File): Promise<string | null> {
-  // Check file size (500MB limit for zip files)
+export async function validateArchiveFile(file: File): Promise<string | null> {
+  // Check file size (500MB limit for archive files)
   const MAX_SIZE = 500 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
     return 'File size must be less than 500MB';
   }
 
-  // Check file type
-  if (file.type !== 'application/zip') {
-    return 'Please upload a ZIP file';
+  // Check file type - support both ZIP and RAR
+  const supportedTypes = ['application/zip', 'application/x-rar-compressed', 'application/vnd.rar'];
+  if (!supportedTypes.includes(file.type)) {
+    return 'Please upload a ZIP or RAR file';
   }
 
   return null;

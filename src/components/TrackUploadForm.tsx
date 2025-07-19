@@ -4,7 +4,7 @@ import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { uploadFile, validateAudioFile, validateZipFile } from '../lib/storage';
+import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -540,11 +540,11 @@ export function TrackUploadForm() {
                 </label>
                 <input
                   type="file"
-                  accept=".zip"
+                  accept=".zip,.rar"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const validationError = await validateZipFile(file);
+                      const validationError = await validateArchiveFile(file);
                       if (validationError) {
                         alert(validationError);
                         e.target.value = '';
@@ -561,7 +561,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Upload a ZIP file containing trackouts.
+                  Upload a ZIP or RAR file containing trackouts.
                 </p>
                 {trackoutsFile && (
                   <div className="bg-white/5 rounded-lg p-4 mt-2">
@@ -577,11 +577,11 @@ export function TrackUploadForm() {
                 </label>
                 <input
                   type="file"
-                  accept=".zip"
+                  accept=".zip,.rar"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      const validationError = await validateZipFile(file);
+                      const validationError = await validateArchiveFile(file);
                       if (validationError) {
                         alert(validationError);
                         e.target.value = '';
@@ -598,7 +598,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Upload a ZIP file containing stems.
+                  Upload a ZIP or RAR file containing stems.
                 </p>
                 {stemsFile && (
                   <div className="bg-white/5 rounded-lg p-4 mt-2">
