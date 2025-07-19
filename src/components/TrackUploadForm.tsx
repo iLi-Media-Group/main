@@ -800,10 +800,10 @@ export function TrackUploadForm() {
             />
           )}
 
-          <div className="pt-8">
+          <div className="pt-8 relative z-10">
             <button
               type="submit"
-              className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-colors flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl"
+              className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
               disabled={isSubmitting || !audioFile}
             >
               {isSubmitting ? (
