@@ -95,11 +95,36 @@ export async function validateArchiveFile(file: File): Promise<string | null> {
     return 'File size must be less than 500MB';
   }
 
-  // Check file type - support both ZIP and RAR
-  const supportedTypes = ['application/zip', 'application/x-rar-compressed', 'application/vnd.rar'];
-  if (!supportedTypes.includes(file.type)) {
-    return 'Please upload a ZIP or RAR file';
+  // Debug logging
+  console.log('File validation debug:', {
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size,
+    extension: file.name.split('.').pop()?.toLowerCase()
+  });
+
+  // Check file extension as primary validation (more reliable for ZIP/RAR)
+  const fileExtension = file.name.split('.').pop()?.toLowerCase();
+  const supportedExtensions = ['zip', 'rar'];
+  
+  if (fileExtension && supportedExtensions.includes(fileExtension)) {
+    console.log('Valid file extension:', fileExtension);
+    return null; // Valid file extension
   }
 
-  return null;
+  // Fallback to MIME type check
+  const supportedTypes = ['application/zip', 'application/x-rar-compressed', 'application/vnd.rar'];
+  if (supportedTypes.includes(file.type)) {
+    console.log('Valid MIME type:', file.type);
+    return null; // Valid MIME type
+  }
+
+  // If neither extension nor MIME type match, check if it's a generic binary file
+  if (file.type === 'application/octet-stream' && fileExtension && supportedExtensions.includes(fileExtension)) {
+    console.log('Valid generic binary with extension:', fileExtension);
+    return null; // Generic binary with valid extension
+  }
+
+  console.log('File validation failed - no valid type or extension found');
+  return 'Please upload a ZIP or RAR file';
 }
