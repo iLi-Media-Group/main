@@ -133,6 +133,29 @@ export async function validateAudioFile(file: File): Promise<string | null> {
   return null;
 }
 
+export async function validateSplitSheetFile(file: File): Promise<string | null> {
+  console.log('validateSplitSheetFile called with:', {
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size
+  });
+
+  // Check file size (50MB limit for split sheets)
+  const MAX_SIZE = 50 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    return 'File size must be less than 50MB';
+  }
+
+  // Check file type
+  if (file.type !== 'application/pdf') {
+    console.log('Split sheet validation failed: not a PDF file');
+    return 'Please upload a PDF file';
+  }
+
+  console.log('Split sheet validation passed');
+  return null;
+}
+
 export async function validateArchiveFile(file: File): Promise<string | null> {
   // Check file size (500MB limit for archive files)
   const MAX_SIZE = 500 * 1024 * 1024;
