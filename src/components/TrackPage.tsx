@@ -161,6 +161,7 @@ export function TrackPage() {
           moods: moods,
           hasVocals: trackData.has_vocals || false,
           vocalsUsageType: trackData.vocals_usage_type || 'normal',
+          isSyncOnly: trackData.is_sync_only || false,
           isOneStop: trackData.is_one_stop || false,
           hasStingEnding: trackData.has_sting_ending || false,
           mp3Url: trackData.mp3_url,
