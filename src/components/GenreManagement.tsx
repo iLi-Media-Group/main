@@ -224,7 +224,7 @@ export function GenreManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-4/5 mx-auto">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-white">Genre Management</h2>
         <div className="flex space-x-3">
