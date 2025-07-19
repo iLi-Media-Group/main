@@ -7,33 +7,39 @@ export async function uploadFile(
   onProgress?: (progress: number) => void,
   pathPrefix?: string // optional, for producer/track association
 ): Promise<string> {
+  console.log('=== UPLOAD DEBUG START ===');
   console.log('uploadFile called with:', {
     fileName: file.name,
     fileType: file.type,
+    fileSize: file.size,
     bucket: bucket,
     pathPrefix: pathPrefix
   });
+  
   try {
     // Generate unique file path
     const fileExt = file.name.split('.').pop()?.toLowerCase();
     const fileName = `${uuidv4()}.${fileExt}`;
     const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
+    
+    console.log('Generated file path:', filePath);
 
     // Try to list buckets for debugging, but don't treat failure as fatal
+    console.log('Attempting to list buckets...');
     const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
     if (bucketError) {
       console.warn('Could not list buckets (this is expected on the client):', bucketError.message);
       // Proceed to upload anyway - client doesn't have permission to list buckets
-    } else {
-      const bucketExists = buckets?.some(b => b.name === bucket);
+    } else if (buckets) {
+      const bucketExists = buckets.some(b => b.name === bucket);
+      console.log(`Bucket '${bucket}' exists in list:`, bucketExists);
       if (!bucketExists) {
         console.error('Bucket not found in list:', bucket);
-        console.log('Available buckets:', buckets?.map(b => b.name));
+        console.log('Available buckets:', buckets.map(b => b.name));
         throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
       }
-
       // Debug: Log bucket details
-      const bucketDetails = buckets?.find(b => b.name === bucket);
+      const bucketDetails = buckets.find(b => b.name === bucket);
       console.log('Bucket details:', {
         name: bucketDetails?.name,
         public: bucketDetails?.public,
@@ -43,6 +49,9 @@ export async function uploadFile(
     }
 
     // Upload file
+    console.log('Starting file upload to bucket:', bucket);
+    console.log('Upload path:', filePath);
+    
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
@@ -61,6 +70,7 @@ export async function uploadFile(
         throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
       }
       if (error.message.includes('already exists')) {
+        console.log('File already exists, attempting to overwrite...');
         // File already exists, try to overwrite
         const { data: overwriteData, error: overwriteError } = await supabase.storage
           .from(bucket)
@@ -73,14 +83,20 @@ export async function uploadFile(
           throw new Error(`Failed to upload file: ${overwriteError.message}`);
         }
         
+        console.log('File overwritten successfully');
         return filePath;
       }
       throw error;
     }
 
+    console.log('Upload successful!');
+    console.log('Upload result:', data);
+    console.log('=== UPLOAD DEBUG END ===');
+    
     // Return the storage path (not a public URL)
     return filePath;
   } catch (error) {
+    console.error('=== UPLOAD ERROR ===');
     console.error('Upload error:', error);
     if (error instanceof Error && error.message.includes('Bucket not found')) {
       throw error;
