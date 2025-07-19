@@ -1584,8 +1584,9 @@ export function ClientDashboard() {
                           View Agreement
                         </button>
                       )}
-                      {(proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
+                      {proposal.payment_status === 'paid' && (proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
                         <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
+                          <div className="text-sm font-medium text-gray-300">Download Files:</div>
                           {console.log('Sync proposal track URLs:', { mp3_url: proposal.track.mp3_url, trackouts_url: proposal.track.trackouts_url, split_sheet_url: proposal.track.split_sheet_url })}
                           {proposal.track.mp3_url && (
                             <button
