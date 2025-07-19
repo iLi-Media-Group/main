@@ -82,17 +82,45 @@ export async function uploadFile(
         }
         
         console.log('File overwritten successfully');
-        return filePath;
+        
+        // Generate signed URL for the overwritten file
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from(bucket)
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
+        
+        if (signedUrlError) {
+          console.error('Error generating signed URL:', signedUrlError);
+          // Return the file path as fallback
+          return filePath;
+        }
+        
+        console.log('Signed URL generated for overwritten file:', signedUrlData.signedUrl);
+        return signedUrlData.signedUrl;
       }
       throw error;
     }
 
     console.log('Upload successful!');
     console.log('Upload result:', data);
+    
+    // Generate signed URL for the uploaded file
+    console.log('Generating signed URL for uploaded file...');
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
+    
+    if (signedUrlError) {
+      console.error('Error generating signed URL:', signedUrlError);
+      // Return the file path as fallback
+      console.log('=== UPLOAD DEBUG END ===');
+      return filePath;
+    }
+    
+    console.log('Signed URL generated successfully:', signedUrlData.signedUrl);
     console.log('=== UPLOAD DEBUG END ===');
     
-    // Return the storage path (not a public URL)
-    return filePath;
+    // Return the signed URL instead of just the file path
+    return signedUrlData.signedUrl;
   } catch (error) {
     console.error('=== UPLOAD ERROR ===');
     console.error('Upload error:', error);

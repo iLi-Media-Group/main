@@ -321,9 +321,32 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
   try {
-    // Check if the fileUrl is a Supabase storage path
-    if (fileUrl && !fileUrl.startsWith('http')) {
-      // This is a Supabase storage path, use the Supabase storage approach
+    console.log('=== DOWNLOAD DEBUG INFO ===');
+    console.log('Original fileUrl:', fileUrl);
+    console.log('Filename:', filename);
+    console.log('File type:', fileType);
+    console.log('Proposal ID:', proposalId);
+    console.log('Track ID:', trackId);
+    console.log('Track title:', trackTitle);
+    
+    // Check if the fileUrl is a signed URL (starts with http)
+    if (fileUrl && fileUrl.startsWith('http')) {
+      console.log('✅ Using stored signed URL for download');
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log("✅ Download completed using signed URL for:", filename);
+    } else if (fileUrl && !fileUrl.startsWith('http')) {
+      // Fallback: This is a file path, try to generate a signed URL
+      console.log('⚠️ Using file path fallback - generating signed URL');
+      
       let bucket = 'track-files'; // Default bucket
       
       // Determine the correct bucket based on file type
@@ -338,19 +361,9 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       // Decode the URL to handle spaces and special characters
       let path = decodeURIComponent(fileUrl);
       
-      // If the path contains spaces or special characters, we need to handle it differently
-      // The path might be stored as a URL-encoded string, so we need to decode it first
-      console.log('=== DOWNLOAD DEBUG INFO ===');
-      console.log('Original fileUrl:', fileUrl);
-      console.log('Decoded path:', path);
       console.log('Bucket:', bucket);
-      console.log('Filename:', filename);
-      console.log('File type:', fileType);
-      console.log('Proposal ID:', proposalId);
-      console.log('Track ID:', trackId);
+      console.log('Decoded path:', path);
       
-      // The path should include the full folder structure, not just the filename
-      // Files are stored in folders like: split-sheets/Oil Money/filename.pdf
       const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
       if (data?.signedUrl) {
         const link = document.createElement('a');
@@ -359,71 +372,15 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        console.log("✅ Sync proposal download completed for:", filename);
+        console.log("✅ Download completed with generated signed URL for:", filename);
       } else {
-        console.error('❌ Supabase storage error:', error);
-        console.log('🔄 Trying alternative approaches...');
-        
-        // Try different path variations since files are in nested folders
-        // Based on the Supabase storage screenshot and user's example:
-        // Structure: UUID/TrackTitle/UUID-filename.ext
-        // Example: 83e21f94-aced-452a-bafb-6eb9629e3b18/Oil Money/ad8fe905-210e-4206-a7d9-13092fc7b0b6.pdf
-        const pathVariations = [
-          path, // Original path
-          path.replace(/%20/g, ' '), // Replace %20 with spaces
-          path.split('/').slice(-2).join('/'), // Last two path segments (folder/filename)
-          path.split('/').slice(-3).join('/'), // Last three path segments
-          path.split('/').pop() || '', // Just filename
-          // Try without the UUID prefix
-          path.replace(/^[^\/]+\//, ''), // Remove first segment (UUID)
-          path.replace(/^[^\/]+\/[^\/]+\//, ''), // Remove first two segments
-          // Try with just the track title as folder
-          `Oil Money/${path.split('/').pop() || ''}`, // Based on screenshot
-          `Oil Money/${filename}`, // Direct filename in Oil Money folder
-          // Try different filename variations
-          filename,
-          filename.replace(/_/g, ' '), // Replace underscores with spaces
-          filename.toLowerCase(),
-          filename.replace(/\.(pdf|zip|mp3)$/i, ''), // Remove extension
-          // NEW: Try the exact structure pattern
-          path.replace(/%20/g, ' '), // Decoded version of original
-          // Try with different track titles (since each track is unique)
-          path.split('/').slice(1).join('/'), // Remove first UUID, keep rest
-          path.split('/').slice(-1)[0] || '', // Just the filename part
-          // Try with the track title from the database
-          `${trackTitle || 'Unknown'}/${path.split('/').pop() || ''}`,
-          // Try with the track title and original filename
-          `${trackTitle || 'Unknown'}/${filename}`,
-        ];
-        
-        console.log('🔄 Trying path variations:', pathVariations);
-        
-        for (const pathVariation of pathVariations) {
-          if (!pathVariation) continue; // Skip empty paths
-          
-          console.log('🔄 Trying path variation:', pathVariation);
-          const { data: altData, error: altError } = await supabase.storage.from(bucket).createSignedUrl(pathVariation, 60);
-          if (altData?.signedUrl) {
-            const link = document.createElement('a');
-            link.href = altData.signedUrl;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            console.log("✅ Sync proposal download completed with path variation:", pathVariation);
-            return; // Success, exit the function
-          } else {
-            console.log('❌ Path variation failed:', pathVariation, altError);
-          }
-        }
-        
-        // If all variations failed, show error
-        console.error('❌ All path variations failed');
-        console.log('💡 Suggestion: Check if the file actually exists in the bucket with the correct path');
+        console.error('❌ Failed to generate signed URL:', error);
         alert('Download failed. Please check your license or contact support.');
       }
     } else {
       // Fallback to the secure download endpoint for external URLs
+      console.log('⚠️ Using secure download endpoint fallback');
+      
       const { data: { session } } = await supabase.auth.getSession();
       const jwt = session?.access_token;
       if (!jwt) {
@@ -433,6 +390,7 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
 
       const projectRef = 'yciqkebqlajqbpwlujma';
       const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
+      
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${jwt}` }
       });
@@ -454,10 +412,10 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-      console.log("Sync proposal download completed for:", filename);
+      console.log("✅ Download completed via secure endpoint for:", filename);
     }
   } catch (error) {
-    console.error("Sync proposal download error:", error);
+    console.error("❌ Sync proposal download error:", error);
     alert("Download failed. Please contact support.");
   }
 };
