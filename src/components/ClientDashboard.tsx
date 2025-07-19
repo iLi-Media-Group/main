@@ -1907,40 +1907,54 @@ export function ClientDashboard() {
                                   <FileText className="w-4 h-4 mr-1" />
                                   View Agreement
                                 </button>
-                                {(license.track.mp3Url || license.track.trackoutsUrl || license.track.splitSheetUrl) && (
-                                  <div className="flex items-center space-x-1 mt-2" key={`download-${license.id}`}>
+                                <div className="flex flex-col space-y-2 mt-3">
+                                  <div className="text-sm font-medium text-gray-300">Download Files:</div>
+                                  <div className="flex items-center space-x-2">
                                     {license.track.mp3Url && (
                                       <button
                                         onClick={() => handleDownload(license.track.id, `${license.track.title}_MP3.mp3`, 'mp3')}
-                                        className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                                        className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                                         title="Download MP3"
                                       >
-                                        <Download className="w-3 h-3 mr-1" />
+                                        <Download className="w-4 h-4 mr-2" />
                                         MP3
                                       </button>
                                     )}
                                     {license.track.trackoutsUrl && (
                                       <button
-                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackouts_url, `${license.track.title}_Trackouts.zip`)}
-                                        className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Trackouts.zip`)}
+                                        className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                         title="Download Trackouts"
                                       >
-                                        <Download className="w-3 h-3 mr-1" />
+                                        <Download className="w-4 h-4 mr-2" />
                                         Trackouts
+                                      </button>
+                                    )}
+                                    {license.track.trackoutsUrl && (
+                                      <button
+                                        onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Stems.zip`)}
+                                        className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                        title="Download Stems"
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Stems
                                       </button>
                                     )}
                                     {license.track.splitSheetUrl && (
                                       <button
                                         onClick={() => handleDownload(license.track.id, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
-                                        className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
+                                        className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                         title="Download Split Sheet"
                                       >
-                                        <Download className="w-3 h-3 mr-1" />
-                                        Sheet
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Split Sheet
                                       </button>
                                     )}
+                                    {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
+                                      <span className="text-sm text-gray-400 italic">No files available for download</span>
+                                    )}
                                   </div>
-                                )}
+                                </div>
                                 <button
                                   onClick={() => setSelectedLicenseToDelete(license)}
                                   className="flex items-center px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
@@ -2048,38 +2062,54 @@ export function ClientDashboard() {
                                   <FileText className="w-4 h-4 mr-1" />
                                   History
                                 </button>
-                                {proposal.payment_status === 'paid' && (proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
-                                  <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}> 
-                                    {proposal.track.mp3_url && (
-                                      <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
-                                        className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                                        title="Download MP3"
-                                      >
-                                        <Download className="w-3 h-3 mr-1" />
-                                        MP3
-                                      </button>
-                                    )}
-                                    {proposal.track.trackouts_url && (
-                                      <button
-                                        onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
-                                        className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                                        title="Download Trackouts"
-                                      >
-                                        <Download className="w-3 h-3 mr-1" />
-                                        Trackouts
-                                      </button>
-                                    )}
-                                    {proposal.track.split_sheet_url && (
-                                      <button
-                                        onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
-                                        className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
-                                        title="Download Split Sheet"
-                                      >
-                                        <Download className="w-3 h-3 mr-1" />
-                                        Sheet
-                                      </button>
-                                    )}
+                                {proposal.payment_status === 'paid' && (
+                                  <div className="flex flex-col space-y-2 mt-3">
+                                    <div className="text-sm font-medium text-gray-300">Download Files:</div>
+                                    <div className="flex items-center space-x-2">
+                                      {proposal.track.mp3_url && (
+                                        <button
+                                          onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
+                                          className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                          title="Download MP3"
+                                        >
+                                          <Download className="w-4 h-4 mr-2" />
+                                          MP3
+                                        </button>
+                                      )}
+                                      {proposal.track.trackouts_url && (
+                                        <button
+                                          onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                          className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                          title="Download Trackouts"
+                                        >
+                                          <Download className="w-4 h-4 mr-2" />
+                                          Trackouts
+                                        </button>
+                                      )}
+                                      {proposal.track.trackouts_url && (
+                                        <button
+                                          onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Stems.zip`)}
+                                          className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                          title="Download Stems"
+                                        >
+                                          <Download className="w-4 h-4 mr-2" />
+                                          Stems
+                                        </button>
+                                      )}
+                                      {proposal.track.split_sheet_url && (
+                                        <button
+                                          onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
+                                          className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                          title="Download Split Sheet"
+                                        >
+                                          <Download className="w-4 h-4 mr-2" />
+                                          Split Sheet
+                                        </button>
+                                      )}
+                                      {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
+                                        <span className="text-sm text-gray-400 italic">No files available for download</span>
+                                      )}
+                                    </div>
                                   </div>
                                 )}
                               </div>
