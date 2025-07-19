@@ -25,6 +25,15 @@ export async function uploadFile(
       throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
     }
 
+    // Debug: Log bucket details
+    const bucketDetails = buckets?.find(b => b.name === bucket);
+    console.log('Bucket details:', {
+      name: bucketDetails?.name,
+      public: bucketDetails?.public,
+      fileSizeLimit: bucketDetails?.file_size_limit,
+      allowedMimeTypes: bucketDetails?.allowed_mime_types
+    });
+
     // Upload file
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -35,6 +44,11 @@ export async function uploadFile(
 
     if (error) {
       console.error('Upload error:', error);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name
+      });
+      
       if (error.message.includes('Bucket not found')) {
         throw new Error(`Storage bucket '${bucket}' not found. Please contact support.`);
       }
