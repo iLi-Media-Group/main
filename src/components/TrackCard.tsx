@@ -66,21 +66,26 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const [showProducerProfile, setShowProducerProfile] = useState(false);
   const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
 
+  // Get signed URL for audio
+  const { signedUrl: audioSignedUrl, loading: audioLoading, error: audioError } = useSignedUrl('track-audio', track.audioUrl);
+
   useEffect(() => {
     if (user && track?.id) {
       checkFavoriteStatus();
     }
     
-    // Create audio element
-    const audio = new Audio(track.audioUrl);
-    audio.addEventListener('ended', () => setIsPlaying(false));
-    setAudioRef(audio);
+    // Create audio element with signed URL
+    if (audioSignedUrl) {
+      const audio = new Audio(audioSignedUrl);
+      audio.addEventListener('ended', () => setIsPlaying(false));
+      setAudioRef(audio);
 
-    return () => {
-      audio.pause();
-      audio.removeEventListener('ended', () => setIsPlaying(false));
-    };
-  }, [user, track?.id]);
+      return () => {
+        audio.pause();
+        audio.removeEventListener('ended', () => setIsPlaying(false));
+      };
+    }
+  }, [user, track?.id, audioSignedUrl]);
 
   const checkFavoriteStatus = async () => {
     try {
@@ -138,12 +143,14 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!audioRef) return;
+    if (!audioRef || audioLoading || !!audioError) return;
 
     if (isPlaying) {
       audioRef.pause();
     } else {
-      audioRef.play();
+      audioRef.play().catch(error => {
+        console.error('Error playing audio:', error);
+      });
     }
     setIsPlaying(!isPlaying);
   };
@@ -191,11 +198,20 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
           {/* Play Button */}
           <button
             onClick={togglePlay}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            disabled={audioLoading || !!audioError}
+            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10 disabled:opacity-50"
           >
             <div className="p-3 rounded-full bg-blue-600/90 hover:bg-blue-600 transform transition-transform duration-300 hover:scale-110">
-              <Play className={`w-6 h-6 text-white ${isPlaying ? 'hidden' : ''}`} />
-              {isPlaying && <span className="block w-4 h-4 bg-white"></span>}
+              {audioLoading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
+              ) : !!audioError ? (
+                <span className="text-white text-xs">Error</span>
+              ) : (
+                <>
+                  <Play className={`w-6 h-6 text-white ${isPlaying ? 'hidden' : ''}`} />
+                  {isPlaying && <span className="block w-4 h-4 bg-white"></span>}
+                </>
+              )}
             </div>
           </button>
         </div>
