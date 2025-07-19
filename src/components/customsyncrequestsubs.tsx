@@ -797,25 +797,15 @@ export default function CustomSyncRequestSubs() {
                         className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-1"
                         onClick={() => openChatBox(req)}
                       >
-                        <MessageCircle className="w-4 h-4" />
+                        <MessageCircle className={`w-4 h-4 ${unreadCounts[req.id] > 0 ? 'animate-bounce' : ''}`} />
                         Chat
-                        {(() => {
-                          const history = chatHistory[req.id] || [];
-                          const lastViewed = getLastViewed(req.id);
-                          const hasUnviewed = history.length > 0 && (!lastViewed || new Date(history[history.length - 1].created_at) > new Date(lastViewed));
-                          return hasUnviewed ? (
-                            <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse" title="New messages">
-                              New
-                            </span>
-                          ) : null;
-                        })()}
                       </button>
                       {/* New Message Envelope Icon (outside chat button, never blocks clicks) */}
                       {unreadCounts[req.id] > 0 && (
                         <img
                           src="/icons/new-message.png"
                           alt="New message"
-                          className="absolute -top-4 -right-10 w-8 h-8 z-20 pointer-events-none"
+                          className="absolute -top-4 -right-10 w-8 h-8 z-20 pointer-events-none animate-bounce"
                           style={{ filter: 'drop-shadow(0 0 6px #0f0)' }}
                         />
                       )}
@@ -965,13 +955,8 @@ export default function CustomSyncRequestSubs() {
                   {chatHistory[req.id] && chatHistory[req.id].length > 0 && (
                     <div className="mt-4 p-4 bg-blue-950/60 border border-blue-700/40 rounded-lg">
                       <h4 className="text-sm font-semibold text-blue-200 mb-2 flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" />
+                        <MessageCircle className={`w-4 h-4 ${unreadCounts[req.id] > 0 ? 'animate-bounce' : ''}`} />
                         Chat History ({chatHistory[req.id].length} messages)
-                        {unreadCounts[req.id] > 0 && (
-                          <span className="ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                            {unreadCounts[req.id]} new
-                          </span>
-                        )}
                       </h4>
                       <div className="max-h-32 overflow-y-auto space-y-2">
                         {chatHistory[req.id].slice(-3).map((msg) => (
@@ -1007,11 +992,6 @@ export default function CustomSyncRequestSubs() {
                         onClick={handleMessageProducer}
                       >
                         Message Producer
-                        {unreadCounts[req.id] > 0 && (
-                          <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                            {unreadCounts[req.id]}
-                          </span>
-                        )}
                       </button>
                       <button
                         className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"

@@ -549,17 +549,7 @@ export default function ProducerSyncSubmission() {
             <div className="relative">
               <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-4">
                 <h3 className="text-lg font-bold text-green-400 mb-4 flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5" /> Client Messages
-                  {(() => {
-                    const history = chatHistory || [];
-                    const lastViewed = getLastViewed(requestId);
-                    const hasUnviewed = history.length > 0 && (!lastViewed || new Date(history[history.length - 1].created_at) > new Date(lastViewed));
-                    return hasUnviewed ? (
-                      <span className="ml-1 px-2 py-0.5 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse" title="New messages">
-                        New
-                      </span>
-                    ) : null;
-                  })()}
+                  <MessageCircle className={`w-5 h-5 ${unreadCount > 0 ? 'animate-bounce' : ''}`} /> Client Messages
                 </h3>
                 <button
                   onClick={async () => {
@@ -574,16 +564,10 @@ export default function ProducerSyncSubmission() {
                 >
                   <MessageCircle className="w-4 h-4" />
                   View Messages
-                  {unreadCount > 0 && (
-                    <span className="absolute -top-2 -right-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs font-bold animate-pulse">
-                      {unreadCount}
-                    </span>
-                  )}
                 </button>
                 {/* Chat History Preview */}
               </div>
               {/* New Message Envelope Icon (outside top-right) */}
-              {(() => { console.log('Unread count:', unreadCount); return null; })()}
               {unreadCount > 0 && (
                 <img
                   src="/icons/new-message.png"
