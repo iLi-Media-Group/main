@@ -7,6 +7,12 @@ export async function uploadFile(
   onProgress?: (progress: number) => void,
   pathPrefix?: string // optional, for producer/track association
 ): Promise<string> {
+  console.log('uploadFile called with:', {
+    fileName: file.name,
+    fileType: file.type,
+    bucket: bucket,
+    pathPrefix: pathPrefix
+  });
   try {
     // Generate unique file path
     const fileExt = file.name.split('.').pop()?.toLowerCase();
@@ -82,6 +88,12 @@ export async function uploadFile(
 }
 
 export async function validateAudioFile(file: File): Promise<string | null> {
+  console.log('validateAudioFile called with:', {
+    fileName: file.name,
+    fileType: file.type,
+    fileSize: file.size
+  });
+
   // Check file size (50MB limit for audio files)
   const MAX_SIZE = 50 * 1024 * 1024;
   if (file.size > MAX_SIZE) {
@@ -90,15 +102,18 @@ export async function validateAudioFile(file: File): Promise<string | null> {
 
   // Check file type
   if (!file.type.startsWith('audio/')) {
+    console.log('Audio validation failed: not an audio file');
     return 'Please upload an audio file';
   }
 
   // Check supported formats
   const supportedFormats = ['audio/mpeg', 'audio/mp3', 'audio/wav'];
   if (!supportedFormats.includes(file.type)) {
+    console.log('Audio validation failed: unsupported format');
     return 'Please upload an MP3 or WAV file';
   }
 
+  console.log('Audio validation passed');
   return null;
 }
 
