@@ -323,7 +323,18 @@ export function TrackUploadForm() {
       // Don't navigate immediately - let user see success modal first
       // navigate('/producer/dashboard');
     } catch (err) {
-      console.error('Submission error:', err);
+      console.error('=== SUBMISSION ERROR DETAILS ===');
+      console.error('Full error object:', err);
+      console.error('Error type:', typeof err);
+      console.error('Error message:', err instanceof Error ? err.message : 'Unknown error');
+      console.error('Error stack:', err instanceof Error ? err.stack : 'No stack trace');
+      
+      if (err && typeof err === 'object' && 'code' in err) {
+        console.error('Database error code:', err.code);
+        console.error('Database error details:', err.details);
+        console.error('Database error hint:', err.hint);
+      }
+      
       setError(err instanceof Error ? err.message : 'Failed to save track. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -913,19 +924,4 @@ export function TrackUploadForm() {
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>
-                    {uploadProgress > 0 ? `Uploading... ${uploadProgress.toFixed(0)}%` : 'Saving...'}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Upload className="w-5 h-5" />
-                  <span>Save Track</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+                    {uploadProgress > 0 ? `Uploading... ${uploadProgress.toFixed(0)}%`
