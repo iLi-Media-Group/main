@@ -1699,22 +1699,47 @@ export function ClientDashboard() {
                           )}
                           {proposal.track.trackouts_url && (
                             <button
-                              onClick={() => handleSyncProposalDownload(proposal.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
-                              className="flex items-center px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                              onClick={() => {
+                                console.log('Trackouts URL for proposal:', proposal.id);
+                                console.log('Trackouts URL:', proposal.track.trackouts_url);
+                                console.log('Track title:', proposal.track.title);
+                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url);
+                              }}
+                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                               title="Download Trackouts"
                             >
-                              <Download className="w-3 h-3 mr-1" />
+                              <Download className="w-4 h-4 mr-2" />
                               Trackouts
+                            </button>
+                          )}
+                          {proposal.track.trackouts_url && (
+                            <button
+                              onClick={() => {
+                                console.log('Stems URL for proposal:', proposal.id);
+                                console.log('Stems URL:', proposal.track.trackouts_url);
+                                console.log('Track title:', proposal.track.title);
+                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url);
+                              }}
+                              className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                              title="Download Stems"
+                            >
+                              <Download className="w-4 h-4 mr-2" />
+                              Stems
                             </button>
                           )}
                           {proposal.track.split_sheet_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
-                              className="flex items-center px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white text-xs rounded transition-colors"
+                              onClick={() => {
+                                console.log('Split sheet URL for proposal:', proposal.id);
+                                console.log('Split sheet URL:', proposal.track.split_sheet_url);
+                                console.log('Track title:', proposal.track.title);
+                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url);
+                              }}
+                              className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                               title="Download Split Sheet"
                             >
-                              <Download className="w-3 h-3 mr-1" />
-                              Sheet
+                              <Download className="w-4 h-4 mr-2" />
+                              Split Sheet
                             </button>
                           )}
                         </div>
@@ -2234,7 +2259,12 @@ export function ClientDashboard() {
                                 )}
                                 {proposal.track.trackouts_url && (
                                   <button
-                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
+                                    onClick={() => {
+                                      console.log('Trackouts URL for proposal:', proposal.id);
+                                      console.log('Trackouts URL:', proposal.track.trackouts_url);
+                                      console.log('Track title:', proposal.track.title);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url);
+                                    }}
                                     className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Trackouts"
                                   >
@@ -2244,7 +2274,12 @@ export function ClientDashboard() {
                                 )}
                                 {proposal.track.trackouts_url && (
                                   <button
-                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url)}
+                                    onClick={() => {
+                                      console.log('Stems URL for proposal:', proposal.id);
+                                      console.log('Stems URL:', proposal.track.trackouts_url);
+                                      console.log('Track title:', proposal.track.title);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url);
+                                    }}
                                     className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Stems"
                                   >
@@ -2254,7 +2289,12 @@ export function ClientDashboard() {
                                 )}
                                 {proposal.track.split_sheet_url && (
                                   <button
-                                    onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url)}
+                                    onClick={() => {
+                                      console.log('Split sheet URL for proposal:', proposal.id);
+                                      console.log('Split sheet URL:', proposal.track.split_sheet_url);
+                                      console.log('Track title:', proposal.track.title);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url);
+                                    }}
                                     className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Split Sheet"
                                   >
