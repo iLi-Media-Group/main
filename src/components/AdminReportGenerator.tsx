@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, FileText, Calendar, BarChart3, DollarSign, Users, Filter, X } from 'lucide-react';
+import { Download, FileText, Calendar, BarChart3, DollarSign, Users, Filter, X, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { saveAs } from 'file-saver';
 import { Page, Image, View, Text } from '@react-pdf/renderer';
@@ -774,7 +774,7 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
         {reportData && (
           <div className="space-y-6">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -809,6 +809,24 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
                     <p className="text-2xl font-bold text-white">{reportData.summary.syncProposals}</p>
                   </div>
                   <Users className="w-8 h-8 text-yellow-500" />
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">White Label Setup</p>
+                    <p className="text-2xl font-bold text-white">{reportData.summary.whiteLabelSetup}</p>
+                  </div>
+                  <Globe className="w-8 h-8 text-orange-500" />
+                </div>
+              </div>
+              <div className="bg-white/5 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm">White Label Monthly</p>
+                    <p className="text-2xl font-bold text-white">{reportData.summary.whiteLabelMonthly}</p>
+                  </div>
+                  <Calendar className="w-8 h-8 text-pink-500" />
                 </div>
               </div>
             </div>
@@ -851,6 +869,8 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
                       <th className="px-4 py-2 text-left text-gray-300">Track Licenses</th>
                       <th className="px-4 py-2 text-left text-gray-300">Sync Proposals</th>
                       <th className="px-4 py-2 text-left text-gray-300">Custom Sync</th>
+                      <th className="px-4 py-2 text-left text-gray-300">White Label Setup</th>
+                      <th className="px-4 py-2 text-left text-gray-300">White Label Monthly</th>
                       <th className="px-4 py-2 text-left text-gray-300">Total Sales</th>
                       <th className="px-4 py-2 text-left text-gray-300">Total Revenue</th>
                     </tr>
@@ -862,6 +882,8 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
                         <td className="px-4 py-2 text-white">{producer.trackLicenses}</td>
                         <td className="px-4 py-2 text-white">{producer.syncProposals}</td>
                         <td className="px-4 py-2 text-white">{producer.customSyncRequests}</td>
+                        <td className="px-4 py-2 text-white">{producer.whiteLabelSetup}</td>
+                        <td className="px-4 py-2 text-white">{producer.whiteLabelMonthly}</td>
                         <td className="px-4 py-2 text-white">{producer.totalSales}</td>
                         <td className="px-4 py-2 text-green-400">${producer.totalRevenue.toFixed(2)}</td>
                       </tr>
