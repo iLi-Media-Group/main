@@ -498,7 +498,7 @@ export function ClientDashboard() {
           track: {
             ...(!Array.isArray(license.track) ? (license.track as any) : {}),
             genres: !Array.isArray(license.track) && typeof (license.track as any)?.genres === 'string' ? ((license.track as any).genres as string).split(',').map((g: string) => g.trim()) : (!Array.isArray(license.track) && Array.isArray((license.track as any)?.genres) ? (license.track as any).genres : []),
-            audioUrl: !Array.isArray(license.track) ? (license.track as any)?.audio_url || '' : '',
+            audioUrl: !Array.isArray(license.track) ? (license.track as any)?.audio_url || (license.track as any)?.mp3_url || '' : '',
             image: !Array.isArray(license.track) ? (license.track as any)?.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop' : 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
             producerId: !Array.isArray(license.track) ? (license.track as any)?.track_producer_id : '',
             duration: !Array.isArray(license.track) ? (license.track as any)?.duration || '3:30' : '3:30',
