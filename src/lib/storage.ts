@@ -171,9 +171,11 @@ export async function validateArchiveFile(file: File): Promise<string | null> {
     extension: file.name.split('.').pop()?.toLowerCase()
   });
 
-  // Check file extension as primary validation (more reliable for ZIP/RAR)
+  // Check file extension as primary validation (more reliable for archives)
   const fileExtension = file.name.split('.').pop()?.toLowerCase();
-  const supportedExtensions = ['zip', 'rar'];
+  const supportedExtensions = [
+    'zip', 'rar', '7z', 'tar', 'gz', 'tgz', 'bz2', 'xz'
+  ];
   
   if (fileExtension && supportedExtensions.includes(fileExtension)) {
     console.log('Valid file extension:', fileExtension);
@@ -181,18 +183,45 @@ export async function validateArchiveFile(file: File): Promise<string | null> {
   }
 
   // Fallback to MIME type check
-  const supportedTypes = ['application/zip', 'application/x-rar-compressed', 'application/vnd.rar'];
+  const supportedTypes = [
+    // ZIP formats
+    'application/zip',
+    'application/x-zip-compressed',
+    'application/x-zip',
+    
+    // RAR formats
+    'application/x-rar-compressed',
+    'application/vnd.rar',
+    'application/rar',
+    
+    // 7-Zip formats
+    'application/x-7z-compressed',
+    'application/7z',
+    
+    // TAR formats
+    'application/x-tar',
+    'application/tar',
+    
+    // GZIP formats
+    'application/gzip',
+    'application/x-gzip',
+    
+    // Generic binary (fallback)
+    'application/octet-stream',
+    'application/x-binary'
+  ];
+  
   if (supportedTypes.includes(file.type)) {
     console.log('Valid MIME type:', file.type);
     return null; // Valid MIME type
   }
 
-  // If neither extension nor MIME type match, check if it's a generic binary file
+  // If neither extension nor MIME type match, check if it's a generic binary file with valid extension
   if (file.type === 'application/octet-stream' && fileExtension && supportedExtensions.includes(fileExtension)) {
     console.log('Valid generic binary with extension:', fileExtension);
     return null; // Generic binary with valid extension
   }
 
   console.log('File validation failed - no valid type or extension found');
-  return 'Please upload a ZIP or RAR file';
+  return 'Please upload a ZIP, RAR, 7Z, TAR, or GZ file';
 }
