@@ -319,7 +319,7 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
   }
 };
 
-const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string) => {
+const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
   try {
     // Check if the fileUrl is a Supabase storage path
     if (fileUrl && !fileUrl.startsWith('http')) {
@@ -365,7 +365,9 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
         console.log('🔄 Trying alternative approaches...');
         
         // Try different path variations since files are in nested folders
-        // Based on the Supabase storage screenshot, try these variations:
+        // Based on the Supabase storage screenshot and user's example:
+        // Structure: UUID/TrackTitle/UUID-filename.ext
+        // Example: 83e21f94-aced-452a-bafb-6eb9629e3b18/Oil Money/ad8fe905-210e-4206-a7d9-13092fc7b0b6.pdf
         const pathVariations = [
           path, // Original path
           path.replace(/%20/g, ' '), // Replace %20 with spaces
@@ -383,6 +385,15 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
           filename.replace(/_/g, ' '), // Replace underscores with spaces
           filename.toLowerCase(),
           filename.replace(/\.(pdf|zip|mp3)$/i, ''), // Remove extension
+          // NEW: Try the exact structure pattern
+          path.replace(/%20/g, ' '), // Decoded version of original
+          // Try with different track titles (since each track is unique)
+          path.split('/').slice(1).join('/'), // Remove first UUID, keep rest
+          path.split('/').slice(-1)[0] || '', // Just the filename part
+          // Try with the track title from the database
+          `${trackTitle || 'Unknown'}/${path.split('/').pop() || ''}`,
+          // Try with the track title and original filename
+          `${trackTitle || 'Unknown'}/${filename}`,
         ];
         
         console.log('🔄 Trying path variations:', pathVariations);
@@ -421,8 +432,7 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       }
 
       const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}&fileUrl=${encodeURIComponent(fileUrl)}`;
-      
+      const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${jwt}` }
       });
@@ -2297,7 +2307,7 @@ export function ClientDashboard() {
                                       console.log('Trackouts URL for proposal:', proposal.id);
                                       console.log('Trackouts URL:', proposal.track.trackouts_url);
                                       console.log('Track title:', proposal.track.title);
-                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url, proposal.track.title);
                                     }}
                                     className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Trackouts"
@@ -2312,7 +2322,7 @@ export function ClientDashboard() {
                                       console.log('Stems URL for proposal:', proposal.id);
                                       console.log('Stems URL:', proposal.track.trackouts_url);
                                       console.log('Track title:', proposal.track.title);
-                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url, proposal.track.title);
                                     }}
                                     className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Stems"
@@ -2327,7 +2337,7 @@ export function ClientDashboard() {
                                       console.log('Split sheet URL for proposal:', proposal.id);
                                       console.log('Split sheet URL:', proposal.track.split_sheet_url);
                                       console.log('Track title:', proposal.track.title);
-                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url);
+                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url, proposal.track.title);
                                     }}
                                     className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Split Sheet"
