@@ -4,6 +4,7 @@
 -- Update track-audio bucket
 UPDATE storage.buckets 
 SET 
+  public = false,
   file_size_limit = 52428800,
   allowed_mime_types = ARRAY['audio/mpeg', 'audio/mp3', 'audio/wav']
 WHERE id = 'track-audio';
@@ -11,6 +12,7 @@ WHERE id = 'track-audio';
 -- Update track-images bucket
 UPDATE storage.buckets 
 SET 
+  public = false,
   file_size_limit = 10485760,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']
 WHERE id = 'track-images';
