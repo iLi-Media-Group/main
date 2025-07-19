@@ -2119,9 +2119,9 @@ export function ClientDashboard() {
                                     Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
                                   </span>
                                 </div>
-                                {proposal.track.audioUrl && (
+                                {(proposal.track.audio_url || proposal.track.mp3_url) && (
                                   <AudioPlayerWithSignedUrl
-                                    audioUrl={proposal.track.audioUrl}
+                                    audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
                                     title={proposal.track.title}
                                     isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
                                     onToggle={() => {
@@ -2133,7 +2133,7 @@ export function ClientDashboard() {
                                     }}
                                   />
                                 )}
-                                {!proposal.track.audioUrl && (
+                                {!proposal.track.audio_url && !proposal.track.mp3_url && (
                                   <div className="text-xs text-gray-400 italic">
                                     No audio preview available
                                   </div>
