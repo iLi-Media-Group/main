@@ -31,8 +31,22 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   // Extract bucket and path from imageUrl
   const getBucketAndPath = (url: string) => {
     console.log('TrackImage getBucketAndPath input:', url);
-    if (!url || url.startsWith('http')) {
-      console.log('TrackImage: URL is external or empty, returning empty bucket/path');
+    
+    // If URL is empty, return empty bucket/path
+    if (!url) {
+      console.log('TrackImage: URL is empty, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
+    
+    // If URL is already a full Supabase storage URL, don't try to generate signed URL
+    if (url.includes('supabase.co/storage/v1/object/sign/')) {
+      console.log('TrackImage: URL is already a signed Supabase URL, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
+    
+    // If URL starts with http/https, it's an external URL
+    if (url.startsWith('http')) {
+      console.log('TrackImage: URL is external, returning empty bucket/path');
       return { bucket: '', path: '' };
     }
     
@@ -88,18 +102,40 @@ const AudioPlayerWithSignedUrl = ({
 }) => {
   // Extract bucket and path from audioUrl
   const getBucketAndPath = (url: string) => {
-    if (!url || url.startsWith('http')) return { bucket: '', path: '' };
+    console.log('AudioPlayerWithSignedUrl getBucketAndPath input:', url);
+    
+    // If URL is empty, return empty bucket/path
+    if (!url) {
+      console.log('AudioPlayerWithSignedUrl: URL is empty, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
+    
+    // If URL is already a full Supabase storage URL, don't try to generate signed URL
+    if (url.includes('supabase.co/storage/v1/object/sign/')) {
+      console.log('AudioPlayerWithSignedUrl: URL is already a signed Supabase URL, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
+    
+    // If URL starts with http/https, it's an external URL
+    if (url.startsWith('http')) {
+      console.log('AudioPlayerWithSignedUrl: URL is external, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
     
     // Remove leading slash if present
     const cleanPath = url.startsWith('/') ? url.slice(1) : url;
     
     // Split by first slash to get bucket and path
     const parts = cleanPath.split('/');
-    if (parts.length < 2) return { bucket: '', path: '' };
+    if (parts.length < 2) {
+      console.log('AudioPlayerWithSignedUrl: URL has less than 2 parts, returning empty bucket/path');
+      return { bucket: '', path: '' };
+    }
     
     const bucket = parts[0];
     const path = parts.slice(1).join('/');
     
+    console.log('AudioPlayerWithSignedUrl: Extracted bucket:', bucket, 'path:', path);
     return { bucket, path };
   };
 
