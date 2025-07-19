@@ -133,7 +133,7 @@ serve(async (req) => {
 </html>`;
 
     console.log("Attempting to send email...");
-    console.log("From: MyBeatFi <contact@mybeatfi.com>");
+    console.log("From: MyBeatFi <onboarding@resend.dev>");
     console.log("To: contactmybeatfi@gmail.com");
     console.log("Subject:", `New Contact Form: ${subject}`);
     
@@ -144,7 +144,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MyBeatFi <contact@mybeatfi.com>",
+        from: "MyBeatFi <onboarding@resend.dev>",
         to: "contactmybeatfi@gmail.com",
         subject: `New Contact Form: ${subject}`,
         html,
