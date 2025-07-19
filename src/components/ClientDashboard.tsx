@@ -1959,6 +1959,11 @@ export function ClientDashboard() {
                                   }}
                                 />
                               )}
+                              {!license.track.audioUrl && (
+                                <div className="text-xs text-gray-400 italic">
+                                  No audio preview available
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2081,6 +2086,11 @@ export function ClientDashboard() {
                                     }
                                   }}
                                 />
+                              )}
+                              {!proposal.track.audioUrl && (
+                                <div className="text-xs text-gray-400 italic">
+                                  No audio preview available
+                                </div>
                               )}
                             </div>
                           </div>
