@@ -107,6 +107,12 @@ export function SyncProposalSuccessPage() {
         console.log('Raw proposal data:', proposal);
         console.log('Track data:', proposal.track);
         console.log('Producer data:', proposal.track?.[0]?.producer);
+        console.log('Sync fee:', proposal.sync_fee);
+        console.log('Final amount:', proposal.final_amount);
+        console.log('Negotiated amount:', proposal.negotiated_amount);
+        console.log('Payment terms:', proposal.payment_terms);
+        console.log('Final payment terms:', proposal.final_payment_terms);
+        console.log('Negotiated payment terms:', proposal.negotiated_payment_terms);
 
         // Fix track data structure (Supabase returns arrays for joins)
         let trackObj: any = proposal.track;
@@ -123,15 +129,30 @@ export function SyncProposalSuccessPage() {
             last_name: producerObj.last_name ?? 'Producer'
           }
         };
+        
+        // Determine the correct payment terms with better fallback logic
+        let paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms;
+        if (!paymentTerms || paymentTerms === 'n/a' || paymentTerms === 'N/A') {
+          paymentTerms = 'immediate'; // Default fallback
+        }
+        
+        // Determine the correct sync fee with better fallback logic
+        let syncFee = proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee;
+        if (!syncFee || syncFee === 0 || isNaN(syncFee)) {
+          syncFee = proposal.sync_fee || 0; // Use original sync fee as fallback
+        }
+        
         const proposalData: SyncProposalData = {
           ...proposal,
           track: normalizedTrack,
-          sync_fee: proposal.sync_fee,
-          payment_terms: proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms,
+          sync_fee: syncFee,
+          payment_terms: paymentTerms,
           is_exclusive: proposal.is_exclusive
         };
 
         console.log('Processed proposal data:', proposalData);
+        console.log('Final sync fee:', proposalData.sync_fee);
+        console.log('Final payment terms:', proposalData.payment_terms);
 
         setProposalData(proposalData);
 
@@ -176,7 +197,11 @@ export function SyncProposalSuccessPage() {
   }, [sessionId, proposalId, navigate]);
 
   const formatPaymentTerms = (terms: string) => {
-    switch (terms) {
+    if (!terms || terms === 'n/a' || terms === 'N/A') {
+      return 'Immediate';
+    }
+    
+    switch (terms.toLowerCase()) {
       case 'immediate': return 'Immediate';
       case 'net30': return 'Net 30 days';
       case 'net60': return 'Net 60 days';
@@ -318,7 +343,7 @@ export function SyncProposalSuccessPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300 text-lg">Amount Paid:</span>
                   <span className="text-green-400 font-bold text-2xl">
-                    ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee).toFixed(2)}
+                    ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee || 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -384,7 +409,7 @@ export function SyncProposalSuccessPage() {
                   <span className="text-white">Amount Paid:</span>
                 </div>
                 <span className="text-green-400 font-semibold">
-                  ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee).toFixed(2)}
+                  ${(proposalData.final_amount || proposalData.negotiated_amount || proposalData.sync_fee || 0).toFixed(2)}
                 </span>
               </div>
               
