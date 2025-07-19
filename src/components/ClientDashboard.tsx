@@ -28,53 +28,47 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   className: string; 
   onClick?: () => void;
 }) => {
-  // Extract bucket and path from imageUrl
-  const getBucketAndPath = (url: string) => {
-    console.log('TrackImage getBucketAndPath input:', url);
-    
-    // If URL is empty, return empty bucket/path
-    if (!url) {
-      console.log('TrackImage: URL is empty, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // If URL is already a full Supabase storage URL, don't try to generate signed URL
-    if (url.includes('supabase.co/storage/v1/object/sign/')) {
-      console.log('TrackImage: URL is already a signed Supabase URL, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // If URL starts with http/https, it's an external URL
-    if (url.startsWith('http')) {
-      console.log('TrackImage: URL is external, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // Remove leading slash if present
-    const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-    
-    // Split by first slash to get bucket and path
-    const parts = cleanPath.split('/');
-    if (parts.length < 2) {
-      console.log('TrackImage: URL has less than 2 parts, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    const bucket = parts[0];
-    const path = parts.slice(1).join('/');
-    
-    console.log('TrackImage: Extracted bucket:', bucket, 'path:', path);
-    return { bucket, path };
-  };
+  // If it's already a public URL (like Unsplash), use it directly
+  if (imageUrl && imageUrl.startsWith('https://')) {
+    return (
+      <img
+        src={imageUrl}
+        alt={title}
+        className={className}
+        onClick={onClick}
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
+      />
+    );
+  }
 
-  const { bucket, path } = getBucketAndPath(imageUrl);
-  const { signedUrl } = useSignedUrl(bucket, path);
-  
-  console.log('TrackImage final src:', signedUrl || imageUrl || 'fallback');
-  
+  // For file paths, use signed URL with hardcoded bucket name
+  const { signedUrl, loading, error } = useSignedUrl('track-images', imageUrl);
+
+  if (loading) {
+    return (
+      <div className={`${className} bg-white/5 flex items-center justify-center`}>
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <img
+        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
+        alt={title}
+        className={className}
+        onClick={onClick}
+      />
+    );
+  }
+
   return (
     <img
-      src={signedUrl || imageUrl || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
+      src={signedUrl}
       alt={title}
       className={className}
       onClick={onClick}
@@ -100,51 +94,41 @@ const AudioPlayerWithSignedUrl = ({
   onToggle: () => void; 
   size?: "sm" | "md" | "lg";
 }) => {
-  // Extract bucket and path from audioUrl
-  const getBucketAndPath = (url: string) => {
-    console.log('AudioPlayerWithSignedUrl getBucketAndPath input:', url);
-    
-    // If URL is empty, return empty bucket/path
-    if (!url) {
-      console.log('AudioPlayerWithSignedUrl: URL is empty, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // If URL is already a full Supabase storage URL, don't try to generate signed URL
-    if (url.includes('supabase.co/storage/v1/object/sign/')) {
-      console.log('AudioPlayerWithSignedUrl: URL is already a signed Supabase URL, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // If URL starts with http/https, it's an external URL
-    if (url.startsWith('http')) {
-      console.log('AudioPlayerWithSignedUrl: URL is external, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    // Remove leading slash if present
-    const cleanPath = url.startsWith('/') ? url.slice(1) : url;
-    
-    // Split by first slash to get bucket and path
-    const parts = cleanPath.split('/');
-    if (parts.length < 2) {
-      console.log('AudioPlayerWithSignedUrl: URL has less than 2 parts, returning empty bucket/path');
-      return { bucket: '', path: '' };
-    }
-    
-    const bucket = parts[0];
-    const path = parts.slice(1).join('/');
-    
-    console.log('AudioPlayerWithSignedUrl: Extracted bucket:', bucket, 'path:', path);
-    return { bucket, path };
-  };
+  // If it's already a public URL, use it directly
+  if (audioUrl && audioUrl.startsWith('https://')) {
+    return (
+      <AudioPlayer
+        src={audioUrl}
+        title={title}
+        isPlaying={isPlaying}
+        onToggle={onToggle}
+        size={size}
+      />
+    );
+  }
 
-  const { bucket, path } = getBucketAndPath(audioUrl);
-  const { signedUrl } = useSignedUrl(bucket, path);
-  
+  // For file paths, use signed URL with hardcoded bucket name
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', audioUrl);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
   return (
     <AudioPlayer
-      src={signedUrl || audioUrl}
+      src={signedUrl}
       title={title}
       isPlaying={isPlaying}
       onToggle={onToggle}
