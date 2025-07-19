@@ -85,6 +85,8 @@ export function TrackUploadForm() {
   const [splitSheetUrl, setSplitSheetUrl] = useState(savedData?.splitSheetUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [uploadedTrackId, setUploadedTrackId] = useState<string | null>(null);
   const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
@@ -295,7 +297,10 @@ export function TrackUploadForm() {
           updated_at: new Date().toISOString()
         });
 
-      if (trackError) throw trackError;
+      if (trackError) {
+        console.error('Track insertion error:', trackError);
+        throw trackError;
+      }
 
       // Get the inserted track ID (if needed for further logic)
       const { data: trackData, error: trackFetchError } = await supabase
@@ -310,8 +315,13 @@ export function TrackUploadForm() {
 
       if (trackFetchError) throw trackFetchError;
 
+      // Set success state
+      setUploadedTrackId(trackData?.id || null);
+      setShowSuccessModal(true);
       clearSavedFormData();
-      navigate('/producer/dashboard');
+      
+      // Don't navigate immediately - let user see success modal first
+      // navigate('/producer/dashboard');
     } catch (err) {
       console.error('Submission error:', err);
       setError(err instanceof Error ? err.message : 'Failed to save track. Please try again.');
@@ -360,6 +370,45 @@ export function TrackUploadForm() {
               <p className="text-xs text-gray-500 mt-4">
                 Please don't close this page while uploading
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-green-900/90 rounded-xl p-8 max-w-md w-full mx-4 shadow-lg border border-green-500/40">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Upload Successful!</h3>
+              <p className="text-green-300 mb-6">Your track has been uploaded and saved successfully.</p>
+              
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    navigate('/producer/dashboard');
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Go to Dashboard
+                </button>
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    // Reset form for another upload
+                    window.location.reload();
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Upload Another Track
+                </button>
+              </div>
             </div>
           </div>
         </div>
