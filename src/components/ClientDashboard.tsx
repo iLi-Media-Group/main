@@ -1997,12 +1997,12 @@ export function ClientDashboard() {
                                 <AudioPlayerWithSignedUrl
                                   audioUrl={license.track.audioUrl}
                                   title={license.track.title}
-                                  isPlaying={currentlyPlaying === license.track.id}
+                                  isPlaying={currentlyPlaying === `license-${license.id}`}
                                   onToggle={() => {
-                                    if (currentlyPlaying === license.track.id) {
+                                    if (currentlyPlaying === `license-${license.id}`) {
                                       setCurrentlyPlaying(null);
                                     } else {
-                                      setCurrentlyPlaying(license.track.id);
+                                      setCurrentlyPlaying(`license-${license.id}`);
                                     }
                                   }}
                                 />
@@ -2141,12 +2141,12 @@ export function ClientDashboard() {
                                 <AudioPlayerWithSignedUrl
                                   audioUrl={proposal.track.audioUrl}
                                   title={proposal.track.title}
-                                  isPlaying={currentlyPlaying === proposal.track.id}
+                                  isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
                                   onToggle={() => {
-                                    if (currentlyPlaying === proposal.track.id) {
+                                    if (currentlyPlaying === `proposal-${proposal.id}`) {
                                       setCurrentlyPlaying(null);
                                     } else {
-                                      setCurrentlyPlaying(proposal.track.id);
+                                      setCurrentlyPlaying(`proposal-${proposal.id}`);
                                     }
                                   }}
                                 />
