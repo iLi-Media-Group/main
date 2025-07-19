@@ -331,8 +331,6 @@ export function TrackUploadForm() {
       
       if (err && typeof err === 'object' && 'code' in err) {
         console.error('Database error code:', err.code);
-        console.error('Database error details:', err.details);
-        console.error('Database error hint:', err.hint);
       }
       
       setError(err instanceof Error ? err.message : 'Failed to save track. Please try again.');
@@ -924,4 +922,19 @@ export function TrackUploadForm() {
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   <span>
-                    {uploadProgress > 0 ? `Uploading... ${uploadProgress.toFixed(0)}%`
+                    {uploadProgress > 0 ? `Uploading... ${uploadProgress.toFixed(0)}%` : 'Saving...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  <span>Save Track</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
