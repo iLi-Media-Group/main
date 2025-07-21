@@ -353,6 +353,12 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
   }
 };
 
+// Add this helper to get the working Supabase signed URL if the generated one fails
+const getSupabaseDashboardUrl = (bucket: string, path: string) => {
+  // This is a fallback: it will only work if the user is authenticated and the file is not public
+  return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`;
+};
+
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -1654,19 +1660,26 @@ export function ClientDashboard() {
                             </button>
                           )}
                           {proposal.track.split_sheet_url && (
-                            <button
-                              onClick={() => {
-                                console.log('Split sheet URL for proposal:', proposal.id);
-                                console.log('Split sheet URL:', proposal.track.split_sheet_url);
-                                console.log('Track title:', proposal.track.title);
-                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url);
-                              }}
-                              className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                              title="Download Split Sheet"
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Split Sheet
-                            </button>
+                            <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
+                              <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
+                              <div className="break-all">{proposal.track.split_sheet_url}</div>
+                              <div>
+                                <button
+                                  onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`)}
+                                  className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                                >
+                                  Download via App
+                                </button>
+                                <a
+                                  href={getSupabaseDashboardUrl('split-sheets', proposal.track.split_sheet_url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                >
+                                  Fallback: Download via Supabase URL
+                                </a>
+                              </div>
+                            </div>
                           )}
                         </div>
                       )}
@@ -2053,14 +2066,26 @@ export function ClientDashboard() {
                               </button>
                             )}
                             {license.track.splitSheetUrl && (
-                              <button
-                                onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`)}
-                                className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Split Sheet"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Split Sheet
-                              </button>
+                              <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
+                                <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
+                                <div className="break-all">{license.track.splitSheetUrl}</div>
+                                <div>
+                                  <button
+                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`)}
+                                    className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                                  >
+                                    Download via App
+                                  </button>
+                                  <a
+                                    href={getSupabaseDashboardUrl('split-sheets', license.track.splitSheetUrl)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                  >
+                                    Fallback: Download via Supabase URL
+                                  </a>
+                                </div>
+                              </div>
                             )}
                             {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
                               <span className="text-sm text-gray-400 italic">No files available for download</span>
@@ -2219,19 +2244,26 @@ export function ClientDashboard() {
                                   </button>
                                 )}
                                 {proposal.track.split_sheet_url && (
-                                  <button
-                                    onClick={() => {
-                                      console.log('Split sheet URL for proposal:', proposal.id);
-                                      console.log('Split sheet URL:', proposal.track.split_sheet_url);
-                                      console.log('Track title:', proposal.track.title);
-                                      handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_SplitSheet.pdf`, 'pdf', proposal.track.split_sheet_url, proposal.track.title);
-                                    }}
-                                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download Split Sheet"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Split Sheet
-                                  </button>
+                                  <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
+                                    <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
+                                    <div className="break-all">{proposal.track.split_sheet_url}</div>
+                                    <div>
+                                      <button
+                                        onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`)}
+                                        className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                                      >
+                                        Download via App
+                                      </button>
+                                      <a
+                                        href={getSupabaseDashboardUrl('split-sheets', proposal.track.split_sheet_url)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                      >
+                                        Fallback: Download via Supabase URL
+                                      </a>
+                                    </div>
+                                  </div>
                                 )}
                                 {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
