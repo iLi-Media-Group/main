@@ -2050,7 +2050,7 @@ export function ClientDashboard() {
                             )}
                             {license.track.splitSheetUrl && (
                               <button
-                                onClick={() => handleDownload(license.track.id, `${license.track.title}_SplitSheet.pdf`, 'pdf')}
+                                onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`)}
                                 className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                 title="Download Split Sheet"
                               >
@@ -2060,6 +2060,11 @@ export function ClientDashboard() {
                             )}
                             {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
                               <span className="text-sm text-gray-400 italic">No files available for download</span>
+                            )}
+                            {license.track.splitSheetUrl && !license.track.splitSheetUrl.endsWith('split_sheet.pdf') && (
+                              <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                                Warning: Split sheet path does not match expected pattern. Please check upload logic and database.
+                              </div>
                             )}
                           </div>
                           <button
