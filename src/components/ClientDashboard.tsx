@@ -528,7 +528,8 @@ export function ClientDashboard() {
             } : undefined,
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: ''
+            leaseAgreementUrl: '',
+            stemsUrl: !Array.isArray(license.track) ? (license.track as any)?.stems_url || '' : '',
           }
         }));
         setLicenses(formattedLicenses);
@@ -567,34 +568,46 @@ export function ClientDashboard() {
         .eq('user_id', user.id);
 
       if (favoritesData) {
-        const formattedFavorites = favoritesData.map(f => ({
-          id: f.tracks.id,
-          title: f.tracks.title,
-          artist: f.tracks.producer ? `${f.tracks.producer.first_name} ${f.tracks.producer.last_name}`.trim() : 'Unknown Artist',
-          genres: typeof f.tracks.genres === 'string' ? f.tracks.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.genres) ? f.tracks.genres : []),
-          moods: f.tracks.moods ? (typeof f.tracks.moods === 'string' ? f.tracks.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(f.tracks.moods) ? f.tracks.moods : [])) : [],
-          duration: f.tracks.duration || '3:30',
-          bpm: f.tracks.bpm,
-          audioUrl: f.tracks.audio_url,
-          image: f.tracks.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-          hasStingEnding: f.tracks.has_sting_ending,
-          isOneStop: f.tracks.is_one_stop,
-          mp3Url: f.tracks.mp3_url,
-          trackoutsUrl: f.tracks.trackouts_url,
-          hasVocals: f.tracks.has_vocals,
-          vocalsUsageType: f.tracks.vocals_usage_type,
-          subGenres: f.tracks.sub_genres ? (typeof f.tracks.sub_genres === 'string' ? f.tracks.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(f.tracks.sub_genres) ? f.tracks.sub_genres : [])) : [],
-          producerId: f.tracks.track_producer_id,
-          producer: f.tracks.producer ? {
-            id: f.tracks.producer.id,
-            firstName: f.tracks.producer.first_name || '',
-            lastName: f.tracks.producer.last_name || '',
-            email: f.tracks.producer.email
-          } : undefined,
-          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-          leaseAgreementUrl: ''
-        }));
+        const formattedFavorites = favoritesData.map(f => {
+          const track = Array.isArray(f.tracks) ? f.tracks[0] : f.tracks;
+          let producer: any = undefined;
+          if (track && track.producer) {
+            if (Array.isArray(track.producer)) {
+              producer = track.producer.length > 0 ? track.producer[0] : undefined;
+            } else if (typeof track.producer === 'object') {
+              producer = track.producer;
+            }
+          }
+          return {
+            id: track.id,
+            title: track.title,
+            artist: producer && typeof producer.first_name === 'string' && typeof producer.last_name === 'string' ? `${producer.first_name} ${producer.last_name}`.trim() : 'Unknown Artist',
+            genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
+            moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
+            duration: track.duration || '3:30',
+            bpm: track.bpm,
+            audioUrl: track.audio_url,
+            image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            hasStingEnding: track.has_sting_ending,
+            isOneStop: track.is_one_stop,
+            mp3Url: track.mp3_url,
+            trackoutsUrl: track.trackouts_url,
+            hasVocals: track.has_vocals,
+            vocalsUsageType: track.vocals_usage_type,
+            subGenres: track.sub_genres ? (typeof track.sub_genres === 'string' ? track.sub_genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.sub_genres) ? track.sub_genres : [])) : [],
+            producerId: track.track_producer_id,
+            producer: producer && typeof producer.id !== 'undefined' ? {
+              id: producer.id,
+              firstName: producer.first_name || '',
+              lastName: producer.last_name || '',
+              email: producer.email
+            } : undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: '',
+            stemsUrl: track && typeof track.stems_url === 'string' ? track.stems_url : '',
+          };
+        });
         setFavorites(formattedFavorites);
       }
 
@@ -630,14 +643,20 @@ export function ClientDashboard() {
         .limit(5);
 
       if (newTracksData) {
-        console.log('New tracks data:', newTracksData);
         const formattedNewTracks = newTracksData.map(track => {
-          console.log(`Track ${track.title} image_url:`, track.image_url);
+          let producer: any = undefined;
+          if (track && track.producer) {
+            if (Array.isArray(track.producer)) {
+              producer = track.producer.length > 0 ? track.producer[0] : undefined;
+            } else if (typeof track.producer === 'object') {
+              producer = track.producer;
+            }
+          }
           return {
             id: track.id,
             title: track.title,
-            artist: track.producer?.first_name 
-              ? `${track.producer.first_name} ${track.producer.last_name || ''}`.trim()
+            artist: producer && typeof producer.first_name === 'string' && producer.first_name
+              ? `${producer.first_name} ${producer.last_name || ''}`.trim()
               : track.artist || 'Unknown Artist',
             genres: typeof track.genres === 'string' ? track.genres.split(',').map((g: string) => g.trim()) : (Array.isArray(track.genres) ? track.genres : []),
             moods: track.moods ? (typeof track.moods === 'string' ? track.moods.split(',').map((m: string) => m.trim()) : (Array.isArray(track.moods) ? track.moods : [])) : [],
@@ -654,15 +673,16 @@ export function ClientDashboard() {
             trackoutsUrl: track.trackouts_url || '',
             splitSheetUrl: track.split_sheet_url || '',
             producerId: track.track_producer_id,
-            producer: track.producer ? {
-              id: track.producer.id,
-              firstName: track.producer.first_name || '',
-              lastName: track.producer.last_name || '',
-              email: track.producer.email
+            producer: producer && typeof producer.id !== 'undefined' ? {
+              id: producer.id,
+              firstName: producer.first_name || '',
+              lastName: producer.last_name || '',
+              email: producer.email
             } : undefined,
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: ''
+            leaseAgreementUrl: '',
+            stemsUrl: track && typeof track.stems_url === 'string' ? track.stems_url : '',
           };
         });
         setNewTracks(formattedNewTracks);
@@ -787,7 +807,7 @@ export function ClientDashboard() {
           producer_status: p.producer_status,
           payment_status: p.payment_status,
           negotiation_status: p.negotiation_status,
-          track_title: p.track?.title
+          track_title: Array.isArray(p.track) ? (p.track[0]?.title || '') : (p.track?.title || '')
         })));
         setSyncProposals(data);
       }
@@ -1934,6 +1954,7 @@ export function ClientDashboard() {
                     fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
                     pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
                     leaseAgreementUrl: '',
+                    stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stems_url || '' : '',
                   },
                   id: proposal.id
                 }))

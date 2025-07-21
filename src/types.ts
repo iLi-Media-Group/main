@@ -17,6 +17,7 @@ export interface Track {
   image: string;
   mp3Url?: string;
   trackoutsUrl?: string;
+  stemsUrl?: string;
   splitSheetUrl?: string;
   hasVocals?: boolean;
   vocalsUsageType?: 'normal' | 'sync_only';
