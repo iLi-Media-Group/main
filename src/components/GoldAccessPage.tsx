@@ -248,26 +248,17 @@ export function GoldAccessPage() {
                   'Unlock Gold Access'
                 )}
               </button>
-              
+              {/* Removed the 'or' divider and CryptoPaymentButton below */}
+              {/*
               <div className="mt-4">
                 <div className="relative flex items-center py-2">
                   <div className="flex-grow border-t border-gray-600"></div>
                   <span className="flex-shrink mx-4 text-gray-400">or</span>
                   <div className="flex-grow border-t border-gray-600"></div>
                 </div>
-                
-                <CryptoPaymentButton
-                  productId="prod_SQOhLQJIM6Rji8"
-                  productName="Gold Access Membership"
-                  productDescription="Monthly subscription with 10 tracks per month"
-                  price={34.99}
-                  disabled={loading}
-                  metadata={{
-                    product_type: 'subscription',
-                    price_id: 'price_1RdAfER8RYA8TFzw7RrrNmtt'
-                  }}
-                />
+                <CryptoPaymentButton ... />
               </div>
+              */}
             </div>
           </div>
         </div>
