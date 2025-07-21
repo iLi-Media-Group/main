@@ -302,6 +302,7 @@ const handleFinalAcceptance = async (proposal: any) => {
 
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
+  console.log('TEST DEBUG: Download function called');
   try {
     const decodedPath = decodeURIComponent(path);
     console.log('[DEBUG] Download requested');
@@ -327,6 +328,7 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
 };
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
+  console.log('TEST DEBUG: Download function called');
   try {
     let bucket = 'track-files';
     if (fileType === 'pdf') {
