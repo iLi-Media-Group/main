@@ -328,7 +328,7 @@ export function TrackUploadForm() {
           key,
           has_sting_ending: hasStingEnding,
           is_one_stop: isOneStop,
-          audio_url: audioPath, // This is now a file path
+          audio_url: `${user.id}/${title}/audio.mp3`, // Always set to deterministic path
           image_url: imageUrl, // This is now a file path
           mp3_url: mp3Url || null,
           trackouts_url: trackoutsStoragePath || null,
@@ -352,7 +352,7 @@ export function TrackUploadForm() {
         .select('id')
         .eq('track_producer_id', user.id)
         .eq('title', title)
-        .eq('audio_url', audioPath)
+        .eq('audio_url', `${user.id}/${title}/audio.mp3`)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
