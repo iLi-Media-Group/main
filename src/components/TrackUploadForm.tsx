@@ -254,6 +254,7 @@ export function TrackUploadForm() {
         `${user.id}/${title}`,
         'audio.mp3'
       );
+      console.log('[DEBUG] Uploaded audio file path:', audioPath);
       setUploadedUrl(audioPath); // Store the file path, not URL
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
@@ -266,6 +267,7 @@ export function TrackUploadForm() {
           `${user.id}/${title}`,
           'cover.jpg'
         );
+        console.log('[DEBUG] Uploaded image file path:', imagePath);
         imageUrl = imagePath; // Store the file path, not URL
       }
 
@@ -281,6 +283,7 @@ export function TrackUploadForm() {
         );
         splitSheetUploadedUrl = `${user.id}/${title}/split_sheet.pdf`;
         setSplitSheetUrl(splitSheetUploadedUrl);
+        console.log('[DEBUG] Uploaded split sheet file path:', splitSheetUploadedUrl);
       }
 
       // --- New logic for trackouts and stems ---
@@ -296,6 +299,7 @@ export function TrackUploadForm() {
         );
         trackoutsStoragePath = `${user.id}/${title}/trackouts.zip`;
         setTrackoutsUrl(trackoutsStoragePath);
+        console.log('[DEBUG] Uploaded trackouts file path:', trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
@@ -309,6 +313,7 @@ export function TrackUploadForm() {
         );
         stemsStoragePath = `${user.id}/${title}/stems.zip`;
         setStemsUrl(stemsStoragePath);
+        console.log('[DEBUG] Uploaded stems file path:', stemsStoragePath);
       }
       // --- End new logic ---
 
@@ -340,9 +345,15 @@ export function TrackUploadForm() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
-
+      console.log('[DEBUG] Inserted track DB values:', {
+        audio_url: `${user.id}/${title}/audio.mp3`,
+        image_url: imageUrl,
+        trackouts_url: trackoutsStoragePath,
+        stems_url: stemsStoragePath,
+        split_sheet_url: splitSheetUploadedUrl
+      });
       if (trackError) {
-        console.error('Track insertion error:', trackError);
+        console.error('[DEBUG] Track insertion error:', trackError);
         throw trackError;
       }
 

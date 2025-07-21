@@ -303,8 +303,8 @@ const handleFinalAcceptance = async (proposal: any) => {
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
   try {
-    // Always decode the path to handle spaces and special characters
     const decodedPath = decodeURIComponent(path);
+    console.log('[DEBUG] Downloading from bucket:', bucket, 'with path:', decodedPath, 'and filename:', filename);
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
     if (data?.signedUrl) {
       const link = document.createElement('a');
@@ -314,17 +314,18 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
       link.click();
       document.body.removeChild(link);
     } else {
+      console.error('[DEBUG] Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
     }
   } catch (err) {
+    console.error('[DEBUG] Download failed. Exception:', err);
     alert('Download failed. Please contact support.');
   }
 };
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
   try {
-    // Always decode the fileUrl to handle spaces and special characters
-    let bucket = 'track-files'; // Default bucket
+    let bucket = 'track-files';
     if (fileType === 'pdf') {
       bucket = 'split-sheets';
     } else if (fileType === 'trackouts' || fileType === 'stems') {
@@ -333,6 +334,7 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       bucket = 'track-audio';
     }
     let path = decodeURIComponent(fileUrl);
+    console.log('[DEBUG] Downloading sync proposal file:', { proposalId, trackId, bucket, path, filename, fileType });
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
     if (data?.signedUrl) {
       const link = document.createElement('a');
@@ -342,9 +344,11 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       link.click();
       document.body.removeChild(link);
     } else {
+      console.error('[DEBUG] Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
     }
   } catch (error) {
+    console.error('[DEBUG] Download failed. Exception:', error);
     alert('Download failed. Please contact support.');
   }
 };
