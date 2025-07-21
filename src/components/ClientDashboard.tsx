@@ -303,7 +303,9 @@ const handleFinalAcceptance = async (proposal: any) => {
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
   try {
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
+    // Always decode the path to handle spaces and special characters
+    const decodedPath = decodeURIComponent(path);
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
     if (data?.signedUrl) {
       const link = document.createElement('a');
       link.href = data.signedUrl;
@@ -321,102 +323,29 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
   try {
-    console.log('=== DOWNLOAD DEBUG INFO ===');
-    console.log('Original fileUrl:', fileUrl);
-    console.log('Filename:', filename);
-    console.log('File type:', fileType);
-    console.log('Proposal ID:', proposalId);
-    console.log('Track ID:', trackId);
-    console.log('Track title:', trackTitle);
-    
-    // Check if the fileUrl is a signed URL (starts with http)
-    if (fileUrl && fileUrl.startsWith('http')) {
-      console.log('✅ Using stored signed URL for download');
-      
-      // Create a temporary link and trigger download
+    // Always decode the fileUrl to handle spaces and special characters
+    let bucket = 'track-files'; // Default bucket
+    if (fileType === 'pdf') {
+      bucket = 'split-sheets';
+    } else if (fileType === 'trackouts' || fileType === 'stems') {
+      bucket = 'trackouts';
+    } else if (fileType === 'mp3') {
+      bucket = 'track-audio';
+    }
+    let path = decodeURIComponent(fileUrl);
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
+    if (data?.signedUrl) {
       const link = document.createElement('a');
-      link.href = fileUrl;
+      link.href = data.signedUrl;
       link.download = filename;
-      link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      console.log("✅ Download completed using signed URL for:", filename);
-    } else if (fileUrl && !fileUrl.startsWith('http')) {
-      // Fallback: This is a file path, try to generate a signed URL
-      console.log('⚠️ Using file path fallback - generating signed URL');
-      
-      let bucket = 'track-files'; // Default bucket
-      
-      // Determine the correct bucket based on file type
-      if (fileType === 'pdf') {
-        bucket = 'split-sheets';
-      } else if (fileType === 'trackouts' || fileType === 'stems') {
-        bucket = 'trackouts';
-      } else if (fileType === 'mp3') {
-        bucket = 'track-audio';
-      }
-      
-      // Decode the URL to handle spaces and special characters
-      let path = decodeURIComponent(fileUrl);
-      
-      console.log('Bucket:', bucket);
-      console.log('Decoded path:', path);
-      
-      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
-      if (data?.signedUrl) {
-        const link = document.createElement('a');
-        link.href = data.signedUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        console.log("✅ Download completed with generated signed URL for:", filename);
-      } else {
-        console.error('❌ Failed to generate signed URL:', error);
-        alert('Download failed. Please check your license or contact support.');
-      }
     } else {
-      // Fallback to the secure download endpoint for external URLs
-      console.log('⚠️ Using secure download endpoint fallback');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      const jwt = session?.access_token;
-      if (!jwt) {
-        alert("You must be logged in to download.");
-        return;
-      }
-
-      const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?proposalId=${encodeURIComponent(proposalId)}&trackId=${encodeURIComponent(trackId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
-      
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${jwt}` }
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Download error response:', errorText);
-        alert("Download failed. Please check your license or contact support.");
-        return;
-      }
-
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-      console.log("✅ Download completed via secure endpoint for:", filename);
+      alert('Download failed. Please check your license or contact support.');
     }
   } catch (error) {
-    console.error("❌ Sync proposal download error:", error);
-    alert("Download failed. Please contact support.");
+    alert('Download failed. Please contact support.');
   }
 };
 
@@ -1062,32 +991,25 @@ export function ClientDashboard() {
   // New secure download handler using Edge Function streaming
   const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3", boomBoxUrl?: string) => {
     try {
-      // Get the user's JWT (adjust for your auth setup)
       const { data: { session } } = await supabase.auth.getSession();
       const jwt = session?.access_token;
       if (!jwt) {
         alert("You must be logged in to download.");
         return;
       }
-
-      // Extract BoomBox share ID from URL if provided, otherwise use trackId
       let shareId = trackId;
       if (boomBoxUrl && boomBoxUrl.includes('app.boombox.io/app/shares/')) {
         shareId = boomBoxUrl.split('app.boombox.io/app/shares/')[1];
       }
-
-      // Replace <your-project-ref> with your actual Supabase project ref
       const projectRef = 'yciqkebqlajqbpwlujma';
       const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&shareId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${jwt}` }
       });
-
       if (!res.ok) {
         alert("Download failed. Please check your license or contact support.");
         return;
       }
-
       const blob = await res.blob();
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -1098,9 +1020,7 @@ export function ClientDashboard() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(downloadUrl);
-      console.log("Secure download completed for:", filename);
     } catch (error) {
-      console.error("Download error:", error);
       alert("Download failed. Please contact support.");
     }
   };
