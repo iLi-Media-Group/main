@@ -2289,19 +2289,21 @@ export function ClientDashboard() {
                                     <div className="break-all">{proposal.track.stems_url}</div>
                                     <div>
                                       <button
-                                        onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
-                                        className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                                        onClick={() => {
+                                          handleSyncProposalDownload(
+                                            proposal.id,
+                                            proposal.track.id,
+                                            `${proposal.track.title}_Stems.zip`,
+                                            'stems',
+                                            proposal.track.stems_url
+                                          );
+                                        }}
+                                        className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                        title="Download Stems"
                                       >
-                                        Download via App
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Stems
                                       </button>
-                                      <a
-                                        href={getSupabaseDashboardUrl('stems', proposal.track.stems_url)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                      >
-                                        Fallback: Download via Supabase URL
-                                      </a>
                                     </div>
                                   </div>
                                 )}
