@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
+import { uploadFile } from '../lib/storage';
 
 interface EditTrackModalProps {
   isOpen: boolean;
@@ -19,6 +20,8 @@ interface EditTrackModalProps {
     vocalsUsageType?: 'normal' | 'sync_only';
     stems_url?: string;
     split_sheet_url?: string;
+    mp3_url?: string;
+    trackouts_url?: string;
   };
   onUpdate: () => void;
 }
@@ -41,6 +44,12 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [stemsUrl, setStemsUrl] = useState(track.stems_url || '');
   const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
   const [splitSheetUrl, setSplitSheetUrl] = useState(track.split_sheet_url || '');
+  // Add mp3Url and trackoutsUrl state
+  const [mp3File, setMp3File] = useState<File | null>(null);
+  const [mp3Url, setMp3Url] = useState(track.mp3_url || '');
+  const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
+  const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
+  const [stemsFile, setStemsFile] = useState<File | null>(null);
 
   // Update state when track prop changes
   useEffect(() => {
@@ -103,19 +112,63 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const formattedGenres = selectedGenres;
       const validMoods = selectedMoods.filter(mood => MOODS.includes(mood));
 
+      // --- File upload logic ---
+      let mp3UploadedUrl = mp3Url;
+      if (mp3File) {
+        // Upload mp3 to track-audio bucket
+        const uploadedMp3Path = await uploadFile(
+          mp3File,
+          'track-audio',
+          undefined,
+          `${track.id}`,
+          'audio.mp3'
+        );
+        mp3UploadedUrl = `${track.id}/audio.mp3`;
+        setMp3Url(mp3UploadedUrl);
+      }
+      let trackoutsUploadedUrl = trackoutsUrl;
+      if (trackoutsFile) {
+        // Upload trackouts to trackouts bucket
+        const uploadedTrackoutsPath = await uploadFile(
+          trackoutsFile,
+          'trackouts',
+          undefined,
+          `${track.id}`,
+          'trackouts.zip'
+        );
+        trackoutsUploadedUrl = `${track.id}/trackouts.zip`;
+        setTrackoutsUrl(trackoutsUploadedUrl);
+      }
+      let stemsUploadedUrl = stemsUrl;
+      if (stemsUrl && stemsUrl.startsWith('http')) {
+        // If user pasted a URL, use as is
+        stemsUploadedUrl = stemsUrl;
+      } else if (stemsFile) {
+        // Upload stems to stems bucket
+        const uploadedStemsPath = await uploadFile(
+          stemsFile,
+          'stems',
+          undefined,
+          `${track.id}`,
+          'stems.zip'
+        );
+        stemsUploadedUrl = `${track.id}/stems.zip`;
+        setStemsUrl(stemsUploadedUrl);
+      }
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
-        // Assuming uploadFile is a function that handles file uploads to Supabase storage
-        // This part would require a proper implementation of uploadFile
-        // For now, we'll just set the URL if a file is selected
-        // In a real app, you'd use a service like Supabase Storage or a CDN
-        // This is a placeholder for the actual file upload logic
-        console.log('Uploading split sheet file...');
-        // Example: const uploadedUrl = await uploadFile(splitSheetFile, 'split-sheets');
-        // setSplitSheetUrl(uploadedUrl);
-        // For now, we'll just set the URL if a file is selected
-        // In a real app, you'd set splitSheetUploadedUrl to the actual uploaded URL
+        // Upload split sheet to split-sheets bucket
+        const uploadedSplitSheetPath = await uploadFile(
+          splitSheetFile,
+          'split-sheets',
+          undefined,
+          `${track.id}`,
+          'split_sheet.pdf'
+        );
+        splitSheetUploadedUrl = `${track.id}/split_sheet.pdf`;
+        setSplitSheetUrl(splitSheetUploadedUrl);
       }
+      // --- End file upload logic ---
 
       const { error: updateError } = await supabase
         .from('tracks')
@@ -125,7 +178,9 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           media_usage: selectedMediaUsage,
           has_vocals: hasVocals,
           vocals_usage_type: isSyncOnly ? 'sync_only' : 'normal',
-          stems_url: stemsUrl || null,
+          mp3_url: mp3UploadedUrl || null,
+          trackouts_url: trackoutsUploadedUrl || null,
+          stems_url: stemsUploadedUrl || null,
           split_sheet_url: splitSheetUploadedUrl || null,
           updated_at: new Date().toISOString()
         })
@@ -342,6 +397,49 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
             />
             {splitSheetUrl && (
               <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Split Sheet</a>
+            )}
+          </div>
+
+          {/* MP3 Upload */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">MP3 File</label>
+            <input
+              type="file"
+              accept="audio/mp3,audio/mpeg"
+              onChange={e => setMp3File(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading}
+            />
+            {mp3Url && (
+              <a href={mp3Url} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded MP3</a>
+            )}
+          </div>
+          {/* Trackouts Upload */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Trackouts ZIP</label>
+            <input
+              type="file"
+              accept="application/zip,application/x-zip-compressed,.zip"
+              onChange={e => setTrackoutsFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading}
+            />
+            {trackoutsUrl && (
+              <a href={trackoutsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Trackouts</a>
+            )}
+          </div>
+          {/* Stems Upload */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Stems ZIP</label>
+            <input
+              type="file"
+              accept="application/zip,application/x-zip-compressed,.zip"
+              onChange={e => setStemsFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading}
+            />
+            {stemsUrl && (
+              <a href={stemsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Stems</a>
             )}
           </div>
 
