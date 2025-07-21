@@ -216,7 +216,7 @@ export function GoldAccessPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <FileCheck className="w-5 h-5 text-purple-400" />
-                  <span className="text-gray-300">Sync-Ready PDFs for Every Track</span>
+                  <span className="text-gray-300">Sync-Ready PDF licenses for Every Track</span>
                 </div>
               </div>
             </div>
@@ -228,16 +228,6 @@ export function GoldAccessPage() {
                   <span className="text-4xl font-bold text-white">$34.99</span>
                   <span className="text-gray-400 ml-2">/month</span>
                 </div>
-              </div>
-
-              <div className="bg-black/20 rounded-lg p-4 mb-6">
-                <div className="flex items-center space-x-2 text-purple-400 mb-2">
-                  <Gift className="w-5 h-5" />
-                  <span className="font-semibold">Special Bonus</span>
-                </div>
-                <p className="text-gray-300">
-                  Sign up now and get a FREE bonus track pack curated by our team!
-                </p>
               </div>
 
               <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-300 text-sm">
