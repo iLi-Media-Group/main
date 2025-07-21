@@ -32,7 +32,7 @@ export function CheckoutSuccessPage() {
         if (user && (user as any).id) {
           await refreshMembership();
           // After refresh, force reload to show new membership
-          window.location.href = '/client-dashboard';
+          window.location.href = '/dashboard';
           return;
         }
 
