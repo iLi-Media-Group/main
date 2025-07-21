@@ -29,8 +29,11 @@ export function CheckoutSuccessPage() {
         const _licenseCreated = false;
 
         // Refresh membership status
-        if (user) {
+        if (user && (user as any).id) {
           await refreshMembership();
+          // After refresh, force reload to show new membership
+          window.location.href = '/client-dashboard';
+          return;
         }
 
         // Handle Stripe payment
