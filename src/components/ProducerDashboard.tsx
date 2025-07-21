@@ -905,7 +905,15 @@ export function ProducerDashboard() {
                       </div>
                     </div>
                     <div className="w-64 flex-shrink-0">
-                      <TrackAudioPlayer track={track} />
+                      <div className="mb-3">
+                          {/* Audio Player with debug warning if audio_url is missing or incorrect */}
+                          {(!track.audio_url || !track.audio_url.endsWith('audio.mp3')) && (
+                            <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                              Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
+                            </div>
+                          )}
+                          <TrackAudioPlayer track={track} />
+                        </div>
                     </div>
                   </div>
                 </div>
