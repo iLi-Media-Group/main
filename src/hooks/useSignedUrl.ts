@@ -28,9 +28,11 @@ export function useSignedUrl(
         setLoading(true);
         setError(null);
         
+        // Always decode the path to handle spaces and special characters
+        const decodedPath = decodeURIComponent(path);
         const { data, error: urlError } = await supabase.storage
           .from(bucket)
-          .createSignedUrl(path, expiresIn);
+          .createSignedUrl(decodedPath, expiresIn);
 
         if (urlError) {
           console.error('Error generating signed URL:', urlError);
