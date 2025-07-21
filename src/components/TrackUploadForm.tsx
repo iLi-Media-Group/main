@@ -279,7 +279,7 @@ export function TrackUploadForm() {
           `${user.id}/${title}`,
           'split_sheet.pdf'
         );
-        splitSheetUploadedUrl = splitSheetPath; // Store the file path, not URL
+        splitSheetUploadedUrl = `${user.id}/${title}/split_sheet.pdf`;
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
 
@@ -294,7 +294,7 @@ export function TrackUploadForm() {
           `${user.id}/${title}`,
           'trackouts.zip'
         );
-        trackoutsStoragePath = trackoutsPath; // Store the file path, not URL
+        trackoutsStoragePath = `${user.id}/${title}/trackouts.zip`;
         setTrackoutsUrl(trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
@@ -307,7 +307,7 @@ export function TrackUploadForm() {
           `${user.id}/${title}`,
           'stems.zip'
         );
-        stemsStoragePath = stemsPath; // Store the file path, not URL
+        stemsStoragePath = `${user.id}/${title}/stems.zip`;
         setStemsUrl(stemsStoragePath);
       }
       // --- End new logic ---
