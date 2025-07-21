@@ -1665,7 +1665,7 @@ export function ClientDashboard() {
                               <div className="break-all">{proposal.track.split_sheet_url}</div>
                               <div>
                                 <button
-                                  onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`)}
+                                  onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_Splitsheets.zip`)}
                                   className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
                                 >
                                   Download via App
@@ -2107,7 +2107,7 @@ export function ClientDashboard() {
                                 <div className="break-all">{license.track.splitSheetUrl}</div>
                                 <div>
                                   <button
-                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_SplitSheet.pdf`)}
+                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
                                     className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
                                   >
                                     Download via App
