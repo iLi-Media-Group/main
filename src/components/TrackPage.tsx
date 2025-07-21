@@ -362,6 +362,12 @@ export function TrackPage() {
               )}
 
               <div className="mb-6">
+                {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+                {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
+                  <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                    Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
+                  </div>
+                )}
                 <TrackAudioPlayer track={track} />
               </div>
 

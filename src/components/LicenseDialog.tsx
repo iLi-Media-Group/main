@@ -233,7 +233,7 @@ export function LicenseDialog({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl" onClick={e => e.stopPropagation()}>
+        <div className="bg-blue-900/90 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white">License Track</h3>
             <button
