@@ -304,9 +304,12 @@ const handleFinalAcceptance = async (proposal: any) => {
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
   try {
     const decodedPath = decodeURIComponent(path);
-    console.log('[DEBUG] Downloading from bucket:', bucket, 'with path:', decodedPath, 'and filename:', filename);
+    console.log('[DEBUG] Download requested');
+    console.log('[DEBUG] Bucket:', bucket);
+    console.log('[DEBUG] Path:', decodedPath);
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
     if (data?.signedUrl) {
+      console.log('[DEBUG] Signed URL:', data.signedUrl);
       const link = document.createElement('a');
       link.href = data.signedUrl;
       link.download = filename;
@@ -334,9 +337,14 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       bucket = 'track-audio';
     }
     let path = decodeURIComponent(fileUrl);
-    console.log('[DEBUG] Downloading sync proposal file:', { proposalId, trackId, bucket, path, filename, fileType });
+    console.log('[DEBUG] Sync Proposal Download requested');
+    console.log('[DEBUG] Proposal ID:', proposalId);
+    console.log('[DEBUG] Track ID:', trackId);
+    console.log('[DEBUG] Bucket:', bucket);
+    console.log('[DEBUG] Path:', path);
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
     if (data?.signedUrl) {
+      console.log('[DEBUG] Signed URL:', data.signedUrl);
       const link = document.createElement('a');
       link.href = data.signedUrl;
       link.download = filename;
