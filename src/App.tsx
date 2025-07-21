@@ -230,7 +230,7 @@ const App = () => {
         <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
-        <Route path="/upgrade" element={<LayoutWrapper><GoldAccessPage /></LayoutWrapper>} />
+        <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
         <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
         <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
