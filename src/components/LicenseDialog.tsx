@@ -161,7 +161,10 @@ export function LicenseDialog({
             licensee_info: {
               name: `${profile.first_name} ${profile.last_name}`,
               email: profile.email
-            }
+            },
+            stems_path: track.stemsUrl || null,
+            trackouts_path: track.trackoutsUrl || null,
+            split_sheet_path: track.splitSheetUrl || null
           }
         ])
         .select('id')
@@ -183,6 +186,13 @@ export function LicenseDialog({
       console.log('License created successfully!', license.id);
       alert(`License created successfully for "${track.title}"!`);
       
+      // Redirect to dashboard for Gold, Platinum, or Ultimate
+      if (["Gold Access", "Platinum Access", "Ultimate Access"].includes(membershipType)) {
+        setTimeout(() => {
+          window.location.href = "/client-dashboard";
+        }, 2000); // 2 seconds delay
+      }
+      
       // Call the callback if provided
       if (onLicenseCreated) {
         onLicenseCreated();
@@ -199,13 +209,21 @@ export function LicenseDialog({
 
   // Check if user has available licenses
   if (membershipType === 'Gold Access' && remainingLicenses <= 0) {
+    // Determine next available plan
+    let nextPlan = null;
+    if (membershipType === 'Gold Access') {
+      nextPlan = 'Platinum Access';
+    }
+    // If Platinum is not available, suggest Ultimate
+    // (This logic can be extended if more plans are added)
+    // You may want to check PRODUCTS for available plans in the future
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
           <h3 className="text-xl font-bold text-white mb-4">License Limit Reached</h3>
           <p className="text-gray-300 mb-6">
             You've used all your available licenses under the Gold Access plan.
-            Upgrade to Platinum Access for unlimited licensing!
+            Upgrade to {nextPlan} for unlimited licensing!
           </p>
           <div className="flex justify-end space-x-4">
             <button
@@ -220,8 +238,54 @@ export function LicenseDialog({
             >
               Upgrade Now
             </a>
-            
-
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (membershipType === 'Platinum Access' && remainingLicenses <= 0) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+          <h3 className="text-xl font-bold text-white mb-4">License Limit Reached</h3>
+          <p className="text-gray-300 mb-6">
+            You've used all your available licenses under the Platinum Access plan.
+            Upgrade to Ultimate Access for unlimited licensing!
+          </p>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <a
+              href="/upgrade"
+              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              Upgrade Now
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (membershipType === 'Ultimate Access' && remainingLicenses <= 0) {
+    return (
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
+          <h3 className="text-xl font-bold text-white mb-4">License Limit Reached</h3>
+          <p className="text-gray-300 mb-6">
+            You've used all your available licenses under the Ultimate Access plan.
+            You already have the highest available plan.
+          </p>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>
