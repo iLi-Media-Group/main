@@ -158,7 +158,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshMembership = async () => {
     if (!user) return;
-    
     try {
       console.log("Refreshing membership info");
       // Fetch user profile
@@ -167,33 +166,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select('membership_plan, account_type')
         .eq('id', user.id)
         .single();
-        
       if (profileError) throw profileError;
-      
       // Check for active subscription
       const subscription = await getUserSubscription();
-      
       if (subscription?.subscription_id && subscription?.status === 'active') {
         // Get membership plan from subscription
         const newMembershipPlan = getMembershipPlanFromPriceId(subscription.price_id);
-        console.log("Current subscription plan:", newMembershipPlan);
-        
-        // Update if different from current plan
-        if (newMembershipPlan !== profileData.membership_plan) {
-          console.log("Updating membership plan from", profileData.membership_plan, "to", newMembershipPlan);
-          await supabase
-            .from('profiles')
-            .update({ membership_plan: newMembershipPlan })
-            .eq('id', user.id);
-            
-          setMembershipPlan(newMembershipPlan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access');
+        console.log("Current subscription plan from Stripe:", newMembershipPlan);
+        // Always update the profile, even if it matches
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ membership_plan: newMembershipPlan })
+          .eq('id', user.id);
+        if (updateError) {
+          console.error('Error updating membership_plan in profiles:', updateError);
         } else {
-          setMembershipPlan(profileData.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
+          console.log('Updated profiles.membership_plan to', newMembershipPlan);
         }
+        setMembershipPlan(newMembershipPlan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access');
       } else {
         setMembershipPlan(profileData.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
       }
-      
       // Also update account type if needed
       if (profileData.account_type) {
         setAccountType(profileData.account_type as 'client' | 'producer');
