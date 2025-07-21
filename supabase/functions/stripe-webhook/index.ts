@@ -625,10 +625,17 @@ Deno.serve(async (req) => {
               .update({ membership_plan: planName })
               .eq('id', customerRecord.user_id);
             if (updateProfileError) {
-              console.error('Error updating membership_plan in profiles:', updateProfileError);
+              console.error('Error updating membership_plan in profiles:', updateProfileError, {
+                planName,
+                user_id: customerRecord.user_id,
+                customer_id: customerId,
+                event_type: event.type
+              });
             } else {
-              console.log(`Updated membership_plan to ${planName} for user ${customerRecord.user_id}`);
+              console.log(`Updated membership_plan to ${planName} for user ${customerRecord.user_id} (event: ${event.type})`);
             }
+          } else {
+            console.error('No customerRecord found for customer_id:', customerId, 'event:', event.type);
           }
           // --- END NEW ---
         }
