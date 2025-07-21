@@ -223,6 +223,17 @@ export function PricingCarousel() {
     }
   };
 
+  // Filter plans based on current membership
+  let filteredProducts = PRODUCTS;
+  if (membershipPlan === 'Gold Access') {
+    filteredProducts = PRODUCTS.filter(p => p.name !== 'Gold Access');
+  } else if (membershipPlan === 'Platinum Access') {
+    filteredProducts = PRODUCTS.filter(p => !['Gold Access', 'Platinum Access'].includes(p.name));
+  } else if (membershipPlan === 'Ultimate Access') {
+    // Only show downgrade to Single Track
+    filteredProducts = PRODUCTS.filter(p => p.name === 'Single Track');
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
@@ -232,7 +243,7 @@ export function PricingCarousel() {
           </div>
         )}
 
-        {PRODUCTS.map((product) => {
+        {filteredProducts.map((product) => {
           const isCurrentPlan =
             (membershipPlan === product.name) ||
             (product.name === 'Single Track' && (!membershipPlan || membershipPlan === 'Single Track'));
