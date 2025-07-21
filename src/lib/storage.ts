@@ -5,7 +5,8 @@ export async function uploadFile(
   file: File, 
   bucket: string,
   onProgress?: (progress: number) => void,
-  pathPrefix?: string // optional, for producer/track association
+  pathPrefix?: string, // optional, for producer/track association
+  fixedFileName?: string // optional, for deterministic naming
 ): Promise<string> {
   console.log('=== UPLOAD DEBUG START ===');
   console.log('uploadFile called with:', {
@@ -17,9 +18,9 @@ export async function uploadFile(
   });
   
   try {
-    // Generate unique file path
+    // Use deterministic file name if provided, else generate UUID
     const fileExt = file.name.split('.').pop()?.toLowerCase();
-    const fileName = `${uuidv4()}.${fileExt}`;
+    const fileName = fixedFileName ? fixedFileName : `${uuidv4()}.${fileExt}`;
     const filePath = pathPrefix ? `${pathPrefix}/${fileName}` : `${fileName}`;
     
     console.log('Generated file path:', filePath);
@@ -54,7 +55,7 @@ export async function uploadFile(
       .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: true // Allow overwriting if file already exists
+        upsert: true // Always overwrite if file already exists
       });
 
     if (error) {

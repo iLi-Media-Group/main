@@ -247,23 +247,38 @@ export function TrackUploadForm() {
       }
 
       setUploadStatus('Uploading audio file...');
-      const audioPath = await uploadFile(audioFile, 'track-audio', (progress) => {
-        setUploadProgress(progress);
-      }, `${user.id}/${title}`);
-
+      const audioPath = await uploadFile(
+        audioFile,
+        'track-audio',
+        (progress) => { setUploadProgress(progress); },
+        `${user.id}/${title}`,
+        'audio.mp3'
+      );
       setUploadedUrl(audioPath); // Store the file path, not URL
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
         setUploadStatus('Uploading image file...');
-        const imagePath = await uploadFile(imageFile, 'track-images', undefined, `${user.id}/${title}`);
+        const imagePath = await uploadFile(
+          imageFile,
+          'track-images',
+          undefined,
+          `${user.id}/${title}`,
+          'cover.jpg'
+        );
         imageUrl = imagePath; // Store the file path, not URL
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
         setUploadStatus('Uploading split sheet...');
-        const splitSheetPath = await uploadFile(splitSheetFile, 'split-sheets', undefined, `${user.id}/${title}`);
+        const splitSheetPath = await uploadFile(
+          splitSheetFile,
+          'split-sheets',
+          undefined,
+          `${user.id}/${title}`,
+          'split_sheet.pdf'
+        );
         splitSheetUploadedUrl = splitSheetPath; // Store the file path, not URL
         setSplitSheetUrl(splitSheetUploadedUrl);
       }
@@ -272,16 +287,26 @@ export function TrackUploadForm() {
       let trackoutsStoragePath = trackoutsUrl;
       if (trackoutsFile) {
         setUploadStatus('Uploading trackouts file...');
-        // If editing and old file exists, delete it first (not shown here, but should be handled)
-        const trackoutsPath = await uploadFile(trackoutsFile, 'trackouts', undefined, `${user.id}/${title}`);
+        const trackoutsPath = await uploadFile(
+          trackoutsFile,
+          'trackouts',
+          undefined,
+          `${user.id}/${title}`,
+          'trackouts.zip'
+        );
         trackoutsStoragePath = trackoutsPath; // Store the file path, not URL
         setTrackoutsUrl(trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
         setUploadStatus('Uploading stems file...');
-        // If editing and old file exists, delete it first (not shown here, but should be handled)
-        const stemsPath = await uploadFile(stemsFile, 'stems', undefined, `${user.id}/${title}`);
+        const stemsPath = await uploadFile(
+          stemsFile,
+          'stems',
+          undefined,
+          `${user.id}/${title}`,
+          'stems.zip'
+        );
         stemsStoragePath = stemsPath; // Store the file path, not URL
         setStemsUrl(stemsStoragePath);
       }
