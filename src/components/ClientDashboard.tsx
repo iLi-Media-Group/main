@@ -2213,70 +2213,34 @@ export function ClientDashboard() {
                               <>
                                 <div className="text-sm font-medium text-gray-300 border-l border-gray-600 pl-3 ml-3">Download Files:</div>
                                 {proposal.track.mp3_url && (
-                                  <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading MP3 from bucket <b>track-audio</b> with path:</div>
-                                    <div className="break-all">{proposal.track.mp3_url}</div>
-                                    <div>
-                                      <button
-                                        onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
-                                        className="mt-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                      >
-                                        Download via App
-                                      </button>
-                                      <a
-                                        href={getSupabaseDashboardUrl('track-audio', proposal.track.mp3_url)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="ml-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                                      >
-                                        Fallback: Download via Supabase URL
-                                      </a>
-                                    </div>
-                                  </div>
+                                  <button
+                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download MP3"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download MP3
+                                  </button>
                                 )}
                                 {proposal.track.trackouts_url && (
-                                  <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading trackouts from bucket <b>trackouts</b> with path:</div>
-                                    <div className="break-all">{proposal.track.trackouts_url}</div>
-                                    <div>
-                                      <button
-                                        onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
-                                        className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                                      >
-                                        Download via App
-                                      </button>
-                                      <a
-                                        href={getSupabaseDashboardUrl('trackouts', proposal.track.trackouts_url)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                      >
-                                        Fallback: Download via Supabase URL
-                                      </a>
-                                    </div>
-                                  </div>
+                                  <button
+                                    onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Trackouts"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Trackouts
+                                  </button>
                                 )}
                                 {proposal.track.stemsUrl && (
-                                  <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
-                                    <div className="break-all">{proposal.track.stemsUrl}</div>
-                                    <div>
-                                      <button
-                                        onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
-                                        className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                                      >
-                                        Download via App
-                                      </button>
-                                      <a
-                                        href={getSupabaseDashboardUrl('stems', proposal.track.stemsUrl)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                      >
-                                        Fallback: Download via Supabase URL
-                                      </a>
-                                    </div>
-                                  </div>
+                                  <button
+                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
+                                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Stems"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Stems
+                                  </button>
                                 )}
                                 {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
