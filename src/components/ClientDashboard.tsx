@@ -277,98 +277,6 @@ function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
   return hasNewMessage && (hasCounterOffer || needsResponse);
 }
 
-// Add this handler at the top-level of the component
-const handleFinalAcceptance = async (proposal: any) => {
-  try {
-    // Call the backend RPC to finalize acceptance
-    const { error } = await supabase.rpc('handle_negotiation_acceptance', {
-      proposal_id: proposal.id,
-      is_sync_proposal: true
-    });
-    if (error) throw error;
-    // Optionally, refresh proposals
-    await fetchSyncProposals();
-    alert('Final acceptance recorded.');
-  } catch (err) {
-    console.error('Error in handleFinalAcceptance:', err);
-    // Check if this is a case where the client accepted but producer hasn't
-    if (err instanceof Error && err.message.includes('producer')) {
-      alert('Your acceptance has been recorded. Waiting for the producer to accept the proposal.');
-    } else {
-      alert('Failed to record final acceptance. Please try again.');
-    }
-  }
-};
-
-// Add this function near the other handlers
-const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
-  alert('TEST DEBUG: Download function called');
-  try {
-    const decodedPath = decodeURIComponent(path);
-    console.log('[DEBUG] Download requested');
-    console.log('[DEBUG] Bucket:', bucket);
-    console.log('[DEBUG] Path:', decodedPath);
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
-    if (data?.signedUrl) {
-      console.log('[DEBUG] Signed URL:', data.signedUrl);
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      console.error('[DEBUG] Download failed. Error:', error);
-      alert('Download failed. Please check your license or contact support.');
-    }
-  } catch (err) {
-    console.error('[DEBUG] Download failed. Exception:', err);
-    alert('Download failed. Please contact support.');
-  }
-};
-
-const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
-  alert('TEST DEBUG: Download function called');
-  try {
-    let bucket = 'track-files';
-    if (fileType === 'pdf') {
-      bucket = 'split-sheets';
-    } else if (fileType === 'trackouts' || fileType === 'stems') {
-      bucket = 'trackouts';
-    } else if (fileType === 'mp3') {
-      bucket = 'track-audio';
-    }
-    let path = decodeURIComponent(fileUrl);
-    console.log('[DEBUG] Sync Proposal Download requested');
-    console.log('[DEBUG] Proposal ID:', proposalId);
-    console.log('[DEBUG] Track ID:', trackId);
-    console.log('[DEBUG] Bucket:', bucket);
-    console.log('[DEBUG] Path:', path);
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
-    if (data?.signedUrl) {
-      console.log('[DEBUG] Signed URL:', data.signedUrl);
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else {
-      console.error('[DEBUG] Download failed. Error:', error);
-      alert('Download failed. Please check your license or contact support.');
-    }
-  } catch (error) {
-    console.error('[DEBUG] Download failed. Exception:', error);
-    alert('Download failed. Please contact support.');
-  }
-};
-
-// Add this helper to get the working Supabase signed URL if the generated one fails
-const getSupabaseDashboardUrl = (bucket: string, path: string) => {
-  // This is a fallback: it will only work if the user is authenticated and the file is not public
-  return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`;
-};
-
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -529,7 +437,7 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: !Array.isArray(license.track) ? ((license.track as any)?.stems_url || '') : '',
+            stemsUrl: !Array.isArray(license.track) ? (license.track as any)?.stemsUrl || '' : '',
           }
         }));
         setLicenses(formattedLicenses);
@@ -605,7 +513,7 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: track && typeof track.stems_url === 'string' ? track.stems_url : '',
+            stemsUrl: (track as any)?.stemsUrl || '',
           };
         });
         setFavorites(formattedFavorites);
@@ -682,7 +590,7 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: track && typeof track.stems_url === 'string' ? track.stems_url : '',
+            stemsUrl: (track as any)?.stemsUrl || '',
           };
         });
         setNewTracks(formattedNewTracks);
@@ -807,7 +715,7 @@ export function ClientDashboard() {
           producer_status: p.producer_status,
           payment_status: p.payment_status,
           negotiation_status: p.negotiation_status,
-          track_title: Array.isArray(p.track) ? (p.track[0]?.title || '') : (p.track?.title || '')
+          track_title: Array.isArray(p.track) ? ((p.track[0] as any)?.title || '') : ((p.track as any)?.title || '')
         })));
         setSyncProposals(data);
       }
@@ -1065,9 +973,73 @@ export function ClientDashboard() {
     }
   };
 
+  // Move these helper functions inside the component for proper scope
+  const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
+    alert('TEST DEBUG: Download function called');
+    try {
+      const decodedPath = decodeURIComponent(path);
+      console.log('[DEBUG] Download requested');
+      console.log('[DEBUG] Bucket:', bucket);
+      console.log('[DEBUG] Path:', decodedPath);
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
+      if (data?.signedUrl) {
+        console.log('[DEBUG] Signed URL:', data.signedUrl);
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        console.error('[DEBUG] Download failed. Error:', error);
+        alert('Download failed. Please check your license or contact support.');
+      }
+    } catch (err) {
+      console.error('[DEBUG] Download failed. Exception:', err);
+      alert('Download failed. Please contact support.');
+    }
+  };
 
+  const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
+    alert('TEST DEBUG: Download function called');
+    try {
+      let bucket = 'track-files';
+      if (fileType === 'pdf') {
+        bucket = 'split-sheets';
+      } else if (fileType === 'trackouts' || fileType === 'stems') {
+        bucket = 'trackouts';
+      } else if (fileType === 'mp3') {
+        bucket = 'track-audio';
+      }
+      let path = decodeURIComponent(fileUrl);
+      console.log('[DEBUG] Sync Proposal Download requested');
+      console.log('[DEBUG] Proposal ID:', proposalId);
+      console.log('[DEBUG] Track ID:', trackId);
+      console.log('[DEBUG] Bucket:', bucket);
+      console.log('[DEBUG] Path:', path);
+      const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
+      if (data?.signedUrl) {
+        console.log('[DEBUG] Signed URL:', data.signedUrl);
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        console.error('[DEBUG] Download failed. Error:', error);
+        alert('Download failed. Please check your license or contact support.');
+      }
+    } catch (error) {
+      console.error('[DEBUG] Download failed. Exception:', error);
+      alert('Download failed. Please contact support.');
+    }
+  };
 
-
+  const getSupabaseDashboardUrl = (bucket: string, path: string) => {
+    // This is a fallback: it will only work if the user is authenticated and the file is not public
+    return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`;
+  };
 
   const sortedAndFilteredLicenses = licenses
     .filter(license => !selectedGenre || license.track.genres.includes(selectedGenre))
@@ -1187,6 +1159,36 @@ export function ClientDashboard() {
       </div>
     );
   }
+
+  // Debug: Log stemsUrl for each licensed track before rendering
+  console.log('DEBUG LICENSE TRACKS:', sortedAndFilteredLicenses.map(l => ({
+    id: l.track.id,
+    title: l.track.title,
+    stemsUrl: l.track.stemsUrl
+  })));
+
+  // Add handleFinalAcceptance inside the component so it can access fetchSyncProposals
+  const handleFinalAcceptance = async (proposal: any) => {
+    try {
+      // Call the backend RPC to finalize acceptance
+      const { error } = await supabase.rpc('handle_negotiation_acceptance', {
+        proposal_id: proposal.id,
+        is_sync_proposal: true
+      });
+      if (error) throw error;
+      // Optionally, refresh proposals
+      await fetchSyncProposals();
+      alert('Final acceptance recorded.');
+    } catch (err) {
+      console.error('Error in handleFinalAcceptance:', err);
+      // Check if this is a case where the client accepted but producer hasn't
+      if (err instanceof Error && err.message.includes('producer')) {
+        alert('Your acceptance has been recorded. Waiting for the producer to accept the proposal.');
+      } else {
+        alert('Failed to record final acceptance. Please try again.');
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1961,7 +1963,7 @@ export function ClientDashboard() {
                     fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
                     pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
                     leaseAgreementUrl: '',
-                    stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stems_url || '' : '',
+                    stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stemsUrl || '' : '',
                   },
                   id: proposal.id
                 }))
@@ -2117,41 +2119,19 @@ export function ClientDashboard() {
                                 </div>
                               </div>
                             )}
-                             {license.track.stemsUrl && (
-                                <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                   <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
-                                   <div className="break-all">{license.track.stemsUrl}</div>
-                                   <div>
-                                     <button
-                                       onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
-                                       className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                                      >
-                                    Download via App
-                                    </button>
-                                      <a
-                                       href={getSupabaseDashboardUrl('stems', license.track.stemsUrl)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                     >
-                                       Fallback: Download via Supabase URL
-                                   </a>
-                                </div>
-                              </div>
-                            )}
-                            {license.track.splitSheetUrl && (
+                            {license.track.stemsUrl && (
                               <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
-                                <div className="break-all">{license.track.splitSheetUrl}</div>
+                                <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
+                                <div className="break-all">{license.track.stemsUrl}</div>
                                 <div>
                                   <button
-                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
-                                    className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                                    onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
+                                    className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
                                   >
                                     Download via App
                                   </button>
                                   <a
-                                    href={getSupabaseDashboardUrl('split-sheets', license.track.splitSheetUrl)}
+                                    href={getSupabaseDashboardUrl('stems', license.track.stemsUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
