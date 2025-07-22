@@ -1940,6 +1940,9 @@ export function ClientDashboard() {
                 );
               }
 
+              // Before rendering allLicensedTracks
+              console.log('Rendering allLicensedTracks:', Array.isArray(allLicensedTracks) ? allLicensedTracks : 'not an array', allLicensedTracks);
+
               return allLicensedTracks.map((item) => {
                 if (item.type === 'license') {
                   const license = item.data;
