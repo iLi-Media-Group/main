@@ -1148,6 +1148,33 @@ export function ClientDashboard() {
     stemsUrl: l.track.stemsUrl
   })));
 
+  useEffect(() => {
+    if (!user) return;
+
+    // Subscribe to changes on the current user's profile
+    const channel = supabase
+      .channel('profile-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Refetch dashboard data on any profile change
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    // Cleanup on unmount
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       <div className="container mx-auto px-4 py-8">
