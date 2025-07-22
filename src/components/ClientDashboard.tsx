@@ -1250,16 +1250,49 @@ export function ClientDashboard() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-white">License Usage</h2>
-                <button
-                  onClick={async () => {
-                    await refreshMembership();
-                    fetchDashboardData();
-                  }}
-                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
-                  title="Refresh membership plan"
-                >
-                  Refresh Plan
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={async () => {
+                      await refreshMembership();
+                      fetchDashboardData();
+                    }}
+                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                    title="Refresh membership plan"
+                  >
+                    Refresh Plan
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (user?.email) {
+                        try {
+                          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-membership-plan`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+                            },
+                            body: JSON.stringify({ email: user.email })
+                          });
+                          
+                          const result = await response.json();
+                          if (result.success) {
+                            console.log('Membership plan fixed:', result);
+                            await refreshMembership();
+                            fetchDashboardData();
+                          } else {
+                            console.error('Failed to fix membership plan:', result.error);
+                          }
+                        } catch (error) {
+                          console.error('Error calling fix-membership-plan:', error);
+                        }
+                      }
+                    }}
+                    className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded transition-colors"
+                    title="Fix membership plan from Stripe"
+                  >
+                    Fix Plan
+                  </button>
+                </div>
               </div>
               <p className="text-gray-300">
                 <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>

@@ -615,9 +615,11 @@ Deno.serve(async (req) => {
             .select('user_id')
             .eq('customer_id', customerId)
             .maybeSingle();
+          
           if (customerLookupError) {
             console.error('Error looking up user_id for customer:', customerId, customerLookupError);
           }
+          
           if (customerRecord && customerRecord.user_id) {
             // Update membership_plan in profiles
             const { error: updateProfileError } = await supabase
@@ -636,6 +638,49 @@ Deno.serve(async (req) => {
             }
           } else {
             console.error('No customerRecord found for customer_id:', customerId, 'event:', event.type);
+            
+            // Fallback: Try to find user by email from Stripe customer
+            try {
+              const stripeCustomer = await stripe.customers.retrieve(customerId);
+              if (stripeCustomer.email) {
+                console.log('Attempting to find user by email:', stripeCustomer.email);
+                
+                // Find user by email
+                const { data: profileData, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('id, email')
+                  .eq('email', stripeCustomer.email)
+                  .maybeSingle();
+                
+                if (profileData && profileData.id) {
+                  console.log('Found user by email, updating membership plan:', profileData.id);
+                  
+                  // Create stripe_customers record if it doesn't exist
+                  await supabase
+                    .from('stripe_customers')
+                    .upsert({
+                      user_id: profileData.id,
+                      customer_id: customerId
+                    }, { onConflict: 'customer_id' });
+                  
+                  // Update membership plan
+                  const { error: updateProfileError } = await supabase
+                    .from('profiles')
+                    .update({ membership_plan: planName })
+                    .eq('id', profileData.id);
+                  
+                  if (updateProfileError) {
+                    console.error('Error updating membership_plan in profiles (fallback):', updateProfileError);
+                  } else {
+                    console.log(`Updated membership_plan to ${planName} for user ${profileData.id} (fallback method)`);
+                  }
+                } else {
+                  console.error('No profile found for email:', stripeCustomer.email);
+                }
+              }
+            } catch (stripeError) {
+              console.error('Error retrieving Stripe customer:', stripeError);
+            }
           }
           // --- END NEW ---
         }
