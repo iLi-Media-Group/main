@@ -1943,9 +1943,14 @@ export function ClientDashboard() {
               // Before rendering allLicensedTracks
               console.log('Rendering allLicensedTracks:', Array.isArray(allLicensedTracks) ? allLicensedTracks : 'not an array', allLicensedTracks);
 
-              return allLicensedTracks.map((item) => {
+              return Array.isArray(allLicensedTracks) && allLicensedTracks.map((item) => {
                 if (item.type === 'license') {
                   const license = item.data;
+                  if (!license || !license.track) {
+                    console.warn('Skipping license with missing data:', item);
+                    return null;
+                  }
+                  console.log('Rendering license:', license);
                   const expiryStatus = getExpiryStatus(license.expiry_date);
                   
                   return (
@@ -2097,7 +2102,11 @@ export function ClientDashboard() {
                 } else {
                   // Sync proposal
                   const proposal = item.data;
-                  
+                  if (!proposal || !proposal.track) {
+                    console.warn('Skipping proposal with missing data:', item);
+                    return null;
+                  }
+                  console.log('Rendering proposal:', proposal);
                   return (
                     <div
                       key={proposal.id}
