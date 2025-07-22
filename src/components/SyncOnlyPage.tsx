@@ -129,6 +129,7 @@ export function SyncOnlyPage() {
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+              trackouts: { format: ['WAV'], url: track.trackouts_url || '' },
               stems: { format: ['WAV'], url: track.stems_url || '' },
               stemsWithVocals: { format: ['WAV'], url: track.stems_url || '' }
             },
