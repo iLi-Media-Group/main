@@ -593,6 +593,7 @@ Deno.serve(async (req) => {
           // --- NEW: Update membership_plan in profiles ---
           // Map price_id to plan name
           let planName = 'Unknown';
+          console.log('Processing subscription with price_id:', priceId);
           switch (priceId) {
             case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
               planName = 'Ultimate Access';
@@ -608,8 +609,11 @@ Deno.serve(async (req) => {
               break;
             default:
               planName = 'Unknown';
+              console.log('Unknown price_id:', priceId);
           }
+          console.log('Mapped to plan name:', planName);
           // Find user_id from stripe_customers
+          console.log('Looking up customer_id:', customerId);
           const { data: customerRecord, error: customerLookupError } = await supabase
             .from('stripe_customers')
             .select('user_id')
@@ -619,6 +623,8 @@ Deno.serve(async (req) => {
           if (customerLookupError) {
             console.error('Error looking up user_id for customer:', customerId, customerLookupError);
           }
+          
+          console.log('Customer record found:', customerRecord);
           
           if (customerRecord && customerRecord.user_id) {
             // Update membership_plan in profiles
