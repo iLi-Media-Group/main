@@ -363,6 +363,31 @@ const getSupabaseDashboardUrl = (bucket: string, path: string) => {
   return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/${bucket}/${encodeURIComponent(path)}`;
 };
 
+// Helper function to get plan level (higher number = higher tier)
+const getPlanLevel = (plan: string): number => {
+  switch (plan) {
+    case 'Single Track': return 1;
+    case 'Gold Access': return 2;
+    case 'Platinum Access': return 3;
+    case 'Ultimate Access': return 4;
+    default: return 0;
+  }
+};
+
+// Helper function to get button text based on current plan vs target plan
+const getButtonText = (currentPlan: string, targetPlan: string): string => {
+  const currentLevel = getPlanLevel(currentPlan);
+  const targetLevel = getPlanLevel(targetPlan);
+  
+  if (currentLevel === targetLevel) {
+    return 'Current Plan';
+  } else if (targetLevel > currentLevel) {
+    return `Upgrade to ${targetPlan}`;
+  } else {
+    return `Downgrade to ${targetPlan}`;
+  }
+};
+
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
@@ -2617,7 +2642,7 @@ export function ClientDashboard() {
 
       {/* Membership Management Dialog */}
       {showMembershipDialog && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-white">Manage Your Membership</h3>
@@ -2672,9 +2697,13 @@ export function ClientDashboard() {
                         onClick={() => {
                           window.location.href = '/pricing?plan=gold';
                         }}
-                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                        className={`w-full px-4 py-2 rounded transition-colors ${
+                          getPlanLevel('Gold Access') > getPlanLevel(membershipPlan || 'Single Track')
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
                       >
-                        Upgrade to Gold
+                        {getButtonText(membershipPlan || 'Single Track', 'Gold Access')}
                       </button>
                     )}
                   </div>
@@ -2699,9 +2728,13 @@ export function ClientDashboard() {
                         onClick={() => {
                           window.location.href = '/pricing?plan=platinum';
                         }}
-                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                        className={`w-full px-4 py-2 rounded transition-colors ${
+                          getPlanLevel('Platinum Access') > getPlanLevel(membershipPlan || 'Single Track')
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
                       >
-                        Upgrade to Platinum
+                        {getButtonText(membershipPlan || 'Single Track', 'Platinum Access')}
                       </button>
                     )}
                   </div>
@@ -2727,32 +2760,53 @@ export function ClientDashboard() {
                         onClick={() => {
                           window.location.href = '/pricing?plan=ultimate';
                         }}
-                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                        className={`w-full px-4 py-2 rounded transition-colors ${
+                          getPlanLevel('Ultimate Access') > getPlanLevel(membershipPlan || 'Single Track')
+                            ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                            : 'bg-red-600 hover:bg-red-700 text-white'
+                        }`}
                       >
-                        Upgrade to Ultimate
+                        {getButtonText(membershipPlan || 'Single Track', 'Ultimate Access')}
                       </button>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Downgrade Section */}
-              {membershipPlan !== 'Single Track' && (
-                <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
-                  <h4 className="text-lg font-semibold text-white mb-2">Downgrade Options</h4>
-                  <p className="text-gray-300 text-sm mb-4">
-                    You can downgrade your plan at any time. Changes will take effect at the end of your current billing period.
-                  </p>
-                  <button
-                    onClick={() => {
-                      window.location.href = '/pricing?downgrade=true';
-                    }}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
-                  >
-                    Downgrade Plan
-                  </button>
+              {/* Single Track - Pay As You Go */}
+              <div className="bg-gray-900/20 border border-gray-500/20 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-white mb-2">Single Track - Pay As You Go</h4>
+                <p className="text-gray-300 text-sm mb-4">
+                  Perfect for one-off projects. Pay only for the tracks you need.
+                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-gray-400">$9.99<span className="text-sm text-gray-500">/track</span></p>
+                    <ul className="text-sm text-gray-400 space-y-1 mt-2">
+                      <li>• Single track download</li>
+                      <li>• Non-exclusive license</li>
+                      <li>• Commercial use</li>
+                      <li>• Worldwide rights</li>
+                    </ul>
+                  </div>
+                  <div>
+                    {membershipPlan === 'Single Track' ? (
+                      <button disabled className="px-6 py-2 bg-gray-600 text-gray-300 rounded cursor-not-allowed">
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          window.location.href = '/pricing?plan=single';
+                        }}
+                        className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                      >
+                        {getButtonText(membershipPlan || 'Gold Access', 'Single Track')}
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
