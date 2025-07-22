@@ -423,11 +423,6 @@ export function ClientDashboard() {
 
       if (profileData) {
         setProfile(profileData);
-        setUserStats(prev => ({
-          ...prev,
-          membershipType: profileData.membership_plan as UserStats['membershipType']
-        }));
-        // Set pending downgrade state
         setPendingDowngrade(!!profileData.subscription_cancel_at_period_end);
         setDowngradeEffectiveDate(profileData.subscription_current_period_end || null);
       }
@@ -2438,11 +2433,11 @@ export function ClientDashboard() {
         />
       )}
 
-      {showLicenseDialog && selectedTrackToLicense && userStats.membershipType && (
+      {showLicenseDialog && selectedTrackToLicense && membershipPlan && (
         <LicenseDialog
           isOpen={showLicenseDialog}
           track={selectedTrackToLicense}
-          membershipType={userStats.membershipType}
+          membershipType={membershipPlan}
           remainingLicenses={userStats.remainingLicenses}
           onClose={() => {
             setShowLicenseDialog(false);
