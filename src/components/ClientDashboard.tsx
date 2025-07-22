@@ -1738,7 +1738,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            }
+            )}
 
             {syncProposalsTab === 'accepted' && (
               sortedAcceptedProposals.length === 0 ? (
