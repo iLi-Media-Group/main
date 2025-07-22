@@ -364,20 +364,13 @@ const getSupabaseDashboardUrl = (bucket: string, path: string) => {
 };
 
 export function ClientDashboard() {
-  // Add error boundary wrapper
-  try {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [newTracks, setNewTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
-  // Debug logs to diagnose blank dashboard
-  console.log('DEBUG ClientDashboard:', {
-    user,
-    membershipPlan,
-    loading,
-  });
+
   const [error, setError] = useState('');
   const [sortField, setSortField] = useState<'renewal' | 'title' | 'genre' | 'bpm'>('renewal');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -1173,12 +1166,7 @@ export function ClientDashboard() {
     );
   }
 
-  // Debug: Log stemsUrl for each licensed track before rendering
-  console.log('DEBUG LICENSE TRACKS:', sortedAndFilteredLicenses.map(l => ({
-    id: l.track.id,
-    title: l.track.title,
-    stemsUrl: l.track.stemsUrl
-  })));
+
 
   // Temporarily disabled useEffect to prevent crashes
   // useEffect(() => {
@@ -1972,20 +1960,12 @@ export function ClientDashboard() {
                 );
               }
 
-              // Before rendering allLicensedTracks
-              console.log('Rendering allLicensedTracks:', Array.isArray(allLicensedTracks) ? allLicensedTracks : 'not an array', allLicensedTracks);
-
               return Array.isArray(allLicensedTracks) && allLicensedTracks.map((item, index) => {
-                try {
-                  console.log(`Processing item ${index}:`, item);
-                  if (item.type === 'license') {
-                    console.log(`Item ${index} is a license`);
+                if (item.type === 'license') {
                     const license = item.data;
                     if (!license || !license.track) {
-                      console.warn('Skipping license with missing data:', item);
                       return null;
                     }
-                    console.log('Rendering license:', license);
                     const expiryStatus = getExpiryStatus(license.expiry_date);
                   
                   return (
@@ -2136,13 +2116,10 @@ export function ClientDashboard() {
                   );
                 } else {
                   // Sync proposal
-                  console.log(`Item ${index} is a sync proposal`);
                   const proposal = item.data;
                   if (!proposal || !proposal.track) {
-                    console.warn('Skipping proposal with missing data:', item);
                     return null;
                   }
-                  console.log('Rendering proposal:', proposal);
                   return (
                     <div
                       key={proposal.id}
@@ -2312,10 +2289,6 @@ export function ClientDashboard() {
                     </div>
                   );
                 }
-              } catch (error) {
-                console.error(`Error rendering item ${index}:`, error, item);
-                return null;
-              }
               });
             })()}
           </div>
@@ -2576,22 +2549,5 @@ export function ClientDashboard() {
       )}
     </div>
   );
-  } catch (error) {
-    console.error('Error in ClientDashboard component:', error);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Something went wrong</h1>
-          <p className="text-gray-300 mb-4">The dashboard encountered an error. Please try refreshing the page.</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
-          >
-            Refresh Page
-          </button>
-        </div>
-      </div>
-    );
-  }
 }
 //end
