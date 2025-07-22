@@ -1738,7 +1738,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            }
+            )}
 
             {syncProposalsTab === 'accepted' && (
               sortedAcceptedProposals.length === 0 ? (
@@ -1844,7 +1844,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            }
+            )}
 
             {syncProposalsTab === 'declined' && (
               sortedDeclinedProposals.length === 0 ? (
