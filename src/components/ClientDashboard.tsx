@@ -2413,7 +2413,7 @@ export function ClientDashboard() {
         </div>
       </div>
 
-      {showProfileDialog && (
+      {showProfileDialog && profile && (
         <ClientProfile
           onClose={() => setShowProfileDialog(false)}
           onUpdate={fetchDashboardData}
@@ -2439,7 +2439,7 @@ export function ClientDashboard() {
         />
       )}
 
-      {showLicenseDialog && selectedTrackToLicense && membershipPlan && (
+      {showLicenseDialog && selectedTrackToLicense && typeof membershipPlan === 'string' && (
         <LicenseDialog
           isOpen={showLicenseDialog}
           track={selectedTrackToLicense}
@@ -2478,23 +2478,27 @@ export function ClientDashboard() {
         </div>
       )}
 
-      <SyncProposalAcceptDialog
-        isOpen={showAcceptDialog}
-        onClose={() => setShowAcceptDialog(false)}
-        proposal={selectedProposal}
-        onAccept={() => { setShowAcceptDialog(false); fetchSyncProposals(); }}
-      />
+      {showAcceptDialog && selectedProposal && (
+        <SyncProposalAcceptDialog
+          isOpen={showAcceptDialog}
+          onClose={() => setShowAcceptDialog(false)}
+          proposal={selectedProposal}
+          onAccept={() => { setShowAcceptDialog(false); fetchSyncProposals(); }}
+        />
+      )}
 
-      <ProposalConfirmDialog
-        isOpen={showDeclineDialog}
-        onClose={() => setShowDeclineDialog(false)}
-        onConfirm={async () => {
-          await handleDeclineProposal(selectedProposal);
-          setShowDeclineDialog(false);
-        }}
-        action="reject"
-        proposal={selectedProposal}
-      />
+      {showDeclineDialog && selectedProposal && (
+        <ProposalConfirmDialog
+          isOpen={showDeclineDialog}
+          onClose={() => setShowDeclineDialog(false)}
+          onConfirm={async () => {
+            await handleDeclineProposal(selectedProposal);
+            setShowDeclineDialog(false);
+          }}
+          action="reject"
+          proposal={selectedProposal}
+        />
+      )}
 
       {/* Negotiation Modal */}
       {showNegotiationModal && selectedProposal && (
