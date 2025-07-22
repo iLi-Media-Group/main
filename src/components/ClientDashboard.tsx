@@ -94,17 +94,36 @@ const AudioPlayerWithSignedUrl = ({
   onToggle: () => void; 
   size?: "sm" | "md" | "lg";
 }) => {
+  // Add defensive checks for props
+  if (!audioUrl || !title || typeof onToggle !== 'function') {
+    console.warn('AudioPlayerWithSignedUrl: Invalid props', { audioUrl, title, onToggle });
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
   // If it's already a public URL, use it directly
   if (audioUrl && audioUrl.startsWith('https://')) {
-    return (
-      <AudioPlayer
-        src={audioUrl}
-        title={title}
-        isPlaying={isPlaying}
-        onToggle={onToggle}
-        size={size}
-      />
-    );
+    try {
+      return (
+        <AudioPlayer
+          src={audioUrl}
+          title={title}
+          isPlaying={isPlaying}
+          onToggle={onToggle}
+          size={size}
+        />
+      );
+    } catch (error) {
+      console.error('Error rendering AudioPlayer with public URL:', error);
+      return (
+        <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+          <p className="text-red-400 text-sm">Audio unavailable</p>
+        </div>
+      );
+    }
   }
 
   // For file paths, use signed URL with hardcoded bucket name
@@ -119,6 +138,7 @@ const AudioPlayerWithSignedUrl = ({
   }
 
   if (error || !signedUrl) {
+    console.warn('AudioPlayerWithSignedUrl: Error or no signed URL', { error, signedUrl, audioUrl });
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
@@ -126,15 +146,24 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  return (
-    <AudioPlayer
-      src={signedUrl}
-      title={title}
-      isPlaying={isPlaying}
-      onToggle={onToggle}
-      size={size}
-    />
-  );
+  try {
+    return (
+      <AudioPlayer
+        src={signedUrl}
+        title={title}
+        isPlaying={isPlaying}
+        onToggle={onToggle}
+        size={size}
+      />
+    );
+  } catch (error) {
+    console.error('Error rendering AudioPlayer with signed URL:', error);
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
 };
 
 interface License {
@@ -2010,7 +2039,7 @@ export function ClientDashboard() {
                                     {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
                                   </span>
                                 </div>
-                                {license.track.audioUrl && (
+                                {license.track.audioUrl && license.track.title && (
                                   <AudioPlayerWithSignedUrl
                                     audioUrl={license.track.audioUrl}
                                     title={license.track.title}
@@ -2157,7 +2186,7 @@ export function ClientDashboard() {
                                     Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
                                   </span>
                                 </div>
-                                {(proposal.track.audio_url || proposal.track.mp3_url) && (
+                                {(proposal.track.audio_url || proposal.track.mp3_url) && proposal.track.title && (
                                   <AudioPlayerWithSignedUrl
                                     audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
                                     title={proposal.track.title}
