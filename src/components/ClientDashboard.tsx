@@ -496,21 +496,7 @@ const getPlanLevel = (plan: string): number => {
     }
   }, [searchParams, user, refreshMembership]);
 
-  // Add a manual refresh function for testing
-  const handleManualRefresh = async () => {
-    if (user) {
-      setLoading(true);
-      try {
-        await refreshMembership();
-        await fetchDashboardData();
-        await fetchSyncProposals();
-      } catch (error) {
-        console.error('Error refreshing dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+
 
   // Handle plan upgrade - direct to Stripe
   const handlePlanUpgrade = async (targetPlan: string) => {
@@ -1386,59 +1372,13 @@ const getPlanLevel = (plan: string): number => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-white">License Usage</h2>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={async () => {
-                      await refreshMembership();
-                      fetchDashboardData();
-                    }}
-                    className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
-                    title="Refresh membership plan"
-                  >
-                    Refresh Plan
-                  </button>
-                  <button
-                    onClick={() => setShowMembershipDialog(true)}
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                    title="Manage membership plan"
-                  >
-                    Manage Plan
-                  </button>
-                  <button
-                    onClick={async () => {
-                      console.log('Force refreshing membership from Stripe...');
-                      try {
-                        // Call the fix-membership-plan function
-                        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-membership-plan`, {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-                          },
-                          body: JSON.stringify({ email: user?.email })
-                        });
-                        
-                        const result = await response.json();
-                        console.log('Fix membership result:', result);
-                        
-                        if (result.success) {
-                          await refreshMembership();
-                          fetchDashboardData();
-                          alert('Membership plan updated successfully!');
-                        } else {
-                          alert(`Failed to update membership plan: ${result.error}`);
-                        }
-                      } catch (error) {
-                        console.error('Error calling fix-membership-plan:', error);
-                        alert('Error updating membership plan. Please try again.');
-                      }
-                    }}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                    title="Force refresh membership from Stripe"
-                  >
-                    Force Refresh
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowMembershipDialog(true)}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold"
+                  title="Manage membership plan"
+                >
+                  Manage Plan
+                </button>
               </div>
               <p className="text-gray-300">
                 <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
