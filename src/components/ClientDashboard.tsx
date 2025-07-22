@@ -1683,7 +1683,7 @@ export function ClientDashboard() {
                                   onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
                                   className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
                                 >
-                                  Download Stems
+                                  Download via App
                                 </button>
                                 <a
                                   href={getSupabaseDashboardUrl('stems', proposal.track.stems_url)}
