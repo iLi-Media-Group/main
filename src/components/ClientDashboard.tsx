@@ -424,7 +424,7 @@ export function ClientDashboard() {
         fetchSyncProposals();
       });
     }
-  }, [user, membershipPlan]);
+  }, [user]);
 
   // Add a manual refresh function for testing
   const handleManualRefresh = async () => {
