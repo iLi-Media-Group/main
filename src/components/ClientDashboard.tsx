@@ -529,7 +529,7 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: !Array.isArray(license.track) ? (license.track as any)?.stems_url || '' : '',
+            stemsUrl: !Array.isArray(license.track) ? ((license.track as any)?.stems_url || '') : '',
           }
         }));
         setLicenses(formattedLicenses);
@@ -1674,19 +1674,19 @@ export function ClientDashboard() {
                               Trackouts
                             </button>
                           )}
-                          {proposal.track.stems_url && (
+                          {proposal.track.stemsUrl && (
                             <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
                               <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
-                              <div className="break-all">{proposal.track.stems_url}</div>
+                              <div className="break-all">{proposal.track.stemsUrl}</div>
                               <div>
                                 <button
-                                  onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
+                                  onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
                                   className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
                                 >
-                                  Download Stems
+                                  Download via App
                                 </button>
                                 <a
-                                  href={getSupabaseDashboardUrl('stems', proposal.track.stems_url)}
+                                  href={getSupabaseDashboardUrl('stems', proposal.track.stemsUrl)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
@@ -2117,7 +2117,6 @@ export function ClientDashboard() {
                                 </div>
                               </div>
                             )}
-                           
                             {license.track.splitSheetUrl && (
                               <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
                                 <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
@@ -2300,27 +2299,25 @@ export function ClientDashboard() {
                                     </div>
                                   </div>
                                 )}
-                                {proposal.track.stems_url && (
+                                {proposal.track.stemsUrl && (
                                   <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
                                     <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
-                                    <div className="break-all">{proposal.track.stems_url}</div>
+                                    <div className="break-all">{proposal.track.stemsUrl}</div>
                                     <div>
                                       <button
-                                        onClick={() => {
-                                          handleSyncProposalDownload(
-                                            proposal.id,
-                                            proposal.track.id,
-                                            `${proposal.track.title}_Stems.zip`,
-                                            'stems',
-                                            proposal.track.stems_url
-                                          );
-                                        }}
-                                        className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                        title="Download Stems"
+                                        onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
+                                        className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
                                       >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Stems
+                                        Download via App
                                       </button>
+                                      <a
+                                        href={getSupabaseDashboardUrl('stems', proposal.track.stemsUrl)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                      >
+                                        Fallback: Download via Supabase URL
+                                      </a>
                                     </div>
                                   </div>
                                 )}
