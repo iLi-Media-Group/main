@@ -1570,7 +1570,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            )}
+            }
 
             {syncProposalsTab === 'payment-pending' && (
               sortedPaymentPendingProposals.length === 0 ? (
@@ -1738,7 +1738,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            )}
+            }
 
             {syncProposalsTab === 'accepted' && (
               sortedAcceptedProposals.length === 0 ? (
@@ -1791,7 +1791,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            )}
+            }
 
             {syncProposalsTab === 'paid' && (
               sortedPaidProposals.length === 0 ? (
@@ -1844,7 +1844,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            )}
+            }
 
             {syncProposalsTab === 'declined' && (
               sortedDeclinedProposals.length === 0 ? (
