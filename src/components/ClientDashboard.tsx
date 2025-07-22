@@ -2209,43 +2209,35 @@ export function ClientDashboard() {
                               <FileText className="w-4 h-4 mr-2" />
                               History
                             </button>
-                            {proposal.payment_status === 'paid' && (
-                              <>
-                                <div className="text-sm font-medium text-gray-300 border-l border-gray-600 pl-3 ml-3">Download Files:</div>
-                                {proposal.track.mp3_url && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
-                                    className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download MP3"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download MP3
-                                  </button>
-                                )}
-                                {proposal.track.trackouts_url && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
-                                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download Trackouts"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download Trackouts
-                                  </button>
-                                )}
-                                {proposal.track.stemsUrl && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
-                                    className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download Stems"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download Stems
-                                  </button>
-                                )}
-                                {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
-                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
-                                )}
-                              </>
+                            {proposal.payment_status === 'paid' && proposal.track.mp3_url && (
+                              <button
+                                onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download MP3"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download MP3
+                              </button>
+                            )}
+                            {proposal.payment_status === 'paid' && proposal.track.trackouts_url && (
+                              <button
+                                onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download Trackouts"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Trackouts
+                              </button>
+                            )}
+                            {proposal.payment_status === 'paid' && proposal.track.stemsUrl && (
+                              <button
+                                onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
+                                className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                title="Download Stems"
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Download Stems
+                              </button>
                             )}
                           </div>
                         </div>
