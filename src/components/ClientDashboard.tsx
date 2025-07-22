@@ -1943,15 +1943,18 @@ export function ClientDashboard() {
               // Before rendering allLicensedTracks
               console.log('Rendering allLicensedTracks:', Array.isArray(allLicensedTracks) ? allLicensedTracks : 'not an array', allLicensedTracks);
 
-              return Array.isArray(allLicensedTracks) && allLicensedTracks.map((item) => {
-                if (item.type === 'license') {
-                  const license = item.data;
-                  if (!license || !license.track) {
-                    console.warn('Skipping license with missing data:', item);
-                    return null;
-                  }
-                  console.log('Rendering license:', license);
-                  const expiryStatus = getExpiryStatus(license.expiry_date);
+              return Array.isArray(allLicensedTracks) && allLicensedTracks.map((item, index) => {
+                try {
+                  console.log(`Processing item ${index}:`, item);
+                  if (item.type === 'license') {
+                    console.log(`Item ${index} is a license`);
+                    const license = item.data;
+                    if (!license || !license.track) {
+                      console.warn('Skipping license with missing data:', item);
+                      return null;
+                    }
+                    console.log('Rendering license:', license);
+                    const expiryStatus = getExpiryStatus(license.expiry_date);
                   
                   return (
                     <div
@@ -2101,6 +2104,7 @@ export function ClientDashboard() {
                   );
                 } else {
                   // Sync proposal
+                  console.log(`Item ${index} is a sync proposal`);
                   const proposal = item.data;
                   if (!proposal || !proposal.track) {
                     console.warn('Skipping proposal with missing data:', item);
@@ -2276,6 +2280,10 @@ export function ClientDashboard() {
                     </div>
                   );
                 }
+              } catch (error) {
+                console.error(`Error rendering item ${index}:`, error, item);
+                return null;
+              }
               });
             })()}
           </div>
