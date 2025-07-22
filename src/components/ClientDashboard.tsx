@@ -341,6 +341,12 @@ export function ClientDashboard() {
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [newTracks, setNewTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
+  // Debug logs to diagnose blank dashboard
+  console.log('DEBUG ClientDashboard:', {
+    user,
+    membershipPlan,
+    loading,
+  });
   const [error, setError] = useState('');
   const [sortField, setSortField] = useState<'renewal' | 'title' | 'genre' | 'bpm'>('renewal');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
