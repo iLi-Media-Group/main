@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
 import { createCheckoutSession } from '../lib/stripe';
 
@@ -366,6 +366,7 @@ const getSupabaseDashboardUrl = (bucket: string, path: string) => {
 export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);
   const [newTracks, setNewTracks] = useState<Track[]>([]);
@@ -396,6 +397,7 @@ export function ClientDashboard() {
   const [showLicenseDialog, setShowLicenseDialog] = useState(false);
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [showMembershipDialog, setShowMembershipDialog] = useState(false);
   const [syncProposals, setSyncProposals] = useState<any[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
@@ -432,6 +434,40 @@ export function ClientDashboard() {
 
     return () => clearInterval(interval);
   }, [user]);
+
+  // Handle plan update success message
+  useEffect(() => {
+    const planUpdated = searchParams.get('plan_updated');
+    if (planUpdated === 'true' && user) {
+      // Refresh membership data
+      refreshMembership().then(() => {
+        fetchDashboardData();
+      });
+      
+      // Show success message
+      const successMessage = document.createElement('div');
+      successMessage.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in';
+      successMessage.innerHTML = `
+        <div class="flex items-center">
+          <Check className="w-5 h-5 mr-2" />
+          <span>Membership plan updated successfully!</span>
+        </div>
+      `;
+      document.body.appendChild(successMessage);
+      
+      // Remove message after 5 seconds
+      setTimeout(() => {
+        if (successMessage.parentNode) {
+          successMessage.parentNode.removeChild(successMessage);
+        }
+      }, 5000);
+      
+      // Clean up URL parameter
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('plan_updated');
+      window.history.replaceState({}, '', newUrl.toString());
+    }
+  }, [searchParams, user, refreshMembership]);
 
   // Add a manual refresh function for testing
   const handleManualRefresh = async () => {
@@ -1262,72 +1298,11 @@ export function ClientDashboard() {
                     Refresh Plan
                   </button>
                   <button
-                    onClick={async () => {
-                      if (user?.email) {
-                        try {
-                          console.log('Calling fix-membership-plan for email:', user.email);
-                          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-membership-plan`, {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-                            },
-                            body: JSON.stringify({ email: user.email })
-                          });
-                          
-                          console.log('Response status:', response.status);
-                          const result = await response.json();
-                          console.log('Response result:', result);
-                          
-                          if (result.success) {
-                            console.log('Membership plan fixed:', result);
-                            await refreshMembership();
-                            fetchDashboardData();
-                          } else {
-                            console.error('Failed to fix membership plan:', result.error);
-                            alert(`Failed to fix membership plan: ${result.error}`);
-                          }
-                        } catch (error) {
-                          console.error('Error calling fix-membership-plan:', error);
-                          alert('Error calling fix-membership-plan function. Please check if the function is deployed.');
-                        }
-                      }
-                    }}
-                    className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded transition-colors"
-                    title="Fix membership plan from Stripe"
+                    onClick={() => setShowMembershipDialog(true)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
+                    title="Manage membership plan"
                   >
-                    Fix Plan
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (user?.id) {
-                        try {
-                          console.log('Manually updating membership plan to Gold Access for user:', user.id);
-                          
-                          const { error } = await supabase
-                            .from('profiles')
-                            .update({ membership_plan: 'Gold Access' })
-                            .eq('id', user.id);
-                          
-                          if (error) {
-                            console.error('Error updating membership plan:', error);
-                            alert(`Error updating membership plan: ${error.message}`);
-                          } else {
-                            console.log('Successfully updated membership plan to Gold Access');
-                            await refreshMembership();
-                            fetchDashboardData();
-                            alert('Membership plan updated to Gold Access!');
-                          }
-                        } catch (error) {
-                          console.error('Error manually updating membership plan:', error);
-                          alert('Error manually updating membership plan');
-                        }
-                      }
-                    }}
-                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
-                    title="Manually set to Gold Access"
-                  >
-                    Set Gold
+                    Manage Plan
                   </button>
                 </div>
               </div>
@@ -2604,6 +2579,149 @@ export function ClientDashboard() {
           onClose={() => setShowHistoryModal(false)}
           proposal={historyProposal}
         />
+      )}
+
+      {/* Membership Management Dialog */}
+      {showMembershipDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">Manage Your Membership</h3>
+              <button
+                onClick={() => setShowMembershipDialog(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Current Plan */}
+              <div className="bg-white/5 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-white mb-2">Current Plan</h4>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-2xl font-bold text-purple-400">{membershipPlan}</p>
+                    <p className="text-gray-300 text-sm">
+                      {membershipPlan === 'Gold Access' ? '10 tracks per month' :
+                       membershipPlan === 'Platinum Access' ? 'Unlimited tracks' :
+                       membershipPlan === 'Ultimate Access' ? 'Unlimited annual access' :
+                       'Single track license'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-400">Active</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Available Plans */}
+              <div>
+                <h4 className="text-lg font-semibold text-white mb-4">Available Plans</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Gold Access */}
+                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Gold Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-lg font-semibold text-white mb-2">Gold Access</h5>
+                    <p className="text-3xl font-bold text-purple-400 mb-2">$34.99<span className="text-sm text-gray-400">/month</span></p>
+                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                      <li>• 10 track downloads per month</li>
+                      <li>• Non-exclusive license</li>
+                      <li>• Commercial use</li>
+                      <li>• Worldwide rights</li>
+                    </ul>
+                    {membershipPlan === 'Gold Access' ? (
+                      <button disabled className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded cursor-not-allowed">
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          window.location.href = '/pricing?plan=gold';
+                        }}
+                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                      >
+                        Upgrade to Gold
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Platinum Access */}
+                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Platinum Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-lg font-semibold text-white mb-2">Platinum Access</h5>
+                    <p className="text-3xl font-bold text-purple-400 mb-2">$59.99<span className="text-sm text-gray-400">/month</span></p>
+                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                      <li>• Unlimited track downloads</li>
+                      <li>• Non-exclusive license</li>
+                      <li>• Commercial use</li>
+                      <li>• Worldwide rights</li>
+                      <li>• Priority support</li>
+                    </ul>
+                    {membershipPlan === 'Platinum Access' ? (
+                      <button disabled className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded cursor-not-allowed">
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          window.location.href = '/pricing?plan=platinum';
+                        }}
+                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                      >
+                        Upgrade to Platinum
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Ultimate Access */}
+                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Ultimate Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-lg font-semibold text-white mb-2">Ultimate Access</h5>
+                    <p className="text-3xl font-bold text-purple-400 mb-2">$499.99<span className="text-sm text-gray-400">/year</span></p>
+                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                      <li>• Unlimited track downloads</li>
+                      <li>• Non-exclusive license</li>
+                      <li>• Commercial use</li>
+                      <li>• Worldwide rights</li>
+                      <li>• Priority support</li>
+                      <li>• Annual savings</li>
+                    </ul>
+                    {membershipPlan === 'Ultimate Access' ? (
+                      <button disabled className="w-full px-4 py-2 bg-gray-600 text-gray-300 rounded cursor-not-allowed">
+                        Current Plan
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          window.location.href = '/pricing?plan=ultimate';
+                        }}
+                        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors"
+                      >
+                        Upgrade to Ultimate
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Downgrade Section */}
+              {membershipPlan !== 'Single Track' && (
+                <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold text-white mb-2">Downgrade Options</h4>
+                  <p className="text-gray-300 text-sm mb-4">
+                    You can downgrade your plan at any time. Changes will take effect at the end of your current billing period.
+                  </p>
+                  <button
+                    onClick={() => {
+                      window.location.href = '/pricing?downgrade=true';
+                    }}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                  >
+                    Downgrade Plan
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

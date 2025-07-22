@@ -3,10 +3,11 @@ import { PricingCarousel } from './PricingCarousel';
 import { getUserSubscription, getMembershipPlanFromPriceId, formatDate, cancelUserSubscription } from '../lib/stripe';
 import { useAuth } from '../contexts/AuthContext';
 import { CreditCard, Calendar, CheckCircle, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export function PricingPage() {
   const { user, refreshMembership } = useAuth();
+  const [searchParams] = useSearchParams();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [downgradeLoading, setDowngradeLoading] = useState(false);
@@ -18,6 +19,28 @@ export function PricingPage() {
       fetchSubscription();
     }
   }, [user]);
+
+  // Handle plan parameter from URL
+  useEffect(() => {
+    const plan = searchParams.get('plan');
+    const downgrade = searchParams.get('downgrade');
+    
+    if (plan && user) {
+      // Auto-select the specific plan
+      const planElement = document.querySelector(`[data-plan="${plan}"]`);
+      if (planElement) {
+        planElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    
+    if (downgrade === 'true' && user && subscription) {
+      // Show downgrade section
+      const downgradeSection = document.querySelector('[data-downgrade-section]');
+      if (downgradeSection) {
+        downgradeSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [searchParams, user, subscription]);
 
   const fetchSubscription = async () => {
     try {

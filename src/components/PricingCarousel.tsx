@@ -212,7 +212,9 @@ export function PricingCarousel() {
         return;
       }
 
-      const checkoutUrl = await createCheckoutSession(product.priceId, product.mode);
+      // Add success URL with dashboard redirect
+      const successUrl = `${window.location.origin}/dashboard?plan_updated=true`;
+      const checkoutUrl = await createCheckoutSession(product.priceId, product.mode, successUrl);
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error('Error creating checkout session:', err);
