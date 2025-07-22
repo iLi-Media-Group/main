@@ -118,7 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           try {
             const subscription = await getUserSubscription();
             
-            if (subscription?.subscription_id && subscription?.status === 'active') {
+            if (subscription?.subscription_id && (subscription?.status === 'active' || subscription?.subscription_status === 'active')) {
               // Update membership plan in profile based on subscription
               const newMembershipPlan = getMembershipPlanFromPriceId(subscription.price_id);
               
@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const subscription = await getUserSubscription();
       console.log("Stripe subscription data:", subscription);
       
-      if (subscription?.subscription_id && subscription?.status === 'active') {
+      if (subscription?.subscription_id && (subscription?.status === 'active' || subscription?.subscription_status === 'active')) {
         // Get membership plan from subscription
         const newMembershipPlan = getMembershipPlanFromPriceId(subscription.price_id);
         console.log("Current subscription plan from Stripe:", newMembershipPlan);
