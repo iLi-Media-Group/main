@@ -1265,6 +1265,7 @@ export function ClientDashboard() {
                     onClick={async () => {
                       if (user?.email) {
                         try {
+                          console.log('Calling fix-membership-plan for email:', user.email);
                           const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/fix-membership-plan`, {
                             method: 'POST',
                             headers: {
@@ -1274,16 +1275,21 @@ export function ClientDashboard() {
                             body: JSON.stringify({ email: user.email })
                           });
                           
+                          console.log('Response status:', response.status);
                           const result = await response.json();
+                          console.log('Response result:', result);
+                          
                           if (result.success) {
                             console.log('Membership plan fixed:', result);
                             await refreshMembership();
                             fetchDashboardData();
                           } else {
                             console.error('Failed to fix membership plan:', result.error);
+                            alert(`Failed to fix membership plan: ${result.error}`);
                           }
                         } catch (error) {
                           console.error('Error calling fix-membership-plan:', error);
+                          alert('Error calling fix-membership-plan function. Please check if the function is deployed.');
                         }
                       }
                     }}
@@ -1291,6 +1297,37 @@ export function ClientDashboard() {
                     title="Fix membership plan from Stripe"
                   >
                     Fix Plan
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (user?.id) {
+                        try {
+                          console.log('Manually updating membership plan to Gold Access for user:', user.id);
+                          
+                          const { error } = await supabase
+                            .from('profiles')
+                            .update({ membership_plan: 'Gold Access' })
+                            .eq('id', user.id);
+                          
+                          if (error) {
+                            console.error('Error updating membership plan:', error);
+                            alert(`Error updating membership plan: ${error.message}`);
+                          } else {
+                            console.log('Successfully updated membership plan to Gold Access');
+                            await refreshMembership();
+                            fetchDashboardData();
+                            alert('Membership plan updated to Gold Access!');
+                          }
+                        } catch (error) {
+                          console.error('Error manually updating membership plan:', error);
+                          alert('Error manually updating membership plan');
+                        }
+                      }
+                    }}
+                    className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                    title="Manually set to Gold Access"
+                  >
+                    Set Gold
                   </button>
                 </div>
               </div>

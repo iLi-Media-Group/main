@@ -199,6 +199,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setMembershipPlan(newMembershipPlan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access');
       } else {
         console.log('No active subscription found, using profile data:', profileData.membership_plan);
+        console.log('Subscription details:', {
+          subscription_id: subscription?.subscription_id,
+          status: subscription?.status,
+          price_id: subscription?.price_id
+        });
+        
+        // Check if user has a Stripe customer record
+        const { data: customerData } = await supabase
+          .from('stripe_customers')
+          .select('customer_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        console.log('Stripe customer data:', customerData);
+        
         setMembershipPlan(profileData.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
       }
       
