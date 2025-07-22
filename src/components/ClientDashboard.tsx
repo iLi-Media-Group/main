@@ -364,6 +364,8 @@ const getSupabaseDashboardUrl = (bucket: string, path: string) => {
 };
 
 export function ClientDashboard() {
+  // Add error boundary wrapper
+  try {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
   const [licenses, setLicenses] = useState<License[]>([]);
@@ -2573,5 +2575,22 @@ export function ClientDashboard() {
       )}
     </div>
   );
+  } catch (error) {
+    console.error('Error in ClientDashboard component:', error);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Something went wrong</h1>
+          <p className="text-gray-300 mb-4">The dashboard encountered an error. Please try refreshing the page.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }
 //end
