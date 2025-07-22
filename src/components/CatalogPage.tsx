@@ -185,8 +185,8 @@ export function CatalogPage() {
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-              stems: { format: ['WAV'], url: track.trackouts_url || '' },
-              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+              stems: { format: ['WAV'], url: track.stems_url || '' },
+              stemsWithVocals: { format: ['WAV'], url: track.stems_url || '' }
             },
             pricing: {
               stereoMp3: 0,
