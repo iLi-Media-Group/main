@@ -159,38 +159,55 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshMembership = async () => {
     if (!user) return;
     try {
-      console.log("Refreshing membership info");
-      // Fetch user profile
+      console.log("Refreshing membership info for user:", user.id);
+      
+      // Fetch user profile first
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('membership_plan, account_type')
         .eq('id', user.id)
         .single();
-      if (profileError) throw profileError;
+      
+      if (profileError) {
+        console.error('Error fetching profile data:', profileError);
+        throw profileError;
+      }
+      
+      console.log("Current profile membership_plan:", profileData.membership_plan);
+      
       // Check for active subscription
       const subscription = await getUserSubscription();
+      console.log("Stripe subscription data:", subscription);
+      
       if (subscription?.subscription_id && subscription?.status === 'active') {
         // Get membership plan from subscription
         const newMembershipPlan = getMembershipPlanFromPriceId(subscription.price_id);
         console.log("Current subscription plan from Stripe:", newMembershipPlan);
+        
         // Always update the profile, even if it matches
         const { error: updateError } = await supabase
           .from('profiles')
           .update({ membership_plan: newMembershipPlan })
           .eq('id', user.id);
+        
         if (updateError) {
           console.error('Error updating membership_plan in profiles:', updateError);
         } else {
           console.log('Updated profiles.membership_plan to', newMembershipPlan);
         }
+        
         setMembershipPlan(newMembershipPlan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access');
       } else {
+        console.log('No active subscription found, using profile data:', profileData.membership_plan);
         setMembershipPlan(profileData.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
       }
+      
       // Also update account type if needed
       if (profileData.account_type) {
         setAccountType(profileData.account_type as 'client' | 'producer');
       }
+      
+      console.log("Membership refresh completed. Final membership plan:", profileData.membership_plan);
     } catch (error) {
       console.error('Error refreshing membership:', {
         message: (error as any)?.message,
@@ -198,6 +215,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         hint: (error as any)?.hint,
         error
       });
+      
+      // Fallback: try to get the profile data even if subscription check fails
+      try {
+        const { data: fallbackProfile } = await supabase
+          .from('profiles')
+          .select('membership_plan, account_type')
+          .eq('id', user.id)
+          .single();
+        
+        if (fallbackProfile) {
+          console.log('Using fallback profile data:', fallbackProfile.membership_plan);
+          setMembershipPlan(fallbackProfile.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
+          if (fallbackProfile.account_type) {
+            setAccountType(fallbackProfile.account_type as 'client' | 'producer');
+          }
+        }
+      } catch (fallbackError) {
+        console.error('Fallback profile fetch also failed:', fallbackError);
+      }
     }
   };
 
@@ -226,6 +262,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Real-time subscription to profile changes for membership plan updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('Profile updated via real-time:', payload);
+          if (payload.new && payload.new.membership_plan) {
+            const newPlan = payload.new.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access';
+            console.log('Updating membership plan via real-time:', newPlan);
+            setMembershipPlan(newPlan);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });

@@ -421,6 +421,18 @@ export function ClientDashboard() {
     }
   }, [user]);
 
+  // Periodic refresh of membership plan (every 30 seconds)
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(async () => {
+      console.log('Performing periodic membership refresh...');
+      await refreshMembership();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Add a manual refresh function for testing
   const handleManualRefresh = async () => {
     if (user) {
@@ -1236,7 +1248,19 @@ export function ClientDashboard() {
         <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-white mb-2">License Usage</h2>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-xl font-bold text-white">License Usage</h2>
+                <button
+                  onClick={async () => {
+                    await refreshMembership();
+                    fetchDashboardData();
+                  }}
+                  className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                  title="Refresh membership plan"
+                >
+                  Refresh Plan
+                </button>
+              </div>
               <p className="text-gray-300">
                 <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
                 <br />
