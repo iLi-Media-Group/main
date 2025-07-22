@@ -2023,18 +2023,20 @@ export function ClientDashboard() {
                                   </span>
                                 </div>
                                 {license.track.audioUrl && license.track.title && (
-                                  <AudioPlayerWithSignedUrl
-                                    audioUrl={license.track.audioUrl}
-                                    title={license.track.title}
-                                    isPlaying={currentlyPlaying === `license-${license.id}`}
-                                    onToggle={() => {
-                                      if (currentlyPlaying === `license-${license.id}`) {
-                                        setCurrentlyPlaying(null);
-                                      } else {
-                                        setCurrentlyPlaying(`license-${license.id}`);
-                                      }
-                                    }}
-                                  />
+                                  <div className="w-48">
+                                    <AudioPlayerWithSignedUrl
+                                      audioUrl={license.track.audioUrl}
+                                      title={license.track.title}
+                                      isPlaying={currentlyPlaying === `license-${license.id}`}
+                                      onToggle={() => {
+                                        if (currentlyPlaying === `license-${license.id}`) {
+                                          setCurrentlyPlaying(null);
+                                        } else {
+                                          setCurrentlyPlaying(`license-${license.id}`);
+                                        }
+                                      }}
+                                    />
+                                  </div>
                                 )}
                                 {!license.track.audioUrl && (
                                   <div className="text-xs text-gray-400 italic">
@@ -2167,18 +2169,20 @@ export function ClientDashboard() {
                                   </span>
                                 </div>
                                 {(proposal.track.audio_url || proposal.track.mp3_url) && proposal.track.title && (
-                                  <AudioPlayerWithSignedUrl
-                                    audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
-                                    title={proposal.track.title}
-                                    isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
-                                    onToggle={() => {
-                                      if (currentlyPlaying === `proposal-${proposal.id}`) {
-                                        setCurrentlyPlaying(null);
-                                      } else {
-                                        setCurrentlyPlaying(`proposal-${proposal.id}`);
-                                      }
-                                    }}
-                                  />
+                                  <div className="w-48">
+                                    <AudioPlayerWithSignedUrl
+                                      audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
+                                      title={proposal.track.title}
+                                      isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
+                                      onToggle={() => {
+                                        if (currentlyPlaying === `proposal-${proposal.id}`) {
+                                          setCurrentlyPlaying(null);
+                                        } else {
+                                          setCurrentlyPlaying(`proposal-${proposal.id}`);
+                                        }
+                                      }}
+                                    />
+                                  </div>
                                 )}
                                 {!proposal.track.audio_url && !proposal.track.mp3_url && (
                                   <div className="text-xs text-gray-400 italic">
@@ -2292,13 +2296,15 @@ export function ClientDashboard() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {track.audioUrl && (
-                            <AudioPlayerWithSignedUrl
-                              audioUrl={track.audioUrl}
-                              title={track.title}
-                              isPlaying={currentlyPlayingFavorite === track.id}
-                              onToggle={() => togglePlayFavorite(track.id)}
-                              size="sm"
-                            />
+                            <div className="w-32">
+                              <AudioPlayerWithSignedUrl
+                                audioUrl={track.audioUrl}
+                                title={track.title}
+                                isPlaying={currentlyPlayingFavorite === track.id}
+                                onToggle={() => togglePlayFavorite(track.id)}
+                                size="sm"
+                              />
+                            </div>
                           )}
                           <button
                             onClick={() => navigate(`/track/${track.id}`)}
@@ -2369,13 +2375,15 @@ export function ClientDashboard() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {track.audioUrl && (
-                            <AudioPlayerWithSignedUrl
-                              audioUrl={track.audioUrl}
-                              title={track.title}
-                              isPlaying={currentlyPlayingNew === track.id}
-                              onToggle={() => togglePlayNew(track.id)}
-                              size="sm"
-                            />
+                            <div className="w-32">
+                              <AudioPlayerWithSignedUrl
+                                audioUrl={track.audioUrl}
+                                title={track.title}
+                                isPlaying={currentlyPlayingNew === track.id}
+                                onToggle={() => togglePlayNew(track.id)}
+                                size="sm"
+                              />
+                            </div>
                           )}
                           <button
                             onClick={() => navigate(`/track/${track.id}`)}
