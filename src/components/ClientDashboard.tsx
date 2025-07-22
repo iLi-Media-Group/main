@@ -279,15 +279,10 @@ function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
 
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
-  alert('TEST DEBUG: Download function called');
   try {
     const decodedPath = decodeURIComponent(path);
-    console.log('[DEBUG] Download requested');
-    console.log('[DEBUG] Bucket:', bucket);
-    console.log('[DEBUG] Path:', decodedPath);
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
     if (data?.signedUrl) {
-      console.log('[DEBUG] Signed URL:', data.signedUrl);
       const link = document.createElement('a');
       link.href = data.signedUrl;
       link.download = filename;
@@ -295,17 +290,16 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
       link.click();
       document.body.removeChild(link);
     } else {
-      console.error('[DEBUG] Download failed. Error:', error);
+      console.error('Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
     }
   } catch (err) {
-    console.error('[DEBUG] Download failed. Exception:', err);
+    console.error('Download failed. Exception:', err);
     alert('Download failed. Please contact support.');
   }
 };
 
 const handleSyncProposalDownload = async (proposalId: string, trackId: string, filename: string, fileType: string, fileUrl: string, trackTitle?: string) => {
-  alert('TEST DEBUG: Download function called');
   try {
     let bucket = 'track-files';
     if (fileType === 'pdf') {
@@ -316,14 +310,8 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       bucket = 'track-audio';
     }
     let path = decodeURIComponent(fileUrl);
-    console.log('[DEBUG] Sync Proposal Download requested');
-    console.log('[DEBUG] Proposal ID:', proposalId);
-    console.log('[DEBUG] Track ID:', trackId);
-    console.log('[DEBUG] Bucket:', bucket);
-    console.log('[DEBUG] Path:', path);
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, 60);
     if (data?.signedUrl) {
-      console.log('[DEBUG] Signed URL:', data.signedUrl);
       const link = document.createElement('a');
       link.href = data.signedUrl;
       link.download = filename;
@@ -331,11 +319,11 @@ const handleSyncProposalDownload = async (proposalId: string, trackId: string, f
       link.click();
       document.body.removeChild(link);
     } else {
-      console.error('[DEBUG] Download failed. Error:', error);
+      console.error('Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
     }
   } catch (error) {
-    console.error('[DEBUG] Download failed. Exception:', error);
+    console.error('Download failed. Exception:', error);
     alert('Download failed. Please contact support.');
   }
 };
