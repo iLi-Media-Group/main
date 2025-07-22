@@ -2117,27 +2117,27 @@ export function ClientDashboard() {
                                 </div>
                               </div>
                             )}
-                             {license.track.splitSheetUrl && (
-                              <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                <div>DEBUG: Downloading split sheet from bucket <b>split-sheets</b> with path:</div>
-                                <div className="break-all">{license.track.splitSheetUrl}</div>
-                                <div>
-                                  <button
-                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
-                                    className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded"
-                                  >
-                                    Download via App
-                                  </button>
-                                  <a
-                                    href={getSupabaseDashboardUrl('split-sheets', license.track.splitSheetUrl)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-                                  >
-                                    Fallback: Download via Supabase URL
-                                  </a>
-                                </div>
-                              </div>
+                             {license.track.stemsUrl && (
+                                <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
+                                   <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
+                                   <div className="break-all">{license.track.stemsUrl}</div>
+                                   <div>
+                                     <button
+                                       onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
+                                       className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                                      >
+                                    Download via App
+                                    </button>
+                                      <a
+                                       href={getSupabaseDashboardUrl('stems', license.track.stemsUrl)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                     >
+                                       Fallback: Download via Supabase URL
+                                   </a>
+                                </div>
+                              </div>
                             )}
                             {license.track.splitSheetUrl && (
                               <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
