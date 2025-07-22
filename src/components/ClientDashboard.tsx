@@ -437,7 +437,8 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: !Array.isArray(license.track) ? (license.track as any)?.stemsUrl || '' : '',
+            stemsUrl: (license.track as any)?.stems_url || '',
+            splitSheetUrl: (license.track as any)?.split_sheet_url || '',
           }
         }));
         setLicenses(formattedLicenses);
@@ -513,7 +514,8 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: (track as any)?.stemsUrl || '',
+            stemsUrl: (track as any)?.stems_url || '',
+            splitSheetUrl: (track as any)?.split_sheet_url || '',
           };
         });
         setFavorites(formattedFavorites);
@@ -590,7 +592,8 @@ export function ClientDashboard() {
             fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
             pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
             leaseAgreementUrl: '',
-            stemsUrl: (track as any)?.stemsUrl || '',
+            stemsUrl: (track as any)?.stems_url || '',
+            splitSheetUrl: (track as any)?.split_sheet_url || '',
           };
         });
         setNewTracks(formattedNewTracks);
@@ -1963,7 +1966,8 @@ export function ClientDashboard() {
                     fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
                     pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
                     leaseAgreementUrl: '',
-                    stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stemsUrl || '' : '',
+                    stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stems_url || '' : '',
+                    splitSheetUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.split_sheet_url || '' : '',
                   },
                   id: proposal.id
                 }))
