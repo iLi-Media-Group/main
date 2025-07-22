@@ -1570,7 +1570,7 @@ export function ClientDashboard() {
                   </div>
                 ))
               )
-            }
+            )}
 
             {syncProposalsTab === 'payment-pending' && (
               sortedPaymentPendingProposals.length === 0 ? (
