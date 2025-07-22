@@ -1674,13 +1674,13 @@ export function ClientDashboard() {
                               Trackouts
                             </button>
                           )}
-                          {proposal.track.trackouts_url && (
+                          {proposal.track.stems_url && (
                             <button
                               onClick={() => {
                                 console.log('Stems URL for proposal:', proposal.id);
-                                console.log('Stems URL:', proposal.track.trackouts_url);
+                                console.log('Stems URL:', proposal.track.stems_url);
                                 console.log('Track title:', proposal.track.title);
-                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.trackouts_url);
+                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.stems_url);
                               }}
                               className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
                               title="Download Stems"
