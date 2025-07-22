@@ -1674,20 +1674,27 @@ export function ClientDashboard() {
                               Trackouts
                             </button>
                           )}
-                          {proposal.track.stems_url && (
-                            <button
-                              onClick={() => {
-                                console.log('Stems URL for proposal:', proposal.id);
-                                console.log('Stems URL:', proposal.track.stems_url);
-                                console.log('Track title:', proposal.track.title);
-                                handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Stems.zip`, 'stems', proposal.track.stems_url);
-                              }}
-                              className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                              title="Download Stems"
-                            >
-                              <Download className="w-4 h-4 mr-2" />
-                              Stems
-                            </button>
+                          {proposal.track.stems_url && (console.log('DEBUG: license.track object', proposal.track),
+                            <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
+                              <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
+                              <div className="break-all">{proposal.track.stems_url}</div>
+                              <div>
+                                <button
+                                  onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
+                                  className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                                >
+                                  Download via App
+                                </button>
+                                <a
+                                  href={getSupabaseDashboardUrl('stems', proposal.track.stems_url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                                >
+                                  Fallback: Download via Supabase URL
+                                </a>
+                              </div>
+                            </div>
                           )}
                           {proposal.track.split_sheet_url && (
                             <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
@@ -2110,19 +2117,19 @@ export function ClientDashboard() {
                                 </div>
                               </div>
                             )}
-                            {license.track.trackoutsUrl && (
+                            {license.track.stemsUrl && (
                               <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
                                 <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
-                                <div className="break-all">{license.track.trackoutsUrl}</div>
+                                <div className="break-all">{license.track.stemsUrl}</div>
                                 <div>
                                   <button
-                                    onClick={() => handleDownloadSupabase('stems', license.track.trackoutsUrl, `${license.track.title}_Stems.zip`)}
+                                    onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
                                     className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded"
                                   >
                                     Download via App
                                   </button>
                                   <a
-                                    href={getSupabaseDashboardUrl('stems', license.track.trackoutsUrl)}
+                                    href={getSupabaseDashboardUrl('stems', license.track.stemsUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="ml-2 px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
