@@ -461,6 +461,7 @@ export function ClientDashboard() {
             mp3_url,
             trackouts_url,
             split_sheet_url,
+            stems_url,
             track_producer_id,
             producer:profiles!tracks_track_producer_id_fkey (
               id,
