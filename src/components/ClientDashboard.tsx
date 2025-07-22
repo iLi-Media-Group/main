@@ -1141,13 +1141,7 @@ export function ClientDashboard() {
     );
   }
 
-  // Debug: Log stemsUrl for each licensed track before rendering
-  console.log('DEBUG LICENSE TRACKS:', sortedAndFilteredLicenses.map(l => ({
-    id: l.track.id,
-    title: l.track.title,
-    stemsUrl: l.track.stemsUrl
-  })));
-
+ 
   useEffect(() => {
     if (!user) return;
 
@@ -1632,22 +1626,21 @@ export function ClientDashboard() {
                           View Agreement
                         </button>
                       )}
-                      {proposal.payment_status === 'paid' && (proposal.track.mp3_url || proposal.track.trackouts_url || proposal.track.split_sheet_url) && (
-                        <div className="flex items-center space-x-1" key={`sync-download-${proposal.id}`}>
-                          <div className="text-sm font-medium text-gray-300">Download Files:</div>
+                      {proposal.payment_status === 'paid' && (
+                        <div className="flex items-center gap-2">
                           {proposal.track.mp3_url && (
                             <button
-                              onClick={() => handleDownload(proposal.track.id, `${proposal.track.title}_MP3.mp3`, 'mp3', proposal.track.mp3_url)}
-                              className="flex items-center px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                              onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                              className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                               title="Download MP3"
                             >
-                              <Download className="w-3 h-3 mr-1" />
-                              MP3
+                              <Download className="w-4 h-4 mr-2" />
+                              Download MP3
                             </button>
                           )}
                           {proposal.track.trackouts_url && (
                             <button
-                              onClick={() => handleSyncProposalDownload(proposal.id, proposal.track.id, `${proposal.track.title}_Trackouts.zip`, 'trackouts', proposal.track.trackouts_url)}
+                              onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
                               className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                               title="Download Trackouts"
                             >
@@ -1674,6 +1667,9 @@ export function ClientDashboard() {
                               <Download className="w-4 h-4 mr-2" />
                               Download Split Sheet
                             </button>
+                          )}
+                          {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.split_sheet_url && (
+                            <span className="text-sm text-gray-400 italic">No files available for download</span>
                           )}
                         </div>
                       )}
@@ -2188,7 +2184,6 @@ export function ClientDashboard() {
                                 <div className="text-sm font-medium text-gray-300 border-l border-gray-600 pl-3 ml-3">Download Files:</div>
                                 {proposal.track.mp3_url && (
                                   <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading MP3 from bucket <b>track-audio</b> with path:</div>
                                     <div className="break-all">{proposal.track.mp3_url}</div>
                                     <div>
                                       <button
@@ -2210,7 +2205,6 @@ export function ClientDashboard() {
                                 )}
                                 {proposal.track.trackouts_url && (
                                   <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading trackouts from bucket <b>trackouts</b> with path:</div>
                                     <div className="break-all">{proposal.track.trackouts_url}</div>
                                     <div>
                                       <button
@@ -2232,7 +2226,6 @@ export function ClientDashboard() {
                                 )}
                                 {proposal.track.stemsUrl && (
                                   <div className="mb-2 p-2 bg-blue-900/80 text-blue-200 rounded text-xs">
-                                    <div>DEBUG: Downloading stems from bucket <b>stems</b> with path:</div>
                                     <div className="break-all">{proposal.track.stemsUrl}</div>
                                     <div>
                                       <button
