@@ -26,13 +26,15 @@ export function CheckoutSuccessPage() {
           return;
         }
 
-        const _licenseCreated = false;
-
-        // Refresh membership status
-        if (user && (user as any).id) {
+        // Always refresh membership after checkout
+        if (user && user.id) {
+          setLoading(true);
           await refreshMembership();
-          // After refresh, force reload to show new membership
-          window.location.href = '/dashboard';
+          setLoading(false);
+          // Redirect to dashboard if not already there
+          if (window.location.pathname !== '/dashboard') {
+            window.location.href = '/dashboard';
+          }
           return;
         }
 
