@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
-import { createCheckoutSession } from '../lib/stripe';
+import { createCheckoutSession, cancelUserSubscription } from '../lib/stripe';
 
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -375,20 +375,20 @@ const getPlanLevel = (plan: string): number => {
 };
 
 // Helper function to get button text based on current plan vs target plan
-const getButtonText = (currentPlan: string, targetPlan: string): string => {
-  const currentLevel = getPlanLevel(currentPlan);
-  const targetLevel = getPlanLevel(targetPlan);
-  
-  if (currentLevel === targetLevel) {
-    return 'Current Plan';
-  } else if (targetLevel > currentLevel) {
-    return `Upgrade to ${targetPlan}`;
-  } else {
-    return `Downgrade to ${targetPlan}`;
-  }
-};
+  const getButtonText = (currentPlan: string, targetPlan: string): string => {
+    const currentLevel = getPlanLevel(currentPlan);
+    const targetLevel = getPlanLevel(targetPlan);
+    
+    if (currentLevel === targetLevel) {
+      return 'Current Plan';
+    } else if (targetLevel > currentLevel) {
+      return `Upgrade to ${targetPlan}`;
+    } else {
+      return `Downgrade to ${targetPlan}`;
+    }
+  };
 
-export function ClientDashboard() {
+    export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -423,6 +423,8 @@ export function ClientDashboard() {
   const [selectedTrackToLicense, setSelectedTrackToLicense] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showMembershipDialog, setShowMembershipDialog] = useState(false);
+  const [membershipLoading, setMembershipLoading] = useState<string | null>(null);
+  const [membershipError, setMembershipError] = useState<string | null>(null);
   const [syncProposals, setSyncProposals] = useState<any[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
@@ -507,6 +509,79 @@ export function ClientDashboard() {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  // Handle plan upgrade - direct to Stripe
+  const handlePlanUpgrade = async (targetPlan: string) => {
+    try {
+      setMembershipLoading(targetPlan);
+      setMembershipError(null);
+      
+      // Map plan name to price ID
+      let priceId = '';
+      switch (targetPlan) {
+        case 'Gold Access':
+          priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+          break;
+        case 'Platinum Access':
+          priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+          break;
+        case 'Ultimate Access':
+          priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+          break;
+        default:
+          throw new Error('Invalid plan selected');
+      }
+      
+      // Create checkout session with success URL back to dashboard
+      const successUrl = `${window.location.origin}/dashboard?plan_updated=true`;
+      const checkoutUrl = await createCheckoutSession(priceId, 'subscription', undefined, undefined, successUrl);
+      
+      // Redirect to Stripe
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      setMembershipError(error instanceof Error ? error.message : 'Failed to create checkout session');
+    } finally {
+      setMembershipLoading(null);
+    }
+  };
+
+  // Handle plan downgrade - schedule for end of billing cycle
+  const handlePlanDowngrade = async (targetPlan: string) => {
+    try {
+      setMembershipLoading(targetPlan);
+      setMembershipError(null);
+      
+      // Show confirmation dialog
+      const confirmed = window.confirm(
+        `Are you sure you want to downgrade to ${targetPlan}? ` +
+        `Your current plan will remain active until the end of your billing cycle, ` +
+        `then you'll be charged the new rate.`
+      );
+      
+      if (!confirmed) {
+        setMembershipLoading(null);
+        return;
+      }
+      
+      // Cancel current subscription (will take effect at end of period)
+      await cancelUserSubscription();
+      
+      // Show success message
+      alert(`Your subscription has been scheduled for downgrade to ${targetPlan}. ` +
+            `You'll continue to have access to your current plan until the end of your billing cycle.`);
+      
+      // Close modal and refresh
+      setShowMembershipDialog(false);
+      await refreshMembership();
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Error downgrading subscription:', error);
+      setMembershipError(error instanceof Error ? error.message : 'Failed to downgrade subscription');
+    } finally {
+      setMembershipLoading(null);
     }
   };
 
@@ -2655,6 +2730,13 @@ export function ClientDashboard() {
             </div>
 
             <div className="space-y-6">
+              {/* Error Display */}
+              {membershipError && (
+                <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
+                  <p className="text-red-400 text-sm">{membershipError}</p>
+                </div>
+              )}
+
               {/* Current Plan */}
               <div className="bg-white/5 rounded-lg p-4">
                 <h4 className="text-lg font-semibold text-white mb-2">Current Plan</h4>
@@ -2695,15 +2777,23 @@ export function ClientDashboard() {
                     ) : (
                       <button
                         onClick={() => {
-                          window.location.href = '/pricing?plan=gold';
+                          const currentLevel = getPlanLevel(membershipPlan || 'Single Track');
+                          const targetLevel = getPlanLevel('Gold Access');
+                          
+                          if (targetLevel > currentLevel) {
+                            handlePlanUpgrade('Gold Access');
+                          } else {
+                            handlePlanDowngrade('Gold Access');
+                          }
                         }}
+                        disabled={membershipLoading === 'Gold Access'}
                         className={`w-full px-4 py-2 rounded transition-colors ${
                           getPlanLevel('Gold Access') > getPlanLevel(membershipPlan || 'Single Track')
                             ? 'bg-purple-600 hover:bg-purple-700 text-white'
                             : 'bg-red-600 hover:bg-red-700 text-white'
-                        }`}
+                        } ${membershipLoading === 'Gold Access' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {getButtonText(membershipPlan || 'Single Track', 'Gold Access')}
+                        {membershipLoading === 'Gold Access' ? 'Processing...' : getButtonText(membershipPlan || 'Single Track', 'Gold Access')}
                       </button>
                     )}
                   </div>
@@ -2726,15 +2816,23 @@ export function ClientDashboard() {
                     ) : (
                       <button
                         onClick={() => {
-                          window.location.href = '/pricing?plan=platinum';
+                          const currentLevel = getPlanLevel(membershipPlan || 'Single Track');
+                          const targetLevel = getPlanLevel('Platinum Access');
+                          
+                          if (targetLevel > currentLevel) {
+                            handlePlanUpgrade('Platinum Access');
+                          } else {
+                            handlePlanDowngrade('Platinum Access');
+                          }
                         }}
+                        disabled={membershipLoading === 'Platinum Access'}
                         className={`w-full px-4 py-2 rounded transition-colors ${
                           getPlanLevel('Platinum Access') > getPlanLevel(membershipPlan || 'Single Track')
                             ? 'bg-purple-600 hover:bg-purple-700 text-white'
                             : 'bg-red-600 hover:bg-red-700 text-white'
-                        }`}
+                        } ${membershipLoading === 'Platinum Access' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {getButtonText(membershipPlan || 'Single Track', 'Platinum Access')}
+                        {membershipLoading === 'Platinum Access' ? 'Processing...' : getButtonText(membershipPlan || 'Single Track', 'Platinum Access')}
                       </button>
                     )}
                   </div>
@@ -2758,15 +2856,23 @@ export function ClientDashboard() {
                     ) : (
                       <button
                         onClick={() => {
-                          window.location.href = '/pricing?plan=ultimate';
+                          const currentLevel = getPlanLevel(membershipPlan || 'Single Track');
+                          const targetLevel = getPlanLevel('Ultimate Access');
+                          
+                          if (targetLevel > currentLevel) {
+                            handlePlanUpgrade('Ultimate Access');
+                          } else {
+                            handlePlanDowngrade('Ultimate Access');
+                          }
                         }}
+                        disabled={membershipLoading === 'Ultimate Access'}
                         className={`w-full px-4 py-2 rounded transition-colors ${
                           getPlanLevel('Ultimate Access') > getPlanLevel(membershipPlan || 'Single Track')
                             ? 'bg-purple-600 hover:bg-purple-700 text-white'
                             : 'bg-red-600 hover:bg-red-700 text-white'
-                        }`}
+                        } ${membershipLoading === 'Ultimate Access' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        {getButtonText(membershipPlan || 'Single Track', 'Ultimate Access')}
+                        {membershipLoading === 'Ultimate Access' ? 'Processing...' : getButtonText(membershipPlan || 'Single Track', 'Ultimate Access')}
                       </button>
                     )}
                   </div>
@@ -2797,11 +2903,14 @@ export function ClientDashboard() {
                     ) : (
                       <button
                         onClick={() => {
-                          window.location.href = '/pricing?plan=single';
+                          handlePlanDowngrade('Single Track');
                         }}
-                        className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+                        disabled={membershipLoading === 'Single Track'}
+                        className={`px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors ${
+                          membershipLoading === 'Single Track' ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
                       >
-                        {getButtonText(membershipPlan || 'Gold Access', 'Single Track')}
+                        {membershipLoading === 'Single Track' ? 'Processing...' : getButtonText(membershipPlan || 'Gold Access', 'Single Track')}
                       </button>
                     )}
                   </div>
