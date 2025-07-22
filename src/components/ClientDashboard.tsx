@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X } from 'lucide-react';
+import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -1350,6 +1350,13 @@ const getPlanLevel = (plan: string): number => {
               <UserCog className="w-5 h-5 mr-2" />
               Edit Profile
             </button>
+            <button
+              onClick={() => setShowMembershipDialog(true)}
+              className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              <CreditCard className="w-5 h-5 mr-2" />
+              Manage Plan
+            </button>
 
 
           </div>
@@ -1360,13 +1367,6 @@ const getPlanLevel = (plan: string): number => {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-xl font-bold text-white">License Usage</h2>
-                <button
-                  onClick={() => setShowMembershipDialog(true)}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold"
-                  title="Manage membership plan"
-                >
-                  Manage Plan
-                </button>
               </div>
               <p className="text-gray-300">
                 <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
