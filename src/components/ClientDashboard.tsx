@@ -1967,7 +1967,7 @@ export function ClientDashboard() {
                     pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
                     leaseAgreementUrl: '',
                     stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stems_url || '' : '',
-                    splitSheetUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.split_sheet_url || '' : '',
+                    
                   },
                   id: proposal.id
                 }))
