@@ -22,7 +22,8 @@ export function SignupForm({ onClose }: SignupFormProps) {
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [success, setSuccess] = useState(false);
+  const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   
   // Get redirect and product info from URL params
@@ -106,16 +107,27 @@ export function SignupForm({ onClose }: SignupFormProps) {
         });
       }
 
-      onClose();
-      
-      // For client accounts, go directly to the dashboard
-      if (accountType === 'client') {
-        navigate('/dashboard');
-        return;
+      // Automatically sign in the user after account creation
+      const signInResult = await signIn(email, password);
+      if (signInResult.error) {
+        throw new Error('Account created but failed to sign in automatically. Please sign in manually.');
       }
+
+      setSuccess(true);
       
-      // For producer accounts, go directly to dashboard
-      navigate('/producer/dashboard');
+      // Show success message for 2 seconds before redirecting
+      setTimeout(() => {
+        onClose();
+        
+        // For client accounts, go directly to the dashboard
+        if (accountType === 'client') {
+          navigate('/dashboard');
+          return;
+        }
+        
+        // For producer accounts, go directly to dashboard
+        navigate('/producer/dashboard');
+      }, 2000);
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
@@ -143,8 +155,14 @@ export function SignupForm({ onClose }: SignupFormProps) {
             {error}
           </div>
         )}
+        
+        {success && (
+          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm">
+            Account created successfully! Redirecting to dashboard...
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -339,10 +357,10 @@ export function SignupForm({ onClose }: SignupFormProps) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || success}
             className="btn-primary w-full"
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
+            {success ? 'Account Created!' : loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
       </div>
