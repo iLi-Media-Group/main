@@ -87,11 +87,8 @@ export default function CustomSyncRequestSubs() {
 
   // Auto-scroll modal chat dialog to bottom when new messages arrive
   useEffect(() => {
-    if (showChatDialog && chatMessages.length > 0) {
-      const node = chatDialogMessagesRef.current;
-      if (node) {
-        node.scrollTop = node.scrollHeight;
-      }
+    if (showChatDialog && chatDialogMessagesRef.current) {
+      chatDialogMessagesRef.current.scrollTop = chatDialogMessagesRef.current.scrollHeight;
     }
   }, [chatMessages, showChatDialog]);
 
@@ -181,7 +178,10 @@ export default function CustomSyncRequestSubs() {
             newMessage.sync_request_id === selectedSubmission.reqId &&
             (newMessage.sender_id === selectedSubmission.sub.producer_id || newMessage.recipient_id === selectedSubmission.sub.producer_id || newMessage.sender_id === user.id || newMessage.recipient_id === user.id)
           ) {
-            setChatMessages((prev) => [...prev, newMessage]);
+            setChatMessages((prev) => {
+              if (prev.some(msg => msg.id === newMessage.id)) return prev;
+              return [...prev, newMessage];
+            });
           }
           // Update unread count for the specific request
           setUnreadCounts(prev => ({
