@@ -32,7 +32,7 @@ import RefundPolicy from './components/RefundPolicy';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import DisputeResolution from './components/DisputeResolution';
 import { AboutPage } from './components/AboutPage';
-import { ContactPage } from './components/ContactPage';
+import ContactPage from './components/ContactPage';
 import { AnnouncementsPage } from './components/AnnouncementsPage';
 import { ChatSystem } from './components/ChatSystem';
 import { ProducerBankingPage } from './components/ProducerBankingPage';
