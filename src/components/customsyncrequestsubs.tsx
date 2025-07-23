@@ -14,6 +14,7 @@ interface CustomSyncRequest {
   status: string;
   created_at: string;
   payment_terms?: string;
+  payment_status?: string; // Added payment_status
 }
 
 interface SyncSubmission {
@@ -821,127 +822,35 @@ export default function CustomSyncRequestSubs() {
                       Delete all except Favorites
                     </button>
                   </div>
-                  {paidRequests[req.id] && (
+                  {req.payment_status === 'paid' && (
                     <div className="mb-2 flex justify-end">
                       <span className="px-3 py-1 bg-green-700 text-white rounded-full text-sm flex items-center gap-2">
-                        <BadgeCheck className="w-4 h-4" /> Paid - Unselected submissions deleted
+                        <BadgeCheck className="w-4 h-4" /> Paid
                       </span>
                     </div>
                   )}
-                  {submissions[req.id] && submissions[req.id].length > 0 && (
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold text-blue-200 mb-4">Producer Submissions</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-1 gap-6">
-                        {submissions[req.id]
-                          .filter(sub => !hiddenSubmissions[req.id]?.has(sub.id))
-                          .map((sub) => (
-                            <div
-                              key={sub.id}
-                              className={`relative bg-blue-950/80 border border-blue-700/40 rounded-2xl shadow-lg p-5 flex flex-col min-h-[170px] max-w-4xl w-full mx-auto transition-transform hover:-translate-y-1 hover:shadow-2xl ${selectedPerRequest[req.id] === sub.id ? 'ring-2 ring-green-400' : ''}`}
-                            >
-                              {/* Top Row: Producer info and actions */}
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <span className="font-semibold text-white text-base">{sub.producer_name}</span>
-                                  {sub.producer_number && (
-                                    <span className="ml-2 text-xs text-blue-300">({sub.producer_number})</span>
-                                  )}
-                                  {favoriteIds.has(sub.id) && (
-                                    <span className="ml-2 flex items-center px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-medium">
-                                      <Star className="w-4 h-4 mr-1 fill-yellow-400" /> Favorited
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="relative" ref={el => (dropdownRefs.current[sub.id] = el)}>
-                                    <button
-                                      className="px-3 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded text-sm flex items-center gap-1"
-                                      onClick={() => setOpenDropdown(openDropdown === sub.id ? null : sub.id)}
-                                    >
-                                      Actions <MoreVertical className="w-4 h-4" />
-                                    </button>
-                                    {openDropdown === sub.id && (
-                                      <div className="absolute right-0 mt-2 w-40 bg-blue-950/90 border border-blue-700 rounded shadow-lg z-50">
-                                        <button
-                                          className="w-full text-left px-4 py-2 hover:bg-blue-800 text-white text-sm"
-                                          onClick={() => { handleFavorite(sub); setOpenDropdown(null); }}
-                                        >
-                                          {favoriteIds.has(sub.id) ? 'Remove Favorite' : 'Set as Favorite'}
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                  <button
-                                    className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow transition-colors disabled:opacity-50"
-                                    onClick={() => handleSelect(req.id, sub.id)}
-                                    disabled={!!selectedPerRequest[req.id]}
-                                  >
-                                    Select
-                                  </button>
-                                </div>
-                              </div>
-                              {/* Audio Player */}
-                              <div className="flex-1 flex flex-col justify-center items-center my-4">
-                                {/* Track Info */}
-                                <div className="mb-2 flex gap-4 text-sm text-blue-200">
-                                  <span><strong>Name:</strong> {sub.track_name || sub.track_url?.split('/').pop() || '-'}</span>
-                                  <span><strong>BPM:</strong> {sub.track_bpm || '-'}</span>
-                                  <span><strong>Key:</strong> {sub.track_key || '-'}</span>
-                                </div>
-                                {sub.has_mp3 && sub.signed_mp3_url ? (
-                                  <audio controls src={sub.signed_mp3_url} className="w-full max-w-sm" />
-                                ) : (
-                                  <span className="text-gray-400">No mp3 uploaded</span>
-                                )}
-                              </div>
-                              {/* Badges */}
-                              <div className="flex gap-3 mb-2">
-                                <span className={
-                                  'px-2 py-1 rounded-full text-xs font-medium ' +
-                                  (sub.has_stems ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-400')
-                                }>
-                                  {sub.has_stems ? '✓ Stems' : '✗ Stems'}
-                                </span>
-                                <span className={
-                                  'px-2 py-1 rounded-full text-xs font-medium ' +
-                                  (sub.has_trackouts ? 'bg-green-500/20 text-green-400' : 'bg-gray-700/40 text-gray-400')
-                                }>
-                                  {sub.has_trackouts ? '✓ Trackouts' : '✗ Trackouts'}
-                                </span>
-                              </div>
-                              {/* Submission Date/Time */}
-                              <div className="absolute bottom-4 right-7 text-xs text-gray-400">
-                                {sub.created_at ? new Date(sub.created_at).toLocaleString() : ''}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                      {/* Mark as Paid button for demo/testing (replace with real payment logic) */}
-                      {!paidRequests[req.id] && selectedPerRequest[req.id] && (
-                        <div className="mt-4 flex flex-col items-end gap-2">
-                          <button
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                            onClick={() => handlePayment(req.id)}
-                            disabled={processingPayment[req.id]}
-                          >
-                            {processingPayment[req.id] ? (
-                              <Hourglass className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                              <CreditCard className="w-4 h-4 mr-2" />
-                            )}
-                            {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
-                          </button>
-                          
-                          {/* Payment Due Date Display */}
-                          <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                            <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
-                            <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
-                            <div className="text-xs text-yellow-200 mt-1">
-                              Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
-                            </div>
-                          </div>
+                  {/* Only show payment button if not paid */}
+                  {req.payment_status !== 'paid' && !paidRequests[req.id] && selectedPerRequest[req.id] && (
+                    <div className="mt-4 flex flex-col items-end gap-2">
+                      <button
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
+                        onClick={() => handlePayment(req.id)}
+                        disabled={processingPayment[req.id]}
+                      >
+                        {processingPayment[req.id] ? (
+                          <Hourglass className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CreditCard className="w-4 h-4 mr-2" />
+                        )}
+                        {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
+                      </button>
+                      <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                        <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
+                        <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
+                        <div className="text-xs text-yellow-200 mt-1">
+                          Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
                         </div>
-                      )}
+                      </div>
                     </div>
                   )}
                   

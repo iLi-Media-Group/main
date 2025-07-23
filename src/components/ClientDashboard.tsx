@@ -853,40 +853,39 @@ const getPlanLevel = (plan: string): number => {
       }
 
       // In fetchDashboardData, after fetching syncRequests:
-      const { data: completedCustomSyncs } = await supabase
+      const { data: paidCustomSyncs } = await supabase
         .from('custom_sync_requests')
         .select('*')
         .eq('client_id', user.id)
-        .eq('status', 'completed')
         .eq('payment_status', 'paid');
-        const formattedCustomSyncs = (paidCustomSyncs || []).map(sync => ({
+      const formattedCustomSyncs = (paidCustomSyncs || []).map(sync => ({
+        id: sync.id,
+        type: 'custom_sync',
+        data: sync,
+        track: {
           id: sync.id,
-          type: 'custom_sync',
-          data: sync,
-          track: {
-            id: sync.id,
-            title: sync.project_title,
-            artist: sync.project_description || 'Custom Sync',
-            genres: [sync.genre],
-            subGenres: sync.sub_genres || [],
-            moods: [],
-            duration: '',
-            bpm: 0,
-            hasStingEnding: false,
-            isOneStop: false,
-            audioUrl: sync.mp3_url || '',
-            image: '',
-            mp3Url: sync.mp3_url || '',
-            trackoutsUrl: sync.trackouts_url || '',
-            splitSheetUrl: sync.split_sheet_url || '',
-            stemsUrl: sync.stems_url || '',
-            producerId: '',
-            producer: undefined,
-            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-            leaseAgreementUrl: '',
-          }
-        }));
+          title: sync.project_title,
+          artist: sync.project_description || 'Custom Sync',
+          genres: [sync.genre],
+          subGenres: sync.sub_genres || [],
+          moods: [],
+          duration: '',
+          bpm: 0,
+          hasStingEnding: false,
+          isOneStop: false,
+          audioUrl: sync.mp3_url || '',
+          image: '',
+          mp3Url: sync.mp3_url || '',
+          trackoutsUrl: sync.trackouts_url || '',
+          splitSheetUrl: sync.split_sheet_url || '',
+          stemsUrl: sync.stems_url || '',
+          producerId: '',
+          producer: undefined,
+          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+          leaseAgreementUrl: '',
+        }
+      }));
       setCustomSyncLicenses(formattedCustomSyncs);
 
     } catch (err) {
