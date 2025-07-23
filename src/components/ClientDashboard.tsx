@@ -858,34 +858,52 @@ const getPlanLevel = (plan: string): number => {
         .select('*')
         .eq('client_id', user.id)
         .eq('payment_status', 'paid');
-      const formattedCustomSyncs = (paidCustomSyncs || []).map(sync => ({
-        id: sync.id,
-        type: 'custom_sync',
-        data: sync,
-        track: {
-          id: sync.id,
-          title: sync.project_title,
-          artist: sync.project_description || 'Custom Sync',
-          genres: [sync.genre],
-          subGenres: sync.sub_genres || [],
-          moods: [],
-          duration: '',
-          bpm: 0,
-          hasStingEnding: false,
-          isOneStop: false,
-          audioUrl: sync.mp3_url || '',
-          image: '',
-          mp3Url: sync.mp3_url || '',
-          trackoutsUrl: sync.trackouts_url || '',
-          splitSheetUrl: sync.split_sheet_url || '',
-          stemsUrl: sync.stems_url || '',
-          producerId: '',
-          producer: undefined,
-          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
-          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
-          leaseAgreementUrl: '',
+      const formattedCustomSyncs = [];
+      for (const sync of paidCustomSyncs || []) {
+        // Fetch the selected submission for this sync request
+        let mp3Url = sync.mp3_url || '';
+        try {
+          const { data: selectedSub } = await supabase
+            .from('sync_submissions')
+            .select('track_url')
+            .eq('sync_request_id', sync.id)
+            .eq('selected', true)
+            .maybeSingle();
+          if (selectedSub && selectedSub.track_url) {
+            mp3Url = selectedSub.track_url;
+          }
+        } catch (e) {
+          // Ignore errors, fallback to sync.mp3_url
         }
-      }));
+        formattedCustomSyncs.push({
+          id: sync.id,
+          type: 'custom_sync',
+          data: sync,
+          track: {
+            id: sync.id,
+            title: sync.project_title,
+            artist: sync.project_description || 'Custom Sync',
+            genres: [sync.genre],
+            subGenres: sync.sub_genres || [],
+            moods: [],
+            duration: '',
+            bpm: 0,
+            hasStingEnding: false,
+            isOneStop: false,
+            audioUrl: mp3Url,
+            image: '',
+            mp3Url: mp3Url,
+            trackoutsUrl: sync.trackouts_url || '',
+            splitSheetUrl: sync.split_sheet_url || '',
+            stemsUrl: sync.stems_url || '',
+            producerId: '',
+            producer: undefined,
+            fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+            pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+            leaseAgreementUrl: '',
+          }
+        });
+      }
       setCustomSyncLicenses(formattedCustomSyncs);
       console.log('customSyncLicenses:', formattedCustomSyncs);
 
