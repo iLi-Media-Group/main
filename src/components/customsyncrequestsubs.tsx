@@ -873,6 +873,21 @@ export default function CustomSyncRequestSubs() {
                       </button>
                     </div>
                   )}
+                  {/* Render submissions for this request */}
+                  {submissions[req.id] && submissions[req.id].length > 0 ? (
+                    <div className="mt-4">
+                      {submissions[req.id].map((sub) => (
+                        <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2">
+                          <div className="text-white font-semibold">{sub.track_name || 'Untitled Track'}</div>
+                          <div className="text-blue-200 text-sm">Producer: {sub.producer_name || 'Unknown'}</div>
+                          <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
+                          {/* Add more details and actions as needed */}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-blue-300 mt-4">No submissions yet.</div>
+                  )}
                 </div>
               ))}
             </div>
