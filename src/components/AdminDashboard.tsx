@@ -39,6 +39,8 @@ interface UserStats {
   white_label_subscriptions_count: number;
   white_label_monthly_amount: number;
   new_memberships_count: number;
+  white_label_pending_subscriptions_count: number;
+  white_label_pending_monthly_amount: number;
 }
 
 interface UserDetails {
@@ -127,6 +129,8 @@ function AdminDashboard() {
     white_label_subscriptions_count: number;
     white_label_monthly_amount: number;
     new_memberships_count: number;
+    white_label_pending_subscriptions_count: number;
+    white_label_pending_monthly_amount: number;
   }>({
     total_clients: 0,
     total_producers: 0,
@@ -147,6 +151,8 @@ function AdminDashboard() {
     white_label_subscriptions_count: 0,
     white_label_monthly_amount: 0,
     new_memberships_count: 0
+    white_label_pending_subscriptions_count: 0,
+    white_label_pending_monthly_amount: 0,
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
@@ -403,7 +409,24 @@ function AdminDashboard() {
         const { data: whiteLabelSubscriptionsData, error: whiteLabelSubscriptionsError } = await supabase
           .from('stripe_subscriptions')
           .select('id, subscription_id, status, price_id, created_at')
-          .eq('status', 'active');
+          .in('status', ['incomplete', 'trialing', 'past_due', 'unpaid']);
+       if (whiteLabelPendingSubsError) {
+          console.error('Error fetching pending white label subscriptions:', whiteLabelPendingSubsError);
+       }
+       const whiteLabelPendingSubs = whiteLabelPendingSubsData || [];
+       const white_label_pending_subscriptions_count = whiteLabelPendingSubs.length;
+       let white_label_pending_monthly_amount = 0;
+       whiteLabelPendingSubs.forEach(subscription => {
+         if (subscription.price_id) {
+           if (subscription.price_id.includes('white_label_starter')) {
+            white_label_pending_monthly_amount += 49;
+         } else if (subscription.price_id.includes('white_label_pro')) {
+           white_label_pending_monthly_amount += 299;
+         } else {
+           white_label_pending_monthly_amount += 49;
+      }
+    }
+  });
         
         if (whiteLabelSubscriptionsError) {
           console.error('Error fetching white label subscriptions:', whiteLabelSubscriptionsError);
@@ -417,6 +440,7 @@ function AdminDashboard() {
         const white_label_subscriptions_count = whiteLabelSubscriptions.length;
         
         // Calculate actual monthly revenue based on price IDs
+        
         let white_label_monthly_amount = 0;
         whiteLabelSubscriptions.forEach(subscription => {
           if (subscription.price_id) {
@@ -453,7 +477,9 @@ function AdminDashboard() {
           white_label_setup_amount,
           white_label_subscriptions_count,
           white_label_monthly_amount,
-          new_memberships_count
+          new_memberships_count,
+          white_label_pending_subscriptions_count,
+          white_label_pending_monthly_amount,
         }));
 
         // Fetch producer analytics using the existing function
