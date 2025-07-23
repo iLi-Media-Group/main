@@ -892,8 +892,12 @@ export default function CustomSyncRequestSubs() {
                                 <button
                                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow"
                                   onClick={() => {
-                                    setSelectedSubmission({ reqId: req.id, sub });
-                                    handleMessageProducer();
+                                    if (!selectedSubmission || selectedSubmission.reqId !== req.id || selectedSubmission.sub.id !== sub.id) {
+                                      setSelectedSubmission({ reqId: req.id, sub });
+                                      setTimeout(() => handleMessageProducer(), 0);
+                                    } else {
+                                      handleMessageProducer();
+                                    }
                                   }}
                                 >
                                   Message Producer
