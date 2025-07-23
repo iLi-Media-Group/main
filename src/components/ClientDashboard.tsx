@@ -193,6 +193,11 @@ interface CustomSyncRequest {
   sub_genres: string[];
   status: 'open' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
+  payment_status: 'pending' | 'paid' | 'cancelled';
+  mp3_url?: string;
+  trackouts_url?: string;
+  stems_url?: string;
+  split_sheet_url?: string;
 }
 
 interface SyncProposal {
@@ -1570,6 +1575,42 @@ const getPlanLevel = (plan: string): number => {
                       </button>
                     </div>
                   </div>
+                  {request.payment_status === 'paid' && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {request.mp3_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('sync-submissions', request.mp3_url || '', `${request.project_title}_MP3.mp3`)}
+                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+                        >
+                          Download MP3
+                        </button>
+                      )}
+                      {request.trackouts_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('trackouts', request.trackouts_url || '', `${request.project_title}_Trackouts.zip`)}
+                          className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                        >
+                          Download Trackouts
+                        </button>
+                      )}
+                      {request.stems_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('stems', request.stems_url || '', `${request.project_title}_Stems.zip`)}
+                          className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                        >
+                          Download Stems
+                        </button>
+                      )}
+                      {request.split_sheet_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('split-sheets', request.split_sheet_url || '', `${request.project_title}_SplitSheet.pdf`)}
+                          className="px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded"
+                        >
+                          Download Split Sheet
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
