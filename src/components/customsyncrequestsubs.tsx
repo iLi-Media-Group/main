@@ -199,6 +199,7 @@ export default function CustomSyncRequestSubs() {
         .select('*, sync_submissions(*)')
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
+      console.log('Fetched custom_sync_requests:', data);
       if (error) setError(error.message);
       else {
         setRequests(data || []);
@@ -206,6 +207,7 @@ export default function CustomSyncRequestSubs() {
         const subMap: Record<string, SyncSubmission[]> = {};
         for (const req of data || []) {
           const subs: SyncSubmission[] = req.sync_submissions || [];
+          console.log('Submissions for request', req.id, subs);
           const updatedSubs = await Promise.all(subs.map(async (sub: SyncSubmission) => {
             let producer_name = 'Unknown Producer';
             let producer_number = '';
