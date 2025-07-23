@@ -57,7 +57,7 @@ export function EditRequestDialog({ onClose, request, onUpdate }: EditRequestDia
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h3 className="text-xl font-bold text-white mb-4">Edit Sync Request</h3> 
         
         {error && (
