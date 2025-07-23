@@ -63,6 +63,7 @@ import { WhiteLabelClientLogin } from './components/WhiteLabelClientLogin';
 import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 import ProducerSyncSubmission from './components/ProducerSyncSubmission';
 import CustomSyncRequestSubs from './components/customsyncrequestsubs';
+import PaymentSuccessPage from './components/PaymentSuccessPage';
 
 
 const App = () => {
@@ -451,6 +452,8 @@ const App = () => {
         } />
 
         <Route path="/producer-sync-submission" element={<LayoutWrapper><ProducerSyncSubmission /></LayoutWrapper>} />
+
+        <Route path="/payment-success" element={<PaymentSuccessPage />} />
 
         <Route path="*" element={
           <LayoutWrapper>
