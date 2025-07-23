@@ -12,7 +12,11 @@ serve(async (req) => {
   }
 
   try {
-    const { name, email, subject, message } = await req.json();
+    // Log the raw request body for debugging
+    const rawBody = await req.text();
+    console.log('Raw incoming request body:', rawBody);
+    // Parse JSON after logging
+    const { name, email, subject, message } = JSON.parse(rawBody);
 
     // Create Supabase client
     const supabaseClient = createClient(
