@@ -891,7 +891,10 @@ export default function CustomSyncRequestSubs() {
                                 </span>
                                 <button
                                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={() => handleMessageProducer()}
+                                  onClick={() => {
+                                    setSelectedSubmission({ reqId: req.id, sub });
+                                    handleMessageProducer();
+                                  }}
                                 >
                                   Message Producer
                                   {unreadCounts[req.id] > 0 && (
@@ -927,7 +930,10 @@ export default function CustomSyncRequestSubs() {
                                 )}
                                 <button
                                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={handleDeselect}
+                                  onClick={() => {
+                                    setSelectedSubmission({ reqId: req.id, sub });
+                                    handleDeselect();
+                                  }}
                                 >
                                   De-select
                                 </button>
