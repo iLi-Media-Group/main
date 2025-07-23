@@ -218,6 +218,8 @@ export function ProducerDashboard() {
   const [syncRequestsError, setSyncRequestsError] = useState<string | null>(null);
   const [showCustomSyncUpload, setShowCustomSyncUpload] = useState<{ open: boolean, request: any | null }>({ open: false, request: null });
   const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
+  // Add state for tab selection
+  const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
 
   useEffect(() => {
     if (user) {
@@ -766,80 +768,94 @@ export function ProducerDashboard() {
           </div>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 mb-8">
-  <h2 className="text-xl font-bold text-white mb-4">Open Custom Sync Requests</h2>
-  {loadingSyncRequests ? (
-    <div className="text-blue-300">Loading...</div>
-  ) : syncRequestsError ? (
-    <div className="text-red-400">{syncRequestsError}</div>
-  ) : openSyncRequests.length === 0 ? (
-    <div className="text-gray-400">No open custom sync requests at this time.</div>
-  ) : (
-    <div className="max-h-96 overflow-y-auto space-y-4">
-      {openSyncRequests.map((req) => (
-        <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-          <div className="flex-1">
-            <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
-            <div className="text-gray-300 mb-1">{req.project_description}</div>
-            <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
-              <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
-              <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
-              <span><strong>Genre:</strong> {req.genre}</span>
-              <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
-            </div>
-          </div>
-          <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
-            <Link
-              to={`/producer-sync-submission?requestId=${req.id}`}
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-            >
-              Submit Track
-            </Link>
-          </div>
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 mb-8">
-  <h2 className="text-xl font-bold text-white mb-4">Completed Custom Syncs (Paid)</h2>
-  {completedCustomSyncRequests.length === 0 ? (
-    <div className="text-gray-400">No completed custom syncs yet.</div>
-  ) : (
-    <div className="space-y-4">
-      {completedCustomSyncRequests.map((req) => {
-        const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
-        return (
-          <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
-              <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
-              <div className="text-gray-300 mb-1">{req.project_description}</div>
-              <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
-                <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
-                <span><strong>Genre:</strong> {req.genre}</span>
-                <span><strong>Status:</strong> {req.status}</span>
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+  <div className="flex items-center mb-6">
+    <button
+      className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+      onClick={() => setCustomSyncTab('open')}
+    >
+      Open Custom Sync Requests
+    </button>
+    <button
+      className={`ml-2 px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'completed' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+      onClick={() => setCustomSyncTab('completed')}
+    >
+      Completed Custom Syncs (Paid)
+    </button>
+  </div>
+  <div className="bg-blue-900/60 rounded-b-lg p-4">
+    {customSyncTab === 'open' ? (
+      loadingSyncRequests ? (
+        <div className="text-blue-300">Loading...</div>
+      ) : syncRequestsError ? (
+        <div className="text-red-400">{syncRequestsError}</div>
+      ) : openSyncRequests.length === 0 ? (
+        <div className="text-gray-400">No open custom sync requests at this time.</div>
+      ) : (
+        <div className="max-h-96 overflow-y-auto space-y-4">
+          {openSyncRequests.map((req) => (
+            <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+              <div className="flex-1">
+                <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                <div className="text-gray-300 mb-1">{req.project_description}</div>
+                <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                  <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                  <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
+                  <span><strong>Genre:</strong> {req.genre}</span>
+                  <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                </div>
+              </div>
+              <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
+                <Link
+                  to={`/producer-sync-submission?requestId=${req.id}`}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Submit Track
+                </Link>
               </div>
             </div>
-            <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
-              {!allFilesUploaded && (
-                <button
-                  onClick={() => setShowCustomSyncUpload({ open: true, request: req })}
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
-                >
-                  <Upload className="w-5 h-5 mr-2" />
-                  Upload Files
-                </button>
-              )}
-              {allFilesUploaded && (
-                <span className="text-green-400 font-semibold">All files uploaded</span>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  )}
+          ))}
+        </div>
+      )
+    ) : (
+      completedCustomSyncRequests.length === 0 ? (
+        <div className="text-gray-400">No completed custom syncs yet.</div>
+      ) : (
+        <div className="space-y-4">
+          {completedCustomSyncRequests.map((req) => {
+            const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
+            return (
+              <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                <div className="flex-1">
+                  <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                  <div className="text-gray-300 mb-1">{req.project_description}</div>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                    <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                    <span><strong>Genre:</strong> {req.genre}</span>
+                    <span><strong>Status:</strong> {req.status}</span>
+                  </div>
+                </div>
+                <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
+                  {!allFilesUploaded && (
+                    <button
+                      onClick={() => setShowCustomSyncUpload({ open: true, request: req })}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                    >
+                      <Upload className="w-5 h-5 mr-2" />
+                      Upload Files
+                    </button>
+                  )}
+                  {allFilesUploaded && (
+                    <span className="text-green-400 font-semibold">All files uploaded</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )
+    )}
+  </div>
 </div>
 {showCustomSyncUpload.open && showCustomSyncUpload.request && (
   <CustomSyncTrackUploadForm
