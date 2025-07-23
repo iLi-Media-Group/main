@@ -170,17 +170,25 @@ export default function CustomSyncRequestSubs() {
           event: 'INSERT', 
           schema: 'public', 
           table: 'cust_sync_chat',
-          filter: `and(recipient_id=eq.${user.id},sync_request_id.in.(${requests.map(r => r.id).join(',')}))`
+          filter: `or(sender_id=eq.${user.id},recipient_id=eq.${user.id})`
         }, 
         (payload) => {
-          console.log('New message received:', payload);
-          // Update unread count for the specific request
           const newMessage = payload.new as any;
+          // If chat dialog is open and this message is for the current chat, append it
+          if (
+            showChatDialog &&
+            selectedSubmission &&
+            newMessage.sync_request_id === selectedSubmission.reqId &&
+            (newMessage.sender_id === selectedSubmission.sub.producer_id || newMessage.recipient_id === selectedSubmission.sub.producer_id || newMessage.sender_id === user.id || newMessage.recipient_id === user.id)
+          ) {
+            setChatMessages((prev) => [...prev, newMessage]);
+          }
+          // Update unread count for the specific request
           setUnreadCounts(prev => ({
             ...prev,
-            [newMessage.sync_request_id]: (prev[newMessage.sync_request_id] || 0) + 1
+            [newMessage.sync_request_id]: (prev[newMessage.sync_request_id] || 0) + (newMessage.recipient_id === user.id ? 1 : 0)
           }));
-          // Reload chat history
+          // Reload chat history for sidebar, etc.
           loadAllChatHistory();
           // If chat box is open for this request, refresh its messages
           if (selectedRequestForChat && selectedRequestForChat.id === newMessage.sync_request_id) {
@@ -193,7 +201,7 @@ export default function CustomSyncRequestSubs() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, requests]);
+  }, [user, requests, showChatDialog, selectedSubmission, selectedRequestForChat]);
 
   useEffect(() => {
     if (!user) return;
