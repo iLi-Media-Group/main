@@ -497,9 +497,13 @@ export default function ProducerSyncSubmission() {
           // Only append if for this chat
           if (
             newMessage.sync_request_id === requestId &&
-            (newMessage.sender_id === selectedClient.id || newMessage.recipient_id === selectedClient.id)
+            (newMessage.sender_id === selectedClient.id || newMessage.recipient_id === selectedClient.id || newMessage.sender_id === user.id || newMessage.recipient_id === user.id)
           ) {
-            setChatMessages((prev) => [...prev, newMessage]);
+            setChatMessages((prev) => {
+              // Prevent duplicate messages
+              if (prev.some(msg => msg.id === newMessage.id)) return prev;
+              return [...prev, newMessage];
+            });
           }
         }
       )
