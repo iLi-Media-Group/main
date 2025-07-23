@@ -640,8 +640,24 @@ export function RevenueBreakdownDialog({
       console.log('Monthly data array:', monthlyData);
       console.log('=== END MONTHLY REVENUE DEBUG ===');
 
+      // Pad monthlyData to always show the last 6 or 12 months, even if some are zero
+      const padMonths = (data: { month: string; amount: number }[], monthsToShow: number): { month: string; amount: number }[] => {
+        const now = new Date();
+        const padded: { month: string; amount: number }[] = [];
+        for (let i = monthsToShow - 1; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const display = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+          const found = data.find((m: { month: string; amount: number }) => m.month === display || m.month === key);
+          padded.push({ month: display, amount: found ? found.amount : 0 });
+        }
+        return padded;
+      };
+      let monthsToShow = 6;
+      if (timeframe === 'year' || timeframe === 'all') monthsToShow = 12;
+      const paddedMonthlyData = padMonths(monthlyData, monthsToShow);
       setRevenueSources(sortedSources);
-      setMonthlyRevenue(monthlyData);
+      setMonthlyRevenue(paddedMonthlyData);
       setTotalRevenue(total);
       setPendingPayments(pendingPaymentsList);
       setTotalPendingRevenue(totalPending);
