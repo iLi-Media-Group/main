@@ -911,6 +911,18 @@ export function ProducerDashboard() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-white">Your Tracks</h2>
+              <input
+                type="text"
+                placeholder="Search tracks..."
+                value={trackSearch}
+                onChange={e => { setTrackSearch(e.target.value); setTrackPage(1); }}
+                className="bg-white/10 border border-purple-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                style={{ minWidth: 200 }}
+              />
+            </div>
+
             {paginatedTracks.length === 0 ? (
               <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                 <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
