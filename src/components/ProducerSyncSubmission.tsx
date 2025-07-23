@@ -689,7 +689,7 @@ export default function ProducerSyncSubmission() {
             <div className="p-4 border-b border-blue-700/40 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold text-white">
-                  Chat with {selectedClient.name}
+                  Chat with {selectedClient?.name || 'Client'}
                 </h3>
                 <p className="text-sm text-blue-300">
                   Sync Request: {requestInfo?.project_title || 'Custom Sync'}
@@ -729,7 +729,9 @@ export default function ProducerSyncSubmission() {
                         }`}
                       >
                         <p className="text-sm font-medium mb-1">
-                          {message.sender.first_name} {message.sender.last_name}
+                          {message.sender.first_name || message.sender.last_name
+                            ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()
+                            : (message.sender.email === user?.email ? 'You' : 'Unknown')}
                         </p>
                         <p>{message.message}</p>
                         <p className="text-xs opacity-70 mt-1">
