@@ -409,7 +409,7 @@ export default function CustomSyncRequestSubs() {
   // Hide all non-favorited submissions for a request
   const handleDeleteAllExceptFavorites = (reqId: string) => {
     setHiddenSubmissions((prev) => {
-      const favIds = new Set(Object.keys(favorites));
+      const favIds = new Set(Array.from(favoriteIds));
       const allSubIds = (submissions[reqId] || []).map(s => s.id);
       const toHide = allSubIds.filter(id => !favIds.has(id));
       return { ...prev, [reqId]: new Set(toHide) };
@@ -832,30 +832,6 @@ export default function CustomSyncRequestSubs() {
                       </span>
                     </div>
                   )}
-                  {/* Only show payment button if not paid */}
-                  {req.payment_status !== 'paid' && !paidRequests[req.id] && selectedPerRequest[req.id] && (
-                    <div className="mt-4 flex flex-col items-end gap-2">
-                      <button
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                        onClick={() => handlePayment(req.id)}
-                        disabled={processingPayment[req.id]}
-                      >
-                        {processingPayment[req.id] ? (
-                          <Hourglass className="w-4 h-4 mr-2 animate-spin" />
-                        ) : (
-                          <CreditCard className="w-4 h-4 mr-2" />
-                        )}
-                        {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
-                      </button>
-                      <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                        <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
-                        <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
-                        <div className="text-xs text-yellow-200 mt-1">
-                          Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   
                   {/* Message Producer and De-select Buttons */}
                   {selectedSubmission && selectedSubmission.reqId === req.id && (
@@ -877,73 +853,88 @@ export default function CustomSyncRequestSubs() {
                   {/* Render submissions for this request */}
                   {submissions[req.id] && submissions[req.id].length > 0 ? (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {submissions[req.id].map((sub) => (
-                        <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative">
-                          <div className="flex items-center gap-2 mb-1">
-                            <button
-                              className={`text-yellow-400 hover:text-yellow-300 focus:outline-none ${favoriteIds.has(sub.id) ? 'font-bold' : ''}`}
-                              onClick={() => handleFavorite(sub)}
-                              title={favoriteIds.has(sub.id) ? 'Unfavorite' : 'Favorite'}
-                            >
-                              <Star className={`w-5 h-5 ${favoriteIds.has(sub.id) ? 'fill-yellow-400' : ''}`} />
-                            </button>
-                            <span className="text-white font-semibold text-lg">{sub.track_name || 'Untitled Track'}</span>
-                          </div>
-                          <div className="text-blue-200 text-sm">Producer: {sub.producer_name || 'Unknown'}</div>
-                          <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
-                          {sub.signed_mp3_url && (
-                            <div className="my-2">
-                              <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" />
-                            </div>
-                          )}
-                          {/* Select button if not already selected */}
-                          {!selectedPerRequest[req.id] && (
-                            <button
-                              className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                              onClick={() => handleSelect(req.id, sub.id)}
-                            >
-                              Select
-                            </button>
-                          )}
-                          {/* If this is the selected submission, show message and payment controls */}
-                          {selectedPerRequest[req.id] === sub.id && (
-                            <div className="mt-2 flex flex-col gap-2">
-                              <span className="px-2 py-1 bg-green-700 text-white rounded-full text-xs flex items-center gap-2">
-                                <BadgeCheck className="w-4 h-4" /> Selected
-                              </span>
+                      {submissions[req.id]
+                        .filter(sub => !hiddenSubmissions[req.id] || !hiddenSubmissions[req.id].has(sub.id))
+                        .map((sub) => (
+                          <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative">
+                            <div className="flex items-center gap-2 mb-1">
                               <button
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow"
-                                onClick={() => handleMessageProducer}
+                                className={`text-yellow-400 hover:text-yellow-300 focus:outline-none ${favoriteIds.has(sub.id) ? 'font-bold' : ''}`}
+                                onClick={() => handleFavorite(sub)}
+                                title={favoriteIds.has(sub.id) ? 'Unfavorite' : 'Favorite'}
                               >
-                                Message Producer
+                                <Star className={`w-5 h-5 ${favoriteIds.has(sub.id) ? 'fill-yellow-400' : ''}`} />
                               </button>
-                              {req.payment_status !== 'paid' && !paidRequests[req.id] && (
-                                <button
-                                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={() => handlePayment(req.id)}
-                                  disabled={processingPayment[req.id]}
-                                >
-                                  {processingPayment[req.id] ? (
-                                    <Hourglass className="w-4 h-4 mr-2 animate-spin" />
-                                  ) : (
-                                    <CreditCard className="w-4 h-4 mr-2" />
-                                  )}
-                                  {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
-                                </button>
-                              )}
-                              {req.payment_status !== 'paid' && (
-                                <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
-                                  <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
-                                  <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
-                                  <div className="text-xs text-yellow-200 mt-1">
-                                    Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
-                                  </div>
-                                </div>
-                              )}
+                              <span className="text-white font-semibold text-lg">{sub.track_name || 'Untitled Track'}</span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <div className="text-blue-200 text-sm">Producer: {sub.producer_name || 'Unknown'}</div>
+                            <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
+                            {sub.signed_mp3_url && (
+                              <div className="my-2">
+                                <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" />
+                              </div>
+                            )}
+                            {/* Select button if not already selected */}
+                            {!selectedPerRequest[req.id] && (
+                              <button
+                                className="mt-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
+                                onClick={() => handleSelect(req.id, sub.id)}
+                              >
+                                Select
+                              </button>
+                            )}
+                            {/* If this is the selected submission, show message and payment controls */}
+                            {selectedPerRequest[req.id] === sub.id && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                <span className="px-2 py-1 bg-green-700 text-white rounded-full text-xs flex items-center gap-2">
+                                  <BadgeCheck className="w-4 h-4" /> Selected
+                                </span>
+                                <button
+                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow"
+                                  onClick={() => handleMessageProducer()}
+                                >
+                                  Message Producer
+                                  {unreadCounts[req.id] > 0 && (
+                                    <img
+                                      src="/icons/new-message.png"
+                                      alt="New message"
+                                      className="inline-block w-6 h-6 ml-2 animate-bounce"
+                                    />
+                                  )}
+                                </button>
+                                {req.payment_status !== 'paid' && !paidRequests[req.id] && (
+                                  <button
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
+                                    onClick={() => handlePayment(req.id)}
+                                    disabled={processingPayment[req.id]}
+                                  >
+                                    {processingPayment[req.id] ? (
+                                      <Hourglass className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                      <CreditCard className="w-4 h-4 mr-2" />
+                                    )}
+                                    {processingPayment[req.id] ? 'Processing Payment...' : 'Pay with Stripe'}
+                                  </button>
+                                )}
+                                {req.payment_status !== 'paid' && (
+                                  <div className="text-sm text-yellow-300 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-3 py-2">
+                                    <div className="font-semibold">Payment Terms: {formatPaymentTerms(req.payment_terms)}</div>
+                                    <div>Due Date: {calculatePaymentDueDate(req.payment_terms).toLocaleDateString()}</div>
+                                    <div className="text-xs text-yellow-200 mt-1">
+                                      Amount: ${req.sync_fee.toFixed(2)} (Pending Payment)
+                                    </div>
+                                  </div>
+                                )}
+                                <button
+                                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
+                                  onClick={handleDeselect}
+                                >
+                                  De-select
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   ) : (
                     <div className="text-blue-300 mt-4">No submissions yet.</div>
