@@ -92,15 +92,14 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
               {logoUrl ? (
-                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
-                  <img 
-                    src={logoUrl} 
-                    alt="Logo" 
-                    className="h-full w-auto object-contain"
-                  />
-                </div>
+                <img
+                  src={logoUrl}
+                  alt="Logo"
+                  className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain"
+                  style={{ border: 'none', boxShadow: 'none', background: 'none', padding: 0, margin: 0 }}
+                />
               ) : (
-                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto flex items-center justify-center rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
+                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto flex items-center justify-center">
                   <Music className="w-full h-full text-blue-400" />
                 </div>
               )}
