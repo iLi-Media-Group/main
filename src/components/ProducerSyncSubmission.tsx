@@ -473,6 +473,11 @@ export default function ProducerSyncSubmission() {
     }
   };
 
+  const TRACK_KEYS = [
+    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+    'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'
+  ];
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
@@ -509,7 +514,17 @@ export default function ProducerSyncSubmission() {
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-300 mb-2">Track Key</label>
-                  <input type="text" value={trackKey} onChange={e => setTrackKey(e.target.value)} className="w-full rounded px-3 py-2 bg-blue-900/60 text-white border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                  <select
+                    value={trackKey}
+                    onChange={e => setTrackKey(e.target.value)}
+                    className="w-full rounded px-3 py-2 bg-blue-900/60 text-white border border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    required
+                  >
+                    <option value="">Select Key</option>
+                    {TRACK_KEYS.map(key => (
+                      <option key={key} value={key}>{key}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div>
@@ -612,7 +627,17 @@ export default function ProducerSyncSubmission() {
                   </div>
                   <div className="flex-1">
                     <label className="block text-sm font-medium text-white mb-1">Track Key</label>
-                    <input type="text" value={editTrackKey} onChange={e => setEditTrackKey(e.target.value)} className="w-full rounded px-3 py-2 border border-blue-700 bg-blue-900/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400" />
+                    <select
+                      value={editTrackKey}
+                      onChange={e => setEditTrackKey(e.target.value)}
+                      className="w-full rounded px-3 py-2 border border-blue-700 bg-blue-900/60 text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      required
+                    >
+                      <option value="">Select Key</option>
+                      {TRACK_KEYS.map(key => (
+                        <option key={key} value={key}>{key}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
