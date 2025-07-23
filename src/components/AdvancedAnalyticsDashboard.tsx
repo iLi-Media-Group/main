@@ -19,6 +19,9 @@ interface AnalyticsData {
     total: number;
     licenses: number;
     clients: number;
+    track_license: number;
+    sync_proposal: number;
+    custom_sync: number;
   }>;
   licenseData: Array<{
     name: string;
@@ -308,12 +311,27 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
       monthData.clients.add(sale.buyer?.id || sale.preferred_producer?.id);
     });
 
-    const revenueData = Array.from(monthlyData.values()).map(data => ({
-      month: data.month,
-      total: data.total,
-      licenses: data.licenses,
-      clients: data.clients.size
-    }));
+    const revenueData = Array.from(monthlyData.entries()).map(([month, data]) => {
+      // Calculate per-type revenue for this month
+      let track_license = 0, sync_proposal = 0, custom_sync = 0;
+      allSales.forEach(sale => {
+        const saleMonth = new Date(sale.created_at).toLocaleDateString('en-US', { month: 'short' });
+        if (saleMonth === month) {
+          if (sale.type === 'track_license') track_license += sale.revenue || 0;
+          if (sale.type === 'sync_proposal') sync_proposal += sale.revenue || 0;
+          if (sale.type === 'custom_sync') custom_sync += sale.revenue || 0;
+        }
+      });
+      return {
+        month: data.month,
+        total: data.total,
+        licenses: data.licenses,
+        clients: data.clients.size,
+        track_license,
+        sync_proposal,
+        custom_sync
+      };
+    });
 
     // License data per client
     const clientMap = new Map();
@@ -864,6 +882,34 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              {/* Revenue Breakdown Table */}
+              {analyticsData && (
+                <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-white mb-2">Revenue Breakdown ({selectedRange.replace('_', ' ')})</h3>
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr>
+                        <td className="text-gray-300 py-1">Track Licenses</td>
+                        <td className="text-right text-green-400 py-1">
+                          ${analyticsData.revenueData.reduce((sum, row) => sum + (row.track_license || 0), 0).toFixed(2)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="text-gray-300 py-1">Sync Proposals</td>
+                        <td className="text-right text-green-400 py-1">
+                          ${analyticsData.revenueData.reduce((sum, row) => sum + (row.sync_proposal || 0), 0).toFixed(2)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="text-gray-300 py-1">Custom Sync Requests</td>
+                        <td className="text-right text-green-400 py-1">
+                          ${analyticsData.revenueData.reduce((sum, row) => sum + (row.custom_sync || 0), 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
 
