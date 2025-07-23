@@ -837,7 +837,7 @@ export default function CustomSyncRequestSubs() {
                   {selectedSubmission && selectedSubmission.reqId === req.id && (
                     <div className="mt-4 flex justify-end gap-2">
                       <button
-                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow relative"
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold shadow"
                         onClick={handleMessageProducer}
                       >
                         Message Producer
@@ -894,9 +894,9 @@ export default function CustomSyncRequestSubs() {
                                   onClick={() => {
                                     if (!selectedSubmission || selectedSubmission.reqId !== req.id || selectedSubmission.sub.id !== sub.id) {
                                       setSelectedSubmission({ reqId: req.id, sub });
-                                      setTimeout(() => handleMessageProducer(), 0);
+                                      setTimeout(() => setShowChatDialog(true), 0);
                                     } else {
-                                      handleMessageProducer();
+                                      setShowChatDialog(true);
                                     }
                                   }}
                                 >
