@@ -479,6 +479,43 @@ export default function ProducerSyncSubmission() {
     'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'
   ];
 
+  // 2. Real-time chat subscription for both sender and recipient:
+  useEffect(() => {
+    if (!user || !requestId || !selectedClient || !showChat) return;
+
+    const channel = supabase
+      .channel('producer_chat_realtime')
+      .on('postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'cust_sync_chat',
+          filter: `or(sender_id=eq.${user.id},recipient_id=eq.${user.id})`
+        },
+        (payload) => {
+          const newMessage = payload.new;
+          // Only append if for this chat
+          if (
+            newMessage.sync_request_id === requestId &&
+            (newMessage.sender_id === selectedClient.id || newMessage.recipient_id === selectedClient.id)
+          ) {
+            setChatMessages((prev) => [...prev, newMessage]);
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, requestId, selectedClient, showChat]);
+
+  // 3. Auto-scroll to latest message:
+  useEffect(() => {
+    if (showChat && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, showChat]);
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
