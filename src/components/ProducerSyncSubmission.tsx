@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Dialog } from './ui/dialog';
+import { AudioPlayer } from './AudioPlayer'; // Added import for AudioPlayer
 
 export default function ProducerSyncSubmission() {
   const { user } = useAuth();
@@ -566,9 +567,15 @@ export default function ProducerSyncSubmission() {
                       )}
                     </span>
                     <div className="flex gap-2 text-xs text-blue-200 mt-1">
-                      <span>BPM: {sub.track_bpm || '-'}</span>
-                      <span>Key: {sub.track_key || '-'}</span>
+                      <span>BPM: {sub.track_bpm || '-'} </span>
+                      <span>Key: {sub.track_key || '-'} </span>
                     </div>
+                    {/* Audio player for the submission */}
+                    {sub.track_url && (
+                      <div className="mt-2">
+                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" />
+                      </div>
+                    )}
                     <span className="mt-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1 w-max"><Hourglass className="w-3 h-3" /> In Consideration</span>
                   </div>
                 ))}
