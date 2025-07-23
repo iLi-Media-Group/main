@@ -361,7 +361,7 @@ export function ProducerDashboard() {
         .from('custom_sync_requests')
         .select('*')
         .eq('preferred_producer_id', user.id)
-        .eq('status', 'completed');
+        .eq('payment_status', 'paid');
 
       if (customSyncError) throw customSyncError;
 
