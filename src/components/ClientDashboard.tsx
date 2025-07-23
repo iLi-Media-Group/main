@@ -908,6 +908,11 @@ const getPlanLevel = (plan: string): number => {
             leaseAgreementUrl: '',
           }
         });
+        // After marking the submission as selected and payment as paid:
+        await supabase
+          .from('custom_sync_requests')
+          .update({ selected_producer_id: selectedSub.producer_id })
+          .eq('id', sync.id);
       }
       setCustomSyncLicenses(formattedCustomSyncs);
       console.log('customSyncLicenses:', formattedCustomSyncs);
