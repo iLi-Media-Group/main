@@ -356,11 +356,11 @@ export function ProducerDashboard() {
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests where this producer is the preferred producer
+      // Fetch completed custom sync requests where this producer is the selected producer
       const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
         .select('*')
-        .eq('preferred_producer_id', user.id)
+        .eq('selected_producer_id', user.id)
         .eq('payment_status', 'paid');
 
       if (customSyncError) throw customSyncError;
