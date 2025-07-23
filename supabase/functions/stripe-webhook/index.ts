@@ -408,11 +408,12 @@ Deno.serve(async (req) => {
                   console.error('Error updating sync submission:', submissionError);
                 }
                 
-                // Update custom sync request status
+                // Update custom sync request status and payment_status
                 const { error: requestError } = await supabase
                   .from('custom_sync_requests')
                   .update({
                     status: 'completed',
+                    payment_status: 'paid', // <--- ADD THIS LINE
                     selected_submission_id: syncSubmissionId,
                     completed_at: new Date().toISOString()
                   })
