@@ -291,12 +291,14 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
     
     // Process track sales
     trackSales.forEach(sale => {
+      if (!sale.track || !sale.track.producer) return;
       const producerId = sale.track.producer.id;
+      if (!producerId) return;
       if (!producerMap.has(producerId)) {
         producerMap.set(producerId, {
           producerId,
-          producerName: `${sale.track.producer.first_name} ${sale.track.producer.last_name}`,
-          producerEmail: sale.track.producer.email,
+          producerName: `${sale.track.producer.first_name || ''} ${sale.track.producer.last_name || ''}`.trim() || 'Unknown',
+          producerEmail: sale.track.producer.email || 'unknown',
           trackLicenses: 0,
           syncProposals: 0,
           customSyncRequests: 0,
@@ -314,12 +316,14 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
 
     // Process sync proposals
     syncProposals.forEach(proposal => {
+      if (!proposal.track || !proposal.track.producer) return;
       const producerId = proposal.track.producer.id;
+      if (!producerId) return;
       if (!producerMap.has(producerId)) {
         producerMap.set(producerId, {
           producerId,
-          producerName: `${proposal.track.producer.first_name} ${proposal.track.producer.last_name}`,
-          producerEmail: proposal.track.producer.email,
+          producerName: `${proposal.track.producer.first_name || ''} ${proposal.track.producer.last_name || ''}`.trim() || 'Unknown',
+          producerEmail: proposal.track.producer.email || 'unknown',
           trackLicenses: 0,
           syncProposals: 0,
           customSyncRequests: 0,
@@ -337,12 +341,14 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
 
     // Process custom sync requests
     customSyncRequests.forEach(request => {
+      if (!request.preferred_producer) return;
       const producerId = request.preferred_producer.id;
+      if (!producerId) return;
       if (!producerMap.has(producerId)) {
         producerMap.set(producerId, {
           producerId,
-          producerName: `${request.preferred_producer.first_name} ${request.preferred_producer.last_name}`,
-          producerEmail: request.preferred_producer.email,
+          producerName: `${request.preferred_producer.first_name || ''} ${request.preferred_producer.last_name || ''}`.trim() || 'Unknown',
+          producerEmail: request.preferred_producer.email || 'unknown',
           trackLicenses: 0,
           syncProposals: 0,
           customSyncRequests: 0,
