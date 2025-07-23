@@ -2011,7 +2011,8 @@ if (subscription.price_id) {
       {/* AdminReportGenerator Modal */}
       <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} />
     </div>
+  </div>
   );
 }
 
-export { AdminDashboard };
+export default AdminDashboard;
