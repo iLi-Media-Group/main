@@ -192,6 +192,7 @@ function AdminDashboard() {
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [loadingContactMessages, setLoadingContactMessages] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
+  const [contactMessagesTab, setContactMessagesTab] = useState<'unread' | 'read'>('unread');
 
   useEffect(() => {
     if (user) {
@@ -1691,6 +1692,20 @@ if (subscription.price_id) {
         {activeTab === 'contact_messages' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <h2 className="text-2xl font-bold text-white mb-6">Contact Messages</h2>
+            <div className="mb-6 flex gap-4">
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${contactMessagesTab === 'unread' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-blue-500/10'}`}
+                onClick={() => setContactMessagesTab('unread')}
+              >
+                Unread
+              </button>
+              <button
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${contactMessagesTab === 'read' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-blue-500/10'}`}
+                onClick={() => setContactMessagesTab('read')}
+              >
+                Read
+              </button>
+            </div>
             {loadingContactMessages ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
@@ -1714,11 +1729,11 @@ if (subscription.price_id) {
                     </tr>
                   </thead>
                   <tbody>
-                    {contactMessages.length === 0 ? (
+                    {contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
                       </tr>
-                    ) : contactMessages.map((msg) => (
+                    ) : contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').map((msg) => (
                       <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
                         <td className="py-3 px-4 text-white">{msg.name}</td>
                         <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
