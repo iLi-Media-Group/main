@@ -887,6 +887,7 @@ const getPlanLevel = (plan: string): number => {
         }
       }));
       setCustomSyncLicenses(formattedCustomSyncs);
+      console.log('customSyncLicenses:', formattedCustomSyncs);
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -2124,6 +2125,8 @@ const getPlanLevel = (plan: string): number => {
                 })),
                 ...customSyncLicenses
               ];
+
+              console.log('allLicensedTracks:', allLicensedTracks);
 
               if (allLicensedTracks.length === 0) {
                 return (
