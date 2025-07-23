@@ -200,24 +200,40 @@ export function ProducerAnalyticsModal({
       
       // Add track sales to track stats
       sales?.forEach(sale => {
-        const trackTitle = sale.track?.[0]?.title;
+        let trackTitle: string | undefined = undefined;
+        if (sale.track) {
+          if (Array.isArray(sale.track)) {
+            trackTitle = (sale.track as any[])[0]?.title;
+          } else {
+            trackTitle = (sale.track as any).title;
+          }
+        }
         if (trackTitle) {
-          if (!trackStats[sale.track_id]) {
-            trackStats[sale.track_id] = {
+          const trackId = sale.track_id;
+          if (!trackStats[trackId]) {
+            trackStats[trackId] = {
               title: trackTitle,
               sales: 0,
               revenue: 0
             };
           }
-          trackStats[sale.track_id].sales++;
-          trackStats[sale.track_id].revenue += sale.amount;
+          trackStats[trackId].sales++;
+          trackStats[trackId].revenue += sale.amount;
         }
       });
-      
       // Add sync proposals to track stats
       paidSyncProposals?.forEach(proposal => {
-        const trackId = proposal.track?.[0]?.id;
-        const trackTitle = proposal.track?.[0]?.title;
+        let trackId: string | undefined = undefined;
+        let trackTitle: string | undefined = undefined;
+        if (proposal.track) {
+          if (Array.isArray(proposal.track)) {
+            trackId = (proposal.track as any[])[0]?.id;
+            trackTitle = (proposal.track as any[])[0]?.title;
+          } else {
+            trackId = (proposal.track as any).id;
+            trackTitle = (proposal.track as any).title;
+          }
+        }
         if (trackId && trackTitle) {
           if (!trackStats[trackId]) {
             trackStats[trackId] = {
