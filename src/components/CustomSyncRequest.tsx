@@ -4,9 +4,11 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
+import { useNavigate } from 'react-router-dom';
 
 export default function CustomSyncRequest() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [syncFee, setSyncFee] = useState('');
@@ -24,6 +26,7 @@ export default function CustomSyncRequest() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [paymentTerms, setPaymentTerms] = useState('immediate');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +53,7 @@ export default function CustomSyncRequest() {
           preferred_producer_id: hasPreferredProducer ? selectedProducer : null,
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
+          payment_terms: paymentTerms,
           status: 'open'
         })
         .select()
@@ -60,6 +64,7 @@ export default function CustomSyncRequest() {
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
+        navigate('/dashboard');
         // Reset form
         setProjectTitle('');
         setProjectDescription('');
@@ -75,6 +80,7 @@ export default function CustomSyncRequest() {
         setSelectedProducer('');
         setSubmissionInstructions('');
         setSubmissionEmail('');
+        setPaymentTerms('immediate');
       }, 3000);
     } catch (err) {
       console.error('Error submitting request:', err);
@@ -160,6 +166,23 @@ export default function CustomSyncRequest() {
                 />
               </div>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Payment Terms
+            </label>
+            <select
+              value={paymentTerms}
+              onChange={e => setPaymentTerms(e.target.value)}
+              className="w-full"
+              required
+            >
+              <option value="immediate">Immediate</option>
+              <option value="net30">Net 30</option>
+              <option value="net60">Net 60</option>
+              <option value="net90">Net 90</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
