@@ -441,6 +441,8 @@ const getPlanLevel = (plan: string): number => {
   const [downgradeEffectiveDate, setDowngradeEffectiveDate] = useState<string | null>(null);
   // Add to state:
   const [customSyncLicenses, setCustomSyncLicenses] = useState<any[]>([]);
+  // Add state for search
+  const [licensedTrackSearch, setLicensedTrackSearch] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -2037,6 +2039,14 @@ const getPlanLevel = (plan: string): number => {
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-white">Your Licensed Tracks</h2>
               <div className="flex items-center space-x-4">
+                <input
+                  type="text"
+                  placeholder="Search tracks..."
+                  value={licensedTrackSearch}
+                  onChange={e => setLicensedTrackSearch(e.target.value)}
+                  className="bg-white/10 border border-purple-500/20 rounded-lg px-3 py-1 text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  style={{ minWidth: 200 }}
+                />
                 <button
                   onClick={() => handleSort('renewal')}
                   className="flex items-center space-x-2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20"
@@ -2131,296 +2141,305 @@ const getPlanLevel = (plan: string): number => {
                 );
               }
 
-              return Array.isArray(allLicensedTracks) && allLicensedTracks.map((item, index) => {
-                if (item.type === 'license') {
-                    const license = item.data;
-                    if (!license || !license.track) {
-                      return null;
-                    }
-                    const expiryStatus = getExpiryStatus(license.expiry_date);
-                  
-                  return (
-                    <div
-                      key={license.id}
-                      className={`bg-white/5 backdrop-blur-sm rounded-lg p-4 border ${
-                        expiryStatus === 'expired' ? 'border-red-500/20' :
-                        expiryStatus === 'expiring-soon' ? 'border-yellow-500/20' :
-                        'border-purple-500/20'
-                      }`}
-                    >
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-start space-x-4 flex-1">
-                          <TrackImage
-                            imageUrl={license.track.image}
-                            title={license.track.title}
-                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                            onClick={() => navigate(`/track/${license.track.id}`)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col">
-                              <button
+              // Filter and limit tracks for display
+              const filteredLicensedTracks = allLicensedTracks.filter(item =>
+                item.track.title.toLowerCase().includes(licensedTrackSearch.toLowerCase())
+              );
+
+              return (
+                <div style={{ maxHeight: 700, overflowY: 'auto' }}>
+                  {filteredLicensedTracks.slice(0, 10).map((item, index) => {
+                    if (item.type === 'license') {
+                      const license = item.data;
+                      if (!license || !license.track) {
+                        return null;
+                      }
+                      const expiryStatus = getExpiryStatus(license.expiry_date);
+                    
+                      return (
+                        <div
+                          key={license.id}
+                          className={`bg-white/5 backdrop-blur-sm rounded-lg p-4 border ${
+                            expiryStatus === 'expired' ? 'border-red-500/20' :
+                            expiryStatus === 'expiring-soon' ? 'border-yellow-500/20' :
+                            'border-purple-500/20'
+                          }`}
+                        >
+                          <div className="flex flex-col h-full">
+                            <div className="flex items-start space-x-4 flex-1">
+                              <TrackImage
+                                imageUrl={license.track.image}
+                                title={license.track.title}
+                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
                                 onClick={() => navigate(`/track/${license.track.id}`)}
-                                className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left mb-2"
-                              >
-                                {license.track.title}
-                              </button>
-                              <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
-                                <span className="flex items-center">
-                                  <Tag className="w-4 h-4 mr-1" />
-                                  {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
-                                </span>
-                                <span className="flex items-center">
-                                  <Hash className="w-4 h-4 mr-1" />
-                                  {license.track.bpm} BPM
-                                </span>
-                                <span className="flex items-center">
-                                  <Layers className="w-4 h-4 mr-1" />
-                                  {license.license_type}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs ${
-                                    expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
-                                    expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
-                                    'bg-green-500/20 text-green-400'
-                                  }`}>
-                                    {expiryStatus === 'expired' ? 'Expired' :
-                                     expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
-                                     'Active'}
-                                  </span>
-                                  <span className="text-xs text-gray-400">
-                                    {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
-                                  </span>
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col">
+                                  <button
+                                    onClick={() => navigate(`/track/${license.track.id}`)}
+                                    className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left mb-2"
+                                  >
+                                    {license.track.title}
+                                  </button>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
+                                    <span className="flex items-center">
+                                      <Tag className="w-4 h-4 mr-1" />
+                                      {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Hash className="w-4 h-4 mr-1" />
+                                      {license.track.bpm} BPM
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Layers className="w-4 h-4 mr-1" />
+                                      {license.license_type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-1 rounded-full text-xs ${
+                                        expiryStatus === 'expired' ? 'bg-red-500/20 text-red-400' :
+                                        expiryStatus === 'expiring-soon' ? 'bg-yellow-500/20 text-yellow-400' :
+                                        'bg-green-500/20 text-green-400'
+                                      }`}>
+                                        {expiryStatus === 'expired' ? 'Expired' :
+                                         expiryStatus === 'expiring-soon' ? 'Expiring Soon' :
+                                         'Active'}
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        {expiryStatus === 'expired' ? 'Expired' : 'Expires'}: {new Date(license.expiry_date).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    {license.track.audioUrl && license.track.title && (
+                                      <div className="w-48">
+                                        <AudioPlayerWithSignedUrl
+                                          audioUrl={license.track.audioUrl}
+                                          title={license.track.title}
+                                          isPlaying={currentlyPlaying === `license-${license.id}`}
+                                          onToggle={() => {
+                                            if (currentlyPlaying === `license-${license.id}`) {
+                                              setCurrentlyPlaying(null);
+                                            } else {
+                                              setCurrentlyPlaying(`license-${license.id}`);
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                    {!license.track.audioUrl && (
+                                      <div className="text-xs text-gray-400 italic">
+                                        No audio preview available
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                {license.track.audioUrl && license.track.title && (
-                                  <div className="w-48">
-                                    <AudioPlayerWithSignedUrl
-                                      audioUrl={license.track.audioUrl}
-                                      title={license.track.title}
-                                      isPlaying={currentlyPlaying === `license-${license.id}`}
-                                      onToggle={() => {
-                                        if (currentlyPlaying === `license-${license.id}`) {
-                                          setCurrentlyPlaying(null);
-                                        } else {
-                                          setCurrentlyPlaying(`license-${license.id}`);
-                                        }
-                                      }}
-                                    />
-                                  </div>
-                                )}
-                                {!license.track.audioUrl && (
-                                  <div className="text-xs text-gray-400 italic">
-                                    No audio preview available
-                                  </div>
-                                )}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
-                          <div className="flex items-center space-x-2">
-                            <button
-                              onClick={() => handleViewLicenseAgreement(license.id)}
-                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                            >
-                              <FileText className="w-4 h-4 mr-2" />
-                              View Agreement
-                            </button>
-                            {license.track.mp3Url && (
-                              <button
-                                onClick={() => handleDownloadSupabase('track-audio', license.track.mp3Url, `${license.track.title}_MP3.mp3`)}
-                                className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download MP3"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download MP3
-                              </button>
-                            )}
-                            {license.track.trackoutsUrl && (
-                              <button
-                                onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Trackouts.zip`)}
-                                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Trackouts"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Trackouts
-                              </button>
-                            )}
-                            {license.track.stemsUrl && (
-                              <button
-                                onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
-                                className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Stems"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Stems
-                              </button>
-                            )}
-                            {license.track.splitSheetUrl && (
-                              <button
-                                onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
-                                className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Split Sheet"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Split Sheet
-                              </button>
-                            )}
-                            {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
-                              <span className="text-sm text-gray-400 italic">No files available for download</span>
-                            )}
-                            {license.track.splitSheetUrl && !license.track.splitSheetUrl.endsWith('split_sheet.pdf') && (
-                              <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
-                                Warning: Split sheet path does not match expected pattern. Please check upload logic and database.
-                              </div>
-                            )}
-                          </div>
-                          <button
-                            onClick={() => setSelectedLicenseToDelete(license)}
-                            className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                } else {
-                  // Sync proposal
-                  const proposal = item.data;
-                  if (!proposal || !proposal.track) {
-                    return null;
-                  }
-                  return (
-                    <div
-                      key={proposal.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
-                    >
-                      <div className="flex flex-col h-full">
-                        <div className="flex items-start space-x-4 flex-1">
-                          <TrackImage
-                            imageUrl={proposal.track.image_url || ''}
-                            title={proposal.track.title}
-                            className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
-                            onClick={() => navigate(`/track/${proposal.track.id}`)}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex flex-col space-y-3">
-                              <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
+                              <div className="flex items-center space-x-2">
                                 <button
-                                  onClick={() => navigate(`/track/${proposal.track.id}`)}
-                                  className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                                  onClick={() => handleViewLicenseAgreement(license.id)}
+                                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
                                 >
-                                  {proposal.track.title}
+                                  <FileText className="w-4 h-4 mr-2" />
+                                  View Agreement
                                 </button>
-                              </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
-                                <span className="flex items-center">
-                                  <Tag className="w-4 h-4 mr-1" />
-                                  {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
-                                </span>
-                                <span className="flex items-center">
-                                  <Hash className="w-4 h-4 mr-1" />
-                                  {proposal.track.bpm} BPM
-                                </span>
-                                <span className="flex items-center">
-                                  <DollarSign className="w-4 h-4 mr-1" />
-                                  ${(proposal.final_amount || proposal.sync_fee).toFixed(2)}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center space-x-2">
-                                  <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
-                                    Paid
-                                  </span>
-                                  <span className="text-xs text-gray-400">
-                                    Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
-                                  </span>
-                                </div>
-                                {(proposal.track.audio_url || proposal.track.mp3_url) && proposal.track.title && (
-                                  <div className="w-48">
-                                    <AudioPlayerWithSignedUrl
-                                      audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
-                                      title={proposal.track.title}
-                                      isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
-                                      onToggle={() => {
-                                        if (currentlyPlaying === `proposal-${proposal.id}`) {
-                                          setCurrentlyPlaying(null);
-                                        } else {
-                                          setCurrentlyPlaying(`proposal-${proposal.id}`);
-                                        }
-                                      }}
-                                    />
+                                {license.track.mp3Url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('track-audio', license.track.mp3Url, `${license.track.title}_MP3.mp3`)}
+                                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download MP3"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download MP3
+                                  </button>
+                                )}
+                                {license.track.trackoutsUrl && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('trackouts', license.track.trackoutsUrl, `${license.track.title}_Trackouts.zip`)}
+                                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Trackouts"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Trackouts
+                                  </button>
+                                )}
+                                {license.track.stemsUrl && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('stems', license.track.stemsUrl, `${license.track.title}_Stems.zip`)}
+                                    className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Stems"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Stems
+                                  </button>
+                                )}
+                                {license.track.splitSheetUrl && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
+                                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Split Sheet"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Split Sheet
+                                  </button>
+                                )}
+                                {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
+                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
+                                )}
+                                {license.track.splitSheetUrl && !license.track.splitSheetUrl.endsWith('split_sheet.pdf') && (
+                                  <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                                    Warning: Split sheet path does not match expected pattern. Please check upload logic and database.
                                   </div>
                                 )}
-                                {!proposal.track.audio_url && !proposal.track.mp3_url && (
-                                  <div className="text-xs text-gray-400 italic">
-                                    No audio preview available
+                              </div>
+                              <button
+                                onClick={() => setSelectedLicenseToDelete(license)}
+                                className="flex items-center px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    } else {
+                      // Sync proposal
+                      const proposal = item.data;
+                      if (!proposal || !proposal.track) {
+                        return null;
+                      }
+                      return (
+                        <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20"
+                        >
+                          <div className="flex flex-col h-full">
+                            <div className="flex items-start space-x-4 flex-1">
+                              <TrackImage
+                                imageUrl={proposal.track.image_url || ''}
+                                title={proposal.track.title}
+                                className="w-16 h-16 object-cover rounded-lg flex-shrink-0 cursor-pointer"
+                                onClick={() => navigate(`/track/${proposal.track.id}`)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col space-y-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <button
+                                      onClick={() => navigate(`/track/${proposal.track.id}`)}
+                                      className="text-lg font-semibold text-white hover:text-blue-400 transition-colors text-left"
+                                    >
+                                      {proposal.track.title}
+                                    </button>
                                   </div>
+                                  <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
+                                    <span className="flex items-center">
+                                      <Tag className="w-4 h-4 mr-1" />
+                                      {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <Hash className="w-4 h-4 mr-1" />
+                                      {proposal.track.bpm} BPM
+                                    </span>
+                                    <span className="flex items-center">
+                                      <DollarSign className="w-4 h-4 mr-1" />
+                                      ${(proposal.final_amount || proposal.sync_fee).toFixed(2)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded-full text-xs">
+                                        Paid
+                                      </span>
+                                      <span className="text-xs text-gray-400">
+                                        Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    {(proposal.track.audio_url || proposal.track.mp3_url) && proposal.track.title && (
+                                      <div className="w-48">
+                                        <AudioPlayerWithSignedUrl
+                                          audioUrl={proposal.track.audio_url || proposal.track.mp3_url}
+                                          title={proposal.track.title}
+                                          isPlaying={currentlyPlaying === `proposal-${proposal.id}`}
+                                          onToggle={() => {
+                                            if (currentlyPlaying === `proposal-${proposal.id}`) {
+                                              setCurrentlyPlaying(null);
+                                            } else {
+                                              setCurrentlyPlaying(`proposal-${proposal.id}`);
+                                            }
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                    {!proposal.track.audio_url && !proposal.track.mp3_url && (
+                                      <div className="text-xs text-gray-400 italic">
+                                        No audio preview available
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
+                              <div className="flex items-center space-x-2">
+                                <span className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
+                                  Sync Proposal
+                                </span>
+                                <button
+                                  onClick={() => handleViewSyncProposalLicense(proposal.id)}
+                                  className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium"
+                                  title="View License Agreement"
+                                >
+                                  <FileText className="w-4 h-4 mr-2" />
+                                  View Agreement
+                                </button>
+                                <button
+                                  onClick={() => handleShowHistory(proposal)}
+                                  className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium"
+                                >
+                                  <FileText className="w-4 h-4 mr-2" />
+                                  History
+                                </button>
+                                {proposal.payment_status === 'paid' && proposal.track.mp3_url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download MP3"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download MP3
+                                  </button>
+                                )}
+                                {proposal.payment_status === 'paid' && proposal.track.trackouts_url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Trackouts"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Trackouts
+                                  </button>
+                                )}
+                                {proposal.payment_status === 'paid' && proposal.track.stemsUrl && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
+                                    className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Stems"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Stems
+                                  </button>
                                 )}
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-600/30">
-                          <div className="flex items-center space-x-2">
-                            <span className="px-3 py-2 bg-purple-500/20 text-purple-400 rounded-lg text-sm font-medium">
-                              Sync Proposal
-                            </span>
-                            <button
-                              onClick={() => handleViewSyncProposalLicense(proposal.id)}
-                              className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors font-medium"
-                              title="View License Agreement"
-                            >
-                              <FileText className="w-4 h-4 mr-2" />
-                              View Agreement
-                            </button>
-                            <button
-                              onClick={() => handleShowHistory(proposal)}
-                              className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors font-medium"
-                            >
-                              <FileText className="w-4 h-4 mr-2" />
-                              History
-                            </button>
-                            {proposal.payment_status === 'paid' && proposal.track.mp3_url && (
-                              <button
-                                onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
-                                className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download MP3"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download MP3
-                              </button>
-                            )}
-                            {proposal.payment_status === 'paid' && proposal.track.trackouts_url && (
-                              <button
-                                onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
-                                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Trackouts"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Trackouts
-                              </button>
-                            )}
-                            {proposal.payment_status === 'paid' && proposal.track.stemsUrl && (
-                              <button
-                                onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
-                                className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                title="Download Stems"
-                              >
-                                <Download className="w-4 h-4 mr-2" />
-                                Download Stems
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-              });
+                      );
+                    }
+                  })}
+                </div>
+              );
             })()}
           </div>
 
