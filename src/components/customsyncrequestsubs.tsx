@@ -71,6 +71,8 @@ export default function CustomSyncRequestSubs() {
   const chatBoxMessagesRef = useRef<HTMLDivElement>(null);
   const [showProducerProfileDialog, setShowProducerProfileDialog] = useState(false);
   const [producerProfileId, setProducerProfileId] = useState<string | null>(null);
+  // Add a pendingChatOpen state
+  const [pendingChatOpen, setPendingChatOpen] = useState(false);
 
   // --- Persistent notification logic ---
   const getLastViewed = (reqId: string) => localStorage.getItem(`cust_sync_last_viewed_${reqId}`);
@@ -782,6 +784,13 @@ export default function CustomSyncRequestSubs() {
     }
   };
 
+  useEffect(() => {
+    if (pendingChatOpen && selectedSubmission) {
+      handleMessageProducer();
+      setPendingChatOpen(false);
+    }
+  }, [pendingChatOpen, selectedSubmission]);
+
   return (
     <div className="min-h-screen bg-blue-900 py-8">
       <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row gap-8">
@@ -899,7 +908,7 @@ export default function CustomSyncRequestSubs() {
                                   onClick={async () => {
                                     if (!selectedSubmission || selectedSubmission.reqId !== req.id || selectedSubmission.sub.id !== sub.id) {
                                       setSelectedSubmission({ reqId: req.id, sub });
-                                      setTimeout(() => handleMessageProducer(), 0);
+                                      setPendingChatOpen(true);
                                     } else {
                                       await handleMessageProducer();
                                     }
