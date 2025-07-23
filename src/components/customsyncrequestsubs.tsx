@@ -876,9 +876,9 @@ export default function CustomSyncRequestSubs() {
                   )}
                   {/* Render submissions for this request */}
                   {submissions[req.id] && submissions[req.id].length > 0 ? (
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                       {submissions[req.id].map((sub) => (
-                        <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative max-w-[70%]">
+                        <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative max-w-[35%]">
                           <div className="flex items-center gap-2 mb-1">
                             <button
                               className={`text-yellow-400 hover:text-yellow-300 focus:outline-none ${favoriteIds.has(sub.id) ? 'font-bold' : ''}`}
