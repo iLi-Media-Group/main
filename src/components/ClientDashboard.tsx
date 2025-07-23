@@ -439,6 +439,8 @@ const getPlanLevel = (plan: string): number => {
   // Add state for pending downgrade
   const [pendingDowngrade, setPendingDowngrade] = useState(false);
   const [downgradeEffectiveDate, setDowngradeEffectiveDate] = useState<string | null>(null);
+  // Add to state:
+  const [customSyncLicenses, setCustomSyncLicenses] = useState<any[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -847,6 +849,43 @@ const getPlanLevel = (plan: string): number => {
           daysUntilReset: Math.ceil((new Date(startOfMonth.getFullYear(), startOfMonth.getMonth() + 1, 1).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
         }));
       }
+
+      // In fetchDashboardData, after fetching syncRequests:
+      const { data: completedCustomSyncs } = await supabase
+        .from('custom_sync_requests')
+        .select('*')
+        .eq('client_id', user.id)
+        .eq('status', 'completed')
+        .eq('payment_status', 'paid');
+      const formattedCustomSyncs = (completedCustomSyncs || []).map(sync => ({
+        id: sync.id,
+        type: 'custom_sync',
+        data: sync,
+        track: {
+          id: sync.id,
+          title: sync.project_title,
+          artist: sync.project_description || 'Custom Sync',
+          genres: [sync.genre],
+          subGenres: sync.sub_genres || [],
+          moods: [],
+          duration: '',
+          bpm: 0,
+          hasStingEnding: false,
+          isOneStop: false,
+          audioUrl: sync.mp3_url || '',
+          image: '',
+          mp3Url: sync.mp3_url || '',
+          trackoutsUrl: sync.trackouts_url || '',
+          splitSheetUrl: sync.split_sheet_url || '',
+          stemsUrl: sync.stems_url || '',
+          producerId: '',
+          producer: undefined,
+          fileFormats: { stereoMp3: { format: [], url: '' }, stems: { format: [], url: '' }, stemsWithVocals: { format: [], url: '' } },
+          pricing: { stereoMp3: 0, stems: 0, stemsWithVocals: 0 },
+          leaseAgreementUrl: '',
+        }
+      }));
+      setCustomSyncLicenses(formattedCustomSyncs);
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -2073,7 +2112,8 @@ const getPlanLevel = (plan: string): number => {
                     stemsUrl: !Array.isArray(proposal.track) ? (proposal.track as any)?.stems_url || '' : '',
                   },
                   id: proposal.id
-                }))
+                })),
+                ...customSyncLicenses
               ];
 
               if (allLicensedTracks.length === 0) {

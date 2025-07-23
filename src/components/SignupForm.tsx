@@ -137,7 +137,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="glass-card p-8 rounded-xl w-full max-w-md relative">
         <button
           onClick={onClose}

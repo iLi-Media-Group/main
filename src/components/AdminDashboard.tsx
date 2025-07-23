@@ -444,7 +444,6 @@ if (subscription.price_id) {
           console.error('Error fetching white label subscriptions:', whiteLabelSubscriptionsError);
         }
         
-        const whiteLabelSubscriptions = whiteLabelSubscriptionsData || [];
         console.log('White Label Subscriptions found:', whiteLabelSubscriptions.length);
         console.log('White Label Subscriptions data:', whiteLabelSubscriptions);
         
