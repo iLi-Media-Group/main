@@ -220,6 +220,10 @@ export function ProducerDashboard() {
   const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
   // Add state for tab selection
   const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
+  // Add state for pagination and search
+  const [trackSearch, setTrackSearch] = useState('');
+  const [trackPage, setTrackPage] = useState(1);
+  const tracksPerPage = 10;
 
   useEffect(() => {
     if (user) {
@@ -683,6 +687,13 @@ export function ProducerDashboard() {
     );
   }
 
+  // Filter and paginate tracks
+  const filteredTracks = tracks.filter(track =>
+    track.title.toLowerCase().includes(trackSearch.toLowerCase())
+  );
+  const totalTrackPages = Math.ceil(filteredTracks.length / tracksPerPage);
+  const paginatedTracks = filteredTracks.slice((trackPage - 1) * tracksPerPage, trackPage * tracksPerPage);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       <div className="container mx-auto px-4 py-8">
@@ -900,95 +911,108 @@ export function ProducerDashboard() {
               </div>
             </div>
 
-            {sortedTracks.length === 0 ? (
+            {paginatedTracks.length === 0 ? (
               <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
                 <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No tracks found</p>
-                <Link
-                  to="/producer/upload"
-                  className="inline-block mt-4 px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
-                >
-                  Upload Your First Track
-                </Link>
+                <p className="text-gray-400">No tracks found.</p>
               </div>
             ) : (
-              sortedTracks.map((track) => (
-                <div
-                  key={track.id}
-                  className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
-                >
-                  <div className="flex items-start space-x-4">
-                    <TrackImage track={track} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col">
-                        <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                        <div className="text-sm text-gray-400 space-y-1">
-                          <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
-                          <div className="flex items-center space-x-4">
-                            <span className="flex items-center">
-                              <DollarSign className="w-4 h-4 mr-1 text-green-400" />
-                              ${track.revenue.toFixed(2)}
-                            </span>
-                            <span className="flex items-center">
-                              <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
-                              {track.sales_count} sales
-                            </span>
-                            {track.has_vocals && (
+              <div>
+                {paginatedTracks.map((track) => (
+                  <div
+                    key={track.id}
+                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                  >
+                    <div className="flex items-start space-x-4">
+                      <TrackImage track={track} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col">
+                          <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
+                          <div className="text-sm text-gray-400 space-y-1">
+                            <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                            <div className="flex items-center space-x-4">
                               <span className="flex items-center">
-                                <Mic className="w-4 h-4 mr-1 text-purple-400" />
-                                {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                                ${track.revenue.toFixed(2)}
                               </span>
-                            )}
+                              <span className="flex items-center">
+                                <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                                {track.sales_count} sales
+                              </span>
+                              {track.has_vocals && (
+                                <span className="flex items-center">
+                                  <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                  {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 mt-3">
+                            <button
+                              onClick={() => {
+                                setSelectedTrack(track);
+                                setShowEditTrackModal(true);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                              title="Edit Track"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTrack(track);
+                                setShowTrackProposalsDialog(true);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                              title="View Proposals"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedTrack(track);
+                                setShowDeleteDialog(true);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
+                              title="Delete Track"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2 mt-3">
-                          <button
-                            onClick={() => {
-                              setSelectedTrack(track);
-                              setShowEditTrackModal(true);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                            title="Edit Track"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedTrack(track);
-                              setShowTrackProposalsDialog(true);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                            title="View Proposals"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedTrack(track);
-                              setShowDeleteDialog(true);
-                            }}
-                            className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
-                            title="Delete Track"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                      </div>
+                      <div className="w-64 flex-shrink-0">
+                        <div className="mb-3">
+                            {/* Audio Player with debug warning if audio_url is missing or incorrect */}
+                            {(!track.audio_url || !track.audio_url.endsWith('audio.mp3')) && (
+                              <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                                Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
+                              </div>
+                            )}
+                            <TrackAudioPlayer track={track} />
+                          </div>
                       </div>
                     </div>
-                    <div className="w-64 flex-shrink-0">
-                      <div className="mb-3">
-                          {/* Audio Player with debug warning if audio_url is missing or incorrect */}
-                          {(!track.audio_url || !track.audio_url.endsWith('audio.mp3')) && (
-                            <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
-                              Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
-                            </div>
-                          )}
-                          <TrackAudioPlayer track={track} />
-                        </div>
-                    </div>
                   </div>
+                ))}
+                <div className="flex justify-center items-center mt-4 gap-2">
+                  <button
+                    onClick={() => setTrackPage(p => Math.max(1, p - 1))}
+                    disabled={trackPage === 1}
+                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-white">Page {trackPage} of {totalTrackPages}</span>
+                  <button
+                    onClick={() => setTrackPage(p => Math.min(totalTrackPages, p + 1))}
+                    disabled={trackPage === totalTrackPages}
+                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                  >
+                    Next
+                  </button>
                 </div>
-              ))
+              </div>
             )}
           </div>
 
