@@ -189,7 +189,7 @@ export default function CustomSyncRequest() {
                   Sub-Genres (Optional)
                 </label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {SUB_GENRES[selectedGenre as keyof typeof SUB_GENRES].map((subGenre) => (
+                  {(SUB_GENRES[selectedGenre as keyof typeof SUB_GENRES] || []).map((subGenre) => (
                     <label key={subGenre} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
