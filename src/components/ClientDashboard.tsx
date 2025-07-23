@@ -534,7 +534,7 @@ const getPlanLevel = (plan: string): number => {
       const checkoutUrl = await createCheckoutSession(priceId, 'subscription', undefined, undefined, successUrl);
       
       // Redirect to Stripe
-      window.location.href = checkoutUrl;
+      window.open(checkoutUrl, '_self');
     } catch (error) {
       console.error('Error creating checkout session:', error);
       setMembershipError(error instanceof Error ? error.message : 'Failed to create checkout session');
@@ -870,12 +870,17 @@ const getPlanLevel = (plan: string): number => {
         try {
           const { data: selectedSub } = await supabase
             .from('sync_submissions')
-            .select('track_url')
+            .select('track_url, producer_id')
             .eq('sync_request_id', sync.id)
             .eq('selected', true)
             .maybeSingle();
           if (selectedSub && selectedSub.track_url) {
             mp3Url = selectedSub.track_url;
+            // Only update selected_producer_id if selectedSub is defined
+            await supabase
+              .from('custom_sync_requests')
+              .update({ selected_producer_id: selectedSub.producer_id })
+              .eq('id', sync.id);
           }
         } catch (e) {
           // Ignore errors, fallback to sync.mp3_url
@@ -908,11 +913,6 @@ const getPlanLevel = (plan: string): number => {
             leaseAgreementUrl: '',
           }
         });
-        // After marking the submission as selected and payment as paid:
-        await supabase
-          .from('custom_sync_requests')
-          .update({ selected_producer_id: selectedSub.producer_id })
-          .eq('id', sync.id);
       }
       setCustomSyncLicenses(formattedCustomSyncs);
       console.log('customSyncLicenses:', formattedCustomSyncs);
@@ -1202,7 +1202,7 @@ const getPlanLevel = (plan: string): number => {
         },
         `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
       );
-      window.location.href = checkoutUrl;
+      window.open(checkoutUrl, '_self');
     } catch (err) {
       console.error('Error initiating payment:', err);
       alert('Failed to initiate payment. Please try again.');
