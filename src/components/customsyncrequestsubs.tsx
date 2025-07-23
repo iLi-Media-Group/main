@@ -73,6 +73,8 @@ export default function CustomSyncRequestSubs() {
   const [producerProfileId, setProducerProfileId] = useState<string | null>(null);
   // Add a pendingChatOpen state
   const [pendingChatOpen, setPendingChatOpen] = useState(false);
+  // Add a dummy state to force re-render
+  const [chatRerender, setChatRerender] = useState(0);
 
   // --- Persistent notification logic ---
   const getLastViewed = (reqId: string) => localStorage.getItem(`cust_sync_last_viewed_${reqId}`);
@@ -90,7 +92,7 @@ export default function CustomSyncRequestSubs() {
     if (showChatDialog && chatDialogMessagesRef.current) {
       chatDialogMessagesRef.current.scrollTop = chatDialogMessagesRef.current.scrollHeight;
     }
-  }, [chatMessages, showChatDialog]);
+  }, [chatMessages, showChatDialog, chatRerender]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -182,6 +184,9 @@ export default function CustomSyncRequestSubs() {
               if (prev.some(msg => msg.id === newMessage.id)) return prev;
               return [...prev, newMessage];
             });
+            setChatRerender((r) => r + 1); // Force re-render
+          } else {
+            setChatRerender((r) => r + 1); // Force re-render for other chats
           }
           // Update unread count for the specific request
           setUnreadCounts(prev => ({
