@@ -896,12 +896,12 @@ export default function CustomSyncRequestSubs() {
                                 </span>
                                 <button
                                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={() => {
+                                  onClick={async () => {
                                     if (!selectedSubmission || selectedSubmission.reqId !== req.id || selectedSubmission.sub.id !== sub.id) {
                                       setSelectedSubmission({ reqId: req.id, sub });
-                                      setTimeout(() => setShowChatDialog(true), 0);
+                                      setTimeout(() => handleMessageProducer(), 0);
                                     } else {
-                                      setShowChatDialog(true);
+                                      await handleMessageProducer();
                                     }
                                   }}
                                 >
