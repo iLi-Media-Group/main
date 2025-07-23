@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
+import { ProducerProfileDialog } from './ProducerProfileDialog';
 
 interface CustomSyncRequest {
   id: string;
@@ -68,6 +69,8 @@ export default function CustomSyncRequestSubs() {
   const [sendingChatBoxMessage, setSendingChatBoxMessage] = useState(false);
   const chatDialogMessagesRef = useRef<HTMLDivElement>(null);
   const chatBoxMessagesRef = useRef<HTMLDivElement>(null);
+  const [showProducerProfileDialog, setShowProducerProfileDialog] = useState(false);
+  const [producerProfileId, setProducerProfileId] = useState<string | null>(null);
 
   // --- Persistent notification logic ---
   const getLastViewed = (reqId: string) => localStorage.getItem(`cust_sync_last_viewed_${reqId}`);
@@ -867,7 +870,9 @@ export default function CustomSyncRequestSubs() {
                               </button>
                               <span className="text-white font-semibold text-lg">{sub.track_name || 'Untitled Track'}</span>
                             </div>
-                            <div className="text-blue-200 text-sm">Producer: {sub.producer_name || 'Unknown'}</div>
+                            <div className="text-blue-200 text-sm">
+                              Producer: <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
+                            </div>
                             <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
                             {sub.signed_mp3_url && (
                               <div className="my-2">
@@ -1006,7 +1011,7 @@ export default function CustomSyncRequestSubs() {
                     >
                       <p className="text-sm font-medium mb-1">
                         {message.sender.first_name || message.sender.last_name
-                          ? `${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()
+                          ? <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(message.sender.id); setShowProducerProfileDialog(true); }}>{`${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()}</button>
                           : (message.sender.email === user?.email ? 'You' : 'Unknown')}
                       </p>
                       <p>{message.message}</p>
@@ -1041,6 +1046,8 @@ export default function CustomSyncRequestSubs() {
           </div>
         </div>
       )}
+
+      <ProducerProfileDialog isOpen={!!showProducerProfileDialog && !!producerProfileId} onClose={() => setShowProducerProfileDialog(false)} producerId={producerProfileId || ''} />
     </div>
   );
 } 
