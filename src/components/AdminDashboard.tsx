@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -82,6 +82,16 @@ interface WhiteLabelClient {
   features_amount_paid?: number;
 }
 
+interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+}
+
 // Helper to load a background image as base64
 const getBase64ImageFromURL = (url: string) =>
   new Promise<string>((resolve, reject) => {
@@ -161,7 +171,7 @@ function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -179,6 +189,9 @@ function AdminDashboard() {
     secondary_color: '#8b5cf6'
   });
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [loadingContactMessages, setLoadingContactMessages] = useState(false);
+  const [contactError, setContactError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -215,6 +228,12 @@ function AdminDashboard() {
       supabase.removeChannel(channel);
     };
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab === 'contact_messages') {
+      fetchContactMessages();
+    }
+  }, [activeTab]);
 
   const fetchData = async () => {
     if (!user) return;
@@ -1068,6 +1087,35 @@ if (subscription.price_id) {
   const openReportModal = () => setIsReportModalOpen(true);
   const closeReportModal = () => setIsReportModalOpen(false);
 
+  const fetchContactMessages = async () => {
+    setLoadingContactMessages(true);
+    setContactError(null);
+    try {
+      const { data, error } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setContactMessages(data || []);
+    } catch (err) {
+      setContactError('Failed to fetch contact messages.');
+    } finally {
+      setLoadingContactMessages(false);
+    }
+  };
+
+  const markAsRead = async (id: string) => {
+    try {
+      await supabase
+        .from('contact_messages')
+        .update({ status: 'read' })
+        .eq('id', id);
+      setContactMessages((prev) => prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg));
+    } catch (err) {
+      alert('Failed to mark as read.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1261,6 +1309,7 @@ if (subscription.price_id) {
             { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
+            { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1469,7 +1518,7 @@ if (subscription.price_id) {
             <DiscountManagement />
           </div>
         )}
-      </div>
+
         {/* White Label Admin Panel */}
         {activeTab === 'white_label' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -1639,6 +1688,59 @@ if (subscription.price_id) {
           <GenreManagement />
         )}
 
+        {activeTab === 'contact_messages' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">Contact Messages</h2>
+            {loadingContactMessages ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+              </div>
+            ) : contactError ? (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-center font-medium">{contactError}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-blue-500/20">
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Name</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Email</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Subject</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Message</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Status</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Date</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contactMessages.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
+                      </tr>
+                    ) : contactMessages.map((msg) => (
+                      <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-white">{msg.name}</td>
+                        <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
+                        <td className="py-3 px-4 text-white">{msg.subject}</td>
+                        <td className="py-3 px-4 text-gray-200 max-w-xs break-words">{msg.message}</td>
+                        <td className="py-3 px-4 text-white">
+                          {msg.status === 'unread' ? <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">Unread</span> : <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Read</span>}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
+                        <td className="py-3 px-4">
+                          {msg.status === 'unread' && (
+                            <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (
