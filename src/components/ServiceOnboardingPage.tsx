@@ -354,7 +354,7 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
                 </button>
               </div>
             </form>
-          )}
+          )
         </div>
       </div>
     </Layout>
