@@ -428,6 +428,7 @@ const App = () => {
         <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
 
         <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
+        <Route path="/service-onboarding-public" element={<ServiceOnboardingPage publicMode={true} />} />
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 

@@ -57,10 +57,10 @@ const STYLE_TAGS = [
   'Abstract'
 ];
 
-export default function ServiceOnboardingPage() {
+export default function ServiceOnboardingPage({ publicMode = false }: { publicMode?: boolean }) {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState<'validate' | 'form' | 'success' | 'invalid'>('validate');
+  const [step, setStep] = useState<'validate' | 'form' | 'success' | 'invalid'>(publicMode ? 'form' : 'validate');
   const [email, setEmail] = useState('');
   const [tokenData, setTokenData] = useState<any>(null);
   const [form, setForm] = useState({
@@ -80,10 +80,12 @@ export default function ServiceOnboardingPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setStep('validate');
-    setTokenData(null);
-    setError('');
-  }, [token]);
+    if (!publicMode) {
+      setStep('validate');
+      setTokenData(null);
+      setError('');
+    }
+  }, [token, publicMode]);
 
   const validateToken = async () => {
     setLoading(true);
@@ -105,9 +107,9 @@ export default function ServiceOnboardingPage() {
   };
 
   useEffect(() => {
-    if (token) validateToken();
+    if (!publicMode && token) validateToken();
     // eslint-disable-next-line
-  }, [token]);
+  }, [token, publicMode]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,7 +172,7 @@ export default function ServiceOnboardingPage() {
     }
   };
 
-  if (step === 'invalid') {
+  if (!publicMode && step === 'invalid') {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -195,9 +197,9 @@ export default function ServiceOnboardingPage() {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-        <div className="w-full max-w-2xl bg-white/5 rounded-xl border border-blue-500/20 p-8 mt-8 mb-8 shadow-xl overflow-y-auto max-h-[90vh]">
+        <div className="w-full max-w-lg bg-white/5 rounded-xl border border-blue-500/20 p-4 sm:p-8 mt-8 mb-8 shadow-xl max-h-[90vh] overflow-y-auto flex flex-col">
           <h1 className="text-2xl font-bold mb-6 text-center">Service Provider Onboarding</h1>
-          {step === 'validate' && (
+          {!publicMode && step === 'validate' && (
             <form onSubmit={handleEmailSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-1">Enter your email to continue</label>
@@ -219,8 +221,7 @@ export default function ServiceOnboardingPage() {
               </button>
             </form>
           )}
-          {step === 'form' && (
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
