@@ -1112,6 +1112,10 @@ if (subscription.price_id) {
         .update({ status: 'read' })
         .eq('id', id);
       setContactMessages((prev) => prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg));
+      // Optionally, if currently on the 'unread' tab, remove the message from the list immediately
+      if (contactMessagesTab === 'unread') {
+        setContactMessages((prev) => prev.filter((msg) => !(msg.id === id && msg.status === 'read')));
+      }
     } catch (err) {
       alert('Failed to mark as read.');
     }
