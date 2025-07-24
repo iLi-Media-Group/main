@@ -20,6 +20,7 @@ import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -448,6 +449,14 @@ const getPlanLevel = (plan: string): number => {
   const [customSyncLicenses, setCustomSyncLicenses] = useState<any[]>([]);
   // Add state for search
   const [licensedTrackSearch, setLicensedTrackSearch] = useState('');
+  // Add state for renewal
+  const [renewingLicenseId, setRenewingLicenseId] = useState<string | null>(null);
+  const [renewalSuccess, setRenewalSuccess] = useState<string | null>(null);
+  const [renewalError, setRenewalError] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState<{ licenseId: string, licenseType: string } | null>(null);
+  // Add state for payment loading and error
+  const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -1398,6 +1407,67 @@ const getPlanLevel = (plan: string): number => {
   //     supabase.removeChannel(channel);
   //   };
   // }, [user]);
+
+  // Helper: check if license is expiring within 15 days
+  const isExpiringSoon = (expiry: string) => {
+    const now = new Date();
+    const exp = new Date(expiry);
+    const diff = (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+    return diff <= 15;
+  };
+
+  // Handler for regular renewal payment
+  const handlePayRenewal = async (license: License) => {
+    if (!user) return;
+    setPaymentLoadingId(license.id);
+    setPaymentError(null);
+    try {
+      // Find the priceId for this license type
+      let priceId = '';
+      if (license.license_type === 'Single Track') {
+        priceId = 'price_1RdAeZR8RYA8TFzwVH3MHECa';
+      } else if (license.license_type === 'Gold Access') {
+        priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+      } else if (license.license_type === 'Platinum Access') {
+        priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+      } else if (license.license_type === 'Ultimate Access') {
+        priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+      }
+      if (!priceId) throw new Error('Unknown license type');
+      const url = await createCheckoutSession(priceId, 'payment', license.track.id, { renewal: true, licenseId: license.id });
+      window.location.href = url;
+    } catch (err: any) {
+      setPaymentError(err.message || 'Failed to start payment');
+    } finally {
+      setPaymentLoadingId(null);
+    }
+  };
+
+  // Handler for sync/custom renewal payment
+  const handlePaySyncRenewal = async (proposal: any) => {
+    if (!user) return;
+    setPaymentLoadingId(proposal.id);
+    setPaymentError(null);
+    try {
+      const amount = Math.round((proposal.final_amount || proposal.sync_fee) * 100); // cents
+      const url = await createCheckoutSession('price_custom', 'payment', proposal.track.id, { renewal: true, proposalId: proposal.id, amount });
+      window.location.href = url;
+    } catch (err: any) {
+      setPaymentError(err.message || 'Failed to start payment');
+    } finally {
+      setPaymentLoadingId(null);
+    }
+  };
+
+  // Handler for completing renewal after payment (stub)
+  const handleCompleteRenewal = async (license: License) => {
+    // In real app, get new expiry from backend or payment confirmation
+    const newExpiry = new Date();
+    newExpiry.setFullYear(newExpiry.getFullYear() + 1);
+    await completeRenewal({ licenseType: 'regular', licenseId: license.id, userId: user.id, newExpiryDate: newExpiry.toISOString() });
+    setShowPaymentDialog(null);
+    fetchDashboardData();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">

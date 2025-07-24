@@ -15,6 +15,7 @@ import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
 import { CustomSyncTrackUploadForm } from './CustomSyncTrackUploadForm';
+import { respondRenewalRequest } from '../api/renewal';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -128,6 +129,9 @@ interface Proposal {
   negotiation_status?: string;
   client_accepted_at?: string;
   payment_status?: string; // Added for paid sync proposals
+  renewal_status?: string;
+  renewal_requested_at?: string;
+  renewal_reason?: string;
 }
 
 // Add a helper to determine if a proposal has a pending action
@@ -224,6 +228,10 @@ export function ProducerDashboard() {
   const [trackSearch, setTrackSearch] = useState('');
   const [trackPage, setTrackPage] = useState(1);
   const tracksPerPage = 10;
+  const [dashboardTab, setDashboardTab] = useState<'proposals' | 'renewals'>('proposals');
+  const [renewalRequests, setRenewalRequests] = useState<Proposal[]>([]);
+  const [renewalLoadingId, setRenewalLoadingId] = useState<string | null>(null);
+  const [renewalFeedback, setRenewalFeedback] = useState<{ [id: string]: string }>({});
 
   useEffect(() => {
     if (user) {
@@ -264,6 +272,50 @@ export function ProducerDashboard() {
     };
     fetchOpenSyncRequests();
   }, []);
+
+  // Fetch renewal requests
+  useEffect(() => {
+    if (!user) return;
+    const fetchRenewalRequests = async () => {
+      const { data, error } = await supabase
+        .from('sync_proposals')
+        .select(`
+          id, track_id, client_id, renewal_status, renewal_requested_at, renewal_reason, payment_status, final_amount, sync_fee, client:profiles!client_id (first_name, last_name, email), track:tracks!track_id (id, title)
+        `)
+        .eq('proposal_producer_id', user.id)
+        .eq('renewal_status', 'pending_producer')
+        .order('renewal_requested_at', { ascending: false });
+      if (!error && data) {
+        // Flatten client and track fields
+        const flattened = data.map((p: any) => ({
+          ...p,
+          client: Array.isArray(p.client) ? p.client[0] : p.client,
+          track: Array.isArray(p.track) ? p.track[0] : p.track,
+        }));
+        setRenewalRequests(flattened);
+      }
+    };
+    fetchRenewalRequests();
+  }, [user]);
+
+  const handleRespondRenewal = async (proposalId: string, action: 'accept' | 'reject', reason?: string) => {
+    if (!user) return;
+    setRenewalLoadingId(proposalId);
+    setRenewalFeedback(fb => ({ ...fb, [proposalId]: '' }));
+    try {
+      const res = await respondRenewalRequest({ licenseId: proposalId, producerId: user.id, action, reason });
+      if (res.success) {
+        setRenewalFeedback(fb => ({ ...fb, [proposalId]: action === 'accept' ? 'Accepted. Waiting for client payment.' : 'Rejected.' }));
+        setRenewalRequests(reqs => reqs.filter(r => r.id !== proposalId));
+      } else {
+        setRenewalFeedback(fb => ({ ...fb, [proposalId]: res.error || 'Failed to respond.' }));
+      }
+    } catch (err) {
+      setRenewalFeedback(fb => ({ ...fb, [proposalId]: 'Failed to respond.' }));
+    } finally {
+      setRenewalLoadingId(null);
+    }
+  };
 
   const fetchDashboardData = async () => {
     if (!user) return;
