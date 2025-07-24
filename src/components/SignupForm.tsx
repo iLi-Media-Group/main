@@ -138,7 +138,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
 
   return (
     <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card p-8 rounded-xl w-full max-w-md relative">
+      <div className="glass-card p-8 rounded-xl w-full max-w-md relative max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"

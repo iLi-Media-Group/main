@@ -497,7 +497,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[95vh] flex flex-col">
+      <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden">
         {/* Track and Terms Header */}
         <div className="mb-4 p-4 bg-white/10 rounded-lg flex-shrink-0">
           <div className="text-lg font-bold text-white mb-1">{proposal?.track?.title || 'Untitled Track'}</div>
@@ -550,8 +550,8 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         )}
 
         {/* Accept/Decline Negotiation Section */}
-        {showAcceptDecline && pendingNegotiation && (
-          <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex-shrink-0">
+        {pendingNegotiation && (
+          <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex-shrink-0 max-h-64 overflow-y-auto">
             <h3 className="text-lg font-semibold text-yellow-400 mb-2">Review Proposed Changes</h3>
             <div className="space-y-2 text-gray-300">
               {pendingNegotiation.counter_offer && (
@@ -599,7 +599,7 @@ export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialPr
         )}
 
         {/* Scrollable Messages Area */}
-        <div className="flex-1 overflow-y-auto mb-4 space-y-4 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
           {messages.map((msg) => (
             <div
               key={msg.id}

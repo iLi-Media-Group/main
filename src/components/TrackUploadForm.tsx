@@ -527,13 +527,13 @@ export function TrackUploadForm() {
                 </label>
                 <input
                   type="file"
-                  accept="audio/*"
+                  accept="audio/mp3"
                   onChange={handleFileChange}
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Supported formats: MP3, WAV, AIFF (Max 50MB)
+                  Supported format: MP3 only (Max 50MB)
                 </p>
               </div>
 

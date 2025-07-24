@@ -1147,13 +1147,22 @@ if (subscription.price_id) {
               </p>
             )}
           </div>
-          <button
-            onClick={() => setShowLogoUpload(!showLogoUpload)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Change Logo
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowLogoUpload(!showLogoUpload)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Change Logo
+            </button>
+            <Link
+              to="/admin/services"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manage/Add Services
+            </Link>
+          </div>
         </div>
 
         {showLogoUpload && <LogoUpload />}

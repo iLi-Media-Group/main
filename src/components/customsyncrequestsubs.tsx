@@ -374,7 +374,6 @@ export default function CustomSyncRequestSubs() {
     }
     
     setConfirmSelect(null);
-    alert('Track selected! All other submissions will be declined.');
   };
 
   // Handle Stripe payment for selected submission
@@ -961,10 +960,7 @@ export default function CustomSyncRequestSubs() {
                                 )}
                                 <button
                                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={() => {
-                                    setSelectedSubmission({ reqId: req.id, sub });
-                                    handleDeselect();
-                                  }}
+                                  onClick={handleDeselect}
                                 >
                                   De-select
                                 </button>

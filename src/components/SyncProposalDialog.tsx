@@ -126,17 +126,6 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-blue-900/90 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        {/* Track and Terms Header */}
-        <div className="mb-6 p-4 bg-white/10 rounded-lg">
-          <div className="text-lg font-bold text-white mb-1">{track.title}</div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200 text-sm">
-            <div><span className="font-medium">Sync Fee:</span> ${track.sync_fee ? track.sync_fee : 'N/A'}</div>
-            <div><span className="font-medium">Payment Terms:</span> {track.payment_terms ? track.payment_terms : 'N/A'}</div>
-            <div><span className="font-medium">Exclusivity:</span> {track.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</div>
-          </div>
-        </div>
-        {/* End Track and Terms Header */}
-
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Submit Sync Proposal</h2>
           <button

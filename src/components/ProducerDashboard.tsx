@@ -708,8 +708,13 @@ export function ProducerDashboard() {
 
   // Tab filter logic for proposals
   const filteredPendingProposals = proposals.filter(p => 
+    // Include proposals that are pending or where only one party has accepted
     (p.status === 'pending' || 
-    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected') ||
+    (p.client_status !== 'accepted' && p.client_status !== 'rejected')) &&
+    // Exclude proposals where both parties have accepted (these go to Accepted tab)
+    !(p.producer_status === 'accepted' && p.client_status === 'accepted') &&
+    // Exclude proposals where either party has rejected
     p.producer_status !== 'rejected' && 
     p.client_status !== 'rejected'
   );

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
-import { createCheckoutSession, cancelUserSubscription } from '../lib/stripe';
+import { createCheckoutSession, cancelUserSubscription, resumeUserSubscription } from '../lib/stripe';
 
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -457,6 +457,9 @@ const getPlanLevel = (plan: string): number => {
   // Add state for payment loading and error
   const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [cancelDowngradeLoading, setCancelDowngradeLoading] = useState(false);
+  const [cancelDowngradeError, setCancelDowngradeError] = useState<string | null>(null);
+  const [cancelDowngradeSuccess, setCancelDowngradeSuccess] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -1532,13 +1535,43 @@ const getPlanLevel = (plan: string): number => {
                 </p>
               )}
               {pendingDowngrade && downgradeEffectiveDate && (
-                <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2" />
-                  <span>
-                    Your account will be downgraded to <b>Single Track</b> on{' '}
-                    <b>{new Date(new Date(downgradeEffectiveDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</b>. You will retain your current plan until then.
-                  </span>
+                <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    <span>
+                      Your account will be downgraded to <b>Single Track</b> on{' '}
+                      <b>{new Date(new Date(downgradeEffectiveDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</b>. You will retain your current plan until then.
+                    </span>
+                  </div>
+                  <button
+                    className="ml-4 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded transition-colors text-sm font-semibold disabled:opacity-50"
+                    disabled={cancelDowngradeLoading}
+                    onClick={async () => {
+                      if (!window.confirm('Are you sure you want to cancel your scheduled downgrade and keep your current subscription?')) return;
+                      setCancelDowngradeLoading(true);
+                      setCancelDowngradeError(null);
+                      setCancelDowngradeSuccess(false);
+                      try {
+                        await resumeUserSubscription();
+                        await refreshMembership();
+                        setPendingDowngrade(false);
+                        setCancelDowngradeSuccess(true);
+                      } catch (err: any) {
+                        setCancelDowngradeError(err.message || 'Failed to cancel downgrade.');
+                      } finally {
+                        setCancelDowngradeLoading(false);
+                      }
+                    }}
+                  >
+                    {cancelDowngradeLoading ? 'Processing...' : 'Cancel Downgrade'}
+                  </button>
                 </div>
+              )}
+              {cancelDowngradeError && (
+                <div className="mt-2 p-2 bg-red-500/10 text-red-400 rounded text-sm">{cancelDowngradeError}</div>
+              )}
+              {cancelDowngradeSuccess && (
+                <div className="mt-2 p-2 bg-green-500/10 text-green-400 rounded text-sm">Your downgrade has been canceled. Your subscription will continue as normal.</div>
               )}
             </div>
             {membershipPlan === 'Gold Access' && userStats.remainingLicenses < 3 && (

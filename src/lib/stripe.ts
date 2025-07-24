@@ -107,6 +107,31 @@ export async function cancelUserSubscription() {
   }
 }
 
+export async function resumeUserSubscription() {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to resume your subscription');
+    }
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${baseUrl}/functions/v1/resume-stripe-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to resume subscription');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
+    throw error;
+  }
+}
+
 export function formatCurrency(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

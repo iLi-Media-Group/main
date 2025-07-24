@@ -45,7 +45,7 @@ export default function CustomSyncRequest() {
           sync_fee: parseFloat(syncFee),
           end_date: endDate,
           genre: selectedGenre,
-          sub_genres: selectedSubGenres,
+          sub_genres: selectedSubGenres.length > 0 ? selectedSubGenres : [],
           reference_artist: referenceArtist || null,
           reference_song: referenceSong || null,
           reference_url: referenceUrl || null,
@@ -346,22 +346,6 @@ export default function CustomSyncRequest() {
                   value={submissionInstructions}
                   onChange={(e) => setSubmissionInstructions(e.target.value)}
                   rows={4}
-                  className="w-full pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Submission Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={submissionEmail}
-                  onChange={(e) => setSubmissionEmail(e.target.value)}
                   className="w-full pl-10"
                   required
                 />
