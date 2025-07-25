@@ -54,6 +54,7 @@ export interface Track {
   sync_fee?: number;
   payment_terms?: string;
   is_exclusive?: boolean;
+  explicit_lyrics?: boolean;
 }
 
 export interface SyncProposal {

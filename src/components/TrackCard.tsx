@@ -261,6 +261,13 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
               </div>
             )}
             
+            {/* Explicit Lyrics Badge */}
+            {track.explicit_lyrics && (
+              <div className="flex items-center text-red-400 bg-red-500/20 px-2 py-0.5 rounded-full">
+                <span className="font-bold mr-1">E</span>
+                <span>Explicit</span>
+              </div>
+            )}
             {/* MP3 Badge */}
             {track.mp3Url && (
               <div className="flex items-center text-green-400">

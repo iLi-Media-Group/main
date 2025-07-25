@@ -95,6 +95,8 @@ export function TrackUploadForm() {
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   // Add state for expanded moods
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
+  // Add state for explicit lyrics
+  const [explicitLyrics, setExplicitLyrics] = useState(false);
 
   // Handle success modal countdown
   useEffect(() => {
@@ -342,6 +344,7 @@ export function TrackUploadForm() {
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? 'normal' : null,
           is_sync_only: isSyncOnly,
+          explicit_lyrics: explicitLyrics,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -774,7 +777,19 @@ export function TrackUploadForm() {
                 />
                 <span>Track contains vocals</span>
               </label>
-
+              {/* Explicit Lyrics Checkbox - only show if hasVocals is true */}
+              {hasVocals && (
+                <label className="flex items-center space-x-2 text-red-300">
+                  <input
+                    type="checkbox"
+                    checked={explicitLyrics}
+                    onChange={(e) => setExplicitLyrics(e.target.checked)}
+                    className="rounded border-gray-600 text-red-600 focus:ring-red-500"
+                    disabled={isSubmitting}
+                  />
+                  <span>This track contains explicit lyrics</span>
+                </label>
+              )}
 
 
               <label className="flex items-center space-x-2 text-gray-300">

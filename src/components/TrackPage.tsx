@@ -185,7 +185,8 @@ export function TrackPage() {
             stems: 0, 
             stemsWithVocals: 0 
           },
-          leaseAgreementUrl: ''
+          leaseAgreementUrl: '',
+          explicit_lyrics: trackData.explicit_lyrics || false
         };
         
         setTrack(mappedTrack);
@@ -408,6 +409,12 @@ export function TrackPage() {
                     </div>
                   )}
                   
+                  {track.explicit_lyrics && (
+                    <div className="flex items-center text-red-400">
+                      <span className="font-bold mr-1">E</span>
+                      <span>Explicit Lyrics</span>
+                    </div>
+                  )}
                   {track.hasStingEnding && (
                     <div className="flex items-center text-gray-300">
                       <Music className="w-5 h-5 mr-2 text-blue-400" />
