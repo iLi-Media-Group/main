@@ -62,9 +62,9 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
-      react-google-recaptcha:
-        specifier: ^3.1.0
-        version: 3.1.0(react@18.3.1)
+      react-google-recaptcha-v3:
+        specifier: ^1.11.0
+        version: 1.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-hot-toast:
         specifier: ^2.5.2
         version: 2.5.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -102,9 +102,6 @@ importers:
       '@types/react-dom':
         specifier: ^18.2.19
         version: 18.3.7(@types/react@18.3.23)
-      '@types/react-google-recaptcha':
-        specifier: ^2.1.9
-        version: 2.1.9
       '@types/uuid':
         specifier: ^9.0.8
         version: 9.0.8
@@ -2498,9 +2495,6 @@ packages:
     resolution: {integrity: sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==}
     peerDependencies:
       '@types/react': ^18.0.0
-
-  '@types/react-google-recaptcha@2.1.9':
-    resolution: {integrity: sha512-nT31LrBDuoSZJN4QuwtQSF3O89FVHC4jLhM+NtKEmVF5R1e8OY0Jo4//x2Yapn2aNHguwgX5doAq8Zo+Ehd0ug==}
 
   '@types/react@18.3.23':
     resolution: {integrity: sha512-/LDXMQh55EzZQ0uVAZmKKhfENivEvWz6E+EYzh+/MCjMhNsotd+ZHhBGIjFDTi6+fz0OhQQQLbTgdQIxxCsC0w==}
@@ -5186,11 +5180,6 @@ packages:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
 
-  react-async-script@1.2.0:
-    resolution: {integrity: sha512-bCpkbm9JiAuMGhkqoAiC0lLkb40DJ0HOEJIku+9JDjxX3Rcs+ztEOG13wbrOskt3n2DTrjshhaQ/iay+SnGg5Q==}
-    peerDependencies:
-      react: '>=16.4.1'
-
   react-chartjs-2@5.3.0:
     resolution: {integrity: sha512-UfZZFnDsERI3c3CZGxzvNJd02SHjaSJ8kgW1djn65H1KK8rehwTjyrRKOG3VTMG8wtHZ5rgAO5oTHtHi9GCCmw==}
     peerDependencies:
@@ -5208,10 +5197,11 @@ packages:
   react-fast-compare@2.0.4:
     resolution: {integrity: sha512-suNP+J1VU1MWFKcyt7RtjiSWUjvidmQSlqu+eHslq+342xCbGTYmC0mEhPCOHxlW0CywylOC1u2DFAT+bv4dBw==}
 
-  react-google-recaptcha@3.1.0:
-    resolution: {integrity: sha512-cYW2/DWas8nEKZGD7SCu9BSuVz8iOcOLHChHyi7upUuVhkpkhYG/6N3KDiTQ3XAiZ2UAZkfvYKMfAHOzBOcGEg==}
+  react-google-recaptcha-v3@1.11.0:
+    resolution: {integrity: sha512-kLQqpz/77m8+trpBwzqcxNtvWZYoZ/YO6Vm2cVTHW8hs80BWUfDpC7RDwuAvpswwtSYApWfaSpIDFWAIBNIYxQ==}
     peerDependencies:
-      react: '>=16.4.1'
+      react: ^16.3 || ^17.0 || ^18.0 || ^19.0
+      react-dom: ^17.0 || ^18.0 || ^19.0
 
   react-hot-toast@2.5.2:
     resolution: {integrity: sha512-Tun3BbCxzmXXM7C+NI4qiv6lT0uwGh4oAfeJyNOjYUejTsm35mK9iCaYLGv8cBz9L5YxZLx/2ii7zsIwPtPUdw==}
@@ -10150,10 +10140,6 @@ snapshots:
     dependencies:
       '@types/react': 18.3.23
 
-  '@types/react-google-recaptcha@2.1.9':
-    dependencies:
-      '@types/react': 18.3.23
-
   '@types/react@18.3.23':
     dependencies:
       '@types/prop-types': 15.7.15
@@ -13416,12 +13402,6 @@ snapshots:
 
   range-parser@1.2.1: {}
 
-  react-async-script@1.2.0(react@18.3.1):
-    dependencies:
-      hoist-non-react-statics: 3.3.2
-      prop-types: 15.8.1
-      react: 18.3.1
-
   react-chartjs-2@5.3.0(chart.js@4.5.0)(react@18.3.1):
     dependencies:
       chart.js: 4.5.0
@@ -13443,11 +13423,11 @@ snapshots:
 
   react-fast-compare@2.0.4: {}
 
-  react-google-recaptcha@3.1.0(react@18.3.1):
+  react-google-recaptcha-v3@1.11.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      prop-types: 15.8.1
+      hoist-non-react-statics: 3.3.2
       react: 18.3.1
-      react-async-script: 1.2.0(react@18.3.1)
+      react-dom: 18.3.1(react@18.3.1)
 
   react-hot-toast@2.5.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:

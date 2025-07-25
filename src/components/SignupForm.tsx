@@ -3,13 +3,13 @@ import { Mail, Lock, User, X, Building2, Music, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import ReCAPTCHA from "react-google-recaptcha";
+import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 
 interface SignupFormProps {
   onClose: () => void;
 }
 
-export function SignupForm({ onClose }: SignupFormProps) {
+function SignupFormContent({ onClose }: SignupFormProps) {
   const [searchParams] = useSearchParams();
   const [email, setEmail] = useState(searchParams.get('email') || '');
   const [password, setPassword] = useState('');
@@ -24,8 +24,7 @@ export function SignupForm({ onClose }: SignupFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   
@@ -55,7 +54,13 @@ export function SignupForm({ onClose }: SignupFormProps) {
         throw new Error('Password does not meet requirements');
       }
 
-      if (!captchaToken) {
+      if (!executeRecaptcha) {
+        throw new Error('reCAPTCHA not loaded');
+      }
+
+      // Execute reCAPTCHA
+      const token = await executeRecaptcha('signup');
+      if (!token) {
         throw new Error('Please complete the reCAPTCHA verification');
       }
 
@@ -154,11 +159,6 @@ export function SignupForm({ onClose }: SignupFormProps) {
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
-      // Reset reCAPTCHA on error
-      if (recaptchaRef.current) {
-        recaptchaRef.current.reset();
-      }
-      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -383,14 +383,6 @@ export function SignupForm({ onClose }: SignupFormProps) {
             </span>
           </label>
 
-          <div className="flex justify-center">
-            <ReCAPTCHA
-              sitekey="6LeE_Y4rAAAAALZxpq4wmNgMTCldPePWEKdy2-W0"
-              onChange={(value) => setCaptchaToken(value)}
-              ref={recaptchaRef}
-            />
-          </div>
-
           <button
             type="submit"
             disabled={loading || success}
@@ -401,5 +393,21 @@ export function SignupForm({ onClose }: SignupFormProps) {
         </form>
       </div>
     </div>
+  );
+}
+
+export function SignupForm({ onClose }: SignupFormProps) {
+  return (
+    <GoogleReCaptchaProvider
+      reCaptchaKey="6LeE_Y4rAAAAALZxpq4wmNgMTCldPePWEKdy2-W0"
+      scriptProps={{
+        async: false,
+        defer: false,
+        appendTo: 'body',
+        nonce: undefined,
+      }}
+    >
+      <SignupFormContent onClose={onClose} />
+    </GoogleReCaptchaProvider>
   );
 }
