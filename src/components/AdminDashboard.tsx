@@ -1117,16 +1117,32 @@ if (subscription.price_id) {
 
   const markAsRead = async (id: string) => {
     try {
-      await supabase
+      console.log('Marking message as read:', id);
+      
+      const { data, error } = await supabase
         .from('contact_messages')
         .update({ status: 'read' })
-        .eq('id', id);
-      setContactMessages((prev) => prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg));
-      // Optionally, if currently on the 'unread' tab, remove the message from the list immediately
-      if (contactMessagesTab === 'unread') {
-        setContactMessages((prev) => prev.filter((msg) => !(msg.id === id && msg.status === 'read')));
+        .eq('id', id)
+        .select();
+      
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
       }
+      
+      console.log('Database update result:', data);
+      
+      // Update the local state to reflect the change
+      setContactMessages((prev) => {
+        const updated = prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg);
+        console.log('Updated contact messages:', updated);
+        return updated;
+      });
+      
+      // Show success feedback
+      console.log('Message marked as read successfully');
     } catch (err) {
+      console.error('Error marking message as read:', err);
       alert('Failed to mark as read.');
     }
   };
