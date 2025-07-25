@@ -1843,9 +1843,9 @@ if (subscription.price_id) {
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => window.open(`/services/${service.id}`, '_blank')}
+                              onClick={() => window.open(`/services`, '_blank')}
                               className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
-                              title="View service"
+                              title="View services page"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
