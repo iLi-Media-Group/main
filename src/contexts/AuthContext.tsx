@@ -68,28 +68,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create one
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: email,
-              account_type: 'client', // Default to client
-              membership_plan: 'Single Track'
-            });
-            
-          if (insertError) {
-            console.error('Error creating profile:', {
-              message: (insertError as any)?.message,
-              details: (insertError as any)?.details,
-              hint: (insertError as any)?.hint,
-              error: insertError
-            });
-            setAccountType('client');
-            setNeedsPasswordSetup(false);
-            return;
-          }
-          
+          // Profile doesn't exist - don't create one automatically
+          // Let the signup form handle profile creation
+          console.log('Profile doesn\'t exist, but not creating automatically');
           setAccountType('client');
           setMembershipPlan('Single Track');
           setNeedsPasswordSetup(false);
