@@ -19,6 +19,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
 import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 interface UserStats {
   total_clients: number;
@@ -198,6 +199,11 @@ function AdminDashboard() {
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [servicesError, setServicesError] = useState<string | null>(null);
+
+  // Feature flag checks for white label clients
+  const { isEnabled: producerOnboardingEnabled } = useFeatureFlag('producer_onboarding');
+  const { isEnabled: aiSearchEnabled } = useFeatureFlag('ai_search_assistance');
+  const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
 
   useEffect(() => {
     if (user) {
@@ -1403,7 +1409,7 @@ if (subscription.price_id) {
         <div className="flex flex-wrap border-b border-blue-500/20 mb-8">
           {[
             { id: 'analytics', label: 'Analytics', icon: null },
-            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" /> },
+            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" />, featureFlag: 'advanced_analytics' },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
@@ -1412,9 +1418,22 @@ if (subscription.price_id) {
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
-            { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" /> },
+            { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
-          ].map(tab => (
+          ].filter(tab => {
+            // Always show tabs without feature flags
+            if (!tab.featureFlag) return true;
+            
+            // Check feature flags for specific tabs
+            switch (tab.featureFlag) {
+              case 'producer_onboarding':
+                return producerOnboardingEnabled;
+              case 'advanced_analytics':
+                return aiSearchEnabled; // Using aiSearchEnabled as proxy for advanced analytics
+              default:
+                return true;
+            }
+          }).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
@@ -1448,10 +1467,21 @@ if (subscription.price_id) {
         )}
 
         {/* Advanced Analytics Section */}
-        {activeTab === 'advanced_analytics' && (
+        {activeTab === 'advanced_analytics' && aiSearchEnabled && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <h2 className="text-2xl font-bold text-white mb-6">Advanced Analytics Dashboard</h2>
             <AdvancedAnalyticsDashboard />
+          </div>
+        )}
+
+        {activeTab === 'advanced_analytics' && !aiSearchEnabled && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="text-center py-12">
+              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-4">Advanced Analytics</h2>
+              <p className="text-gray-400 mb-6">This feature requires the AI Search Assistance add-on to be enabled.</p>
+              <p className="text-sm text-gray-500">Contact your administrator to enable this feature.</p>
+            </div>
           </div>
         )}
 
@@ -1860,8 +1890,19 @@ if (subscription.price_id) {
           </div>
         )}
 
-        {activeTab === 'producer_applications' && (
+        {activeTab === 'producer_applications' && producerOnboardingEnabled && (
           <ProducerApplicationsAdmin />
+        )}
+
+        {activeTab === 'producer_applications' && !producerOnboardingEnabled && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-4">Producer Applications</h2>
+              <p className="text-gray-400 mb-6">This feature requires the Producer Onboarding add-on to be enabled.</p>
+              <p className="text-sm text-gray-500">Contact your administrator to enable this feature.</p>
+            </div>
+          </div>
         )}
 
         {activeTab === 'services' && (

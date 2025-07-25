@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
 import AISearchAssistant from './AISearchAssistant';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,6 +19,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const isAdmin = user?.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email);
+  
+  // Feature flag checks
+  const { isEnabled: aiSearchEnabled } = useFeatureFlag('ai_search_assistance');
 
 
   useEffect(() => {
@@ -268,16 +272,18 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
         {children}
       </main>
 
-      <AISearchAssistant onSearchApply={(filters) => {
-        const params = new URLSearchParams();
-        if (filters.query) params.set('q', filters.query);
-        if (filters.genres?.length) params.set('genres', filters.genres.join(','));
-        if (filters.moods?.length) params.set('moods', filters.moods.join(','));
-        if (filters.minBpm) params.set('minBpm', filters.minBpm.toString());
-        if (filters.maxBpm) params.set('maxBpm', filters.maxBpm.toString());
+      {aiSearchEnabled && (
+        <AISearchAssistant onSearchApply={(filters) => {
+          const params = new URLSearchParams();
+          if (filters.query) params.set('q', filters.query);
+          if (filters.genres?.length) params.set('genres', filters.genres.join(','));
+          if (filters.moods?.length) params.set('moods', filters.moods.join(','));
+          if (filters.minBpm) params.set('minBpm', filters.minBpm.toString());
+          if (filters.maxBpm) params.set('maxBpm', filters.maxBpm.toString());
 
-        navigate(`/catalog?${params.toString()}`);
-      }} />
+          navigate(`/catalog?${params.toString()}`);
+        }} />
+      )}
 
       <Footer />
     </div>
