@@ -344,6 +344,17 @@ export default function AdminServicesPage() {
                         ))}
                       </div>
                     )}
+                    {/* Display additional images at the bottom */}
+                    {(service.image2 || service.image3) && (
+                      <div className="flex gap-2 mt-4">
+                        {service.image2 && (
+                          <img src={service.image2} alt="Additional 1" className="h-20 rounded border border-blue-500/20" />
+                        )}
+                        {service.image3 && (
+                          <img src={service.image3} alt="Additional 2" className="h-20 rounded border border-blue-500/20" />
+                        )}
+                      </div>
+                    )}
                     <div className="flex space-x-2 mt-4">
                       <button className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm" onClick={() => handleEdit(service)}>Edit</button>
                       <button className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm" onClick={() => handleDelete(service)}>Delete</button>
@@ -351,14 +362,6 @@ export default function AdminServicesPage() {
                   </div>
                 ))
               )}
-            </div>
-            <div className="mb-8">
-              <button
-                className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
-                onClick={() => setShowOnboardingModal(true)}
-              >
-                Invite Service Provider
-              </button>
             </div>
             {/* Add/Edit Modal */}
             {showForm && (
@@ -536,53 +539,6 @@ export default function AdminServicesPage() {
                       <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingService ? 'Update' : 'Add'}</button>
                     </div>
                   </form>
-                </div>
-              </div>
-            )}
-            {/* Onboarding Modal */}
-            {showOnboardingModal && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                <div className="bg-blue-900/90 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
-                  <h2 className="text-xl font-bold mb-4">Invite Service Provider</h2>
-                  <label className="block text-sm font-medium mb-1">Provider Email</label>
-                  <input
-                    type="email"
-                    value={onboardingEmail}
-                    onChange={e => setOnboardingEmail(e.target.value)}
-                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mb-4"
-                    required
-                  />
-                  <label className="block text-sm font-medium mb-1">Service Type</label>
-                  <select
-                    value={onboardingType}
-                    onChange={e => setOnboardingType(e.target.value)}
-                    className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mb-4"
-                  >
-                    {SERVICE_TYPES.map((t) => (
-                      <option key={t.key} value={t.key}>{t.label}</option>
-                    ))}
-                  </select>
-                  {onboardingError && <div className="text-red-400 mb-2">{onboardingError}</div>}
-                  {onboardingLink && (
-                    <div className="text-green-400 mb-2 break-all">
-                      Link sent! <a href={onboardingLink} className="underline" target="_blank" rel="noopener noreferrer">{onboardingLink}</a>
-                    </div>
-                  )}
-                  <div className="flex justify-end space-x-2 mt-4">
-                    <button
-                      className="px-4 py-2 bg-gray-700 rounded"
-                      onClick={() => setShowOnboardingModal(false)}
-                    >
-                      Close
-                    </button>
-                    <button
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white"
-                      onClick={handleSendOnboardingLink}
-                      disabled={sendingOnboarding || !onboardingEmail}
-                    >
-                      {sendingOnboarding ? 'Sending...' : 'Send Link'}
-                    </button>
-                  </div>
                 </div>
               </div>
             )}
