@@ -242,19 +242,8 @@ function AdminDashboard() {
   }, [user]);
 
   useEffect(() => {
-    console.log('Active tab changed to:', activeTab);
-    console.log('Current contact messages length:', contactMessages.length);
     if (activeTab === 'contact_messages' && contactMessages.length === 0) {
-      console.log('Fetching contact messages due to empty state');
       fetchContactMessages();
-    } else if (activeTab === 'contact_messages') {
-      console.log('Contact messages tab accessed, but messages already loaded');
-      console.log('Current messages status breakdown:');
-      const statusCounts = contactMessages.reduce((acc, msg) => {
-        acc[msg.status] = (acc[msg.status] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log('Status counts:', statusCounts);
     }
   }, [activeTab]);
 
@@ -1120,7 +1109,6 @@ if (subscription.price_id) {
     setLoadingContactMessages(true);
     setContactError(null);
     try {
-      console.log('=== FETCH CONTACT MESSAGES START ===');
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
@@ -1131,19 +1119,7 @@ if (subscription.price_id) {
         throw error;
       }
       
-      console.log('Fetched contact messages from database:', data);
-      console.log('Number of messages:', data?.length);
-      console.log('Status breakdown:');
-      if (data) {
-        const statusCounts = data.reduce((acc, msg) => {
-          acc[msg.status] = (acc[msg.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('Status counts:', statusCounts);
-      }
-      
       setContactMessages(data || []);
-      console.log('=== FETCH CONTACT MESSAGES END ===');
     } catch (err) {
       console.error('Failed to fetch contact messages:', err);
       setContactError('Failed to fetch contact messages.');
@@ -1154,39 +1130,8 @@ if (subscription.price_id) {
 
   const markAsRead = async (id: string) => {
     try {
-      console.log('=== MARK AS READ START ===');
-      console.log('Message ID:', id);
-      
-      // Check if user is admin
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('account_type')
-        .eq('id', user?.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error fetching user profile:', profileError);
-      } else {
-        console.log('User account type:', profileData?.account_type);
-      }
-      
-      // First, let's check the current status of the message
-      const { data: currentData, error: currentError } = await supabase
-        .from('contact_messages')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (currentError) {
-        console.error('Error fetching current message:', currentError);
-        throw currentError;
-      }
-      
-      console.log('Current message status:', currentData);
-      console.log('Current status value:', currentData?.status);
-      
       // Update the message status
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('contact_messages')
         .update({ 
           status: 'read'
@@ -1194,51 +1139,19 @@ if (subscription.price_id) {
         .eq('id', id);
       
       if (error) {
-        console.error('Database update error:', error);
-        console.error('Error details:', error.details);
-        console.error('Error hint:', error.hint);
-        console.error('Error code:', error.code);
-        console.error('Error message:', error.message);
+        console.error('Error marking message as read:', error);
         throw error;
       }
       
-      console.log('Database update result:', data);
-      console.log('Update successful, data returned:', data);
-      
-      // Verify the update by fetching the message again
-      const { data: verifyData, error: verifyError } = await supabase
-        .from('contact_messages')
-        .select('*')
-        .eq('id', id)
-        .single();
-      
-      if (verifyError) {
-        console.error('Error verifying update:', verifyError);
-      } else {
-        console.log('Verified message status after update:', verifyData);
-        console.log('Verified status value:', verifyData?.status);
-      }
-      
       // Update the local state to reflect the change
-      setContactMessages((prev) => {
-        const updated = prev.map((msg) => {
-          if (msg.id === id) {
-            const updatedMsg = { ...msg, status: 'read' };
-            console.log('Updating local state for message:', updatedMsg);
-            return updatedMsg;
-          }
-          return msg;
-        });
-        console.log('Updated contact messages array:', updated);
-        return updated;
-      });
-      
-      // Show success feedback
-      console.log('Message marked as read successfully');
-      console.log('=== MARK AS READ END ===');
+      setContactMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === id ? { ...msg, status: 'read' } : msg
+        )
+      );
     } catch (err) {
       console.error('Error marking message as read:', err);
-      alert('Failed to mark as read. Check console for details.');
+      alert('Failed to mark as read.');
     }
   };
 
@@ -1926,42 +1839,27 @@ if (subscription.price_id) {
                     </tr>
                   </thead>
                                     <tbody>
-                    {(() => {
-                      const filteredMessages = contactMessages.filter(msg => 
-                        contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read'
-                      );
-                      console.log('=== CONTACT MESSAGES FILTERING ===');
-                      console.log('Current tab:', contactMessagesTab);
-                      console.log('All messages:', contactMessages);
-                      console.log('Filtered messages:', filteredMessages);
-                      console.log('Filtered count:', filteredMessages.length);
-                      
-                      if (filteredMessages.length === 0) {
-                        return (
-                          <tr>
-                            <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
-                          </tr>
-                        );
-                      }
-                      
-                      return filteredMessages.map((msg) => (
-                        <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
-                          <td className="py-3 px-4 text-white">{msg.name}</td>
-                          <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
-                          <td className="py-3 px-4 text-white">{msg.subject}</td>
-                          <td className="py-3 px-4 text-gray-200 max-w-xs break-words">{msg.message}</td>
-                          <td className="py-3 px-4 text-white">
-                            {msg.status === 'unread' ? <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">Unread</span> : <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Read</span>}
-                          </td>
-                          <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
-                          <td className="py-3 px-4">
-                            {msg.status === 'unread' && (
-                              <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
-                            )}
-                          </td>
-                        </tr>
-                      ));
-                    })()}
+                    {contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
+                      </tr>
+                    ) : contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').map((msg) => (
+                      <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-white">{msg.name}</td>
+                        <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
+                        <td className="py-3 px-4 text-white">{msg.subject}</td>
+                        <td className="py-3 px-4 text-gray-200 max-w-xs break-words">{msg.message}</td>
+                        <td className="py-3 px-4 text-white">
+                          {msg.status === 'unread' ? <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">Unread</span> : <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Read</span>}
+                        </td>
+                        <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
+                        <td className="py-3 px-4">
+                          {msg.status === 'unread' && (
+                            <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
