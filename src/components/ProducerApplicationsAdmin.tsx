@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
+import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 type Application = {
   id: string;
@@ -19,182 +20,591 @@ type Application = {
   sample_use: string;
   splice_use: string;
   loop_use: string;
+  ai_generated_music: string;
   artist_collab: string;
   business_entity: string;
+  pro_affiliation: string;
   additional_info: string;
   status: string;
-  disqualification_reason: string | null;
-  review_score: number | null;
-  tier: string | null;
+  review_tier: string | null;
+  auto_disqualified: boolean;
+  created_at: string;
+  updated_at: string;
 };
+
+type TabType = 'new' | 'invited' | 'save_for_later' | 'declined';
 
 export default function ProducerApplicationsAdmin() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filter, setFilter] = useState<string>('All');
+  const [activeTab, setActiveTab] = useState<TabType>('new');
+  const [selectedGenre, setSelectedGenre] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'date' | 'genre'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [search, setSearch] = useState<string>('');
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
 
   useEffect(() => {
     fetchApplications();
-  }, [filter, search]);
+  }, [activeTab]);
 
   const fetchApplications = async () => {
     setLoading(true);
-    let query = supabase.from('producer_applications').select('*').order('created_at', { ascending: false });
+    try {
+      let query = supabase
+        .from('producer_applications')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-    if (filter === 'Pending') query = query.eq('status', 'Pending');
-    if (filter === 'Qualified') query = query.eq('status', 'Qualified');
-    if (filter === 'Disqualified') query = query.eq('status', 'Disqualified');
-    if (['Tier 1', 'Tier 2', 'Tier 3'].includes(filter)) query = query.eq('tier', filter);
-
-    const { data, error } = await query;
-    if (error) console.error('Error fetching applications:', error);
-    else {
-      let filtered = data as Application[];
-      if (search.trim()) {
-        const lower = search.toLowerCase();
-        filtered = filtered.filter(app => app.name.toLowerCase().includes(lower) || app.email.toLowerCase().includes(lower));
+      // Filter by status based on active tab
+      switch (activeTab) {
+        case 'new':
+          query = query.eq('status', 'new').is('review_tier', null);
+          break;
+        case 'invited':
+          query = query.eq('status', 'invited');
+          break;
+        case 'save_for_later':
+          query = query.eq('status', 'save_for_later');
+          break;
+        case 'declined':
+          query = query.eq('status', 'declined');
+          break;
       }
-      setApplications(filtered);
+
+      const { data, error } = await query;
+      if (error) {
+        console.error('Error fetching applications:', error);
+      } else {
+        setApplications(data || []);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const evaluateAndScore = async (app: Application) => {
-    let status = 'Qualified';
-    let reason: string | null = null;
-    let score = 0;
-    let tier = '';
-
-    if (app.sample_use === 'Yes' || app.loop_use === 'Yes') {
-      status = 'Disqualified';
-      reason = 'Uses samples or loops';
-      score = 0;
-      tier = 'Disqualified';
-    } else {
-      if (app.team_type.toLowerCase().includes('one')) score += 40;
-      if (app.instruments && app.instruments.length > 3) score += 20;
-      const years = parseInt(app.years_experience);
-      if (!isNaN(years)) {
-        if (years >= 5) score += 30;
-        else if (years >= 2) score += 15;
+  const updateApplicationStatus = async (applicationId: string, newStatus: string, reviewTier?: string) => {
+    try {
+      const updateData: any = { status: newStatus };
+      if (reviewTier) {
+        updateData.review_tier = reviewTier;
       }
-      if (app.business_entity.toLowerCase().includes('llc') || app.business_entity.toLowerCase().includes('corp')) score += 10;
+      
+      const { error } = await supabase
+        .from('producer_applications')
+        .update(updateData)
+        .eq('id', applicationId);
 
-      if (app.splice_use === 'Yes') tier = 'Tier 2';
-      else if (score >= 80) tier = 'Tier 1';
-      else if (score >= 50) tier = 'Tier 2';
-      else tier = 'Tier 3';
+      if (error) {
+        console.error('Error updating application:', error);
+      } else {
+        // Refresh the applications list
+        fetchApplications();
+      }
+    } catch (err) {
+      console.error('Error:', err);
     }
-
-    await supabase
-      .from('producer_applications')
-      .update({ review_score: score, status, disqualification_reason: reason, tier })
-      .eq('id', app.id);
   };
 
-  const runAutoDisqualificationForAll = async () => {
-    for (const app of applications) {
-      if (app.status === 'Pending') await evaluateAndScore(app);
+  const getTabApplications = () => {
+    let filtered = applications;
+
+    // Filter by genre if selected
+    if (selectedGenre) {
+      filtered = filtered.filter(app => 
+        app.primary_genre.toLowerCase().includes(selectedGenre.toLowerCase()) ||
+        (app.secondary_genre && app.secondary_genre.toLowerCase().includes(selectedGenre.toLowerCase()))
+      );
     }
-    fetchApplications();
+
+    // Filter by search term
+    if (search.trim()) {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(app => 
+        app.name.toLowerCase().includes(searchLower) ||
+        app.email.toLowerCase().includes(searchLower) ||
+        app.primary_genre.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Sort applications
+    filtered.sort((a, b) => {
+      if (sortBy === 'date') {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+      } else {
+        // Sort by genre
+        const genreA = a.primary_genre.toLowerCase();
+        const genreB = b.primary_genre.toLowerCase();
+        return sortOrder === 'asc' ? genreA.localeCompare(genreB) : genreB.localeCompare(genreA);
+      }
+    });
+
+    return filtered;
+  };
+
+  const getUniqueGenres = () => {
+    const genres = new Set<string>();
+    applications.forEach(app => {
+      if (app.primary_genre) genres.add(app.primary_genre);
+      if (app.secondary_genre) genres.add(app.secondary_genre);
+    });
+    return Array.from(genres).sort();
   };
 
   const exportPDF = () => {
     const doc = new jsPDF();
-    doc.text('Producer Applications Report', 10, 10);
-    const rows = applications.map(app => [
+    doc.text(`Producer Applications - ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}`, 10, 10);
+    
+    const rows = getTabApplications().map(app => [
       app.name,
       app.email,
+      app.primary_genre,
       app.status,
-      app.tier,
-      app.review_score,
-      app.disqualification_reason || '',
+      app.review_tier || 'N/A',
+      new Date(app.created_at).toLocaleDateString(),
     ]);
-    doc.autoTable({
-      head: [['Name', 'Email', 'Status', 'Tier', 'Score', 'Disqualification Reason']],
+    
+    autoTable(doc, {
+      head: [['Name', 'Email', 'Genre', 'Status', 'Tier', 'Date']],
       body: rows,
     });
-    doc.save('producer_applications_report.pdf');
+    doc.save(`producer_applications_${activeTab}.pdf`);
   };
 
-  const updateStatus = async (id: string, status: string, reason: string | null = null, score: number | null = null) => {
-    await supabase
-      .from('producer_applications')
-      .update({ status, disqualification_reason: reason, review_score: score })
-      .eq('id', id);
-    fetchApplications();
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'new': return 'bg-blue-100 text-blue-800';
+      case 'invited': return 'bg-green-100 text-green-800';
+      case 'save_for_later': return 'bg-yellow-100 text-yellow-800';
+      case 'declined': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTabCount = (tab: TabType) => {
+    return applications.filter(app => {
+      switch (tab) {
+        case 'new': return app.status === 'new' && !app.review_tier;
+        case 'invited': return app.status === 'invited';
+        case 'save_for_later': return app.status === 'save_for_later';
+        case 'declined': return app.status === 'declined';
+        default: return false;
+      }
+    }).length;
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Producer Applications Dashboard</h1>
-
-      <div className="flex space-x-2 mb-4">
-        <Button onClick={() => setFilter('All')}>All</Button>
-        <Button onClick={() => setFilter('Pending')}>Pending</Button>
-        <Button onClick={() => setFilter('Qualified')}>Qualified</Button>
-        <Button onClick={() => setFilter('Disqualified')}>Disqualified</Button>
-        <Button onClick={() => setFilter('Tier 1')}>Tier 1</Button>
-        <Button onClick={() => setFilter('Tier 2')}>Tier 2</Button>
-        <Button onClick={() => setFilter('Tier 3')}>Tier 3</Button>
-        <Button variant="destructive" onClick={runAutoDisqualificationForAll}>
-          Run Auto-Disqualify & Score
-        </Button>
-        <Button variant="outline" onClick={exportPDF}>
+    <div className="max-w-7xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-white">Producer Applications</h1>
+        <Button onClick={exportPDF} className="bg-blue-600 hover:bg-blue-700">
           Export PDF
         </Button>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search by name or email..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="border p-2 mb-4 w-full max-w-sm"
-      />
+      {/* Tab Navigation */}
+      <div className="flex space-x-1 mb-6 bg-white/5 rounded-lg p-1">
+        <button
+          onClick={() => setActiveTab('new')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'new'
+              ? 'bg-blue-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-blue-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <User className="w-4 h-4" />
+            <span>New Applicants</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('new')}
+            </span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('invited')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'invited'
+              ? 'bg-green-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-green-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <CheckCircle className="w-4 h-4" />
+            <span>Invited</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('invited')}
+            </span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('save_for_later')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'save_for_later'
+              ? 'bg-yellow-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-yellow-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <Save className="w-4 h-4" />
+            <span>Save for Later</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('save_for_later')}
+            </span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('declined')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'declined'
+              ? 'bg-red-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-red-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <XCircle className="w-4 h-4" />
+            <span>Declined</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('declined')}
+            </span>
+          </div>
+        </button>
+      </div>
 
+      {/* Filters and Search */}
+      <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex items-center space-x-2">
+          <Filter className="w-4 h-4 text-gray-400" />
+          <select
+            value={selectedGenre}
+            onChange={(e) => setSelectedGenre(e.target.value)}
+            className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Genres</option>
+            {getUniqueGenres().map(genre => (
+              <option key={genre} value={genre}>{genre}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <ArrowUpDown className="w-4 h-4 text-gray-400" />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'date' | 'genre')}
+            className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="date">Sort by Date</option>
+            <option value="genre">Sort by Genre</option>
+          </select>
+          <button
+            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+            className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white hover:bg-white/20 transition-colors"
+          >
+            {sortOrder === 'asc' ? '↑' : '↓'}
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-2 flex-1">
+          <Search className="w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or genre..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+          />
+        </div>
+      </div>
+
+      {/* Applications List */}
       {loading ? (
-        <p>Loading...</p>
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
       ) : (
-        applications.map(app => (
-          <div key={app.id} className="border p-4 mb-4 rounded shadow-sm">
-            <div className="flex justify-between">
-              <div>
-                <p><strong>{app.name}</strong> – {app.email}</p>
-                <p>Status: <span className="font-semibold">{app.status}</span></p>
-                {app.tier && <p>Tier: <span className="font-semibold">{app.tier}</span></p>}
-                {app.disqualification_reason && <p className="text-red-500">Reason: {app.disqualification_reason}</p>}
-                {app.review_score !== null && <p>Score: {app.review_score}</p>}
+        <div className="space-y-4">
+          {getTabApplications().length === 0 ? (
+            <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+              <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No applications found in this category.</p>
+            </div>
+          ) : (
+            getTabApplications().map((app) => (
+              <div key={app.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-blue-500/20">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4 mb-2">
+                      <h3 className="text-xl font-semibold text-white">{app.name}</h3>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
+                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      </span>
+                      {app.auto_disqualified && (
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                          Auto-Disqualified
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-4 text-gray-300 mb-2">
+                      <span className="flex items-center">
+                        <Mail className="w-4 h-4 mr-1" />
+                        {app.email}
+                      </span>
+                      <span className="flex items-center">
+                        <Music className="w-4 h-4 mr-1" />
+                        {app.primary_genre}
+                        {app.secondary_genre && ` / ${app.secondary_genre}`}
+                      </span>
+                      <span className="flex items-center">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        {new Date(app.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      <p><strong>Experience:</strong> {app.years_experience} years • <strong>Team:</strong> {app.team_type} • <strong>Output:</strong> {app.tracks_per_week} tracks/week</p>
+                      <p><strong>DAWs:</strong> {app.daws_used} • <strong>PRO:</strong> {app.pro_affiliation}</p>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedApplication(app);
+                        setShowApplicationModal(true);
+                      }}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-blue-500/20">
+                  {activeTab === 'new' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 1)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 2)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+                  {activeTab === 'invited' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+                  {activeTab === 'save_for_later' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 1)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 2)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+                  {activeTab === 'declined' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 1)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 2)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => updateStatus(app.id, 'Qualified', null, 100)}>Approve</Button>
-                <Button variant="destructive" onClick={() => updateStatus(app.id, 'Disqualified', 'Manual review disqualified')}>Disqualify</Button>
-                <Button onClick={() => updateStatus(app.id, app.status, null, 50)}>Score 50</Button>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Application Details Modal */}
+      {showApplicationModal && selectedApplication && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">Application Details</h2>
+              <Button
+                onClick={() => setShowApplicationModal(false)}
+                variant="outline"
+                size="sm"
+              >
+                ×
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Contact Information</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Name:</strong> {selectedApplication.name}</p>
+                  <p><strong>Email:</strong> {selectedApplication.email}</p>
+                  <p><strong>Status:</strong> {selectedApplication.status}</p>
+                  <p><strong>Created:</strong> {new Date(selectedApplication.created_at).toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Music Information</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Primary Genre:</strong> {selectedApplication.primary_genre}</p>
+                  <p><strong>Secondary Genre:</strong> {selectedApplication.secondary_genre || 'N/A'}</p>
+                  <p><strong>Years Experience:</strong> {selectedApplication.years_experience}</p>
+                  <p><strong>DAWs Used:</strong> {selectedApplication.daws_used}</p>
+                  <p><strong>Team Type:</strong> {selectedApplication.team_type}</p>
+                  <p><strong>Tracks per Week:</strong> {selectedApplication.tracks_per_week}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Music Creation</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{selectedApplication.spotify_link}</a></p>
+                  <p><strong>Instruments:</strong> {selectedApplication.instruments || 'N/A'}</p>
+                  <p><strong>Sample Use:</strong> {selectedApplication.sample_use}</p>
+                  <p><strong>Splice Use:</strong> {selectedApplication.splice_use}</p>
+                  <p><strong>Loop Use:</strong> {selectedApplication.loop_use}</p>
+                  <p><strong>AI-Generated Music:</strong> {selectedApplication.ai_generated_music}</p>
+                  <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Business Information</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Business Entity:</strong> {selectedApplication.business_entity || 'N/A'}</p>
+                  <p><strong>PRO Affiliation:</strong> {selectedApplication.pro_affiliation}</p>
+                  <p><strong>Auto-Disqualified:</strong> {selectedApplication.auto_disqualified ? 'Yes' : 'No'}</p>
+                  <p><strong>Review Tier:</strong> {selectedApplication.review_tier || 'N/A'}</p>
+                </div>
               </div>
             </div>
-
-            <details className="mt-2">
-              <summary className="cursor-pointer text-blue-600">View Full Application</summary>
-              <div className="mt-2 text-sm text-gray-700 space-y-1">
-                <p>Primary Genre: {app.primary_genre}</p>
-                <p>Secondary Genre: {app.secondary_genre}</p>
-                <p>Years Experience: {app.years_experience}</p>
-                <p>DAWs: {app.daws_used}</p>
-                <p>Team Type: {app.team_type}</p>
-                <p>Tracks per Week: {app.tracks_per_week}</p>
-                <p>Spotify: <a href={app.spotify_link} target="_blank" className="text-blue-500 underline">{app.spotify_link}</a></p>
-                <p>Instruments: {app.instruments}</p>
-                <p>Sample Use: {app.sample_use}</p>
-                <p>Splice Use: {app.splice_use}</p>
-                <p>Loop Use: {app.loop_use}</p>
-                <p>Artist Collab: {app.artist_collab}</p>
-                <p>Business Entity: {app.business_entity}</p>
-                <p>Additional Info: {app.additional_info}</p>
+            
+            {selectedApplication.additional_info && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Additional Information</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApplication.additional_info}</p>
               </div>
-            </details>
+            )}
+            
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
+              <Button
+                onClick={() => setShowApplicationModal(false)}
+                variant="outline"
+              >
+                Close
+              </Button>
+            </div>
           </div>
-        ))
+        </div>
       )}
     </div>
   );

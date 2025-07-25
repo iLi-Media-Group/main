@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -18,6 +18,7 @@ import { GenreManagement } from './GenreManagement';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
+import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
 
 interface UserStats {
   total_clients: number;
@@ -171,7 +172,7 @@ function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'services'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'producer_applications' | 'services'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1411,6 +1412,7 @@ if (subscription.price_id) {
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
+            { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" /> },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
           ].map(tab => (
             <button
@@ -1856,6 +1858,10 @@ if (subscription.price_id) {
               </div>
             )}
           </div>
+        )}
+
+        {activeTab === 'producer_applications' && (
+          <ProducerApplicationsAdmin />
         )}
 
         {activeTab === 'services' && (
