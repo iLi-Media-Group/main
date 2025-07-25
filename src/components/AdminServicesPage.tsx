@@ -71,6 +71,8 @@ interface Service {
   contact: string;
   website: string;
   image: string;
+  image2?: string;
+  image3?: string;
   subgenres: string[];
   tier: string;
   style_tags: string[];
@@ -83,6 +85,8 @@ interface ServiceForm {
   contact: string;
   website: string;
   image: string;
+  image2?: string;
+  image3?: string;
   subgenres: string[];
   tier: string;
   style_tags: string[];
@@ -94,7 +98,13 @@ export default function AdminServicesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
-  const [form, setForm] = useState<ServiceForm>({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', subgenres: [], tier: '', style_tags: [] });
+  const [form, setForm] = useState<ServiceForm>({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', image2: '', image3: '', subgenres: [], tier: '', style_tags: [] });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile2, setImageFile2] = useState<File | null>(null);
+  const [imagePreview2, setImagePreview2] = useState<string | null>(null);
+  const [imageFile3, setImageFile3] = useState<File | null>(null);
+  const [imagePreview3, setImagePreview3] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
@@ -125,16 +135,30 @@ export default function AdminServicesPage() {
       contact: service.contact,
       website: service.website,
       image: service.image,
+      image2: service.image2 || '',
+      image3: service.image3 || '',
       subgenres: service.subgenres,
       tier: service.tier,
       style_tags: service.style_tags
     });
+    setImagePreview(service.image || null);
+    setImagePreview2(service.image2 || null);
+    setImagePreview3(service.image3 || null);
+    setImageFile(null);
+    setImageFile2(null);
+    setImageFile3(null);
     setShowForm(true);
   };
 
   const handleAdd = () => {
     setEditingService(null);
-    setForm({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', subgenres: [], tier: '', style_tags: [] });
+    setForm({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', image2: '', image3: '', subgenres: [], tier: '', style_tags: [] });
+    setImagePreview(null);
+    setImagePreview2(null);
+    setImagePreview3(null);
+    setImageFile(null);
+    setImageFile2(null);
+    setImageFile3(null);
     setShowForm(true);
   };
 
@@ -159,9 +183,38 @@ export default function AdminServicesPage() {
     }
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageNum = 1) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 2 * 1024 * 1024) return;
+    if (imageNum === 1) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (imageNum === 2) {
+      setImageFile2(file);
+      setImagePreview2(URL.createObjectURL(file));
+    } else if (imageNum === 3) {
+      setImageFile3(file);
+      setImagePreview3(URL.createObjectURL(file));
+    }
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { ...form };
+    let imageUrl = form.image;
+    let imageUrl2 = form.image2;
+    let imageUrl3 = form.image3;
+    if (imageFile) {
+      imageUrl = await (await import('../lib/storage')).uploadFile(imageFile, 'service-images');
+    }
+    if (imageFile2) {
+      imageUrl2 = await (await import('../lib/storage')).uploadFile(imageFile2, 'service-images');
+    }
+    if (imageFile3) {
+      imageUrl3 = await (await import('../lib/storage')).uploadFile(imageFile3, 'service-images');
+    }
+    const payload = { ...form, image: imageUrl, image2: imageUrl2, image3: imageUrl3 };
     if (editingService) {
       await supabase.from('services').update(payload).eq('id', editingService.id);
     } else {
@@ -252,7 +305,7 @@ export default function AdminServicesPage() {
                 <p className="col-span-full text-center text-gray-400">No services found.</p>
               ) : (
                 filteredServices.map((service) => (
-                  <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center animated-border relative">
+                  <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center relative">
                     <img
                       src={service.image}
                       alt={service.name}
@@ -378,6 +431,53 @@ export default function AdminServicesPage() {
                         onChange={handleFormChange}
                         className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                       />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageChange(e, 1)}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                      />
+                      {imagePreview && (
+                        <img src={imagePreview} alt="Preview" className="mt-2 h-24 rounded border border-blue-500/20" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Additional Image 1 (optional)</label>
+                      <input
+                        type="text"
+                        name="image2"
+                        value={form.image2}
+                        onChange={handleFormChange}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageChange(e, 2)}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                      />
+                      {imagePreview2 && (
+                        <img src={imagePreview2} alt="Preview 2" className="mt-2 h-24 rounded border border-blue-500/20" />
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Additional Image 2 (optional)</label>
+                      <input
+                        type="text"
+                        name="image3"
+                        value={form.image3}
+                        onChange={handleFormChange}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleImageChange(e, 3)}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                      />
+                      {imagePreview3 && (
+                        <img src={imagePreview3} alt="Preview 3" className="mt-2 h-24 rounded border border-blue-500/20" />
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Subgenres</label>
