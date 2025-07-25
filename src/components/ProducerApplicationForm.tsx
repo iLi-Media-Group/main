@@ -33,6 +33,7 @@ const initialFormData = {
   sample_use: '',
   splice_use: '',
   loop_use: '',
+  ai_generated_music: '',
   artist_collab: '',
   business_entity: '',
   pro_affiliation: '',
@@ -81,6 +82,7 @@ const ProducerApplicationForm: React.FC = () => {
         if (!formData.sample_use) errors.push('Please select whether you use samples');
         if (!formData.splice_use) errors.push('Please select whether you use Splice');
         if (!formData.loop_use) errors.push('Please select whether you use loops');
+        if (!formData.ai_generated_music) errors.push('Please select whether you use AI to create music');
         break;
       
       case 3: // Business Details
@@ -114,7 +116,17 @@ const ProducerApplicationForm: React.FC = () => {
 
     setSubmitting(true);
     setError(null);
-    const { error } = await supabase.from('producer_applications').insert([formData]);
+    
+    // Check if AI-generated music is "Yes" - this is a disqualifying factor
+    const isDisqualified = formData.ai_generated_music === 'Yes';
+    
+    // Prepare the data to insert
+    const submissionData = {
+      ...formData,
+      auto_disqualified: isDisqualified
+    };
+    
+    const { error } = await supabase.from('producer_applications').insert([submissionData]);
     if (error) {
       setError(error.message);
     } else {
@@ -208,6 +220,11 @@ const ProducerApplicationForm: React.FC = () => {
           </select>
           <select name="loop_use" value={formData.loop_use} onChange={handleChange} required className="w-full border p-3 rounded text-black">
             <option value="">Do you use loops from other producers? *</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          <select name="ai_generated_music" value={formData.ai_generated_music} onChange={handleChange} required className="w-full border p-3 rounded text-black">
+            <option value="">Do you use AI to create music? *</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
