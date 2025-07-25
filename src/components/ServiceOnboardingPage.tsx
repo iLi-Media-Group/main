@@ -163,7 +163,14 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
       }
       const payload = { ...form, image: imageUrl };
       await supabase.from('services').insert([payload]);
-      await supabase.from('service_onboarding_tokens').update({ used: true }).eq('id', tokenData.id);
+      // Only update token if tokenData and tokenData.id exist
+      if (tokenData && tokenData.id) {
+        await supabase.from('service_onboarding_tokens').update({ used: true }).eq('id', tokenData.id);
+      } else if (!publicMode) {
+        setError('Invalid or expired onboarding link.');
+        setLoading(false);
+        return;
+      }
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'Failed to submit service.');
