@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -242,7 +242,7 @@ function AdminDashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'contact_messages') {
+    if (activeTab === 'contact_messages' && contactMessages.length === 0) {
       fetchContactMessages();
     }
   }, [activeTab]);
@@ -1824,7 +1824,19 @@ if (subscription.price_id) {
 
         {activeTab === 'contact_messages' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Contact Messages</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Contact Messages</h2>
+              <div className="flex gap-4">
+                <button
+                  onClick={fetchContactMessages}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                  title="Refresh messages"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </button>
+              </div>
+            </div>
             <div className="mb-6 flex gap-4">
               <button
                 className={`px-4 py-2 rounded-lg font-semibold transition-colors ${contactMessagesTab === 'unread' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-blue-500/10'}`}
