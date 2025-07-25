@@ -213,6 +213,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
+          {/* Hidden fields to prevent autofill */}
+          <input type="text" style={{ display: 'none' }} />
+          <input type="password" style={{ display: 'none' }} />
+          
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -368,6 +372,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                 className="w-full pl-10 pr-4 py-2"
                 required
                 disabled={loading}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
               />
             </div>
           </div>
@@ -385,6 +393,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                 className="w-full pl-10 pr-4 py-2"
                 required
                 disabled={loading}
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
               />
             </div>
             <p className="mt-1 text-xs text-gray-400">
