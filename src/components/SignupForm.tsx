@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Mail, Lock, User, X, Building2, Music, Info } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import ReCAPTCHA from "react-google-recaptcha";
 
 interface SignupFormProps {
   onClose: () => void;
@@ -23,6 +24,8 @@ export function SignupForm({ onClose }: SignupFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const { signUp, signIn } = useAuth();
   const navigate = useNavigate();
   
@@ -50,6 +53,10 @@ export function SignupForm({ onClose }: SignupFormProps) {
 
       if (!validatePassword(password)) {
         throw new Error('Password does not meet requirements');
+      }
+
+      if (!captchaToken) {
+        throw new Error('Please complete the reCAPTCHA verification');
       }
 
       // Check invitation code for producer accounts
@@ -147,6 +154,11 @@ export function SignupForm({ onClose }: SignupFormProps) {
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
+      // Reset reCAPTCHA on error
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+      setCaptchaToken(null);
     } finally {
       setLoading(false);
     }
@@ -370,6 +382,14 @@ export function SignupForm({ onClose }: SignupFormProps) {
               I am 18 years or older
             </span>
           </label>
+
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              sitekey="6LeE_Y4rAAAAALZxpq4wmNgMTCldPePWEKdy2-W0"
+              onChange={(value) => setCaptchaToken(value)}
+              ref={recaptchaRef}
+            />
+          </div>
 
           <button
             type="submit"
