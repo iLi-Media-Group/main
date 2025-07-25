@@ -97,6 +97,10 @@ export function TrackUploadForm() {
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
   // Add state for explicit lyrics
   const [explicitLyrics, setExplicitLyrics] = useState(false);
+  // Add state for clean version logic
+  const [isCleanVersion, setIsCleanVersion] = useState<null | boolean>(null);
+  const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
+  const [cleanVersionOf, setCleanVersionOf] = useState<string>('');
 
   // Handle success modal countdown
   useEffect(() => {
@@ -152,7 +156,6 @@ export function TrackUploadForm() {
       selectedGenres,
       selectedSubGenres,
       selectedMoods,
-      selectedMediaUsage,
       mp3Url,
       trackoutsUrl,
       hasVocals,
@@ -345,6 +348,7 @@ export function TrackUploadForm() {
           vocals_usage_type: hasVocals ? 'normal' : null,
           is_sync_only: isSyncOnly,
           explicit_lyrics: explicitLyrics,
+          clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -400,6 +404,19 @@ export function TrackUploadForm() {
       setUploadStatus('');
     }
   };
+
+  // Fetch user's explicit tracks for clean version dropdown
+  useEffect(() => {
+    if (user && explicitLyrics && hasVocals && isCleanVersion) {
+      supabase
+        .from('tracks')
+        .select('id, title')
+        .eq('track_producer_id', user.id)
+        .eq('explicit_lyrics', true)
+        .neq('id', uploadedTrackId) // Exclude current track if editing
+        .then(({ data }) => setExplicitTracks(data || []));
+    }
+  }, [user, explicitLyrics, hasVocals, isCleanVersion, uploadedTrackId]);
 
   if (genresLoading) {
     return (
@@ -789,6 +806,52 @@ export function TrackUploadForm() {
                   />
                   <span>This track contains explicit lyrics</span>
                 </label>
+              )}
+              {/* Clean version logic */}
+              {hasVocals && explicitLyrics && (
+                <div className="mt-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Is this the clean version of an explicit song?
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        type="radio"
+                        checked={isCleanVersion === true}
+                        onChange={() => setIsCleanVersion(true)}
+                        disabled={isSubmitting}
+                      />
+                      <span>Yes</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        type="radio"
+                        checked={isCleanVersion === false}
+                        onChange={() => setIsCleanVersion(false)}
+                        disabled={isSubmitting}
+                      />
+                      <span>No</span>
+                    </label>
+                  </div>
+                  {isCleanVersion && (
+                    <div className="mt-2">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Select the explicit track this is the clean version of:
+                      </label>
+                      <select
+                        value={cleanVersionOf}
+                        onChange={e => setCleanVersionOf(e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        disabled={isSubmitting}
+                      >
+                        <option value="">Select explicit track</option>
+                        {explicitTracks.map(track => (
+                          <option key={track.id} value={track.id}>{track.title}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
               )}
 
 

@@ -98,8 +98,23 @@ export function TrackPage() {
   });
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [cleanVersion, setCleanVersion] = useState<Track | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch clean version if this is an explicit track
+  useEffect(() => {
+    if (track && track.explicit_lyrics && track.id) {
+      supabase
+        .from('tracks')
+        .select('*')
+        .eq('clean_version_of', track.id)
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) setCleanVersion(data[0]);
+        });
+    }
+  }, [track]);
 
   useEffect(() => {
     if (!trackId) {
@@ -349,6 +364,19 @@ export function TrackPage() {
             {/* Middle Column - Track Details */}
             <div className="md:col-span-2">
               <h1 className="text-3xl font-bold text-white mb-2">{track.title}</h1>
+              {/* Clean version link */}
+              {track.explicit_lyrics && cleanVersion && (
+                <div className="mb-4">
+                  <span className="text-red-400 font-semibold mr-2">Explicit</span>
+                  <span className="text-gray-300">A clean version is available: </span>
+                  <a
+                    href={`/track/${cleanVersion.id}`}
+                    className="text-green-400 underline hover:text-green-300"
+                  >
+                    {cleanVersion.title}
+                  </a>
+                </div>
+              )}
               
               {track.producer && (
                 <button
