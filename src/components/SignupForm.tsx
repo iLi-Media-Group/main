@@ -141,21 +141,28 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         throw new Error('Account created but failed to sign in automatically. Please sign in manually.');
       }
 
+      // Set success state and show message
       setSuccess(true);
+      setError('');
       
-      // Show success message for 2 seconds before redirecting
+      console.log('Account created successfully, redirecting to dashboard...');
+      
+      // Show success message for 3 seconds before redirecting
       setTimeout(() => {
+        console.log('Closing form and navigating...');
         onClose();
         
         // For client accounts, go directly to the dashboard
         if (accountType === 'client') {
+          console.log('Navigating to client dashboard');
           navigate('/dashboard');
           return;
         }
         
         // For producer accounts, go directly to dashboard
+        console.log('Navigating to producer dashboard');
         navigate('/producer/dashboard');
-      }, 2000);
+      }, 3000);
     } catch (err) {
       console.error('Signup error:', err);
       setError(err instanceof Error ? err.message : 'Failed to create account');
@@ -185,8 +192,9 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         )}
         
         {success && (
-          <div className="mb-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-sm">
-            Account created successfully! Redirecting to dashboard...
+          <div className="mb-4 p-4 bg-green-500/20 border border-green-500/40 rounded-lg text-green-300 text-center">
+            <div className="font-semibold text-lg mb-2">✅ Account Created Successfully!</div>
+            <div className="text-sm">Redirecting to your dashboard...</div>
           </div>
         )}
 
@@ -388,7 +396,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             disabled={loading || success}
             className="btn-primary w-full"
           >
-            {success ? 'Account Created!' : loading ? 'Creating Account...' : 'Create Account'}
+            {success ? '✅ Account Created!' : loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
       </div>
