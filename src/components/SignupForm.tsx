@@ -125,24 +125,61 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         throw new Error('User not found after account creation');
       }
 
-      // Create the profile with all details
-      const { error: profileError } = await supabase
+      // Check if a profile already exists for this user
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .insert({
-          id: user.id,
-          email: user.email,
-          first_name: firstName,
-          last_name: lastName,
-          company_name: companyName.trim() || null,
-          account_type: accountType,
-          membership_plan: accountType === 'client' ? 'Single Track' : 'Producer',
-          age_verified: ageVerified, 
-          invitation_code: accountType === 'producer' ? invitationCode : null,
-          ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
-          performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error('Error checking existing profile:', checkError);
+        throw new Error('Failed to check existing profile');
+      }
+
+      let profileError;
+      if (existingProfile) {
+        // Profile exists, update it
+        console.log('Profile exists, updating...');
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            email: user.email,
+            first_name: firstName,
+            last_name: lastName,
+            company_name: companyName.trim() || null,
+            account_type: accountType,
+            membership_plan: accountType === 'client' ? 'Single Track' : 'Producer',
+            age_verified: ageVerified, 
+            invitation_code: accountType === 'producer' ? invitationCode : null,
+            ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
+            performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        profileError = error;
+      } else {
+        // Profile doesn't exist, create it
+        console.log('Profile doesn\'t exist, creating...');
+        const { error } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email,
+            first_name: firstName,
+            last_name: lastName,
+            company_name: companyName.trim() || null,
+            account_type: accountType,
+            membership_plan: accountType === 'client' ? 'Single Track' : 'Producer',
+            age_verified: ageVerified, 
+            invitation_code: accountType === 'producer' ? invitationCode : null,
+            ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
+            performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        profileError = error;
+      }
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
