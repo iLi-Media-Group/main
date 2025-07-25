@@ -43,6 +43,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      console.log('Starting signup process...');
       setError('');
       setLoading(true);
 
@@ -58,11 +59,13 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         throw new Error('reCAPTCHA not loaded');
       }
 
+      console.log('Executing reCAPTCHA...');
       // Execute reCAPTCHA
       const token = await executeRecaptcha('signup');
       if (!token) {
         throw new Error('Please complete the reCAPTCHA verification');
       }
+      console.log('reCAPTCHA token received:', token ? 'YES' : 'NO');
 
       // Check invitation code for producer accounts
       if (accountType === 'producer') {
@@ -91,11 +94,14 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         }
       }
 
+      console.log('Creating user account...');
       // Create user account
       const signUpResult = await signUp(email, password);
+      console.log('Signup result:', signUpResult);
 
       // Check if email confirmation is required
       if (signUpResult.requiresEmailConfirmation) {
+        console.log('Email confirmation required, redirecting...');
         // Store email for verification page
         localStorage.setItem('pendingVerificationEmail', email);
         setSuccess(true);
@@ -109,6 +115,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         return;
       }
 
+      console.log('Creating profile...');
       // If email is already confirmed, proceed with profile creation
       // Upsert profile with additional details
       const { error: profileError } = await supabase
@@ -125,7 +132,11 @@ function SignupFormContent({ onClose }: SignupFormProps) {
           performing_rights_org: accountType === 'producer' ? performingRightsOrg : null
         }, { onConflict: 'email' });
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+        throw profileError;
+      }
+      console.log('Profile created successfully');
 
       // Mark invitation as used if it's a producer
       if (accountType === 'producer') {
@@ -135,11 +146,14 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         });
       }
 
+      console.log('Signing in user...');
       // Automatically sign in the user after account creation
       const signInResult = await signIn(email, password);
       if (signInResult.error) {
+        console.error('Sign in error:', signInResult.error);
         throw new Error('Account created but failed to sign in automatically. Please sign in manually.');
       }
+      console.log('User signed in successfully');
 
       // Set success state and show message
       setSuccess(true);

@@ -23,11 +23,13 @@ CREATE POLICY "Users can insert their own profile" ON profiles
   );
 
 -- Ensure the basic policies exist
-CREATE POLICY IF NOT EXISTS "Public profiles are viewable by everyone"
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+CREATE POLICY "Public profiles are viewable by everyone"
   ON profiles FOR SELECT
   USING (true);
 
-CREATE POLICY IF NOT EXISTS "Users can update own profile"
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
