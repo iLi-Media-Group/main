@@ -517,7 +517,15 @@ const getPlanLevel = (plan: string): number => {
     }
   }, [searchParams, user, refreshMembership]);
 
-
+  // Auto-clear cancel downgrade success message after 5 seconds
+  useEffect(() => {
+    if (cancelDowngradeSuccess) {
+      const timer = setTimeout(() => {
+        setCancelDowngradeSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [cancelDowngradeSuccess]);
 
   // Handle plan upgrade - direct to Stripe
   const handlePlanUpgrade = async (targetPlan: string) => {
