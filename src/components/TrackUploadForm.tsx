@@ -103,6 +103,10 @@ export function TrackUploadForm() {
   const [isCleanVersion, setIsCleanVersion] = useState<null | boolean>(null);
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
   const [cleanVersionOf, setCleanVersionOf] = useState<string>('');
+  // Add state for autocomplete search
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Handle success modal countdown
   useEffect(() => {
@@ -419,6 +423,25 @@ export function TrackUploadForm() {
         .then(({ data }) => setExplicitTracks(data || []));
     }
   }, [user, explicitLyrics, hasVocals, isCleanVersion, uploadedTrackId]);
+
+  // Autocomplete search for explicit tracks
+  useEffect(() => {
+    if (user && isCleanVersion && searchTerm.length > 1) {
+      setSearchLoading(true);
+      supabase
+        .from('tracks')
+        .select('id, title')
+        .eq('track_producer_id', user.id)
+        .eq('explicit_lyrics', true)
+        .ilike('title', `%${searchTerm}%`)
+        .then(({ data }) => {
+          setSearchResults(data || []);
+          setSearchLoading(false);
+        });
+    } else {
+      setSearchResults([]);
+    }
+  }, [user, isCleanVersion, searchTerm]);
 
   if (genresLoading) {
     return (
@@ -830,17 +853,32 @@ export function TrackUploadForm() {
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Select the explicit track this is the clean version of:
                       </label>
-                      <select
-                        value={cleanVersionOf}
-                        onChange={e => setCleanVersionOf(e.target.value)}
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        placeholder="Type to search tracks..."
                         className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                         disabled={isSubmitting}
-                      >
-                        <option value="">Select explicit track</option>
-                        {explicitTracks.map(track => (
-                          <option key={track.id} value={track.id}>{track.title}</option>
-                        ))}
-                      </select>
+                      />
+                      {searchLoading && <div className="text-blue-400 text-xs mt-1">Searching...</div>}
+                      {searchResults.length > 0 && (
+                        <ul className="bg-blue-900/90 border border-blue-500/20 rounded-lg mt-1 max-h-40 overflow-y-auto">
+                          {searchResults.map(track => (
+                            <li
+                              key={track.id}
+                              className={`px-3 py-2 cursor-pointer hover:bg-blue-700/40 text-white ${cleanVersionOf === track.id ? 'bg-blue-700/60' : ''}`}
+                              onClick={() => {
+                                setCleanVersionOf(track.id);
+                                setSearchTerm(track.title);
+                                setSearchResults([]);
+                              }}
+                            >
+                              {track.title}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   )}
                 </div>
