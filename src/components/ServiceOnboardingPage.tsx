@@ -331,25 +331,23 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
                   </select>
                 </div>
               )}
-              {form.type === 'artists' && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Style Tags</label>
-                  <div className="flex flex-wrap gap-2">
-                    {STYLE_TAGS.map((tag) => (
-                      <label key={tag} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
-                        <input
-                          type="checkbox"
-                          name="style_tags"
-                          value={tag}
-                          checked={form.style_tags.includes(tag)}
-                          onChange={handleFormChange}
-                        />
-                        <span>{tag}</span>
-                      </label>
-                    ))}
-                  </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Style Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {STYLE_TAGS.map((tag) => (
+                    <label key={tag} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
+                      <input
+                        type="checkbox"
+                        name="style_tags"
+                        value={tag}
+                        checked={form.style_tags.includes(tag)}
+                        onChange={handleFormChange}
+                      />
+                      <span>{tag}</span>
+                    </label>
+                  ))}
                 </div>
-              )}
+              </div>
               {typeof error === 'string' && error.trim() && <div className="text-red-400">{error}</div>}
               <div className="flex justify-end space-x-2 mt-4">
                 <button
