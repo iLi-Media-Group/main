@@ -242,8 +242,19 @@ function AdminDashboard() {
   }, [user]);
 
   useEffect(() => {
+    console.log('Active tab changed to:', activeTab);
+    console.log('Current contact messages length:', contactMessages.length);
     if (activeTab === 'contact_messages' && contactMessages.length === 0) {
+      console.log('Fetching contact messages due to empty state');
       fetchContactMessages();
+    } else if (activeTab === 'contact_messages') {
+      console.log('Contact messages tab accessed, but messages already loaded');
+      console.log('Current messages status breakdown:');
+      const statusCounts = contactMessages.reduce((acc, msg) => {
+        acc[msg.status] = (acc[msg.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log('Status counts:', statusCounts);
     }
   }, [activeTab]);
 
@@ -1109,7 +1120,7 @@ if (subscription.price_id) {
     setLoadingContactMessages(true);
     setContactError(null);
     try {
-      console.log('Fetching contact messages...');
+      console.log('=== FETCH CONTACT MESSAGES START ===');
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
@@ -1120,8 +1131,19 @@ if (subscription.price_id) {
         throw error;
       }
       
-      console.log('Fetched contact messages:', data);
+      console.log('Fetched contact messages from database:', data);
+      console.log('Number of messages:', data?.length);
+      console.log('Status breakdown:');
+      if (data) {
+        const statusCounts = data.reduce((acc, msg) => {
+          acc[msg.status] = (acc[msg.status] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('Status counts:', statusCounts);
+      }
+      
       setContactMessages(data || []);
+      console.log('=== FETCH CONTACT MESSAGES END ===');
     } catch (err) {
       console.error('Failed to fetch contact messages:', err);
       setContactError('Failed to fetch contact messages.');
@@ -1132,7 +1154,8 @@ if (subscription.price_id) {
 
   const markAsRead = async (id: string) => {
     try {
-      console.log('Marking message as read:', id);
+      console.log('=== MARK AS READ START ===');
+      console.log('Message ID:', id);
       
       // First, let's check the current status of the message
       const { data: currentData, error: currentError } = await supabase
@@ -1147,20 +1170,27 @@ if (subscription.price_id) {
       }
       
       console.log('Current message status:', currentData);
+      console.log('Current status value:', currentData?.status);
       
       // Update the message status
       const { data, error } = await supabase
         .from('contact_messages')
-        .update({ status: 'read' })
+        .update({ 
+          status: 'read',
+          updated_at: new Date().toISOString()
+        })
         .eq('id', id)
         .select();
       
       if (error) {
-        console.error('Database error:', error);
+        console.error('Database update error:', error);
+        console.error('Error details:', error.details);
+        console.error('Error hint:', error.hint);
         throw error;
       }
       
       console.log('Database update result:', data);
+      console.log('Updated message:', data?.[0]);
       
       // Verify the update by fetching the message again
       const { data: verifyData, error: verifyError } = await supabase
@@ -1173,20 +1203,29 @@ if (subscription.price_id) {
         console.error('Error verifying update:', verifyError);
       } else {
         console.log('Verified message status after update:', verifyData);
+        console.log('Verified status value:', verifyData?.status);
       }
       
       // Update the local state to reflect the change
       setContactMessages((prev) => {
-        const updated = prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg);
-        console.log('Updated contact messages:', updated);
+        const updated = prev.map((msg) => {
+          if (msg.id === id) {
+            const updatedMsg = { ...msg, status: 'read' };
+            console.log('Updating local state for message:', updatedMsg);
+            return updatedMsg;
+          }
+          return msg;
+        });
+        console.log('Updated contact messages array:', updated);
         return updated;
       });
       
       // Show success feedback
       console.log('Message marked as read successfully');
+      console.log('=== MARK AS READ END ===');
     } catch (err) {
       console.error('Error marking message as read:', err);
-      alert('Failed to mark as read.');
+      alert('Failed to mark as read. Check console for details.');
     }
   };
 
