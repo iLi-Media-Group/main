@@ -64,6 +64,8 @@ import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 import ProducerSyncSubmission from './components/ProducerSyncSubmission';
 import CustomSyncRequestSubs from './components/customsyncrequestsubs';
 import PaymentSuccessPage from './components/PaymentSuccessPage';
+import { EmailVerificationPage } from './components/EmailVerificationPage';
+import { AuthCallback } from './components/AuthCallback';
 
 
 const App = () => {
@@ -455,6 +457,10 @@ const App = () => {
         <Route path="/producer-sync-submission" element={<LayoutWrapper><ProducerSyncSubmission /></LayoutWrapper>} />
 
         <Route path="/payment-success" element={<PaymentSuccessPage />} />
+
+        {/* Email verification routes */}
+        <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route path="*" element={
           <LayoutWrapper>

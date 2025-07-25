@@ -80,8 +80,24 @@ export function SignupForm({ onClose }: SignupFormProps) {
       }
 
       // Create user account
-      await signUp(email, password);
+      const signUpResult = await signUp(email, password);
 
+      // Check if email confirmation is required
+      if (signUpResult.requiresEmailConfirmation) {
+        // Store email for verification page
+        localStorage.setItem('pendingVerificationEmail', email);
+        setSuccess(true);
+        setError('');
+        // Show email verification message
+        setTimeout(() => {
+          onClose();
+          // Redirect to a verification page or show verification message
+          navigate('/auth/verify-email');
+        }, 2000);
+        return;
+      }
+
+      // If email is already confirmed, proceed with profile creation
       // Upsert profile with additional details
       const { error: profileError } = await supabase
         .from('profiles')

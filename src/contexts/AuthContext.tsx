@@ -10,7 +10,7 @@ interface AuthContextType {
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ requiresEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
   refreshMembership: () => Promise<void>;
 }
@@ -349,8 +349,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('An account with this email already exists');
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
     if (error) throw error;
+    
+    // Check if email confirmation is required
+    if (data.user && !data.user.email_confirmed_at) {
+      // Email verification required - don't create profile yet
+      // The profile will be created after email verification
+      return { requiresEmailConfirmation: true };
+    }
     
     if (data.user) {
       try {
@@ -372,6 +385,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw err;
       }
     }
+    
+    return { requiresEmailConfirmation: false };
   };
 
   const signOut = async () => {
