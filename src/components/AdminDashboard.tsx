@@ -1911,28 +1911,43 @@ if (subscription.price_id) {
                       <th className="py-3 px-4 text-left text-gray-300 font-semibold">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
-                      </tr>
-                    ) : contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').map((msg) => (
-                      <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
-                        <td className="py-3 px-4 text-white">{msg.name}</td>
-                        <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
-                        <td className="py-3 px-4 text-white">{msg.subject}</td>
-                        <td className="py-3 px-4 text-gray-200 max-w-xs break-words">{msg.message}</td>
-                        <td className="py-3 px-4 text-white">
-                          {msg.status === 'unread' ? <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">Unread</span> : <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Read</span>}
-                        </td>
-                        <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
-                        <td className="py-3 px-4">
-                          {msg.status === 'unread' && (
-                            <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                                    <tbody>
+                    {(() => {
+                      const filteredMessages = contactMessages.filter(msg => 
+                        contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read'
+                      );
+                      console.log('=== CONTACT MESSAGES FILTERING ===');
+                      console.log('Current tab:', contactMessagesTab);
+                      console.log('All messages:', contactMessages);
+                      console.log('Filtered messages:', filteredMessages);
+                      console.log('Filtered count:', filteredMessages.length);
+                      
+                      if (filteredMessages.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
+                          </tr>
+                        );
+                      }
+                      
+                      return filteredMessages.map((msg) => (
+                        <tr key={msg.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
+                          <td className="py-3 px-4 text-white">{msg.name}</td>
+                          <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${msg.email}`}>{msg.email}</a></td>
+                          <td className="py-3 px-4 text-white">{msg.subject}</td>
+                          <td className="py-3 px-4 text-gray-200 max-w-xs break-words">{msg.message}</td>
+                          <td className="py-3 px-4 text-white">
+                            {msg.status === 'unread' ? <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">Unread</span> : <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded text-xs">Read</span>}
+                          </td>
+                          <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
+                          <td className="py-3 px-4">
+                            {msg.status === 'unread' && (
+                              <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
+                            )}
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
