@@ -1157,6 +1157,19 @@ if (subscription.price_id) {
       console.log('=== MARK AS READ START ===');
       console.log('Message ID:', id);
       
+      // Check if user is admin
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('account_type')
+        .eq('id', user?.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+      } else {
+        console.log('User account type:', profileData?.account_type);
+      }
+      
       // First, let's check the current status of the message
       const { data: currentData, error: currentError } = await supabase
         .from('contact_messages')
@@ -1178,18 +1191,19 @@ if (subscription.price_id) {
         .update({ 
           status: 'read'
         })
-        .eq('id', id)
-        .select();
+        .eq('id', id);
       
       if (error) {
         console.error('Database update error:', error);
         console.error('Error details:', error.details);
         console.error('Error hint:', error.hint);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
         throw error;
       }
       
       console.log('Database update result:', data);
-      console.log('Updated message:', data?.[0]);
+      console.log('Update successful, data returned:', data);
       
       // Verify the update by fetching the message again
       const { data: verifyData, error: verifyError } = await supabase
