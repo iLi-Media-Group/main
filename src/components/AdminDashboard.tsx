@@ -1176,8 +1176,7 @@ if (subscription.price_id) {
       const { data, error } = await supabase
         .from('contact_messages')
         .update({ 
-          status: 'read',
-          updated_at: new Date().toISOString()
+          status: 'read'
         })
         .eq('id', id)
         .select();
