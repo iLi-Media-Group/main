@@ -114,7 +114,7 @@ const getBase64ImageFromURL = (url: string) =>
   });
 
 function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1849,13 +1849,15 @@ if (subscription.price_id) {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => handleDeleteService(service.id)}
-                              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                              title="Delete service"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {accountType === 'admin' && (
+                              <button
+                                onClick={() => handleDeleteService(service.id)}
+                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                title="Delete service"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
