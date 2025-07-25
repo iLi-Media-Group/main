@@ -168,6 +168,16 @@ export function NavigationMenu() {
           <span>Profile</span>
         </Link>
       </div>
+      {/* Add Services Directory link at the very bottom */}
+      <div className="mt-10 pt-4 border-t border-gray-800">
+        <Link 
+          to="/services" 
+          className="flex items-center space-x-3 text-purple-400 hover:text-white transition-colors font-semibold"
+        >
+          <Settings className="w-5 h-5" />
+          <span>Services Directory</span>
+        </Link>
+      </div>
     </nav>
   );
 }
