@@ -211,7 +211,7 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
                   required
                 />
               </div>
-              {error && <div className="text-red-400">{error}</div>}
+              {typeof error === 'string' && error.trim() && <div className="text-red-400">{error}</div>}
               <button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white font-semibold"
@@ -343,7 +343,7 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
                   </div>
                 </div>
               )}
-              {error && <div className="text-red-400">{error}</div>}
+              {typeof error === 'string' && error.trim() && <div className="text-red-400">{error}</div>}
               <div className="flex justify-end space-x-2 mt-4">
                 <button
                   type="submit"
