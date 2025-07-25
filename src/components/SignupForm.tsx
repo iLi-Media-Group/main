@@ -118,12 +118,17 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       }
 
       console.log('Creating profile...');
-      // If email is already confirmed, proceed with profile creation
-      // Upsert profile with additional details
+      // Get the current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error('User not found after account creation');
+      }
+
+      // Update the existing profile with additional details
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          email,
+        .update({
           first_name: firstName,
           last_name: lastName,
           company_name: companyName.trim() || null,
@@ -131,8 +136,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
           age_verified: ageVerified, 
           invitation_code: accountType === 'producer' ? invitationCode : null,
           ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
-          performing_rights_org: accountType === 'producer' ? performingRightsOrg : null
-        }, { onConflict: 'email' });
+          performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
 
       if (profileError) {
         console.error('Profile creation error:', profileError);
