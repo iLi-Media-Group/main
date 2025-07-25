@@ -125,21 +125,24 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         throw new Error('User not found after account creation');
       }
 
-      // Update the existing profile with additional details
+      // Create the profile with all details
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .insert({
+          id: user.id,
+          email: user.email,
           first_name: firstName,
           last_name: lastName,
           company_name: companyName.trim() || null,
-          account_type: accountType, 
+          account_type: accountType,
+          membership_plan: accountType === 'client' ? 'Single Track' : 'Producer',
           age_verified: ageVerified, 
           invitation_code: accountType === 'producer' ? invitationCode : null,
           ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
           performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+          created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+        });
 
       if (profileError) {
         console.error('Profile creation error:', profileError);

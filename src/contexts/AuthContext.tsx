@@ -365,27 +365,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { requiresEmailConfirmation: true };
     }
     
-    if (data.user) {
-      try {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            account_type: 'client', // Default to client for new signups
-            membership_plan: 'Single Track' // Default membership plan
-          });
-
-        if (profileError) throw profileError;
-        setAccountType('client');
-        setMembershipPlan('Single Track');
-      } catch (err) {
-        // If profile creation fails, clean up by deleting the auth user
-        await supabase.auth.admin.deleteUser(data.user.id);
-        throw err;
-      }
-    }
-    
+    // Don't create profile here - let SignupForm handle it
+    // This prevents the duplicate email constraint violation
     return { requiresEmailConfirmation: false };
   };
 
