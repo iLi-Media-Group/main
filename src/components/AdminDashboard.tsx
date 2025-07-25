@@ -171,7 +171,7 @@ function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'services'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -193,6 +193,10 @@ function AdminDashboard() {
   const [loadingContactMessages, setLoadingContactMessages] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
   const [contactMessagesTab, setContactMessagesTab] = useState<'unread' | 'read'>('unread');
+  // Add state for services
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [servicesError, setServicesError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -233,6 +237,12 @@ function AdminDashboard() {
   useEffect(() => {
     if (activeTab === 'contact_messages') {
       fetchContactMessages();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'services') {
+      fetchServices();
     }
   }, [activeTab]);
 
@@ -1121,6 +1131,31 @@ if (subscription.price_id) {
     }
   };
 
+  const fetchServices = async () => {
+    setLoadingServices(true);
+    setServicesError(null);
+    try {
+      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setServices(data || []);
+    } catch (err) {
+      setServicesError('Failed to fetch services.');
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this service?')) return;
+    try {
+      const { error } = await supabase.from('services').delete().eq('id', id);
+      if (error) throw error;
+      setServices(services.filter(s => s.id !== id));
+    } catch (err) {
+      alert('Failed to delete service.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1324,6 +1359,7 @@ if (subscription.price_id) {
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
+            { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1760,6 +1796,67 @@ if (subscription.price_id) {
                           {msg.status === 'unread' && (
                             <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
                           )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'services' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">All Services</h2>
+            {loadingServices ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+              </div>
+            ) : servicesError ? (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-center font-medium">{servicesError}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-blue-500/20">
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Name</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Type</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Contact</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Created</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-gray-400">No services found.</td>
+                      </tr>
+                    ) : services.map((service) => (
+                      <tr key={service.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-white">{service.name}</td>
+                        <td className="py-3 px-4 text-white">{service.type}</td>
+                        <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${service.contact}`}>{service.contact}</a></td>
+                        <td className="py-3 px-4 text-gray-400">{service.created_at ? new Date(service.created_at).toLocaleString() : ''}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => window.open(`/services/${service.id}`, '_blank')}
+                              className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                              title="View service"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteService(service.id)}
+                              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                              title="Delete service"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
