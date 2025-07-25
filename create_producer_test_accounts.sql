@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS producer_invitations (
 );
 
 -- Insert test producer invitation codes
-INSERT INTO producer_invitations (invitation_code, email_address, created_by) VALUES
+INSERT INTO producer_invitations (invitation_code, email, created_by) VALUES
 ('TEST_PRODUCER_001', 'testproducer1@mybeatfi.io', (SELECT id FROM auth.users WHERE email = 'knockriobeats@gmail.com' LIMIT 1)),
 ('TEST_PRODUCER_002', 'testproducer2@mybeatfi.io', (SELECT id FROM auth.users WHERE email = 'knockriobeats@gmail.com' LIMIT 1))
 ON CONFLICT (invitation_code) DO NOTHING;

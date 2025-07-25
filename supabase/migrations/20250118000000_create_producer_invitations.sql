@@ -5,7 +5,7 @@
 CREATE TABLE IF NOT EXISTS producer_invitations (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     invitation_code TEXT UNIQUE NOT NULL,
-    email_address TEXT,
+    email TEXT,
     used BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     used_at TIMESTAMP WITH TIME ZONE,
@@ -20,7 +20,7 @@ DROP INDEX IF EXISTS idx_producer_invitations_email;
 DROP INDEX IF EXISTS idx_producer_invitations_code;
 DROP INDEX IF EXISTS idx_producer_invitations_used;
 
-CREATE INDEX idx_producer_invitations_email ON producer_invitations(email_address);
+CREATE INDEX idx_producer_invitations_email ON producer_invitations(email);
 CREATE INDEX idx_producer_invitations_code ON producer_invitations(invitation_code);
 CREATE INDEX idx_producer_invitations_used ON producer_invitations(used) WHERE NOT used;
 
@@ -48,7 +48,7 @@ BEGIN
     RETURN EXISTS (
         SELECT 1 FROM producer_invitations
         WHERE invitation_code = code
-        AND (email_address IS NULL OR email_address = validate_producer_invitation.email_address)
+        AND (email IS NULL OR email = validate_producer_invitation.email_address)
         AND NOT used
     );
 END;
@@ -64,7 +64,7 @@ BEGIN
     UPDATE producer_invitations
     SET used = TRUE, used_at = NOW()
     WHERE invitation_code = code
-    AND (email_address IS NULL OR email_address = use_producer_invitation.email_address)
+    AND (email IS NULL OR email = use_producer_invitation.email_address)
     AND NOT used;
 END;
 $$; 
