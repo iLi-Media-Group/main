@@ -1102,13 +1102,21 @@ if (subscription.price_id) {
     setLoadingContactMessages(true);
     setContactError(null);
     try {
+      console.log('Fetching contact messages...');
       const { data, error } = await supabase
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error fetching contact messages:', error);
+        throw error;
+      }
+      
+      console.log('Fetched contact messages:', data);
       setContactMessages(data || []);
     } catch (err) {
+      console.error('Failed to fetch contact messages:', err);
       setContactError('Failed to fetch contact messages.');
     } finally {
       setLoadingContactMessages(false);
@@ -1119,6 +1127,21 @@ if (subscription.price_id) {
     try {
       console.log('Marking message as read:', id);
       
+      // First, let's check the current status of the message
+      const { data: currentData, error: currentError } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (currentError) {
+        console.error('Error fetching current message:', currentError);
+        throw currentError;
+      }
+      
+      console.log('Current message status:', currentData);
+      
+      // Update the message status
       const { data, error } = await supabase
         .from('contact_messages')
         .update({ status: 'read' })
@@ -1131,6 +1154,19 @@ if (subscription.price_id) {
       }
       
       console.log('Database update result:', data);
+      
+      // Verify the update by fetching the message again
+      const { data: verifyData, error: verifyError } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (verifyError) {
+        console.error('Error verifying update:', verifyError);
+      } else {
+        console.log('Verified message status after update:', verifyData);
+      }
       
       // Update the local state to reflect the change
       setContactMessages((prev) => {
