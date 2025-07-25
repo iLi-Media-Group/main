@@ -1,3 +1,5 @@
+// NOTE: Triggering redeploy for deployment troubleshooting.
+// NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
@@ -347,7 +349,7 @@ export function TrackUploadForm() {
           has_vocals: hasVocals,
           vocals_usage_type: hasVocals ? 'normal' : null,
           is_sync_only: isSyncOnly,
-          explicit_lyrics: explicitLyrics,
+          explicit_lyrics: isCleanVersion ? false : explicitLyrics,
           clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -794,21 +796,8 @@ export function TrackUploadForm() {
                 />
                 <span>Track contains vocals</span>
               </label>
-              {/* Explicit Lyrics Checkbox - only show if hasVocals is true */}
+              {/* Clean version logic - always show if hasVocals is true */}
               {hasVocals && (
-                <label className="flex items-center space-x-2 text-red-300">
-                  <input
-                    type="checkbox"
-                    checked={explicitLyrics}
-                    onChange={(e) => setExplicitLyrics(e.target.checked)}
-                    className="rounded border-gray-600 text-red-600 focus:ring-red-500"
-                    disabled={isSubmitting}
-                  />
-                  <span>This track contains explicit lyrics</span>
-                </label>
-              )}
-              {/* Clean version logic */}
-              {hasVocals && explicitLyrics && (
                 <div className="mt-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Is this the clean version of an explicit song?
@@ -818,7 +807,10 @@ export function TrackUploadForm() {
                       <input
                         type="radio"
                         checked={isCleanVersion === true}
-                        onChange={() => setIsCleanVersion(true)}
+                        onChange={() => {
+                          setIsCleanVersion(true);
+                          setExplicitLyrics(false); // Uncheck explicit if clean version
+                        }}
                         disabled={isSubmitting}
                       />
                       <span>Yes</span>
@@ -852,6 +844,19 @@ export function TrackUploadForm() {
                     </div>
                   )}
                 </div>
+              )}
+              {/* Explicit Lyrics Checkbox - only show if hasVocals is true and not a clean version */}
+              {hasVocals && (
+                <label className="flex items-center space-x-2 text-red-300">
+                  <input
+                    type="checkbox"
+                    checked={explicitLyrics}
+                    onChange={(e) => setExplicitLyrics(e.target.checked)}
+                    className="rounded border-gray-600 text-red-600 focus:ring-red-500"
+                    disabled={isSubmitting || isCleanVersion}
+                  />
+                  <span>This track contains explicit lyrics</span>
+                </label>
               )}
 
 
