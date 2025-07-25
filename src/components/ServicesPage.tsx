@@ -69,6 +69,8 @@ interface Service {
   contact: string;
   website: string;
   image: string;
+  image2?: string;
+  image3?: string;
   subgenres?: string[];
   tier?: string;
   style_tags?: string[];
@@ -180,7 +182,7 @@ export default function ServicesPage() {
           <p className="col-span-full text-center text-gray-400">No services found.</p>
         ) : (
           filteredServices.map((service) => (
-            <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center animated-border">
+            <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center">
               <img
                 src={service.image}
                 alt={service.name}
@@ -217,6 +219,17 @@ export default function ServicesPage() {
                   {service.style_tags.map((tag) => (
                     <span key={tag} className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">{tag}</span>
                   ))}
+                </div>
+              )}
+              {/* Display additional images at the bottom */}
+              {(service.image2 || service.image3) && (
+                <div className="flex gap-2 mt-4">
+                  {service.image2 && (
+                    <img src={service.image2} alt="Additional 1" className="h-20 rounded border border-blue-500/20" />
+                  )}
+                  {service.image3 && (
+                    <img src={service.image3} alt="Additional 2" className="h-20 rounded border border-blue-500/20" />
+                  )}
                 </div>
               )}
             </div>

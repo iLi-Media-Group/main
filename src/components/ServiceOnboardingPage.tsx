@@ -70,12 +70,18 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
     contact: '',
     website: '',
     image: '',
+    image2: '',
+    image3: '',
     subgenres: [] as string[],
     tier: '',
     style_tags: [] as string[]
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile2, setImageFile2] = useState<File | null>(null);
+  const [imagePreview2, setImagePreview2] = useState<string | null>(null);
+  const [imageFile3, setImageFile3] = useState<File | null>(null);
+  const [imagePreview3, setImagePreview3] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -136,7 +142,7 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageNum = 1) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -147,8 +153,16 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
       setError('Image size must be less than 2MB');
       return;
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (imageNum === 1) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (imageNum === 2) {
+      setImageFile2(file);
+      setImagePreview2(URL.createObjectURL(file));
+    } else if (imageNum === 3) {
+      setImageFile3(file);
+      setImagePreview3(URL.createObjectURL(file));
+    }
     setError('');
   };
 
@@ -158,10 +172,18 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
     setError('');
     try {
       let imageUrl = form.image;
+      let imageUrl2 = form.image2;
+      let imageUrl3 = form.image3;
       if (imageFile) {
         imageUrl = await uploadFile(imageFile, 'service-images');
       }
-      const payload = { ...form, image: imageUrl };
+      if (imageFile2) {
+        imageUrl2 = await uploadFile(imageFile2, 'service-images');
+      }
+      if (imageFile3) {
+        imageUrl3 = await uploadFile(imageFile3, 'service-images');
+      }
+      const payload = { ...form, image: imageUrl, image2: imageUrl2, image3: imageUrl3 };
       await supabase.from('services').insert([payload]);
       // Only update token if tokenData and tokenData.id exist
       if (tokenData && tokenData.id) {
@@ -290,11 +312,35 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={e => handleImageChange(e, 1)}
                   className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                 />
                 {imagePreview && (
                   <img src={imagePreview} alt="Preview" className="mt-2 h-24 rounded border border-blue-500/20" />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Additional Image 1 (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => handleImageChange(e, 2)}
+                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                />
+                {imagePreview2 && (
+                  <img src={imagePreview2} alt="Preview 2" className="mt-2 h-24 rounded border border-blue-500/20" />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Additional Image 2 (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => handleImageChange(e, 3)}
+                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                />
+                {imagePreview3 && (
+                  <img src={imagePreview3} alt="Preview 3" className="mt-2 h-24 rounded border border-blue-500/20" />
                 )}
               </div>
               <div>
