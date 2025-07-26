@@ -72,39 +72,64 @@ serve(async (req) => {
     let redeemByTimestamp = null
     if (discount.end_date) {
       try {
-        const redeemBy = new Date(discount.end_date)
+        // Handle different date formats
+        let redeemBy: Date
+        if (typeof discount.end_date === 'string') {
+          redeemBy = new Date(discount.end_date)
+        } else {
+          redeemBy = new Date(discount.end_date)
+        }
+        
         if (!isNaN(redeemBy.getTime())) {
           redeemByTimestamp = Math.floor(redeemBy.getTime() / 1000)
+          console.log('Calculated redeem_by timestamp:', redeemByTimestamp)
+        } else {
+          console.error('Invalid end_date:', discount.end_date)
         }
       } catch (error) {
-        console.error('Error parsing end_date:', error)
+        console.error('Error parsing end_date:', error, 'end_date:', discount.end_date)
       }
+    } else {
+      console.log('No end_date provided, setting redeem_by to null')
     }
 
     // Create Stripe coupon
+    // Ensure percent_off is a valid integer between 1-100
+    const percentOff = Math.round(Number(discount.discount_percent))
+    
+    if (isNaN(percentOff) || percentOff < 1 || percentOff > 100) {
+      throw new Error(`Invalid discount_percent: ${discount.discount_percent}. Must be between 1-100.`)
+    }
+    
     console.log('Creating Stripe coupon with data:', {
       id: discount.promotion_code,
       name: discount.name,
-      percent_off: discount.discount_percent,
+      percent_off: percentOff,
       redeem_by: redeemByTimestamp
     })
 
-    const coupon = await stripe.coupons.create({
-      id: discount.promotion_code,
-      name: discount.name,
-      percent_off: discount.discount_percent,
-      duration: 'once',
-      duration_in_months: null,
-      max_redemptions: null, // Unlimited
-      redeem_by: redeemByTimestamp, // Will be null if no valid end_date
-      metadata: {
-        description: discount.description || '',
-        applies_to: Array.isArray(discount.applies_to) ? discount.applies_to.join(',') : '',
-        discount_id: discount.id
-      }
-    })
+    let coupon: any = null
+    try {
+      coupon = await stripe.coupons.create({
+        id: discount.promotion_code,
+        name: discount.name,
+        percent_off: percentOff,
+        duration: 'once',
+        duration_in_months: null,
+        max_redemptions: null, // Unlimited
+        redeem_by: redeemByTimestamp, // Will be null if no valid end_date
+        metadata: {
+          description: discount.description || '',
+          applies_to: Array.isArray(discount.applies_to) ? discount.applies_to.join(',') : '',
+          discount_id: discount.id
+        }
+      })
 
-    console.log(`✅ Created Stripe coupon: ${coupon.id}`)
+      console.log(`✅ Created Stripe coupon: ${coupon.id}`)
+    } catch (stripeError) {
+      console.error('Stripe coupon creation failed:', stripeError)
+      throw new Error(`Stripe coupon creation failed: ${stripeError.message}`)
+    }
 
     // Update the discount record with Stripe coupon info
     const { error: updateError } = await supabase
