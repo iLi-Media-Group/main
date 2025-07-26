@@ -52,13 +52,14 @@ async function getApplicableDiscounts(itemName: string, checkDate: string = new 
 }
 
 // Function to calculate discounted price
-async function calculateDiscountedPrice(originalPrice: number, itemName: string, checkDate: string = new Date().toISOString().split('T')[0]) {
-  console.log(`🔍 Discount Debug: Calculating discounted price for ${itemName}, original price: ${originalPrice} cents`);
+async function calculateDiscountedPrice(originalPrice: number, itemName: string, checkDate: string = new Date().toISOString().split('T')[0], promotionCode?: string) {
+  console.log(`🔍 Discount Debug: Calculating discounted price for ${itemName}, original price: ${originalPrice} cents, promotion code: ${promotionCode || 'none'}`);
   const { data, error } = await supabase
     .rpc('calculate_discounted_price', {
       original_price: originalPrice,
       item_name: itemName,
-      check_date: checkDate
+      check_date: checkDate,
+      promotion_code_input: promotionCode || null
     });
 
   if (error) {
@@ -68,7 +69,9 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
       discount_percent: 0,
       discounted_price: originalPrice,
       discount_name: null,
-      discount_description: null
+      discount_description: null,
+      discount_type: null,
+      promotion_code: null
     };
   }
 
@@ -77,7 +80,9 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
     discount_percent: 0,
     discounted_price: originalPrice,
     discount_name: null,
-    discount_description: null
+    discount_description: null,
+    discount_type: null,
+    promotion_code: null
   };
   
   console.log(`🔍 Discount Debug: Discount calculation result:`, result);
@@ -102,7 +107,7 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    const { price_id, success_url, cancel_url, mode, metadata = {}, custom_amount } = await req.json();
+    const { price_id, success_url, cancel_url, mode, metadata = {}, custom_amount, promotion_code } = await req.json();
 
     const error = validateParameters(
       { price_id, success_url, cancel_url, mode, metadata, custom_amount },
@@ -304,11 +309,12 @@ Deno.serve(async (req) => {
         const originalAmount = price.unit_amount || 0;
         console.log(`🔍 Discount Debug: Original price amount: ${originalAmount} cents`);
 
-        // Calculate discounted price
+        // Calculate discounted price (check for both automatic and promotion code discounts)
         const discountResult = await calculateDiscountedPrice(
           originalAmount, 
           productName, 
-          new Date().toISOString().split('T')[0]
+          new Date().toISOString().split('T')[0],
+          promotion_code
         );
         console.log(`🔍 Discount Debug: Discount calculation result:`, discountResult);
 

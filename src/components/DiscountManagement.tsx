@@ -23,6 +23,8 @@ interface DiscountFormData {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  discount_type: 'automatic' | 'promotion_code';
+  promotion_code: string;
 }
 
 const APPLICABLE_ITEMS = [
@@ -74,7 +76,9 @@ export function DiscountManagement() {
     applies_to: [],
     start_date: '',
     end_date: '',
-    is_active: true
+    is_active: true,
+    discount_type: 'automatic',
+    promotion_code: ''
   });
 
   useEffect(() => {
@@ -131,7 +135,9 @@ export function DiscountManagement() {
             applies_to: formData.applies_to,
             start_date: formData.start_date,
             end_date: formData.end_date,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            discount_type: formData.discount_type,
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null
           })
           .eq('id', editingDiscount.id);
 
@@ -148,7 +154,9 @@ export function DiscountManagement() {
             applies_to: formData.applies_to,
             start_date: formData.start_date,
             end_date: formData.end_date,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            discount_type: formData.discount_type,
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null
           });
 
         if (error) throw error;
@@ -179,7 +187,9 @@ export function DiscountManagement() {
       applies_to: discount.applies_to,
       start_date: discount.start_date,
       end_date: discount.end_date,
-      is_active: discount.is_active
+      is_active: discount.is_active,
+      discount_type: (discount as any).discount_type || 'automatic',
+      promotion_code: (discount as any).promotion_code || ''
     });
     setShowForm(true);
   };
@@ -217,7 +227,9 @@ export function DiscountManagement() {
       applies_to: [],
       start_date: '',
       end_date: '',
-      is_active: true
+      is_active: true,
+      discount_type: 'automatic',
+      promotion_code: ''
     });
     setEditingDiscount(null);
     setShowForm(false);
@@ -356,6 +368,54 @@ export function DiscountManagement() {
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Discount Type *
+                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discount_type"
+                      value="automatic"
+                      checked={formData.discount_type === 'automatic'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'automatic' | 'promotion_code' }))}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Automatic Discount (applies to all eligible purchases)</span>
+                  </label>
+                  <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="discount_type"
+                      value="promotion_code"
+                      checked={formData.discount_type === 'promotion_code'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'automatic' | 'promotion_code' }))}
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm">Promotion Code (requires customers to enter code)</span>
+                  </label>
+                </div>
+              </div>
+
+              {formData.discount_type === 'promotion_code' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Promotion Code *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.promotion_code}
+                    onChange={(e) => setFormData(prev => ({ ...prev, promotion_code: e.target.value.toUpperCase() }))}
+                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                    placeholder="e.g., WELCOME10, SUMMER20"
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Applies To *
@@ -483,6 +543,13 @@ export function DiscountManagement() {
                       <span className="text-blue-400 font-semibold">{discount.discount_percent}% off</span>
                       <span className="text-gray-300">
                         {new Date(discount.start_date).toLocaleDateString()} - {new Date(discount.end_date).toLocaleDateString()}
+                      </span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        (discount as any).discount_type === 'promotion_code' 
+                          ? 'bg-purple-500/20 text-purple-400' 
+                          : 'bg-green-500/20 text-green-400'
+                      }`}>
+                        {(discount as any).discount_type === 'promotion_code' ? 'Promotion Code' : 'Automatic'}
                       </span>
                     </div>
                   </div>
