@@ -35,6 +35,7 @@ function corsResponse(body: string | object | null, status = 200) {
 
 // Function to get applicable discounts
 async function getApplicableDiscounts(itemName: string, checkDate: string = new Date().toISOString().split('T')[0]) {
+  console.log(`🔍 Discount Debug: Getting applicable discounts for ${itemName} on ${checkDate}`);
   const { data, error } = await supabase
     .rpc('get_applicable_discounts', {
       item_name: itemName,
@@ -46,11 +47,13 @@ async function getApplicableDiscounts(itemName: string, checkDate: string = new 
     return null;
   }
 
+  console.log(`🔍 Discount Debug: Found ${data?.length || 0} applicable discounts:`, data);
   return data;
 }
 
 // Function to calculate discounted price
 async function calculateDiscountedPrice(originalPrice: number, itemName: string, checkDate: string = new Date().toISOString().split('T')[0]) {
+  console.log(`🔍 Discount Debug: Calculating discounted price for ${itemName}, original price: ${originalPrice} cents`);
   const { data, error } = await supabase
     .rpc('calculate_discounted_price', {
       original_price: originalPrice,
@@ -69,13 +72,16 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
     };
   }
 
-  return data?.[0] || {
+  const result = data?.[0] || {
     original_price: originalPrice,
     discount_percent: 0,
     discounted_price: originalPrice,
     discount_name: null,
     discount_description: null
   };
+  
+  console.log(`🔍 Discount Debug: Discount calculation result:`, result);
+  return result;
 }
 
 // Mapping of price IDs to product names for discount lookup
@@ -288,6 +294,7 @@ Deno.serve(async (req) => {
     } else {
       // Check for applicable discounts
       const productName = PRICE_TO_PRODUCT_MAPPING[price_id];
+      console.log(`🔍 Discount Debug: Checking discounts for price_id: ${price_id}, productName: ${productName}`);
       let couponId = null;
       let appliedDiscount: { name: string; description: string; percent: number } | null = null;
 
@@ -295,6 +302,7 @@ Deno.serve(async (req) => {
         // Get the original price from Stripe to calculate discount
         const price = await stripe.prices.retrieve(price_id);
         const originalAmount = price.unit_amount || 0;
+        console.log(`🔍 Discount Debug: Original price amount: ${originalAmount} cents`);
 
         // Calculate discounted price
         const discountResult = await calculateDiscountedPrice(
@@ -302,8 +310,10 @@ Deno.serve(async (req) => {
           productName, 
           new Date().toISOString().split('T')[0]
         );
+        console.log(`🔍 Discount Debug: Discount calculation result:`, discountResult);
 
         if (discountResult && discountResult.discount_percent > 0) {
+          console.log(`🔍 Discount Debug: Creating Stripe coupon with ${discountResult.discount_percent}% discount`);
           // Create a coupon for the discount
           const coupon = await stripe.coupons.create({
             percent_off: discountResult.discount_percent,
@@ -317,7 +327,12 @@ Deno.serve(async (req) => {
             description: discountResult.discount_description,
             percent: discountResult.discount_percent
           };
+          console.log(`🔍 Discount Debug: Created coupon ${couponId} for discount:`, appliedDiscount);
+        } else {
+          console.log(`🔍 Discount Debug: No applicable discount found for ${productName}`);
         }
+      } else {
+        console.log(`🔍 Discount Debug: No product mapping found for price_id: ${price_id}`);
       }
 
       // Regular checkout session
