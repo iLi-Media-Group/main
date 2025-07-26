@@ -54,8 +54,15 @@ async function getApplicableDiscounts(itemName: string, checkDate: string = new 
 // Function to calculate discounted price
 async function calculateDiscountedPrice(originalPrice: number, itemName: string, checkDate: string = new Date().toISOString().split('T')[0], promotionCode?: string) {
   console.log(`🔍 Discount Debug: Calculating discounted price for ${itemName}, original price: ${originalPrice} cents, promotion code: ${promotionCode || 'none'}`);
+  
+  // Call the function with a single JSON object to avoid parameter order issues
   const { data, error } = await supabase
-    .rpc('calculate_discounted_price', originalPrice, itemName, checkDate, promotionCode || null);
+    .rpc('calculate_discounted_price', {
+      p_original_price: originalPrice,
+      item_name: itemName,
+      check_date: checkDate,
+      promotion_code_input: promotionCode || null
+    });
 
   if (error) {
     console.error('Error calculating discounted price:', error);
@@ -88,7 +95,12 @@ Deno.serve(async (req) => {
   // Test the database function directly
   console.log('🔍 Testing database function directly...');
   const { data: testData, error: testError } = await supabase
-    .rpc('calculate_discounted_price', 999, 'single_track', new Date().toISOString().split('T')[0], null);
+    .rpc('calculate_discounted_price', {
+      p_original_price: 999,
+      item_name: 'single_track',
+      check_date: new Date().toISOString().split('T')[0],
+      promotion_code_input: null
+    });
   
   if (testError) {
     console.error('🔍 Database function test failed:', testError);
