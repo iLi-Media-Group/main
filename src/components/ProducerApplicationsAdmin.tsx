@@ -68,8 +68,9 @@ export default function ProducerApplicationsAdmin() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('new');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'date' | 'genre' | 'ranking'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [selectedRankingRange, setSelectedRankingRange] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'date' | 'genre' | 'ranking'>('ranking');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [search, setSearch] = useState<string>('');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
@@ -215,6 +216,26 @@ export default function ProducerApplicationsAdmin() {
         app.primary_genre.toLowerCase().includes(searchLower)
       );
       console.log('After search filter:', filtered.length);
+    }
+
+    // Filter by ranking range
+    if (selectedRankingRange) {
+      filtered = filtered.filter(app => {
+        const score = app.ranking_score || 0;
+        switch (selectedRankingRange) {
+          case 'high':
+            return score >= 20;
+          case 'medium':
+            return score >= 10 && score < 20;
+          case 'low':
+            return score < 10;
+          case 'auto-rejected':
+            return app.is_auto_rejected === true;
+          default:
+            return true;
+        }
+      });
+      console.log('After ranking filter:', filtered.length);
     }
 
     // Sort applications
@@ -386,6 +407,21 @@ export default function ProducerApplicationsAdmin() {
         </div>
 
         <div className="flex items-center space-x-2">
+          <Star className="w-4 h-4 text-gray-400" />
+          <select
+            value={selectedRankingRange}
+            onChange={(e) => setSelectedRankingRange(e.target.value)}
+            className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">All Rankings</option>
+            <option value="high">High Score (20+ pts)</option>
+            <option value="medium">Medium Score (10-19 pts)</option>
+            <option value="low">Low Score (< 10 pts)</option>
+            <option value="auto-rejected">Auto-Rejected</option>
+          </select>
+        </div>
+
+        <div className="flex items-center space-x-2">
           <ArrowUpDown className="w-4 h-4 text-gray-400" />
           <select
             value={sortBy}
@@ -431,6 +467,27 @@ export default function ProducerApplicationsAdmin() {
           ) : (
             getTabApplications().map((app) => (
               <div key={app.id} className="bg-white/5 backdrop-blur-sm rounded-lg p-6 border border-blue-500/20">
+                {/* Ranking Score - Prominent Display */}
+                {app.ranking_score !== undefined && (
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Star className="w-5 h-5 text-yellow-400" />
+                      <span className={`text-lg font-bold px-4 py-2 rounded-lg ${
+                        app.ranking_score >= 20 ? 'bg-green-100 text-green-800' :
+                        app.ranking_score >= 10 ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {app.ranking_score} points
+                      </span>
+                    </div>
+                    {app.is_auto_rejected && (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                        Auto-Rejected
+                      </span>
+                    )}
+                  </div>
+                )}
+                
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
                     <div className="flex items-center space-x-4 mb-2">
@@ -441,21 +498,6 @@ export default function ProducerApplicationsAdmin() {
                       {app.auto_disqualified && (
                         <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
                           Auto-Disqualified
-                        </span>
-                      )}
-                      {app.ranking_score !== undefined && (
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${
-                          app.ranking_score >= 20 ? 'bg-green-100 text-green-800' :
-                          app.ranking_score >= 10 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          <Star className="w-3 h-3 mr-1" />
-                          {app.ranking_score} pts
-                        </span>
-                      )}
-                      {app.is_auto_rejected && (
-                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                          Auto-Rejected
                         </span>
                       )}
                     </div>
