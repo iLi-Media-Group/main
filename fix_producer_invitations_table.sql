@@ -5,16 +5,24 @@
 ALTER TABLE producer_invitations 
 ADD COLUMN IF NOT EXISTS producer_number text;
 
--- Add constraint to ensure producer_number format
+-- Add constraint to ensure producer_number format (only if column exists)
 DO $$ 
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint 
-        WHERE conname = 'producer_invitations_producer_number_check'
+    -- Check if table exists and has the producer_number column
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'producer_invitations' 
+        AND column_name = 'producer_number'
     ) THEN
-        ALTER TABLE producer_invitations 
-        ADD CONSTRAINT producer_invitations_producer_number_check 
-        CHECK (producer_number ~ '^mbfpr-\d{3}$');
+        -- Check if constraint doesn't already exist
+        IF NOT EXISTS (
+            SELECT 1 FROM pg_constraint 
+            WHERE conname = 'producer_invitations_producer_number_check'
+        ) THEN
+            ALTER TABLE producer_invitations 
+            ADD CONSTRAINT producer_invitations_producer_number_check 
+            CHECK (producer_number ~ '^mbfpr-\d{3}$');
+        END IF;
     END IF;
 END $$;
 
