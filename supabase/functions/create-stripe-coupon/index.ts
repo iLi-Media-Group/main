@@ -58,9 +58,18 @@ serve(async (req) => {
 
     console.log(`Creating Stripe coupon for discount: ${discount.name}`)
 
-    // Calculate expiration date
-    const redeemBy = new Date(discount.end_date)
-    const redeemByTimestamp = Math.floor(redeemBy.getTime() / 1000)
+    // Calculate expiration date - handle null/invalid dates
+    let redeemByTimestamp = null
+    if (discount.end_date) {
+      try {
+        const redeemBy = new Date(discount.end_date)
+        if (!isNaN(redeemBy.getTime())) {
+          redeemByTimestamp = Math.floor(redeemBy.getTime() / 1000)
+        }
+      } catch (error) {
+        console.error('Error parsing end_date:', error)
+      }
+    }
 
     // Create Stripe coupon
     const coupon = await stripe.coupons.create({
@@ -70,10 +79,10 @@ serve(async (req) => {
       duration: 'once',
       duration_in_months: null,
       max_redemptions: null, // Unlimited
-      redeem_by: redeemByTimestamp,
+      redeem_by: redeemByTimestamp, // Will be null if no valid end_date
       metadata: {
-        description: discount.description,
-        applies_to: discount.applies_to.join(','),
+        description: discount.description || '',
+        applies_to: Array.isArray(discount.applies_to) ? discount.applies_to.join(',') : '',
         discount_id: discount.id
       }
     })
