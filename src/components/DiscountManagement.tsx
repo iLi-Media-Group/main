@@ -11,6 +11,10 @@ interface Discount {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  discount_type: 'automatic' | 'promotion_code';
+  promotion_code: string | null;
+  stripe_coupon_id: string | null;
+  stripe_coupon_created_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -106,6 +110,49 @@ export function DiscountManagement() {
     }
   };
 
+  const createStripeCoupon = async (discountId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-coupon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({ discount_id: discountId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create Stripe coupon');
+      }
+
+      const result = await response.json();
+      console.log('Stripe coupon created:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating Stripe coupon:', error);
+      throw error;
+    }
+  };
+
+  const createStripeCouponForExisting = async (discountId: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+      
+      await createStripeCoupon(discountId);
+      setSuccess('Stripe coupon created successfully!');
+      fetchDiscounts(); // Refresh to show updated status
+      
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      console.error('Error creating Stripe coupon:', error);
+      setError('Failed to create Stripe coupon');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -145,7 +192,7 @@ export function DiscountManagement() {
         setSuccess('Discount updated successfully');
       } else {
         // Create new discount
-        const { error } = await supabase
+        const { data: newDiscount, error } = await supabase
           .from('discounts')
           .insert({
             name: formData.name,
@@ -157,10 +204,24 @@ export function DiscountManagement() {
             is_active: formData.is_active,
             discount_type: formData.discount_type,
             promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-        setSuccess('Discount created successfully');
+
+        // If this is a promotion code discount, create the Stripe coupon
+        if (formData.discount_type === 'promotion_code' && newDiscount) {
+          try {
+            await createStripeCoupon(newDiscount.id);
+            setSuccess('Discount created successfully and Stripe coupon created!');
+          } catch (stripeError) {
+            console.error('Failed to create Stripe coupon:', stripeError);
+            setSuccess('Discount created successfully, but failed to create Stripe coupon. Please try again.');
+          }
+        } else {
+          setSuccess('Discount created successfully');
+        }
       }
 
       // Reset form and refresh data
@@ -262,6 +323,36 @@ export function DiscountManagement() {
     return appliesTo.map(item => 
       APPLICABLE_ITEMS.find(option => option.value === item)?.label || item
     ).join(', ');
+  };
+
+  const getStripeCouponStatus = (discount: Discount) => {
+    if (discount.discount_type !== 'promotion_code') {
+      return null;
+    }
+
+    if (discount.stripe_coupon_id) {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Stripe Coupon Created
+        </span>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => createStripeCouponForExisting(discount.id)}
+        disabled={saving}
+        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:opacity-50"
+      >
+        {saving ? (
+          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+        ) : (
+          <AlertCircle className="w-3 h-3 mr-1" />
+        )}
+        Create Stripe Coupon
+      </button>
+    );
   };
 
   if (loading) {
@@ -581,6 +672,7 @@ export function DiscountManagement() {
                   </div>
                   <p className="text-sm text-gray-400">{getApplicableItemsText(discount.applies_to)}</p>
                 </div>
+                {getStripeCouponStatus(discount)}
               </div>
             ))}
           </div>
