@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
 import AISearchAssistant from './AISearchAssistant';
-import WelcomeDiscountModal from './WelcomeDiscountModal';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 interface LayoutProps {
@@ -100,10 +99,6 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex flex-col">
-      {/* Show welcome discount banner for logged-in clients */}
-      {user && accountType === 'client' && (
-        <WelcomeDiscountModal onClose={() => {}} />
-      )}
       
       <header className="py-4 px-4 bg-blue-900/80 backdrop-solid-sm border-b border-blue-500/20 sticky top-0 z-50">
         <nav className="container mx-auto flex justify-between items-center relative">
