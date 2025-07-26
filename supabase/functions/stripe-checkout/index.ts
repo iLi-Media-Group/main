@@ -75,18 +75,8 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
     };
   }
 
-  const result = data?.[0] || {
-    original_price: originalPrice,
-    discount_percent: 0,
-    discounted_price: originalPrice,
-    discount_name: null,
-    discount_description: null,
-    discount_type: null,
-    promotion_code: null
-  };
-  
-  console.log(`🔍 Discount Debug: Discount calculation result:`, result);
-  return result;
+  console.log('🔍 Discount Debug: Discount calculation result:', data);
+  return data;
 }
 
 // Mapping of price IDs to product names for discount lookup
