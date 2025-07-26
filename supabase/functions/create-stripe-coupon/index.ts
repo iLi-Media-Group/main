@@ -42,11 +42,21 @@ serve(async (req) => {
       .single()
 
     if (discountError || !discount) {
+      console.error('Discount not found:', discountError)
       return new Response(
-        JSON.stringify({ error: 'Discount not found' }),
+        JSON.stringify({ error: 'Discount not found', details: discountError }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    console.log('Found discount:', {
+      id: discount.id,
+      name: discount.name,
+      discount_type: discount.discount_type,
+      promotion_code: discount.promotion_code,
+      discount_percent: discount.discount_percent,
+      end_date: discount.end_date
+    })
 
     // Only create Stripe coupon for promotion code discounts
     if (discount.discount_type !== 'promotion_code' || !discount.promotion_code) {
@@ -72,6 +82,13 @@ serve(async (req) => {
     }
 
     // Create Stripe coupon
+    console.log('Creating Stripe coupon with data:', {
+      id: discount.promotion_code,
+      name: discount.name,
+      percent_off: discount.discount_percent,
+      redeem_by: redeemByTimestamp
+    })
+
     const coupon = await stripe.coupons.create({
       id: discount.promotion_code,
       name: discount.name,
