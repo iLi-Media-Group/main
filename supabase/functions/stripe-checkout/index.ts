@@ -98,6 +98,7 @@ const PRICE_TO_PRODUCT_MAPPING: Record<string, string> = {
 };
 
 Deno.serve(async (req) => {
+  console.log('🔍 Checkout Debug: Function called');
   try {
     if (req.method === 'OPTIONS') {
       return corsResponse({}, 204);
