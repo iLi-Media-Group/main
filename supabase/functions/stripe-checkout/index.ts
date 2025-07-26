@@ -84,6 +84,18 @@ const PRICE_TO_PRODUCT_MAPPING: Record<string, string> = {
 
 Deno.serve(async (req) => {
   console.log('🔍 Checkout Debug: Function called');
+  
+  // Test the database function directly
+  console.log('🔍 Testing database function directly...');
+  const { data: testData, error: testError } = await supabase
+    .rpc('calculate_discounted_price', 999, 'single_track', new Date().toISOString().split('T')[0], null);
+  
+  if (testError) {
+    console.error('🔍 Database function test failed:', testError);
+  } else {
+    console.log('🔍 Database function test successful:', testData);
+  }
+  
   try {
     if (req.method === 'OPTIONS') {
       return corsResponse({}, 204);
