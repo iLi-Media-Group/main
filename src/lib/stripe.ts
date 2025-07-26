@@ -46,6 +46,66 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
   }
 }
 
+// Add the missing createStripeCheckout function that uses our Edge Function
+export async function createStripeCheckout({
+  productId,
+  name,
+  description,
+  price,
+  successUrl,
+  cancelUrl,
+  metadata
+}: {
+  productId: string;
+  name: string;
+  description: string;
+  price: number;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: any;
+}) {
+  try {
+    // Get the current session - this implicitly handles refresh
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to make a purchase');
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        price_id: 'price_custom',
+        custom_amount: Math.round(price * 100), // Convert to cents
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          product_id: productId,
+          name,
+          description,
+          ...metadata
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create checkout session');
+    }
+
+    const { url } = await response.json();
+    return url;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw error;
+  }
+}
+
 export async function getUserSubscription() {
   try {
     const { data, error } = await supabase
