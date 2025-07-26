@@ -6,9 +6,17 @@ ALTER TABLE producer_invitations
 ADD COLUMN IF NOT EXISTS producer_number text;
 
 -- Add constraint to ensure producer_number format
-ALTER TABLE producer_invitations 
-ADD CONSTRAINT IF NOT EXISTS producer_invitations_producer_number_check 
-CHECK (producer_number ~ '^mbfpr-\d{3}$');
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'producer_invitations_producer_number_check'
+    ) THEN
+        ALTER TABLE producer_invitations 
+        ADD CONSTRAINT producer_invitations_producer_number_check 
+        CHECK (producer_number ~ '^mbfpr-\d{3}$');
+    END IF;
+END $$;
 
 -- Create index for efficient querying
 CREATE INDEX IF NOT EXISTS idx_producer_invitations_producer_number 
