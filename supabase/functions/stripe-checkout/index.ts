@@ -56,7 +56,7 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
   console.log(`🔍 Discount Debug: Calculating discounted price for ${itemName}, original price: ${originalPrice} cents, promotion code: ${promotionCode || 'none'}`);
   const { data, error } = await supabase
     .rpc('calculate_discounted_price', {
-      original_price: originalPrice,
+      p_original_price: originalPrice,
       item_name: itemName,
       check_date: checkDate,
       promotion_code_input: promotionCode || null
