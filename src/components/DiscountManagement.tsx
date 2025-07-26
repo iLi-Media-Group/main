@@ -15,6 +15,11 @@ interface Discount {
   promotion_code: string | null;
   stripe_coupon_id: string | null;
   stripe_coupon_created_at: string | null;
+  duration_type: 'once' | 'repeating' | 'forever';
+  duration_in_months: number | null;
+  max_redemptions: number | null;
+  max_redemptions_per_customer: number | null;
+  usage_restrictions: any | null;
   created_at: string;
   updated_at: string;
 }
@@ -29,6 +34,10 @@ interface DiscountFormData {
   is_active: boolean;
   discount_type: 'automatic' | 'promotion_code';
   promotion_code: string;
+  duration_type: 'once' | 'repeating' | 'forever';
+  duration_in_months: number | null;
+  max_redemptions: number | null;
+  max_redemptions_per_customer: number | null;
 }
 
 const APPLICABLE_ITEMS = [
@@ -82,7 +91,11 @@ export function DiscountManagement() {
     end_date: '',
     is_active: true,
     discount_type: 'automatic',
-    promotion_code: ''
+    promotion_code: '',
+    duration_type: 'once',
+    duration_in_months: null,
+    max_redemptions: null,
+    max_redemptions_per_customer: null,
   });
 
   useEffect(() => {
@@ -184,7 +197,15 @@ export function DiscountManagement() {
             end_date: formData.end_date,
             is_active: formData.is_active,
             discount_type: formData.discount_type,
-            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null,
+            duration_type: formData.duration_type,
+            duration_in_months: formData.duration_in_months,
+            max_redemptions: formData.max_redemptions,
+            max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            usage_restrictions: formData.duration_type === 'repeating' ? {
+              max_redemptions: formData.max_redemptions,
+              max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            } : null,
           })
           .eq('id', editingDiscount.id);
 
@@ -203,7 +224,15 @@ export function DiscountManagement() {
             end_date: formData.end_date,
             is_active: formData.is_active,
             discount_type: formData.discount_type,
-            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null,
+            duration_type: formData.duration_type,
+            duration_in_months: formData.duration_in_months,
+            max_redemptions: formData.max_redemptions,
+            max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            usage_restrictions: formData.duration_type === 'repeating' ? {
+              max_redemptions: formData.max_redemptions,
+              max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            } : null,
           })
           .select()
           .single();
@@ -250,7 +279,11 @@ export function DiscountManagement() {
       end_date: discount.end_date,
       is_active: discount.is_active,
       discount_type: (discount as any).discount_type || 'automatic',
-      promotion_code: (discount as any).promotion_code || ''
+      promotion_code: (discount as any).promotion_code || '',
+      duration_type: (discount as any).duration_type || 'once',
+      duration_in_months: (discount as any).duration_in_months || null,
+      max_redemptions: (discount as any).max_redemptions || null,
+      max_redemptions_per_customer: (discount as any).max_redemptions_per_customer || null,
     });
     setShowForm(true);
   };
@@ -290,7 +323,11 @@ export function DiscountManagement() {
       end_date: '',
       is_active: true,
       discount_type: 'automatic',
-      promotion_code: ''
+      promotion_code: '',
+      duration_type: 'once',
+      duration_in_months: null,
+      max_redemptions: null,
+      max_redemptions_per_customer: null,
     });
     setEditingDiscount(null);
     setShowForm(false);
@@ -566,6 +603,103 @@ export function DiscountManagement() {
                   className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:border-blue-500 focus:ring focus:ring-blue-500/20"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Duration and Usage Configuration */}
+            <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-white border-b border-blue-500/20 pb-2">Duration & Usage Settings</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Duration Type *
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="once"
+                        checked={formData.duration_type === 'once'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Once (single use per customer)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="repeating"
+                        checked={formData.duration_type === 'repeating'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Repeating (monthly for specified duration)</span>
+                    </label>
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="forever"
+                        checked={formData.duration_type === 'forever'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Forever (unlimited duration)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {formData.duration_type === 'repeating' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Duration (Months)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.duration_in_months || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, duration_in_months: e.target.value ? parseInt(e.target.value) : null }))}
+                      className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                      placeholder="12"
+                      min="1"
+                      max="60"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Max Redemptions (Total)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_redemptions || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, max_redemptions: e.target.value ? parseInt(e.target.value) : null }))}
+                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                    placeholder="Leave empty for unlimited"
+                    min="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited total redemptions</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Max Redemptions Per Customer
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_redemptions_per_customer || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, max_redemptions_per_customer: e.target.value ? parseInt(e.target.value) : null }))}
+                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                    placeholder="Leave empty for unlimited"
+                    min="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited per customer</p>
+                </div>
               </div>
             </div>
 

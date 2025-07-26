@@ -330,25 +330,87 @@ Deno.serve(async (req) => {
         console.log(`🔍 Discount Debug: Promotion code provided: ${promotion_code || 'none'}`);
 
         if (discountResult && discountResult.discount_percent > 0) {
-          console.log(`🔍 Discount Debug: Creating Stripe coupon with ${discountResult.discount_percent}% discount`);
+          console.log(`🔍 Discount Debug: Found discount with ${discountResult.discount_percent}% discount`);
           console.log(`🔍 Discount Debug: Discount name: ${discountResult.discount_name}`);
           console.log(`🔍 Discount Debug: Discount type: ${discountResult.discount_type}`);
           
-          // Create a coupon for the discount
-          const coupon = await stripe.coupons.create({
-            percent_off: discountResult.discount_percent,
-            duration: mode === 'subscription' ? 'repeating' : 'once',
-            duration_in_months: mode === 'subscription' ? 12 : undefined,
-            name: discountResult.discount_name || `${productName} Discount`,
-            id: promotion_code ? `promo_${promotion_code.toLowerCase()}` : undefined, // Use promotion code as coupon ID
-          });
-          couponId = coupon.id;
+          // For promotion code discounts, use the existing Stripe coupon
+          if (discountResult.discount_type === 'promotion_code' && promotion_code) {
+            console.log(`🔍 Discount Debug: Looking for existing Stripe coupon for promotion code: ${promotion_code}`);
+            
+            // Get the discount record to find the Stripe coupon ID
+            const { data: discountRecord, error: discountError } = await supabase
+              .from('discounts')
+              .select('stripe_coupon_id')
+              .eq('promotion_code', promotion_code)
+              .eq('discount_type', 'promotion_code')
+              .single();
+            
+            if (discountError) {
+              console.error('🔍 Discount Debug: Error fetching discount record:', discountError);
+            } else if (discountRecord && discountRecord.stripe_coupon_id) {
+              couponId = discountRecord.stripe_coupon_id;
+              console.log(`🔍 Discount Debug: Found existing Stripe coupon: ${couponId}`);
+              
+              // Verify the coupon exists in Stripe
+              try {
+                const coupon = await stripe.coupons.retrieve(couponId);
+                console.log(`🔍 Discount Debug: Verified Stripe coupon exists: ${coupon.id}`);
+                console.log(`🔍 Discount Debug: Coupon details:`, {
+                  id: coupon.id,
+                  name: coupon.name,
+                  percent_off: coupon.percent_off,
+                  valid: coupon.valid
+                });
+              } catch (stripeError) {
+                console.error('🔍 Discount Debug: Stripe coupon not found, creating new one:', stripeError);
+                couponId = null; // Reset to create new coupon
+              }
+            } else {
+              console.log('🔍 Discount Debug: No existing Stripe coupon found, will create new one');
+            }
+          }
+          
+          // If no existing coupon found, create a new one
+          if (!couponId) {
+            console.log(`🔍 Discount Debug: Creating new Stripe coupon with ${discountResult.discount_percent}% discount`);
+            
+            // Create a coupon for the discount
+            const coupon = await stripe.coupons.create({
+              percent_off: discountResult.discount_percent,
+              duration: mode === 'subscription' ? 'repeating' : 'once',
+              duration_in_months: mode === 'subscription' ? 12 : undefined,
+              name: discountResult.discount_name || `${productName} Discount`,
+              id: promotion_code ? `promo_${promotion_code.toLowerCase()}` : undefined, // Use promotion code as coupon ID
+            });
+            couponId = coupon.id;
+            console.log(`🔍 Discount Debug: Created new coupon ${couponId}`);
+            
+            // Update the discount record with the new Stripe coupon ID
+            if (promotion_code) {
+              const { error: updateError } = await supabase
+                .from('discounts')
+                .update({
+                  stripe_coupon_id: couponId,
+                  stripe_coupon_created_at: new Date().toISOString()
+                })
+                .eq('promotion_code', promotion_code)
+                .eq('discount_type', 'promotion_code');
+              
+              if (updateError) {
+                console.error('🔍 Discount Debug: Error updating discount with Stripe coupon ID:', updateError);
+              } else {
+                console.log(`🔍 Discount Debug: Updated discount record with Stripe coupon ID: ${couponId}`);
+              }
+            }
+          }
+          
           appliedDiscount = {
             name: discountResult.discount_name,
             description: discountResult.discount_description,
             percent: discountResult.discount_percent
           };
-          console.log(`🔍 Discount Debug: Created coupon ${couponId} for discount:`, appliedDiscount);
+          console.log(`🔍 Discount Debug: Using coupon ${couponId} for discount:`, appliedDiscount);
         } else {
           console.log(`🔍 Discount Debug: No applicable discount found for ${productName}`);
           console.log(`🔍 Discount Debug: Discount result was:`, discountResult);
