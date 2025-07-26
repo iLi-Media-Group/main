@@ -126,22 +126,17 @@ serve(async (req) => {
       throw new Error(`Invalid discount_percent: ${discount.discount_percent}. Must be between 1-100.`)
     }
     
-    // Create coupon data - let Stripe generate the ID
+    // Create coupon data - simplified for current database structure
     const couponData = {
       name: discount.name,
       percent_off: percentOff,
-      duration: discount.duration_type || 'once', // Use configured duration
-      duration_in_months: discount.duration_type === 'repeating' ? (discount.duration_in_months || 12) : undefined,
-      max_redemptions: discount.max_redemptions || null, // Use configured max redemptions
+      duration: 'once', // Default to once for now
       redeem_by: redeemByTimestamp, // Will be null if no valid end_date
       metadata: {
         description: discount.description || '',
         applies_to: Array.isArray(discount.applies_to) ? discount.applies_to.join(',') : '',
         discount_id: discount.id,
-        promotion_code: discount.promotion_code, // Store our promotion code in metadata
-        duration_type: discount.duration_type,
-        max_redemptions: discount.max_redemptions?.toString() || 'unlimited',
-        max_redemptions_per_customer: discount.max_redemptions_per_customer?.toString() || 'unlimited'
+        promotion_code: discount.promotion_code // Store our promotion code in metadata
       }
     }
     
