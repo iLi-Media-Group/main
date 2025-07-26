@@ -41,7 +41,8 @@ export function ProtectedRoute({
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresProducer && accountType !== 'producer') {
+  // Check for producer access (including dual roles)
+  if (requiresProducer && accountType && !accountType.includes('producer')) {
     return <Navigate to="/dashboard" replace />;
   }
 

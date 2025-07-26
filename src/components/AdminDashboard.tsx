@@ -205,6 +205,12 @@ function AdminDashboard() {
   const { isEnabled: aiSearchEnabled } = useFeatureFlag('ai_search_assistance');
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
 
+  // Debug logging for producer applications tab
+  useEffect(() => {
+    console.log('AdminDashboard: producerOnboardingEnabled =', producerOnboardingEnabled);
+    console.log('AdminDashboard: user email =', user?.email);
+  }, [producerOnboardingEnabled, user]);
+
   useEffect(() => {
     if (user) {
       fetchData();

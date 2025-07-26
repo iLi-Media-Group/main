@@ -6,7 +6,7 @@ import { getUserSubscription, getMembershipPlanFromPriceId } from '../lib/stripe
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  accountType: 'client' | 'producer' | 'admin' | 'white_label' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Check if user is an admin
       if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email.toLowerCase())) {
-        setAccountType('admin');
+        // Special handling for knockriobeats@gmail.com - dual admin/producer role
+        if (email.toLowerCase() === 'knockriobeats@gmail.com') {
+          setAccountType('admin,producer');
+        } else {
+          setAccountType('admin');
+        }
         setNeedsPasswordSetup(false);
         return;
       }
@@ -90,7 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data) {
-        setAccountType(data.account_type as 'client' | 'producer' | 'white_label');
+        // Handle dual roles properly
+        let accountType = data.account_type as 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer';
+        
+        // If the account_type includes multiple roles, use the first one for compatibility
+        if (accountType && accountType.includes(',')) {
+          accountType = accountType.split(',')[0] as 'client' | 'producer' | 'admin' | 'white_label';
+        }
+        
+        setAccountType(accountType);
         setMembershipPlan(data.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
         setNeedsPasswordSetup(false);
         

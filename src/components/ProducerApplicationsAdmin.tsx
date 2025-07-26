@@ -16,7 +16,7 @@ type Application = {
   team_type: string;
   tracks_per_week: string;
   spotify_link: string;
-  instruments: string;
+  instruments: string; // Keep for backward compatibility
   sample_use: string;
   splice_use: string;
   loop_use: string;
@@ -25,6 +25,18 @@ type Application = {
   business_entity: string;
   pro_affiliation: string;
   additional_info: string;
+  // New instrument fields
+  instrument_one: string;
+  instrument_one_proficiency: string;
+  instrument_two: string;
+  instrument_two_proficiency: string;
+  instrument_three: string;
+  instrument_three_proficiency: string;
+  instrument_four: string;
+  instrument_four_proficiency: string;
+  // New recording artists fields
+  records_artists: string;
+  artist_example_link: string;
   status: string;
   review_tier: string | null;
   auto_disqualified: boolean;
@@ -565,15 +577,48 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Instruments & Proficiency</h3>
+                <div className="space-y-2 text-sm">
+                  {selectedApplication.instrument_one && (
+                    <p><strong>Instrument 1:</strong> {selectedApplication.instrument_one} ({selectedApplication.instrument_one_proficiency || 'N/A'})</p>
+                  )}
+                  {selectedApplication.instrument_two && (
+                    <p><strong>Instrument 2:</strong> {selectedApplication.instrument_two} ({selectedApplication.instrument_two_proficiency || 'N/A'})</p>
+                  )}
+                  {selectedApplication.instrument_three && (
+                    <p><strong>Instrument 3:</strong> {selectedApplication.instrument_three} ({selectedApplication.instrument_three_proficiency || 'N/A'})</p>
+                  )}
+                  {selectedApplication.instrument_four && (
+                    <p><strong>Instrument 4:</strong> {selectedApplication.instrument_four} ({selectedApplication.instrument_four_proficiency || 'N/A'})</p>
+                  )}
+                  {!selectedApplication.instrument_one && !selectedApplication.instrument_two && 
+                   !selectedApplication.instrument_three && !selectedApplication.instrument_four && (
+                    <p><strong>Instruments:</strong> {selectedApplication.instruments || 'N/A'}</p>
+                  )}
+                </div>
+              </div>
+              
+              <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-900">Music Creation</h3>
                 <div className="space-y-2 text-sm">
                   <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{selectedApplication.spotify_link}</a></p>
-                  <p><strong>Instruments:</strong> {selectedApplication.instruments || 'N/A'}</p>
                   <p><strong>Sample Use:</strong> {selectedApplication.sample_use}</p>
                   <p><strong>Splice Use:</strong> {selectedApplication.splice_use}</p>
                   <p><strong>Loop Use:</strong> {selectedApplication.loop_use}</p>
                   <p><strong>AI-Generated Music:</strong> {selectedApplication.ai_generated_music}</p>
-                  <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-gray-900">Recording Artists</h3>
+                <div className="space-y-2 text-sm">
+                  <p><strong>Records Artists:</strong> {selectedApplication.records_artists || 'N/A'}</p>
+                  {selectedApplication.records_artists === 'Yes' && selectedApplication.artist_example_link && (
+                    <p><strong>Artist Example Link:</strong> <a href={selectedApplication.artist_example_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{selectedApplication.artist_example_link}</a></p>
+                  )}
+                  {selectedApplication.artist_collab && (
+                    <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab}</p>
+                  )}
                 </div>
               </div>
               

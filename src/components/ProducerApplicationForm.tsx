@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, User, Mail, Music, Briefcase, Info, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { CheckCircle, User, Mail, Music, Briefcase, Info, ArrowRight, Loader2, AlertCircle, Plus, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const proOptions = [
@@ -11,6 +11,12 @@ const proOptions = [
   'Other',
 ];
 
+const proficiencyOptions = [
+  'beginner',
+  'intermediate',
+  'pro'
+];
+
 const steps = [
   'Contact Info',
   'Experience',
@@ -18,6 +24,11 @@ const steps = [
   'Business Details',
   'Additional Info',
 ];
+
+interface Instrument {
+  name: string;
+  proficiency: string;
+}
 
 const initialFormData = {
   name: '',
@@ -29,7 +40,7 @@ const initialFormData = {
   team_type: '',
   tracks_per_week: '',
   spotify_link: '',
-  instruments: '',
+  instruments: '', // Keep for backward compatibility
   sample_use: '',
   splice_use: '',
   loop_use: '',
@@ -38,6 +49,17 @@ const initialFormData = {
   business_entity: '',
   pro_affiliation: '',
   additional_info: '',
+  // New fields
+  instrument_one: '',
+  instrument_one_proficiency: '',
+  instrument_two: '',
+  instrument_two_proficiency: '',
+  instrument_three: '',
+  instrument_three_proficiency: '',
+  instrument_four: '',
+  instrument_four_proficiency: '',
+  records_artists: '',
+  artist_example_link: '',
 };
 
 const ProducerApplicationForm: React.FC = () => {
@@ -83,6 +105,7 @@ const ProducerApplicationForm: React.FC = () => {
         if (!formData.splice_use) errors.push('Please select whether you use Splice');
         if (!formData.loop_use) errors.push('Please select whether you use loops');
         if (!formData.ai_generated_music) errors.push('Please select whether you use AI to create music');
+        if (!formData.records_artists) errors.push('Please select whether you record artists');
         break;
       
       case 3: // Business Details
@@ -207,7 +230,100 @@ const ProducerApplicationForm: React.FC = () => {
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-xl font-bold mb-2 flex items-center"><Music className="w-5 h-5 mr-2" />Music & Links</h2>
           <input name="spotify_link" placeholder="Best Spotify Link to Your Work *" value={formData.spotify_link} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-          <input name="instruments" placeholder="Instruments You Play (comma separated)" value={formData.instruments} onChange={handleChange} className="w-full border p-3 rounded text-black" />
+          
+          {/* Instruments Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white">Instruments You Play (up to 4)</h3>
+            
+            {/* Instrument 1 */}
+            <div className="grid grid-cols-3 gap-2">
+              <input 
+                name="instrument_one" 
+                placeholder="Instrument 1" 
+                value={formData.instrument_one} 
+                onChange={handleChange} 
+                className="col-span-2 border p-3 rounded text-black" 
+              />
+              <select 
+                name="instrument_one_proficiency" 
+                value={formData.instrument_one_proficiency} 
+                onChange={handleChange} 
+                className="border p-3 rounded text-black"
+              >
+                <option value="">Level</option>
+                {proficiencyOptions.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Instrument 2 */}
+            <div className="grid grid-cols-3 gap-2">
+              <input 
+                name="instrument_two" 
+                placeholder="Instrument 2" 
+                value={formData.instrument_two} 
+                onChange={handleChange} 
+                className="col-span-2 border p-3 rounded text-black" 
+              />
+              <select 
+                name="instrument_two_proficiency" 
+                value={formData.instrument_two_proficiency} 
+                onChange={handleChange} 
+                className="border p-3 rounded text-black"
+              >
+                <option value="">Level</option>
+                {proficiencyOptions.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Instrument 3 */}
+            <div className="grid grid-cols-3 gap-2">
+              <input 
+                name="instrument_three" 
+                placeholder="Instrument 3" 
+                value={formData.instrument_three} 
+                onChange={handleChange} 
+                className="col-span-2 border p-3 rounded text-black" 
+              />
+              <select 
+                name="instrument_three_proficiency" 
+                value={formData.instrument_three_proficiency} 
+                onChange={handleChange} 
+                className="border p-3 rounded text-black"
+              >
+                <option value="">Level</option>
+                {proficiencyOptions.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Instrument 4 */}
+            <div className="grid grid-cols-3 gap-2">
+              <input 
+                name="instrument_four" 
+                placeholder="Instrument 4" 
+                value={formData.instrument_four} 
+                onChange={handleChange} 
+                className="col-span-2 border p-3 rounded text-black" 
+              />
+              <select 
+                name="instrument_four_proficiency" 
+                value={formData.instrument_four_proficiency} 
+                onChange={handleChange} 
+                className="border p-3 rounded text-black"
+              >
+                <option value="">Level</option>
+                {proficiencyOptions.map(level => (
+                  <option key={level} value={level}>{level}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <select name="sample_use" value={formData.sample_use} onChange={handleChange} required className="w-full border p-3 rounded text-black">
             <option value="">Do you use samples from 3rd parties? *</option>
             <option value="Yes">Yes</option>
@@ -228,7 +344,25 @@ const ProducerApplicationForm: React.FC = () => {
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
-          <input name="artist_collab" placeholder="Do you work with artists to record full songs? If yes, provide examples or links" value={formData.artist_collab} onChange={handleChange} className="w-full border p-3 rounded text-black" />
+          
+          {/* Recording Artists Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-white">Recording Artists</h3>
+            <select name="records_artists" value={formData.records_artists} onChange={handleChange} required className="w-full border p-3 rounded text-black">
+              <option value="">Do you record artists? *</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            {formData.records_artists === 'Yes' && (
+              <input 
+                name="artist_example_link" 
+                placeholder="Example link to an artist you work with" 
+                value={formData.artist_example_link} 
+                onChange={handleChange} 
+                className="w-full border p-3 rounded text-black" 
+              />
+            )}
+          </div>
         </div>
       )}
       {step === 3 && (

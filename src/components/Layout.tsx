@@ -66,7 +66,11 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (accountType === 'white_label') {
       return '/white-label-dashboard';
     }
-    return accountType === 'producer' ? '/producer/dashboard' : '/dashboard';
+    // Check for producer access (including dual roles)
+    if (accountType && accountType.includes('producer')) {
+      return '/producer/dashboard';
+    }
+    return '/dashboard';
   };
 
   const getDashboardIcon = () => {
@@ -86,7 +90,11 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (accountType === 'white_label') {
       return 'White Label Dashboard';
     }
-    return accountType === 'producer' ? 'Producer Dashboard' : 'Dashboard';
+    // Check for producer access (including dual roles)
+    if (accountType && accountType.includes('producer')) {
+      return 'Producer Dashboard';
+    }
+    return 'Dashboard';
   };
 
   return (
