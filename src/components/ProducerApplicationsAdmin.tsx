@@ -86,6 +86,13 @@ export default function ProducerApplicationsAdmin() {
       }
 
       const { data, error } = await query;
+      
+      // Debug logging
+      console.log('ProducerApplicationsAdmin: fetchApplications');
+      console.log('Active tab:', activeTab);
+      console.log('Query result:', { data, error });
+      console.log('Applications count:', data?.length || 0);
+      
       if (error) {
         console.error('Error fetching applications:', error);
       } else {
@@ -124,12 +131,19 @@ export default function ProducerApplicationsAdmin() {
   const getTabApplications = () => {
     let filtered = applications;
 
+    // Debug logging
+    console.log('ProducerApplicationsAdmin: getTabApplications');
+    console.log('Total applications:', applications.length);
+    console.log('Selected genre:', selectedGenre);
+    console.log('Search term:', search);
+
     // Filter by genre if selected
     if (selectedGenre) {
       filtered = filtered.filter(app => 
         app.primary_genre.toLowerCase().includes(selectedGenre.toLowerCase()) ||
         (app.secondary_genre && app.secondary_genre.toLowerCase().includes(selectedGenre.toLowerCase()))
       );
+      console.log('After genre filter:', filtered.length);
     }
 
     // Filter by search term
@@ -140,6 +154,7 @@ export default function ProducerApplicationsAdmin() {
         app.email.toLowerCase().includes(searchLower) ||
         app.primary_genre.toLowerCase().includes(searchLower)
       );
+      console.log('After search filter:', filtered.length);
     }
 
     // Sort applications
@@ -156,6 +171,7 @@ export default function ProducerApplicationsAdmin() {
       }
     });
 
+    console.log('Final filtered applications:', filtered.length);
     return filtered;
   };
 
