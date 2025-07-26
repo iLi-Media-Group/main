@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
-import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown, Star } from 'lucide-react';
+import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown, Star, UserPlus } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateRankingScore, applicationToRankingCriteria, RankingResult } from '../lib/rankingSystem';
+import { useNavigate } from 'react-router-dom';
 
 type Application = {
   id: string;
@@ -63,6 +64,7 @@ type Application = {
 type TabType = 'new' | 'invited' | 'save_for_later' | 'declined';
 
 export default function ProducerApplicationsAdmin() {
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
   const [allApplications, setAllApplications] = useState<Application[]>([]); // Add this for tab counts
   const [loading, setLoading] = useState(false);
@@ -313,6 +315,23 @@ export default function ProducerApplicationsAdmin() {
     }).length;
   };
 
+  const handleInviteProducer = (application: Application) => {
+    // Extract first and last name from the full name
+    const nameParts = application.name.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    // Navigate to invite producer page with pre-filled data
+    const params = new URLSearchParams({
+      email: application.email,
+      firstName: firstName,
+      lastName: lastName,
+      applicationId: application.id
+    });
+    
+    navigate(`/admin/invite-producer?${params.toString()}`);
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -541,12 +560,12 @@ export default function ProducerApplicationsAdmin() {
                   {activeTab === 'new' && (
                     <>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        onClick={() => handleInviteProducer(app)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Invite (Tier 1)
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Invite Producer
                       </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
@@ -554,7 +573,7 @@ export default function ProducerApplicationsAdmin() {
                         size="sm"
                       >
                         <CheckCircle className="w-4 h-4 mr-1" />
-                        Invite (Tier 2)
+                        Quick Invite (Tier 2)
                       </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
