@@ -37,6 +37,16 @@ type Application = {
   // New recording artists fields
   records_artists: string;
   artist_example_link: string;
+  // Sync licensing and quiz fields
+  sync_licensing_course: string;
+  quiz_question_1: string;
+  quiz_question_2: string;
+  quiz_question_3: string;
+  quiz_question_4: string;
+  quiz_question_5: string;
+  quiz_score: number;
+  quiz_total_questions: number;
+  quiz_completed: boolean;
   status: string;
   review_tier: string | null;
   auto_disqualified: boolean;
@@ -672,6 +682,30 @@ export default function ProducerApplicationsAdmin() {
                   <p><strong>PRO Affiliation:</strong> {selectedApplication.pro_affiliation}</p>
                   <p><strong>Auto-Disqualified:</strong> {selectedApplication.auto_disqualified ? 'Yes' : 'No'}</p>
                   <p><strong>Review Tier:</strong> {selectedApplication.review_tier || 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white">Sync Licensing & Quiz</h3>
+                <div className="space-y-2 text-sm text-white">
+                  <p><strong>Sync Licensing Course:</strong> {selectedApplication.sync_licensing_course || 'N/A'}</p>
+                  <p><strong>Quiz Score:</strong> {selectedApplication.quiz_score || 0}/{selectedApplication.quiz_total_questions || 5}</p>
+                  <p><strong>Quiz Completed:</strong> {selectedApplication.quiz_completed ? 'Yes' : 'No'}</p>
+                  {selectedApplication.quiz_question_1 && (
+                    <p><strong>Q1 Answer:</strong> {selectedApplication.quiz_question_1}</p>
+                  )}
+                  {selectedApplication.quiz_question_2 && (
+                    <p><strong>Q2 Answer:</strong> {selectedApplication.quiz_question_2}</p>
+                  )}
+                  {selectedApplication.quiz_question_3 && (
+                    <p><strong>Q3 Answer:</strong> {selectedApplication.quiz_question_3}</p>
+                  )}
+                  {selectedApplication.quiz_question_4 && (
+                    <p><strong>Q4 Answer:</strong> {selectedApplication.quiz_question_4}</p>
+                  )}
+                  {selectedApplication.quiz_question_5 && (
+                    <p><strong>Q5 Answer:</strong> {selectedApplication.quiz_question_5}</p>
+                  )}
                 </div>
               </div>
             </div>

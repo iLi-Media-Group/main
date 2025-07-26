@@ -17,11 +17,78 @@ const proficiencyOptions = [
   'pro'
 ];
 
+// Quiz questions and correct answers
+const quizQuestions = [
+  {
+    id: 1,
+    question: "What does \"one-stop\" mean in music licensing?",
+    options: [
+      "A song that is only available in one country",
+      "A track made using one sample or instrument", 
+      "The producer controls both the master and publishing rights",
+      "The song has only one version (no stems or edits)"
+    ],
+    correctAnswer: "C",
+    explanation: "One-stop means the producer controls both the master and publishing rights, making licensing easier."
+  },
+  {
+    id: 2,
+    question: "Which of the following best describes a \"sync license\"?",
+    options: [
+      "A license to perform a song live",
+      "A license to use a song in a film, TV show, or commercial",
+      "A license to sell music on streaming platforms", 
+      "A license to sample another artist's music"
+    ],
+    correctAnswer: "B",
+    explanation: "A sync license allows music to be synchronized with visual media like films, TV shows, or commercials."
+  },
+  {
+    id: 3,
+    question: "Who typically needs to grant permission for a sync license to be approved?",
+    options: [
+      "The performing artist",
+      "The owner of the master recording", 
+      "The owner of the publishing rights",
+      "The distributor (e.g., DistroKid)"
+    ],
+    correctAnswers: ["B", "C"],
+    explanation: "Both the master and the publishing rights holders must approve the sync license.",
+    isMultipleChoice: true
+  },
+  {
+    id: 4,
+    question: "What is the typical structure of a sync-ready track?",
+    options: [
+      "Long intro, unpredictable changes, no clear ending",
+      "Repetitive loop with no development",
+      "Clear edit points, structured sections, and a clean ending",
+      "Just a beat with no melody or progression"
+    ],
+    correctAnswer: "C",
+    explanation: "Sync-ready tracks need clear edit points, structured sections, and a clean ending for easy editing."
+  },
+  {
+    id: 5,
+    question: "You used a loop from Splice to create your melody. Can this track be offered as one-stop for sync?",
+    options: [
+      "Yes, as long as I mixed it myself",
+      "No, because it contains third-party content",
+      "Yes, if I give credit to Splice",
+      "Only if I remove the loop after licensing"
+    ],
+    correctAnswer: "B",
+    explanation: "Even though Splice loops are royalty-free, using third-party content disqualifies it from true one-stop control because you don't own 100% of the composition or sound recording."
+  }
+];
+
 const steps = [
   'Contact Info',
   'Experience',
   'Music & Links',
   'Business Details',
+  'Sync Licensing',
+  'Sync Quiz',
   'Additional Info',
 ];
 
@@ -60,6 +127,16 @@ const initialFormData = {
   instrument_four_proficiency: '',
   records_artists: '',
   artist_example_link: '',
+  // Sync licensing and quiz fields
+  sync_licensing_course: '',
+  quiz_question_1: '',
+  quiz_question_2: '',
+  quiz_question_3: '',
+  quiz_question_4: '',
+  quiz_question_5: '',
+  quiz_score: 0,
+  quiz_total_questions: 5,
+  quiz_completed: false,
 };
 
 const ProducerApplicationForm: React.FC = () => {
@@ -112,7 +189,19 @@ const ProducerApplicationForm: React.FC = () => {
         if (!formData.pro_affiliation) errors.push('PRO affiliation is required');
         break;
       
-      case 4: // Additional Info
+      case 4: // Sync Licensing
+        if (!formData.sync_licensing_course) errors.push('Please select whether you have completed a sync licensing course');
+        break;
+      
+      case 5: // Sync Quiz
+        if (!formData.quiz_question_1) errors.push('Please answer question 1');
+        if (!formData.quiz_question_2) errors.push('Please answer question 2');
+        if (!formData.quiz_question_3) errors.push('Please answer question 3');
+        if (!formData.quiz_question_4) errors.push('Please answer question 4');
+        if (!formData.quiz_question_5) errors.push('Please answer question 5');
+        break;
+      
+      case 6: // Additional Info
         // Additional info is optional, so no validation needed
         break;
     }
@@ -129,6 +218,30 @@ const ProducerApplicationForm: React.FC = () => {
 
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
+  // Calculate quiz score
+  const calculateQuizScore = () => {
+    let score = 0;
+    
+    // Question 1
+    if (formData.quiz_question_1 === 'C') score++;
+    
+    // Question 2
+    if (formData.quiz_question_2 === 'B') score++;
+    
+    // Question 3 (multiple choice - both B and C must be selected)
+    if (formData.quiz_question_3 && formData.quiz_question_3.includes('B') && formData.quiz_question_3.includes('C')) {
+      score++;
+    }
+    
+    // Question 4
+    if (formData.quiz_question_4 === 'C') score++;
+    
+    // Question 5
+    if (formData.quiz_question_5 === 'B') score++;
+    
+    return score;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -140,12 +253,17 @@ const ProducerApplicationForm: React.FC = () => {
     setSubmitting(true);
     setError(null);
     
+    // Calculate quiz score
+    const quizScore = calculateQuizScore();
+    
     // Check if AI-generated music is "Yes" - this is a disqualifying factor
     const isDisqualified = formData.ai_generated_music === 'Yes';
     
     // Prepare the data to insert
     const submissionData = {
       ...formData,
+      quiz_score: quizScore,
+      quiz_completed: true,
       auto_disqualified: isDisqualified
     };
     
@@ -377,6 +495,137 @@ const ProducerApplicationForm: React.FC = () => {
         </div>
       )}
       {step === 4 && (
+        <div className="space-y-4 animate-fade-in">
+          <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Course</h2>
+          <p className="text-white text-sm mb-4">Have you completed a Sync Licensing course online or in person?</p>
+          <select name="sync_licensing_course" value={formData.sync_licensing_course} onChange={handleChange} required className="w-full border p-3 rounded text-black">
+            <option value="">Select an option *</option>
+            <option value="Yes - Online">Yes - Online</option>
+            <option value="Yes - In Person">Yes - In Person</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+      )}
+      {step === 5 && (
+        <div className="space-y-6 animate-fade-in">
+          <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Quiz</h2>
+          <p className="text-white text-sm mb-4">Please answer these 5 questions about sync licensing. This helps us understand your knowledge level.</p>
+          
+          {/* Question 1 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white">1. {quizQuestions[0].question}</h3>
+            <div className="space-y-2">
+              {quizQuestions[0].options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quiz_question_1"
+                    value={String.fromCharCode(65 + index)} // A, B, C, D
+                    checked={formData.quiz_question_1 === String.fromCharCode(65 + index)}
+                    onChange={handleChange}
+                    className="text-blue-600"
+                  />
+                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Question 2 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white">2. {quizQuestions[1].question}</h3>
+            <div className="space-y-2">
+              {quizQuestions[1].options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quiz_question_2"
+                    value={String.fromCharCode(65 + index)} // A, B, C, D
+                    checked={formData.quiz_question_2 === String.fromCharCode(65 + index)}
+                    onChange={handleChange}
+                    className="text-blue-600"
+                  />
+                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Question 3 - Multiple Choice */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white">3. {quizQuestions[2].question}</h3>
+            <p className="text-sm text-gray-300">Select all that apply:</p>
+            <div className="space-y-2">
+              {quizQuestions[2].options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="quiz_question_3"
+                    value={String.fromCharCode(65 + index)} // A, B, C, D
+                    checked={!!(formData.quiz_question_3 && formData.quiz_question_3.includes(String.fromCharCode(65 + index)))}
+                    onChange={(e) => {
+                      const currentAnswers = formData.quiz_question_3 ? formData.quiz_question_3.split(',') : [];
+                      let newAnswers;
+                      if (e.target.checked) {
+                        newAnswers = [...currentAnswers, e.target.value];
+                      } else {
+                        newAnswers = currentAnswers.filter(ans => ans !== e.target.value);
+                      }
+                      setFormData({
+                        ...formData,
+                        quiz_question_3: newAnswers.join(',')
+                      });
+                    }}
+                    className="text-blue-600"
+                  />
+                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Question 4 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white">4. {quizQuestions[3].question}</h3>
+            <div className="space-y-2">
+              {quizQuestions[3].options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quiz_question_4"
+                    value={String.fromCharCode(65 + index)} // A, B, C, D
+                    checked={formData.quiz_question_4 === String.fromCharCode(65 + index)}
+                    onChange={handleChange}
+                    className="text-blue-600"
+                  />
+                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Question 5 */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-white">5. {quizQuestions[4].question}</h3>
+            <div className="space-y-2">
+              {quizQuestions[4].options.map((option, index) => (
+                <label key={index} className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="quiz_question_5"
+                    value={String.fromCharCode(65 + index)} // A, B, C, D
+                    checked={formData.quiz_question_5 === String.fromCharCode(65 + index)}
+                    onChange={handleChange}
+                    className="text-blue-600"
+                  />
+                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {step === 6 && (
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Additional Info</h2>
           <textarea name="additional_info" placeholder="Tell us anything else we should know..." value={formData.additional_info} onChange={handleChange} className="w-full border p-3 rounded text-black" rows={4} />
