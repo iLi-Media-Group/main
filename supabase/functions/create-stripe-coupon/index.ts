@@ -178,6 +178,63 @@ serve(async (req) => {
       console.log('✅ Successfully updated discount record')
     }
 
+    // Now create the promotion code in Stripe
+    console.log('Creating Stripe promotion code...')
+    let promotionCode: any = null
+    try {
+      console.log('Calling stripe.promotionCodes.create...')
+      console.log('Promotion code data:', {
+        coupon: coupon.id,
+        code: discount.promotion_code,
+        active: true
+      })
+      
+      promotionCode = await stripe.promotionCodes.create({
+        coupon: coupon.id,
+        code: discount.promotion_code,
+        active: true,
+        // Optional: Add restrictions based on discount settings
+        // max_redemptions: discount.max_redemptions || null,
+        // expires_at: redeemByTimestamp || null,
+      })
+      
+      console.log(`✅ Created Stripe promotion code: ${promotionCode.id}`)
+      console.log('Promotion code details:', {
+        id: promotionCode.id,
+        code: promotionCode.code,
+        coupon: promotionCode.coupon,
+        active: promotionCode.active,
+        max_redemptions: promotionCode.max_redemptions,
+        expires_at: promotionCode.expires_at
+      })
+
+      // Update the discount record with promotion code info
+      console.log('Updating discount record with promotion code info...')
+      const { error: promoUpdateError } = await supabase
+        .from('discounts')
+        .update({
+          stripe_promotion_code_id: promotionCode.id,
+          stripe_promotion_code_created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', discount_id)
+
+      if (promoUpdateError) {
+        console.error('Error updating discount with promotion code info:', promoUpdateError)
+      } else {
+        console.log('✅ Successfully updated discount record with promotion code')
+      }
+
+    } catch (promoError: any) {
+      console.error('Stripe promotion code creation failed:', promoError)
+      console.error('Promotion code error message:', promoError.message)
+      console.error('Promotion code error type:', promoError.type)
+      console.error('Promotion code error code:', promoError.code)
+      console.error('Full promotion code error:', JSON.stringify(promoError, null, 2))
+      // Don't throw error here - coupon was created successfully
+      console.log('⚠️ Coupon created but promotion code failed. You can create it manually in Stripe Dashboard.')
+    }
+
     console.log('=== CREATE STRIPE COUPON FUNCTION COMPLETED SUCCESSFULLY ===')
 
     return new Response(
@@ -187,7 +244,9 @@ serve(async (req) => {
         coupon_name: coupon.name,
         percent_off: coupon.percent_off,
         redeem_by: coupon.redeem_by,
-        promotion_code: discount.promotion_code
+        promotion_code: discount.promotion_code,
+        promotion_code_id: promotionCode?.id || null,
+        promotion_code_created: !!promotionCode
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
