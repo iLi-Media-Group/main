@@ -416,7 +416,7 @@ export default function ProducerApplicationsAdmin() {
             <option value="">All Rankings</option>
             <option value="high">High Score (20+ pts)</option>
             <option value="medium">Medium Score (10-19 pts)</option>
-            <option value="low">Low Score (< 10 pts)</option>
+            <option value="low">Low Score (&lt; 10 pts)</option>
             <option value="auto-rejected">Auto-Rejected</option>
           </select>
         </div>
