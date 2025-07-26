@@ -1,5 +1,5 @@
--- Add Test Producer Applications
--- This script adds some test applications if there are none in the database
+-- Add Test Producer Applications (Fixed with Integers)
+-- This script adds some test applications with correct integer data types
 
 -- First, check if there are any applications
 SELECT 'Current Applications Count:' as info;
@@ -47,10 +47,10 @@ INSERT INTO producer_applications (
     'john.producer@example.com',
     'Hip Hop',
     'R&B',
-    '5',
+    5,
     'Logic Pro, Ableton',
     'solo',
-    '3-5',
+    4,
     'https://open.spotify.com/artist/test1',
     'Piano',
     'pro',
@@ -80,10 +80,10 @@ INSERT INTO producer_applications (
     'sarah.beatmaker@example.com',
     'Pop',
     'Electronic',
-    '3',
+    3,
     'FL Studio, Pro Tools',
     'small_team',
-    '2-3',
+    3,
     'https://open.spotify.com/artist/test2',
     'Guitar',
     'intermediate',
@@ -113,10 +113,10 @@ INSERT INTO producer_applications (
     'mike.composer@example.com',
     'Film Score',
     'Classical',
-    '8',
+    8,
     'Cubase, Logic Pro',
     'solo',
-    '1-2',
+    2,
     'https://open.spotify.com/artist/test3',
     'Piano',
     'pro',

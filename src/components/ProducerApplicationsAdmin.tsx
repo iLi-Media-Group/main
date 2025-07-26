@@ -48,6 +48,7 @@ type TabType = 'new' | 'invited' | 'save_for_later' | 'declined';
 
 export default function ProducerApplicationsAdmin() {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [allApplications, setAllApplications] = useState<Application[]>([]); // Add this for tab counts
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('new');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
@@ -58,8 +59,32 @@ export default function ProducerApplicationsAdmin() {
   const [showApplicationModal, setShowApplicationModal] = useState(false);
 
   useEffect(() => {
-    fetchApplications();
+    fetchAllApplications(); // Fetch all applications first
+    fetchApplications(); // Then fetch filtered applications
   }, [activeTab]);
+
+  // Refresh all applications when component mounts to ensure tab counts are accurate
+  useEffect(() => {
+    fetchAllApplications();
+  }, []);
+
+  // Add this function to fetch all applications for tab counts
+  const fetchAllApplications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('producer_applications')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching all applications:', error);
+      } else {
+        setAllApplications(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching all applications:', error);
+    }
+  };
 
   const fetchApplications = async () => {
     setLoading(true);
@@ -98,8 +123,8 @@ export default function ProducerApplicationsAdmin() {
       } else {
         setApplications(data || []);
       }
-    } catch (err) {
-      console.error('Error:', err);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
     } finally {
       setLoading(false);
     }
@@ -120,7 +145,8 @@ export default function ProducerApplicationsAdmin() {
       if (error) {
         console.error('Error updating application:', error);
       } else {
-        // Refresh the applications list
+        // Refresh both the filtered applications and all applications
+        fetchAllApplications();
         fetchApplications();
       }
     } catch (err) {
@@ -215,7 +241,7 @@ export default function ProducerApplicationsAdmin() {
   };
 
   const getTabCount = (tab: TabType) => {
-    return applications.filter(app => {
+    return allApplications.filter(app => { // Use allApplications instead of applications
       switch (tab) {
         case 'new': return app.status === 'new' && !app.review_tier;
         case 'invited': return app.status === 'invited';
@@ -557,13 +583,14 @@ export default function ProducerApplicationsAdmin() {
       {/* Application Details Modal */}
       {showApplicationModal && selectedApplication && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-blue-900/90 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">Application Details</h2>
+              <h2 className="text-2xl font-bold text-white">Application Details</h2>
               <Button
                 onClick={() => setShowApplicationModal(false)}
                 variant="outline"
                 size="sm"
+                className="text-white border-white hover:bg-white/10"
               >
                 ×
               </Button>
@@ -571,8 +598,8 @@ export default function ProducerApplicationsAdmin() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Contact Information</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-white">Contact Information</h3>
+                <div className="space-y-2 text-sm text-white">
                   <p><strong>Name:</strong> {selectedApplication.name}</p>
                   <p><strong>Email:</strong> {selectedApplication.email}</p>
                   <p><strong>Status:</strong> {selectedApplication.status}</p>
@@ -581,8 +608,8 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Music Information</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-white">Music Information</h3>
+                <div className="space-y-2 text-sm text-white">
                   <p><strong>Primary Genre:</strong> {selectedApplication.primary_genre}</p>
                   <p><strong>Secondary Genre:</strong> {selectedApplication.secondary_genre || 'N/A'}</p>
                   <p><strong>Years Experience:</strong> {selectedApplication.years_experience}</p>
@@ -593,8 +620,8 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Instruments & Proficiency</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-white">Instruments & Proficiency</h3>
+                <div className="space-y-2 text-sm text-white">
                   {selectedApplication.instrument_one && (
                     <p><strong>Instrument 1:</strong> {selectedApplication.instrument_one} ({selectedApplication.instrument_one_proficiency || 'N/A'})</p>
                   )}
@@ -615,9 +642,9 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Music Creation</h3>
-                <div className="space-y-2 text-sm">
-                  <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{selectedApplication.spotify_link}</a></p>
+                <h3 className="text-lg font-semibold mb-3 text-white">Music Creation</h3>
+                <div className="space-y-2 text-sm text-white">
+                  <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.spotify_link}</a></p>
                   <p><strong>Sample Use:</strong> {selectedApplication.sample_use}</p>
                   <p><strong>Splice Use:</strong> {selectedApplication.splice_use}</p>
                   <p><strong>Loop Use:</strong> {selectedApplication.loop_use}</p>
@@ -626,11 +653,11 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Recording Artists</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-white">Recording Artists</h3>
+                <div className="space-y-2 text-sm text-white">
                   <p><strong>Records Artists:</strong> {selectedApplication.records_artists || 'N/A'}</p>
                   {selectedApplication.records_artists === 'Yes' && selectedApplication.artist_example_link && (
-                    <p><strong>Artist Example Link:</strong> <a href={selectedApplication.artist_example_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{selectedApplication.artist_example_link}</a></p>
+                    <p><strong>Artist Example Link:</strong> <a href={selectedApplication.artist_example_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.artist_example_link}</a></p>
                   )}
                   {selectedApplication.artist_collab && (
                     <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab}</p>
@@ -639,8 +666,8 @@ export default function ProducerApplicationsAdmin() {
               </div>
               
               <div>
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Business Information</h3>
-                <div className="space-y-2 text-sm">
+                <h3 className="text-lg font-semibold mb-3 text-white">Business Information</h3>
+                <div className="space-y-2 text-sm text-white">
                   <p><strong>Business Entity:</strong> {selectedApplication.business_entity || 'N/A'}</p>
                   <p><strong>PRO Affiliation:</strong> {selectedApplication.pro_affiliation}</p>
                   <p><strong>Auto-Disqualified:</strong> {selectedApplication.auto_disqualified ? 'Yes' : 'No'}</p>
@@ -651,15 +678,16 @@ export default function ProducerApplicationsAdmin() {
             
             {selectedApplication.additional_info && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-3 text-gray-900">Additional Information</h3>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedApplication.additional_info}</p>
+                <h3 className="text-lg font-semibold mb-3 text-white">Additional Information</h3>
+                <p className="text-sm text-white whitespace-pre-wrap">{selectedApplication.additional_info}</p>
               </div>
             )}
             
-            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t">
+            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t border-white/20">
               <Button
                 onClick={() => setShowApplicationModal(false)}
                 variant="outline"
+                className="text-white border-white hover:bg-white/10"
               >
                 Close
               </Button>

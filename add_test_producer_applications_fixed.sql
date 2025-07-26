@@ -1,5 +1,5 @@
--- Add Test Producer Applications
--- This script adds some test applications if there are none in the database
+-- Add Test Producer Applications (Fixed Data Types)
+-- This script adds some test applications with correct data types
 
 -- First, check if there are any applications
 SELECT 'Current Applications Count:' as info;
@@ -50,7 +50,7 @@ INSERT INTO producer_applications (
     '5',
     'Logic Pro, Ableton',
     'solo',
-    '3-5',
+    '3-5 tracks per week',
     'https://open.spotify.com/artist/test1',
     'Piano',
     'pro',
@@ -83,7 +83,7 @@ INSERT INTO producer_applications (
     '3',
     'FL Studio, Pro Tools',
     'small_team',
-    '2-3',
+    '2-3 tracks per week',
     'https://open.spotify.com/artist/test2',
     'Guitar',
     'intermediate',
@@ -116,7 +116,7 @@ INSERT INTO producer_applications (
     '8',
     'Cubase, Logic Pro',
     'solo',
-    '1-2',
+    '1-2 tracks per week',
     'https://open.spotify.com/artist/test3',
     'Piano',
     'pro',
