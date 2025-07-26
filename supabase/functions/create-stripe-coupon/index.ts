@@ -19,7 +19,7 @@ serve(async (req) => {
       apiVersion: '2024-12-18.acacia',
     })
 
-    // Initialize Supabase
+    // Initialize Supabase with service role key to bypass RLS
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
