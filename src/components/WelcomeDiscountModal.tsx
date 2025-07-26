@@ -73,7 +73,7 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
           
           {/* Description */}
           <p className="text-gray-300 mb-6">
-            Get 30% off your first purchase with our welcome discount!
+            Get 30% off your purchase with our welcome discount!
           </p>
 
           {/* Discount Code */}
@@ -102,6 +102,10 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
               <span>No restrictions or hidden fees</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+              <span>Can be used multiple times</span>
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
