@@ -24,21 +24,38 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
     // Fetch active promotion code discounts
     const fetchDiscounts = async () => {
       try {
+        console.log('🔍 WelcomeDiscountModal: Fetching discounts...');
+        const today = new Date().toISOString().split('T')[0];
+        console.log('🔍 WelcomeDiscountModal: Today is:', today);
+        
         const { data, error } = await supabase
           .from('discounts')
-          .select('id, name, promotion_code, discount_percent, description')
+          .select('id, name, promotion_code, discount_percent, description, start_date, end_date, is_active')
           .eq('discount_type', 'promotion_code')
-          .eq('is_active', true)
-          .gte('start_date', new Date().toISOString().split('T')[0])
-          .lte('end_date', new Date().toISOString().split('T')[0]);
+          .eq('is_active', true);
 
         if (error) {
-          console.error('Error fetching discounts:', error);
-        } else if (data && data.length > 0) {
-          setDiscounts(data);
+          console.error('🔍 WelcomeDiscountModal: Error fetching discounts:', error);
+        } else {
+          console.log('🔍 WelcomeDiscountModal: Raw discounts data:', data);
+          
+          // Filter by date range manually
+          const activeDiscounts = data?.filter(discount => {
+            const startDate = new Date(discount.start_date);
+            const endDate = new Date(discount.end_date);
+            const currentDate = new Date();
+            
+            const isActive = currentDate >= startDate && currentDate <= endDate;
+            console.log(`🔍 WelcomeDiscountModal: Discount ${discount.promotion_code}: start=${discount.start_date}, end=${discount.end_date}, isActive=${isActive}`);
+            
+            return isActive;
+          }) || [];
+          
+          console.log('🔍 WelcomeDiscountModal: Active discounts:', activeDiscounts);
+          setDiscounts(activeDiscounts);
         }
       } catch (error) {
-        console.error('Error fetching discounts:', error);
+        console.error('🔍 WelcomeDiscountModal: Error fetching discounts:', error);
       } finally {
         setLoading(false);
       }
@@ -49,18 +66,31 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
 
   useEffect(() => {
     // Only show modal if we have discounts and user hasn't seen it today
+    console.log('🔍 WelcomeDiscountModal: Checking modal visibility...');
+    console.log('🔍 WelcomeDiscountModal: loading=', loading);
+    console.log('🔍 WelcomeDiscountModal: discounts.length=', discounts.length);
+    
     if (!loading && discounts.length > 0) {
       const today = new Date().toDateString();
       const seenToday = localStorage.getItem('welcomeDiscountModalSeen') === today;
       
+      console.log('🔍 WelcomeDiscountModal: today=', today);
+      console.log('🔍 WelcomeDiscountModal: seenToday=', seenToday);
+      
       if (!seenToday) {
+        console.log('🔍 WelcomeDiscountModal: Setting timer to show modal in 2 seconds...');
         // Delay the modal appearance to avoid popup blockers
         const timer = setTimeout(() => {
+          console.log('🔍 WelcomeDiscountModal: Showing modal now!');
           setIsVisible(true);
         }, 2000); // Show after 2 seconds
 
         return () => clearTimeout(timer);
+      } else {
+        console.log('🔍 WelcomeDiscountModal: User has already seen modal today');
       }
+    } else {
+      console.log('🔍 WelcomeDiscountModal: Not showing modal - loading or no discounts');
     }
   }, [loading, discounts]);
 
@@ -81,7 +111,13 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
     }
   };
 
-  if (!isVisible || loading || discounts.length === 0) return null;
+  if (!isVisible || loading || discounts.length === 0) {
+    console.log('🔍 WelcomeDiscountModal: Not rendering modal:');
+    console.log('🔍 WelcomeDiscountModal: isVisible=', isVisible);
+    console.log('🔍 WelcomeDiscountModal: loading=', loading);
+    console.log('🔍 WelcomeDiscountModal: discounts.length=', discounts.length);
+    return null;
+  }
 
   // Use the first available discount
   const discount = discounts[0];
