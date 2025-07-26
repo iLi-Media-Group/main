@@ -1,28 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, Gift } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface WelcomeDiscountModalProps {
   onClose: () => void;
 }
 
+interface Discount {
+  id: string;
+  name: string;
+  promotion_code: string;
+  discount_percent: number;
+  description?: string;
+}
+
 export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [hasSeenModal, setHasSeenModal] = useState(false);
+  const [discounts, setDiscounts] = useState<Discount[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user has seen the modal today
-    const today = new Date().toDateString();
-    const seenToday = localStorage.getItem('welcomeDiscountModalSeen') === today;
-    
-    if (!seenToday) {
-      // Delay the modal appearance to avoid popup blockers
-      const timer = setTimeout(() => {
-        setIsVisible(true);
-      }, 2000); // Show after 2 seconds
+    // Fetch active promotion code discounts
+    const fetchDiscounts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('discounts')
+          .select('id, name, promotion_code, discount_percent, description')
+          .eq('discount_type', 'promotion_code')
+          .eq('is_active', true)
+          .gte('start_date', new Date().toISOString().split('T')[0])
+          .lte('end_date', new Date().toISOString().split('T')[0]);
 
-      return () => clearTimeout(timer);
-    }
+        if (error) {
+          console.error('Error fetching discounts:', error);
+        } else if (data && data.length > 0) {
+          setDiscounts(data);
+        }
+      } catch (error) {
+        console.error('Error fetching discounts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDiscounts();
   }, []);
+
+  useEffect(() => {
+    // Only show modal if we have discounts and user hasn't seen it today
+    if (!loading && discounts.length > 0) {
+      const today = new Date().toDateString();
+      const seenToday = localStorage.getItem('welcomeDiscountModalSeen') === today;
+      
+      if (!seenToday) {
+        // Delay the modal appearance to avoid popup blockers
+        const timer = setTimeout(() => {
+          setIsVisible(true);
+        }, 2000); // Show after 2 seconds
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [loading, discounts]);
 
   const handleClose = () => {
     setIsVisible(false);
@@ -32,16 +72,19 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
     onClose();
   };
 
-  const copyCode = async () => {
+  const copyCode = async (code: string) => {
     try {
-      await navigator.clipboard.writeText('WELCOME30');
+      await navigator.clipboard.writeText(code);
       // You could add a toast notification here
     } catch (err) {
       console.error('Failed to copy code:', err);
     }
   };
 
-  if (!isVisible) return null;
+  if (!isVisible || loading || discounts.length === 0) return null;
+
+  // Use the first available discount
+  const discount = discounts[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -73,7 +116,7 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
           
           {/* Description */}
           <p className="text-gray-300 mb-6">
-            Get 30% off your purchase with our welcome discount!
+            Get {discount.discount_percent}% off your purchase with our welcome discount!
           </p>
 
           {/* Discount Code */}
@@ -81,10 +124,10 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
             <p className="text-sm text-gray-300 mb-2">Use this code at checkout:</p>
             <div className="flex items-center justify-center gap-3">
               <span className="font-mono font-bold text-xl bg-white/20 px-4 py-2 rounded-lg">
-                WELCOME30
+                {discount.promotion_code}
               </span>
               <button
-                onClick={copyCode}
+                onClick={() => copyCode(discount.promotion_code)}
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 title="Copy code"
               >
@@ -123,7 +166,7 @@ export default function WelcomeDiscountModal({ onClose }: WelcomeDiscountModalPr
             </button>
             <button
               onClick={() => {
-                copyCode();
+                copyCode(discount.promotion_code);
                 handleClose();
               }}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-lg transition-colors font-semibold"
