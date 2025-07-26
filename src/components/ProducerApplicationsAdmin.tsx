@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
-import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown } from 'lucide-react';
+import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown, Star } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { calculateRankingScore, applicationToRankingCriteria, RankingResult } from '../lib/rankingSystem';
 
 type Application = {
   id: string;
@@ -52,6 +53,11 @@ type Application = {
   auto_disqualified: boolean;
   created_at: string;
   updated_at: string;
+  // Ranking fields
+  ranking_score?: number;
+  ranking_breakdown?: any;
+  is_auto_rejected?: boolean;
+  rejection_reason?: string;
 };
 
 type TabType = 'new' | 'invited' | 'save_for_later' | 'declined';
@@ -62,11 +68,12 @@ export default function ProducerApplicationsAdmin() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('new');
   const [selectedGenre, setSelectedGenre] = useState<string>('');
-  const [sortBy, setSortBy] = useState<'date' | 'genre'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'genre' | 'ranking'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [search, setSearch] = useState<string>('');
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [showRankingBreakdown, setShowRankingBreakdown] = useState(false);
 
   useEffect(() => {
     fetchAllApplications(); // Fetch all applications first
@@ -77,6 +84,22 @@ export default function ProducerApplicationsAdmin() {
   useEffect(() => {
     fetchAllApplications();
   }, []);
+
+  // Calculate rankings for applications
+  const calculateRankings = (apps: Application[]): Application[] => {
+    return apps.map(app => {
+      const criteria = applicationToRankingCriteria(app);
+      const ranking = calculateRankingScore(criteria);
+      
+      return {
+        ...app,
+        ranking_score: ranking.totalScore,
+        ranking_breakdown: ranking.breakdown,
+        is_auto_rejected: ranking.isAutoRejected,
+        rejection_reason: ranking.rejectionReason
+      };
+    });
+  };
 
   // Add this function to fetch all applications for tab counts
   const fetchAllApplications = async () => {
@@ -131,7 +154,8 @@ export default function ProducerApplicationsAdmin() {
       if (error) {
         console.error('Error fetching applications:', error);
       } else {
-        setApplications(data || []);
+        const appsWithRankings = calculateRankings(data || []);
+        setApplications(appsWithRankings);
       }
     } catch (error) {
       console.error('Error fetching applications:', error);
@@ -199,12 +223,18 @@ export default function ProducerApplicationsAdmin() {
         const dateA = new Date(a.created_at).getTime();
         const dateB = new Date(b.created_at).getTime();
         return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-      } else {
+      } else if (sortBy === 'genre') {
         // Sort by genre
         const genreA = a.primary_genre.toLowerCase();
         const genreB = b.primary_genre.toLowerCase();
         return sortOrder === 'asc' ? genreA.localeCompare(genreB) : genreB.localeCompare(genreA);
+      } else if (sortBy === 'ranking') {
+        // Sort by ranking score
+        const scoreA = a.ranking_score || 0;
+        const scoreB = b.ranking_score || 0;
+        return sortOrder === 'asc' ? scoreA - scoreB : scoreB - scoreA;
       }
+      return 0;
     });
 
     console.log('Final filtered applications:', filtered.length);
@@ -359,11 +389,12 @@ export default function ProducerApplicationsAdmin() {
           <ArrowUpDown className="w-4 h-4 text-gray-400" />
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'date' | 'genre')}
+            onChange={(e) => setSortBy(e.target.value as 'date' | 'genre' | 'ranking')}
             className="bg-white/10 border border-blue-500/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="date">Sort by Date</option>
             <option value="genre">Sort by Genre</option>
+            <option value="ranking">Sort by Ranking</option>
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
@@ -410,6 +441,21 @@ export default function ProducerApplicationsAdmin() {
                       {app.auto_disqualified && (
                         <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
                           Auto-Disqualified
+                        </span>
+                      )}
+                      {app.ranking_score !== undefined && (
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center ${
+                          app.ranking_score >= 20 ? 'bg-green-100 text-green-800' :
+                          app.ranking_score >= 10 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          <Star className="w-3 h-3 mr-1" />
+                          {app.ranking_score} pts
+                        </span>
+                      )}
+                      {app.is_auto_rejected && (
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                          Auto-Rejected
                         </span>
                       )}
                     </div>
@@ -708,6 +754,23 @@ export default function ProducerApplicationsAdmin() {
                   )}
                 </div>
               </div>
+              
+              {selectedApplication.ranking_breakdown && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3 text-white">Ranking Breakdown</h3>
+                  <div className="space-y-2 text-sm text-white">
+                    <p><strong>Total Score:</strong> {selectedApplication.ranking_score} points</p>
+                    <p><strong>Experience Score:</strong> {selectedApplication.ranking_breakdown.experienceScore} points</p>
+                    <p><strong>Output Score:</strong> {selectedApplication.ranking_breakdown.outputScore} points</p>
+                    <p><strong>Skillset Score:</strong> {selectedApplication.ranking_breakdown.skillsetScore} points</p>
+                    <p><strong>Disqualifier Penalty:</strong> {selectedApplication.ranking_breakdown.disqualifierPenalty} points</p>
+                    <p><strong>Quiz Score:</strong> {selectedApplication.ranking_breakdown.quizScore} points</p>
+                    {selectedApplication.is_auto_rejected && (
+                      <p className="text-red-300"><strong>Rejection Reason:</strong> {selectedApplication.rejection_reason}</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             
             {selectedApplication.additional_info && (
