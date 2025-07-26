@@ -327,15 +327,20 @@ Deno.serve(async (req) => {
           promotion_code
         );
         console.log(`🔍 Discount Debug: Discount calculation result:`, discountResult);
+        console.log(`🔍 Discount Debug: Promotion code provided: ${promotion_code || 'none'}`);
 
         if (discountResult && discountResult.discount_percent > 0) {
           console.log(`🔍 Discount Debug: Creating Stripe coupon with ${discountResult.discount_percent}% discount`);
+          console.log(`🔍 Discount Debug: Discount name: ${discountResult.discount_name}`);
+          console.log(`🔍 Discount Debug: Discount type: ${discountResult.discount_type}`);
+          
           // Create a coupon for the discount
           const coupon = await stripe.coupons.create({
             percent_off: discountResult.discount_percent,
             duration: mode === 'subscription' ? 'repeating' : 'once',
             duration_in_months: mode === 'subscription' ? 12 : undefined,
             name: discountResult.discount_name || `${productName} Discount`,
+            id: promotion_code ? `promo_${promotion_code.toLowerCase()}` : undefined, // Use promotion code as coupon ID
           });
           couponId = coupon.id;
           appliedDiscount = {
@@ -346,6 +351,7 @@ Deno.serve(async (req) => {
           console.log(`🔍 Discount Debug: Created coupon ${couponId} for discount:`, appliedDiscount);
         } else {
           console.log(`🔍 Discount Debug: No applicable discount found for ${productName}`);
+          console.log(`🔍 Discount Debug: Discount result was:`, discountResult);
         }
       } else {
         console.log(`🔍 Discount Debug: No product mapping found for price_id: ${price_id}`);
@@ -382,37 +388,37 @@ Deno.serve(async (req) => {
   }
 });
 
-type ExpectedType = 'string' | { values: string[] };
-type Expectations<T> = { [K in keyof T]: ExpectedType | 'object' | 'optional_number' };
+  type ExpectedType = 'string' | { values: string[] };
+  type Expectations<T> = { [K in keyof T]: ExpectedType | 'object' | 'optional_number' };
 
-function validateParameters<T extends Record<string, any>>(values: T, expected: Expectations<T>): string | undefined {
-  for (const parameter in values) {
-    const expectation = expected[parameter];
-    if (!expectation) continue; // Skip parameters that don't have expectations
-    
-    const value = values[parameter];
+  function validateParameters<T extends Record<string, any>>(values: T, expected: Expectations<T>): string | undefined {
+    for (const parameter in values) {
+      const expectation = expected[parameter];
+      if (!expectation) continue; // Skip parameters that don't have expectations
+      
+      const value = values[parameter];
 
-    if (expectation === 'string') {
-      if (value == null) {
-        return `Missing required parameter ${parameter}`;
-      }
-      if (typeof value !== 'string') {
-        return `Expected parameter ${parameter} to be a string got ${JSON.stringify(value)}`;
-      }
-    } else if (expectation === 'object') {
-      if (value != null && typeof value !== 'object') {
-        return `Expected parameter ${parameter} to be an object got ${JSON.stringify(value)}`;
-      }
-    } else if (expectation === 'optional_number') {
-      if (value != null && typeof value !== 'number') {
-        return `Expected parameter ${parameter} to be a number got ${JSON.stringify(value)}`;
-      }
-    } else {
-      if (!expectation.values.includes(value)) {
-        return `Expected parameter ${parameter} to be one of ${expectation.values.join(', ')}`;
+      if (expectation === 'string') {
+        if (value == null) {
+          return `Missing required parameter ${parameter}`;
+        }
+        if (typeof value !== 'string') {
+          return `Expected parameter ${parameter} to be a string got ${JSON.stringify(value)}`;
+        }
+      } else if (expectation === 'object') {
+        if (value != null && typeof value !== 'object') {
+          return `Expected parameter ${parameter} to be an object got ${JSON.stringify(value)}`;
+        }
+      } else if (expectation === 'optional_number') {
+        if (value != null && typeof value !== 'number') {
+          return `Expected parameter ${parameter} to be a number got ${JSON.stringify(value)}`;
+        }
+      } else {
+        if (!expectation.values.includes(value)) {
+          return `Expected parameter ${parameter} to be one of ${expectation.values.join(', ')}`;
+        }
       }
     }
-  }
 
-  return undefined;
-}
+    return undefined;
+  }
