@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download, CheckCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 
@@ -799,6 +799,18 @@ export default function CustomSyncRequestSubs() {
   // Download function for sync request files
   const handleDownloadSyncRequest = async (bucket: string, path: string, filename: string) => {
     try {
+      // First check if the file exists
+      const { data: fileExists, error: checkError } = await supabase.storage
+        .from(bucket)
+        .list(path.split('/').slice(0, -1).join('/'), {
+          search: path.split('/').pop()
+        });
+      
+      if (checkError || !fileExists || fileExists.length === 0) {
+        alert('File not found. The producer may not have uploaded this file yet.');
+        return;
+      }
+      
       const { data, error } = await supabase.storage
         .from(bucket)
         .createSignedUrl(path, 3600);
@@ -810,9 +822,11 @@ export default function CustomSyncRequestSubs() {
       }
       
       if (data?.signedUrl) {
+        // Create a temporary link and trigger download
         const link = document.createElement('a');
         link.href = data.signedUrl;
         link.download = filename;
+        link.target = '_blank'; // This ensures it downloads instead of opening
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -896,6 +910,7 @@ export default function CustomSyncRequestSubs() {
                         
                         return (
                           <>
+                            {/* MP3 Download - Always available if track_url exists */}
                             {selectedSub.track_url && (
                               <button
                                 onClick={() => {
@@ -911,6 +926,7 @@ export default function CustomSyncRequestSubs() {
                               </button>
                             )}
                             
+                            {/* Trackouts Download - Only show if producer indicated they have trackouts */}
                             {selectedSub.has_trackouts && selectedSub.track_url && (
                               <button
                                 onClick={() => {
@@ -926,6 +942,7 @@ export default function CustomSyncRequestSubs() {
                               </button>
                             )}
                             
+                            {/* Stems Download - Only show if producer indicated they have stems */}
                             {selectedSub.has_stems && selectedSub.track_url && (
                               <button
                                 onClick={() => {
@@ -941,7 +958,7 @@ export default function CustomSyncRequestSubs() {
                               </button>
                             )}
                             
-                            {/* Split sheet would typically be a separate file, but we'll add it for completeness */}
+                            {/* Split Sheet Download - Always available as it's typically generated */}
                             {selectedSub.track_url && (
                               <button
                                 onClick={() => {
@@ -955,6 +972,13 @@ export default function CustomSyncRequestSubs() {
                                 <Download className="w-3 h-3" />
                                 Download Split Sheet
                               </button>
+                            )}
+                            
+                            {/* Show message if no additional files are available */}
+                            {!selectedSub.has_trackouts && !selectedSub.has_stems && (
+                              <div className="text-xs text-gray-400 mt-2">
+                                Note: Producer has not indicated availability of trackouts or stems
+                              </div>
                             )}
                           </>
                         );
@@ -982,9 +1006,30 @@ export default function CustomSyncRequestSubs() {
                   {/* Render submissions for this request */}
                   {submissions[req.id] && submissions[req.id].length > 0 ? (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {submissions[req.id]
-                        .filter(sub => !hiddenSubmissions[req.id] || !hiddenSubmissions[req.id].has(sub.id))
-                        .map((sub) => (
+                      {(() => {
+                        const filteredSubmissions = submissions[req.id].filter(sub => {
+                          // If request is paid, only show the selected submission
+                          if (req.payment_status === 'paid' || paidRequests[req.id]) {
+                            return selectedPerRequest[req.id] === sub.id;
+                          }
+                          // Otherwise, show all submissions except hidden ones
+                          return !hiddenSubmissions[req.id] || !hiddenSubmissions[req.id].has(sub.id);
+                        });
+                        
+                        // If request is paid but no selected submission is found, show a message
+                        if ((req.payment_status === 'paid' || paidRequests[req.id]) && filteredSubmissions.length === 0) {
+                          return (
+                            <div className="col-span-full text-center py-8">
+                              <div className="text-gray-400">
+                                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                                <p className="text-lg font-semibold mb-2">Request Completed</p>
+                                <p>This request has been paid and completed. The selected submission is no longer available for viewing.</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return filteredSubmissions.map((sub) => (
                           <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative">
                             <div className="flex items-center gap-2 mb-1">
                               <button
@@ -1072,7 +1117,8 @@ export default function CustomSyncRequestSubs() {
                               </div>
                             )}
                           </div>
-                        ))}
+                        ));
+                      })()}
                     </div>
                   ) : (
                     <div className="text-blue-300 mt-4">No submissions yet.</div>
