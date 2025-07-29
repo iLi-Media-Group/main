@@ -307,11 +307,18 @@ export const AdminResourceManager: React.FC = () => {
                      value={formData.category}
                      onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                     style={{ color: 'black', backgroundColor: 'white' }}
+                     style={{ 
+                       color: 'black', 
+                       backgroundColor: 'white', 
+                       fontWeight: 'normal',
+                       WebkitAppearance: 'none',
+                       MozAppearance: 'none',
+                       appearance: 'none'
+                     }}
                      required
                    >
                                          {categories.map(category => (
-                       <option key={category.id} value={category.id} style={{ color: 'black', backgroundColor: 'white' }}>
+                       <option key={category.id} value={category.id} style={{ color: 'black', backgroundColor: 'white', fontWeight: 'normal' }}>
                          {category.title}
                        </option>
                      ))}
