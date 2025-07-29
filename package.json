@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "security:audit": "npm audit",
+    "security:fix": "npm audit fix"
   },
   "dependencies": {
     "@heliofi/react": "^1.1.0",
@@ -60,5 +62,25 @@
     "typescript-eslint": "^7.1.1",
     "unocss": "^66.2.0",
     "vite": "^5.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "security": {
+    "csp": {
+      "default-src": ["'self'"],
+      "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://www.google.com/recaptcha/", "https://www.gstatic.com/recaptcha/", "https://js.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com"],
+      "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      "font-src": ["'self'", "https://fonts.gstatic.com"],
+      "img-src": ["'self'", "data:", "https:", "blob:", "https://*.stripe.com", "https://maps.googleapis.com", "https://maps.gstatic.com"],
+      "connect-src": ["'self'", "https://*.supabase.co", "https://api.stripe.com", "https://checkout.stripe.com", "https://maps.googleapis.com", "wss://*.supabase.co"],
+      "frame-src": ["'self'", "https://js.stripe.com", "https://checkout.stripe.com", "https://www.google.com/recaptcha/"],
+      "object-src": ["'none'"],
+      "base-uri": ["'self'"],
+      "form-action": ["'self'", "https://checkout.stripe.com"],
+      "frame-ancestors": ["'none'"],
+      "upgrade-insecure-requests": []
+    }
   }
 }

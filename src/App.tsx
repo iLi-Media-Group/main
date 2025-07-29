@@ -66,13 +66,26 @@ import CustomSyncRequestSubs from './components/customsyncrequestsubs';
 import PaymentSuccessPage from './components/PaymentSuccessPage';
 import { EmailVerificationPage } from './components/EmailVerificationPage';
 import { AuthCallback } from './components/AuthCallback';
-
+import { useSecurity } from './hooks/useSecurity';
+import SecurityBlock from './components/SecurityBlock';
 
 const App = () => {
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
+  
+  // Security hook for the entire application
+  const {
+    securityViolations,
+    isBlocked,
+    clearViolations,
+    logSecurityViolation,
+  } = useSecurity({
+    enableRateLimiting: true,
+    enableInputValidation: true,
+    enableXSSProtection: true,
+  });
   
   // Check if we have email and redirect params that should trigger opening the signup dialog
   useEffect(() => {
@@ -83,6 +96,32 @@ const App = () => {
       setIsSignupOpen(true);
     }
   }, [searchParams, user]);
+
+  // Security monitoring - log suspicious activities
+  useEffect(() => {
+    // Monitor for rapid navigation changes (potential bot activity)
+    let navigationCount = 0;
+    const handleNavigation = () => {
+      navigationCount++;
+      if (navigationCount > 10) {
+        logSecurityViolation('Suspicious navigation pattern detected');
+      }
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
+  }, [logSecurityViolation]);
+
+  // Security: Block access if user is blocked
+  if (isBlocked) {
+    return (
+      <SecurityBlock
+        violations={securityViolations}
+        onClearViolations={clearViolations}
+        isBlocked={isBlocked}
+      />
+    );
+  }
 
   const LayoutWrapper = ({ children }: { children: React.ReactNode }) => (
     <Layout onSignupClick={() => setIsSignupOpen(true)}>
