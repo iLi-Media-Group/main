@@ -248,7 +248,13 @@ const App = () => {
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
         <Route path="/producers" element={<ProducerLandingPage />} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
-        <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
+        <Route path="/producer-applications-admin" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ProducerApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
         <Route path="/admin/white-label-clients" element={
           <ProtectedRoute requiresAdmin>
             <AdminWhiteLabelClientsPage />
@@ -272,7 +278,13 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/custom-sync-request-subs" element={<LayoutWrapper><CustomSyncRequestSubs /></LayoutWrapper>} />
+        <Route path="/custom-sync-request-subs" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <CustomSyncRequestSubs />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/open-sync-briefs" element={
           <ProtectedRoute>
@@ -409,7 +421,13 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
+        <Route path="/advanced-analytics" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdvancedAnalyticsDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/admin/white-label" element={
           accountType === 'admin' ? (
@@ -427,7 +445,13 @@ const App = () => {
           )
         } />
 
-        <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
+        <Route path="/services" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ServicesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
         <Route path="/service-onboarding-public" element={<ServiceOnboardingPage publicMode={true} />} />
