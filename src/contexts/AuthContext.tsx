@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { getUserSubscription, getMembershipPlanFromPriceId } from '../lib/stripe';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface AuthContextType {
   user: User | null;
@@ -27,7 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchAccountType = async (userId: string, email: string) => {
     try {
       // Check if user is an admin
-      if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email.toLowerCase())) {
+      if (isAdminEmail(email)) {
         // Special handling for knockriobeats@gmail.com - dual admin/producer role
         if (email.toLowerCase() === 'knockriobeats@gmail.com') {
           setAccountType('admin,producer');

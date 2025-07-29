@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Calendar, Youtube, Sparkles, Bell, ExternalLink, Image, Loader2, AlertTriangle, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { sanitizeHtml } from '../utils/sanitize';
 
 interface Announcement {
   id: string;
@@ -743,8 +744,8 @@ export function AdminAnnouncementManager() {
                   )}
 
                   <div 
-                    className="prose prose-invert max-w-none line-clamp-3"
-                    dangerouslySetInnerHTML={{ __html: announcement.content }}
+                    className="prose prose-invert max-w-none mb-6"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.content) }}
                   />
 
                   {announcement.external_url && (

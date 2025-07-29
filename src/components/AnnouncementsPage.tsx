@@ -3,6 +3,8 @@ import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play } fro
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { sanitizeHtml } from '../utils/sanitize';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface Announcement {
   id: string;
@@ -111,7 +113,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
       .eq('id', user.id)
       .single();
       
-    if (data && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(data.email)) {
+    if (data && isAdminEmail(data.email)) {
       setIsAdmin(true);
     }
   };
@@ -163,7 +165,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
 
         <div 
           className="prose prose-invert max-w-none mb-6"
-          dangerouslySetInnerHTML={{ __html: announcement.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.content) }}
         />
 
         <div className="flex justify-between items-center">
@@ -225,7 +227,7 @@ export function AnnouncementsPage() {
       .eq('id', user.id)
       .single();
       
-    if (data && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(data.email)) {
+    if (data && isAdminEmail(data.email)) {
       setIsAdmin(true);
     }
   };
@@ -394,7 +396,7 @@ export function AnnouncementsPage() {
 
                   <div 
                     className="prose prose-invert max-w-none line-clamp-3"
-                    dangerouslySetInnerHTML={{ __html: announcement.content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.content) }}
                   />
 
                   <button

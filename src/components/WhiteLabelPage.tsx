@@ -5,7 +5,7 @@ import { WhiteLabelFeatureFlagsProvider, useWhiteLabelFeatureFlags } from '../co
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
-const clientId = process.env.REACT_APP_WHITE_LABEL_CLIENT_ID || '';
+const clientId = import.meta.env.VITE_WHITE_LABEL_CLIENT_ID || '';
 
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  const isAdmin = user.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email.toLowerCase());
+  const isAdmin = user.email && isAdminEmail(user.email);
 
   // Admins can access all routes
   if (isAdmin) {

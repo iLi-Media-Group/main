@@ -17,19 +17,5 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Create admin client only when needed, with different storage key
-export const createAdminClient = () => {
-  const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseServiceKey) {
-    throw new Error('Missing Supabase service role key');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      storageKey: 'mybeatfi-admin-auth' // Different storage key for admin
-    }
-  });
-};
+// Note: Admin client should only be used in edge functions, not in frontend
+// Service role key should never be exposed to the browser
