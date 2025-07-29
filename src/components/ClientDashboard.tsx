@@ -1490,6 +1490,13 @@ const getPlanLevel = (plan: string): number => {
     fetchDashboardData();
   };
 
+  // Debug: Log stemsUrl for each licensed track before rendering
+  console.log('DEBUG LICENSE TRACKS:', sortedAndFilteredLicenses.map(l => ({
+    id: l.track.id,
+    title: l.track.title,
+    stemsUrl: l.track.stemsUrl
+  })));
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       <div className="container mx-auto px-4 py-8">
