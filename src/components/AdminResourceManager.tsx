@@ -258,9 +258,9 @@ export const AdminResourceManager: React.FC = () => {
           </button>
         </div>
 
-                 {/* Upload Form */}
-         {showUploadForm && (
-           <div className="mb-8 bg-blue-100/95 backdrop-blur-sm rounded-lg shadow-lg border border-blue-200/20 p-6">
+                                   {/* Upload Form */}
+          {showUploadForm && (
+            <div className="mb-8 bg-blue-200/95 backdrop-blur-sm rounded-lg shadow-lg border border-blue-300/20 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingResource ? 'Edit Resource' : 'Add New Resource'}
@@ -419,14 +419,14 @@ export const AdminResourceManager: React.FC = () => {
              <p className="mt-4 text-blue-100">Loading resources...</p>
            </div>
          ) : (
-           <div className="bg-blue-100/95 backdrop-blur-sm rounded-lg shadow-lg border border-blue-200/20">
-                         <div className="px-6 py-4 border-b border-blue-200/20">
+                       <div className="bg-blue-200/95 backdrop-blur-sm rounded-lg shadow-lg border border-blue-300/20">
+                         <div className="px-6 py-4 border-b border-blue-300/20">
                <h3 className="text-lg font-semibold text-gray-900">
                  All Resources ({resources.length})
                </h3>
              </div>
              
-             <div className="divide-y divide-blue-200/20">
+                           <div className="divide-y divide-blue-300/20">
               {resources.map(resource => {
                 const categoryInfo = getCategoryInfo(resource.category);
                 return (
@@ -488,7 +488,7 @@ export const AdminResourceManager: React.FC = () => {
             
                          {resources.length === 0 && (
                <div className="text-center py-12">
-                                            <div className="w-16 h-16 bg-blue-200/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                                                         <div className="w-16 h-16 bg-blue-300/20 rounded-full flex items-center justify-center mx-auto mb-4">
                              <FileText className="w-8 h-8 text-blue-600/60" />
                            </div>
                  <h3 className="text-lg font-medium text-gray-900 mb-2">No resources yet</h3>
