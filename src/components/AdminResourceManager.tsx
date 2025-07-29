@@ -239,13 +239,13 @@ export const AdminResourceManager: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-900/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Resource Manager</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-bold text-white mb-2">Resource Manager</h1>
+            <p className="text-blue-100">
               Upload and manage resources for producers.
             </p>
           </div>
@@ -260,7 +260,7 @@ export const AdminResourceManager: React.FC = () => {
 
         {/* Upload Form */}
         {showUploadForm && (
-          <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="mb-8 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
                 {editingResource ? 'Edit Resource' : 'Add New Resource'}
@@ -399,18 +399,18 @@ export const AdminResourceManager: React.FC = () => {
         {/* Resources List */}
         {loading ? (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading resources...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+            <p className="mt-4 text-blue-100">Loading resources...</p>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
+            <div className="px-6 py-4 border-b border-white/20">
               <h3 className="text-lg font-semibold text-gray-900">
                 All Resources ({resources.length})
               </h3>
             </div>
             
-            <div className="divide-y divide-gray-200">
+            <div className="divide-y divide-white/20">
               {resources.map(resource => {
                 const categoryInfo = getCategoryInfo(resource.category);
                 return (
@@ -470,15 +470,15 @@ export const AdminResourceManager: React.FC = () => {
               })}
             </div>
             
-            {resources.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No resources yet</h3>
-                <p className="text-gray-600">Start by adding your first resource using the button above.</p>
-              </div>
-            )}
+                         {resources.length === 0 && (
+               <div className="text-center py-12">
+                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <FileText className="w-8 h-8 text-white/60" />
+                 </div>
+                 <h3 className="text-lg font-medium text-gray-900 mb-2">No resources yet</h3>
+                 <p className="text-gray-600">Start by adding your first resource using the button above.</p>
+               </div>
+             )}
           </div>
         )}
       </div>
