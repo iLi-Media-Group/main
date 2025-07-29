@@ -279,7 +279,7 @@ const ProducerApplicationForm: React.FC = () => {
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto p-8 bg-green-50 rounded-xl shadow-lg flex flex-col items-center">
+      <div className="max-w-6xl mx-auto p-8 bg-green-50 rounded-xl shadow-lg flex flex-col items-center">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
         <h2 className="text-2xl font-bold mb-2 text-green-800">Thank you!</h2>
         <p className="text-green-700 text-center">Your application has been submitted. Our team will review and contact you if selected.</p>
@@ -288,16 +288,16 @@ const ProducerApplicationForm: React.FC = () => {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white/10 backdrop-blur-md p-8 rounded-xl shadow-lg space-y-8 mt-8">
+    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto bg-white/10 backdrop-blur-md p-8 rounded-xl shadow-lg space-y-8 mt-8">
       {/* Progress Bar */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-6 overflow-x-auto">
         {steps.map((label, idx) => (
           <React.Fragment key={label}>
-            <div className={`flex items-center ${idx <= step ? 'text-blue-600' : 'text-gray-400'}`}> 
+            <div className={`flex items-center flex-shrink-0 ${idx <= step ? 'text-blue-600' : 'text-gray-400'}`}> 
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${idx <= step ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white/20'}`}>{idx + 1}</div>
-              <span className="ml-2 font-medium text-sm hidden sm:inline">{label}</span>
+              <span className="ml-2 font-medium text-sm whitespace-nowrap">{label}</span>
             </div>
-            {idx < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded ${idx < step ? 'bg-blue-600' : 'bg-gray-300'}`}></div>}
+            {idx < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded min-w-8 ${idx < step ? 'bg-blue-600' : 'bg-gray-300'}`}></div>}
           </React.Fragment>
         ))}
       </div>
