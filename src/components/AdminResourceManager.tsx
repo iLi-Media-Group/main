@@ -293,8 +293,8 @@ export const AdminResourceManager: React.FC = () => {
                      type="text"
                      value={formData.title}
                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                     style={{ color: 'black', backgroundColor: 'white' }}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                     style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}
                      required
                    />
                 </div>
@@ -306,12 +306,12 @@ export const AdminResourceManager: React.FC = () => {
                                      <select
                      value={formData.category}
                      onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                     style={{ color: 'black', backgroundColor: 'white' }}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                     style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}
                      required
                    >
                                          {categories.map(category => (
-                       <option key={category.id} value={category.id} className="text-black bg-white" style={{ color: 'black', backgroundColor: 'white' }}>
+                       <option key={category.id} value={category.id} style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}>
                          {category.title}
                        </option>
                      ))}
@@ -327,8 +327,8 @@ export const AdminResourceManager: React.FC = () => {
                    value={formData.description}
                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                    rows={4}
-                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                   style={{ color: 'black', backgroundColor: 'white' }}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}
                    placeholder="Describe the resource and its benefits for producers..."
                    required
                  />
@@ -343,8 +343,8 @@ export const AdminResourceManager: React.FC = () => {
                      type="file"
                      onChange={handleFileSelect}
                      accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.rtf,.odt,.ods,.odp"
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                     style={{ color: 'black', backgroundColor: 'white' }}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                     style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}
                    />
                   {selectedFile && (
                     <p className="mt-2 text-sm text-gray-600">
@@ -362,8 +362,8 @@ export const AdminResourceManager: React.FC = () => {
                      value={formData.external_url}
                      onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
                      placeholder="https://example.com"
-                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-black bg-white"
-                     style={{ color: 'black', backgroundColor: 'white' }}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                     style={{ color: '#000000 !important', backgroundColor: '#ffffff !important' }}
                    />
                 </div>
               </div>
