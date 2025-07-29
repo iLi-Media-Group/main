@@ -62,7 +62,7 @@ export const ProducerResourcesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (user && accountType === 'producer') {
+    if (user && (accountType === 'producer' || accountType === 'admin,producer')) {
       fetchResources();
     }
   }, [user, accountType]);
@@ -132,7 +132,7 @@ export const ProducerResourcesPage: React.FC = () => {
     return categories.find(cat => cat.id === categoryId);
   };
 
-  if (accountType !== 'producer') {
+  if (accountType !== 'producer' && accountType !== 'admin,producer') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

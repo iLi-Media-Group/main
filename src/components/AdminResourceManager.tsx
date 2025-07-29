@@ -74,7 +74,7 @@ export const AdminResourceManager: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (user && (accountType === 'admin' || accountType === 'producer')) {
+    if (user && (accountType === 'admin' || accountType === 'producer' || accountType === 'admin,producer')) {
       fetchResources();
     }
   }, [user, accountType]);
@@ -227,7 +227,7 @@ export const AdminResourceManager: React.FC = () => {
     return categories.find(cat => cat.id === categoryId);
   };
 
-  if (accountType !== 'admin' && accountType !== 'producer') {
+  if (accountType !== 'admin' && accountType !== 'producer' && accountType !== 'admin,producer') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
