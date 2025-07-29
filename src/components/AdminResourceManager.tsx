@@ -289,25 +289,25 @@ export const AdminResourceManager: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Title *
                   </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                                     <input
+                     type="text"
+                     value={formData.title}
+                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                     required
+                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Category *
                   </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
+                                     <select
+                     value={formData.category}
+                     onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                     required
+                   >
                     {categories.map(category => (
                       <option key={category.id} value={category.id}>
                         {category.title}
@@ -321,14 +321,14 @@ export const AdminResourceManager: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description *
                 </label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Describe the resource and its benefits for producers..."
-                  required
-                />
+                                 <textarea
+                   value={formData.description}
+                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                   rows={4}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                   placeholder="Describe the resource and its benefits for producers..."
+                   required
+                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -336,12 +336,12 @@ export const AdminResourceManager: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     File Upload
                   </label>
-                  <input
-                    type="file"
-                    onChange={handleFileSelect}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.rtf,.odt,.ods,.odp"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                                     <input
+                     type="file"
+                     onChange={handleFileSelect}
+                     accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.rtf,.odt,.ods,.odp"
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                   />
                   {selectedFile && (
                     <p className="mt-2 text-sm text-gray-600">
                       Selected: {selectedFile.name}
@@ -353,27 +353,27 @@ export const AdminResourceManager: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     External URL
                   </label>
-                  <input
-                    type="url"
-                    value={formData.external_url}
-                    onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-                    placeholder="https://example.com"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
+                                     <input
+                     type="url"
+                     value={formData.external_url}
+                     onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
+                     placeholder="https://example.com"
+                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                   />
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUploadForm(false);
-                    setEditingResource(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
+                                 <button
+                   type="button"
+                   onClick={() => {
+                     setShowUploadForm(false);
+                     setEditingResource(null);
+                   }}
+                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                 >
+                   Cancel
+                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
