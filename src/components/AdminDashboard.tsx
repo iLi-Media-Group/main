@@ -1227,6 +1227,13 @@ if (subscription.price_id) {
               <Plus className="w-4 h-4 mr-2" />
               Manage/Add Services
             </Link>
+            <Link
+              to="/admin/resources"
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Manage Resources
+            </Link>
           </div>
         </div>
 

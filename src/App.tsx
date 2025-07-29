@@ -68,6 +68,8 @@ import { EmailVerificationPage } from './components/EmailVerificationPage';
 import { AuthCallback } from './components/AuthCallback';
 import { useSecurity } from './hooks/useSecurity';
 import SecurityBlock from './components/SecurityBlock';
+import ProducerResourcesPage from './components/ProducerResourcesPage';
+import AdminResourceManager from './components/AdminResourceManager';
 
 const App = () => {
   const [searchParams] = useSearchParams();
@@ -411,6 +413,22 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerWithdrawalsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/resources" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerResourcesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/resources" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdminResourceManager />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

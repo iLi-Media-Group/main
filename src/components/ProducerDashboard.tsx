@@ -785,6 +785,13 @@ export function ProducerDashboard() {
               <Plus className="w-5 h-5 mr-2" />
               Upload Track
             </Link>
+            <Link
+              to="/producer/resources"
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+            >
+              <FileText className="w-5 h-5 mr-2" />
+              Resources
+            </Link>
           </div>
         </div>
 
