@@ -667,7 +667,7 @@ const getPlanLevel = (plan: string): number => {
             duration: !Array.isArray(license.track) ? (license.track as any)?.duration || '3:30' : '3:30',
             hasStingEnding: !Array.isArray(license.track) ? (license.track as any)?.has_sting_ending || false : false,
             isOneStop: !Array.isArray(license.track) ? (license.track as any)?.is_one_stop || false : false,
-            mp3Url: !Array.isArray(license.track) ? (license.track as any)?.mp3_url || '' : '',
+            mp3Url: !Array.isArray(license.track) ? (license.track as any)?.mp3_url || (license.track as any)?.audio_url || '' : '',
             trackoutsUrl: !Array.isArray(license.track) ? (license.track as any)?.trackouts_url || '' : '',
             splitSheetUrl: !Array.isArray(license.track) ? (license.track as any)?.split_sheet_url || '' : '',
             hasVocals: !Array.isArray(license.track) ? (license.track as any)?.has_vocals : undefined,
@@ -687,6 +687,15 @@ const getPlanLevel = (plan: string): number => {
             stemsUrl: !Array.isArray(license.track) ? ((license.track as any)?.stems_url || '') : '',
           }
         }));
+        
+        // Debug logging for MP3 URLs
+        console.log('Formatted licenses with MP3 URLs:', formattedLicenses.map(license => ({
+          title: license.track.title,
+          mp3Url: license.track.mp3Url,
+          audioUrl: license.track.audioUrl,
+          hasMp3Url: !!license.track.mp3Url
+        })));
+        
         setLicenses(formattedLicenses);
       }
 
@@ -720,7 +729,7 @@ const getPlanLevel = (plan: string): number => {
             )
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user?.id);
 
       if (favoritesData) {
         const formattedFavorites = favoritesData.map(f => {
@@ -1476,7 +1485,7 @@ const getPlanLevel = (plan: string): number => {
     // In real app, get new expiry from backend or payment confirmation
     const newExpiry = new Date();
     newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-    await completeRenewal({ licenseType: 'regular', licenseId: license.id, userId: user.id, newExpiryDate: newExpiry.toISOString() });
+    await completeRenewal({ licenseType: 'regular', licenseId: license.id, userId: user?.id || '', newExpiryDate: newExpiry.toISOString() });
     setShowPaymentDialog(null);
     fetchDashboardData();
   };
