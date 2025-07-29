@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle } from 'lucide-react';
+import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 
@@ -796,6 +796,33 @@ export default function CustomSyncRequestSubs() {
     }
   };
 
+  // Download function for sync request files
+  const handleDownloadSyncRequest = async (bucket: string, path: string, filename: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 3600);
+      
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        alert('Failed to download file. Please try again.');
+        return;
+      }
+      
+      if (data?.signedUrl) {
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Failed to download file. Please try again.');
+    }
+  };
+
   useEffect(() => {
     if (pendingChatOpen && selectedSubmission) {
       handleMessageProducer();
@@ -854,6 +881,84 @@ export default function CustomSyncRequestSubs() {
                       <span className="px-3 py-1 bg-green-700 text-white rounded-full text-sm flex items-center gap-2">
                         <BadgeCheck className="w-4 h-4" /> Paid
                       </span>
+                    </div>
+                  )}
+                  
+                  {/* Download buttons for paid requests */}
+                  {req.payment_status === 'paid' && (
+                    <div className="mb-4 flex flex-wrap gap-2 justify-end">
+                      {/* Find the selected submission for this request */}
+                      {(() => {
+                        const selectedSubId = selectedPerRequest[req.id];
+                        const selectedSub = submissions[req.id]?.find(sub => sub.id === selectedSubId);
+                        
+                        if (!selectedSub) return null;
+                        
+                        return (
+                          <>
+                            {selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1] : (selectedSub.track_url || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_MP3.mp3`);
+                                }}
+                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download MP3"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download MP3
+                              </button>
+                            )}
+                            
+                            {selectedSub.has_trackouts && selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_trackouts.zip') : (selectedSub.track_url?.replace('.mp3', '_trackouts.zip') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_Trackouts.zip`);
+                                }}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Trackouts"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Trackouts
+                              </button>
+                            )}
+                            
+                            {selectedSub.has_stems && selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_stems.zip') : (selectedSub.track_url?.replace('.mp3', '_stems.zip') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_Stems.zip`);
+                                }}
+                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Stems"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Stems
+                              </button>
+                            )}
+                            
+                            {/* Split sheet would typically be a separate file, but we'll add it for completeness */}
+                            {selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_split_sheet.pdf') : (selectedSub.track_url?.replace('.mp3', '_split_sheet.pdf') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_SplitSheet.pdf`);
+                                }}
+                                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Split Sheet"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Split Sheet
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                   
