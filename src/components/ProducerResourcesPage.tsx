@@ -93,7 +93,7 @@ export const ProducerResourcesPage: React.FC = () => {
 
     try {
       const { data, error } = await supabase.storage
-        .from('producer-resources')
+        .from('contracts-and-forms')
         .download(resource.file_url);
 
       if (error) {

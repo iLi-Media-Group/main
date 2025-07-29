@@ -70,13 +70,13 @@ CREATE POLICY "Admins can delete resources" ON producer_resources
 
 -- Create storage bucket for producer resources
 INSERT INTO storage.buckets (id, name, public) 
-VALUES ('producer-resources', 'producer-resources', false)
+VALUES ('contracts-and-forms', 'contracts-and-forms', false)
 ON CONFLICT (id) DO NOTHING;
 
--- Storage policies for producer-resources bucket
+-- Storage policies for contracts-and-forms bucket
 CREATE POLICY "Producers can download resources" ON storage.objects
     FOR SELECT USING (
-        bucket_id = 'producer-resources' AND
+        bucket_id = 'contracts-and-forms' AND
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE profiles.id = auth.uid() 
@@ -86,7 +86,7 @@ CREATE POLICY "Producers can download resources" ON storage.objects
 
 CREATE POLICY "Admins can upload resources" ON storage.objects
     FOR INSERT WITH CHECK (
-        bucket_id = 'producer-resources' AND
+        bucket_id = 'contracts-and-forms' AND
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE profiles.id = auth.uid() 
@@ -96,7 +96,7 @@ CREATE POLICY "Admins can upload resources" ON storage.objects
 
 CREATE POLICY "Admins can update resources" ON storage.objects
     FOR UPDATE USING (
-        bucket_id = 'producer-resources' AND
+        bucket_id = 'contracts-and-forms' AND
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE profiles.id = auth.uid() 
@@ -106,7 +106,7 @@ CREATE POLICY "Admins can update resources" ON storage.objects
 
 CREATE POLICY "Admins can delete resources" ON storage.objects
     FOR DELETE USING (
-        bucket_id = 'producer-resources' AND
+        bucket_id = 'contracts-and-forms' AND
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE profiles.id = auth.uid() 

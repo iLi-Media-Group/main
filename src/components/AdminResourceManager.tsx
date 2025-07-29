@@ -68,7 +68,7 @@ export const AdminResourceManager: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'forms' as const,
+    category: 'contracts' as 'contracts' | 'websites' | 'books' | 'forms',
     external_url: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -115,7 +115,7 @@ export const AdminResourceManager: React.FC = () => {
   const uploadFile = async (file: File): Promise<string> => {
     const fileName = `${Date.now()}_${file.name}`;
     const { data, error } = await supabase.storage
-      .from('producer-resources')
+      .from('contracts-and-forms')
       .upload(fileName, file);
 
     if (error) {
@@ -175,7 +175,7 @@ export const AdminResourceManager: React.FC = () => {
       setFormData({
         title: '',
         description: '',
-        category: 'forms',
+        category: 'contracts',
         external_url: ''
       });
       setSelectedFile(null);
@@ -339,7 +339,7 @@ export const AdminResourceManager: React.FC = () => {
                   <input
                     type="file"
                     onChange={handleFileSelect}
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.rtf,.odt,.ods,.odp"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   {selectedFile && (
