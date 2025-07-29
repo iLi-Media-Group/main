@@ -23,6 +23,14 @@ export function useSignedUrl(
       return;
     }
 
+    // Check if the path is already a full URL (starts with http/https)
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      setSignedUrl(path);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const generateSignedUrl = async () => {
       try {
         setLoading(true);
