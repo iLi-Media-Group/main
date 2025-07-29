@@ -2171,6 +2171,51 @@ const getPlanLevel = (plan: string): number => {
                       >
                         History
                       </button>
+                      
+                      {/* Download buttons for paid proposals */}
+                      {proposal.payment_status === 'paid' && proposal.track?.mp3_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Download MP3"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download MP3
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.trackouts_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center"
+                          title="Download Trackouts"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Trackouts
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.stems_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
+                          className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm flex items-center"
+                          title="Download Stems"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Stems
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.split_sheet_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"
+                          title="Download Split Sheet"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Split Sheet
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
@@ -2589,36 +2634,7 @@ const getPlanLevel = (plan: string): number => {
                                   <FileText className="w-4 h-4 mr-2" />
                                   History
                                 </button>
-                                {proposal.payment_status === 'paid' && proposal.track.mp3_url && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
-                                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download MP3"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download MP3
-                                  </button>
-                                )}
-                                {proposal.payment_status === 'paid' && proposal.track.trackouts_url && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
-                                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download Trackouts"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download Trackouts
-                                  </button>
-                                )}
-                                {proposal.payment_status === 'paid' && proposal.track.stemsUrl && (
-                                  <button
-                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
-                                    className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
-                                    title="Download Stems"
-                                  >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Download Stems
-                                  </button>
-                                )}
+
                               </div>
                             </div>
                           </div>
