@@ -94,13 +94,21 @@ export default function ProducerApplicationsAdmin() {
       const criteria = applicationToRankingCriteria(app);
       const ranking = calculateRankingScore(criteria);
       
-      return {
+      const updatedApp = {
         ...app,
         ranking_score: ranking.totalScore,
         ranking_breakdown: ranking.breakdown,
         is_auto_rejected: ranking.isAutoRejected,
         rejection_reason: ranking.rejectionReason
       };
+
+      // If the application is auto-rejected and hasn't been updated in the database yet,
+      // update its status to 'declined'
+      if (ranking.isAutoRejected && app.status !== 'declined' && !app.is_auto_rejected) {
+        updateApplicationStatus(app.id, 'declined');
+      }
+
+      return updatedApp;
     });
   };
 
@@ -133,7 +141,7 @@ export default function ProducerApplicationsAdmin() {
       // Filter by status based on active tab
       switch (activeTab) {
         case 'new':
-          query = query.eq('status', 'new').is('review_tier', null);
+          query = query.eq('status', 'new').is('review_tier', null).eq('is_auto_rejected', false);
           break;
         case 'invited':
           query = query.eq('status', 'invited');
@@ -142,7 +150,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.eq('status', 'save_for_later');
           break;
         case 'declined':
-          query = query.eq('status', 'declined');
+          // Include both manually declined and auto-rejected applications
+          query = query.or('status.eq.declined,is_auto_rejected.eq.true');
           break;
       }
 
@@ -306,10 +315,10 @@ export default function ProducerApplicationsAdmin() {
   const getTabCount = (tab: TabType) => {
     return allApplications.filter(app => { // Use allApplications instead of applications
       switch (tab) {
-        case 'new': return app.status === 'new' && !app.review_tier;
+        case 'new': return app.status === 'new' && !app.review_tier && !app.is_auto_rejected;
         case 'invited': return app.status === 'invited';
         case 'save_for_later': return app.status === 'save_for_later';
-        case 'declined': return app.status === 'declined';
+        case 'declined': return app.status === 'declined' || app.is_auto_rejected === true;
         default: return false;
       }
     }).length;
@@ -512,7 +521,7 @@ export default function ProducerApplicationsAdmin() {
                     <div className="flex items-center space-x-4 mb-2">
                       <h3 className="text-xl font-semibold text-white">{app.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
-                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                        {app.is_auto_rejected ? 'Auto-Rejected' : app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                       </span>
                       {app.auto_disqualified && (
                         <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">

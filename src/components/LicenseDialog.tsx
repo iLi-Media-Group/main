@@ -59,6 +59,8 @@ export function LicenseDialog({
   const [email, setEmail] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [createdLicenseId, setCreatedLicenseId] = useState<string | null>(null);
+  const [showExistingLicenseWarning, setShowExistingLicenseWarning] = useState(false);
+  const [existingLicensesInfo, setExistingLicensesInfo] = useState<{count: number, latestDate: string} | null>(null);
 
   useEffect(() => {
     if (isOpen && user) {
@@ -129,20 +131,51 @@ export function LicenseDialog({
       setLoading(true);
       setError('');
 
-      // Prevent duplicate licenses
-      const { data: existingLicense, error: checkError } = await supabase
+      // Check for existing licenses but don't prevent creation
+      const { data: existingLicenses, error: checkError } = await supabase
         .from('sales')
-        .select('id')
+        .select('id, created_at, license_type')
         .eq('track_id', track.id)
         .eq('buyer_id', user.id)
-        .is('deleted_at', null)
-        .maybeSingle();
+        .is('deleted_at', null);
 
       if (checkError) {
-        console.error('Error checking existing license:', checkError);
-      } else if (existingLicense) {
-        throw new Error('You already have a license for this track');
+        console.error('Error checking existing licenses:', checkError);
+      } else if (existingLicenses && existingLicenses.length > 0) {
+        // Show a warning but allow the user to proceed
+        const existingCount = existingLicenses.length;
+        const latestLicense = existingLicenses.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )[0];
+        
+        const warningMessage = `You already have ${existingCount} license${existingCount > 1 ? 's' : ''} for this track (latest: ${new Date(latestLicense.created_at).toLocaleDateString()}). You can license this track again for different projects.`;
+        
+        // Show the warning dialog instead of just logging
+        setExistingLicensesInfo({
+          count: existingCount,
+          latestDate: new Date(latestLicense.created_at).toLocaleDateString()
+        });
+        setShowExistingLicenseWarning(true);
+        setLoading(false);
+        return; // Stop here and wait for user confirmation
       }
+
+      // If no existing licenses or user confirmed, proceed with license creation
+      await createLicenseRecord();
+    } catch (err) {
+      console.error('Error creating license:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create license');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createLicenseRecord = async () => {
+    if (!user || !profile) return;
+
+    try {
+      setLoading(true);
+      setError('');
 
       const purchaseDate = new Date().toISOString();
 
@@ -394,17 +427,64 @@ export function LicenseDialog({
         </div>
       </div>
 
-      {showConfirmation && createdLicenseId && (
-        <LicenseConfirmationDialog
-          isOpen={true}
-          onClose={() => {
-            setShowConfirmation(false);
-            onClose();
-          }}
-          trackTitle={track.title}
-          licenseType={membershipType}
-          licenseId={createdLicenseId}
-        />
+      <LicenseConfirmationDialog
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        trackTitle={track.title}
+        licenseType={membershipType}
+        licenseId={createdLicenseId || ''}
+      />
+
+      {/* Existing License Warning Dialog */}
+      {showExistingLicenseWarning && existingLicensesInfo && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-blue-900/90 border border-purple-500/20 rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-white">Multiple Licenses</h3>
+              <button
+                onClick={() => {
+                  setShowExistingLicenseWarning(false);
+                  setExistingLicensesInfo(null);
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-300 mb-4">
+                You already have {existingLicensesInfo.count} license{existingLicensesInfo.count > 1 ? 's' : ''} for this track 
+                (latest: {existingLicensesInfo.latestDate}).
+              </p>
+              <p className="text-blue-200 text-sm">
+                You can license this track again for different projects. Each license is valid for separate commercial use.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowExistingLicenseWarning(false);
+                  setExistingLicensesInfo(null);
+                }}
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowExistingLicenseWarning(false);
+                  setExistingLicensesInfo(null);
+                  createLicenseRecord();
+                }}
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
