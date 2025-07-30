@@ -90,7 +90,7 @@ export function DiscountManagement() {
     start_date: '',
     end_date: '',
     is_active: true,
-    discount_type: 'automatic',
+    discount_type: 'promotion_code',
     promotion_code: '',
     duration_type: 'once',
     duration_in_months: null,
@@ -278,7 +278,7 @@ export function DiscountManagement() {
       start_date: discount.start_date,
       end_date: discount.end_date,
       is_active: discount.is_active,
-      discount_type: (discount as any).discount_type || 'automatic',
+      discount_type: (discount as any).discount_type || 'promotion_code',
       promotion_code: (discount as any).promotion_code || '',
       duration_type: (discount as any).duration_type || 'once',
       duration_in_months: (discount as any).duration_in_months || null,
@@ -322,7 +322,7 @@ export function DiscountManagement() {
       start_date: '',
       end_date: '',
       is_active: true,
-      discount_type: 'automatic',
+      discount_type: 'promotion_code',
       promotion_code: '',
       duration_type: 'once',
       duration_in_months: null,
@@ -496,52 +496,18 @@ export function DiscountManagement() {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Discount Type *
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="discount_type"
-                      value="automatic"
-                      checked={formData.discount_type === 'automatic'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'automatic' | 'promotion_code' }))}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Automatic Discount (applies to all eligible purchases)</span>
-                  </label>
-                  <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="discount_type"
-                      value="promotion_code"
-                      checked={formData.discount_type === 'promotion_code'}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discount_type: e.target.value as 'automatic' | 'promotion_code' }))}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm">Promotion Code (requires customers to enter code)</span>
-                  </label>
-                </div>
-              </div>
-
-              {formData.discount_type === 'promotion_code' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Promotion Code *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.promotion_code}
-                    onChange={(e) => setFormData(prev => ({ ...prev, promotion_code: e.target.value.toUpperCase() }))}
-                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
-                    placeholder="e.g., WELCOME10, SUMMER20"
-                    required
-                  />
-                </div>
-              )}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Promotion Code *
+              </label>
+              <input
+                type="text"
+                value={formData.promotion_code}
+                onChange={(e) => setFormData(prev => ({ ...prev, promotion_code: e.target.value.toUpperCase() }))}
+                className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                placeholder="e.g., WELCOME10, SUMMER20"
+                required
+              />
             </div>
 
             <div>
