@@ -193,13 +193,31 @@ const DiscountCodesSection: React.FC = () => {
   // Show carousel for 4+ discounts
   return (
     <div className="mb-4">
-      <div className="relative max-w-4xl mx-auto">
+      <div className="relative max-w-6xl mx-auto px-12">
+        {/* Navigation Arrows - Outside Container */}
+        {discountCodes.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-green-600 hover:bg-green-700 text-white rounded-full p-2 transition-colors shadow-lg z-10"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-green-600 hover:bg-green-700 text-white rounded-full p-2 transition-colors shadow-lg z-10"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </>
+        )}
+
         {/* Carousel Container */}
         <div className="overflow-hidden rounded-lg">
-          <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
+          <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentIndex * 50}%)` }}>
             {discountCodes.map((discount) => (
-              <div key={discount.id} className="w-full flex-shrink-0">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 shadow-lg mx-2">
+              <div key={discount.id} className="w-1/2 flex-shrink-0 px-2">
+                <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 shadow-lg">
                   <div className="flex flex-col gap-2">
                     {/* Header - Compact */}
                     <div className="flex items-center justify-between">
@@ -252,27 +270,9 @@ const DiscountCodesSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation Arrows */}
-        {discountCodes.length > 1 && (
-          <>
-            <button
-              onClick={prevSlide}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-1 transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white rounded-full p-1 transition-colors"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
-
         {/* Dots Indicator */}
         {discountCodes.length > 1 && (
-          <div className="flex justify-center mt-2 gap-1">
+          <div className="flex justify-center mt-3 gap-1">
             {discountCodes.map((_, index) => (
               <button
                 key={index}
