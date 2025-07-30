@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Percent, Plus, Edit, Trash2, Calendar, Tag, Save, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Percent, Plus, Edit, Trash2, Calendar, Tag, Save, X, Loader2, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Discount {
@@ -616,7 +616,7 @@ export function DiscountManagement() {
                     Duration Type *
                   </label>
                   <div className="space-y-2">
-                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
                       <input
                         type="radio"
                         name="duration_type"
@@ -626,8 +626,23 @@ export function DiscountManagement() {
                         className="text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm">Once (single use per customer)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Once */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Once (Single Use Per Customer)</div>
+                          <div className="space-y-2">
+                            <div>• Each customer can use this coupon <strong>only once</strong></div>
+                            <div>• Example: "WELCOME20" - customer uses it once, then can never use it again</div>
+                            <div>• End date: Coupon expires on the end date regardless of usage</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
                     </label>
-                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                    
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
                       <input
                         type="radio"
                         name="duration_type"
@@ -637,8 +652,23 @@ export function DiscountManagement() {
                         className="text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm">Repeating (monthly for specified duration)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Repeating */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Repeating (Monthly for Specified Duration)</div>
+                          <div className="space-y-2">
+                            <div>• Customer can use this coupon <strong>every month</strong> for the specified duration</div>
+                            <div>• Example: "SUBSCRIPTION10" - customer gets 10% off every month for 6 months</div>
+                            <div>• End date: Coupon expires on the end date, but customer can use it multiple times before then</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
                     </label>
-                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer">
+                    
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
                       <input
                         type="radio"
                         name="duration_type"
@@ -648,6 +678,20 @@ export function DiscountManagement() {
                         className="text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-sm">Forever (unlimited duration)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Forever */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Forever (Unlimited Duration)</div>
+                          <div className="space-y-2">
+                            <div>• Customer can use this coupon <strong>unlimited times</strong> until the end date</div>
+                            <div>• Example: "LOYALTY15" - customer can use 15% off as many times as they want</div>
+                            <div>• End date: Coupon expires on the end date, but unlimited usage before then</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
                     </label>
                   </div>
                 </div>
