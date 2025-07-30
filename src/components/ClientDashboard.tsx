@@ -1528,13 +1528,11 @@ const getPlanLevel = (plan: string): number => {
           </div>
         </div>
 
+        {/* Discount Codes Section - Compact */}
+        <DiscountCodesSection />
+
         {/* Discount Banner */}
         <DiscountBanner />
-
-        {/* Discount Codes Section */}
-        <div className="mb-8">
-          <DiscountCodesSection />
-        </div>
 
         <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">

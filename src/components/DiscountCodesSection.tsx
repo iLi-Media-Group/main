@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Copy, Tag, Percent, Calendar, CheckCircle } from 'lucide-react';
@@ -11,6 +10,7 @@ interface DiscountCode {
   description: string;
   promotion_code: string;
   discount_percent: number;
+  discount_type: string;
   end_date: string;
   is_active: boolean;
 }
@@ -36,6 +36,7 @@ const DiscountCodesSection: React.FC = () => {
           description,
           promotion_code,
           discount_percent,
+          discount_type,
           end_date,
           is_active,
           start_date,
@@ -43,6 +44,7 @@ const DiscountCodesSection: React.FC = () => {
         `)
         .eq('discount_type', 'promotion_code')
         .eq('is_active', true)
+        .not('promotion_code', 'is', null) // Only show discounts with promotion codes
         .gte('end_date', new Date().toISOString().split('T')[0]) // Only show codes that haven't expired
         .order('created_at', { ascending: false });
 
@@ -86,110 +88,66 @@ const DiscountCodesSection: React.FC = () => {
 
   if (loading) {
     return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Discount Codes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4">Loading discount codes...</div>
-        </CardContent>
-      </Card>
+      <div className="flex justify-center mb-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2 text-sm text-blue-700 dark:text-blue-300">
+          Loading discount codes...
+        </div>
+      </div>
     );
   }
 
   if (discountCodes.length === 0) {
-    return (
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
-            Discount Codes
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4 text-muted-foreground">
-            No active discount codes available at the moment.
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null; // Don't show anything if no discount codes
   }
 
+  // Show only the first active discount code in a compact format
+  const discount = discountCodes[0];
+
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Tag className="h-5 w-5" />
-          Available Discount Codes
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {discountCodes.map((discount) => (
-            <div
-              key={discount.id}
-              className="border rounded-lg p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold text-lg">{discount.name}</h3>
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      <Percent className="h-3 w-3 mr-1" />
-                      {discount.discount_percent}% OFF
-                    </Badge>
-                    {isExpiringSoon(discount.end_date) && (
-                      <Badge variant="destructive" className="text-xs">
-                        Expires Soon
-                      </Badge>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-3">
-                    {discount.description}
-                  </p>
-                  
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      Expires: {formatDate(discount.end_date)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <CheckCircle className="h-3 w-3" />
-                      Active
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex flex-col items-end gap-2">
-                  <div className="bg-white dark:bg-gray-800 border rounded-md px-3 py-2 font-mono text-sm">
-                    {discount.promotion_code}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => copyToClipboard(discount.promotion_code)}
-                    className="text-xs"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    {copiedCode === discount.promotion_code ? 'Copied!' : 'Copy Code'}
-                  </Button>
-                </div>
+    <div className="flex justify-center mb-4">
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3 max-w-md">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                  {discount.name}
+                </span>
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                  <Percent className="h-3 w-3 mr-1" />
+                  {discount.discount_percent}% OFF
+                </Badge>
+                {isExpiringSoon(discount.end_date) && (
+                  <Badge variant="destructive" className="text-xs">
+                    Expires Soon
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mt-1">
+                <Calendar className="h-3 w-3" />
+                Expires: {formatDate(discount.end_date)}
               </div>
             </div>
-          ))}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 border rounded px-2 py-1 font-mono text-xs">
+              {discount.promotion_code}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => copyToClipboard(discount.promotion_code)}
+              className="text-xs h-6 px-2"
+            >
+              <Copy className="h-3 w-3 mr-1" />
+              {copiedCode === discount.promotion_code ? 'Copied!' : 'Copy'}
+            </Button>
+          </div>
         </div>
-        
-        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            💡 <strong>How to use:</strong> Copy a discount code and enter it during checkout to receive your discount!
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
