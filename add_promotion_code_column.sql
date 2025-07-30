@@ -77,7 +77,7 @@ INSERT INTO discounts (
     'WELCOME20',
     20,
     'promotion_code',
-    'all',
+    ARRAY['all'],
     CURRENT_DATE,
     CURRENT_DATE + INTERVAL '30 days',
     true
