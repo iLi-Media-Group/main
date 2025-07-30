@@ -105,16 +105,16 @@ const DiscountCodesSection: React.FC = () => {
 
   return (
     <div className="flex justify-center mb-4">
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 border border-green-200 dark:border-green-800 rounded-lg px-4 py-3 max-w-md">
+      <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 max-w-md shadow-lg">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <Tag className="h-4 w-4 text-white" />
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                <span className="font-medium text-sm text-white">
                   {discount.name}
                 </span>
-                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs">
+                <Badge variant="secondary" className="bg-white/20 text-white border-white/30 text-xs">
                   <Percent className="h-3 w-3 mr-1" />
                   {discount.discount_percent}% OFF
                 </Badge>
@@ -124,7 +124,7 @@ const DiscountCodesSection: React.FC = () => {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mt-1">
+              <div className="flex items-center gap-2 text-xs text-green-100 mt-1">
                 <Calendar className="h-3 w-3" />
                 Expires: {formatDate(discount.end_date)}
               </div>
@@ -132,14 +132,14 @@ const DiscountCodesSection: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <div className="bg-white dark:bg-gray-800 border rounded px-2 py-1 font-mono text-xs">
+            <div className="bg-white text-green-700 font-bold border rounded px-2 py-1 font-mono text-xs shadow-sm">
               {discount.promotion_code}
             </div>
             <Button
               size="sm"
               variant="outline"
               onClick={() => copyToClipboard(discount.promotion_code)}
-              className="text-xs h-6 px-2"
+              className="text-xs h-6 px-2 bg-white/20 text-white border-white/30 hover:bg-white/30"
             >
               <Copy className="h-3 w-3 mr-1" />
               {copiedCode === discount.promotion_code ? 'Copied!' : 'Copy'}
