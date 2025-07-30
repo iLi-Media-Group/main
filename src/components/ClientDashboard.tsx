@@ -22,6 +22,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 import DiscountBanner from './DiscountBanner';
+import DiscountCodesSection from './DiscountCodesSection';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -1529,6 +1530,11 @@ const getPlanLevel = (plan: string): number => {
 
         {/* Discount Banner */}
         <DiscountBanner />
+
+        {/* Discount Codes Section */}
+        <div className="mb-8">
+          <DiscountCodesSection />
+        </div>
 
         <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">
