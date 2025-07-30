@@ -21,7 +21,6 @@ import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
-import DiscountBanner from './DiscountBanner';
 import DiscountCodesSection from './DiscountCodesSection';
 
 // Track Image Component with Signed URL
@@ -1530,9 +1529,6 @@ const getPlanLevel = (plan: string): number => {
 
         {/* Discount Codes Section - Compact */}
         <DiscountCodesSection />
-
-        {/* Discount Banner */}
-        <DiscountBanner />
 
         <div className="mb-8 p-6 glass-card rounded-lg">
           <div className="flex items-center justify-between">
