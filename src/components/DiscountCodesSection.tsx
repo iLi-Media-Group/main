@@ -11,6 +11,7 @@ interface DiscountCode {
   promotion_code: string;
   discount_percent: number;
   discount_type: string;
+  applies_to: string[];
   end_date: string;
   is_active: boolean;
 }
@@ -37,6 +38,7 @@ const DiscountCodesSection: React.FC = () => {
           promotion_code,
           discount_percent,
           discount_type,
+          applies_to,
           end_date,
           is_active,
           start_date,
@@ -86,6 +88,25 @@ const DiscountCodesSection: React.FC = () => {
     return daysUntilExpiry <= 7;
   };
 
+  const getAppliesToText = (appliesTo: string[]) => {
+    if (!appliesTo || appliesTo.length === 0) return 'All plans';
+    
+    const planNames: { [key: string]: string } = {
+      'single_track': 'Single Track',
+      'gold_access': 'Gold Access',
+      'platinum_access': 'Platinum Access',
+      'ultimate_access': 'Ultimate Access',
+      'all': 'All plans',
+      'pro': 'Pro plans',
+      'starter': 'Starter plans'
+    };
+
+    if (appliesTo.includes('all')) return 'All plans';
+    
+    const planTexts = appliesTo.map(plan => planNames[plan] || plan).join(', ');
+    return planTexts;
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center mb-4">
@@ -100,17 +121,15 @@ const DiscountCodesSection: React.FC = () => {
     return null; // Don't show anything if no discount codes
   }
 
-  // Show only the first active discount code in a compact format
-  const discount = discountCodes[0];
-
   return (
-    <div className="flex justify-center mb-4">
-      <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 max-w-md shadow-lg">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-white" />
-            <div>
+    <div className="mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+        {discountCodes.map((discount) => (
+          <div key={discount.id} className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 shadow-lg">
+            <div className="flex flex-col gap-3">
+              {/* Header */}
               <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-white" />
                 <span className="font-medium text-sm text-white">
                   {discount.name}
                 </span>
@@ -124,28 +143,41 @@ const DiscountCodesSection: React.FC = () => {
                   </Badge>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-xs text-green-100 mt-1">
+
+              {/* Description */}
+              <div className="text-xs text-green-100">
+                {discount.description}
+              </div>
+
+              {/* Applies to */}
+              <div className="text-xs text-green-100">
+                <span className="font-medium">Applies to:</span> {getAppliesToText(discount.applies_to)}
+              </div>
+
+              {/* Expiry date */}
+              <div className="flex items-center gap-2 text-xs text-green-100">
                 <Calendar className="h-3 w-3" />
                 Expires: {formatDate(discount.end_date)}
               </div>
+              
+              {/* Promotion code and copy button */}
+              <div className="flex items-center gap-2">
+                <div className="bg-white text-green-700 font-bold border rounded px-2 py-1 font-mono text-xs shadow-sm flex-1 text-center">
+                  {discount.promotion_code}
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => copyToClipboard(discount.promotion_code)}
+                  className="text-xs h-6 px-2 bg-white/20 text-white border-white/30 hover:bg-white/30"
+                >
+                  <Copy className="h-3 w-3 mr-1" />
+                  {copiedCode === discount.promotion_code ? 'Copied!' : 'Copy'}
+                </Button>
+              </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="bg-white text-green-700 font-bold border rounded px-2 py-1 font-mono text-xs shadow-sm">
-              {discount.promotion_code}
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => copyToClipboard(discount.promotion_code)}
-              className="text-xs h-6 px-2 bg-white/20 text-white border-white/30 hover:bg-white/30"
-            >
-              <Copy className="h-3 w-3 mr-1" />
-              {copiedCode === discount.promotion_code ? 'Copied!' : 'Copy'}
-            </Button>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
