@@ -22,6 +22,8 @@ interface EditTrackModalProps {
     split_sheet_url?: string;
     mp3_url?: string;
     trackouts_url?: string;
+    spotify_track_id?: string;
+    spotify_external_url?: string;
   };
   onUpdate: () => void;
 }
@@ -50,6 +52,10 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
   const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
   const [stemsFile, setStemsFile] = useState<File | null>(null);
+  
+  // Spotify integration state
+  const [spotifyUrl, setSpotifyUrl] = useState(track.spotify_external_url || '');
+  const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
 
   // Update state when track prop changes
   useEffect(() => {
@@ -67,6 +73,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setIsSyncOnly(track.vocalsUsageType === 'sync_only');
       setStemsUrl(track.stems_url || '');
       setSplitSheetUrl(track.split_sheet_url || '');
+      setSpotifyUrl(track.spotify_external_url || '');
     }
   }, [track]);
 
@@ -95,6 +102,22 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setSelectedMediaUsage([...selectedMediaUsage, usageType]);
     } else {
       setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== usageType));
+    }
+  };
+
+  // Handle Spotify URL input
+  const handleSpotifyUrlChange = (url: string) => {
+    setSpotifyUrl(url);
+    setSpotifyUrlError('');
+    
+    // Extract track ID from Spotify URL if valid
+    const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
+    if (trackIdMatch) {
+      setSpotifyUrlError('');
+    } else if (url && !url.includes('open.spotify.com')) {
+      setSpotifyUrlError('Please enter a valid Spotify track URL');
+    } else if (url) {
+      setSpotifyUrlError('');
     }
   };
 
@@ -170,6 +193,14 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       }
       // --- End file upload logic ---
 
+      // Prepare Spotify data if URL is provided
+      const spotifyData = spotifyUrl ? {
+        spotify_track_id: spotifyUrl.match(/track\/([a-zA-Z0-9]+)/)?.[1] || null,
+        spotify_external_url: spotifyUrl,
+        spotify_search_attempted: true,
+        spotify_last_searched: new Date().toISOString()
+      } : {};
+
       const { error: updateError } = await supabase
         .from('tracks')
         .update({
@@ -182,7 +213,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           trackouts_url: trackoutsUploadedUrl || null,
           stems_url: stemsUploadedUrl || null,
           split_sheet_url: splitSheetUploadedUrl || null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          ...spotifyData // Include Spotify data if available
         })
         .eq('id', track.id);
 
@@ -427,6 +459,25 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
             {trackoutsUrl && (
               <a href={trackoutsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Trackouts</a>
             )}
+          </div>
+
+          {/* Spotify URL */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Spotify Track URL (Optional)</label>
+            <input
+              type="url"
+              value={spotifyUrl}
+              onChange={(e) => handleSpotifyUrlChange(e.target.value)}
+              placeholder="https://open.spotify.com/track/..."
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading}
+            />
+            {spotifyUrlError && (
+              <p className="text-red-400 text-xs mt-2">{spotifyUrlError}</p>
+            )}
+            <p className="text-xs text-gray-500 mt-1">
+              Paste your Spotify track URL to link it to this track
+            </p>
           </div>
           {/* Stems Upload */}
           <div className="mb-4">

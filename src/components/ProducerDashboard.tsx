@@ -97,6 +97,8 @@ interface Track {
   vocals_usage_type: string | null;
   sales_count: number;
   revenue: number;
+  spotify_track_id?: string;
+  spotify_external_url?: string;
 }
 
 interface Proposal {
@@ -350,7 +352,9 @@ export function ProducerDashboard() {
           image_url,
           created_at,
           has_vocals,
-          vocals_usage_type
+          vocals_usage_type,
+          spotify_track_id,
+          spotify_external_url
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)
