@@ -36,34 +36,41 @@ export function SpotifyTrackAudioPlayer({
 
   // Check if we should use Spotify preview
   useEffect(() => {
-    const shouldUseSpotify = track.spotify_track_id && track.use_spotify_preview !== false;
+    const shouldUseSpotify = (track.spotify_track_id || track.spotify_external_url) && track.use_spotify_preview !== false;
     setUseSpotify(!!shouldUseSpotify);
-  }, [track.spotify_track_id, track.use_spotify_preview]);
+  }, [track.spotify_track_id, track.spotify_external_url, track.use_spotify_preview]);
 
   // Fetch Spotify preview URL if needed
   useEffect(() => {
     const fetchSpotifyPreview = async () => {
-      if (!useSpotify || !track.spotify_track_id) return;
+      if (!useSpotify) return;
 
-      setSpotifyLoading(true);
-      try {
-        const spotifyTrack = await spotifyAPI.getTrackById(track.spotify_track_id);
-        if (spotifyTrack && spotifyTrack.preview_url) {
-          setSpotifyPreviewUrl(spotifyTrack.preview_url);
-        } else {
-          // Fall back to MP3 if no Spotify preview
+      // If we have a track ID, try to get preview URL
+      if (track.spotify_track_id) {
+        setSpotifyLoading(true);
+        try {
+          const spotifyTrack = await spotifyAPI.getTrackById(track.spotify_track_id);
+          if (spotifyTrack && spotifyTrack.preview_url) {
+            setSpotifyPreviewUrl(spotifyTrack.preview_url);
+          } else {
+            // Fall back to MP3 if no Spotify preview
+            setUseSpotify(false);
+          }
+        } catch (error) {
+          console.error('Failed to fetch Spotify preview:', error);
           setUseSpotify(false);
+        } finally {
+          setSpotifyLoading(false);
         }
-      } catch (error) {
-        console.error('Failed to fetch Spotify preview:', error);
+      } else if (track.spotify_external_url) {
+        // If we have external URL but no track ID, we can't get preview
+        // But we can still show the toggle and let user know
         setUseSpotify(false);
-      } finally {
-        setSpotifyLoading(false);
       }
     };
 
     fetchSpotifyPreview();
-  }, [useSpotify, track.spotify_track_id]);
+  }, [useSpotify, track.spotify_track_id, track.spotify_external_url]);
 
   // Determine which audio source to use
   const audioSrc = useSpotify && spotifyPreviewUrl ? spotifyPreviewUrl : (signedUrl || '');
@@ -89,7 +96,7 @@ export function SpotifyTrackAudioPlayer({
   return (
     <div className="space-y-2">
       <AudioPlayer src={audioSrc} title={track.title} size={size} />
-      {showToggle && track.spotify_track_id && (
+      {showToggle && (track.spotify_track_id || track.spotify_external_url) && (
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>
             {useSpotify ? '🎵 Spotify Preview' : '📁 Uploaded MP3'}
@@ -103,7 +110,7 @@ export function SpotifyTrackAudioPlayer({
           </button>
         </div>
       )}
-      {showToggle && showProducerMessage && !track.spotify_track_id && (
+      {showToggle && showProducerMessage && !track.spotify_track_id && !track.spotify_external_url && (
         <div className="group relative">
           <div className="text-xs text-gray-400 cursor-help">
             📁 This track will play the uploaded MP3
