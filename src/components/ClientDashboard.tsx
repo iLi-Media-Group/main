@@ -147,7 +147,7 @@ const AudioPlayerWithSignedUrl = ({
   const trackObj = {
     id: 'temp-id',
     title: title,
-    audio_url: audioUrl
+    audioUrl: audioUrl
   };
 
   return (
@@ -2690,8 +2690,14 @@ const getPlanLevel = (plan: string): number => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                          >
+                            View Track
+                          </button>
                           {track.audioUrl && (
-                            <div className="w-32">
+                            <div className="w-8 h-8 flex items-center justify-center -ml-[45px]">
                               <AudioPlayerWithSignedUrl
                                 audioUrl={track.audioUrl}
                                 title={track.title}
@@ -2701,12 +2707,6 @@ const getPlanLevel = (plan: string): number => {
                               />
                             </div>
                           )}
-                          <button
-                            onClick={() => navigate(`/track/${track.id}`)}
-                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            View Track
-                          </button>
                           <button
                             onClick={() => handleRemoveFavorite(track.id)}
                             disabled={removingFavorite === track.id}
@@ -2769,8 +2769,14 @@ const getPlanLevel = (plan: string): number => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                          >
+                            View Track
+                          </button>
                           {track.audioUrl && (
-                            <div className="w-32">
+                            <div className="w-8 h-8 flex items-center justify-center -ml-[45px]">
                               <AudioPlayerWithSignedUrl
                                 audioUrl={track.audioUrl}
                                 title={track.title}
@@ -2780,12 +2786,6 @@ const getPlanLevel = (plan: string): number => {
                               />
                             </div>
                           )}
-                          <button
-                            onClick={() => navigate(`/track/${track.id}`)}
-                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            View Track
-                          </button>
                         </div>
                       </div>
                     </div>
