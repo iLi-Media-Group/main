@@ -21,6 +21,48 @@ interface SpotifyTrackAudioPlayerProps {
   showProducerMessage?: boolean;
 }
 
+// Global audio manager to ensure only one player is active at a time
+class AudioManager {
+  private static instance: AudioManager;
+  private currentAudio: HTMLAudioElement | null = null;
+  private currentPlayerId: string | null = null;
+
+  static getInstance(): AudioManager {
+    if (!AudioManager.instance) {
+      AudioManager.instance = new AudioManager();
+    }
+    return AudioManager.instance;
+  }
+
+  play(audio: HTMLAudioElement, playerId: string): void {
+    // Stop any currently playing audio
+    if (this.currentAudio && this.currentAudio !== audio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+    }
+    
+    // Set new current audio
+    this.currentAudio = audio;
+    this.currentPlayerId = playerId;
+    
+    // Play the new audio
+    audio.play();
+  }
+
+  stop(playerId: string): void {
+    if (this.currentPlayerId === playerId && this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
+      this.currentPlayerId = null;
+    }
+  }
+
+  isCurrentPlayer(playerId: string): boolean {
+    return this.currentPlayerId === playerId;
+  }
+}
+
 // Utility to extract Spotify Track ID from URL
 function extractSpotifyId(url: string): string {
   const match = url.match(/track\/([a-zA-Z0-9]+)/);
@@ -45,11 +87,15 @@ export function SpotifyTrackAudioPlayer({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const playerId = useRef(`player-${track.id}-${Date.now()}`);
+
+  // Get audio manager instance
+  const audioManager = AudioManager.getInstance();
 
   // Determine which URL to use
   const spotifyUrl = track.spotify_external_url || '';
   const mp3Url = signedUrl || '';
-  
+   
   // Extract Spotify track ID if we have a URL
   const spotifyTrackId = spotifyUrl ? extractSpotifyId(spotifyUrl) : '';
 
@@ -90,11 +136,9 @@ export function SpotifyTrackAudioPlayer({
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        audioManager.stop(playerId.current);
       } else {
-        audioRef.current.play().catch(err => {
-          console.error('Failed to play audio:', err);
-          setAudioError('Failed to play audio');
-        });
+        audioManager.play(audioRef.current, playerId.current);
       }
     }
   };
@@ -139,8 +183,18 @@ export function SpotifyTrackAudioPlayer({
       setDuration(audio.duration);
     };
 
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
+    const handlePlay = () => {
+      setIsPlaying(true);
+      // Check if this player is still the current one
+      if (!audioManager.isCurrentPlayer(playerId.current)) {
+        setIsPlaying(false);
+      }
+    };
+    
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+    
     const handleError = () => {
       console.error('Audio error:', audio.error);
       setAudioError('Failed to load audio');
@@ -160,6 +214,13 @@ export function SpotifyTrackAudioPlayer({
       audio.removeEventListener('error', handleError);
     };
   }, [duration, currentTime]);
+
+  // Cleanup when component unmounts
+  useEffect(() => {
+    return () => {
+      audioManager.stop(playerId.current);
+    };
+  }, []);
 
   if (loading || isLoadingPreview) {
     return (
