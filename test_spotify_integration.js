@@ -6,12 +6,12 @@ async function testSpotifyAPI() {
   console.log('🎵 Testing Spotify API Integration...');
   
   // Check if environment variables are set
-  const clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET;
+  const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+  const clientSecret = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
   
   if (!clientId || !clientSecret) {
     console.error('❌ Spotify credentials not configured');
-    console.log('Please add REACT_APP_SPOTIFY_CLIENT_ID and REACT_APP_SPOTIFY_CLIENT_SECRET to your .env file');
+    console.log('Please add VITE_SPOTIFY_CLIENT_ID and VITE_SPOTIFY_CLIENT_SECRET to your .env file');
     return;
   }
   

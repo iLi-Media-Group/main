@@ -11,8 +11,8 @@ export function SpotifyTest() {
 
     try {
       // Test 1: Check credentials
-      if (!process.env.REACT_APP_SPOTIFY_CLIENT_ID || !process.env.REACT_APP_SPOTIFY_CLIENT_SECRET) {
-        setTestResult('❌ Spotify credentials not configured\nPlease add REACT_APP_SPOTIFY_CLIENT_ID and REACT_APP_SPOTIFY_CLIENT_SECRET to your .env file');
+      if (!import.meta.env.VITE_SPOTIFY_CLIENT_ID || !import.meta.env.VITE_SPOTIFY_CLIENT_SECRET) {
+        setTestResult('❌ Spotify credentials not configured\nPlease add VITE_SPOTIFY_CLIENT_ID and VITE_SPOTIFY_CLIENT_SECRET to your .env file');
         return;
       }
 
