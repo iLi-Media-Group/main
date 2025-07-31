@@ -233,22 +233,27 @@ export function TrackUploadForm() {
 
   // Handle Spotify URL input
   const handleSpotifyUrlChange = (url: string) => {
+    console.log('[DEBUG] Spotify URL changed:', url);
     setSpotifyUrl(url);
     setSpotifyUrlError('');
     
     // Extract track ID from Spotify URL if valid
     const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
+    console.log('[DEBUG] Track ID match:', trackIdMatch);
     if (trackIdMatch) {
       const trackId = trackIdMatch[1];
+      console.log('[DEBUG] Extracted track ID:', trackId);
       // Set as manual Spotify data
-      setSpotifyTrack({
+      const spotifyData = {
         id: trackId,
         external_urls: { spotify: url },
         preview_url: null,
         name: 'Manual Spotify Link',
         artists: [{ name: 'Unknown Artist' }],
         duration_ms: 0
-      });
+      };
+      console.log('[DEBUG] Setting Spotify track data:', spotifyData);
+      setSpotifyTrack(spotifyData);
     } else if (url && !url.includes('open.spotify.com')) {
       setSpotifyUrlError('Please enter a valid Spotify track URL');
       setSpotifyTrack(null);
@@ -363,12 +368,14 @@ export function TrackUploadForm() {
       setUploadStatus('Saving track to database...');
       
       // Prepare Spotify data if available
+      console.log('[DEBUG] Spotify data check:', { spotifyTrack, spotifyUrl });
       const spotifyData = spotifyTrack ? {
         spotify_track_id: spotifyTrack.id,
         spotify_external_url: spotifyTrack.external_urls.spotify,
         spotify_search_attempted: true,
         spotify_last_searched: new Date().toISOString()
       } : {};
+      console.log('[DEBUG] Prepared Spotify data:', spotifyData);
       
       // Insert or update track in DB
       const { error: trackError } = await supabase
