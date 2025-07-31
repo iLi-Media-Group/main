@@ -45,4 +45,40 @@ SELECT
   file_size_limit,
   allowed_mime_types
 FROM storage.buckets 
-WHERE name = 'track-images'; 
+WHERE name = 'track-images';
+
+-- Check all files in track-images bucket
+SELECT 
+  name,
+  bucket_id,
+  owner,
+  created_at,
+  updated_at
+FROM storage.objects 
+WHERE bucket_id = 'track-images'
+ORDER BY created_at DESC
+LIMIT 10;
+
+-- Check if there are any files with the user's ID in the path
+SELECT 
+  name,
+  bucket_id,
+  owner,
+  created_at,
+  updated_at
+FROM storage.objects 
+WHERE name LIKE '%83e21f94-aced-452a-bafb-6eb9629e3b18%'
+ORDER BY created_at DESC;
+
+-- Check storage policies
+SELECT 
+  schemaname,
+  tablename,
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual
+FROM pg_policies 
+WHERE tablename = 'storage.objects'
+ORDER BY policyname; 

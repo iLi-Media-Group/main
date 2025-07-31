@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { spotifyAPI } from '../lib/spotify';
 
@@ -42,6 +42,9 @@ export function SpotifyTrackAudioPlayer({
   const [audioError, setAudioError] = useState<string | null>(null);
   const [spotifyPreviewUrl, setSpotifyPreviewUrl] = useState<string | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Determine which URL to use
   const spotifyUrl = track.spotify_external_url || '';
@@ -56,8 +59,12 @@ export function SpotifyTrackAudioPlayer({
       setIsLoadingPreview(true);
       spotifyAPI.getTrackById(spotifyTrackId)
         .then(trackData => {
+          console.log('Spotify track data:', trackData);
           if (trackData && trackData.preview_url) {
+            console.log('Setting Spotify preview URL:', trackData.preview_url);
             setSpotifyPreviewUrl(trackData.preview_url);
+          } else {
+            console.log('No preview URL available for Spotify track');
           }
         })
         .catch(err => {
@@ -71,22 +78,82 @@ export function SpotifyTrackAudioPlayer({
 
   // Determine which audio source to use
   const audioSrc = spotifyPreviewUrl || mp3Url;
+  console.log('Audio source:', { spotifyPreviewUrl, mp3Url, finalSrc: audioSrc });
 
   const handlePlayPause = () => {
-    setIsPlaying(!isPlaying);
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(err => {
+          console.error('Failed to play audio:', err);
+          setAudioError('Failed to play audio');
+        });
+      }
+    }
   };
 
   const handleMute = () => {
-    setIsMuted(!isMuted);
+    if (audioRef.current) {
+      audioRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
   };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const bounds = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - bounds.left;
-    const width = bounds.width;
-    const percentage = x / width;
-    setProgress(percentage * 100);
+    if (audioRef.current && duration > 0) {
+      const bounds = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - bounds.left;
+      const width = bounds.width;
+      const percentage = x / width;
+      const newTime = percentage * duration;
+      audioRef.current.currentTime = newTime;
+      setProgress(percentage * 100);
+    }
   };
+
+  // Update progress and time
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      if (duration > 0) {
+        const progressPercent = (currentTime / duration) * 100;
+        setProgress(progressPercent);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+      updateProgress();
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleError = () => {
+      console.error('Audio error:', audio.error);
+      setAudioError('Failed to load audio');
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+    audio.addEventListener('error', handleError);
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
+      audio.removeEventListener('error', handleError);
+    };
+  }, [duration, currentTime]);
 
   if (loading || isLoadingPreview) {
     return (
@@ -100,6 +167,7 @@ export function SpotifyTrackAudioPlayer({
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
+        {audioError && <p className="text-red-300 text-xs mt-1">{audioError}</p>}
       </div>
     );
   }
@@ -110,7 +178,8 @@ export function SpotifyTrackAudioPlayer({
       <div className="flex items-center space-x-4 bg-white/5 backdrop-blur-sm rounded-lg p-3">
         <button
           onClick={handlePlayPause}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
+          disabled={!audioSrc}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPlaying ? (
             <Pause className="w-5 h-5 text-white" />
@@ -134,7 +203,8 @@ export function SpotifyTrackAudioPlayer({
         
         <button
           onClick={handleMute}
-          className="text-gray-400 hover:text-white transition-colors"
+          disabled={!audioSrc}
+          className="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
         >
           {isMuted ? (
             <VolumeX className="w-5 h-5" />
@@ -145,11 +215,10 @@ export function SpotifyTrackAudioPlayer({
         
         {/* Hidden audio element */}
         <audio 
+          ref={audioRef}
           src={audioSrc} 
           preload="metadata"
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onError={() => setAudioError('Failed to load audio')}
+          muted={isMuted}
         />
       </div>
 
@@ -159,6 +228,11 @@ export function SpotifyTrackAudioPlayer({
           <span>
             {spotifyPreviewUrl ? '🎵 Spotify Preview' : '📁 Uploaded MP3'}
           </span>
+          {audioSrc && (
+            <span className="text-xs text-gray-500">
+              {spotifyPreviewUrl ? 'Spotify' : 'MP3'} • {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
+            </span>
+          )}
         </div>
       )}
       
