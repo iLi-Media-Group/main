@@ -76,9 +76,15 @@ export function SpotifyTrackAudioPlayer({
     }
   }, [spotifyTrackId, track.use_spotify_preview]);
 
-  // Determine which audio source to use
-  const audioSrc = spotifyPreviewUrl || mp3Url;
-  console.log('Audio source:', { spotifyPreviewUrl, mp3Url, finalSrc: audioSrc });
+  // Determine which audio source to use - prioritize MP3 if available
+  const audioSrc = mp3Url || spotifyPreviewUrl;
+  console.log('Audio source:', { 
+    spotifyPreviewUrl, 
+    mp3Url, 
+    finalSrc: audioSrc,
+    hasMp3: !!mp3Url,
+    hasSpotify: !!spotifyPreviewUrl
+  });
 
   const handlePlayPause = () => {
     if (audioRef.current) {
@@ -168,6 +174,10 @@ export function SpotifyTrackAudioPlayer({
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
         {audioError && <p className="text-red-300 text-xs mt-1">{audioError}</p>}
+        <p className="text-red-300 text-xs mt-1">
+          MP3: {mp3Url ? 'Available' : 'Not available'} | 
+          Spotify: {spotifyPreviewUrl ? 'Available' : 'Not available'}
+        </p>
       </div>
     );
   }
@@ -180,6 +190,7 @@ export function SpotifyTrackAudioPlayer({
           onClick={handlePlayPause}
           disabled={!audioSrc}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={audioSrc ? 'Play/Pause' : 'No audio available'}
         >
           {isPlaying ? (
             <Pause className="w-5 h-5 text-white" />
