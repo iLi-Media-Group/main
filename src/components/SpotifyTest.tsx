@@ -18,7 +18,7 @@ export function SpotifyTest() {
 
       setTestResult(prev => prev + '✅ Spotify credentials found\n');
 
-      // Test 2: Direct API call to avoid CORS issues
+      // Test 2: Try direct API call first
       setTestResult(prev => prev + '🔄 Testing direct API call...\n');
       
       const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
@@ -27,54 +27,110 @@ export function SpotifyTest() {
       // Create the authorization header
       const authHeader = 'Basic ' + btoa(clientId + ':' + clientSecret);
 
-      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Authorization': authHeader
-        },
-        body: 'grant_type=client_credentials'
-      });
-
-      if (!tokenResponse.ok) {
-        throw new Error(`Token request failed: ${tokenResponse.status} - ${tokenResponse.statusText}`);
-      }
-
-      const tokenData = await tokenResponse.json();
-      setTestResult(prev => prev + '✅ Token request successful\n');
-
-      // Test 3: Search for a track
-      setTestResult(prev => prev + '🔍 Testing track search...\n');
-      
-      const searchResponse = await fetch(
-        'https://api.spotify.com/v1/search?q=Bohemian%20Rhapsody%20artist:Queen&type=track&limit=1&market=US',
-        {
+      try {
+        const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+          method: 'POST',
           headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`
-          }
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': authHeader
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        if (!tokenResponse.ok) {
+          throw new Error(`Token request failed: ${tokenResponse.status} - ${tokenResponse.statusText}`);
         }
-      );
 
-      if (!searchResponse.ok) {
-        throw new Error(`Search request failed: ${searchResponse.status} - ${searchResponse.statusText}`);
-      }
+        const tokenData = await tokenResponse.json();
+        setTestResult(prev => prev + '✅ Token request successful\n');
 
-      const searchData = await searchResponse.json();
-      const track = searchData.tracks?.items[0];
-      
-      if (track) {
-        setTestResult(prev => prev + `✅ Track search successful\n📊 Track found: ${track.name} by ${track.artists[0]?.name}\n`);
+        // Test 3: Search for a track
+        setTestResult(prev => prev + '🔍 Testing track search...\n');
         
-        if (track.preview_url) {
-          setTestResult(prev => prev + `🎵 Preview URL available: ${track.preview_url}\n`);
-        } else {
-          setTestResult(prev => prev + '⚠️ No preview URL available for this track\n');
-        }
-      } else {
-        setTestResult(prev => prev + '⚠️ No tracks found in search\n');
-      }
+        const searchResponse = await fetch(
+          'https://api.spotify.com/v1/search?q=Bohemian%20Rhapsody%20artist:Queen&type=track&limit=1&market=US',
+          {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`
+            }
+          }
+        );
 
-      setTestResult(prev => prev + '🎉 Spotify API integration test completed successfully!');
+        if (!searchResponse.ok) {
+          throw new Error(`Search request failed: ${searchResponse.status} - ${searchResponse.statusText}`);
+        }
+
+        const searchData = await searchResponse.json();
+        const track = searchData.tracks?.items[0];
+        
+        if (track) {
+          setTestResult(prev => prev + `✅ Track search successful\n📊 Track found: ${track.name} by ${track.artists[0]?.name}\n`);
+          
+          if (track.preview_url) {
+            setTestResult(prev => prev + `🎵 Preview URL available: ${track.preview_url}\n`);
+          } else {
+            setTestResult(prev => prev + '⚠️ No preview URL available for this track\n');
+          }
+        } else {
+          setTestResult(prev => prev + '⚠️ No tracks found in search\n');
+        }
+
+        setTestResult(prev => prev + '🎉 Spotify API integration test completed successfully!');
+
+      } catch (fetchError) {
+        // If direct API call fails, try with CORS proxy
+        setTestResult(prev => prev + '⚠️ Direct API call failed, trying CORS proxy...\n');
+        
+        const corsProxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const tokenResponse = await fetch(corsProxyUrl + 'https://accounts.spotify.com/api/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': authHeader,
+            'Origin': window.location.origin
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        if (!tokenResponse.ok) {
+          throw new Error(`CORS proxy token request failed: ${tokenResponse.status}`);
+        }
+
+        const tokenData = await tokenResponse.json();
+        setTestResult(prev => prev + '✅ CORS proxy token request successful\n');
+
+        // Search with CORS proxy
+        const searchResponse = await fetch(
+          corsProxyUrl + 'https://api.spotify.com/v1/search?q=Bohemian%20Rhapsody%20artist:Queen&type=track&limit=1&market=US',
+          {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Origin': window.location.origin
+            }
+          }
+        );
+
+        if (!searchResponse.ok) {
+          throw new Error(`CORS proxy search failed: ${searchResponse.status}`);
+        }
+
+        const searchData = await searchResponse.json();
+        const track = searchData.tracks?.items[0];
+        
+        if (track) {
+          setTestResult(prev => prev + `✅ CORS proxy search successful\n📊 Track found: ${track.name} by ${track.artists[0]?.name}\n`);
+          
+          if (track.preview_url) {
+            setTestResult(prev => prev + `🎵 Preview URL available: ${track.preview_url}\n`);
+          } else {
+            setTestResult(prev => prev + '⚠️ No preview URL available for this track\n');
+          }
+        } else {
+          setTestResult(prev => prev + '⚠️ No tracks found in search\n');
+        }
+
+        setTestResult(prev => prev + '🎉 Spotify API integration test completed successfully (via CORS proxy)!');
+      }
 
     } catch (error) {
       console.error('Spotify API test error:', error);
@@ -82,7 +138,8 @@ export function SpotifyTest() {
       
       // Provide helpful debugging info
       if (error.message.includes('Failed to fetch')) {
-        setTestResult(prev => prev + '\n💡 This might be a CORS issue. The Spotify API should work in production.\n');
+        setTestResult(prev => prev + '\n💡 This is a CORS issue in development. The Spotify API should work in production.\n');
+        setTestResult(prev => prev + '🌐 Try testing on your live site instead.\n');
       }
     } finally {
       setLoading(false);
