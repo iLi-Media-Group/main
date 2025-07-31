@@ -48,6 +48,7 @@ interface FormData {
   isSyncOnly: boolean;
   stemsUrl: string;
   splitSheetUrl: string;
+  spotifyUrl: string;
 }
 
 export function TrackUploadForm() {
@@ -111,8 +112,15 @@ export function TrackUploadForm() {
 
   // Spotify integration state
   const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
-  const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [spotifyUrl, setSpotifyUrl] = useState(savedData?.spotifyUrl || '');
   const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
+
+  // Process saved Spotify URL on load
+  useEffect(() => {
+    if (savedData?.spotifyUrl) {
+      handleSpotifyUrlChange(savedData.spotifyUrl);
+    }
+  }, []);
 
   // Handle success modal countdown
   useEffect(() => {
@@ -173,7 +181,8 @@ export function TrackUploadForm() {
       hasVocals,
       isSyncOnly,
       stemsUrl,
-      splitSheetUrl
+      splitSheetUrl,
+      spotifyUrl
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [
@@ -190,7 +199,8 @@ export function TrackUploadForm() {
     hasVocals,
     isSyncOnly,
     stemsUrl,
-    splitSheetUrl
+    splitSheetUrl,
+    spotifyUrl
   ]);
 
   const clearSavedFormData = () => {
