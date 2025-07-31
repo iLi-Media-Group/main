@@ -20,6 +20,7 @@ import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
 import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { SpotifyTest } from './SpotifyTest';
 
 interface UserStats {
   total_clients: number;
@@ -173,7 +174,7 @@ function AdminDashboard() {
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'producer_applications' | 'services'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1398,6 +1399,7 @@ if (subscription.price_id) {
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
+            { id: 'spotify_test', label: 'Spotify Test', icon: <Music className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -1955,6 +1957,14 @@ if (subscription.price_id) {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Spotify Test Section */}
+        {activeTab === 'spotify_test' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">Spotify API Integration Test</h2>
+            <SpotifyTest />
           </div>
         )}
 

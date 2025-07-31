@@ -1,103 +1,13 @@
--- Fix RLS policies for discounts table to allow admin access
+-- Fix Discounts RLS Policies
+-- This script fixes the Row Level Security policies for the discounts table
 
--- First, enable RLS on the discounts table if not already enabled
-ALTER TABLE discounts ENABLE ROW LEVEL SECURITY;
+-- ============================================
+-- 1. CHECK CURRENT RLS POLICIES
+-- ============================================
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "Enable read access for all users" ON discounts;
-DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON discounts;
-DROP POLICY IF EXISTS "Enable update for users based on email" ON discounts;
-DROP POLICY IF EXISTS "Enable delete for users based on email" ON discounts;
-DROP POLICY IF EXISTS "Enable all access for admins" ON discounts;
-
--- Create comprehensive RLS policies for discounts table
-
--- 1. Allow all authenticated users to read active discounts
-CREATE POLICY "Enable read access for all users" ON discounts
-    FOR SELECT
-    USING (is_active = true);
-
--- 2. Allow admin users to read all discounts (including inactive ones)
-CREATE POLICY "Enable read access for admins" ON discounts
-    FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (
-                profiles.account_type = 'admin' 
-                OR profiles.account_type = 'admin,producer'
-                OR profiles.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com')
-            )
-        )
-    );
-
--- 3. Allow admin users to insert discounts
-CREATE POLICY "Enable insert for admins" ON discounts
-    FOR INSERT
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (
-                profiles.account_type = 'admin' 
-                OR profiles.account_type = 'admin,producer'
-                OR profiles.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com')
-            )
-        )
-    );
-
--- 4. Allow admin users to update discounts
-CREATE POLICY "Enable update for admins" ON discounts
-    FOR UPDATE
-    USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (
-                profiles.account_type = 'admin' 
-                OR profiles.account_type = 'admin,producer'
-                OR profiles.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com')
-            )
-        )
-    )
-    WITH CHECK (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (
-                profiles.account_type = 'admin' 
-                OR profiles.account_type = 'admin,producer'
-                OR profiles.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com')
-            )
-        )
-    );
-
--- 5. Allow admin users to delete discounts
-CREATE POLICY "Enable delete for admins" ON discounts
-    FOR DELETE
-    USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE profiles.id = auth.uid() 
-            AND (
-                profiles.account_type = 'admin' 
-                OR profiles.account_type = 'admin,producer'
-                OR profiles.email IN ('knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com')
-            )
-        )
-    );
-
--- Test the policies
-SELECT 'Testing RLS policies for discounts table:' as info;
-
--- Check if current user can read discounts
-SELECT 'Current user can read discounts:' as test;
-SELECT COUNT(*) as discount_count FROM discounts;
-
--- Show all policies on discounts table
-SELECT 'Current policies on discounts table:' as info;
-SELECT 
+SELECT
+    'Current RLS policies for discounts table:' as info;
+SELECT
     schemaname,
     tablename,
     policyname,
@@ -106,5 +16,143 @@ SELECT
     cmd,
     qual,
     with_check
-FROM pg_policies 
-WHERE tablename = 'discounts'; 
+FROM pg_policies
+WHERE tablename = 'discounts';
+
+-- ============================================
+-- 2. DROP EXISTING POLICIES
+-- ============================================
+
+-- Drop existing policies to recreate them properly
+DROP POLICY IF EXISTS "Allow admin access to discounts" ON discounts;
+DROP POLICY IF EXISTS "Allow read access to active discounts" ON discounts;
+
+-- ============================================
+-- 3. CREATE PROPER RLS POLICIES
+-- ============================================
+
+-- Enable RLS on discounts table
+ALTER TABLE discounts ENABLE ROW LEVEL SECURITY;
+
+-- Policy for admins to manage discounts (INSERT, UPDATE, DELETE)
+CREATE POLICY "Allow admin access to discounts" ON discounts
+    FOR ALL USING (
+        auth.uid() IN (
+            SELECT id FROM profiles 
+            WHERE account_type IN ('admin', 'admin,producer')
+        )
+    );
+
+-- Policy for all authenticated users to read active discounts
+CREATE POLICY "Allow read access to active discounts" ON discounts
+    FOR SELECT USING (
+        is_active = true 
+        AND CURRENT_DATE BETWEEN start_date AND end_date
+    );
+
+-- Policy for authenticated users to read all discounts (for admin dashboard)
+CREATE POLICY "Allow authenticated users to read discounts" ON discounts
+    FOR SELECT USING (
+        auth.role() = 'authenticated'
+    );
+
+-- ============================================
+-- 4. VERIFY THE POLICIES
+-- ============================================
+
+SELECT
+    'Updated RLS policies for discounts table:' as info;
+SELECT
+    schemaname,
+    tablename,
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual,
+    with_check
+FROM pg_policies
+WHERE tablename = 'discounts';
+
+-- ============================================
+-- 5. CHECK USER PERMISSIONS
+-- ============================================
+
+SELECT
+    'Current user permissions check:' as info;
+SELECT
+    'Current user ID' as info,
+    auth.uid() as user_id;
+
+-- Check if current user is admin
+SELECT
+    'Admin check for current user:' as info;
+SELECT
+    id,
+    email,
+    account_type,
+    CASE
+        WHEN account_type IN ('admin', 'admin,producer') THEN '✅ IS ADMIN'
+        ELSE '❌ NOT ADMIN'
+    END as admin_status
+FROM profiles
+WHERE id = auth.uid();
+
+-- ============================================
+-- 6. TEST INSERT PERMISSION
+-- ============================================
+
+-- Test if we can insert a discount (this will show if the policy works)
+SELECT
+    'Testing insert permission:' as info;
+SELECT
+    CASE
+        WHEN auth.uid() IN (
+            SELECT id FROM profiles 
+            WHERE account_type IN ('admin', 'admin,producer')
+        ) THEN '✅ CAN INSERT DISCOUNTS'
+        ELSE '❌ CANNOT INSERT DISCOUNTS'
+    END as insert_permission;
+
+-- ============================================
+-- 7. SUMMARY
+-- ============================================
+
+SELECT
+    'Summary:' as info;
+SELECT
+    'RLS enabled on discounts' as item,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM pg_tables 
+            WHERE tablename = 'discounts' 
+            AND rowsecurity = true
+        ) THEN '✅ YES'
+        ELSE '❌ NO'
+    END as status
+
+UNION ALL
+
+SELECT
+    'Admin policies created' as item,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'discounts' 
+            AND policyname = 'Allow admin access to discounts'
+        ) THEN '✅ YES'
+        ELSE '❌ NO'
+    END as status
+
+UNION ALL
+
+SELECT
+    'Read policies created' as item,
+    CASE 
+        WHEN EXISTS (
+            SELECT 1 FROM pg_policies 
+            WHERE tablename = 'discounts' 
+            AND policyname IN ('Allow read access to active discounts', 'Allow authenticated users to read discounts')
+        ) THEN '✅ YES'
+        ELSE '❌ NO'
+    END as status; 

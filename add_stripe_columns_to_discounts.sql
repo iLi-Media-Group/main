@@ -1,65 +1,12 @@
--- Add Stripe-related columns to discounts table
--- This script adds the missing columns needed for Stripe integration
+-- Add Stripe Columns to Discounts Table
+-- This script adds the missing Stripe-related columns to the discounts table
 
 -- ============================================
--- 1. ADD STRIPE COUPON COLUMNS
+-- 1. CHECK CURRENT DISCOUNTS TABLE STRUCTURE
 -- ============================================
 
--- Add stripe_coupon_id column if it doesn't exist
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'discounts' AND column_name = 'stripe_coupon_id'
-    ) THEN
-        ALTER TABLE discounts ADD COLUMN stripe_coupon_id TEXT;
-    END IF;
-END $$;
-
--- Add stripe_coupon_created_at column if it doesn't exist
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'discounts' AND column_name = 'stripe_coupon_created_at'
-    ) THEN
-        ALTER TABLE discounts ADD COLUMN stripe_coupon_created_at TIMESTAMP WITH TIME ZONE;
-    END IF;
-END $$;
-
--- ============================================
--- 2. ADD STRIPE PROMOTION CODE COLUMNS
--- ============================================
-
--- Add stripe_promotion_code_id column if it doesn't exist
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'discounts' AND column_name = 'stripe_promotion_code_id'
-    ) THEN
-        ALTER TABLE discounts ADD COLUMN stripe_promotion_code_id TEXT;
-    END IF;
-END $$;
-
--- Add stripe_promotion_code_created_at column if it doesn't exist
-DO $$ 
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns 
-        WHERE table_name = 'discounts' AND column_name = 'stripe_promotion_code_created_at'
-    ) THEN
-        ALTER TABLE discounts ADD COLUMN stripe_promotion_code_created_at TIMESTAMP WITH TIME ZONE;
-    END IF;
-END $$;
-
--- ============================================
--- 3. VERIFY COLUMNS ADDED
--- ============================================
-
--- Show updated table structure
 SELECT
-    'Updated discounts table structure:' as info;
+    'Current discounts table columns:' as info;
 SELECT
     column_name,
     data_type,
@@ -70,27 +17,89 @@ WHERE table_name = 'discounts'
 ORDER BY ordinal_position;
 
 -- ============================================
--- 4. SHOW CURRENT STRIPE INTEGRATION STATUS
+-- 2. ADD MISSING STRIPE COLUMNS
 -- ============================================
 
--- Show current Stripe integration status for all discounts
+-- Add stripe_coupon_id column
+ALTER TABLE discounts 
+ADD COLUMN IF NOT EXISTS stripe_coupon_id TEXT;
+
+-- Add stripe_coupon_created_at column
+ALTER TABLE discounts 
+ADD COLUMN IF NOT EXISTS stripe_coupon_created_at TIMESTAMP WITH TIME ZONE;
+
+-- Add stripe_promotion_code_id column (for the promotion code ID)
+ALTER TABLE discounts 
+ADD COLUMN IF NOT EXISTS stripe_promotion_code_id TEXT;
+
+-- Add stripe_promotion_code_created_at column
+ALTER TABLE discounts 
+ADD COLUMN IF NOT EXISTS stripe_promotion_code_created_at TIMESTAMP WITH TIME ZONE;
+
+-- ============================================
+-- 3. VERIFY THE NEW COLUMNS
+-- ============================================
+
 SELECT
-    'Current Stripe integration status:' as info;
+    'Updated discounts table columns:' as info;
+SELECT
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns
+WHERE table_name = 'discounts'
+ORDER BY ordinal_position;
+
+-- ============================================
+-- 4. CHECK DISCOUNTS WITH STRIPE DATA
+-- ============================================
+
+SELECT
+    'All discounts with new Stripe columns:' as info;
 SELECT
     id,
     name,
     promotion_code,
-    discount_percent,
     stripe_coupon_id,
+    stripe_coupon_created_at,
     stripe_promotion_code_id,
-    CASE 
-        WHEN stripe_coupon_id IS NOT NULL AND stripe_promotion_code_id IS NOT NULL 
-        THEN '✅ FULLY INTEGRATED'
-        WHEN stripe_coupon_id IS NOT NULL 
-        THEN '⚠️ HAS COUPON, NEEDS PROMOTION CODE'
-        WHEN discount_type = 'promotion_code' AND promotion_code IS NOT NULL
-        THEN '❌ NEEDS STRIPE INTEGRATION'
-        ELSE 'ℹ️ AUTOMATIC DISCOUNT (NO STRIPE NEEDED)'
-    END as integration_status
+    stripe_promotion_code_created_at,
+    created_at
 FROM discounts
-ORDER BY created_at DESC; 
+ORDER BY created_at DESC;
+
+-- ============================================
+-- 5. SUMMARY
+-- ============================================
+
+SELECT
+    'Summary:' as info;
+SELECT
+    'Total discounts' as category,
+    COUNT(*) as count
+FROM discounts
+
+UNION ALL
+
+SELECT
+    'Discounts with promotion codes' as category,
+    COUNT(*) as count
+FROM discounts
+WHERE promotion_code IS NOT NULL AND promotion_code != ''
+
+UNION ALL
+
+SELECT
+    'Discounts with Stripe coupon IDs' as category,
+    COUNT(*) as count
+FROM discounts
+WHERE stripe_coupon_id IS NOT NULL
+
+UNION ALL
+
+SELECT
+    'Discounts with Stripe promotion code IDs' as category,
+    COUNT(*) as count
+FROM discounts
+WHERE stripe_promotion_code_id IS NOT NULL; 
