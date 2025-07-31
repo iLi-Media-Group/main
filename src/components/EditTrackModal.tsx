@@ -197,6 +197,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const spotifyData = spotifyUrl ? {
         spotify_track_id: spotifyUrl.match(/track\/([a-zA-Z0-9]+)/)?.[1] || null,
         spotify_external_url: spotifyUrl,
+        use_spotify_preview: true,
         spotify_search_attempted: true,
         spotify_last_searched: new Date().toISOString()
       } : {};

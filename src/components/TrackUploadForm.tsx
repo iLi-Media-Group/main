@@ -398,6 +398,7 @@ export function TrackUploadForm() {
           spotifyData = {
             spotify_track_id: trackIdMatch[1],
             spotify_external_url: spotifyUrl,
+            use_spotify_preview: true,
             spotify_search_attempted: true,
             spotify_last_searched: new Date().toISOString()
           };
@@ -406,6 +407,7 @@ export function TrackUploadForm() {
           // If no track ID, just save the URL as external_url
           spotifyData = {
             spotify_external_url: spotifyUrl,
+            use_spotify_preview: true,
             spotify_search_attempted: true,
             spotify_last_searched: new Date().toISOString()
           };

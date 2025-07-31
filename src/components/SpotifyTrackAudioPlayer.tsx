@@ -53,9 +53,9 @@ export function SpotifyTrackAudioPlayer({
   // Extract Spotify track ID if we have a URL
   const spotifyTrackId = spotifyUrl ? extractSpotifyId(spotifyUrl) : '';
 
-  // Fetch Spotify preview URL if we have a track ID
+  // Fetch Spotify preview URL if we have a track ID and use_spotify_preview is true
   useEffect(() => {
-    if (spotifyTrackId) {
+    if (spotifyTrackId && track.use_spotify_preview !== false) {
       setIsLoadingPreview(true);
       spotifyAPI.getTrackById(spotifyTrackId)
         .then(trackData => {
@@ -74,7 +74,7 @@ export function SpotifyTrackAudioPlayer({
           setIsLoadingPreview(false);
         });
     }
-  }, [spotifyTrackId]);
+  }, [spotifyTrackId, track.use_spotify_preview]);
 
   // Determine which audio source to use
   const audioSrc = spotifyPreviewUrl || mp3Url;
