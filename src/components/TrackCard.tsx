@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AudioPlayer } from './AudioPlayer';
 import { Track } from '../types';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic } from 'lucide-react';
 import { supabase } from '../lib/supabase';

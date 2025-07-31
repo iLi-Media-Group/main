@@ -19,7 +19,7 @@ import { AudioPlayer } from './SpotifyTrackAudioPlayer';
 
 // Component to handle signed URL generation for track audio with Spotify support
 function TrackAudioPlayer({ track }: { track: Track }) {
-  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
 
   return (
     <AudioPlayer
@@ -83,7 +83,7 @@ interface Track {
   moods?: string[];
   mediaUsage?: string[];
   bpm: number;
-  audio_url: string;
+  audioUrl: string;
   image_url: string;
   created_at: string;
   has_vocals: boolean;
@@ -343,7 +343,7 @@ export function ProducerDashboard() {
           moods,
           media_usage,
           bpm,
-          audio_url,
+          audioUrl: audio_url,
           image_url,
           created_at,
           has_vocals,
@@ -1056,8 +1056,8 @@ export function ProducerDashboard() {
                       </div>
                       <div className="w-64 flex-shrink-0">
                         <div className="mb-3">
-                            {/* Audio Player with debug warning if audio_url is missing or incorrect */}
-                            {(!track.audio_url || !track.audio_url.endsWith('audio.mp3')) && (
+                                      {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+          {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
                               <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
                                 Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
                               </div>
