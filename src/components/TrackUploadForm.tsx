@@ -327,60 +327,60 @@ export function TrackUploadForm() {
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
         setUploadStatus('Uploading image file...');
-        const imagePath = await uploadFile(
+        const imageSignedUrl = await uploadFile(
           imageFile,
           'track-images',
           undefined,
           `${user.id}/${title}`,
           'cover.jpg'
         );
-        console.log('[DEBUG] Uploaded image file path:', imagePath);
-        imageUrl = imagePath; // Store the file path, not URL
+        console.log('[DEBUG] Uploaded image signed URL:', imageSignedUrl);
+        imageUrl = imageSignedUrl; // Store the signed URL
       }
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
         setUploadStatus('Uploading split sheet...');
-        const splitSheetPath = await uploadFile(
+        const splitSheetSignedUrl = await uploadFile(
           splitSheetFile,
           'split-sheets',
           undefined,
           `${user.id}/${title}`,
           'split_sheet.pdf'
         );
-        splitSheetUploadedUrl = `${user.id}/${title}/split_sheet.pdf`;
+        splitSheetUploadedUrl = splitSheetSignedUrl;
         setSplitSheetUrl(splitSheetUploadedUrl);
-        console.log('[DEBUG] Uploaded split sheet file path:', splitSheetUploadedUrl);
+        console.log('[DEBUG] Uploaded split sheet signed URL:', splitSheetUploadedUrl);
       }
 
       // --- New logic for trackouts and stems ---
       let trackoutsStoragePath = trackoutsUrl;
       if (trackoutsFile) {
         setUploadStatus('Uploading trackouts file...');
-        const trackoutsPath = await uploadFile(
+        const trackoutsSignedUrl = await uploadFile(
           trackoutsFile,
           'trackouts',
           undefined,
           `${user.id}/${title}`,
           'trackouts.zip'
         );
-        trackoutsStoragePath = `${user.id}/${title}/trackouts.zip`;
+        trackoutsStoragePath = trackoutsSignedUrl;
         setTrackoutsUrl(trackoutsStoragePath);
-        console.log('[DEBUG] Uploaded trackouts file path:', trackoutsStoragePath);
+        console.log('[DEBUG] Uploaded trackouts signed URL:', trackoutsStoragePath);
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
         setUploadStatus('Uploading stems file...');
-        const stemsPath = await uploadFile(
+        const stemsSignedUrl = await uploadFile(
           stemsFile,
           'stems',
           undefined,
           `${user.id}/${title}`,
           'stems.zip'
         );
-        stemsStoragePath = `${user.id}/${title}/stems.zip`;
+        stemsStoragePath = stemsSignedUrl;
         setStemsUrl(stemsStoragePath);
-        console.log('[DEBUG] Uploaded stems file path:', stemsStoragePath);
+        console.log('[DEBUG] Uploaded stems signed URL:', stemsStoragePath);
       }
       // --- End new logic ---
 
