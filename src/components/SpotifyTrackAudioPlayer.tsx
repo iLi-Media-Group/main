@@ -36,9 +36,18 @@ export function SpotifyTrackAudioPlayer({
 
   // Check if we should use Spotify preview
   useEffect(() => {
+    console.log('🎵 Track data:', {
+      id: track.id,
+      title: track.title,
+      spotify_track_id: track.spotify_track_id,
+      spotify_external_url: track.spotify_external_url,
+      use_spotify_preview: track.use_spotify_preview
+    });
+    
     // Only use Spotify if we have a track ID (can get preview URL)
     // For external URLs without track ID (like albums), we can't get preview
     const shouldUseSpotify = track.spotify_track_id && track.use_spotify_preview !== false;
+    console.log('🎵 Should use Spotify:', shouldUseSpotify);
     setUseSpotify(!!shouldUseSpotify);
   }, [track.spotify_track_id, track.spotify_external_url, track.use_spotify_preview]);
 
@@ -49,17 +58,21 @@ export function SpotifyTrackAudioPlayer({
 
       // If we have a track ID, try to get preview URL
       if (track.spotify_track_id) {
+        console.log('🔍 Fetching Spotify preview for track ID:', track.spotify_track_id);
         setSpotifyLoading(true);
         try {
           const spotifyTrack = await spotifyAPI.getTrackById(track.spotify_track_id);
+          console.log('🎵 Spotify track result:', spotifyTrack);
           if (spotifyTrack && spotifyTrack.preview_url) {
+            console.log('✅ Setting Spotify preview URL:', spotifyTrack.preview_url);
             setSpotifyPreviewUrl(spotifyTrack.preview_url);
           } else {
+            console.log('❌ No preview URL available, falling back to MP3');
             // Fall back to MP3 if no Spotify preview
             setUseSpotify(false);
           }
         } catch (error) {
-          console.error('Failed to fetch Spotify preview:', error);
+          console.error('❌ Failed to fetch Spotify preview:', error);
           setUseSpotify(false);
         } finally {
           setSpotifyLoading(false);
@@ -67,6 +80,7 @@ export function SpotifyTrackAudioPlayer({
       } else if (track.spotify_external_url) {
         // If we have external URL but no track ID, we can't get preview
         // But we can still show the toggle and let user know
+        console.log('📁 External URL without track ID, using MP3');
         setUseSpotify(false);
       }
     };
@@ -77,6 +91,12 @@ export function SpotifyTrackAudioPlayer({
   // Determine which audio source to use
   // For external URLs without track ID, we can't get preview, so always use MP3
   const audioSrc = useSpotify && spotifyPreviewUrl ? spotifyPreviewUrl : (signedUrl || '');
+  console.log('🎵 Audio source:', {
+    useSpotify,
+    spotifyPreviewUrl,
+    signedUrl,
+    finalAudioSrc: audioSrc
+  });
   const isLoading = (useSpotify && spotifyLoading) || (!useSpotify && loading);
   const hasError = !useSpotify && error;
 
