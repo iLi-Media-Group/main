@@ -48,7 +48,6 @@ interface FormData {
   isSyncOnly: boolean;
   stemsUrl: string;
   splitSheetUrl: string;
-  spotifyUrl: string;
   audioFileName: string;
 }
 
@@ -112,17 +111,7 @@ export function TrackUploadForm() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Spotify integration state
-  const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
-  const [spotifyUrl, setSpotifyUrl] = useState(savedData?.spotifyUrl || '');
-  const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
 
-  // Process saved Spotify URL on load
-  useEffect(() => {
-    if (savedData?.spotifyUrl) {
-      handleSpotifyUrlChange(savedData.spotifyUrl);
-    }
-  }, []);
 
   // Handle success modal countdown
   useEffect(() => {
@@ -184,7 +173,6 @@ export function TrackUploadForm() {
       isSyncOnly,
       stemsUrl,
       splitSheetUrl,
-      spotifyUrl,
       audioFileName
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
@@ -203,7 +191,6 @@ export function TrackUploadForm() {
     isSyncOnly,
     stemsUrl,
     splitSheetUrl,
-    spotifyUrl,
     audioFileName
   ]);
 
@@ -247,34 +234,7 @@ export function TrackUploadForm() {
   };
 
   // Handle Spotify URL input
-  const handleSpotifyUrlChange = (url: string) => {
-    setSpotifyUrl(url);
-    setSpotifyUrlError('');
-    
-    // Extract track ID from Spotify URL if valid
-    const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
-    console.log('[DEBUG] Track ID match:', trackIdMatch);
-    if (trackIdMatch) {
-      const trackId = trackIdMatch[1];
-      console.log('[DEBUG] Extracted track ID:', trackId);
-      // Set as manual Spotify data
-      const spotifyData = {
-        id: trackId,
-        external_urls: { spotify: url },
-        preview_url: null,
-        name: 'Manual Spotify Link',
-        artists: [{ name: 'Unknown Artist' }],
-        duration_ms: 0
-      };
-      console.log('[DEBUG] Setting Spotify track data:', spotifyData);
-      setSpotifyTrack(spotifyData);
-    } else if (url && !url.includes('open.spotify.com')) {
-      setSpotifyUrlError('Please enter a valid Spotify track URL');
-      setSpotifyTrack(null);
-    } else if (url) {
-      setSpotifyTrack(null);
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     alert('Submit function called');
@@ -387,33 +347,7 @@ export function TrackUploadForm() {
       setUploadStatus('Saving track to database...');
       
       // Prepare Spotify data if available
-      let spotifyData = {};
-      
-      // Always try to extract from spotifyUrl if it exists
-      alert('Spotify URL: ' + spotifyUrl);
-      if (spotifyUrl && spotifyUrl.trim()) {
-        // Try to extract track ID first
-        let trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
-        if (trackIdMatch) {
-          spotifyData = {
-            spotify_track_id: trackIdMatch[1],
-            spotify_external_url: spotifyUrl,
-            use_spotify_preview: true,
-            spotify_search_attempted: true,
-            spotify_last_searched: new Date().toISOString()
-          };
-          alert('Spotify TRACK data prepared: ' + JSON.stringify(spotifyData));
-        } else {
-          // If no track ID, just save the URL as external_url
-          spotifyData = {
-            spotify_external_url: spotifyUrl,
-            use_spotify_preview: true,
-            spotify_search_attempted: true,
-            spotify_last_searched: new Date().toISOString()
-          };
-          alert('Spotify URL data prepared (no track ID): ' + JSON.stringify(spotifyData));
-        }
-      }
+
       
       // Insert or update track in DB
       const insertData = {
@@ -440,8 +374,7 @@ export function TrackUploadForm() {
         explicit_lyrics: isCleanVersion ? false : explicitLyrics,
         clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        ...spotifyData // Include Spotify data if available
+        updated_at: new Date().toISOString()
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
@@ -730,48 +663,7 @@ export function TrackUploadForm() {
                   required
                 />
                 
-                {/* Spotify URL Integration */}
-                <div className="mt-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Spotify Track URL (Optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={spotifyUrl}
-                      onChange={(e) => handleSpotifyUrlChange(e.target.value)}
-                      placeholder="https://open.spotify.com/track/..."
-                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
-                      disabled={isSubmitting}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Paste your Spotify track URL to link it to this upload
-                    </p>
-                  </div>
-                  
-                  {spotifyUrlError && (
-                    <p className="text-red-400 text-xs mt-2">{spotifyUrlError}</p>
-                  )}
-                  
-                  {spotifyTrack && (
-                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-green-400 font-medium">Spotify Link Added</h4>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSpotifyTrack(null);
-                            setSpotifyUrl('');
-                          }}
-                          className="text-gray-400 hover:text-white text-sm"
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <p className="text-white text-sm">Spotify track link added successfully</p>
-                    </div>
-                  )}
-                </div>
+
               </div>
 
               <div>
