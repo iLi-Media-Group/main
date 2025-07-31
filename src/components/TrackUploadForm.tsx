@@ -249,6 +249,8 @@ export function TrackUploadForm() {
   // Handle Spotify URL input
   const handleSpotifyUrlChange = (url: string) => {
     console.log('[DEBUG] Spotify URL changed:', url);
+    console.log('[DEBUG] URL type:', typeof url);
+    console.log('[DEBUG] URL length:', url?.length);
     setSpotifyUrl(url);
     setSpotifyUrlError('');
     
@@ -389,6 +391,9 @@ export function TrackUploadForm() {
 
       setUploadStatus('Saving track to database...');
       console.log('[DEBUG] About to process Spotify data');
+      console.log('[DEBUG] Spotify URL value:', spotifyUrl);
+      console.log('[DEBUG] Spotify URL length:', spotifyUrl?.length);
+      console.log('[DEBUG] Spotify URL includes spotify:', spotifyUrl?.includes('spotify'));
       
       // Prepare Spotify data if available
       console.log('[DEBUG] Spotify data check:', { spotifyTrack, spotifyUrl });
@@ -414,6 +419,8 @@ export function TrackUploadForm() {
         }
       }
       console.log('[DEBUG] Prepared Spotify data:', spotifyData);
+      console.log('[DEBUG] Spotify data keys:', Object.keys(spotifyData));
+      console.log('[DEBUG] Spotify data empty?', Object.keys(spotifyData).length === 0);
       
       // Insert or update track in DB
       const insertData = {
