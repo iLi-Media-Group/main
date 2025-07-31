@@ -184,6 +184,7 @@ const getPaymentTermsDisplay = (paymentTerms: string): string => {
 };
 
 export function ProducerDashboard() {
+  console.log('🎵 ProducerDashboard component loaded');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

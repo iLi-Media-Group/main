@@ -72,6 +72,7 @@ import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
 
 const App = () => {
+  console.log('🚀 App component loaded');
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const { user, accountType } = useAuth();
