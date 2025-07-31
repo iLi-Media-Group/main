@@ -114,6 +114,8 @@ export function TrackUploadForm() {
   const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
   const [spotifySearchError, setSpotifySearchError] = useState<string>('');
   const [useSpotifyPreview, setUseSpotifyPreview] = useState(false);
+  const [spotifyUrl, setSpotifyUrl] = useState('');
+  const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
 
   // Handle success modal countdown
   useEffect(() => {
@@ -258,6 +260,33 @@ export function TrackUploadForm() {
       setSpotifySearchError('Failed to search Spotify. Please try again.');
     } finally {
       setSpotifySearchLoading(false);
+    }
+  };
+
+  // Handle manual Spotify URL input
+  const handleSpotifyUrlChange = (url: string) => {
+    setSpotifyUrl(url);
+    setSpotifyUrlError('');
+    
+    // Extract track ID from Spotify URL if valid
+    const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
+    if (trackIdMatch) {
+      const trackId = trackIdMatch[1];
+      // Set as manual Spotify data
+      setSpotifyTrack({
+        id: trackId,
+        external_urls: { spotify: url },
+        preview_url: null, // Will be fetched if needed
+        name: 'Manual Spotify Link',
+        artists: [{ name: 'Unknown Artist' }],
+        duration_ms: 0
+      });
+      setUseSpotifyPreview(false); // Manual links don't have previews
+    } else if (url && !url.includes('open.spotify.com')) {
+      setSpotifyUrlError('Please enter a valid Spotify track URL');
+      setSpotifyTrack(null);
+    } else if (url) {
+      setSpotifyTrack(null);
     }
   };
 
@@ -660,38 +689,68 @@ export function TrackUploadForm() {
                 
                 {/* Spotify Search Integration */}
                 <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={handleSpotifySearch}
-                    disabled={spotifySearchLoading || isSubmitting || !title.trim()}
-                    className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors"
-                  >
-                    {spotifySearchLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Search className="w-4 h-4" />
-                    )}
-                    {spotifySearchLoading ? 'Searching...' : 'Search on Spotify'}
-                  </button>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={handleSpotifySearch}
+                      disabled={spotifySearchLoading || isSubmitting || !title.trim()}
+                      className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+                    >
+                      {spotifySearchLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      {spotifySearchLoading ? 'Searching...' : 'Search on Spotify'}
+                    </button>
+                    
+                    <span className="text-gray-400 text-sm self-center">or</span>
+                    
+                    <div className="flex-1">
+                      <input
+                        type="url"
+                        value={spotifyUrl}
+                        onChange={(e) => handleSpotifyUrlChange(e.target.value)}
+                        placeholder="Paste Spotify track URL"
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 text-sm"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
                   
                   {spotifySearchError && (
                     <p className="text-red-400 text-xs mt-2">{spotifySearchError}</p>
                   )}
                   
+                  {spotifyUrlError && (
+                    <p className="text-red-400 text-xs mt-2">{spotifyUrlError}</p>
+                  )}
+                  
                   {spotifyTrack && (
                     <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-green-400 font-medium">Spotify Track Found</h4>
+                        <h4 className="text-green-400 font-medium">
+                          {spotifyTrack.name === 'Manual Spotify Link' ? 'Spotify Link Added' : 'Spotify Track Found'}
+                        </h4>
                         <button
                           type="button"
-                          onClick={() => setSpotifyTrack(null)}
+                          onClick={() => {
+                            setSpotifyTrack(null);
+                            setSpotifyUrl('');
+                          }}
                           className="text-gray-400 hover:text-white text-sm"
                         >
                           ×
                         </button>
                       </div>
-                      <p className="text-white text-sm">{spotifyTrack.name} by {spotifyTrack.artists[0]?.name}</p>
-                      <p className="text-gray-400 text-xs">Duration: {Math.floor(spotifyTrack.duration_ms / 60000)}:{(spotifyTrack.duration_ms % 60000 / 1000).toFixed(0).padStart(2, '0')}</p>
+                      {spotifyTrack.name !== 'Manual Spotify Link' ? (
+                        <>
+                          <p className="text-white text-sm">{spotifyTrack.name} by {spotifyTrack.artists[0]?.name}</p>
+                          <p className="text-gray-400 text-xs">Duration: {Math.floor(spotifyTrack.duration_ms / 60000)}:{(spotifyTrack.duration_ms % 60000 / 1000).toFixed(0).padStart(2, '0')}</p>
+                        </>
+                      ) : (
+                        <p className="text-white text-sm">Manual Spotify track link added</p>
+                      )}
                       
                       {spotifyTrack.preview_url && (
                         <div className="mt-2">
