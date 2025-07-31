@@ -31,8 +31,8 @@ class SpotifyAPI {
   private tokenExpiry: number = 0;
 
   constructor() {
-    this.clientId = process.env.REACT_APP_SPOTIFY_CLIENT_ID || '';
-    this.clientSecret = process.env.REACT_APP_SPOTIFY_CLIENT_SECRET || '';
+    this.clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
+    this.clientSecret = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET || '';
     
     if (!this.clientId || !this.clientSecret) {
       console.warn('Spotify API credentials not configured');
