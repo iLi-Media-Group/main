@@ -5,19 +5,33 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
-import { AudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './AudioPlayer';
 
-// Component to handle signed URL generation for track audio with Spotify support
+// Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
   const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
   return (
     <AudioPlayer
-      track={track}
-      signedUrl={signedUrl}
-      loading={loading}
-      error={!!error}
-      showToggle={true}
+      src={signedUrl}
+      title={track.title}
+      size="md"
     />
   );
 }
