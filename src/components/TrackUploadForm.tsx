@@ -277,17 +277,15 @@ export function TrackUploadForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('[DEBUG] Submit function called');
+    alert('Submit function called');
     e.preventDefault();
-    console.log('[DEBUG] User:', user?.id);
-    console.log('[DEBUG] Audio file:', audioFile?.name);
     if (!user || !audioFile) {
-      console.log('[DEBUG] Submit blocked - missing user or audio file');
+      alert('Submit blocked - missing user or audio file');
       return;
     }
 
     try {
-      console.log('[DEBUG] Starting upload process');
+      alert('Starting upload process');
       setIsSubmitting(true);
       setIsUploading(true);
       setError('');
@@ -389,16 +387,11 @@ export function TrackUploadForm() {
       setUploadStatus('Saving track to database...');
       
       // Prepare Spotify data if available
-      console.log('SPOTIFY URL TEST:', spotifyUrl);
       let spotifyData = {};
-      if (spotifyTrack) {
-        spotifyData = {
-          spotify_track_id: spotifyTrack.id,
-          spotify_external_url: spotifyTrack.external_urls.spotify,
-          spotify_search_attempted: true,
-          spotify_last_searched: new Date().toISOString()
-        };
-      } else if (spotifyUrl) {
+      
+      // Always try to extract from spotifyUrl if it exists
+      alert('Spotify URL: ' + spotifyUrl);
+      if (spotifyUrl && spotifyUrl.trim()) {
         const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
         if (trackIdMatch) {
           spotifyData = {
@@ -407,9 +400,9 @@ export function TrackUploadForm() {
             spotify_search_attempted: true,
             spotify_last_searched: new Date().toISOString()
           };
+          alert('Spotify data prepared: ' + JSON.stringify(spotifyData));
         }
       }
-      console.log('SPOTIFY DATA TEST:', spotifyData);
       
       // Insert or update track in DB
       const insertData = {
