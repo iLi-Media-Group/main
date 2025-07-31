@@ -29,6 +29,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
       loading={loading}
       error={!!error}
       showToggle={true}
+      showProducerMessage={true}
     />
   );
 }

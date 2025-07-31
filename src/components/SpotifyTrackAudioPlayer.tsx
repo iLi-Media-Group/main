@@ -18,6 +18,7 @@ interface SpotifyTrackAudioPlayerProps {
   error?: boolean;
   size?: 'sm' | 'md' | 'lg';
   showToggle?: boolean;
+  showProducerMessage?: boolean;
 }
 
 export function SpotifyTrackAudioPlayer({ 
@@ -26,7 +27,8 @@ export function SpotifyTrackAudioPlayer({
   loading = false, 
   error = false,
   size = 'md',
-  showToggle = true
+  showToggle = true,
+  showProducerMessage = false
 }: SpotifyTrackAudioPlayerProps) {
   const [spotifyPreviewUrl, setSpotifyPreviewUrl] = useState<string | null>(null);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
@@ -101,7 +103,7 @@ export function SpotifyTrackAudioPlayer({
           </button>
         </div>
       )}
-      {showToggle && !track.spotify_track_id && (
+      {showToggle && showProducerMessage && !track.spotify_track_id && (
         <div className="group relative">
           <div className="text-xs text-gray-400 cursor-help">
             📁 This track will play the uploaded MP3
