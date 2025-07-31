@@ -1,7 +1,7 @@
 // NOTE: Triggering redeploy for deployment troubleshooting.
 // NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
-import { Upload, Loader2, Music, Hash, Image } from 'lucide-react';
+import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
+import { spotifyAPI, searchAndUpdateTrack } from '../lib/spotify';
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
 
@@ -107,6 +108,12 @@ export function TrackUploadForm() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // Spotify integration state
+  const [spotifySearchLoading, setSpotifySearchLoading] = useState(false);
+  const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
+  const [spotifySearchError, setSpotifySearchError] = useState<string>('');
+  const [useSpotifyPreview, setUseSpotifyPreview] = useState(false);
 
   // Handle success modal countdown
   useEffect(() => {
@@ -225,6 +232,35 @@ export function TrackUploadForm() {
     setError('');
   };
 
+  // Spotify search function
+  const handleSpotifySearch = async () => {
+    if (!title.trim()) {
+      setSpotifySearchError('Please enter a track title first');
+      return;
+    }
+
+    try {
+      setSpotifySearchLoading(true);
+      setSpotifySearchError('');
+      setSpotifyTrack(null);
+
+      const track = await spotifyAPI.searchTrack(title);
+      
+      if (track) {
+        setSpotifyTrack(track);
+        setUseSpotifyPreview(true);
+        setSpotifySearchError('');
+      } else {
+        setSpotifySearchError('No matching track found on Spotify');
+      }
+    } catch (error) {
+      console.error('Spotify search error:', error);
+      setSpotifySearchError('Failed to search Spotify. Please try again.');
+    } finally {
+      setSpotifySearchLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !audioFile) return;
@@ -329,6 +365,17 @@ export function TrackUploadForm() {
       // --- End new logic ---
 
       setUploadStatus('Saving track to database...');
+      
+      // Prepare Spotify data if available
+      const spotifyData = spotifyTrack ? {
+        spotify_track_id: spotifyTrack.id,
+        spotify_preview_url: spotifyTrack.preview_url,
+        spotify_external_url: spotifyTrack.external_urls.spotify,
+        use_spotify_preview: useSpotifyPreview && spotifyTrack.preview_url ? true : false,
+        spotify_search_attempted: true,
+        spotify_last_searched: new Date().toISOString()
+      } : {};
+      
       // Insert or update track in DB
       const { error: trackError } = await supabase
         .from('tracks')
@@ -356,7 +403,8 @@ export function TrackUploadForm() {
           explicit_lyrics: isCleanVersion ? false : explicitLyrics,
           clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          ...spotifyData // Include Spotify data if available
         });
       console.log('[DEBUG] Inserted track DB values:', {
         audio_url: `${user.id}/${title}/audio.mp3`,
@@ -609,6 +657,59 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                   required
                 />
+                
+                {/* Spotify Search Integration */}
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={handleSpotifySearch}
+                    disabled={spotifySearchLoading || isSubmitting || !title.trim()}
+                    className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+                  >
+                    {spotifySearchLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                    {spotifySearchLoading ? 'Searching...' : 'Search on Spotify'}
+                  </button>
+                  
+                  {spotifySearchError && (
+                    <p className="text-red-400 text-xs mt-2">{spotifySearchError}</p>
+                  )}
+                  
+                  {spotifyTrack && (
+                    <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-green-400 font-medium">Spotify Track Found</h4>
+                        <button
+                          type="button"
+                          onClick={() => setSpotifyTrack(null)}
+                          className="text-gray-400 hover:text-white text-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-white text-sm">{spotifyTrack.name} by {spotifyTrack.artists[0]?.name}</p>
+                      <p className="text-gray-400 text-xs">Duration: {Math.floor(spotifyTrack.duration_ms / 60000)}:{(spotifyTrack.duration_ms % 60000 / 1000).toFixed(0).padStart(2, '0')}</p>
+                      
+                      {spotifyTrack.preview_url && (
+                        <div className="mt-2">
+                          <label className="flex items-center space-x-2 text-gray-300 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={useSpotifyPreview}
+                              onChange={(e) => setUseSpotifyPreview(e.target.checked)}
+                              className="rounded border-gray-600 text-green-600 focus:ring-green-500"
+                              disabled={isSubmitting}
+                            />
+                            <span>Use Spotify preview (30-second sample)</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
