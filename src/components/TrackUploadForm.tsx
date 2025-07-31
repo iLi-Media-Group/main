@@ -446,6 +446,9 @@ export function TrackUploadForm() {
       
       console.log('[DEBUG] Full insert data:', insertData);
       
+      // Log the exact data being sent to help debug the 400 error
+      console.log('[DEBUG] Inserting track with data:', JSON.stringify(insertData, null, 2));
+      
       const { error: trackError } = await supabase
         .from('tracks')
         .insert(insertData);
@@ -458,6 +461,12 @@ export function TrackUploadForm() {
       });
       if (trackError) {
         console.error('[DEBUG] Track insertion error:', trackError);
+        console.error('[DEBUG] Error details:', {
+          message: trackError.message,
+          details: trackError.details,
+          hint: trackError.hint,
+          code: trackError.code
+        });
         throw trackError;
       }
 
