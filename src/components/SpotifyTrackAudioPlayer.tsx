@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -34,6 +35,13 @@ export function SpotifyTrackAudioPlayer({
   showToggle = true,
   showProducerMessage = false
 }: SpotifyTrackAudioPlayerProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const [spotifyPreviewUrl, setSpotifyPreviewUrl] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
   // Determine which URL to use
   const spotifyUrl = track.spotify_external_url || '';
   const mp3Url = signedUrl || '';
@@ -41,7 +49,50 @@ export function SpotifyTrackAudioPlayer({
   // Extract Spotify track ID if we have a URL
   const spotifyTrackId = spotifyUrl ? extractSpotifyId(spotifyUrl) : '';
 
-  if (loading) {
+  // Fetch Spotify preview URL if we have a track ID
+  useEffect(() => {
+    if (spotifyTrackId) {
+      setIsLoadingPreview(true);
+      fetch(`https://api.spotify.com/v1/tracks/${spotifyTrackId}`, {
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SPOTIFY_ACCESS_TOKEN}`
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.preview_url) {
+          setSpotifyPreviewUrl(data.preview_url);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch Spotify preview:', err);
+      })
+      .finally(() => {
+        setIsLoadingPreview(false);
+      });
+    }
+  }, [spotifyTrackId]);
+
+  // Determine which audio source to use
+  const audioSrc = spotifyPreviewUrl || mp3Url;
+
+  const handlePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
+  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const bounds = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - bounds.left;
+    const width = bounds.width;
+    const percentage = x / width;
+    setProgress(percentage * 100);
+  };
+
+  if (loading || isLoadingPreview) {
     return (
       <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
@@ -49,7 +100,7 @@ export function SpotifyTrackAudioPlayer({
     );
   }
 
-  if (error) {
+  if (error || audioError) {
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
@@ -59,33 +110,58 @@ export function SpotifyTrackAudioPlayer({
 
   return (
     <div className="space-y-2">
-      {spotifyTrackId ? (
-        // Spotify link (opens in new tab)
-        <div className="flex items-center justify-center h-16 bg-green-600/10 border border-green-500/20 rounded-lg">
-          <div className="text-center">
-            <div className="text-green-400 text-sm mb-1">🎵 Spotify Track Available</div>
-            <a
-              href={spotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-green-300 hover:text-green-200 text-xs underline"
-            >
-              Open in Spotify →
-            </a>
+      {/* Audio Player */}
+      <div className="flex items-center space-x-4 bg-white/5 backdrop-blur-sm rounded-lg p-3">
+        <button
+          onClick={handlePlayPause}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
+        >
+          {isPlaying ? (
+            <Pause className="w-5 h-5 text-white" />
+          ) : (
+            <Play className="w-5 h-5 text-white" />
+          )}
+        </button>
+        
+        <div className="flex-1">
+          <p className="text-sm text-gray-200">{track.title}</p>
+          <div 
+            className="mt-1 h-1 bg-gray-700 rounded-full cursor-pointer"
+            onClick={handleProgressClick}
+          >
+            <div 
+              className="h-full bg-blue-600 rounded-full transition-all duration-100"
+              style={{ width: `${progress}%` }}
+            ></div>
           </div>
         </div>
-      ) : (
-        // MP3 player
-        <audio controls preload="none" className="w-full">
-          <source src={mp3Url} type="audio/mpeg" />
-          Your browser does not support the audio element.
-        </audio>
-      )}
-      
-      {showToggle && spotifyUrl && (
+        
+        <button
+          onClick={handleMute}
+          className="text-gray-400 hover:text-white transition-colors"
+        >
+          {isMuted ? (
+            <VolumeX className="w-5 h-5" />
+          ) : (
+            <Volume2 className="w-5 h-5" />
+          )}
+        </button>
+        
+        {/* Hidden audio element */}
+        <audio 
+          src={audioSrc} 
+          preload="metadata"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onError={() => setAudioError('Failed to load audio')}
+        />
+      </div>
+
+      {/* Status indicator */}
+      {showToggle && (
         <div className="flex items-center justify-between text-xs text-gray-400">
           <span>
-            {spotifyTrackId ? '🎵 Spotify Player' : '📁 Uploaded MP3'}
+            {spotifyPreviewUrl ? '🎵 Spotify Preview' : '📁 Uploaded MP3'}
           </span>
         </div>
       )}
@@ -96,7 +172,7 @@ export function SpotifyTrackAudioPlayer({
             📁 This track will play the uploaded MP3
           </div>
           <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-            To change to a Spotify player, edit the track and add a Spotify link
+            To change to a Spotify preview, edit the track and add a Spotify link
             <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
           </div>
         </div>
