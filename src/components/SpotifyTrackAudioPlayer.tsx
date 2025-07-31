@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Square } from 'lucide-react';
 import { spotifyAPI } from '../lib/spotify';
 
 interface Track {
@@ -143,6 +143,14 @@ export function SpotifyTrackAudioPlayer({
     }
   };
 
+  const handleStop = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioManager.stop(playerId.current);
+    }
+  };
+
   const handleMute = () => {
     if (audioRef.current) {
       audioRef.current.muted = !isMuted;
@@ -243,6 +251,34 @@ export function SpotifyTrackAudioPlayer({
     );
   }
 
+  // Compact version for track cards
+  if (size === 'sm') {
+    return (
+      <div className="relative">
+        <button
+          onClick={handlePlayPause}
+          disabled={!audioSrc}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title={audioSrc ? 'Play/Pause' : 'No audio available'}
+        >
+          {isPlaying ? (
+            <Pause className="w-4 h-4 text-white" />
+          ) : (
+            <Play className="w-4 h-4 text-white" />
+          )}
+        </button>
+        
+        {/* Hidden audio element */}
+        <audio 
+          ref={audioRef}
+          src={audioSrc} 
+          preload="metadata"
+          muted={isMuted}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       {/* Audio Player */}
@@ -258,6 +294,15 @@ export function SpotifyTrackAudioPlayer({
           ) : (
             <Play className="w-5 h-5 text-white" />
           )}
+        </button>
+
+        <button
+          onClick={handleStop}
+          disabled={!audioSrc || !isPlaying}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-600 hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Stop"
+        >
+          <Square className="w-4 h-4 text-white" />
         </button>
         
         <div className="flex-1">
