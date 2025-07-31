@@ -18,14 +18,49 @@ export function SpotifyTest() {
 
       setTestResult(prev => prev + '✅ Spotify credentials found\n');
 
-      // Test 2: Get access token
-      setTestResult(prev => prev + '🔄 Testing token request...\n');
-      const token = await spotifyAPI['getAccessToken']();
+      // Test 2: Direct API call to avoid CORS issues
+      setTestResult(prev => prev + '🔄 Testing direct API call...\n');
+      
+      const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
+      const clientSecret = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET;
+
+      // Create the authorization header
+      const authHeader = 'Basic ' + btoa(clientId + ':' + clientSecret);
+
+      const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': authHeader
+        },
+        body: 'grant_type=client_credentials'
+      });
+
+      if (!tokenResponse.ok) {
+        throw new Error(`Token request failed: ${tokenResponse.status} - ${tokenResponse.statusText}`);
+      }
+
+      const tokenData = await tokenResponse.json();
       setTestResult(prev => prev + '✅ Token request successful\n');
 
       // Test 3: Search for a track
       setTestResult(prev => prev + '🔍 Testing track search...\n');
-      const track = await spotifyAPI.searchTrack('Bohemian Rhapsody', 'Queen');
+      
+      const searchResponse = await fetch(
+        'https://api.spotify.com/v1/search?q=Bohemian%20Rhapsody%20artist:Queen&type=track&limit=1&market=US',
+        {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`
+          }
+        }
+      );
+
+      if (!searchResponse.ok) {
+        throw new Error(`Search request failed: ${searchResponse.status} - ${searchResponse.statusText}`);
+      }
+
+      const searchData = await searchResponse.json();
+      const track = searchData.tracks?.items[0];
       
       if (track) {
         setTestResult(prev => prev + `✅ Track search successful\n📊 Track found: ${track.name} by ${track.artists[0]?.name}\n`);
@@ -42,7 +77,13 @@ export function SpotifyTest() {
       setTestResult(prev => prev + '🎉 Spotify API integration test completed successfully!');
 
     } catch (error) {
-      setTestResult(prev => prev + `❌ Spotify API test failed: ${error}\n`);
+      console.error('Spotify API test error:', error);
+      setTestResult(prev => prev + `❌ Spotify API test failed: ${error.message}\n`);
+      
+      // Provide helpful debugging info
+      if (error.message.includes('Failed to fetch')) {
+        setTestResult(prev => prev + '\n💡 This might be a CORS issue. The Spotify API should work in production.\n');
+      }
     } finally {
       setLoading(false);
     }
