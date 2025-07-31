@@ -36,7 +36,9 @@ export function SpotifyTrackAudioPlayer({
 
   // Check if we should use Spotify preview
   useEffect(() => {
-    const shouldUseSpotify = (track.spotify_track_id || track.spotify_external_url) && track.use_spotify_preview !== false;
+    // Only use Spotify if we have a track ID (can get preview URL)
+    // For external URLs without track ID (like albums), we can't get preview
+    const shouldUseSpotify = track.spotify_track_id && track.use_spotify_preview !== false;
     setUseSpotify(!!shouldUseSpotify);
   }, [track.spotify_track_id, track.spotify_external_url, track.use_spotify_preview]);
 
@@ -73,6 +75,7 @@ export function SpotifyTrackAudioPlayer({
   }, [useSpotify, track.spotify_track_id, track.spotify_external_url]);
 
   // Determine which audio source to use
+  // For external URLs without track ID, we can't get preview, so always use MP3
   const audioSrc = useSpotify && spotifyPreviewUrl ? spotifyPreviewUrl : (signedUrl || '');
   const isLoading = (useSpotify && spotifyLoading) || (!useSpotify && loading);
   const hasError = !useSpotify && error;
@@ -98,16 +101,18 @@ export function SpotifyTrackAudioPlayer({
       <AudioPlayer src={audioSrc} title={track.title} size={size} />
       {showToggle && (track.spotify_track_id || track.spotify_external_url) && (
         <div className="flex items-center justify-between text-xs text-gray-400">
-          <span>
-            {useSpotify ? '🎵 Spotify Preview' : '📁 Uploaded MP3'}
-          </span>
-          <button
-            onClick={() => setUseSpotify(!useSpotify)}
-            className="text-blue-400 hover:text-blue-300 transition-colors"
-            disabled={!track.spotify_track_id}
-          >
-            Switch to {useSpotify ? 'MP3' : 'Spotify'}
-          </button>
+                     <span>
+             {track.spotify_track_id ? 
+               (useSpotify ? '🎵 Spotify Preview' : '📁 Uploaded MP3') :
+               '📁 Uploaded MP3 (Album URL - no preview available)'
+             }
+           </span>
+                     <button
+             onClick={() => setUseSpotify(!useSpotify)}
+             className="text-blue-400 hover:text-blue-300 transition-colors"
+           >
+             Switch to {useSpotify ? 'MP3' : 'Spotify'}
+           </button>
         </div>
       )}
       {showToggle && showProducerMessage && !track.spotify_track_id && !track.spotify_external_url && (
