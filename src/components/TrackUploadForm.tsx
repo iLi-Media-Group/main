@@ -392,7 +392,8 @@ export function TrackUploadForm() {
       // Always try to extract from spotifyUrl if it exists
       alert('Spotify URL: ' + spotifyUrl);
       if (spotifyUrl && spotifyUrl.trim()) {
-        const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
+        // Try to extract track ID first
+        let trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
         if (trackIdMatch) {
           spotifyData = {
             spotify_track_id: trackIdMatch[1],
@@ -400,7 +401,15 @@ export function TrackUploadForm() {
             spotify_search_attempted: true,
             spotify_last_searched: new Date().toISOString()
           };
-          alert('Spotify data prepared: ' + JSON.stringify(spotifyData));
+          alert('Spotify TRACK data prepared: ' + JSON.stringify(spotifyData));
+        } else {
+          // If no track ID, just save the URL as external_url
+          spotifyData = {
+            spotify_external_url: spotifyUrl,
+            spotify_search_attempted: true,
+            spotify_last_searched: new Date().toISOString()
+          };
+          alert('Spotify URL data prepared (no track ID): ' + JSON.stringify(spotifyData));
         }
       }
       
