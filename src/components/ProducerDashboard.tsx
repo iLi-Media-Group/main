@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseArrayField } from '../lib/utils';
 import { useSignedUrl } from '../hooks/useSignedUrl';
-import { AudioPlayer } from './AudioPlayer';
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
@@ -16,14 +15,14 @@ import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
 import { CustomSyncTrackUploadForm } from './CustomSyncTrackUploadForm';
 import { respondRenewalRequest } from '../api/renewal';
-import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './SpotifyTrackAudioPlayer';
 
 // Component to handle signed URL generation for track audio with Spotify support
 function TrackAudioPlayer({ track }: { track: Track }) {
   const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
 
   return (
-    <SpotifyTrackAudioPlayer
+    <AudioPlayer
       track={track}
       signedUrl={signedUrl}
       loading={loading}

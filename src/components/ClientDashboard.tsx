@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog'
 import { createCheckoutSession, cancelUserSubscription, resumeUserSubscription } from '../lib/stripe';
 
 import { Track } from '../types';
-import { AudioPlayer } from './AudioPlayer';
 import { calculateTimeRemaining } from '../utils/dateUtils';
 import { ClientProfile } from './ClientProfile';
 import { DeleteLicenseDialog } from './DeleteLicenseDialog';
@@ -22,7 +21,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 import DiscountCodesSection from './DiscountCodesSection';
-import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './SpotifyTrackAudioPlayer';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -109,11 +108,11 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  // If we have track data with Spotify info, use SpotifyTrackAudioPlayer
-  if (track && (track.spotify_track_id || track.spotifyTrackId)) {
+  // Use the new AudioPlayer for all tracks
+  if (track) {
     const { signedUrl, loading, error } = useSignedUrl('track-audio', audioUrl);
     return (
-      <SpotifyTrackAudioPlayer
+      <AudioPlayer
         track={track}
         signedUrl={signedUrl}
         loading={loading}
@@ -122,28 +121,6 @@ const AudioPlayerWithSignedUrl = ({
         showToggle={false}
       />
     );
-  }
-
-  // If it's already a public URL, use it directly
-  if (audioUrl && audioUrl.startsWith('https://')) {
-    try {
-      return (
-        <AudioPlayer
-          src={audioUrl}
-          title={title}
-          isPlaying={isPlaying}
-          onToggle={onToggle}
-          size={size}
-        />
-      );
-    } catch (error) {
-      console.error('Error rendering AudioPlayer with public URL:', error);
-      return (
-        <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
-          <p className="text-red-400 text-sm">Audio unavailable</p>
-        </div>
-      );
-    }
   }
 
   // For file paths, use signed URL with hardcoded bucket name
@@ -166,24 +143,23 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  try {
-    return (
-      <AudioPlayer
-        src={signedUrl}
-        title={title}
-        isPlaying={isPlaying}
-        onToggle={onToggle}
-        size={size}
-      />
-    );
-  } catch (error) {
-    console.error('Error rendering AudioPlayer with signed URL:', error);
-    return (
-      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
-        <p className="text-red-400 text-sm">Audio unavailable</p>
-      </div>
-    );
-  }
+  // Create a track object for the AudioPlayer
+  const trackObj = {
+    id: 'temp-id',
+    title: title,
+    audio_url: audioUrl
+  };
+
+  return (
+    <AudioPlayer
+      track={trackObj}
+      signedUrl={signedUrl}
+      loading={loading}
+      error={!!error}
+      size={size}
+      showToggle={false}
+    />
+  );
 };
 
 interface License {

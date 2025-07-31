@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
-import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './SpotifyTrackAudioPlayer';
 
 interface TrackCardProps {
   track: Track;
@@ -177,7 +177,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             }}
           >
             <div className="p-3 rounded-full bg-blue-600/90 hover:bg-blue-600 transform transition-transform duration-300 hover:scale-110">
-              <SpotifyTrackAudioPlayer
+              <AudioPlayer
                 track={track}
                 signedUrl={audioSignedUrl}
                 loading={audioLoading}

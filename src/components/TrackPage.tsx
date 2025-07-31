@@ -5,15 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
-import { AudioPlayer } from './AudioPlayer';
-import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './SpotifyTrackAudioPlayer';
 
 // Component to handle signed URL generation for track audio with Spotify support
 function TrackAudioPlayer({ track }: { track: Track }) {
   const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
 
   return (
-    <SpotifyTrackAudioPlayer
+    <AudioPlayer
       track={track}
       signedUrl={signedUrl}
       loading={loading}

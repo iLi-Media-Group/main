@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Volume2, VolumeX, Square } from 'lucide-react';
-import { spotifyAPI } from '../lib/spotify';
 
 interface Track {
   id: string;
   title: string;
-  audio_url: string;
-  spotify_track_id?: string;
-  spotify_external_url?: string;
-  use_spotify_preview?: boolean;
+  audioUrl: string;
 }
 
-interface SpotifyTrackAudioPlayerProps {
+interface AudioPlayerProps {
   track: Track;
   signedUrl?: string | null;
   loading?: boolean;
@@ -63,13 +59,7 @@ class AudioManager {
   }
 }
 
-// Utility to extract Spotify Track ID from URL
-function extractSpotifyId(url: string): string {
-  const match = url.match(/track\/([a-zA-Z0-9]+)/);
-  return match ? match[1] : '';
-}
-
-export function SpotifyTrackAudioPlayer({ 
+export function AudioPlayer({ 
   track, 
   signedUrl, 
   loading = false, 
@@ -77,13 +67,11 @@ export function SpotifyTrackAudioPlayer({
   size = 'md',
   showToggle = true,
   showProducerMessage = false
-}: SpotifyTrackAudioPlayerProps) {
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [spotifyPreviewUrl, setSpotifyPreviewUrl] = useState<string | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -92,45 +80,8 @@ export function SpotifyTrackAudioPlayer({
   // Get audio manager instance
   const audioManager = AudioManager.getInstance();
 
-  // Determine which URL to use
-  const spotifyUrl = track.spotify_external_url || '';
-  const mp3Url = signedUrl || '';
-   
-  // Extract Spotify track ID if we have a URL
-  const spotifyTrackId = spotifyUrl ? extractSpotifyId(spotifyUrl) : '';
-
-  // Fetch Spotify preview URL if we have a track ID and use_spotify_preview is true
-  useEffect(() => {
-    if (spotifyTrackId && track.use_spotify_preview !== false) {
-      setIsLoadingPreview(true);
-      spotifyAPI.getTrackById(spotifyTrackId)
-        .then(trackData => {
-          console.log('Spotify track data:', trackData);
-          if (trackData && trackData.preview_url) {
-            console.log('Setting Spotify preview URL:', trackData.preview_url);
-            setSpotifyPreviewUrl(trackData.preview_url);
-          } else {
-            console.log('No preview URL available for Spotify track');
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch Spotify preview:', err);
-        })
-        .finally(() => {
-          setIsLoadingPreview(false);
-        });
-    }
-  }, [spotifyTrackId, track.use_spotify_preview]);
-
-  // Determine which audio source to use - prioritize MP3 if available
-  const audioSrc = mp3Url || spotifyPreviewUrl;
-  console.log('Audio source:', { 
-    spotifyPreviewUrl, 
-    mp3Url, 
-    finalSrc: audioSrc,
-    hasMp3: !!mp3Url,
-    hasSpotify: !!spotifyPreviewUrl
-  });
+  // Use the signed URL for audio
+  const audioSrc = signedUrl || '';
 
   const handlePlayPause = () => {
     if (audioRef.current) {
@@ -230,7 +181,7 @@ export function SpotifyTrackAudioPlayer({
     };
   }, []);
 
-  if (loading || isLoadingPreview) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
@@ -243,10 +194,6 @@ export function SpotifyTrackAudioPlayer({
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
         {audioError && <p className="text-red-300 text-xs mt-1">{audioError}</p>}
-        <p className="text-red-300 text-xs mt-1">
-          MP3: {mp3Url ? 'Available' : 'Not available'} | 
-          Spotify: {spotifyPreviewUrl ? 'Available' : 'Not available'}
-        </p>
       </div>
     );
   }
@@ -342,26 +289,12 @@ export function SpotifyTrackAudioPlayer({
       {/* Status indicator */}
       {showToggle && (
         <div className="flex items-center justify-between text-xs text-gray-400">
-          <span>
-            {spotifyPreviewUrl ? '🎵 Spotify Preview' : '📁 Uploaded MP3'}
-          </span>
+          <span>📁 Uploaded MP3</span>
           {audioSrc && (
             <span className="text-xs text-gray-500">
-              {spotifyPreviewUrl ? 'Spotify' : 'MP3'} • {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
+              MP3 • {duration > 0 ? `${Math.floor(duration / 60)}:${Math.floor(duration % 60).toString().padStart(2, '0')}` : '--:--'}
             </span>
           )}
-        </div>
-      )}
-      
-      {showToggle && showProducerMessage && !spotifyUrl && (
-        <div className="group relative">
-          <div className="text-xs text-gray-400 cursor-help">
-            📁 This track will play the uploaded MP3
-          </div>
-          <div className="absolute bottom-full left-0 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-            To change to a Spotify preview, edit the track and add a Spotify link
-            <div className="absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-          </div>
         </div>
       )}
     </div>
