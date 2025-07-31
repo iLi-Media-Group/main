@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AudioPlayer } from './AudioPlayer';
 import { spotifyAPI } from '../lib/spotify';
 
+console.log('🎵 SpotifyTrackAudioPlayer file loaded');
+
 interface Track {
   id: string;
   title: string;

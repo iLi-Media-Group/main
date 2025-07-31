@@ -22,6 +22,7 @@ export function AudioPlayer({
   className = '',
   size = 'md'
 }: AudioPlayerProps) {
+  console.log('🎵 AudioPlayer component rendered with src:', src);
   const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
