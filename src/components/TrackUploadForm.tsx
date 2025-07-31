@@ -49,6 +49,7 @@ interface FormData {
   stemsUrl: string;
   splitSheetUrl: string;
   spotifyUrl: string;
+  audioFileName: string;
 }
 
 export function TrackUploadForm() {
@@ -64,6 +65,7 @@ export function TrackUploadForm() {
 
   const [title, setTitle] = useState(savedData?.title || '');
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioFileName, setAudioFileName] = useState(savedData?.audioFileName || '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -182,7 +184,8 @@ export function TrackUploadForm() {
       isSyncOnly,
       stemsUrl,
       splitSheetUrl,
-      spotifyUrl
+      spotifyUrl,
+      audioFileName
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [
@@ -200,7 +203,8 @@ export function TrackUploadForm() {
     isSyncOnly,
     stemsUrl,
     splitSheetUrl,
-    spotifyUrl
+    spotifyUrl,
+    audioFileName
   ]);
 
   const clearSavedFormData = () => {
@@ -220,6 +224,7 @@ export function TrackUploadForm() {
     }
 
     setAudioFile(selectedFile);
+    setAudioFileName(selectedFile.name);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -641,7 +646,27 @@ export function TrackUploadForm() {
                 </p>
               </div>
 
-                              {audioFile && (
+              {/* Show saved audio file name if no file is currently selected */}
+              {!audioFile && audioFileName && (
+                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-blue-400 font-medium">Saved Audio File</h4>
+                    <button
+                      type="button"
+                      onClick={() => setAudioFileName('')}
+                      className="text-gray-400 hover:text-white text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="text-white text-sm">{audioFileName}</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Please re-select your audio file to continue
+                  </p>
+                </div>
+              )}
+
+              {audioFile && (
                   <div className="bg-white/5 rounded-lg p-4">
                     <h3 className="text-white font-medium mb-2">Preview</h3>
                     <AudioPlayer src={URL.createObjectURL(audioFile)} title={audioFile.name} />
