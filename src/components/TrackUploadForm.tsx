@@ -11,7 +11,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
-import { spotifyAPI, searchAndUpdateTrack } from '../lib/spotify';
+
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
 
@@ -110,10 +110,7 @@ export function TrackUploadForm() {
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Spotify integration state
-  const [spotifySearchLoading, setSpotifySearchLoading] = useState(false);
   const [spotifyTrack, setSpotifyTrack] = useState<any>(null);
-  const [spotifySearchError, setSpotifySearchError] = useState<string>('');
-  const [useSpotifyPreview, setUseSpotifyPreview] = useState(false);
   const [spotifyUrl, setSpotifyUrl] = useState('');
   const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
 
@@ -234,36 +231,7 @@ export function TrackUploadForm() {
     setError('');
   };
 
-  // Spotify search function
-  const handleSpotifySearch = async () => {
-    if (!title.trim()) {
-      setSpotifySearchError('Please enter a track title first');
-      return;
-    }
-
-    try {
-      setSpotifySearchLoading(true);
-      setSpotifySearchError('');
-      setSpotifyTrack(null);
-
-      const track = await spotifyAPI.searchTrack(title);
-      
-      if (track) {
-        setSpotifyTrack(track);
-        setUseSpotifyPreview(true);
-        setSpotifySearchError('');
-      } else {
-        setSpotifySearchError('No matching track found on Spotify');
-      }
-    } catch (error) {
-      console.error('Spotify search error:', error);
-      setSpotifySearchError('Failed to search Spotify. Please try again.');
-    } finally {
-      setSpotifySearchLoading(false);
-    }
-  };
-
-  // Handle manual Spotify URL input
+  // Handle Spotify URL input
   const handleSpotifyUrlChange = (url: string) => {
     setSpotifyUrl(url);
     setSpotifyUrlError('');
@@ -276,12 +244,11 @@ export function TrackUploadForm() {
       setSpotifyTrack({
         id: trackId,
         external_urls: { spotify: url },
-        preview_url: null, // Will be fetched if needed
+        preview_url: null,
         name: 'Manual Spotify Link',
         artists: [{ name: 'Unknown Artist' }],
         duration_ms: 0
       });
-      setUseSpotifyPreview(false); // Manual links don't have previews
     } else if (url && !url.includes('open.spotify.com')) {
       setSpotifyUrlError('Please enter a valid Spotify track URL');
       setSpotifyTrack(null);
@@ -398,9 +365,7 @@ export function TrackUploadForm() {
       // Prepare Spotify data if available
       const spotifyData = spotifyTrack ? {
         spotify_track_id: spotifyTrack.id,
-        spotify_preview_url: spotifyTrack.preview_url,
         spotify_external_url: spotifyTrack.external_urls.spotify,
-        use_spotify_preview: useSpotifyPreview && spotifyTrack.preview_url ? true : false,
         spotify_search_attempted: true,
         spotify_last_searched: new Date().toISOString()
       } : {};
@@ -687,40 +652,24 @@ export function TrackUploadForm() {
                   required
                 />
                 
-                {/* Spotify Search Integration */}
+                {/* Spotify URL Integration */}
                 <div className="mt-3">
-                  <div className="flex gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={handleSpotifySearch}
-                      disabled={spotifySearchLoading || isSubmitting || !title.trim()}
-                      className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white text-sm rounded-lg transition-colors"
-                    >
-                      {spotifySearchLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4" />
-                      )}
-                      {spotifySearchLoading ? 'Searching...' : 'Search on Spotify'}
-                    </button>
-                    
-                    <span className="text-gray-400 text-sm self-center">or</span>
-                    
-                    <div className="flex-1">
-                      <input
-                        type="url"
-                        value={spotifyUrl}
-                        onChange={(e) => handleSpotifyUrlChange(e.target.value)}
-                        placeholder="Paste Spotify track URL"
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500 text-sm"
-                        disabled={isSubmitting}
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Spotify Track URL (Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={spotifyUrl}
+                      onChange={(e) => handleSpotifyUrlChange(e.target.value)}
+                      placeholder="https://open.spotify.com/track/..."
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
+                      disabled={isSubmitting}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Paste your Spotify track URL to link it to this upload
+                    </p>
                   </div>
-                  
-                  {spotifySearchError && (
-                    <p className="text-red-400 text-xs mt-2">{spotifySearchError}</p>
-                  )}
                   
                   {spotifyUrlError && (
                     <p className="text-red-400 text-xs mt-2">{spotifyUrlError}</p>
@@ -729,9 +678,7 @@ export function TrackUploadForm() {
                   {spotifyTrack && (
                     <div className="mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-green-400 font-medium">
-                          {spotifyTrack.name === 'Manual Spotify Link' ? 'Spotify Link Added' : 'Spotify Track Found'}
-                        </h4>
+                        <h4 className="text-green-400 font-medium">Spotify Link Added</h4>
                         <button
                           type="button"
                           onClick={() => {
@@ -743,29 +690,7 @@ export function TrackUploadForm() {
                           ×
                         </button>
                       </div>
-                      {spotifyTrack.name !== 'Manual Spotify Link' ? (
-                        <>
-                          <p className="text-white text-sm">{spotifyTrack.name} by {spotifyTrack.artists[0]?.name}</p>
-                          <p className="text-gray-400 text-xs">Duration: {Math.floor(spotifyTrack.duration_ms / 60000)}:{(spotifyTrack.duration_ms % 60000 / 1000).toFixed(0).padStart(2, '0')}</p>
-                        </>
-                      ) : (
-                        <p className="text-white text-sm">Manual Spotify track link added</p>
-                      )}
-                      
-                      {spotifyTrack.preview_url && (
-                        <div className="mt-2">
-                          <label className="flex items-center space-x-2 text-gray-300 text-sm">
-                            <input
-                              type="checkbox"
-                              checked={useSpotifyPreview}
-                              onChange={(e) => setUseSpotifyPreview(e.target.checked)}
-                              className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                              disabled={isSubmitting}
-                            />
-                            <span>Use Spotify preview (30-second sample)</span>
-                          </label>
-                        </div>
-                      )}
+                      <p className="text-white text-sm">Spotify track link added successfully</p>
                     </div>
                   )}
                 </div>
