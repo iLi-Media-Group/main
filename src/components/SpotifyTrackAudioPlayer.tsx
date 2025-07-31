@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { spotifyAPI } from '../lib/spotify';
 
 interface Track {
   id: string;
@@ -53,23 +54,18 @@ export function SpotifyTrackAudioPlayer({
   useEffect(() => {
     if (spotifyTrackId) {
       setIsLoadingPreview(true);
-      fetch(`https://api.spotify.com/v1/tracks/${spotifyTrackId}`, {
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SPOTIFY_ACCESS_TOKEN}`
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.preview_url) {
-          setSpotifyPreviewUrl(data.preview_url);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to fetch Spotify preview:', err);
-      })
-      .finally(() => {
-        setIsLoadingPreview(false);
-      });
+      spotifyAPI.getTrackById(spotifyTrackId)
+        .then(trackData => {
+          if (trackData && trackData.preview_url) {
+            setSpotifyPreviewUrl(trackData.preview_url);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch Spotify preview:', err);
+        })
+        .finally(() => {
+          setIsLoadingPreview(false);
+        });
     }
   }, [spotifyTrackId]);
 
