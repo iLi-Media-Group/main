@@ -30,6 +30,7 @@ export function SpotifyTrackAudioPlayer({
   showToggle = true,
   showProducerMessage = false
 }: SpotifyTrackAudioPlayerProps) {
+  console.log('🎵 SpotifyTrackAudioPlayer component rendered');
   const [spotifyPreviewUrl, setSpotifyPreviewUrl] = useState<string | null>(null);
   const [spotifyLoading, setSpotifyLoading] = useState(false);
   const [useSpotify, setUseSpotify] = useState(false);
