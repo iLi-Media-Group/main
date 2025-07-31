@@ -20,7 +20,7 @@ import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
 import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
-import { SpotifyTest } from './SpotifyTest';
+
 
 interface UserStats {
   total_clients: number;
@@ -1399,7 +1399,6 @@ if (subscription.price_id) {
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
-            { id: 'spotify_test', label: 'Spotify Test', icon: <Music className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -1960,13 +1959,7 @@ if (subscription.price_id) {
           </div>
         )}
 
-        {/* Spotify Test Section */}
-        {activeTab === 'spotify_test' && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Spotify API Integration Test</h2>
-            <SpotifyTest />
-          </div>
-        )}
+
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (
