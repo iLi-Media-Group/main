@@ -278,10 +278,17 @@ export function TrackUploadForm() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[DEBUG] Submit function called');
     e.preventDefault();
-    if (!user || !audioFile) return;
+    console.log('[DEBUG] User:', user?.id);
+    console.log('[DEBUG] Audio file:', audioFile?.name);
+    if (!user || !audioFile) {
+      console.log('[DEBUG] Submit blocked - missing user or audio file');
+      return;
+    }
 
     try {
+      console.log('[DEBUG] Starting upload process');
       setIsSubmitting(true);
       setIsUploading(true);
       setError('');
@@ -381,6 +388,7 @@ export function TrackUploadForm() {
       // --- End new logic ---
 
       setUploadStatus('Saving track to database...');
+      console.log('[DEBUG] About to process Spotify data');
       
       // Prepare Spotify data if available
       console.log('[DEBUG] Spotify data check:', { spotifyTrack, spotifyUrl });
