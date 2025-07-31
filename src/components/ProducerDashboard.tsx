@@ -16,28 +16,21 @@ import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
 import { CustomSyncTrackUploadForm } from './CustomSyncTrackUploadForm';
 import { respondRenewalRequest } from '../api/renewal';
+import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
 
-// Component to handle signed URL generation for track audio
+// Component to handle signed URL generation for track audio with Spotify support
 function TrackAudioPlayer({ track }: { track: Track }) {
   const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
-        <p className="text-red-400 text-sm">Audio unavailable</p>
-      </div>
-    );
-  }
-
-  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+  return (
+    <SpotifyTrackAudioPlayer
+      track={track}
+      signedUrl={signedUrl}
+      loading={loading}
+      error={!!error}
+      showToggle={true}
+    />
+  );
 }
 
 // Component to handle signed URL generation for track images
@@ -99,6 +92,7 @@ interface Track {
   revenue: number;
   spotify_track_id?: string;
   spotify_external_url?: string;
+  use_spotify_preview?: boolean;
 }
 
 interface Proposal {
@@ -354,7 +348,8 @@ export function ProducerDashboard() {
           has_vocals,
           vocals_usage_type,
           spotify_track_id,
-          spotify_external_url
+          spotify_external_url,
+          use_spotify_preview
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)

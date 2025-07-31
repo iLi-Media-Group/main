@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
 
 interface TrackCardProps {
   track: Track;
@@ -61,8 +62,6 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
   const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
 
@@ -73,19 +72,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     if (user && track?.id) {
       checkFavoriteStatus();
     }
-    
-    // Create audio element with signed URL
-    if (audioSignedUrl) {
-      const audio = new Audio(audioSignedUrl);
-      audio.addEventListener('ended', () => setIsPlaying(false));
-      setAudioRef(audio);
-
-      return () => {
-        audio.pause();
-        audio.removeEventListener('ended', () => setIsPlaying(false));
-      };
-    }
-  }, [user, track?.id, audioSignedUrl]);
+  }, [user, track?.id]);
 
   const checkFavoriteStatus = async () => {
     try {
@@ -139,21 +126,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     }
   };
 
-  const togglePlay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
 
-    if (!audioRef || audioLoading || !!audioError) return;
-
-    if (isPlaying) {
-      audioRef.pause();
-    } else {
-      audioRef.play().catch(error => {
-        console.error('Error playing audio:', error);
-      });
-    }
-    setIsPlaying(!isPlaying);
-  };
 
   const handleProducerClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -195,25 +168,19 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             </button>
           )}
 
-          {/* Play Button */}
-          <button
-            onClick={togglePlay}
-            disabled={audioLoading || !!audioError}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10 disabled:opacity-50"
-          >
+          {/* Audio Player */}
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             <div className="p-3 rounded-full bg-blue-600/90 hover:bg-blue-600 transform transition-transform duration-300 hover:scale-110">
-              {audioLoading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
-              ) : !!audioError ? (
-                <span className="text-white text-xs">Error</span>
-              ) : (
-                <>
-                  <Play className={`w-6 h-6 text-white ${isPlaying ? 'hidden' : ''}`} />
-                  {isPlaying && <span className="block w-4 h-4 bg-white"></span>}
-                </>
-              )}
+              <SpotifyTrackAudioPlayer
+                track={track}
+                signedUrl={audioSignedUrl}
+                loading={audioLoading}
+                error={!!audioError}
+                size="sm"
+                showToggle={false}
+              />
             </div>
-          </button>
+          </div>
         </div>
 
         {/* Content Section */}

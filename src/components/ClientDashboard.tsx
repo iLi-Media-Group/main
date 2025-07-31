@@ -22,6 +22,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 import DiscountCodesSection from './DiscountCodesSection';
+import { SpotifyTrackAudioPlayer } from './SpotifyTrackAudioPlayer';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -82,19 +83,21 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   );
 };
 
-// Audio Player Component with Signed URL
+// Audio Player Component with Signed URL and Spotify support
 const AudioPlayerWithSignedUrl = ({ 
   audioUrl, 
   title, 
   isPlaying, 
   onToggle, 
-  size = "md" 
+  size = "md",
+  track
 }: { 
   audioUrl: string; 
   title: string; 
   isPlaying: boolean; 
   onToggle: () => void; 
   size?: "sm" | "md" | "lg";
+  track?: any;
 }) => {
   // Add defensive checks for props
   if (!audioUrl || !title || typeof onToggle !== 'function') {
@@ -103,6 +106,21 @@ const AudioPlayerWithSignedUrl = ({
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
       </div>
+    );
+  }
+
+  // If we have track data with Spotify info, use SpotifyTrackAudioPlayer
+  if (track && (track.spotify_track_id || track.spotifyTrackId)) {
+    const { signedUrl, loading, error } = useSignedUrl('track-audio', audioUrl);
+    return (
+      <SpotifyTrackAudioPlayer
+        track={track}
+        signedUrl={signedUrl}
+        loading={loading}
+        error={!!error}
+        size={size}
+        showToggle={false}
+      />
     );
   }
 
