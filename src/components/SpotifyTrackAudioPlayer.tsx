@@ -60,17 +60,20 @@ export function SpotifyTrackAudioPlayer({
   return (
     <div className="space-y-2">
       {spotifyTrackId ? (
-        // Spotify player
-        <iframe
-          src={`https://open.spotify.com/embed/track/${spotifyTrackId}`}
-          width="100%"
-          height="80"
-          frameBorder="0"
-          allow="encrypted-media"
-          allowTransparency
-          loading="lazy"
-          className="rounded-lg"
-        />
+        // Spotify link (opens in new tab)
+        <div className="flex items-center justify-center h-16 bg-green-600/10 border border-green-500/20 rounded-lg">
+          <div className="text-center">
+            <div className="text-green-400 text-sm mb-1">🎵 Spotify Track Available</div>
+            <a
+              href={spotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-300 hover:text-green-200 text-xs underline"
+            >
+              Open in Spotify →
+            </a>
+          </div>
+        </div>
       ) : (
         // MP3 player
         <audio controls preload="none" className="w-full">
