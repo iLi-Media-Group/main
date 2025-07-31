@@ -384,44 +384,63 @@ export function TrackUploadForm() {
       
       // Prepare Spotify data if available
       console.log('[DEBUG] Spotify data check:', { spotifyTrack, spotifyUrl });
-      const spotifyData = spotifyTrack ? {
-        spotify_track_id: spotifyTrack.id,
-        spotify_external_url: spotifyTrack.external_urls.spotify,
-        spotify_search_attempted: true,
-        spotify_last_searched: new Date().toISOString()
-      } : {};
+      
+      // Extract track ID from URL if spotifyTrack is null but spotifyUrl exists
+      let spotifyData = {};
+      if (spotifyTrack) {
+        spotifyData = {
+          spotify_track_id: spotifyTrack.id,
+          spotify_external_url: spotifyTrack.external_urls.spotify,
+          spotify_search_attempted: true,
+          spotify_last_searched: new Date().toISOString()
+        };
+      } else if (spotifyUrl) {
+        const trackIdMatch = spotifyUrl.match(/track\/([a-zA-Z0-9]+)/);
+        if (trackIdMatch) {
+          spotifyData = {
+            spotify_track_id: trackIdMatch[1],
+            spotify_external_url: spotifyUrl,
+            spotify_search_attempted: true,
+            spotify_last_searched: new Date().toISOString()
+          };
+        }
+      }
       console.log('[DEBUG] Prepared Spotify data:', spotifyData);
       
       // Insert or update track in DB
+      const insertData = {
+        track_producer_id: user.id,
+        title,
+        artist: user.email?.split('@')[0] || 'Unknown Artist',
+        genres: formattedGenres.join(','),
+        sub_genres: selectedSubGenres.join(','),
+        moods: selectedMoods,
+        media_usage: selectedMediaUsage,
+        bpm: bpmNumber,
+        key,
+        has_sting_ending: hasStingEnding,
+        is_one_stop: isOneStop,
+        audio_url: `${user.id}/${title}/audio.mp3`, // Always set to deterministic path
+        image_url: imageUrl, // This is now a file path
+        mp3_url: mp3Url || null,
+        trackouts_url: trackoutsStoragePath || null,
+        stems_url: stemsStoragePath || null,
+        split_sheet_url: splitSheetUploadedUrl || null,
+        has_vocals: hasVocals,
+        vocals_usage_type: hasVocals ? 'normal' : null,
+        is_sync_only: isSyncOnly,
+        explicit_lyrics: isCleanVersion ? false : explicitLyrics,
+        clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...spotifyData // Include Spotify data if available
+      };
+      
+      console.log('[DEBUG] Full insert data:', insertData);
+      
       const { error: trackError } = await supabase
         .from('tracks')
-        .insert({
-          track_producer_id: user.id,
-          title,
-          artist: user.email?.split('@')[0] || 'Unknown Artist',
-          genres: formattedGenres.join(','),
-          sub_genres: selectedSubGenres.join(','),
-          moods: selectedMoods,
-          media_usage: selectedMediaUsage,
-          bpm: bpmNumber,
-          key,
-          has_sting_ending: hasStingEnding,
-          is_one_stop: isOneStop,
-          audio_url: `${user.id}/${title}/audio.mp3`, // Always set to deterministic path
-          image_url: imageUrl, // This is now a file path
-          mp3_url: mp3Url || null,
-          trackouts_url: trackoutsStoragePath || null,
-          stems_url: stemsStoragePath || null,
-          split_sheet_url: splitSheetUploadedUrl || null,
-          has_vocals: hasVocals,
-          vocals_usage_type: hasVocals ? 'normal' : null,
-          is_sync_only: isSyncOnly,
-          explicit_lyrics: isCleanVersion ? false : explicitLyrics,
-          clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          ...spotifyData // Include Spotify data if available
-        });
+        .insert(insertData);
       console.log('[DEBUG] Inserted track DB values:', {
         audio_url: `${user.id}/${title}/audio.mp3`,
         image_url: imageUrl,
