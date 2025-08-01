@@ -113,6 +113,12 @@ export default function AdminServicesPage() {
   const [onboardingLink, setOnboardingLink] = useState('');
   const [sendingOnboarding, setSendingOnboarding] = useState(false);
   const [onboardingError, setOnboardingError] = useState('');
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [existingImages, setExistingImages] = useState({
+    image: '',
+    image2: '',
+    image3: ''
+  });
 
   useEffect(() => {
     if (activeTab === 'services') fetchServices();
@@ -141,6 +147,12 @@ export default function AdminServicesPage() {
       tier: service.tier,
       style_tags: service.style_tags
     });
+    // Store existing images for reference
+    setExistingImages({
+      image: service.image || '',
+      image2: service.image2 || '',
+      image3: service.image3 || ''
+    });
     setImagePreview(service.image || null);
     setImagePreview2(service.image2 || null);
     setImagePreview3(service.image3 || null);
@@ -153,6 +165,7 @@ export default function AdminServicesPage() {
   const handleAdd = () => {
     setEditingService(null);
     setForm({ type: 'studios', name: '', description: '', contact: '', website: '', image: '', image2: '', image3: '', subgenres: [], tier: '', style_tags: [] });
+    setExistingImages({ image: '', image2: '', image3: '' });
     setImagePreview(null);
     setImagePreview2(null);
     setImagePreview3(null);
@@ -186,8 +199,21 @@ export default function AdminServicesPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageNum = 1) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 2 * 1024 * 1024) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file');
+      return;
+    }
+    
+    // Validate file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Image file size must be less than 2MB');
+      return;
+    }
+
+    setError(null); // Clear any previous errors
+
     if (imageNum === 1) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
@@ -202,27 +228,69 @@ export default function AdminServicesPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    let imageUrl = form.image;
-    let imageUrl2 = form.image2;
-    let imageUrl3 = form.image3;
-    if (imageFile) {
-      imageUrl = await (await import('../lib/storage')).uploadFile(imageFile, 'service-images');
+    setUploadingImages(true);
+    setError(null);
+
+    try {
+      let imageUrl = form.image;
+      let imageUrl2 = form.image2;
+      let imageUrl3 = form.image3;
+
+      // Upload new images if files are selected
+      if (imageFile) {
+        try {
+          imageUrl = await (await import('../lib/storage')).uploadFile(imageFile, 'service-images');
+        } catch (uploadError) {
+          throw new Error(`Failed to upload main image: ${uploadError}`);
+        }
+      }
+
+      if (imageFile2) {
+        try {
+          imageUrl2 = await (await import('../lib/storage')).uploadFile(imageFile2, 'service-images');
+        } catch (uploadError) {
+          throw new Error(`Failed to upload additional image 1: ${uploadError}`);
+        }
+      }
+
+      if (imageFile3) {
+        try {
+          imageUrl3 = await (await import('../lib/storage')).uploadFile(imageFile3, 'service-images');
+        } catch (uploadError) {
+          throw new Error(`Failed to upload additional image 2: ${uploadError}`);
+        }
+      }
+
+      const payload = { 
+        ...form, 
+        image: imageUrl, 
+        image2: imageUrl2, 
+        image3: imageUrl3 
+      };
+
+      if (editingService) {
+        const { error: updateError } = await supabase
+          .from('services')
+          .update(payload)
+          .eq('id', editingService.id);
+        
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('services')
+          .insert([payload]);
+        
+        if (insertError) throw insertError;
+      }
+
+      setShowForm(false);
+      setEditingService(null);
+      fetchServices();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save service');
+    } finally {
+      setUploadingImages(false);
     }
-    if (imageFile2) {
-      imageUrl2 = await (await import('../lib/storage')).uploadFile(imageFile2, 'service-images');
-    }
-    if (imageFile3) {
-      imageUrl3 = await (await import('../lib/storage')).uploadFile(imageFile3, 'service-images');
-    }
-    const payload = { ...form, image: imageUrl, image2: imageUrl2, image3: imageUrl3 };
-    if (editingService) {
-      await supabase.from('services').update(payload).eq('id', editingService.id);
-    } else {
-      await supabase.from('services').insert([payload]);
-    }
-    setShowForm(false);
-    setEditingService(null);
-    fetchServices();
   };
 
   const handleSendOnboardingLink = async () => {
@@ -426,60 +494,78 @@ export default function AdminServicesPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Image URL</label>
-                      <input
-                        type="text"
-                        name="image"
-                        value={form.image}
-                        onChange={handleFormChange}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                      />
+                      <label className="block text-sm font-medium mb-1">Main Image</label>
+                      {editingService && existingImages.image && (
+                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                          <p className="text-xs text-blue-300 mb-1">Current Image:</p>
+                          <img src={existingImages.image} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                        </div>
+                      )}
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => handleImageChange(e, 1)}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview && (
-                        <img src={imagePreview} alt="Preview" className="mt-2 h-24 rounded border border-blue-500/20" />
+                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                          <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
+                          <img src={imagePreview} alt="Preview" className="h-24 rounded border border-green-500/20" />
+                        </div>
+                      )}
+                      {editingService && !imageFile && existingImages.image && (
+                        <p className="text-xs text-gray-400 mt-1">No new image selected - current image will be kept</p>
                       )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Additional Image 1 (optional)</label>
-                      <input
-                        type="text"
-                        name="image2"
-                        value={form.image2}
-                        onChange={handleFormChange}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                      />
+                      {editingService && existingImages.image2 && (
+                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                          <p className="text-xs text-blue-300 mb-1">Current Image:</p>
+                          <img src={existingImages.image2} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                        </div>
+                      )}
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => handleImageChange(e, 2)}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview2 && (
-                        <img src={imagePreview2} alt="Preview 2" className="mt-2 h-24 rounded border border-blue-500/20" />
+                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                          <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
+                          <img src={imagePreview2} alt="Preview 2" className="h-24 rounded border border-green-500/20" />
+                        </div>
+                      )}
+                      {editingService && !imageFile2 && existingImages.image2 && (
+                        <p className="text-xs text-gray-400 mt-1">No new image selected - current image will be kept</p>
                       )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Additional Image 2 (optional)</label>
-                      <input
-                        type="text"
-                        name="image3"
-                        value={form.image3}
-                        onChange={handleFormChange}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
-                      />
+                      {editingService && existingImages.image3 && (
+                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                          <p className="text-xs text-blue-300 mb-1">Current Image:</p>
+                          <img src={existingImages.image3} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                        </div>
+                      )}
                       <input
                         type="file"
                         accept="image/*"
                         onChange={e => handleImageChange(e, 3)}
-                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white mt-2"
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview3 && (
-                        <img src={imagePreview3} alt="Preview 3" className="mt-2 h-24 rounded border border-blue-500/20" />
+                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                          <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
+                          <img src={imagePreview3} alt="Preview 3" className="h-24 rounded border border-green-500/20" />
+                        </div>
+                      )}
+                      {editingService && !imageFile3 && existingImages.image3 && (
+                        <p className="text-xs text-gray-400 mt-1">No new image selected - current image will be kept</p>
                       )}
                     </div>
                     <div>
@@ -534,9 +620,38 @@ export default function AdminServicesPage() {
                         </div>
                       </div>
                     )}
+                    {error && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
+                        {error}
+                      </div>
+                    )}
                     <div className="flex justify-end space-x-2">
-                      <button type="button" className="px-4 py-2 bg-gray-700 rounded" onClick={() => setShowForm(false)}>Cancel</button>
-                      <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">{editingService ? 'Update' : 'Add'}</button>
+                      <button 
+                        type="button" 
+                        className="px-4 py-2 bg-gray-700 rounded" 
+                        onClick={() => setShowForm(false)}
+                        disabled={uploadingImages}
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        className={`px-4 py-2 rounded text-white flex items-center ${
+                          uploadingImages 
+                            ? 'bg-blue-500 cursor-not-allowed' 
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                        disabled={uploadingImages}
+                      >
+                        {uploadingImages ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            {editingService ? 'Updating...' : 'Adding...'}
+                          </>
+                        ) : (
+                          editingService ? 'Update' : 'Add'
+                        )}
+                      </button>
                     </div>
                   </form>
                 </div>
