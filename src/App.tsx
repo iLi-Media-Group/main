@@ -488,19 +488,17 @@ const App = () => {
         } />
 
         <Route path="/admin/white-label" element={
-          accountType === 'admin' ? (
+          <ProtectedRoute requiresAdmin>
             <WhiteLabelAdminPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          </ProtectedRoute>
         } />
 
         <Route path="/admin/services" element={
-          accountType === 'admin' ? (
-            <AdminServicesPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdminServicesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
         } />
 
         <Route path="/services" element={
