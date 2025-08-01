@@ -70,7 +70,6 @@ export function TrackUploadForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<string>('');
   const [bpm, setBpm] = useState(savedData?.bpm || '');
   const [key, setKey] = useState(savedData?.key || '');
   const [hasStingEnding, setHasStingEnding] = useState(savedData?.hasStingEnding || false);
@@ -224,7 +223,6 @@ export function TrackUploadForm() {
     setTrackoutsFile(null);
     setStemsFile(null);
     setError('');
-    setUploadStatus('');
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -279,7 +277,6 @@ export function TrackUploadForm() {
       setIsUploading(true);
       setError('');
       setUploadProgress(0);
-      setUploadStatus('Starting upload...');
 
       const bpmNumber = parseInt(bpm);
       if (isNaN(bpmNumber) || bpmNumber < 1 || bpmNumber > 999) {
@@ -302,7 +299,6 @@ export function TrackUploadForm() {
         throw new Error('At least one valid genre is required');
       }
 
-      setUploadStatus('Uploading audio file...');
       const audioPath = await uploadFile(
         audioFile,
         'track-audio',
@@ -315,7 +311,6 @@ export function TrackUploadForm() {
 
       let imageUrl = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       if (imageFile) {
-        setUploadStatus('Uploading image file...');
         const imageSignedUrl = await uploadFile(
           imageFile,
           'track-images',
@@ -329,7 +324,6 @@ export function TrackUploadForm() {
 
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
-        setUploadStatus('Uploading split sheet...');
         const splitSheetSignedUrl = await uploadFile(
           splitSheetFile,
           'split-sheets',
@@ -345,7 +339,6 @@ export function TrackUploadForm() {
       // --- New logic for trackouts and stems ---
       let trackoutsStoragePath = trackoutsUrl;
       if (trackoutsFile) {
-        setUploadStatus('Uploading trackouts file...');
         const trackoutsSignedUrl = await uploadFile(
           trackoutsFile,
           'trackouts',
@@ -359,7 +352,6 @@ export function TrackUploadForm() {
       }
       let stemsStoragePath = stemsUrl;
       if (stemsFile) {
-        setUploadStatus('Uploading stems file...');
         const stemsSignedUrl = await uploadFile(
           stemsFile,
           'stems',
@@ -373,8 +365,6 @@ export function TrackUploadForm() {
       }
       // --- End new logic ---
 
-      setUploadStatus('Saving track to database...');
-      
       // Prepare Spotify data if available
 
       
@@ -470,7 +460,6 @@ export function TrackUploadForm() {
       setIsSubmitting(false);
       setIsUploading(false);
       setUploadProgress(0);
-      setUploadStatus('');
     }
   };
 
@@ -526,7 +515,6 @@ export function TrackUploadForm() {
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-blue-400 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-white mb-2">Uploading Track</h3>
-              <p className="text-blue-300 mb-6">{uploadStatus}</p>
               
               {/* Progress Bar */}
               <div className="w-full bg-blue-800/60 rounded-full h-3 mb-4">
@@ -827,7 +815,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Upload a ZIP or RAR file containing trackouts.
+                  Upload a ZIP or RAR file containing trackouts. (Max 500MB)
                 </p>
                 {trackoutsFile && (
                   <div className="bg-white/5 rounded-lg p-4 mt-2">
@@ -864,7 +852,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Upload a ZIP or RAR file containing stems.
+                  Upload a ZIP or RAR file containing stems. (Max 500MB)
                 </p>
                 {stemsFile && (
                   <div className="bg-white/5 rounded-lg p-4 mt-2">
