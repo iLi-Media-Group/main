@@ -495,9 +495,7 @@ const App = () => {
 
         <Route path="/admin/services" element={
           <ProtectedRoute requiresAdmin>
-            <LayoutWrapper>
-              <AdminServicesPage />
-            </LayoutWrapper>
+            <AdminServicesPage />
           </ProtectedRoute>
         } />
 
