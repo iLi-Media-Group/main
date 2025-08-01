@@ -52,6 +52,8 @@ interface FormData {
   explicitLyrics: boolean;
   isCleanVersion: boolean | null;
   cleanVersionOf: string;
+  audioFileData?: string; // Base64 encoded audio file
+  audioFileType?: string; // MIME type of the audio file
 }
 
 export function TrackUploadForm() {
@@ -63,10 +65,46 @@ export function TrackUploadForm() {
     return saved ? JSON.parse(saved) : null;
   };
 
+  // Convert File to base64 string
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:audio/mp3;base64,")
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  // Convert base64 string back to File
+  const base64ToFile = (base64: string, fileName: string, mimeType: string): File => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new File([byteArray], fileName, { type: mimeType });
+  };
+
   const savedData = loadSavedFormData();
 
   const [title, setTitle] = useState(savedData?.title || '');
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(() => {
+    if (savedData?.audioFileData && savedData?.audioFileName && savedData?.audioFileType) {
+      try {
+        return base64ToFile(savedData.audioFileData, savedData.audioFileName, savedData.audioFileType);
+      } catch (error) {
+        console.error('Error restoring audio file from saved data:', error);
+        return null;
+      }
+    }
+    return null;
+  });
   const [audioFileName, setAudioFileName] = useState(savedData?.audioFileName || '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -179,9 +217,35 @@ export function TrackUploadForm() {
       audioFileName,
       explicitLyrics,
       isCleanVersion,
-      cleanVersionOf
+      cleanVersionOf,
+      // Only include audio file data if audioFile exists (to avoid overwriting with null)
+      ...(audioFile && {
+        audioFileData: (async () => {
+          try {
+            return await fileToBase64(audioFile);
+          } catch (error) {
+            console.error('Error converting audio file to base64:', error);
+            return undefined;
+          }
+        })()
+      })
     };
-    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    
+    // Handle async audio file conversion
+    const saveFormData = async () => {
+      if (audioFile) {
+        try {
+          const audioFileData = await fileToBase64(audioFile);
+          formData.audioFileData = audioFileData;
+          formData.audioFileType = audioFile.type;
+        } catch (error) {
+          console.error('Error converting audio file to base64:', error);
+        }
+      }
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    };
+    
+    saveFormData();
   }, [
     title,
     bpm,
@@ -201,7 +265,8 @@ export function TrackUploadForm() {
     audioFileName,
     explicitLyrics,
     isCleanVersion,
-    cleanVersionOf
+    cleanVersionOf,
+    audioFile
   ]);
 
   const clearSavedFormData = () => {
@@ -237,6 +302,13 @@ export function TrackUploadForm() {
     setExplicitLyrics(false);
     setIsCleanVersion(null);
     setCleanVersionOf('');
+    
+    // Clear audio file data from localStorage
+    const currentFormData = loadSavedFormData();
+    if (currentFormData) {
+      const { audioFileData, audioFileType, ...cleanedData } = currentFormData;
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(cleanedData));
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,6 +321,22 @@ export function TrackUploadForm() {
     if (validationError) {
       setError(validationError);
       return;
+    }
+
+    // Convert file to base64 for persistence
+    try {
+      const base64Data = await fileToBase64(selectedFile);
+      // Store the base64 data temporarily for the form persistence
+      const currentFormData = loadSavedFormData() || {};
+      const updatedFormData = {
+        ...currentFormData,
+        audioFileData: base64Data,
+        audioFileName: selectedFile.name,
+        audioFileType: selectedFile.type
+      };
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(updatedFormData));
+    } catch (error) {
+      console.error('Error saving audio file data:', error);
     }
 
     setAudioFile(selectedFile);
