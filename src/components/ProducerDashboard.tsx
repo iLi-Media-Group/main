@@ -103,9 +103,6 @@ interface Track {
   vocals_usage_type: string | null;
   sales_count: number;
   revenue: number;
-  spotify_track_id?: string;
-  spotify_external_url?: string;
-  use_spotify_preview?: boolean;
 }
 
 interface Proposal {
@@ -361,10 +358,7 @@ export function ProducerDashboard() {
           image_url,
           created_at,
           has_vocals,
-          vocals_usage_type,
-          spotify_track_id,
-          spotify_external_url,
-          use_spotify_preview
+          vocals_usage_type
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)
@@ -411,9 +405,6 @@ export function ProducerDashboard() {
         created_at: track.created_at,
         has_vocals: track.has_vocals,
         vocals_usage_type: track.vocals_usage_type,
-        spotify_track_id: track.spotify_track_id,
-        spotify_external_url: track.spotify_external_url,
-        use_spotify_preview: track.use_spotify_preview,
         genres: parseArrayField(track.genres),
         moods: parseArrayField(track.moods),
         mediaUsage: parseArrayField(track.media_usage),
