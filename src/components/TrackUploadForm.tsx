@@ -198,6 +198,35 @@ export function TrackUploadForm() {
     localStorage.removeItem(FORM_STORAGE_KEY);
   };
 
+  const resetForm = () => {
+    setTitle('');
+    setAudioFile(null);
+    setAudioFileName('');
+    setImageFile(null);
+    setImagePreview(null);
+    setUploadProgress(0);
+    setUploadedUrl(null);
+    setBpm('');
+    setKey('');
+    setHasStingEnding(false);
+    setIsOneStop(false);
+    setSelectedGenres([]);
+    setSelectedSubGenres([]);
+    setSelectedMoods([]);
+    setSelectedMediaUsage([]);
+    setMp3Url('');
+    setTrackoutsUrl('');
+    setHasVocals(false);
+    setIsSyncOnly(false);
+    setStemsUrl('');
+    setSplitSheetFile(null);
+    setSplitSheetUrl('');
+    setTrackoutsFile(null);
+    setStemsFile(null);
+    setError('');
+    setUploadStatus('');
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
@@ -421,6 +450,7 @@ export function TrackUploadForm() {
       setSuccessCountdown(10); // Reset countdown
       setShowSuccessModal(true);
       clearSavedFormData();
+      resetForm(); // Reset form to empty state
       
       // Don't navigate immediately - let user see success modal first
       // navigate('/producer/dashboard');
@@ -559,7 +589,7 @@ export function TrackUploadForm() {
                     setShowSuccessModal(false);
                     setSuccessCountdown(10);
                     // Reset form for another upload
-                    window.location.reload();
+                    resetForm();
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
