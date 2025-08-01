@@ -49,6 +49,9 @@ interface FormData {
   stemsUrl: string;
   splitSheetUrl: string;
   audioFileName: string;
+  explicitLyrics: boolean;
+  isCleanVersion: boolean | null;
+  cleanVersionOf: string;
 }
 
 export function TrackUploadForm() {
@@ -100,11 +103,11 @@ export function TrackUploadForm() {
   // Add state for expanded moods
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
   // Add state for explicit lyrics
-  const [explicitLyrics, setExplicitLyrics] = useState(false);
+  const [explicitLyrics, setExplicitLyrics] = useState(savedData?.explicitLyrics || false);
   // Add state for clean version logic
-  const [isCleanVersion, setIsCleanVersion] = useState<null | boolean>(null);
+  const [isCleanVersion, setIsCleanVersion] = useState<null | boolean>(savedData?.isCleanVersion || null);
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
-  const [cleanVersionOf, setCleanVersionOf] = useState<string>('');
+  const [cleanVersionOf, setCleanVersionOf] = useState<string>(savedData?.cleanVersionOf || '');
   // Add state for autocomplete search
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -166,13 +169,17 @@ export function TrackUploadForm() {
       selectedGenres,
       selectedSubGenres,
       selectedMoods,
+      selectedMediaUsage,
       mp3Url,
       trackoutsUrl,
       hasVocals,
       isSyncOnly,
       stemsUrl,
       splitSheetUrl,
-      audioFileName
+      audioFileName,
+      explicitLyrics,
+      isCleanVersion,
+      cleanVersionOf
     };
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
   }, [
@@ -184,13 +191,17 @@ export function TrackUploadForm() {
     selectedGenres,
     selectedSubGenres,
     selectedMoods,
+    selectedMediaUsage,
     mp3Url,
     trackoutsUrl,
     hasVocals,
     isSyncOnly,
     stemsUrl,
     splitSheetUrl,
-    audioFileName
+    audioFileName,
+    explicitLyrics,
+    isCleanVersion,
+    cleanVersionOf
   ]);
 
   const clearSavedFormData = () => {
@@ -223,6 +234,9 @@ export function TrackUploadForm() {
     setTrackoutsFile(null);
     setStemsFile(null);
     setError('');
+    setExplicitLyrics(false);
+    setIsCleanVersion(null);
+    setCleanVersionOf('');
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,15 +278,12 @@ export function TrackUploadForm() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
-    alert('Submit function called');
     e.preventDefault();
     if (!user || !audioFile) {
-      alert('Submit blocked - missing user or audio file');
       return;
     }
 
     try {
-      alert('Starting upload process');
       setIsSubmitting(true);
       setIsUploading(true);
       setError('');
@@ -800,7 +811,7 @@ export function TrackUploadForm() {
                     if (file) {
                       const validationError = await validateArchiveFile(file);
                       if (validationError) {
-                        alert(validationError);
+                        setError(validationError);
                         e.target.value = '';
                         return;
                       }
@@ -837,7 +848,7 @@ export function TrackUploadForm() {
                     if (file) {
                       const validationError = await validateArchiveFile(file);
                       if (validationError) {
-                        alert(validationError);
+                        setError(validationError);
                         e.target.value = '';
                         return;
                       }
