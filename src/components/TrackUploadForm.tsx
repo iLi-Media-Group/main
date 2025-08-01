@@ -624,59 +624,6 @@ export function TrackUploadForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Audio Upload Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-              <Music className="w-5 h-5 mr-2" />
-              Audio File
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Upload Audio File *
-                </label>
-                <input
-                  type="file"
-                  accept="audio/mp3"
-                  onChange={handleFileChange}
-                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-                  disabled={isSubmitting}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Supported format: MP3 only (Max 50MB)
-                </p>
-              </div>
-
-              {/* Show saved audio file name if no file is currently selected */}
-              {!audioFile && audioFileName && (
-                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-blue-400 font-medium">Saved Audio File</h4>
-                    <button
-                      type="button"
-                      onClick={() => setAudioFileName('')}
-                      className="text-gray-400 hover:text-white text-sm"
-                    >
-                      ×
-                    </button>
-                  </div>
-                  <p className="text-white text-sm">{audioFileName}</p>
-                  <p className="text-gray-400 text-xs mt-1">
-                    Please re-select your audio file to continue
-                  </p>
-                </div>
-              )}
-
-              {audioFile && (
-                  <div className="bg-white/5 rounded-lg p-4">
-                    <h3 className="text-white font-medium mb-2">Preview</h3>
-                    <AudioPlayer src={URL.createObjectURL(audioFile)} title={audioFile.name} />
-                  </div>
-                )}
-            </div>
-          </div>
-
           {/* Track Details Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Track Details</h2>
@@ -795,6 +742,59 @@ export function TrackUploadForm() {
                   />
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Audio Upload Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <Music className="w-5 h-5 mr-2" />
+              Audio File
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Upload Audio File *
+                </label>
+                <input
+                  type="file"
+                  accept="audio/mp3"
+                  onChange={handleFileChange}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Supported format: MP3 only (Max 50MB)
+                </p>
+              </div>
+
+              {/* Show saved audio file name if no file is currently selected */}
+              {!audioFile && audioFileName && (
+                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-blue-400 font-medium">Saved Audio File</h4>
+                    <button
+                      type="button"
+                      onClick={() => setAudioFileName('')}
+                      className="text-gray-400 hover:text-white text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <p className="text-white text-sm">{audioFileName}</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    Please re-select your audio file to continue
+                  </p>
+                </div>
+              )}
+
+              {audioFile && (
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-2">Preview</h3>
+                    <AudioPlayer src={URL.createObjectURL(audioFile)} title={audioFile.name} />
+                  </div>
+                )}
             </div>
           </div>
 
