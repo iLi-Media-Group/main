@@ -347,6 +347,7 @@ export function ProducerDashboard() {
       }
 
       // Fetch tracks with sales data
+      console.log('🔍 Fetching tracks for user:', user.id);
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
         .select(`
@@ -369,6 +370,7 @@ export function ProducerDashboard() {
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
+      console.log('📊 Tracks query result:', { tracksData, tracksError });
       if (tracksError) throw tracksError;
 
       // Fetch sales data for each track

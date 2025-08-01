@@ -500,9 +500,13 @@ export function TrackUploadForm() {
       // Log the exact data being sent to help debug the 400 error
       console.log('[DEBUG] Inserting track with data:', JSON.stringify(insertData, null, 2));
       
-      const { error: trackError } = await supabase
+      console.log('🎵 Inserting track with data:', JSON.stringify(insertData, null, 2));
+      const { data: insertResult, error: trackError } = await supabase
         .from('tracks')
-        .insert(insertData);
+        .insert(insertData)
+        .select();
+      
+      console.log('✅ Track insertion result:', { insertResult, trackError });
       console.log('[DEBUG] Inserted track DB values:', {
         audio_url: `${user.id}/${title}/audio.mp3`,
         image_url: imageUrl,
