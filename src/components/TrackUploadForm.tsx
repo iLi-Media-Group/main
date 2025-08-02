@@ -11,9 +11,12 @@ import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
+import { useFormPersistence } from '../hooks/useFormPersistence';
+import { FilePersistenceManager } from '../utils/filePersistence';
 
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
+const FORM_KEY = 'trackUpload';
 
 interface Genre {
   id: string;
@@ -57,38 +60,50 @@ interface FormData {
 export function TrackUploadForm() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  const loadSavedFormData = (): FormData | null => {
-    const saved = localStorage.getItem(FORM_STORAGE_KEY);
-    return saved ? JSON.parse(saved) : null;
-  };
 
-  const savedData = loadSavedFormData();
+  // Initialize form persistence
+  const {
+    formData,
+    updateFormData,
+    clearSavedData,
+    resetForm: resetFormData
+  } = useFormPersistence({
+    title: '',
+    bpm: '',
+    key: '',
+    hasStingEnding: false,
+    isOneStop: false,
+    selectedGenres: [] as string[],
+    selectedSubGenres: [] as string[],
+    selectedMoods: [] as string[],
+    selectedMediaUsage: [] as string[],
+    mp3Url: '',
+    trackoutsUrl: '',
+    hasVocals: false,
+    isSyncOnly: false,
+    stemsUrl: '',
+    splitSheetUrl: '',
+    audioFileName: '',
+    explicitLyrics: false,
+    isCleanVersion: null as boolean | null,
+    cleanVersionOf: ''
+  }, {
+    storageKey: FORM_STORAGE_KEY,
+    excludeFields: ['audioFile', 'imageFile', 'trackoutsFile', 'stemsFile', 'splitSheetFile', 'imagePreview']
+  });
 
-  const [title, setTitle] = useState(savedData?.title || '');
+  // File states (not persisted in localStorage)
   const [audioFile, setAudioFile] = useState<File | null>(null);
-  const [audioFileName, setAudioFileName] = useState(savedData?.audioFileName || '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
+  const [stemsFile, setStemsFile] = useState<File | null>(null);
+  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+
+  // Other states
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [bpm, setBpm] = useState(savedData?.bpm || '');
-  const [key, setKey] = useState(savedData?.key || '');
-  const [hasStingEnding, setHasStingEnding] = useState(savedData?.hasStingEnding || false);
-  const [isOneStop, setIsOneStop] = useState(savedData?.isOneStop || false);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>(savedData?.selectedGenres || []);
-  const [selectedSubGenres, setSelectedSubGenres] = useState<string[]>(savedData?.selectedSubGenres || []);
-  const [selectedMoods, setSelectedMoods] = useState<string[]>(savedData?.selectedMoods || []);
-  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>(savedData?.selectedMediaUsage || []);
-  const [mp3Url, setMp3Url] = useState(savedData?.mp3Url || '');
-  const [trackoutsUrl, setTrackoutsUrl] = useState(savedData?.trackoutsUrl || '');
-  const [hasVocals, setHasVocals] = useState(savedData?.hasVocals || false); 
-
-  const [isSyncOnly, setIsSyncOnly] = useState(savedData?.isSyncOnly || false);
-  const [stemsUrl, setStemsUrl] = useState(savedData?.stemsUrl || '');
-  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
-  const [splitSheetUrl, setSplitSheetUrl] = useState(savedData?.splitSheetUrl || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -98,20 +113,47 @@ export function TrackUploadForm() {
   const [genresLoading, setGenresLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
-  const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
-  const [stemsFile, setStemsFile] = useState<File | null>(null);
-  // Add state for expanded moods
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
-  // Add state for explicit lyrics
-  const [explicitLyrics, setExplicitLyrics] = useState(savedData?.explicitLyrics || false);
-  // Add state for clean version logic
-  const [isCleanVersion, setIsCleanVersion] = useState<null | boolean>(savedData?.isCleanVersion || null);
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
-  const [cleanVersionOf, setCleanVersionOf] = useState<string>(savedData?.cleanVersionOf || '');
-  // Add state for autocomplete search
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+
+  // Load saved files on mount
+  useEffect(() => {
+    const loadSavedFiles = () => {
+      // Load audio file
+      const savedAudioFile = FilePersistenceManager.restoreFile(FORM_KEY, 'audioFile');
+      if (savedAudioFile) {
+        setAudioFile(savedAudioFile);
+      }
+
+      // Load image file
+      const savedImageFile = FilePersistenceManager.restoreFile(FORM_KEY, 'imageFile');
+      if (savedImageFile) {
+        setImageFile(savedImageFile);
+        setImagePreview(URL.createObjectURL(savedImageFile));
+      }
+
+      // Load other files
+      const savedTrackoutsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'trackoutsFile');
+      if (savedTrackoutsFile) {
+        setTrackoutsFile(savedTrackoutsFile);
+      }
+
+      const savedStemsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'stemsFile');
+      if (savedStemsFile) {
+        setStemsFile(savedStemsFile);
+      }
+
+      const savedSplitSheetFile = FilePersistenceManager.restoreFile(FORM_KEY, 'splitSheetFile');
+      if (savedSplitSheetFile) {
+        setSplitSheetFile(savedSplitSheetFile);
+      }
+    };
+
+    loadSavedFiles();
+  }, []);
 
 
 
@@ -159,84 +201,20 @@ export function TrackUploadForm() {
     fetchGenres();
   }, []);
 
-  useEffect(() => {
-    const formData: FormData = {
-      title,
-      bpm,
-      key,
-      hasStingEnding,
-      isOneStop,
-      selectedGenres,
-      selectedSubGenres,
-      selectedMoods,
-      selectedMediaUsage,
-      mp3Url,
-      trackoutsUrl,
-      hasVocals,
-      isSyncOnly,
-      stemsUrl,
-      splitSheetUrl,
-      audioFileName,
-      explicitLyrics,
-      isCleanVersion,
-      cleanVersionOf
-    };
-    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
-  }, [
-    title,
-    bpm,
-    key,
-    hasStingEnding,
-    isOneStop,
-    selectedGenres,
-    selectedSubGenres,
-    selectedMoods,
-    selectedMediaUsage,
-    mp3Url,
-    trackoutsUrl,
-    hasVocals,
-    isSyncOnly,
-    stemsUrl,
-    splitSheetUrl,
-    audioFileName,
-    explicitLyrics,
-    isCleanVersion,
-    cleanVersionOf
-  ]);
-
-  const clearSavedFormData = () => {
-    localStorage.removeItem(FORM_STORAGE_KEY);
-  };
-
   const resetForm = () => {
-    setTitle('');
+    resetFormData();
     setAudioFile(null);
-    setAudioFileName('');
     setImageFile(null);
     setImagePreview(null);
-    setUploadProgress(0);
-    setUploadedUrl(null);
-    setBpm('');
-    setKey('');
-    setHasStingEnding(false);
-    setIsOneStop(false);
-    setSelectedGenres([]);
-    setSelectedSubGenres([]);
-    setSelectedMoods([]);
-    setSelectedMediaUsage([]);
-    setMp3Url('');
-    setTrackoutsUrl('');
-    setHasVocals(false);
-    setIsSyncOnly(false);
-    setStemsUrl('');
-    setSplitSheetFile(null);
-    setSplitSheetUrl('');
     setTrackoutsFile(null);
     setStemsFile(null);
+    setSplitSheetFile(null);
+    setUploadProgress(0);
+    setUploadedUrl(null);
     setError('');
-    setExplicitLyrics(false);
-    setIsCleanVersion(null);
-    setCleanVersionOf('');
+    
+    // Clear saved files
+    FilePersistenceManager.clearAllFiles(FORM_KEY);
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -252,7 +230,10 @@ export function TrackUploadForm() {
     }
 
     setAudioFile(selectedFile);
-    setAudioFileName(selectedFile.name);
+    updateFormData({ audioFileName: selectedFile.name });
+    
+    // Save file to persistence
+    FilePersistenceManager.saveFileMetadata(selectedFile, FORM_KEY, 'audioFile');
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,6 +253,9 @@ export function TrackUploadForm() {
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
     setError('');
+    
+    // Save file to persistence
+    FilePersistenceManager.saveFileMetadata(file, FORM_KEY, 'imageFile');
   };
 
   // Handle Spotify URL input
@@ -289,17 +273,17 @@ export function TrackUploadForm() {
       setError('');
       setUploadProgress(0);
 
-      const bpmNumber = parseInt(bpm);
+      const bpmNumber = parseInt(formData.bpm);
       if (isNaN(bpmNumber) || bpmNumber < 1 || bpmNumber > 999) {
         throw new Error('Please provide a valid BPM value between 1 and 999');
       }
 
-      if (!selectedGenres.length) {
+      if (!formData.selectedGenres.length) {
         throw new Error('Please select at least one genre');
       }
 
       // Validate and format genres - use display names for database storage
-      const formattedGenres = selectedGenres
+      const formattedGenres = formData.selectedGenres
         .map(genreName => {
           const genre = genres.find(g => g.display_name === genreName);
           return genre ? genre.display_name : genreName;
@@ -314,7 +298,7 @@ export function TrackUploadForm() {
         audioFile,
         'track-audio',
         (progress) => { setUploadProgress(progress); },
-        `${user.id}/${title}`,
+        `${user.id}/${formData.title}`,
         'audio.mp3'
       );
       console.log('[DEBUG] Uploaded audio file path:', audioPath);
@@ -326,83 +310,82 @@ export function TrackUploadForm() {
           imageFile,
           'track-images',
           undefined,
-          `${user.id}/${title}`,
+          `${user.id}/${formData.title}`,
           'cover.jpg'
         );
         console.log('[DEBUG] Uploaded image signed URL:', imageSignedUrl);
         imageUrl = imageSignedUrl; // Store the signed URL
       }
 
-      let splitSheetUploadedUrl = splitSheetUrl;
+      let splitSheetUploadedUrl = formData.splitSheetUrl;
       if (splitSheetFile) {
         const splitSheetSignedUrl = await uploadFile(
           splitSheetFile,
           'split-sheets',
           undefined,
-          `${user.id}/${title}`,
+          `${user.id}/${formData.title}`,
           'split_sheet.pdf'
         );
         splitSheetUploadedUrl = splitSheetSignedUrl;
-        setSplitSheetUrl(splitSheetUploadedUrl);
+        updateFormData({ splitSheetUrl: splitSheetUploadedUrl });
         console.log('[DEBUG] Uploaded split sheet signed URL:', splitSheetUploadedUrl);
       }
 
       // --- New logic for trackouts and stems ---
-      let trackoutsStoragePath = trackoutsUrl;
+      let trackoutsStoragePath = formData.trackoutsUrl;
       if (trackoutsFile) {
         const trackoutsSignedUrl = await uploadFile(
           trackoutsFile,
           'trackouts',
           undefined,
-          `${user.id}/${title}`,
+          `${user.id}/${formData.title}`,
           'trackouts.zip'
         );
         trackoutsStoragePath = trackoutsSignedUrl;
-        setTrackoutsUrl(trackoutsStoragePath);
+        updateFormData({ trackoutsUrl: trackoutsStoragePath });
         console.log('[DEBUG] Uploaded trackouts signed URL:', trackoutsStoragePath);
       }
-      let stemsStoragePath = stemsUrl;
+      let stemsStoragePath = formData.stemsUrl;
       if (stemsFile) {
         const stemsSignedUrl = await uploadFile(
           stemsFile,
           'stems',
           undefined,
-          `${user.id}/${title}`,
+          `${user.id}/${formData.title}`,
           'stems.zip'
         );
         stemsStoragePath = stemsSignedUrl;
-        setStemsUrl(stemsStoragePath);
+        updateFormData({ stemsUrl: stemsStoragePath });
         console.log('[DEBUG] Uploaded stems signed URL:', stemsStoragePath);
       }
       // --- End new logic ---
 
       // Prepare Spotify data if available
 
-      
       // Insert or update track in DB
       const insertData = {
         track_producer_id: user.id,
-        title,
+        title: formData.title,
         artist: user.email?.split('@')[0] || 'Unknown Artist',
         genres: formattedGenres.join(','),
-        sub_genres: selectedSubGenres.join(','),
-        moods: selectedMoods,
-        media_usage: selectedMediaUsage,
+        sub_genres: formData.selectedSubGenres.join(','),
+        moods: formData.selectedMoods,
+        media_usage: formData.selectedMediaUsage,
         bpm: bpmNumber,
-        key,
-        has_sting_ending: hasStingEnding,
-        is_one_stop: isOneStop,
-        audio_url: `${user.id}/${title}/audio.mp3`, // Always set to deterministic path
+        key: formData.key,
+        has_sting_ending: formData.hasStingEnding,
+        is_one_stop: formData.isOneStop,
+        audio_url: `${user.id}/${formData.title}/audio.mp3`, // Always set to deterministic path
         image_url: imageUrl, // This is now a file path
-        mp3_url: mp3Url || null,
+        mp3_url: formData.mp3Url || null,
         trackouts_url: trackoutsStoragePath || null,
         stems_url: stemsStoragePath || null,
         split_sheet_url: splitSheetUploadedUrl || null,
-        has_vocals: hasVocals,
-        vocals_usage_type: hasVocals ? 'normal' : null,
-        is_sync_only: isSyncOnly,
-        explicit_lyrics: isCleanVersion ? false : explicitLyrics,
-        clean_version_of: isCleanVersion && cleanVersionOf ? cleanVersionOf : null,
+        has_vocals: formData.hasVocals,
+        vocals_usage_type: formData.hasVocals ? 'normal' : null,
+        is_sync_only: formData.isSyncOnly,
+        explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
+        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -420,7 +403,7 @@ export function TrackUploadForm() {
       
       console.log('✅ Track insertion result:', { insertResult, trackError });
       console.log('[DEBUG] Inserted track DB values:', {
-        audio_url: `${user.id}/${title}/audio.mp3`,
+        audio_url: `${user.id}/${formData.title}/audio.mp3`,
         image_url: imageUrl,
         trackouts_url: trackoutsStoragePath,
         stems_url: stemsStoragePath,
@@ -442,8 +425,8 @@ export function TrackUploadForm() {
         .from('tracks')
         .select('id')
         .eq('track_producer_id', user.id)
-        .eq('title', title)
-        .eq('audio_url', `${user.id}/${title}/audio.mp3`)
+        .eq('title', formData.title)
+        .eq('audio_url', `${user.id}/${formData.title}/audio.mp3`)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -454,7 +437,7 @@ export function TrackUploadForm() {
       setUploadedTrackId(trackData?.id || null);
       setSuccessCountdown(10); // Reset countdown
       setShowSuccessModal(true);
-      clearSavedFormData();
+      clearSavedData();
       resetForm(); // Reset form to empty state
       
       // Don't navigate immediately - let user see success modal first
@@ -480,7 +463,7 @@ export function TrackUploadForm() {
 
   // Fetch user's explicit tracks for clean version dropdown
   useEffect(() => {
-    if (user && explicitLyrics && hasVocals && isCleanVersion) {
+    if (user && formData.explicitLyrics && formData.hasVocals && formData.isCleanVersion) {
       supabase
         .from('tracks')
         .select('id, title')
@@ -489,11 +472,11 @@ export function TrackUploadForm() {
         .neq('id', uploadedTrackId) // Exclude current track if editing
         .then(({ data }) => setExplicitTracks(data || []));
     }
-  }, [user, explicitLyrics, hasVocals, isCleanVersion, uploadedTrackId]);
+  }, [user, formData.explicitLyrics, formData.hasVocals, formData.isCleanVersion, uploadedTrackId]);
 
   // Autocomplete search for explicit tracks
   useEffect(() => {
-    if (user && isCleanVersion && searchTerm.length > 1) {
+    if (user && formData.isCleanVersion && searchTerm.length > 1) {
       setSearchLoading(true);
       supabase
         .from('tracks')
@@ -508,7 +491,7 @@ export function TrackUploadForm() {
     } else {
       setSearchResults([]);
     }
-  }, [user, isCleanVersion, searchTerm]);
+  }, [user, formData.isCleanVersion, searchTerm]);
 
   if (genresLoading) {
     return (
@@ -568,7 +551,7 @@ export function TrackUploadForm() {
               
               <h3 className="text-2xl font-bold text-white mb-3">🎉 Upload Successful!</h3>
               <p className="text-green-200 mb-2 text-lg">Your track has been uploaded and saved successfully.</p>
-              <p className="text-green-300 mb-6 text-sm">Track: <span className="font-semibold">{title}</span></p>
+              <p className="text-green-300 mb-6 text-sm">Track: <span className="font-semibold">{formData.title}</span></p>
               
               {/* Countdown timer */}
               <div className="mb-6">
@@ -615,6 +598,24 @@ export function TrackUploadForm() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Upload New Track</h1>
           <p className="text-gray-400">Share your music with the world</p>
+          
+          {/* Persistence notification */}
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></div>
+                <p className="text-blue-300 text-sm">
+                  💾 Your form data is automatically saved. You can navigate away and return without losing your progress.
+                </p>
+              </div>
+              <button
+                onClick={resetForm}
+                className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+              >
+                Clear Form
+              </button>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -635,8 +636,8 @@ export function TrackUploadForm() {
                 </label>
                 <input
                   type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  value={formData.title}
+                  onChange={(e) => updateFormData({ title: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                   placeholder="Enter track title"
                   disabled={isSubmitting}
@@ -652,8 +653,8 @@ export function TrackUploadForm() {
                 </label>
                 <input
                   type="number"
-                  value={bpm}
-                  onChange={(e) => setBpm(e.target.value)}
+                  value={formData.bpm}
+                  onChange={(e) => updateFormData({ bpm: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                   placeholder="120"
                   min="1"
@@ -668,8 +669,8 @@ export function TrackUploadForm() {
                   Musical Key
                 </label>
                 <select
-                  value={key}
-                  onChange={(e) => setKey(e.target.value)}
+                  value={formData.key}
+                  onChange={(e) => updateFormData({ key: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                   disabled={isSubmitting}
                 >
@@ -686,8 +687,8 @@ export function TrackUploadForm() {
                 <label className="flex items-center space-x-2 text-gray-300">
                   <input
                     type="checkbox"
-                    checked={hasStingEnding}
-                    onChange={(e) => setHasStingEnding(e.target.checked)}
+                    checked={formData.hasStingEnding}
+                    onChange={(e) => updateFormData({ hasStingEnding: e.target.checked })}
                     className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
@@ -697,8 +698,8 @@ export function TrackUploadForm() {
                 <label className="flex items-center space-x-2 text-gray-300">
                   <input
                     type="checkbox"
-                    checked={isOneStop}
-                    onChange={(e) => setIsOneStop(e.target.checked)}
+                    checked={formData.isOneStop}
+                    onChange={(e) => updateFormData({ isOneStop: e.target.checked })}
                     className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
@@ -770,19 +771,19 @@ export function TrackUploadForm() {
               </div>
 
               {/* Show saved audio file name if no file is currently selected */}
-              {!audioFile && audioFileName && (
+              {!audioFile && formData.audioFileName && (
                 <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-blue-400 font-medium">Saved Audio File</h4>
                     <button
                       type="button"
-                      onClick={() => setAudioFileName('')}
+                      onClick={() => updateFormData({ audioFileName: '' })}
                       className="text-gray-400 hover:text-white text-sm"
                     >
                       ×
                     </button>
                   </div>
-                  <p className="text-white text-sm">{audioFileName}</p>
+                  <p className="text-white text-sm">{formData.audioFileName}</p>
                   <p className="text-gray-400 text-xs mt-1">
                     Please re-select your audio file to continue
                   </p>
@@ -820,10 +821,12 @@ export function TrackUploadForm() {
                         return;
                       }
                       setTrackoutsFile(file);
-                      setTrackoutsUrl(URL.createObjectURL(file)); // Preview for now
+                      updateFormData({ trackoutsUrl: URL.createObjectURL(file) }); // Preview for now
+                      FilePersistenceManager.saveFileMetadata(file, FORM_KEY, 'trackoutsFile');
                     } else {
                       setTrackoutsFile(null);
-                      setTrackoutsUrl('');
+                      updateFormData({ trackoutsUrl: '' });
+                      FilePersistenceManager.clearFile(FORM_KEY, 'trackoutsFile');
                     }
                   }}
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
@@ -857,10 +860,12 @@ export function TrackUploadForm() {
                         return;
                       }
                       setStemsFile(file);
-                      setStemsUrl(URL.createObjectURL(file)); // Preview for now
+                      updateFormData({ stemsUrl: URL.createObjectURL(file) }); // Preview for now
+                      FilePersistenceManager.saveFileMetadata(file, FORM_KEY, 'stemsFile');
                     } else {
                       setStemsFile(null);
-                      setStemsUrl('');
+                      updateFormData({ stemsUrl: '' });
+                      FilePersistenceManager.clearFile(FORM_KEY, 'stemsFile');
                     }
                   }}
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
@@ -884,7 +889,15 @@ export function TrackUploadForm() {
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => setSplitSheetFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setSplitSheetFile(file);
+                    if (file) {
+                      FilePersistenceManager.saveFileMetadata(file, FORM_KEY, 'splitSheetFile');
+                    } else {
+                      FilePersistenceManager.clearFile(FORM_KEY, 'splitSheetFile');
+                    }
+                  }}
                   className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                   disabled={isSubmitting}
                 />
@@ -900,15 +913,15 @@ export function TrackUploadForm() {
               <label className="flex items-center space-x-2 text-gray-300">
                 <input
                   type="checkbox"
-                  checked={hasVocals}
-                  onChange={(e) => setHasVocals(e.target.checked)}
+                  checked={formData.hasVocals}
+                  onChange={(e) => updateFormData({ hasVocals: e.target.checked })}
                   className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                   disabled={isSubmitting}
                 />
                 <span>Track contains vocals</span>
               </label>
               {/* Clean version logic - always show if hasVocals is true */}
-              {hasVocals && (
+              {formData.hasVocals && (
                 <div className="mt-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Is this the clean version of an explicit song?
@@ -917,10 +930,12 @@ export function TrackUploadForm() {
                     <label className="flex items-center space-x-2 text-gray-300">
                       <input
                         type="radio"
-                        checked={isCleanVersion === true}
+                        checked={formData.isCleanVersion === true}
                         onChange={() => {
-                          setIsCleanVersion(true);
-                          setExplicitLyrics(false); // Uncheck explicit if clean version
+                          updateFormData({ 
+                            isCleanVersion: true,
+                            explicitLyrics: false // Uncheck explicit if clean version
+                          });
                         }}
                         disabled={isSubmitting}
                       />
@@ -929,14 +944,14 @@ export function TrackUploadForm() {
                     <label className="flex items-center space-x-2 text-gray-300">
                       <input
                         type="radio"
-                        checked={isCleanVersion === false}
-                        onChange={() => setIsCleanVersion(false)}
+                        checked={formData.isCleanVersion === false}
+                        onChange={() => updateFormData({ isCleanVersion: false })}
                         disabled={isSubmitting}
                       />
                       <span>No</span>
                     </label>
                   </div>
-                  {isCleanVersion && (
+                  {formData.isCleanVersion && (
                     <div className="mt-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Select the explicit track this is the clean version of:
@@ -955,9 +970,9 @@ export function TrackUploadForm() {
                           {searchResults.map(track => (
                             <li
                               key={track.id}
-                              className={`px-3 py-2 cursor-pointer hover:bg-blue-700/40 text-white ${cleanVersionOf === track.id ? 'bg-blue-700/60' : ''}`}
+                              className={`px-3 py-2 cursor-pointer hover:bg-blue-700/40 text-white ${formData.cleanVersionOf === track.id ? 'bg-blue-700/60' : ''}`}
                               onClick={() => {
-                                setCleanVersionOf(track.id);
+                                updateFormData({ cleanVersionOf: track.id });
                                 setSearchTerm(track.title);
                                 setSearchResults([]);
                               }}
@@ -971,26 +986,26 @@ export function TrackUploadForm() {
                   )}
                 </div>
               )}
-              {/* Explicit Lyrics Checkbox - only show if hasVocals is true and not a clean version */}
-              {hasVocals && (
-                <label className="flex items-center space-x-2 text-red-300">
-                  <input
-                    type="checkbox"
-                    checked={explicitLyrics}
-                    onChange={(e) => setExplicitLyrics(e.target.checked)}
-                    className="rounded border-gray-600 text-red-600 focus:ring-red-500"
-                    disabled={isSubmitting || isCleanVersion}
-                  />
-                  <span>This track contains explicit lyrics</span>
-                </label>
+                              {/* Explicit Lyrics Checkbox - only show if hasVocals is true and not a clean version */}
+                {formData.hasVocals && (
+                              <label className="flex items-center space-x-2 text-red-300">
+                <input
+                  type="checkbox"
+                  checked={formData.explicitLyrics}
+                  onChange={(e) => updateFormData({ explicitLyrics: e.target.checked })}
+                  className="rounded border-gray-600 text-red-600 focus:ring-red-500"
+                  disabled={isSubmitting || !!formData.isCleanVersion}
+                />
+                <span>This track contains explicit lyrics</span>
+              </label>
               )}
 
 
               <label className="flex items-center space-x-2 text-gray-300">
                 <input
                   type="checkbox"
-                  checked={isSyncOnly}
-                  onChange={(e) => setIsSyncOnly(e.target.checked)}
+                  checked={formData.isSyncOnly}
+                  onChange={(e) => updateFormData({ isSyncOnly: e.target.checked })}
                   className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                   disabled={isSubmitting}
                 />
@@ -1023,17 +1038,21 @@ export function TrackUploadForm() {
                       >
                         <input
                           type="checkbox"
-                          checked={selectedGenres.includes(genre.display_name)}
+                          checked={formData.selectedGenres.includes(genre.display_name)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedGenres([...selectedGenres, genre.display_name]);
+                              updateFormData({ 
+                                selectedGenres: [...formData.selectedGenres, genre.display_name] 
+                              });
                             } else {
-                              setSelectedGenres(selectedGenres.filter((g) => g !== genre.display_name));
+                              const newSelectedGenres = formData.selectedGenres.filter((g) => g !== genre.display_name);
+                              updateFormData({ selectedGenres: newSelectedGenres });
                               // Remove sub-genres for this genre when unchecking
-                              setSelectedSubGenres(selectedSubGenres.filter(sg => {
+                              const newSelectedSubGenres = formData.selectedSubGenres.filter(sg => {
                                 const subGenre = genre.sub_genres.find(s => s.display_name === sg);
                                 return !subGenre;
-                              }));
+                              });
+                              updateFormData({ selectedSubGenres: newSelectedSubGenres });
                             }
                           }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -1045,7 +1064,7 @@ export function TrackUploadForm() {
                   </div>
                 </div>
 
-                {selectedGenres.map((genreName) => {
+                {formData.selectedGenres.map((genreName: string) => {
                   const genre = genres.find(g => g.display_name === genreName);
                   const subGenres = genre?.sub_genres || [];
                   
@@ -1062,14 +1081,16 @@ export function TrackUploadForm() {
                           >
                             <input
                               type="checkbox"
-                              checked={selectedSubGenres.includes(subGenre.display_name)}
+                              checked={formData.selectedSubGenres.includes(subGenre.display_name)}
                               onChange={(e) => {
                                 if (e.target.checked) {
-                                  setSelectedSubGenres([...selectedSubGenres, subGenre.display_name]);
+                                  updateFormData({ 
+                                    selectedSubGenres: [...formData.selectedSubGenres, subGenre.display_name] 
+                                  });
                                 } else {
-                                  setSelectedSubGenres(
-                                    selectedSubGenres.filter((sg) => sg !== subGenre.display_name)
-                                  );
+                                  updateFormData({
+                                    selectedSubGenres: formData.selectedSubGenres.filter((sg) => sg !== subGenre.display_name)
+                                  });
                                 }
                               }}
                               className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -1108,12 +1129,16 @@ export function TrackUploadForm() {
                         <label key={subMood} className="flex items-center space-x-2 text-gray-300">
                           <input
                             type="checkbox"
-                            checked={selectedMoods.includes(subMood)}
+                            checked={formData.selectedMoods.includes(subMood)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedMoods([...selectedMoods, subMood]);
+                                updateFormData({ 
+                                  selectedMoods: [...formData.selectedMoods, subMood] 
+                                });
                               } else {
-                                setSelectedMoods(selectedMoods.filter((m) => m !== subMood));
+                                updateFormData({
+                                  selectedMoods: formData.selectedMoods.filter((m) => m !== subMood)
+                                });
                               }
                             }}
                             className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -1153,12 +1178,16 @@ export function TrackUploadForm() {
                                 <label key={fullType} className="flex items-center space-x-2">
                                   <input
                                     type="checkbox"
-                                    checked={selectedMediaUsage.includes(fullType)}
+                                    checked={formData.selectedMediaUsage.includes(fullType)}
                                     onChange={(e) => {
                                       if (e.target.checked) {
-                                        setSelectedMediaUsage([...selectedMediaUsage, fullType]);
+                                        updateFormData({ 
+                                          selectedMediaUsage: [...formData.selectedMediaUsage, fullType] 
+                                        });
                                       } else {
-                                        setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== fullType));
+                                        updateFormData({
+                                          selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== fullType)
+                                        });
                                       }
                                     }}
                                     className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"

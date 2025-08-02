@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Loader2, Upload, X } from 'lucide-react';
+import { FilePersistenceManager } from '../utils/filePersistence';
 
 interface CustomSyncTrackUploadFormProps {
   request: any;
   onClose: () => void;
   onUploaded: () => void;
 }
+
+const FORM_KEY = 'customSyncUpload';
 
 export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: CustomSyncTrackUploadFormProps) {
   const [mp3File, setMp3File] = useState<File | null>(null);
@@ -17,9 +20,41 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Load saved files on mount
+  useEffect(() => {
+    const loadSavedFiles = () => {
+      const savedMp3File = FilePersistenceManager.restoreFile(FORM_KEY, 'mp3File');
+      if (savedMp3File) {
+        setMp3File(savedMp3File);
+      }
+
+      const savedTrackoutsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'trackoutsFile');
+      if (savedTrackoutsFile) {
+        setTrackoutsFile(savedTrackoutsFile);
+      }
+
+      const savedStemsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'stemsFile');
+      if (savedStemsFile) {
+        setStemsFile(savedStemsFile);
+      }
+
+      const savedSplitSheetFile = FilePersistenceManager.restoreFile(FORM_KEY, 'splitSheetFile');
+      if (savedSplitSheetFile) {
+        setSplitSheetFile(savedSplitSheetFile);
+      }
+    };
+
+    loadSavedFiles();
+  }, []);
+
+  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>, fileKey: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setter(e.target.files[0]);
+      const file = e.target.files[0];
+      setter(file);
+      FilePersistenceManager.saveFileMetadata(file, FORM_KEY, fileKey);
+    } else {
+      setter(null);
+      FilePersistenceManager.clearFile(FORM_KEY, fileKey);
     }
   };
 
@@ -65,12 +100,24 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
         if (updateError) throw updateError;
       }
       setSuccess(true);
+      
+      // Clear saved files after successful upload
+      FilePersistenceManager.clearAllFiles(FORM_KEY);
+      
       onUploaded();
     } catch (err: any) {
       setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
+  };
+
+  const clearAllFiles = () => {
+    setMp3File(null);
+    setTrackoutsFile(null);
+    setStemsFile(null);
+    setSplitSheetFile(null);
+    FilePersistenceManager.clearAllFiles(FORM_KEY);
   };
 
   return (
@@ -86,30 +133,71 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">MP3 File</label>
-            <input type="file" accept="audio/mp3,audio/mpeg" onChange={handleFileChange(setMp3File)} className="w-full" />
+            <input 
+              type="file" 
+              accept="audio/mp3,audio/mpeg" 
+              onChange={handleFileChange(setMp3File, 'mp3File')} 
+              className="w-full" 
+            />
+            {mp3File && (
+              <p className="text-xs text-gray-400 mt-1">Selected: {mp3File.name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Trackouts (ZIP)</label>
-            <input type="file" accept="application/zip" onChange={handleFileChange(setTrackoutsFile)} className="w-full" />
+            <input 
+              type="file" 
+              accept="application/zip" 
+              onChange={handleFileChange(setTrackoutsFile, 'trackoutsFile')} 
+              className="w-full" 
+            />
+            {trackoutsFile && (
+              <p className="text-xs text-gray-400 mt-1">Selected: {trackoutsFile.name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Stems (ZIP)</label>
-            <input type="file" accept="application/zip" onChange={handleFileChange(setStemsFile)} className="w-full" />
+            <input 
+              type="file" 
+              accept="application/zip" 
+              onChange={handleFileChange(setStemsFile, 'stemsFile')} 
+              className="w-full" 
+            />
+            {stemsFile && (
+              <p className="text-xs text-gray-400 mt-1">Selected: {stemsFile.name}</p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Split Sheet (PDF)</label>
-            <input type="file" accept="application/pdf" onChange={handleFileChange(setSplitSheetFile)} className="w-full" />
+            <input 
+              type="file" 
+              accept="application/pdf" 
+              onChange={handleFileChange(setSplitSheetFile, 'splitSheetFile')} 
+              className="w-full" 
+            />
+            {splitSheetFile && (
+              <p className="text-xs text-gray-400 mt-1">Selected: {splitSheetFile.name}</p>
+            )}
           </div>
           {error && <div className="text-red-400 text-sm">{error}</div>}
           {success && <div className="text-green-400 text-sm">Upload successful!</div>}
-          <button
-            type="submit"
-            disabled={uploading}
-            className="w-full flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold mt-4 disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Upload className="w-5 h-5 mr-2" />}
-            {uploading ? 'Uploading...' : 'Upload Files'}
-          </button>
+          <div className="flex space-x-2">
+            <button
+              type="button"
+              onClick={clearAllFiles}
+              className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors font-semibold"
+            >
+              Clear All
+            </button>
+            <button
+              type="submit"
+              disabled={uploading}
+              className="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold disabled:opacity-50"
+            >
+              {uploading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Upload className="w-5 h-5 mr-2" />}
+              {uploading ? 'Uploading...' : 'Upload Files'}
+            </button>
+          </div>
         </form>
       </div>
     </div>
