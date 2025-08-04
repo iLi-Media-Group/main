@@ -251,14 +251,14 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   )}
                   {/* Authentication links */}
                   {user ? (
-                    <button onClick={handleSignOut} className="w-full flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                    <button type="button" onClick={handleSignOut} className="w-full flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
                       <LogOut className="w-4 h-4 mr-2" />Sign Out
                     </button>
                   ) : (
                     <>
-                      <a href="#" onClick={handleCreateAccount} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                      <button type="button" onClick={handleCreateAccount} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
                         <UserPlus className="w-4 h-4 mr-2" />Create Account
-                      </a>
+                      </button>
                       <Link to="/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <LogIn className="w-4 h-4 mr-2" />Client Login
                       </Link>

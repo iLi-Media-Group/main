@@ -2276,7 +2276,7 @@ if (subscription.price_id) {
                 <AlertTriangle className="w-6 h-6 text-red-400 mr-3" />
                 <h3 className="text-xl font-bold text-white">Delete Producer</h3>
               </div>
-              <button onClick={() => setProducerToDelete(null)} className="text-gray-400 hover:text-white">
+              <button type="button" onClick={() => setProducerToDelete(null)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>

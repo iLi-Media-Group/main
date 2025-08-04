@@ -91,7 +91,7 @@ export function NavigationMenu() {
       <div className="flex flex-col space-y-6">
         <div className="relative flex items-center justify-between mb-4">
           <span className="text-lg font-bold text-white">Menu</span>
-          <button className="relative" onClick={handleBellClick}>
+          <button type="button" className="relative" onClick={handleBellClick}>
             <Bell className="w-6 h-6 text-gray-300 hover:text-white transition-colors" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{unreadCount}</span>

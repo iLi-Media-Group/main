@@ -1042,7 +1042,7 @@ export default function CustomSyncRequestSubs() {
                               <span className="text-white font-semibold text-lg">{sub.track_name || 'Untitled Track'}</span>
                             </div>
                             <div className="text-blue-200 text-sm">
-                              Producer: <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
+                              Producer: <button type="button" className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
                             </div>
                             <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
                             {sub.signed_mp3_url && (
@@ -1181,7 +1181,7 @@ export default function CustomSyncRequestSubs() {
                     >
                       <p className="text-sm font-medium mb-1">
                         {message.sender.first_name || message.sender.last_name
-                          ? <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(message.sender.id); setShowProducerProfileDialog(true); }}>{`${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()}</button>
+                          ? <button type="button" className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(message.sender.id); setShowProducerProfileDialog(true); }}>{`${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()}</button>
                           : (message.sender.email === user?.email ? 'You' : 'Unknown')}
                       </p>
                       <p>{message.message}</p>
