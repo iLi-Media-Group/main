@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseArrayField } from '../lib/utils';
@@ -245,6 +245,17 @@ export function ProducerDashboard() {
   const [renewalRequests, setRenewalRequests] = useState<Proposal[]>([]);
   const [renewalLoadingId, setRenewalLoadingId] = useState<string | null>(null);
   const [renewalFeedback, setRenewalFeedback] = useState<{ [id: string]: string }>({});
+  
+  // Add state for track tabs and deleted tracks
+  const [trackTab, setTrackTab] = useState<'active' | 'deleted'>('active');
+  const [deletedTracks, setDeletedTracks] = useState<Track[]>([]);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    setTrackPage(1);
+  }, [trackTab]);
 
   useEffect(() => {
     if (user) {
@@ -378,6 +389,34 @@ export function ProducerDashboard() {
       console.log('📊 Tracks query result:', { tracksData, tracksError });
       if (tracksError) throw tracksError;
 
+      // Fetch deleted tracks
+      const { data: deletedTracksData, error: deletedTracksError } = await supabase
+        .from('tracks')
+        .select(`
+          id,
+          title,
+          genres,
+          moods,
+          media_usage,
+          bpm,
+          audio_url,
+          image_url,
+          created_at,
+          has_vocals,
+          vocals_usage_type,
+          is_sync_only,
+          stems_url,
+          split_sheet_url,
+          mp3_url,
+          trackouts_url,
+          deleted_at
+        `)
+        .eq('track_producer_id', user.id)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (deletedTracksError) throw deletedTracksError;
+
       // Fetch sales data for each track
       const trackIds = tracksData?.map(track => track.id) || [];
       
@@ -431,6 +470,32 @@ export function ProducerDashboard() {
       })) || [];
 
       setTracks(tracksWithSales);
+
+      // Process deleted tracks data
+      const deletedTracksWithSales = deletedTracksData?.map(track => ({
+        id: track.id,
+        title: track.title,
+        audioUrl: track.audio_url,
+        image_url: track.image_url,
+        created_at: track.created_at,
+        has_vocals: track.has_vocals,
+        vocals_usage_type: track.vocals_usage_type,
+        is_sync_only: track.is_sync_only,
+        stems_url: track.stems_url,
+        split_sheet_url: track.split_sheet_url,
+        mp3_url: track.mp3_url,
+        trackouts_url: track.trackouts_url,
+        audio_url: track.audio_url,
+        genres: parseArrayField(track.genres),
+        moods: parseArrayField(track.moods),
+        mediaUsage: parseArrayField(track.media_usage),
+        bpm: track.bpm,
+        sales_count: trackSalesMap[track.id] || 0,
+        revenue: trackRevenueMap[track.id] || 0,
+        deleted_at: track.deleted_at
+      })) || [];
+
+      setDeletedTracks(deletedTracksWithSales);
 
       // Calculate total stats from track sales only
       const totalTracks = tracksWithSales.length;
@@ -615,13 +680,77 @@ export function ProducerDashboard() {
 
       if (error) throw error;
 
-      // Update local state
+      // Move track from active to deleted list
       setTracks(tracks.filter(track => track.id !== selectedTrack.id));
+      setDeletedTracks(prev => [selectedTrack, ...prev]);
       setShowDeleteDialog(false);
       setSelectedTrack(null);
     } catch (err) {
       console.error('Error deleting track:', err);
       setError('Failed to delete track');
+    }
+  };
+
+  const confirmPermanentDeleteTrack = async () => {
+    if (!selectedTrack) return;
+
+    try {
+      // Check if track has any licenses
+      const { data: licenses, error: licensesError } = await supabase
+        .from('sales')
+        .select('id')
+        .eq('track_id', selectedTrack.id)
+        .is('deleted_at', null);
+
+      if (licensesError) throw licensesError;
+
+      if (licenses && licenses.length > 0) {
+        setError('Cannot permanently delete track with active licenses. Please contact support.');
+        setShowPermanentDeleteDialog(false);
+        setSelectedTrack(null);
+        return;
+      }
+
+      // Permanently delete the track
+      const { error } = await supabase
+        .from('tracks')
+        .delete()
+        .eq('id', selectedTrack.id);
+
+      if (error) throw error;
+
+      // Remove track from deleted list
+      setDeletedTracks(prev => prev.filter(track => track.id !== selectedTrack.id));
+      setShowPermanentDeleteDialog(false);
+      setSelectedTrack(null);
+    } catch (err) {
+      console.error('Error permanently deleting track:', err);
+      setError('Failed to permanently delete track');
+    }
+  };
+
+  const confirmRestoreTrack = async () => {
+    if (!selectedTrack) return;
+
+    try {
+      // Restore the track by removing deleted_at
+      const { error } = await supabase
+        .from('tracks')
+        .update({
+          deleted_at: null
+        })
+        .eq('id', selectedTrack.id);
+
+      if (error) throw error;
+
+      // Move track from deleted to active list
+      setDeletedTracks(prev => prev.filter(track => track.id !== selectedTrack.id));
+      setTracks(prev => [selectedTrack, ...prev]);
+      setShowRestoreDialog(false);
+      setSelectedTrack(null);
+    } catch (err) {
+      console.error('Error restoring track:', err);
+      setError('Failed to restore track');
     }
   };
 
@@ -778,7 +907,8 @@ export function ProducerDashboard() {
   }
 
   // Filter and paginate tracks
-  const filteredTracks = tracks.filter(track =>
+  const currentTracks = trackTab === 'active' ? tracks : deletedTracks;
+  const filteredTracks = currentTracks.filter(track =>
     track.title.toLowerCase().includes(trackSearch.toLowerCase())
   );
   const totalTrackPages = Math.ceil(filteredTracks.length / tracksPerPage);
@@ -1008,6 +1138,30 @@ export function ProducerDashboard() {
               </div>
             </div>
 
+            {/* Track Tabs */}
+            <div className="flex space-x-1 mb-4 bg-white/5 rounded-lg p-1">
+              <button
+                onClick={() => setTrackTab('active')}
+                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  trackTab === 'active'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Active Tracks ({tracks.length})
+              </button>
+              <button
+                onClick={() => setTrackTab('deleted')}
+                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  trackTab === 'deleted'
+                    ? 'bg-red-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Deleted Tracks ({deletedTracks.length})
+              </button>
+            </div>
+
             <input
               type="text"
               placeholder="Search tracks..."
@@ -1017,108 +1171,187 @@ export function ProducerDashboard() {
               style={{ minWidth: 200 }}
             />
 
-            {paginatedTracks.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No tracks found.</p>
-              </div>
-            ) : (
-              <div>
-                {paginatedTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
-                  >
-                    <div className="flex items-start space-x-4">
-                      <TrackImage track={track} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col">
-                          <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                          <div className="text-sm text-gray-400 space-y-1">
-                            <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
-                            <div className="flex items-center space-x-4">
-                              <span className="flex items-center">
-                                <DollarSign className="w-4 h-4 mr-1 text-green-400" />
-                                ${track.revenue.toFixed(2)}
-                              </span>
-                              <span className="flex items-center">
-                                <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
-                                {track.sales_count} sales
-                              </span>
-                              {track.has_vocals && (
+            {trackTab === 'active' ? (
+              paginatedTracks.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No active tracks found.</p>
+                </div>
+              ) : (
+                <div>
+                  {paginatedTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <TrackImage track={track} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                              <div className="flex items-center space-x-4">
                                 <span className="flex items-center">
-                                  <Mic className="w-4 h-4 mr-1 text-purple-400" />
-                                  {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                                  ${track.revenue.toFixed(2)}
                                 </span>
-                              )}
+                                <span className="flex items-center">
+                                  <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.sales_count} sales
+                                </span>
+                                {track.has_vocals && (
+                                  <span className="flex items-center">
+                                    <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                    {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowEditTrackModal(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                                title="Edit Track"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowTrackProposalsDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                                title="View Proposals"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
+                                title="Delete Track"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2 mt-3">
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowEditTrackModal(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                              title="Edit Track"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowTrackProposalsDialog(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                              title="View Proposals"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
-                              title="Delete Track"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                      <div className="w-64 flex-shrink-0">
-                        <div className="mb-3">
-                                      {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
-          {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
+                        <div className="w-64 flex-shrink-0">
+                          <div className="mb-3">
+                            {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+                            {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
                               <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
                                 Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
                               </div>
                             )}
                             <TrackAudioPlayer track={track} />
                           </div>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                  <div className="flex justify-center items-center mt-4 gap-2">
+                    <button
+                      onClick={() => setTrackPage(p => Math.max(1, p - 1))}
+                      disabled={trackPage === 1}
+                      className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-white">Page {trackPage} of {totalTrackPages}</span>
+                    <button
+                      onClick={() => setTrackPage(p => Math.min(totalTrackPages, p + 1))}
+                      disabled={trackPage === totalTrackPages}
+                      className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
                   </div>
-                ))}
-                <div className="flex justify-center items-center mt-4 gap-2">
-                  <button
-                    onClick={() => setTrackPage(p => Math.max(1, p - 1))}
-                    disabled={trackPage === 1}
-                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-white">Page {trackPage} of {totalTrackPages}</span>
-                  <button
-                    onClick={() => setTrackPage(p => Math.min(totalTrackPages, p + 1))}
-                    disabled={trackPage === totalTrackPages}
-                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
                 </div>
-              </div>
+              )
+            ) : (
+              deletedTracks.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No deleted tracks found.</p>
+                </div>
+              ) : (
+                <div>
+                  {deletedTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <TrackImage track={track} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                              <div className="flex items-center space-x-4">
+                                <span className="flex items-center">
+                                  <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                                  ${track.revenue.toFixed(2)}
+                                </span>
+                                <span className="flex items-center">
+                                  <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.sales_count} sales
+                                </span>
+                                {track.has_vocals && (
+                                  <span className="flex items-center">
+                                    <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                    {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowRestoreDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-green-400 transition-colors rounded-lg hover:bg-green-400/10"
+                                title="Restore Track"
+                              >
+                                <ArrowUpDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowPermanentDeleteDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
+                                title="Permanently Delete Track"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-64 flex-shrink-0">
+                          <div className="mb-3">
+                            {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+                            {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
+                              <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                                Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
+                              </div>
+                            )}
+                            <TrackAudioPlayer track={track} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
 
@@ -1577,6 +1810,66 @@ export function ProducerDashboard() {
             fetchDashboardData();
           }}
         />
+      )}
+
+      {selectedTrack && showRestoreDialog && (
+        <DeleteTrackDialog
+          isOpen={showRestoreDialog}
+          onClose={() => {
+            setShowRestoreDialog(false);
+            setSelectedTrack(null);
+          }}
+          trackTitle={selectedTrack.title}
+          onConfirm={confirmRestoreTrack}
+          isRestore={true}
+        />
+      )}
+
+      {selectedTrack && showPermanentDeleteDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+            <h3 className="text-xl font-bold text-white mb-4">Permanently Delete Track</h3>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <p className="text-gray-300 mb-4">
+                Are you sure you want to permanently delete "{selectedTrack.title}"? This action cannot be undone and will remove the track from the database.
+              </p>
+              
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-400 text-sm">
+                    This will permanently delete the track from the database. If the track has any active licenses, it cannot be permanently deleted.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowPermanentDeleteDialog(false);
+                  setSelectedTrack(null);
+                }}
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPermanentDeleteTrack}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Permanently Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
