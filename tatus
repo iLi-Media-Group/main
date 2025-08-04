@@ -1,0 +1,5 @@
+[33m3d23cc1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Fix genre search case sensitivity and update GENRES array to lowercase - database stores genres in lowercase, so UI and search logic now match
+[33mfe75b83[m Fix search logic to properly handle genre filtering - restructure search conditions to use single .or() call instead of separate calls
+[33m7fa2728[m 🔒 Fix authentication security: Add profile deletion trigger and user management
+[33m2feeee3[m Add comprehensive form persistence for track upload forms
+[33m8dd8498[m Move audio upload section below cover art on track upload page

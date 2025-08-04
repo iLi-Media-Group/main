@@ -286,6 +286,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           const params = new URLSearchParams();
           if (filters.query) params.set('q', filters.query);
           if (filters.genres?.length) params.set('genres', filters.genres.join(','));
+          if (filters.subGenres?.length) params.set('subGenres', filters.subGenres.join(','));
           if (filters.moods?.length) params.set('moods', filters.moods.join(','));
           if (filters.minBpm) params.set('minBpm', filters.minBpm.toString());
           if (filters.maxBpm) params.set('maxBpm', filters.maxBpm.toString());

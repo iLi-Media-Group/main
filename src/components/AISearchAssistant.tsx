@@ -44,14 +44,14 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
   // Popular search examples
   const popularExamples = [
-    'energetic Hiphop for workout',
-    'peaceful Electronic for meditation',
-    'uplifting Pop for commercials',
-    'dramatic Classical for trailers',
-    'funky Jazz for restaurants',
+    'energetic hiphop for workout',
+    'peaceful electronic for meditation',
+    'uplifting pop for commercials',
+    'dramatic classical for trailers',
+    'funky jazz for restaurants',
     'electronic dance for clubs',
-    'romantic Classical for weddings',
-    'mysterious Electronic for documentaries'
+    'romantic classical for weddings',
+    'mysterious electronic for documentaries'
   ];
 
   // AI-powered suggestions based on context
@@ -157,14 +157,16 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     const lowerQuery = query.toLowerCase();
 
-    // Genre and subgenre detection - use the actual GENRES from types
+    // Genre detection - check for exact matches first, then partial matches
     GENRES.forEach(genre => {
       const genreLower = genre.toLowerCase();
-      if (lowerQuery.includes(genreLower) || lowerQuery.includes(genreLower.replace(/\s+/g, ''))) {
+      
+      // Check for exact genre match
+      if (lowerQuery.includes(genreLower)) {
         filters.genres.push(genre);
         
         // Check if this genre has subgenres and if any are mentioned
-        const genreKey = genreLower.replace(/\s+/g, '');
+        const genreKey = genreLower;
         if (SUB_GENRES[genreKey as keyof typeof SUB_GENRES]) {
           const subGenres = SUB_GENRES[genreKey as keyof typeof SUB_GENRES];
           subGenres.forEach(subGenre => {
@@ -175,16 +177,6 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
           });
         }
       }
-    });
-
-    // Also check for standalone subgenres that might not be associated with a genre
-    Object.entries(SUB_GENRES).forEach(([genreKey, subGenres]) => {
-      subGenres.forEach(subGenre => {
-        const subGenreLower = subGenre.toLowerCase();
-        if (lowerQuery.includes(subGenreLower)) {
-          filters.subGenres.push(subGenre);
-        }
-      });
     });
 
     // Mood detection - use the actual MOODS from types
@@ -238,7 +230,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     // For now, just simulate it
     if (!isListening) {
       setTimeout(() => {
-        setQuery('energetic Electronic music for workout');
+        setQuery('energetic electronic music for workout');
         setIsListening(false);
       }, 2000);
     }
