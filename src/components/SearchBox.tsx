@@ -32,25 +32,102 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch(filters);
+    
+    // Parse the query text to automatically detect genres, subgenres, and moods
+    const parsedFilters = parseQueryText(filters.query);
+    
+    // Combine manual selections with parsed text
+    const combinedFilters = {
+      ...filters,
+      query: parsedFilters.query,
+      genres: [...new Set([...filters.genres, ...parsedFilters.genres])],
+      subGenres: [...new Set([...filters.subGenres, ...parsedFilters.subGenres])],
+      moods: [...new Set([...filters.moods, ...parsedFilters.moods])]
+    };
+    
+    onSearch(combinedFilters);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onSearch(filters);
+      
+      // Parse the query text to automatically detect genres, subgenres, and moods
+      const parsedFilters = parseQueryText(filters.query);
+      
+      // Combine manual selections with parsed text
+      const combinedFilters = {
+        ...filters,
+        query: parsedFilters.query,
+        genres: [...new Set([...filters.genres, ...parsedFilters.genres])],
+        subGenres: [...new Set([...filters.subGenres, ...parsedFilters.subGenres])],
+        moods: [...new Set([...filters.moods, ...parsedFilters.moods])]
+      };
+      
+      onSearch(combinedFilters);
     }
+  };
+
+  // Function to parse query text and detect genres, subgenres, and moods
+  const parseQueryText = (queryText: string) => {
+    const lowerQuery = queryText.toLowerCase();
+    const detectedGenres: string[] = [];
+    const detectedSubGenres: string[] = [];
+    const detectedMoods: string[] = [];
+    let remainingQuery = queryText;
+
+    // Detect genres
+    GENRES.forEach(genre => {
+      const genreLower = genre.toLowerCase();
+      if (lowerQuery.includes(genreLower)) {
+        detectedGenres.push(genre);
+        // Remove the detected genre from the remaining query
+        remainingQuery = remainingQuery.replace(new RegExp(genreLower, 'gi'), '').trim();
+      }
+    });
+
+    // Detect subgenres
+    Object.entries(SUB_GENRES).forEach(([genreKey, subGenres]) => {
+      subGenres.forEach(subGenre => {
+        const subGenreLower = subGenre.toLowerCase();
+        if (lowerQuery.includes(subGenreLower)) {
+          detectedSubGenres.push(subGenre);
+          // Remove the detected subgenre from the remaining query
+          remainingQuery = remainingQuery.replace(new RegExp(subGenreLower, 'gi'), '').trim();
+        }
+      });
+    });
+
+    // Detect moods
+    MOODS.forEach(mood => {
+      const moodLower = mood.toLowerCase();
+      if (lowerQuery.includes(moodLower)) {
+        detectedMoods.push(mood);
+        // Remove the detected mood from the remaining query
+        remainingQuery = remainingQuery.replace(new RegExp(moodLower, 'gi'), '').trim();
+      }
+    });
+
+    return {
+      query: remainingQuery, // The remaining text after removing detected terms
+      genres: detectedGenres,
+      subGenres: detectedSubGenres,
+      moods: detectedMoods
+    };
   };
 
   const getPlaceholderText = () => {
     const examples = [
-      'hip hop energetic',
+      'hiphop energetic',
       'electronic peaceful',
       'pop uplifting',
       'jazz romantic',
-      'rock powerful'
+      'rock powerful',
+      'energetic hiphop',
+      'peaceful electronic',
+      'uplifting pop'
     ];
-    return `Search by title, genre, or mood (e.g., "${examples[Math.floor(Math.random() * examples.length)]}")`;
+    return `Search by title, genre, mood, or any combination (e.g., "${examples[Math.floor(Math.random() * examples.length)]}")`;
   };
 
   // Get available subgenres based on selected genres
