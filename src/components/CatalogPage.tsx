@@ -102,7 +102,7 @@ export function CatalogPage() {
       if (filters?.trackId) {
         query = query.eq('id', filters.trackId);
       } else {
-        // Build search conditions - make it more fluid and less restrictive
+        // Build search conditions - make it more precise and require ALL conditions
         const searchConditions = [];
 
         // Apply BPM filters first (these are always applied)
@@ -122,31 +122,28 @@ export function CatalogPage() {
           searchConditions.push(`moods.ilike.%${filters.query}%`);
         }
 
-        // Genre filtering - if genres are selected, use them
+        // Genre filtering - if genres are selected, require ALL of them to match
         if (filters?.genres?.length > 0) {
-          const genreConditions = filters.genres.map((genre: string) => 
-            `genres.ilike.%${genre}%`
-          );
-          searchConditions.push(...genreConditions);
+          filters.genres.forEach((genre: string) => {
+            query = query.ilike('genres', `%${genre}%`);
+          });
         }
 
-        // Subgenre filtering - if subgenres are selected, use them
+        // Subgenre filtering - if subgenres are selected, require ALL of them to match
         if (filters?.subGenres?.length > 0) {
-          const subGenreConditions = filters.subGenres.map((subGenre: string) => 
-            `sub_genres.ilike.%${subGenre}%`
-          );
-          searchConditions.push(...subGenreConditions);
+          filters.subGenres.forEach((subGenre: string) => {
+            query = query.ilike('sub_genres', `%${subGenre}%`);
+          });
         }
 
-        // Mood filtering - if moods are selected, use them
+        // Mood filtering - if moods are selected, require ALL of them to match
         if (filters?.moods?.length > 0) {
-          const moodConditions = filters.moods.map((mood: string) => 
-            `moods.ilike.%${mood}%`
-          );
-          searchConditions.push(...moodConditions);
+          filters.moods.forEach((mood: string) => {
+            query = query.ilike('moods', `%${mood}%`);
+          });
         }
 
-        // Apply all search conditions with OR logic - this makes it more fluid
+        // Apply text search conditions with OR logic only for text search
         if (searchConditions.length > 0) {
           query = query.or(searchConditions.join(','));
         }

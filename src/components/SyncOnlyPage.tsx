@@ -71,14 +71,8 @@ export function SyncOnlyPage() {
       if (filters?.trackId) {
         query = query.eq('id', filters.trackId);
       } else {
-        // Build search conditions with proper priority
+        // Build search conditions - make it more precise and require ALL conditions
         const searchConditions = [];
-
-        // Text search in title and artist
-        if (filters?.query) {
-          searchConditions.push(`title.ilike.%${filters.query}%`);
-          searchConditions.push(`artist.ilike.%${filters.query}%`);
-        }
 
         // Apply BPM filters first (these are always applied)
         if (filters?.minBpm !== undefined) {
@@ -88,54 +82,37 @@ export function SyncOnlyPage() {
           query = query.lte('bpm', filters.maxBpm);
         }
 
-        // Priority 1: Genre filtering (highest priority)
-        if (filters?.genres?.length > 0) {
-          // Create genre conditions - tracks must match at least one of the selected genres
-          const genreConditions = filters.genres.map((genre: string) => 
-            `genres.ilike.%${genre}%`
-          );
-          
-          // Add genre conditions to search conditions
-          searchConditions.push(...genreConditions);
-          
-          // Priority 2: Subgenre filtering (only if genres are selected)
-          if (filters?.subGenres?.length > 0) {
-            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
-              `sub_genres.ilike.%${subGenre}%`
-            );
-            // Add subgenre conditions to search conditions
-            searchConditions.push(...subGenreConditions);
-          }
-          
-          // Priority 3: Mood filtering (only if genres are selected)
-          if (filters?.moods?.length > 0) {
-            const moodConditions = filters.moods.map((mood: string) => 
-              `moods.ilike.%${mood}%`
-            );
-            // Add mood conditions to search conditions
-            searchConditions.push(...moodConditions);
-          }
-        } else {
-          // No genres selected - allow mood-based search only
-          if (filters?.moods?.length > 0) {
-            const moodConditions = filters.moods.map((mood: string) => 
-              `moods.ilike.%${mood}%`
-            );
-            // Add mood conditions to search conditions
-            searchConditions.push(...moodConditions);
-          }
-          
-          // Also allow subgenre search when no genres are selected
-          if (filters?.subGenres?.length > 0) {
-            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
-              `sub_genres.ilike.%${subGenre}%`
-            );
-            // Add subgenre conditions to search conditions
-            searchConditions.push(...subGenreConditions);
-          }
+        // Text search in title and artist - this should always work
+        if (filters?.query) {
+          searchConditions.push(`title.ilike.%${filters.query}%`);
+          searchConditions.push(`artist.ilike.%${filters.query}%`);
+          searchConditions.push(`genres.ilike.%${filters.query}%`);
+          searchConditions.push(`sub_genres.ilike.%${filters.query}%`);
+          searchConditions.push(`moods.ilike.%${filters.query}%`);
         }
 
-        // Apply all search conditions with OR logic
+        // Genre filtering - if genres are selected, require ALL of them to match
+        if (filters?.genres?.length > 0) {
+          filters.genres.forEach((genre: string) => {
+            query = query.ilike('genres', `%${genre}%`);
+          });
+        }
+
+        // Subgenre filtering - if subgenres are selected, require ALL of them to match
+        if (filters?.subGenres?.length > 0) {
+          filters.subGenres.forEach((subGenre: string) => {
+            query = query.ilike('sub_genres', `%${subGenre}%`);
+          });
+        }
+
+        // Mood filtering - if moods are selected, require ALL of them to match
+        if (filters?.moods?.length > 0) {
+          filters.moods.forEach((mood: string) => {
+            query = query.ilike('moods', `%${mood}%`);
+          });
+        }
+
+        // Apply text search conditions with OR logic only for text search
         if (searchConditions.length > 0) {
           query = query.or(searchConditions.join(','));
         }

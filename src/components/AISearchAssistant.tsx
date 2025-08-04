@@ -46,13 +46,15 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   // Enhanced popular search examples with natural language
   const popularExamples = [
     'I need energetic hiphop for my workout routine',
-    'Looking for peaceful electronic music for meditation',
+    'Looking for peaceful classical music for meditation',
     'Want uplifting pop songs for commercials',
     'Need dramatic classical music for movie trailers',
     'Searching for funky jazz for restaurant background',
     'Find electronic dance music for club nights',
     'Looking for romantic classical for wedding ceremonies',
-    'Need mysterious electronic for documentary films'
+    'Need mysterious electronic for documentary films',
+    'Want energetic rock for gaming content',
+    'Looking for peaceful ambient for relaxation'
   ];
 
   // AI-powered suggestions based on context and user behavior
@@ -212,19 +214,19 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     const explanations = [];
     
     if (filters.genres.length > 0) {
-      explanations.push(`🎵 Detected genres: ${filters.genres.join(', ')}`);
+      explanations.push(`🎵 Genres: ${filters.genres.join(', ')}`);
     }
     
     if (filters.moods.length > 0) {
-      explanations.push(`😊 Detected moods: ${filters.moods.join(', ')}`);
+      explanations.push(`😊 Moods: ${filters.moods.join(', ')}`);
     }
     
     if (filters.subGenres.length > 0) {
-      explanations.push(`🎼 Detected subgenres: ${filters.subGenres.join(', ')}`);
+      explanations.push(`🎼 Subgenres: ${filters.subGenres.join(', ')}`);
     }
     
     if (filters.minBpm > 0 || filters.maxBpm < 300) {
-      explanations.push(`⚡ BPM range: ${filters.minBpm}-${filters.maxBpm}`);
+      explanations.push(`⚡ BPM: ${filters.minBpm}-${filters.maxBpm}`);
     }
     
     if (filters.query) {
@@ -235,7 +237,8 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       return "🤖 AI is searching for tracks matching your description...";
     }
     
-    return `🤖 AI understood: ${explanations.join(' | ')}`;
+    // Add context about the original query
+    return `🤖 From "${originalQuery}": ${explanations.join(' | ')}`;
   };
 
   // Enhanced AI-powered search processing
@@ -251,25 +254,27 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     const lowerQuery = query.toLowerCase();
 
-    // 1. CONTEXT-AWARE GENRE DETECTION
-    // Handle variations and synonyms
+    // 1. ENHANCED CONTEXT-AWARE GENRE DETECTION
+    // Handle variations and synonyms with more precision
     const genreSynonyms: { [key: string]: string[] } = {
       'hiphop': ['hip hop', 'hip-hop', 'rap', 'trap', 'drill'],
       'electronic': ['edm', 'electronic dance', 'techno', 'house', 'trance'],
       'pop': ['popular', 'mainstream'],
       'rock': ['rock and roll', 'hard rock', 'soft rock'],
       'jazz': ['jazz fusion', 'smooth jazz'],
-      'classical': ['orchestral', 'symphony', 'chamber'],
+      'classical': ['orchestral', 'symphony', 'chamber', 'classical music'],
       'world': ['ethnic', 'cultural', 'traditional'],
       'religious': ['gospel', 'spiritual', 'worship'],
       'childrens': ['kids', 'children', 'nursery'],
       'country': ['country western', 'bluegrass', 'americana']
     };
 
-    // Enhanced genre detection with synonyms
+    // More precise genre detection - prioritize exact matches
+    let genreDetected = false;
     Object.entries(genreSynonyms).forEach(([genre, synonyms]) => {
       if (lowerQuery.includes(genre) || synonyms.some(syn => lowerQuery.includes(syn))) {
         filters.genres.push(genre);
+        genreDetected = true;
       }
     });
 
@@ -321,7 +326,8 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       }
     }
 
-    // 4. USE CASE AND CONTEXT DETECTION
+    // 4. ENHANCED USE CASE AND CONTEXT DETECTION
+    // More specific use case contexts that override general preferences
     const useCaseContexts = {
       'workout': { genres: ['hiphop', 'electronic'], moods: ['energetic'], bpmRange: [120, 180] },
       'meditation': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 90] },
@@ -338,14 +344,29 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'wedding': { genres: ['classical', 'jazz'], moods: ['romantic'], bpmRange: [70, 120] }
     };
 
+    // Check for specific use cases and apply strict genre requirements
     for (const [useCase, context] of Object.entries(useCaseContexts)) {
       if (lowerQuery.includes(useCase)) {
         filters.query = useCase;
         
-        // Apply context-based suggestions if no specific genres/moods detected
+        // For specific use cases, be more strict about genre requirements
         if (filters.genres.length === 0) {
+          // If no genre was detected but we have a specific use case, use the use case genres
           filters.genres.push(...context.genres);
+        } else {
+          // If genres were detected, ensure they match the use case requirements
+          const matchingGenres = filters.genres.filter(genre => 
+            context.genres.includes(genre)
+          );
+          if (matchingGenres.length > 0) {
+            // Keep only matching genres
+            filters.genres = matchingGenres;
+          } else {
+            // If no matching genres, use the use case genres
+            filters.genres = [...context.genres];
+          }
         }
+        
         if (filters.moods.length === 0) {
           filters.moods.push(...context.moods);
         }
@@ -357,7 +378,15 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       }
     }
 
-    // 5. LEARNING-BASED SUGGESTIONS
+    // 5. STRICT GENRE ENFORCEMENT
+    // If specific genres were mentioned in the query, prioritize them over user preferences
+    if (genreDetected) {
+      // Don't fall back to user preferences if specific genres were detected
+      // This ensures that "dramatic classical" returns only classical tracks
+      return filters;
+    }
+
+    // 6. LEARNING-BASED SUGGESTIONS (only if no specific genres detected)
     // Analyze user's search history to provide personalized suggestions
     const userPreferences = await analyzeUserPreferences();
     if (userPreferences && filters.genres.length === 0) {
