@@ -446,7 +446,7 @@ export function TrackPage() {
                   )}
                   
                   {/* MP3 Only Indicator */}
-                  {track.mp3Url && !track.trackoutsUrl && (
+                  {track.audioUrl && !track.trackoutsUrl && (
                     <div className="flex items-center text-gray-300">
                       <FileMusic className="w-5 h-5 mr-2 text-yellow-400" />
                       <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
@@ -456,7 +456,7 @@ export function TrackPage() {
                   )}
                   
                   {/* MP3 + Trackouts Indicator */}
-                  {track.mp3Url && track.trackoutsUrl && (
+                  {track.audioUrl && track.trackoutsUrl && (
                     <div className="flex items-center text-gray-300">
                       <FileMusic className="w-5 h-5 mr-2 text-green-400" />
                       <span>MP3 + Trackouts Available</span>
@@ -464,7 +464,7 @@ export function TrackPage() {
                   )}
                   
                   {/* Trackouts Only Indicator */}
-                  {!track.mp3Url && track.trackoutsUrl && (
+                  {!track.audioUrl && track.trackoutsUrl && (
                     <div className="flex items-center text-gray-300">
                       <Layers className="w-5 h-5 mr-2 text-blue-400" />
                       <span>Trackouts Available</span>

@@ -169,9 +169,8 @@ export function CatalogPage() {
           console.log('First track data:', {
             id: data[0].id,
             title: data[0].title,
-            mp3_url: data[0].mp3_url,
-            trackouts_url: data[0].trackouts_url,
-            audio_url: data[0].audio_url
+            audio_url: data[0].audio_url,
+            trackouts_url: data[0].trackouts_url
           });
         }
 
