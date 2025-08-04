@@ -80,17 +80,17 @@ export interface SyncProposal {
 
 // Updated genres to be lowercase and match database constraint pattern
 export const GENRES = [
-  'Hiphop',
-  'Rnb',
-  'Pop',
-  'Rock',
-  'Electronic',
-  'Jazz',
-  'Classical',
-  'World',
-  'Religious',
-  'Childrens',
-  'Country',
+  'hiphop',
+  'rnb',
+  'pop',
+  'rock',
+  'electronic',
+  'jazz',
+  'classical',
+  'world',
+  'religious',
+  'childrens',
+  'country',
 ] as const;
 
 export const SUB_GENRES = {
@@ -113,6 +113,7 @@ export const SUB_GENRES = {
     'silly and goofy',
     'interactive'
   ],
+  'country': ['traditional', 'modern', 'bluegrass', 'americana', 'outlaw']
 } as const;
 
 export const MUSICAL_KEYS = [

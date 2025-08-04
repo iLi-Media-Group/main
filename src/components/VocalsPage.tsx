@@ -188,7 +188,16 @@ export function VocalsPage() {
   };
 
   const handleSearch = (filters: any) => {
-    fetchTracks(filters);
+    // Convert search terms to lowercase and remove extra spaces
+    const normalizedFilters = {
+      ...filters,
+      query: filters.query?.toLowerCase().trim(),
+      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
+      moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
+    };
+    
+    fetchTracks(normalizedFilters);
   };
 
   const handleTrackSelect = (track: Track) => {

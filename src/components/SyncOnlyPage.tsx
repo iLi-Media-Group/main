@@ -208,11 +208,12 @@ export function SyncOnlyPage() {
   };
 
   const handleSearch = async (filters: any) => {
-    // Convert all search terms to lowercase and remove extra spaces
+    // Convert search terms to lowercase and remove extra spaces
     const normalizedFilters = {
       ...filters,
       query: filters.query?.toLowerCase().trim(),
-      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()),
+      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
       moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
     };
 

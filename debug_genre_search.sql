@@ -1,45 +1,48 @@
--- Debug genre search functionality
--- Test search for "Hip Hop" genre
+-- Debug genre search issue
+-- Check what genres are actually stored in the database
+
+-- 1. Check a few sample tracks and their genre data
 SELECT 
   id,
   title,
-  artist,
   genres,
   sub_genres,
   moods,
-  bpm
+  is_sync_only,
+  has_vocals
 FROM tracks 
 WHERE deleted_at IS NULL 
-  AND is_sync_only = false
-  AND (
-    genres ILIKE '%Hip Hop%' OR
-    genres ILIKE '%hip hop%' OR
-    genres ILIKE '%HipHop%'
-  )
 LIMIT 10;
 
--- Test search for "Pop" genre
+-- 2. Check all unique genres in the database
+SELECT DISTINCT genres 
+FROM tracks 
+WHERE deleted_at IS NULL 
+AND genres IS NOT NULL 
+AND genres != '';
+
+-- 3. Test a specific genre search
 SELECT 
   id,
   title,
-  artist,
   genres,
   sub_genres,
-  moods,
-  bpm
+  moods
 FROM tracks 
 WHERE deleted_at IS NULL 
-  AND is_sync_only = false
-  AND (
-    genres ILIKE '%Pop%' OR
-    genres ILIKE '%pop%'
-  )
-LIMIT 10;
+AND is_sync_only = false
+AND (
+  genres ILIKE '%hip hop%' OR
+  genres ILIKE '%pop%' OR
+  genres ILIKE '%rock%' OR
+  genres ILIKE '%electronic%'
+)
+LIMIT 5;
 
--- Check if any tracks have genres at all
-SELECT 
-  COUNT(*) as tracks_with_genres,
-  COUNT(CASE WHEN genres IS NULL OR genres = '' THEN 1 END) as tracks_without_genres
+-- 4. Check if there are any tracks at all
+SELECT COUNT(*) as total_tracks,
+       COUNT(CASE WHEN is_sync_only = false THEN 1 END) as non_sync_tracks,
+       COUNT(CASE WHEN has_vocals = true THEN 1 END) as vocal_tracks,
+       COUNT(CASE WHEN is_sync_only = true THEN 1 END) as sync_only_tracks
 FROM tracks 
-WHERE deleted_at IS NULL 
-  AND is_sync_only = false; 
+WHERE deleted_at IS NULL; 
