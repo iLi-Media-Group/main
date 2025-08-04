@@ -24,3 +24,31 @@ FROM sub_genres sg
 JOIN genres g ON sg.genre_id = g.id
 ORDER BY g.display_name, sg.display_name
 LIMIT 20; 
+
+-- Check genre data in tracks table
+SELECT 
+  id,
+  title,
+  artist,
+  genres,
+  sub_genres,
+  moods,
+  bpm,
+  created_at
+FROM tracks 
+WHERE deleted_at IS NULL 
+  AND is_sync_only = false
+LIMIT 10;
+
+-- Check distinct genres
+SELECT DISTINCT genres 
+FROM tracks 
+WHERE deleted_at IS NULL 
+  AND genres IS NOT NULL 
+  AND genres != '';
+
+-- Check total count of tracks
+SELECT COUNT(*) as total_tracks 
+FROM tracks 
+WHERE deleted_at IS NULL 
+  AND is_sync_only = false; 

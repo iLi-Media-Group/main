@@ -53,70 +53,77 @@ export function VocalsPage() {
         `)
         .eq('has_vocals', true);
 
-      // Apply search filters if provided
-      if (filters) {
+      // If a specific track ID is provided, fetch only that track
+      if (filters?.trackId) {
+        query = query.eq('id', filters.trackId);
+      } else {
+        // Build search conditions with proper priority
+        const searchConditions = [];
+
+        // Text search in title and artist
+        if (filters?.query) {
+          searchConditions.push(`title.ilike.%${filters.query}%`);
+          searchConditions.push(`artist.ilike.%${filters.query}%`);
+        }
+
         // Apply BPM filters first (these are always applied)
-        if (filters.minBpm) {
+        if (filters?.minBpm !== undefined) {
           query = query.gte('bpm', filters.minBpm);
         }
-        if (filters.maxBpm) {
+        if (filters?.maxBpm !== undefined) {
           query = query.lte('bpm', filters.maxBpm);
         }
 
         // Priority 1: Genre filtering (highest priority)
-        if (filters.genres?.length > 0) {
+        if (filters?.genres?.length > 0) {
           // Create genre conditions - tracks must match at least one of the selected genres
           const genreConditions = filters.genres.map((genre: string) => 
             `genres.ilike.%${genre}%`
           );
           
-          // Apply genre filter with OR condition
-          query = query.or(genreConditions.join(','));
+          // Add genre conditions to search conditions
+          searchConditions.push(...genreConditions);
           
           // Priority 2: Subgenre filtering (only if genres are selected)
-          if (filters.subGenres?.length > 0) {
+          if (filters?.subGenres?.length > 0) {
             const subGenreConditions = filters.subGenres.map((subGenre: string) => 
               `sub_genres.ilike.%${subGenre}%`
             );
-            // Apply subgenre filter with OR condition
-            query = query.or(subGenreConditions.join(','));
+            // Add subgenre conditions to search conditions
+            searchConditions.push(...subGenreConditions);
           }
           
           // Priority 3: Mood filtering (only if genres are selected)
-          if (filters.moods?.length > 0) {
+          if (filters?.moods?.length > 0) {
             const moodConditions = filters.moods.map((mood: string) => 
               `moods.ilike.%${mood}%`
             );
-            // Apply mood filter with OR condition
-            query = query.or(moodConditions.join(','));
+            // Add mood conditions to search conditions
+            searchConditions.push(...moodConditions);
           }
         } else {
           // No genres selected - allow mood-based search only
-          if (filters.moods?.length > 0) {
+          if (filters?.moods?.length > 0) {
             const moodConditions = filters.moods.map((mood: string) => 
               `moods.ilike.%${mood}%`
             );
-            // Apply mood filter with OR condition
-            query = query.or(moodConditions.join(','));
+            // Add mood conditions to search conditions
+            searchConditions.push(...moodConditions);
           }
           
           // Also allow subgenre search when no genres are selected
-          if (filters.subGenres?.length > 0) {
+          if (filters?.subGenres?.length > 0) {
             const subGenreConditions = filters.subGenres.map((subGenre: string) => 
               `sub_genres.ilike.%${subGenre}%`
             );
-            // Apply subgenre filter with OR condition
-            query = query.or(subGenreConditions.join(','));
+            // Add subgenre conditions to search conditions
+            searchConditions.push(...subGenreConditions);
           }
         }
 
-        // Text search in title and artist
-        if (filters.query) {
-          const textConditions = [
-            `title.ilike.%${filters.query}%`,
-            `artist.ilike.%${filters.query}%`
-          ];
-          query = query.or(textConditions.join(','));
+        // Apply all search conditions with OR logic
+        if (searchConditions.length > 0) {
+          query = query.or(searchConditions.join(','));
         }
       }
 

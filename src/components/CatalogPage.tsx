@@ -125,16 +125,16 @@ export function CatalogPage() {
             `genres.ilike.%${genre}%`
           );
           
-          // Apply genre filter with OR condition
-          query = query.or(genreConditions.join(','));
+          // Add genre conditions to search conditions
+          searchConditions.push(...genreConditions);
           
           // Priority 2: Subgenre filtering (only if genres are selected)
           if (filters?.subGenres?.length > 0) {
             const subGenreConditions = filters.subGenres.map((subGenre: string) => 
               `sub_genres.ilike.%${subGenre}%`
             );
-            // Apply subgenre filter with OR condition
-            query = query.or(subGenreConditions.join(','));
+            // Add subgenre conditions to search conditions
+            searchConditions.push(...subGenreConditions);
           }
           
           // Priority 3: Mood filtering (only if genres are selected)
@@ -142,8 +142,8 @@ export function CatalogPage() {
             const moodConditions = filters.moods.map((mood: string) => 
               `moods.ilike.%${mood}%`
             );
-            // Apply mood filter with OR condition
-            query = query.or(moodConditions.join(','));
+            // Add mood conditions to search conditions
+            searchConditions.push(...moodConditions);
           }
         } else {
           // No genres selected - allow mood-based search only
@@ -151,8 +151,8 @@ export function CatalogPage() {
             const moodConditions = filters.moods.map((mood: string) => 
               `moods.ilike.%${mood}%`
             );
-            // Apply mood filter with OR condition
-            query = query.or(moodConditions.join(','));
+            // Add mood conditions to search conditions
+            searchConditions.push(...moodConditions);
           }
           
           // Also allow subgenre search when no genres are selected
@@ -160,12 +160,12 @@ export function CatalogPage() {
             const subGenreConditions = filters.subGenres.map((subGenre: string) => 
               `sub_genres.ilike.%${subGenre}%`
             );
-            // Apply subgenre filter with OR condition
-            query = query.or(subGenreConditions.join(','));
+            // Add subgenre conditions to search conditions
+            searchConditions.push(...subGenreConditions);
           }
         }
 
-        // Apply text search conditions if any
+        // Apply all search conditions with OR logic
         if (searchConditions.length > 0) {
           query = query.or(searchConditions.join(','));
         }
