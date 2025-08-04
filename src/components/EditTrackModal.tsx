@@ -23,8 +23,6 @@ interface EditTrackModalProps {
     split_sheet_url?: string;
     mp3_url?: string;
     trackouts_url?: string;
-    spotify_track_id?: string;
-    spotify_external_url?: string;
   };
   onUpdate: () => void;
 }
@@ -39,6 +37,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [isSyncOnly, setIsSyncOnly] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
   const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
@@ -54,13 +53,23 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   
-  // Spotify integration state
-  const [spotifyUrl, setSpotifyUrl] = useState(track.spotify_external_url || '');
-  const [spotifyUrlError, setSpotifyUrlError] = useState<string>('');
-
   // Update state when track prop changes
   useEffect(() => {
     if (track) {
+      console.log('EditTrackModal: Received track data:', {
+        id: track.id,
+        title: track.title,
+        genres: track.genres,
+        moods: track.moods,
+        mediaUsage: track.mediaUsage,
+        hasVocals: track.hasVocals,
+        isSyncOnly: track.isSyncOnly,
+        stems_url: track.stems_url,
+        split_sheet_url: track.split_sheet_url,
+        mp3_url: track.mp3_url,
+        trackouts_url: track.trackouts_url
+      });
+
       const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
         GENRES.some(g => normalizeGenre(g) === normalizeGenre(genre))
       ).map(genre => {
@@ -74,7 +83,15 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setIsSyncOnly(track.isSyncOnly || false);
       setStemsUrl(track.stems_url || '');
       setSplitSheetUrl(track.split_sheet_url || '');
-      setSpotifyUrl(track.spotify_external_url || '');
+      setMp3Url(track.mp3_url || '');
+      setTrackoutsUrl(track.trackouts_url || '');
+
+      console.log('EditTrackModal: Populated form state:', {
+        selectedGenres: initialGenres,
+        selectedMoods: Array.isArray(track.moods) ? track.moods : [],
+        hasVocals: track.hasVocals || false,
+        isSyncOnly: track.isSyncOnly || false
+      });
     }
   }, [track]);
 
@@ -106,22 +123,6 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
     }
   };
 
-  // Handle Spotify URL input
-  const handleSpotifyUrlChange = (url: string) => {
-    setSpotifyUrl(url);
-    setSpotifyUrlError('');
-    
-    // Extract track ID from Spotify URL if valid
-    const trackIdMatch = url.match(/track\/([a-zA-Z0-9]+)/);
-    if (trackIdMatch) {
-      setSpotifyUrlError('');
-    } else if (url && !url.includes('open.spotify.com')) {
-      setSpotifyUrlError('Please enter a valid Spotify track URL');
-    } else if (url) {
-      setSpotifyUrlError('');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -136,72 +137,109 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const formattedGenres = selectedGenres;
       const validMoods = selectedMoods.filter(mood => MOODS.includes(mood));
 
-      // --- File upload logic ---
+      // Check if any files are being uploaded
+      const hasFilesToUpload = mp3File || trackoutsFile || stemsFile || splitSheetFile;
+      
+      if (hasFilesToUpload) {
+        setUploadingFiles(true);
+      }
+
+      // --- File upload logic with better error handling ---
       let mp3UploadedUrl = mp3Url;
       if (mp3File) {
-        // Upload mp3 to track-audio bucket
-        const uploadedMp3Path = await uploadFile(
-          mp3File,
-          'track-audio',
-          undefined,
-          `${track.id}`,
-          'audio.mp3'
-        );
-        mp3UploadedUrl = `${track.id}/audio.mp3`;
-        setMp3Url(mp3UploadedUrl);
+        try {
+          console.log('Uploading MP3 file:', mp3File.name);
+          const uploadedMp3Path = await uploadFile(
+            mp3File,
+            'track-audio',
+            undefined,
+            `${track.id}`,
+            'audio.mp3'
+          );
+          mp3UploadedUrl = `${track.id}/audio.mp3`;
+          setMp3Url(mp3UploadedUrl);
+          console.log('MP3 upload successful:', uploadedMp3Path);
+        } catch (uploadError) {
+          console.error('MP3 upload failed:', uploadError);
+          throw new Error(`Failed to upload MP3 file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
       }
+
       let trackoutsUploadedUrl = trackoutsUrl;
       if (trackoutsFile) {
-        // Upload trackouts to trackouts bucket
-        const uploadedTrackoutsPath = await uploadFile(
-          trackoutsFile,
-          'trackouts',
-          undefined,
-          `${track.id}`,
-          'trackouts.zip'
-        );
-        trackoutsUploadedUrl = `${track.id}/trackouts.zip`;
-        setTrackoutsUrl(trackoutsUploadedUrl);
+        try {
+          console.log('Uploading trackouts file:', trackoutsFile.name);
+          const uploadedTrackoutsPath = await uploadFile(
+            trackoutsFile,
+            'trackouts',
+            undefined,
+            `${track.id}`,
+            'trackouts.zip'
+          );
+          trackoutsUploadedUrl = `${track.id}/trackouts.zip`;
+          setTrackoutsUrl(trackoutsUploadedUrl);
+          console.log('Trackouts upload successful:', uploadedTrackoutsPath);
+        } catch (uploadError) {
+          console.error('Trackouts upload failed:', uploadError);
+          throw new Error(`Failed to upload trackouts file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
       }
+
       let stemsUploadedUrl = stemsUrl;
       if (stemsUrl && stemsUrl.startsWith('http')) {
         // If user pasted a URL, use as is
         stemsUploadedUrl = stemsUrl;
       } else if (stemsFile) {
-        // Upload stems to stems bucket
-        const uploadedStemsPath = await uploadFile(
-          stemsFile,
-          'stems',
-          undefined,
-          `${track.id}`,
-          'stems.zip'
-        );
-        stemsUploadedUrl = `${track.id}/stems.zip`;
-        setStemsUrl(stemsUploadedUrl);
+        try {
+          console.log('Uploading stems file:', stemsFile.name);
+          const uploadedStemsPath = await uploadFile(
+            stemsFile,
+            'stems',
+            undefined,
+            `${track.id}`,
+            'stems.zip'
+          );
+          stemsUploadedUrl = `${track.id}/stems.zip`;
+          setStemsUrl(stemsUploadedUrl);
+          console.log('Stems upload successful:', uploadedStemsPath);
+        } catch (uploadError) {
+          console.error('Stems upload failed:', uploadError);
+          throw new Error(`Failed to upload stems file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
       }
+
       let splitSheetUploadedUrl = splitSheetUrl;
       if (splitSheetFile) {
-        // Upload split sheet to split-sheets bucket
-        const uploadedSplitSheetPath = await uploadFile(
-          splitSheetFile,
-          'split-sheets',
-          undefined,
-          `${track.id}`,
-          'split_sheet.pdf'
-        );
-        splitSheetUploadedUrl = `${track.id}/split_sheet.pdf`;
-        setSplitSheetUrl(splitSheetUploadedUrl);
+        try {
+          console.log('Uploading split sheet file:', splitSheetFile.name);
+          const uploadedSplitSheetPath = await uploadFile(
+            splitSheetFile,
+            'split-sheets',
+            undefined,
+            `${track.id}`,
+            'split_sheet.pdf'
+          );
+          splitSheetUploadedUrl = `${track.id}/split_sheet.pdf`;
+          setSplitSheetUrl(splitSheetUploadedUrl);
+          console.log('Split sheet upload successful:', uploadedSplitSheetPath);
+        } catch (uploadError) {
+          console.error('Split sheet upload failed:', uploadError);
+          throw new Error(`Failed to upload split sheet file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
       }
       // --- End file upload logic ---
 
-      // Prepare Spotify data if URL is provided
-      const spotifyData = spotifyUrl ? {
-        spotify_track_id: spotifyUrl.match(/track\/([a-zA-Z0-9]+)/)?.[1] || null,
-        spotify_external_url: spotifyUrl,
-        use_spotify_preview: true,
-        spotify_search_attempted: true,
-        spotify_last_searched: new Date().toISOString()
-      } : {};
+      console.log('Updating track with data:', {
+        genres: formattedGenres,
+        moods: validMoods,
+        media_usage: selectedMediaUsage,
+        has_vocals: hasVocals,
+        is_sync_only: isSyncOnly,
+        mp3_url: mp3UploadedUrl,
+        trackouts_url: trackoutsUploadedUrl,
+        stems_url: stemsUploadedUrl,
+        split_sheet_url: splitSheetUploadedUrl
+      });
 
       const { error: updateError } = await supabase
         .from('tracks')
@@ -216,12 +254,15 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           stems_url: stemsUploadedUrl || null,
           split_sheet_url: splitSheetUploadedUrl || null,
           updated_at: new Date().toISOString(),
-          ...spotifyData // Include Spotify data if available
         })
         .eq('id', track.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw new Error(`Failed to update track in database: ${updateError.message}`);
+      }
 
+      console.log('Track updated successfully');
       onUpdate();
       onClose();
     } catch (err) {
@@ -229,6 +270,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setError(err instanceof Error ? err.message : 'Failed to update track. Please try again.');
     } finally {
       setLoading(false);
+      setUploadingFiles(false);
     }
   };
 
@@ -257,6 +299,25 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Current Track Summary */}
+          <div className="bg-white/5 rounded-lg p-4 mb-6">
+            <h3 className="text-white font-medium mb-3">Current Track Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-400">Genres: <span className="text-white">{selectedGenres.length > 0 ? selectedGenres.join(', ') : 'None set'}</span></p>
+                <p className="text-gray-400">Moods: <span className="text-white">{selectedMoods.length > 0 ? selectedMoods.join(', ') : 'None set'}</span></p>
+                <p className="text-gray-400">Vocals: <span className="text-white">{hasVocals ? 'Full Track with Vocals' : 'Instrumental'}</span></p>
+                <p className="text-gray-400">Sync Only: <span className="text-white">{isSyncOnly ? 'Yes' : 'No'}</span></p>
+              </div>
+              <div>
+                <p className="text-gray-400">MP3: <span className="text-white">{mp3Url ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Trackouts: <span className="text-white">{trackoutsUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Stems: <span className="text-white">{stemsUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Split Sheet: <span className="text-white">{splitSheetUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
+              </div>
+            </div>
+          </div>
+
           {/* Genres */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-4">
@@ -410,7 +471,9 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
 
           {/* Stems URL */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Stems URL</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Stems URL (External Link)
+            </label>
             <input
               type="url"
               value={stemsUrl}
@@ -418,81 +481,88 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
               placeholder="https://..."
             />
+            {stemsUrl && (
+              <p className="text-blue-400 text-xs mt-1">✓ External stems link set</p>
+            )}
           </div>
 
           {/* Split Sheet PDF */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Split Sheet PDF</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Split Sheet PDF {splitSheetUrl && !splitSheetFile && <span className="text-green-400">(Current: ✓)</span>}
+            </label>
             <input
               type="file"
               accept="application/pdf"
               onChange={e => setSplitSheetFile(e.target.files?.[0] || null)}
               className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading || uploadingFiles}
             />
-            {splitSheetUrl && (
-              <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Split Sheet</a>
+            {splitSheetFile && (
+              <p className="text-green-400 text-sm mt-1">✓ {splitSheetFile.name} selected (will replace existing)</p>
+            )}
+            {splitSheetUrl && !splitSheetFile && (
+              <a href={splitSheetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Current Split Sheet</a>
             )}
           </div>
 
           {/* MP3 Upload */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">MP3 File</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              MP3 File {mp3Url && !mp3File && <span className="text-green-400">(Current: ✓)</span>}
+            </label>
             <input
               type="file"
               accept="audio/mp3,audio/mpeg"
               onChange={e => setMp3File(e.target.files?.[0] || null)}
               className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              disabled={loading}
+              disabled={loading || uploadingFiles}
             />
-            {mp3Url && (
-              <a href={mp3Url} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded MP3</a>
+            {mp3File && (
+              <p className="text-green-400 text-sm mt-1">✓ {mp3File.name} selected (will replace existing)</p>
+            )}
+            {mp3Url && !mp3File && (
+              <a href={mp3Url} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Current MP3</a>
             )}
           </div>
+          
           {/* Trackouts Upload */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Trackouts ZIP</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Trackouts ZIP {trackoutsUrl && !trackoutsFile && <span className="text-green-400">(Current: ✓)</span>}
+            </label>
             <input
               type="file"
               accept="application/zip,application/x-zip-compressed,.zip"
               onChange={e => setTrackoutsFile(e.target.files?.[0] || null)}
               className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              disabled={loading}
+              disabled={loading || uploadingFiles}
             />
-            {trackoutsUrl && (
-              <a href={trackoutsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Trackouts</a>
+            {trackoutsFile && (
+              <p className="text-green-400 text-sm mt-1">✓ {trackoutsFile.name} selected (will replace existing)</p>
+            )}
+            {trackoutsUrl && !trackoutsFile && (
+              <a href={trackoutsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Current Trackouts</a>
             )}
           </div>
 
-          {/* Spotify URL */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Spotify Track URL (Optional)</label>
-            <input
-              type="url"
-              value={spotifyUrl}
-              onChange={(e) => handleSpotifyUrlChange(e.target.value)}
-              placeholder="https://open.spotify.com/track/..."
-              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              disabled={loading}
-            />
-            {spotifyUrlError && (
-              <p className="text-red-400 text-xs mt-2">{spotifyUrlError}</p>
-            )}
-            <p className="text-xs text-gray-500 mt-1">
-              Paste your Spotify track URL to link it to this track
-            </p>
-          </div>
           {/* Stems Upload */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">Stems ZIP</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Stems ZIP {stemsUrl && !stemsFile && !stemsUrl.startsWith('http') && <span className="text-green-400">(Current: ✓)</span>}
+            </label>
             <input
               type="file"
               accept="application/zip,application/x-zip-compressed,.zip"
               onChange={e => setStemsFile(e.target.files?.[0] || null)}
               className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              disabled={loading}
+              disabled={loading || uploadingFiles}
             />
-            {stemsUrl && (
-              <a href={stemsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Uploaded Stems</a>
+            {stemsFile && (
+              <p className="text-green-400 text-sm mt-1">✓ {stemsFile.name} selected (will replace existing)</p>
+            )}
+            {stemsUrl && !stemsFile && !stemsUrl.startsWith('http') && (
+              <a href={stemsUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline mt-2 block">View Current Stems</a>
             )}
           </div>
 
@@ -502,16 +572,16 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
-              disabled={loading}
+              disabled={loading || uploadingFiles}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="btn-primary"
-              disabled={loading}
+              disabled={loading || uploadingFiles}
             >
-              {loading ? 'Updating...' : 'Update Track'}
+              {uploadingFiles ? 'Uploading Files...' : loading ? 'Updating...' : 'Update Track'}
             </button>
           </div>
         </form>
