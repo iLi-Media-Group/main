@@ -101,6 +101,12 @@ interface Track {
   created_at: string;
   has_vocals: boolean;
   vocals_usage_type: string | null;
+  is_sync_only?: boolean;
+  stems_url?: string;
+  split_sheet_url?: string;
+  mp3_url?: string;
+  trackouts_url?: string;
+  audio_url?: string;
   sales_count: number;
   revenue: number;
 }
@@ -358,7 +364,12 @@ export function ProducerDashboard() {
           image_url,
           created_at,
           has_vocals,
-          vocals_usage_type
+          vocals_usage_type,
+          is_sync_only,
+          stems_url,
+          split_sheet_url,
+          mp3_url,
+          trackouts_url
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)
@@ -405,6 +416,12 @@ export function ProducerDashboard() {
         created_at: track.created_at,
         has_vocals: track.has_vocals,
         vocals_usage_type: track.vocals_usage_type,
+        is_sync_only: track.is_sync_only,
+        stems_url: track.stems_url,
+        split_sheet_url: track.split_sheet_url,
+        mp3_url: track.mp3_url,
+        trackouts_url: track.trackouts_url,
+        audio_url: track.audio_url,
         genres: parseArrayField(track.genres),
         moods: parseArrayField(track.moods),
         mediaUsage: parseArrayField(track.media_usage),

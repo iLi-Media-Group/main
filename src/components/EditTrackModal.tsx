@@ -16,13 +16,14 @@ interface EditTrackModalProps {
     genres: string[];
     moods: string[];
     mediaUsage?: string[];
-    hasVocals?: boolean;
-    vocalsUsageType?: 'normal' | 'sync_only';
-    isSyncOnly?: boolean;
+    has_vocals?: boolean;
+    vocals_usage_type?: 'normal' | 'sync_only';
+    is_sync_only?: boolean;
     stems_url?: string;
     split_sheet_url?: string;
     mp3_url?: string;
     trackouts_url?: string;
+    audio_url?: string;
   };
   onUpdate: () => void;
 }
@@ -62,12 +63,13 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         genres: track.genres,
         moods: track.moods,
         mediaUsage: track.mediaUsage,
-        hasVocals: track.hasVocals,
-        isSyncOnly: track.isSyncOnly,
+        has_vocals: track.has_vocals,
+        is_sync_only: track.is_sync_only,
         stems_url: track.stems_url,
         split_sheet_url: track.split_sheet_url,
         mp3_url: track.mp3_url,
-        trackouts_url: track.trackouts_url
+        trackouts_url: track.trackouts_url,
+        audio_url: track.audio_url
       });
 
       const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
@@ -79,8 +81,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setSelectedGenres(initialGenres);
       setSelectedMoods(Array.isArray(track.moods) ? track.moods : []);
       setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
-      setHasVocals(track.hasVocals || false);
-      setIsSyncOnly(track.isSyncOnly || false);
+      setHasVocals(track.has_vocals || false);
+      setIsSyncOnly(track.is_sync_only || false);
       setStemsUrl(track.stems_url || '');
       setSplitSheetUrl(track.split_sheet_url || '');
       setMp3Url(track.mp3_url || '');
@@ -89,8 +91,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       console.log('EditTrackModal: Populated form state:', {
         selectedGenres: initialGenres,
         selectedMoods: Array.isArray(track.moods) ? track.moods : [],
-        hasVocals: track.hasVocals || false,
-        isSyncOnly: track.isSyncOnly || false
+        hasVocals: track.has_vocals || false,
+        isSyncOnly: track.is_sync_only || false
       });
     }
   }, [track]);
@@ -310,10 +312,10 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                 <p className="text-gray-400">Sync Only: <span className="text-white">{isSyncOnly ? 'Yes' : 'No'}</span></p>
               </div>
               <div>
-                <p className="text-gray-400">MP3: <span className="text-white">{mp3Url ? '✓ Available' : '❌ Not uploaded'}</span></p>
-                <p className="text-gray-400">Trackouts: <span className="text-white">{trackoutsUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
-                <p className="text-gray-400">Stems: <span className="text-white">{stemsUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
-                <p className="text-gray-400">Split Sheet: <span className="text-white">{splitSheetUrl ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">MP3: <span className="text-white">{track.audio_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Trackouts: <span className="text-white">{track.trackouts_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Stems: <span className="text-white">{track.stems_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Split Sheet: <span className="text-white">{track.split_sheet_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
               </div>
             </div>
           </div>
