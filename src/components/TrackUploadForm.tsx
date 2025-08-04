@@ -347,6 +347,7 @@ export function TrackUploadForm() {
       }
       let stemsStoragePath = formData.stemsUrl;
       if (stemsFile) {
+        console.log('[DEBUG] Uploading stems file:', stemsFile.name, stemsFile.size);
         const stemsSignedUrl = await uploadFile(
           stemsFile,
           'stems',
@@ -357,6 +358,8 @@ export function TrackUploadForm() {
         stemsStoragePath = stemsSignedUrl;
         updateFormData({ stemsUrl: stemsStoragePath });
         console.log('[DEBUG] Uploaded stems signed URL:', stemsStoragePath);
+      } else {
+        console.log('[DEBUG] No stems file to upload, using existing stemsUrl:', formData.stemsUrl);
       }
       // --- End new logic ---
 
@@ -393,6 +396,14 @@ export function TrackUploadForm() {
       
       // Log the exact data being sent to help debug the 400 error
       console.log('[DEBUG] Inserting track with data:', JSON.stringify(insertData, null, 2));
+      
+      // Debug stems_url specifically
+      console.log('[DEBUG] Stems URL details:', {
+        stemsFile: stemsFile ? `${stemsFile.name} (${stemsFile.size} bytes)` : 'null',
+        formDataStemsUrl: formData.stemsUrl,
+        stemsStoragePath: stemsStoragePath,
+        finalStemsUrl: insertData.stems_url
+      });
       
       console.log('🎵 Inserting track with data:', JSON.stringify(insertData, null, 2));
       const { data: insertResult, error: trackError } = await supabase
