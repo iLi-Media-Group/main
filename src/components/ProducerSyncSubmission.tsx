@@ -701,8 +701,8 @@ export default function ProducerSyncSubmission() {
                 {editError && <div className="text-red-400 text-sm">{editError}</div>}
               </div>
               <div className="flex justify-end gap-4 mt-6">
-                <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
-                <button onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
+                <button type="button" onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
+                <button type="button" onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
               </div>
             </div>
           </div>
@@ -715,8 +715,8 @@ export default function ProducerSyncSubmission() {
             <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Changes</h2>
             <p className="mb-6 text-gray-700">Are you sure you want to save these changes to your submission?</p>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
-              <button onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Yes, Save</button>
+              <button type="button" onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+              <button type="button" onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Yes, Save</button>
             </div>
           </div>
         </div>
@@ -737,6 +737,7 @@ export default function ProducerSyncSubmission() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={handleCloseChat}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >

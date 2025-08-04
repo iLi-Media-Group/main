@@ -231,8 +231,8 @@ function WhiteLabelAdminContent(props: any) {
                   <td className="border border-gray-600 px-4 py-2">{client.domain}</td>
                   <td className="border border-gray-600 px-4 py-2">{client.owner_id}</td>
                   <td className="border border-gray-600 px-4 py-2 space-x-2">
-                    <button className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
-                    <button className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
+                    <button type="button" className="bg-blue-600 hover:bg-blue-700 px-4 py-1 rounded" onClick={() => handleEdit(client)}>Edit</button>
+                    <button type="button" className="bg-red-600 hover:bg-red-700 px-4 py-1 rounded" onClick={() => handleDelete(client)}>Delete</button>
                   </td>
                 </tr>
               ))}
@@ -315,8 +315,8 @@ function WhiteLabelAdminContent(props: any) {
               <h2 className="text-xl font-bold mb-4 text-red-400">Delete Client</h2>
               <p className="mb-4">Are you sure you want to delete <span className="font-semibold">{deletingClient.company_name}</span>?</p>
               <div className="flex justify-end space-x-2">
-                <button className="px-4 py-2 bg-gray-700 rounded" onClick={() => setDeletingClient(null)}>Cancel</button>
-                <button className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white" onClick={confirmDelete}>Delete</button>
+                <button type="button" className="px-4 py-2 bg-gray-700 rounded" onClick={() => setDeletingClient(null)}>Cancel</button>
+                <button type="button" className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-white" onClick={confirmDelete}>Delete</button>
               </div>
             </div>
           </div>

@@ -1137,8 +1137,8 @@ export default function CustomSyncRequestSubs() {
             <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Selection</h2>
             <p className="mb-6 text-gray-700">Selecting this track will decline all other submissions for this request. Are you sure you want to proceed?</p>
             <div className="flex justify-end gap-4">
-              <button onClick={cancelSelect} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
-              <button onClick={confirmSelectSubmission} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">Yes, Select</button>
+              <button type="button" onClick={cancelSelect} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+              <button type="button" onClick={confirmSelectSubmission} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">Yes, Select</button>
             </div>
           </div>
         </div>
@@ -1156,6 +1156,7 @@ export default function CustomSyncRequestSubs() {
                 <p className="text-sm text-blue-300">Sync Request: {selectedSubmission?.sub.track_name || 'Custom Sync'}</p>
               </div>
               <button
+                type="button"
                 onClick={() => setShowChatDialog(false)}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >

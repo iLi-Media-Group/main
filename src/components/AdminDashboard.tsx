@@ -1904,7 +1904,7 @@ if (subscription.price_id) {
                         <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
                         <td className="py-3 px-4">
                           {msg.status === 'unread' && (
-                            <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
+                            <button type="button" onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
                           )}
                         </td>
                       </tr>
@@ -1968,6 +1968,7 @@ if (subscription.price_id) {
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-2">
                             <button
+                              type="button"
                               onClick={() => window.open(`/services`, '_blank')}
                               className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
                               title="View services page"
@@ -1976,6 +1977,7 @@ if (subscription.price_id) {
                             </button>
                             {accountType === 'admin' && (
                               <button
+                                type="button"
                                 onClick={() => handleDeleteService(service.id)}
                                 className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
                                 title="Delete service"

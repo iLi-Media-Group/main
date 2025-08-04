@@ -52,7 +52,7 @@ function DeleteConfirmationDialog({ isOpen, onClose, client, onConfirm }: Delete
             <AlertTriangle className="w-6 h-6 text-red-400 mr-3" />
             <h3 className="text-xl font-bold text-white">Delete User</h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -148,7 +148,7 @@ function ChangePlanDialog({ isOpen, onClose, client, onConfirm }: ChangePlanDial
       <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-white">Change Membership Plan</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button type="button" onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
