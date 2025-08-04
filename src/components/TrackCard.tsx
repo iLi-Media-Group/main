@@ -239,7 +239,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             )}
             
             {/* MP3 Only Badge - Show when MP3 exists but no trackouts/stems */}
-            {track.audioUrl && !track.trackoutsUrl && (
+            {track.audioUrl && !track.trackoutsUrl && !track.stemsUrl && (
               <div className="flex items-center text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full">
                 <FileMusic className="w-3 h-3 mr-0.5" />
                 <span>MP3 Only</span>
@@ -249,12 +249,12 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             {/* Debug info - remove after testing */}
             {process.env.NODE_ENV === 'development' && (
               <div className="text-xs text-gray-500">
-                Debug: audioUrl={track.audioUrl ? 'yes' : 'no'}, trackoutsUrl={track.trackoutsUrl ? 'yes' : 'no'}
+                Debug: audioUrl={track.audioUrl ? 'yes' : 'no'}, trackoutsUrl={track.trackoutsUrl ? 'yes' : 'no'}, stemsUrl={track.stemsUrl ? 'yes' : 'no'}
               </div>
             )}
             
             {/* MP3 Badge - Show when MP3 exists and trackouts also exist */}
-            {track.audioUrl && track.trackoutsUrl && (
+            {track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
               <div className="flex items-center text-green-400">
                 <FileMusic className="w-3 h-3 mr-0.5" />
                 <span>MP3</span>

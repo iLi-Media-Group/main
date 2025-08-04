@@ -83,6 +83,7 @@ export function CatalogPage() {
           duration,
           mp3_url,
           trackouts_url,
+          stems_url,
           has_vocals,
           vocals_usage_type,
           is_sync_only,
@@ -170,7 +171,8 @@ export function CatalogPage() {
             id: data[0].id,
             title: data[0].title,
             audio_url: data[0].audio_url,
-            trackouts_url: data[0].trackouts_url
+            trackouts_url: data[0].trackouts_url,
+            stems_url: data[0].stems_url
           });
         }
 
@@ -196,6 +198,7 @@ export function CatalogPage() {
             isOneStop: track.is_one_stop,
             mp3Url: track.mp3_url,
             trackoutsUrl: track.trackouts_url,
+            stemsUrl: track.stems_url,
             hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
             producerId: track.track_producer_id || '',
