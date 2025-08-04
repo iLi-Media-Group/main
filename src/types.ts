@@ -19,9 +19,8 @@ export interface Track {
   trackoutsUrl?: string;
   stemsUrl?: string;
   splitSheetUrl?: string;
-  hasVocals?: boolean;
-  vocalsUsageType?: 'normal' | 'sync_only';
-  isSyncOnly?: boolean;
+  hasVocals?: boolean; // Boolean: true if track has vocals
+  isSyncOnly?: boolean; // Boolean: true if track is sync-only (not available for regular licensing)
   producerId: string; // Added explicit producerId field
   producer?: {
     id: string;

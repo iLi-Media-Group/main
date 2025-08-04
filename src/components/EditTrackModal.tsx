@@ -18,6 +18,7 @@ interface EditTrackModalProps {
     mediaUsage?: string[];
     hasVocals?: boolean;
     vocalsUsageType?: 'normal' | 'sync_only';
+    isSyncOnly?: boolean;
     stems_url?: string;
     split_sheet_url?: string;
     mp3_url?: string;
@@ -70,7 +71,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setSelectedMoods(Array.isArray(track.moods) ? track.moods : []);
       setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
       setHasVocals(track.hasVocals || false);
-      setIsSyncOnly(track.vocalsUsageType === 'sync_only');
+      setIsSyncOnly(track.isSyncOnly || false);
       setStemsUrl(track.stems_url || '');
       setSplitSheetUrl(track.split_sheet_url || '');
       setSpotifyUrl(track.spotify_external_url || '');
@@ -209,7 +210,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           moods: validMoods,
           media_usage: selectedMediaUsage,
           has_vocals: hasVocals,
-          vocals_usage_type: isSyncOnly ? 'sync_only' : 'normal',
+          is_sync_only: isSyncOnly,
           mp3_url: mp3UploadedUrl || null,
           trackouts_url: trackoutsUploadedUrl || null,
           stems_url: stemsUploadedUrl || null,

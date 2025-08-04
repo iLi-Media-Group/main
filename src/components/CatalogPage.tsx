@@ -31,6 +31,7 @@ export function CatalogPage() {
     // Get search params
     const query = searchParams.get('q')?.toLowerCase().trim() || '';
     const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
+    const subGenres = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
     const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
     const minBpm = searchParams.get('minBpm');
     const maxBpm = searchParams.get('maxBpm');
@@ -40,6 +41,7 @@ export function CatalogPage() {
     const filters = {
       query,
       genres,
+      subGenres,
       moods,
       minBpm: minBpm ? parseInt(minBpm) : undefined,
       maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
@@ -84,52 +86,31 @@ export function CatalogPage() {
           has_vocals,
           vocals_usage_type,
           is_sync_only,
-          track_producer_id:profiles!track_producer_id (
+          track_producer_id,
+          profiles!track_producer_id (
             id,
             first_name,
             last_name,
             email
           )
         `)
-        .is('deleted_at', null);
+        .is('deleted_at', null)
+        .eq('is_sync_only', false); // Exclude sync-only tracks from main catalog
 
       // If a specific track ID is provided, fetch only that track
       if (filters?.trackId) {
         query = query.eq('id', filters.trackId);
       } else {
-        // Build search conditions
+        // Build search conditions with proper priority
         const searchConditions = [];
 
+        // Text search in title and artist
         if (filters?.query) {
-          // Text search
           searchConditions.push(`title.ilike.%${filters.query}%`);
           searchConditions.push(`artist.ilike.%${filters.query}%`);
-          
-          // Search in comma-separated strings
-          searchConditions.push(`genres.ilike.%${filters.query}%`);
-          searchConditions.push(`moods.ilike.%${filters.query}%`);
         }
 
-        // Genre filters
-        if (filters?.genres?.length > 0) {
-          filters.genres.forEach((genre: string) => {
-            searchConditions.push(`genres.ilike.%${genre}%`);
-          });
-        }
-
-        // Mood filters
-        if (filters?.moods?.length > 0) {
-          filters.moods.forEach((mood: string) => {
-            searchConditions.push(`moods.ilike.%${mood}%`);
-          });
-        }
-
-        // Apply search conditions
-        if (searchConditions.length > 0) {
-          query = query.or(searchConditions.join(','));
-        }
-
-        // Apply BPM filters
+        // Apply BPM filters first (these are always applied)
         if (filters?.minBpm !== undefined) {
           query = query.gte('bpm', filters.minBpm);
         }
@@ -137,14 +118,66 @@ export function CatalogPage() {
           query = query.lte('bpm', filters.maxBpm);
         }
 
-        // Add pagination
-        const from = (currentPage - 1) * TRACKS_PER_PAGE;
-        const to = from + TRACKS_PER_PAGE - 1;
-        query = query.range(from, to);
+        // Priority 1: Genre filtering (highest priority)
+        if (filters?.genres?.length > 0) {
+          // Create genre conditions - tracks must match at least one of the selected genres
+          const genreConditions = filters.genres.map((genre: string) => 
+            `genres.ilike.%${genre}%`
+          );
+          
+          // Apply genre filter with OR condition
+          query = query.or(genreConditions.join(','));
+          
+          // Priority 2: Subgenre filtering (only if genres are selected)
+          if (filters?.subGenres?.length > 0) {
+            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
+              `sub_genres.ilike.%${subGenre}%`
+            );
+            // Apply subgenre filter with OR condition
+            query = query.or(subGenreConditions.join(','));
+          }
+          
+          // Priority 3: Mood filtering (only if genres are selected)
+          if (filters?.moods?.length > 0) {
+            const moodConditions = filters.moods.map((mood: string) => 
+              `moods.ilike.%${mood}%`
+            );
+            // Apply mood filter with OR condition
+            query = query.or(moodConditions.join(','));
+          }
+        } else {
+          // No genres selected - allow mood-based search only
+          if (filters?.moods?.length > 0) {
+            const moodConditions = filters.moods.map((mood: string) => 
+              `moods.ilike.%${mood}%`
+            );
+            // Apply mood filter with OR condition
+            query = query.or(moodConditions.join(','));
+          }
+          
+          // Also allow subgenre search when no genres are selected
+          if (filters?.subGenres?.length > 0) {
+            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
+              `sub_genres.ilike.%${subGenre}%`
+            );
+            // Apply subgenre filter with OR condition
+            query = query.or(subGenreConditions.join(','));
+          }
+        }
 
-        // Order by most recent first
-        query = query.order('created_at', { ascending: false });
+        // Apply text search conditions if any
+        if (searchConditions.length > 0) {
+          query = query.or(searchConditions.join(','));
+        }
       }
+
+      // Add pagination
+      const from = (currentPage - 1) * TRACKS_PER_PAGE;
+      const to = from + TRACKS_PER_PAGE - 1;
+      query = query.range(from, to);
+
+      // Order by most recent first
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
 
@@ -157,8 +190,8 @@ export function CatalogPage() {
             id: track.id,
             title: track.title || 'Untitled',
             artist:
-              track.track_producer_id?.first_name ||
-              track.track_producer_id?.email?.split('@')[0] ||
+              track.profiles?.[0]?.first_name ||
+              track.profiles?.[0]?.email?.split('@')[0] ||
               'Unknown Artist',
             genres: parseArrayField(track.genres),
             subGenres: parseArrayField(track.sub_genres),
@@ -173,21 +206,19 @@ export function CatalogPage() {
             isOneStop: track.is_one_stop,
             mp3Url: track.mp3_url,
             trackoutsUrl: track.trackouts_url,
-            hasVocals: track.has_vocals,
-            vocalsUsageType: track.vocals_usage_type,
+            hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id?.id || '',
-            producer: track.track_producer_id ? {
-              id: track.track_producer_id.id,
-              firstName: track.track_producer_id.first_name || '',
-              lastName: track.track_producer_id.last_name || '',
-              email: track.track_producer_id.email
+            producerId: track.track_producer_id || '',
+            producer: track.profiles?.[0] ? {
+              id: track.profiles[0].id,
+              firstName: track.profiles[0].first_name || '',
+              lastName: track.profiles[0].last_name || '',
+              email: track.profiles[0].email || '',
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-              trackouts: { format: ['WAV'], url: track.trackouts_url || '' },
-              stems: { format: ['WAV'], url: track.stems_url || '' },
-              stemsWithVocals: { format: ['WAV'], url: track.stems_url || '' }
+              stems: { format: ['WAV'], url: track.trackouts_url || '' },
+              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
             },
             pricing: {
               stereoMp3: 0,
@@ -204,11 +235,6 @@ export function CatalogPage() {
         }
 
         setHasMore(formattedTracks.length === TRACKS_PER_PAGE);
-        
-        // If we're looking for a specific track and found it, navigate to its page
-        if (filters?.trackId && formattedTracks.length === 1) {
-          navigate(`/track/${filters.trackId}`);
-        }
       }
     } catch (error) {
       console.error('Error fetching tracks:', error);
@@ -224,6 +250,7 @@ export function CatalogPage() {
       ...filters,
       query: filters.query?.toLowerCase().trim(),
       genres: filters.genres?.map((g: string) => g.toLowerCase().trim()),
+      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()),
       moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
     };
 
@@ -231,6 +258,7 @@ export function CatalogPage() {
     const params = new URLSearchParams();
     if (normalizedFilters.query) params.set('q', normalizedFilters.query);
     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
+    if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
     if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
     if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());

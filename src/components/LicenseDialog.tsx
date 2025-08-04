@@ -274,21 +274,21 @@ export function LicenseDialog({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
-        <div className="bg-blue-900/90 p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-white">License Track</h3>
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4" onClick={onClose}>
+        <div className="bg-blue-900/90 p-4 sm:p-6 rounded-xl border border-purple-500/20 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h3 className="text-lg sm:text-xl font-bold text-white">License Track</h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors p-1"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-              <p className="text-red-400 text-center">{error}</p>
+            <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-center text-sm sm:text-base">{error}</p>
             </div>
           )}
 
@@ -307,7 +307,7 @@ export function LicenseDialog({
           )}
 
           {step === 'profile' && (
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
+            <form onSubmit={handleProfileSubmit} className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   First Name
@@ -316,7 +316,7 @@ export function LicenseDialog({
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full pl-4"
+                  className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -329,7 +329,7 @@ export function LicenseDialog({
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full pl-4"
+                  className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -342,23 +342,23 @@ export function LicenseDialog({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-4"
+                  className="w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 text-gray-300 hover:text-white transition-colors"
                   disabled={loading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                  className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Continue'}
@@ -368,10 +368,10 @@ export function LicenseDialog({
           )}
 
           {step === 'confirm' && profile && (
-            <div className="space-y-6">
-              <div className="bg-white/5 rounded-lg p-6">
-                <h4 className="text-lg font-semibold text-white mb-4">License Summary</h4>
-                <div className="space-y-3">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="bg-white/5 rounded-lg p-4 sm:p-6">
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">License Summary</h4>
+                <div className="space-y-2 sm:space-y-3 text-sm sm:text-base">
                   <p className="text-gray-300">
                     <span className="font-medium text-white">Track:</span> {track.title}
                   </p>
@@ -396,17 +396,17 @@ export function LicenseDialog({
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-4">
+              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4 pt-4">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 text-gray-300 hover:text-white transition-colors"
                   disabled={loading}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLicense}
-                  className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+                  className="w-full sm:w-auto px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center justify-center"
                   disabled={loading}
                 >
                   {loading ? (
@@ -437,38 +437,38 @@ export function LicenseDialog({
 
       {/* Existing License Warning Dialog */}
       {showExistingLicenseWarning && existingLicensesInfo && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-blue-900/90 border border-purple-500/20 rounded-xl p-6 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-blue-900/90 border border-purple-500/20 rounded-xl p-4 sm:p-6 max-w-sm sm:max-w-md w-full">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white">Multiple Licenses</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-white">Multiple Licenses</h3>
               <button
                 onClick={() => {
                   setShowExistingLicenseWarning(false);
                   setExistingLicensesInfo(null);
                 }}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-white transition-colors p-1"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
             
-            <div className="mb-6">
-              <p className="text-gray-300 mb-4">
+            <div className="mb-4 sm:mb-6">
+              <p className="text-gray-300 mb-3 sm:mb-4 text-sm sm:text-base">
                 You already have {existingLicensesInfo.count} license{existingLicensesInfo.count > 1 ? 's' : ''} for this track 
                 (latest: {existingLicensesInfo.latestDate}).
               </p>
-              <p className="text-blue-200 text-sm">
+              <p className="text-blue-200 text-xs sm:text-sm">
                 You can license this track again for different projects. Each license is valid for separate commercial use.
               </p>
             </div>
             
-            <div className="flex justify-end space-x-4">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-4">
               <button
                 onClick={() => {
                   setShowExistingLicenseWarning(false);
                   setExistingLicensesInfo(null);
                 }}
-                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+                className="w-full sm:w-auto px-4 py-2 text-gray-300 hover:text-white transition-colors"
               >
                 Cancel
               </button>
@@ -478,7 +478,7 @@ export function LicenseDialog({
                   setExistingLicensesInfo(null);
                   createLicenseRecord();
                 }}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 Continue
               </button>

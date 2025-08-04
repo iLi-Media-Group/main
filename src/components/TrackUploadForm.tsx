@@ -382,7 +382,6 @@ export function TrackUploadForm() {
         stems_url: stemsStoragePath || null,
         split_sheet_url: splitSheetUploadedUrl || null,
         has_vocals: formData.hasVocals,
-        vocals_usage_type: formData.hasVocals ? 'normal' : null,
         is_sync_only: formData.isSyncOnly,
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
         clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,

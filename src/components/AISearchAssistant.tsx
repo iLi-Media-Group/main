@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight, Zap, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
+import { GENRES, SUB_GENRES, MOODS } from '../types';
 
 interface SearchFilters {
   query: string;
   genres: string[];
+  subGenres: string[];
   moods: string[];
   minBpm: number;
   maxBpm: number;
@@ -42,14 +44,14 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
   // Popular search examples
   const popularExamples = [
-    'energetic hip hop for workout',
-    'peaceful ambient for meditation',
-    'uplifting pop for commercials',
-    'dramatic orchestral for trailers',
-    'funky jazz for restaurants',
+    'energetic Hiphop for workout',
+    'peaceful Electronic for meditation',
+    'uplifting Pop for commercials',
+    'dramatic Classical for trailers',
+    'funky Jazz for restaurants',
     'electronic dance for clubs',
-    'romantic piano for weddings',
-    'mysterious synth for documentaries'
+    'romantic Classical for weddings',
+    'mysterious Electronic for documentaries'
   ];
 
   // AI-powered suggestions based on context
@@ -147,6 +149,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     const filters: SearchFilters = {
       query: '',
       genres: [],
+      subGenres: [],
       moods: [],
       minBpm: 0,
       maxBpm: 300
@@ -154,18 +157,40 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     const lowerQuery = query.toLowerCase();
 
-    // Genre detection
-    const genres = ['hip hop', 'electronic', 'pop', 'rock', 'jazz', 'classical', 'country', 'r&b', 'folk', 'reggae', 'blues', 'metal', 'punk', 'indie', 'ambient', 'techno', 'house', 'trance', 'dubstep', 'trap'];
-    genres.forEach(genre => {
-      if (lowerQuery.includes(genre)) {
+    // Genre and subgenre detection - use the actual GENRES from types
+    GENRES.forEach(genre => {
+      const genreLower = genre.toLowerCase();
+      if (lowerQuery.includes(genreLower) || lowerQuery.includes(genreLower.replace(/\s+/g, ''))) {
         filters.genres.push(genre);
+        
+        // Check if this genre has subgenres and if any are mentioned
+        const genreKey = genreLower.replace(/\s+/g, '');
+        if (SUB_GENRES[genreKey as keyof typeof SUB_GENRES]) {
+          const subGenres = SUB_GENRES[genreKey as keyof typeof SUB_GENRES];
+          subGenres.forEach(subGenre => {
+            const subGenreLower = subGenre.toLowerCase();
+            if (lowerQuery.includes(subGenreLower)) {
+              filters.subGenres.push(subGenre);
+            }
+          });
+        }
       }
     });
 
-    // Mood detection
-    const moods = ['energetic', 'peaceful', 'uplifting', 'dramatic', 'romantic', 'mysterious', 'funky', 'aggressive', 'melancholic', 'happy', 'sad', 'excited', 'calm', 'intense', 'relaxed', 'powerful', 'gentle', 'dark', 'bright', 'emotional'];
-    moods.forEach(mood => {
-      if (lowerQuery.includes(mood)) {
+    // Also check for standalone subgenres that might not be associated with a genre
+    Object.entries(SUB_GENRES).forEach(([genreKey, subGenres]) => {
+      subGenres.forEach(subGenre => {
+        const subGenreLower = subGenre.toLowerCase();
+        if (lowerQuery.includes(subGenreLower)) {
+          filters.subGenres.push(subGenre);
+        }
+      });
+    });
+
+    // Mood detection - use the actual MOODS from types
+    MOODS.forEach(mood => {
+      const moodLower = mood.toLowerCase();
+      if (lowerQuery.includes(moodLower)) {
         filters.moods.push(mood);
       }
     });
@@ -180,13 +205,14 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       }
     }
 
-    // Use case detection
-    const useCases = ['workout', 'meditation', 'commercial', 'trailer', 'restaurant', 'club', 'party', 'background', 'foreground', 'intro', 'outro', 'transition'];
-    useCases.forEach(useCase => {
+    // Use case detection for query text
+    const useCases = ['workout', 'meditation', 'commercial', 'trailer', 'restaurant', 'club', 'party', 'background', 'foreground', 'intro', 'outro', 'transition', 'gaming', 'fitness', 'podcast', 'movie', 'documentary', 'wedding'];
+    for (const useCase of useCases) {
       if (lowerQuery.includes(useCase)) {
         filters.query = useCase;
+        break; // Use the first use case found
       }
-    });
+    }
 
     return filters;
   };
@@ -212,7 +238,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     // For now, just simulate it
     if (!isListening) {
       setTimeout(() => {
-        setQuery('energetic electronic music for workout');
+        setQuery('energetic Electronic music for workout');
         setIsListening(false);
       }, 2000);
     }

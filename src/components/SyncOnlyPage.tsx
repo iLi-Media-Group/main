@@ -68,26 +68,70 @@ export function SyncOnlyPage() {
         .range((currentPage - 1) * TRACKS_PER_PAGE, currentPage * TRACKS_PER_PAGE - 1);
 
       // Apply search filters
-      if (filters?.query) {
-        query = query.ilike('title', `%${filters.query}%`);
-      }
+      if (filters) {
+        // Apply BPM filters first (these are always applied)
+        if (filters.minBpm) {
+          query = query.gte('bpm', filters.minBpm);
+        }
+        if (filters.maxBpm) {
+          query = query.lte('bpm', filters.maxBpm);
+        }
 
-      if (filters?.genres?.length) {
-        const genreConditions = filters.genres.map((genre: string) => `genres.ilike.%${genre}%`);
-        query = query.or(genreConditions.join(','));
-      }
+        // Priority 1: Genre filtering (highest priority)
+        if (filters.genres?.length > 0) {
+          // Create genre conditions - tracks must match at least one of the selected genres
+          const genreConditions = filters.genres.map((genre: string) => 
+            `genres.ilike.%${genre}%`
+          );
+          
+          // Apply genre filter with OR condition
+          query = query.or(genreConditions.join(','));
+          
+          // Priority 2: Subgenre filtering (only if genres are selected)
+          if (filters.subGenres?.length > 0) {
+            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
+              `sub_genres.ilike.%${subGenre}%`
+            );
+            // Apply subgenre filter with OR condition
+            query = query.or(subGenreConditions.join(','));
+          }
+          
+          // Priority 3: Mood filtering (only if genres are selected)
+          if (filters.moods?.length > 0) {
+            const moodConditions = filters.moods.map((mood: string) => 
+              `moods.ilike.%${mood}%`
+            );
+            // Apply mood filter with OR condition
+            query = query.or(moodConditions.join(','));
+          }
+        } else {
+          // No genres selected - allow mood-based search only
+          if (filters.moods?.length > 0) {
+            const moodConditions = filters.moods.map((mood: string) => 
+              `moods.ilike.%${mood}%`
+            );
+            // Apply mood filter with OR condition
+            query = query.or(moodConditions.join(','));
+          }
+          
+          // Also allow subgenre search when no genres are selected
+          if (filters.subGenres?.length > 0) {
+            const subGenreConditions = filters.subGenres.map((subGenre: string) => 
+              `sub_genres.ilike.%${subGenre}%`
+            );
+            // Apply subgenre filter with OR condition
+            query = query.or(subGenreConditions.join(','));
+          }
+        }
 
-      if (filters?.moods?.length) {
-        const moodConditions = filters.moods.map((mood: string) => `moods.ilike.%${mood}%`);
-        query = query.or(moodConditions.join(','));
-      }
-
-      if (filters?.minBpm) {
-        query = query.gte('bpm', filters.minBpm);
-      }
-
-      if (filters?.maxBpm) {
-        query = query.lte('bpm', filters.maxBpm);
+        // Text search in title and artist
+        if (filters.query) {
+          const textConditions = [
+            `title.ilike.%${filters.query}%`,
+            `artist.ilike.%${filters.query}%`
+          ];
+          query = query.or(textConditions.join(','));
+        }
       }
 
       const { data, error } = await query;
@@ -117,15 +161,14 @@ export function SyncOnlyPage() {
             isOneStop: track.is_one_stop,
             mp3Url: track.mp3_url,
             trackoutsUrl: track.trackouts_url,
-            hasVocals: track.has_vocals,
-            vocalsUsageType: track.vocals_usage_type,
+            hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id?.id || '',
-            producer: track.track_producer_id ? {
-              id: track.track_producer_id.id,
-              firstName: track.track_producer_id.first_name || '',
-              lastName: track.track_producer_id.last_name || '',
-              email: track.track_producer_id.email
+            producerId: track.track_producer_id || '',
+            producer: track.track_producer_id?.[0] ? {
+              id: track.track_producer_id[0].id,
+              firstName: track.track_producer_id[0].first_name || '',
+              lastName: track.track_producer_id[0].last_name || '',
+              email: track.track_producer_id[0].email
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },

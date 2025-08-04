@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate } from 'react-router-dom';
@@ -170,9 +170,10 @@ function AdminDashboard() {
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('total_revenue');
-  const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('first_name');
+  const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
+  const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
   const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test'>('analytics');
   
@@ -884,6 +885,26 @@ if (subscription.price_id) {
     }
   };
 
+  const handleDeleteProducer = async () => {
+    if (!producerToDelete) return;
+
+    try {
+      // Delete the profile - this will trigger the database trigger to delete the auth user
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', producerToDelete.id);
+
+      if (error) throw error;
+
+      // Refresh producer list
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting producer:', err);
+      throw new Error('Failed to delete producer. Please try again.');
+    }
+  };
+
   const filteredProducers = producers
     .filter(producer => {
       if (!searchQuery) return true;
@@ -1565,7 +1586,7 @@ if (subscription.price_id) {
                         )}
                       </button>
                     </th>
-
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-purple-500/10">
@@ -1595,6 +1616,20 @@ if (subscription.price_id) {
                       </td>
                       <td className="px-6 py-4 text-gray-300">
                         {new Date(producer.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProducerToDelete(producer);
+                            }}
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                            title="Delete producer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2229,6 +2264,65 @@ if (subscription.price_id) {
       )}
       {/* AdminReportGenerator Modal */}
       <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} />
+
+      {/* Producer Delete Confirmation Dialog */}
+      {producerToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <AlertTriangle className="w-6 h-6 text-red-400 mr-3" />
+                <h3 className="text-xl font-bold text-white">Delete Producer</h3>
+              </div>
+              <button onClick={() => setProducerToDelete(null)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-sm font-medium mb-2">⚠️ Warning</p>
+                <p className="text-gray-300 text-sm">
+                  This action will permanently delete the producer account and all associated data including tracks, sales, and proposals. 
+                  The producer will no longer be able to log in to the system.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-white">
+                  Are you sure you want to delete <strong>{producerToDelete.first_name} {producerToDelete.last_name}</strong> ({producerToDelete.email})?
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setProducerToDelete(null)}
+                  className="px-4 py-2 text-gray-300 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await handleDeleteProducer();
+                      setProducerToDelete(null);
+                    } catch (err) {
+                      console.error('Error deleting producer:', err);
+                    }
+                  }}
+                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Producer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
   );

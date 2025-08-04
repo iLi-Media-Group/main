@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Sliders } from 'lucide-react';
-import { GENRES, MOODS } from '../types';
+import { GENRES, SUB_GENRES, MOODS } from '../types';
 
 interface SearchBoxProps {
   onSearch: (filters: SearchFilters) => void;
@@ -9,6 +9,7 @@ interface SearchBoxProps {
 export interface SearchFilters {
   query: string;
   genres: string[];
+  subGenres: string[];
   moods: string[];
   minBpm: number;
   maxBpm: number;
@@ -19,6 +20,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     genres: [],
+    subGenres: [],
     moods: [],
     minBpm: 0,
     maxBpm: 300,
@@ -50,6 +52,22 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     ];
     return `Search by title, genre, or mood (e.g., "${examples[Math.floor(Math.random() * examples.length)]}")`;
   };
+
+  // Get available subgenres based on selected genres
+  const getAvailableSubGenres = () => {
+    if (filters.genres.length === 0) return [];
+    
+    const availableSubGenres: string[] = [];
+    filters.genres.forEach(genre => {
+      const genreKey = genre.toLowerCase();
+      if (SUB_GENRES[genreKey as keyof typeof SUB_GENRES]) {
+        availableSubGenres.push(...SUB_GENRES[genreKey as keyof typeof SUB_GENRES]);
+      }
+    });
+    return [...new Set(availableSubGenres)]; // Remove duplicates
+  };
+
+  const availableSubGenres = getAvailableSubGenres();
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -83,10 +101,10 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
 
         {isFiltersOpen && (
           <div className="glass-card p-6 rounded-lg space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Genres
+                  Genres (Primary Filter)
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                   {GENRES.map((genre) => (
@@ -99,12 +117,42 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                             ? [...filters.genres, genre]
                             : filters.genres.filter(g => g !== genre);
                           handleFilterChange('genres', newGenres);
+                          // Clear subgenres when genres change
+                          handleFilterChange('subGenres', []);
                         }}
                         className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
                       <span className="text-gray-300">{genre}</span>
                     </label>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Subgenres
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {availableSubGenres.length > 0 ? (
+                    availableSubGenres.map((subGenre) => (
+                      <label key={subGenre} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={filters.subGenres.includes(subGenre)}
+                          onChange={(e) => {
+                            const newSubGenres = e.target.checked
+                              ? [...filters.subGenres, subGenre]
+                              : filters.subGenres.filter(sg => sg !== subGenre);
+                            handleFilterChange('subGenres', newSubGenres);
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-gray-300">{subGenre}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-gray-500 text-sm">Select genres first to see subgenres</p>
+                  )}
                 </div>
               </div>
 
@@ -145,7 +193,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                       max={filters.maxBpm}
                       value={filters.minBpm}
                       onChange={(e) => handleFilterChange('minBpm', parseInt(e.target.value))}
-                      className="mt-1 block w-full"
+                      className="mt-1 block w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -156,7 +204,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                       max="300"
                       value={filters.maxBpm}
                       onChange={(e) => handleFilterChange('maxBpm', parseInt(e.target.value))}
-                      className="mt-1 block w-full"
+                      className="mt-1 block w-full px-3 py-2 bg-white/10 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
