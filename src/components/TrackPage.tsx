@@ -181,7 +181,6 @@ export function TrackPage() {
           duration: trackData.duration || '',
           moods: moods,
           hasVocals: trackData.has_vocals || false,
-          vocalsUsageType: trackData.vocals_usage_type || 'normal',
           isSyncOnly: trackData.is_sync_only || false,
           isOneStop: trackData.is_one_stop || false,
           hasStingEnding: trackData.has_sting_ending || false,
@@ -341,8 +340,8 @@ export function TrackPage() {
   }
 
   // Determine button type based on track properties
-  const isSyncOnlyTrack = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
-  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly && track.vocalsUsageType !== 'sync_only';
+  const isSyncOnlyTrack = track.isSyncOnly;
+  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -443,6 +442,32 @@ export function TrackPage() {
                       <span className="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-xs">
                         Sync Only
                       </span>
+                    </div>
+                  )}
+                  
+                  {/* MP3 Only Indicator */}
+                  {track.mp3Url && !track.trackoutsUrl && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-yellow-400" />
+                      <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                        MP3 Only
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* MP3 + Trackouts Indicator */}
+                  {track.mp3Url && track.trackoutsUrl && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-green-400" />
+                      <span>MP3 + Trackouts Available</span>
+                    </div>
+                  )}
+                  
+                  {/* Trackouts Only Indicator */}
+                  {!track.mp3Url && track.trackoutsUrl && (
+                    <div className="flex items-center text-gray-300">
+                      <Layers className="w-5 h-5 mr-2 text-blue-400" />
+                      <span>Trackouts Available</span>
                     </div>
                   )}
                   

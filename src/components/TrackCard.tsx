@@ -62,7 +62,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
-  const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
+  const isSyncOnly = track.isSyncOnly;
 
   // Get signed URL for audio
   const { signedUrl: audioSignedUrl, loading: audioLoading, error: audioError } = useSignedUrl('track-audio', track.audioUrl);
@@ -237,8 +237,17 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
                 <span>Explicit</span>
               </div>
             )}
-            {/* MP3 Badge */}
-            {track.mp3Url && (
+            
+            {/* MP3 Only Badge - Show when MP3 exists but no trackouts/stems */}
+            {track.mp3Url && !track.trackoutsUrl && (
+              <div className="flex items-center text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                <FileMusic className="w-3 h-3 mr-0.5" />
+                <span>MP3 Only</span>
+              </div>
+            )}
+            
+            {/* MP3 Badge - Show when MP3 exists and trackouts also exist */}
+            {track.mp3Url && track.trackoutsUrl && (
               <div className="flex items-center text-green-400">
                 <FileMusic className="w-3 h-3 mr-0.5" />
                 <span>MP3</span>
