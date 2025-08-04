@@ -164,6 +164,17 @@ export function CatalogPage() {
       if (error) throw error;
 
       if (data) {
+        // Debug: Log the first track's data to see what we're getting
+        if (data.length > 0 && process.env.NODE_ENV === 'development') {
+          console.log('First track data:', {
+            id: data[0].id,
+            title: data[0].title,
+            mp3_url: data[0].mp3_url,
+            trackouts_url: data[0].trackouts_url,
+            audio_url: data[0].audio_url
+          });
+        }
+
         const formattedTracks = data
           .filter(track => track && track.id)
           .map(track => ({
