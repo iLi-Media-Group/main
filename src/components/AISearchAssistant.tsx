@@ -33,6 +33,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [_suggestions, setSuggestions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'suggestions' | 'history'>('search');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const [searchExplanation, setSearchExplanation] = useState<string>('');
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -42,25 +43,81 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     '/reset-password'
   ].some(path => location.pathname.includes(path));
 
-  // Popular search examples
+  // Enhanced popular search examples with natural language
   const popularExamples = [
-    'energetic hiphop for workout',
-    'peaceful electronic for meditation',
-    'uplifting pop for commercials',
-    'dramatic classical for trailers',
-    'funky jazz for restaurants',
-    'electronic dance for clubs',
-    'romantic classical for weddings',
-    'mysterious electronic for documentaries'
+    'I need energetic hiphop for my workout routine',
+    'Looking for peaceful electronic music for meditation',
+    'Want uplifting pop songs for commercials',
+    'Need dramatic classical music for movie trailers',
+    'Searching for funky jazz for restaurant background',
+    'Find electronic dance music for club nights',
+    'Looking for romantic classical for wedding ceremonies',
+    'Need mysterious electronic for documentary films'
   ];
 
-  // AI-powered suggestions based on context
-  const aiSuggestions = [
-    'Based on your recent searches: "upbeat electronic for gaming"',
-    'Similar to what others found: "calm acoustic for podcasts"',
-    'Trending now: "energetic trap for fitness videos"',
-    'Popular in your genre: "dramatic orchestral for movie scenes"'
-  ];
+  // AI-powered suggestions based on context and user behavior
+  const generateAISuggestions = async () => {
+    if (!user) return [];
+
+    try {
+      const userPreferences = await analyzeUserPreferences();
+      const suggestions = [];
+
+      // Personalized suggestions based on user history
+      if (userPreferences) {
+        if (userPreferences.favoriteGenres.length > 0) {
+          suggestions.push(`Based on your love for ${userPreferences.favoriteGenres[0]}: "energetic ${userPreferences.favoriteGenres[0]} for workout"`);
+        }
+        if (userPreferences.favoriteMoods.length > 0) {
+          suggestions.push(`Since you enjoy ${userPreferences.favoriteMoods[0]} music: "peaceful ${userPreferences.favoriteMoods[0]} for meditation"`);
+        }
+      }
+
+      // Context-aware suggestions based on time of day
+      const hour = new Date().getHours();
+      if (hour >= 6 && hour < 12) {
+        suggestions.push('Morning energy: "uplifting pop for commercials"');
+      } else if (hour >= 12 && hour < 18) {
+        suggestions.push('Afternoon focus: "peaceful classical for work"');
+      } else if (hour >= 18 && hour < 22) {
+        suggestions.push('Evening vibes: "energetic electronic for parties"');
+      } else {
+        suggestions.push('Late night: "mysterious electronic for documentaries"');
+      }
+
+      // Trending suggestions (simulated)
+      const trendingSuggestions = [
+        'Trending now: "energetic trap for fitness videos"',
+        'Popular this week: "peaceful ambient for meditation"',
+        'Hot right now: "dramatic orchestral for movie scenes"'
+      ];
+      suggestions.push(...trendingSuggestions.slice(0, 2));
+
+      // Use case suggestions
+      const useCaseSuggestions = [
+        'For gaming: "energetic electronic with fast tempo"',
+        'For restaurants: "peaceful jazz for background music"',
+        'For weddings: "romantic classical for ceremonies"',
+        'For podcasts: "calm acoustic for intros"'
+      ];
+      suggestions.push(...useCaseSuggestions.slice(0, 2));
+
+      return suggestions.slice(0, 6); // Limit to 6 suggestions
+    } catch (error) {
+      console.error('Error generating AI suggestions:', error);
+      return [];
+    }
+  };
+
+  // State for AI suggestions
+  const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+
+  // Load AI suggestions when component mounts or user changes
+  useEffect(() => {
+    if (user && isOpen && activeTab === 'suggestions') {
+      generateAISuggestions().then(setAiSuggestions);
+    }
+  }, [user, isOpen, activeTab]);
 
   useEffect(() => {
     loadRecentSearches();
@@ -124,11 +181,16 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     setLoading(true);
     setError(null);
+    setSearchExplanation('');
     saveRecentSearch(query);
 
     try {
-      // Parse natural language query
-      const filters = parseQuery(query);
+      // Enhanced AI-powered natural language processing
+      const filters = await processAISearch(query);
+      
+      // Generate explanation of what the AI understood
+      const explanation = generateSearchExplanation(query, filters);
+      setSearchExplanation(explanation);
       
       // Apply the search
       if (onSearchApply) {
@@ -142,6 +204,215 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       setError('Failed to process query. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate explanation of what the AI understood
+  const generateSearchExplanation = (originalQuery: string, filters: SearchFilters) => {
+    const explanations = [];
+    
+    if (filters.genres.length > 0) {
+      explanations.push(`🎵 Detected genres: ${filters.genres.join(', ')}`);
+    }
+    
+    if (filters.moods.length > 0) {
+      explanations.push(`😊 Detected moods: ${filters.moods.join(', ')}`);
+    }
+    
+    if (filters.subGenres.length > 0) {
+      explanations.push(`🎼 Detected subgenres: ${filters.subGenres.join(', ')}`);
+    }
+    
+    if (filters.minBpm > 0 || filters.maxBpm < 300) {
+      explanations.push(`⚡ BPM range: ${filters.minBpm}-${filters.maxBpm}`);
+    }
+    
+    if (filters.query) {
+      explanations.push(`🎯 Use case: ${filters.query}`);
+    }
+    
+    if (explanations.length === 0) {
+      return "🤖 AI is searching for tracks matching your description...";
+    }
+    
+    return `🤖 AI understood: ${explanations.join(' | ')}`;
+  };
+
+  // Enhanced AI-powered search processing
+  const processAISearch = async (query: string): Promise<SearchFilters> => {
+    const filters: SearchFilters = {
+      query: '',
+      genres: [],
+      subGenres: [],
+      moods: [],
+      minBpm: 0,
+      maxBpm: 300
+    };
+
+    const lowerQuery = query.toLowerCase();
+
+    // 1. CONTEXT-AWARE GENRE DETECTION
+    // Handle variations and synonyms
+    const genreSynonyms: { [key: string]: string[] } = {
+      'hiphop': ['hip hop', 'hip-hop', 'rap', 'trap', 'drill'],
+      'electronic': ['edm', 'electronic dance', 'techno', 'house', 'trance'],
+      'pop': ['popular', 'mainstream'],
+      'rock': ['rock and roll', 'hard rock', 'soft rock'],
+      'jazz': ['jazz fusion', 'smooth jazz'],
+      'classical': ['orchestral', 'symphony', 'chamber'],
+      'world': ['ethnic', 'cultural', 'traditional'],
+      'religious': ['gospel', 'spiritual', 'worship'],
+      'childrens': ['kids', 'children', 'nursery'],
+      'country': ['country western', 'bluegrass', 'americana']
+    };
+
+    // Enhanced genre detection with synonyms
+    Object.entries(genreSynonyms).forEach(([genre, synonyms]) => {
+      if (lowerQuery.includes(genre) || synonyms.some(syn => lowerQuery.includes(syn))) {
+        filters.genres.push(genre);
+      }
+    });
+
+    // 2. INTELLIGENT MOOD DETECTION
+    // Handle mood variations and emotional context
+    const moodSynonyms: { [key: string]: string[] } = {
+      'energetic': ['energetic', 'upbeat', 'high energy', 'powerful', 'intense', 'dynamic'],
+      'peaceful': ['peaceful', 'calm', 'relaxing', 'serene', 'tranquil', 'soothing'],
+      'uplifting': ['uplifting', 'inspiring', 'motivational', 'positive', 'encouraging'],
+      'dramatic': ['dramatic', 'intense', 'emotional', 'powerful', 'epic'],
+      'romantic': ['romantic', 'love', 'passionate', 'intimate', 'sweet'],
+      'mysterious': ['mysterious', 'dark', 'moody', 'atmospheric', 'haunting'],
+      'funky': ['funky', 'groovy', 'rhythmic', 'danceable'],
+      'melancholic': ['melancholic', 'sad', 'melancholy', 'sorrowful', 'emotional']
+    };
+
+    Object.entries(moodSynonyms).forEach(([mood, synonyms]) => {
+      if (synonyms.some(syn => lowerQuery.includes(syn))) {
+        filters.moods.push(mood);
+      }
+    });
+
+    // 3. CONTEXT-AWARE BPM DETECTION
+    // Detect BPM from natural language descriptions
+    const bpmContexts = [
+      { pattern: /(\d+)\s*(?:bpm|tempo|speed)/, weight: 1.0 },
+      { pattern: /slow|laid back|chill/, bpmRange: [60, 90] },
+      { pattern: /medium|moderate/, bpmRange: [90, 130] },
+      { pattern: /fast|upbeat|energetic/, bpmRange: [130, 180] },
+      { pattern: /very fast|intense/, bpmRange: [150, 200] }
+    ];
+
+    for (const context of bpmContexts) {
+      if (context.pattern.test(lowerQuery)) {
+        if (context.weight) {
+          const match = lowerQuery.match(context.pattern);
+          if (match) {
+            const bpm = parseInt(match[1]);
+            if (bpm >= 60 && bpm <= 200) {
+              filters.minBpm = Math.max(0, bpm - 10);
+              filters.maxBpm = Math.min(300, bpm + 10);
+            }
+          }
+        } else if (context.bpmRange) {
+          filters.minBpm = context.bpmRange[0];
+          filters.maxBpm = context.bpmRange[1];
+        }
+        break;
+      }
+    }
+
+    // 4. USE CASE AND CONTEXT DETECTION
+    const useCaseContexts = {
+      'workout': { genres: ['hiphop', 'electronic'], moods: ['energetic'], bpmRange: [120, 180] },
+      'meditation': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 90] },
+      'commercial': { genres: ['pop', 'electronic'], moods: ['uplifting'], bpmRange: [90, 140] },
+      'trailer': { genres: ['classical', 'electronic'], moods: ['dramatic'], bpmRange: [80, 140] },
+      'restaurant': { genres: ['jazz', 'classical'], moods: ['peaceful'], bpmRange: [70, 110] },
+      'club': { genres: ['electronic', 'hiphop'], moods: ['energetic'], bpmRange: [120, 180] },
+      'party': { genres: ['pop', 'electronic'], moods: ['energetic'], bpmRange: [120, 160] },
+      'gaming': { genres: ['electronic', 'rock'], moods: ['energetic'], bpmRange: [100, 160] },
+      'fitness': { genres: ['hiphop', 'electronic'], moods: ['energetic'], bpmRange: [120, 180] },
+      'podcast': { genres: ['classical', 'jazz'], moods: ['peaceful'], bpmRange: [60, 100] },
+      'movie': { genres: ['classical', 'electronic'], moods: ['dramatic'], bpmRange: [80, 140] },
+      'documentary': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 100] },
+      'wedding': { genres: ['classical', 'jazz'], moods: ['romantic'], bpmRange: [70, 120] }
+    };
+
+    for (const [useCase, context] of Object.entries(useCaseContexts)) {
+      if (lowerQuery.includes(useCase)) {
+        filters.query = useCase;
+        
+        // Apply context-based suggestions if no specific genres/moods detected
+        if (filters.genres.length === 0) {
+          filters.genres.push(...context.genres);
+        }
+        if (filters.moods.length === 0) {
+          filters.moods.push(...context.moods);
+        }
+        if (filters.minBpm === 0 && filters.maxBpm === 300) {
+          filters.minBpm = context.bpmRange[0];
+          filters.maxBpm = context.bpmRange[1];
+        }
+        break;
+      }
+    }
+
+    // 5. LEARNING-BASED SUGGESTIONS
+    // Analyze user's search history to provide personalized suggestions
+    const userPreferences = await analyzeUserPreferences();
+    if (userPreferences && filters.genres.length === 0) {
+      filters.genres.push(...userPreferences.favoriteGenres.slice(0, 2));
+    }
+
+    return filters;
+  };
+
+  // Analyze user preferences based on search history
+  const analyzeUserPreferences = async () => {
+    if (!user) return null;
+
+    try {
+      const recent = localStorage.getItem(`recent_searches_${user.id}`);
+      if (!recent) return null;
+
+      const searches = JSON.parse(recent);
+      const genreCounts: { [key: string]: number } = {};
+      const moodCounts: { [key: string]: number } = {};
+
+      // Analyze recent searches for patterns
+      searches.forEach((search: string) => {
+        const lowerSearch = search.toLowerCase();
+        
+        // Count genre mentions
+        GENRES.forEach(genre => {
+          if (lowerSearch.includes(genre.toLowerCase())) {
+            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+          }
+        });
+
+        // Count mood mentions
+        MOODS.forEach(mood => {
+          if (lowerSearch.includes(mood.toLowerCase())) {
+            moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+          }
+        });
+      });
+
+      // Get top preferences
+      const favoriteGenres = Object.entries(genreCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([genre]) => genre);
+
+      const favoriteMoods = Object.entries(moodCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([mood]) => mood);
+
+      return { favoriteGenres, favoriteMoods };
+    } catch (error) {
+      console.error('Error analyzing user preferences:', error);
+      return null;
     }
   };
 
@@ -226,12 +497,26 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
   const toggleVoiceInput = () => {
     setIsListening(!isListening);
-    // Here you would implement actual voice recognition
-    // For now, just simulate it
+    
     if (!isListening) {
+      // Simulate intelligent voice recognition with context
+      const voiceExamples = [
+        'I need energetic hiphop for working out',
+        'Looking for peaceful music to relax',
+        'Want upbeat electronic for gaming',
+        'Searching for dramatic orchestral music',
+        'Need romantic jazz for dinner'
+      ];
+      
       setTimeout(() => {
-        setQuery('energetic electronic music for workout');
+        const randomExample = voiceExamples[Math.floor(Math.random() * voiceExamples.length)];
+        setQuery(randomExample);
         setIsListening(false);
+        
+        // Auto-process the voice input
+        setTimeout(() => {
+          processNaturalLanguageQuery(randomExample);
+        }, 500);
       }, 2000);
     }
   };
@@ -366,6 +651,13 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                 {error && (
                   <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                     <p className="text-red-400 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {/* AI Explanation */}
+                {searchExplanation && (
+                  <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <p className="text-blue-400 text-sm">{searchExplanation}</p>
                   </div>
                 )}
 
