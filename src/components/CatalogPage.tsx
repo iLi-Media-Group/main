@@ -122,25 +122,61 @@ export function CatalogPage() {
           searchConditions.push(`moods.ilike.%${filters.query}%`);
         }
 
-        // Genre filtering - if genres are selected, require ALL of them to match
+        // Genre filtering - if genres are selected, use OR logic with flexible matching
         if (filters?.genres?.length > 0) {
+          const genreConditions = [];
           filters.genres.forEach((genre: string) => {
-            query = query.ilike('genres', `%${genre}%`);
+            // Create multiple variations for each genre
+            const variations = [
+              genre.toLowerCase(),
+              genre.toLowerCase().replace(/\s+/g, ''),
+              genre.toLowerCase().replace(/\s+/g, '-'),
+              genre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              genreConditions.push(`genres.ilike.%${variation}%`);
+            });
           });
+          query = query.or(genreConditions.join(','));
         }
 
-        // Subgenre filtering - if subgenres are selected, require ALL of them to match
+        // Subgenre filtering - if subgenres are selected, use OR logic with flexible matching
         if (filters?.subGenres?.length > 0) {
+          const subGenreConditions = [];
           filters.subGenres.forEach((subGenre: string) => {
-            query = query.ilike('sub_genres', `%${subGenre}%`);
+            // Create multiple variations for each subgenre
+            const variations = [
+              subGenre.toLowerCase(),
+              subGenre.toLowerCase().replace(/\s+/g, ''),
+              subGenre.toLowerCase().replace(/\s+/g, '-'),
+              subGenre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              subGenreConditions.push(`sub_genres.ilike.%${variation}%`);
+            });
           });
+          query = query.or(subGenreConditions.join(','));
         }
 
-        // Mood filtering - if moods are selected, require ALL of them to match
+        // Mood filtering - if moods are selected, use OR logic with flexible matching
         if (filters?.moods?.length > 0) {
+          const moodConditions = [];
           filters.moods.forEach((mood: string) => {
-            query = query.ilike('moods', `%${mood}%`);
+            // Create multiple variations for each mood
+            const variations = [
+              mood.toLowerCase(),
+              mood.toLowerCase().replace(/\s+/g, ''),
+              mood.toLowerCase().replace(/\s+/g, '-'),
+              mood.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              moodConditions.push(`moods.ilike.%${variation}%`);
+            });
           });
+          query = query.or(moodConditions.join(','));
         }
 
         // Apply text search conditions with OR logic only for text search
