@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Sliders } from 'lucide-react';
-import { GENRES, SUB_GENRES, MOODS } from '../types';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface SearchBoxProps {
   onSearch: (filters: SearchFilters) => void;
@@ -16,6 +16,7 @@ export interface SearchFilters {
 }
 
 export function SearchBox({ onSearch }: SearchBoxProps) {
+  const { genres, subGenres, moods, loading: dataLoading, error: dataError } = useDynamicSearchData();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
@@ -76,35 +77,126 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     const detectedMoods: string[] = [];
     let remainingQuery = queryText;
 
-    // Detect genres
-    GENRES.forEach(genre => {
-      const genreLower = genre.toLowerCase();
-      if (lowerQuery.includes(genreLower)) {
-        detectedGenres.push(genre);
-        // Remove the detected genre from the remaining query
-        remainingQuery = remainingQuery.replace(new RegExp(genreLower, 'gi'), '').trim();
+    // Create dynamic genre variations from database data
+    const genreVariations: { [key: string]: string[] } = {};
+    genres.forEach(genre => {
+      const variations = [
+        genre.name.toLowerCase(),
+        genre.display_name.toLowerCase(),
+        genre.name.toLowerCase().replace(/\s+/g, ''),
+        genre.name.toLowerCase().replace(/\s+/g, '-'),
+        genre.name.toLowerCase().replace(/\s+/g, '_'),
+        genre.display_name.toLowerCase().replace(/\s+/g, ''),
+        genre.display_name.toLowerCase().replace(/\s+/g, '-'),
+        genre.display_name.toLowerCase().replace(/\s+/g, '_')
+      ];
+      
+      // Add common variations for specific genres
+      if (genre.name.toLowerCase().includes('hip')) {
+        variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill');
+      }
+      if (genre.name.toLowerCase().includes('rnb') || genre.name.toLowerCase().includes('soul')) {
+        variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
+      }
+      if (genre.name.toLowerCase().includes('electronic')) {
+        variations.push('edm', 'electronic dance', 'techno', 'house', 'trance');
+      }
+      
+      genreVariations[genre.name] = [...new Set(variations)];
+    });
+
+    // Create dynamic mood variations from database data
+    const moodVariations: { [key: string]: string[] } = {};
+    moods.forEach(mood => {
+      const variations = [
+        mood.name.toLowerCase(),
+        mood.display_name.toLowerCase()
+      ];
+      
+      // Add common synonyms for moods
+      if (mood.name.toLowerCase().includes('energetic')) {
+        variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
+      }
+      if (mood.name.toLowerCase().includes('peaceful')) {
+        variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
+      }
+      if (mood.name.toLowerCase().includes('uplifting')) {
+        variations.push('inspiring', 'motivational', 'positive', 'encouraging');
+      }
+      if (mood.name.toLowerCase().includes('dramatic')) {
+        variations.push('intense', 'emotional', 'powerful', 'epic');
+      }
+      if (mood.name.toLowerCase().includes('romantic')) {
+        variations.push('love', 'passionate', 'intimate', 'sweet');
+      }
+      if (mood.name.toLowerCase().includes('mysterious')) {
+        variations.push('dark', 'moody', 'atmospheric', 'haunting');
+      }
+      if (mood.name.toLowerCase().includes('funky')) {
+        variations.push('groovy', 'rhythmic', 'danceable');
+      }
+      if (mood.name.toLowerCase().includes('melancholic')) {
+        variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
+      }
+      
+      moodVariations[mood.name] = [...new Set(variations)];
+    });
+
+    // Detect genres with variations
+    Object.entries(genreVariations).forEach(([genreName, variations]) => {
+      const matchedVariation = variations.find(variation => 
+        lowerQuery.includes(variation.toLowerCase())
+      );
+      
+      if (matchedVariation) {
+        detectedGenres.push(genreName);
+        remainingQuery = remainingQuery.replace(new RegExp(matchedVariation, 'gi'), '').trim();
       }
     });
 
-    // Detect subgenres
-    Object.entries(SUB_GENRES).forEach(([genreKey, subGenres]) => {
-      subGenres.forEach(subGenre => {
-        const subGenreLower = subGenre.toLowerCase();
-        if (lowerQuery.includes(subGenreLower)) {
-          detectedSubGenres.push(subGenre);
-          // Remove the detected subgenre from the remaining query
-          remainingQuery = remainingQuery.replace(new RegExp(subGenreLower, 'gi'), '').trim();
-        }
-      });
+    // Detect subgenres with variations
+    subGenres.forEach(subGenre => {
+      const subGenreLower = subGenre.name.toLowerCase();
+      const displayNameLower = subGenre.display_name.toLowerCase();
+      
+      // Check for exact match
+      if (lowerQuery.includes(subGenreLower) || lowerQuery.includes(displayNameLower)) {
+        detectedSubGenres.push(subGenre.name);
+        remainingQuery = remainingQuery.replace(new RegExp(subGenreLower, 'gi'), '').trim();
+        remainingQuery = remainingQuery.replace(new RegExp(displayNameLower, 'gi'), '').trim();
+      }
+      
+      // Check for common variations
+      const subGenreVariations = [
+        subGenreLower,
+        displayNameLower,
+        subGenreLower.replace(/\s+/g, ''),
+        subGenreLower.replace(/\s+/g, '-'),
+        subGenreLower.replace(/\s+/g, '_'),
+        displayNameLower.replace(/\s+/g, ''),
+        displayNameLower.replace(/\s+/g, '-'),
+        displayNameLower.replace(/\s+/g, '_')
+      ];
+      
+      const matchedVariation = subGenreVariations.find(variation => 
+        lowerQuery.includes(variation) && !detectedSubGenres.includes(subGenre.name)
+      );
+      
+      if (matchedVariation) {
+        detectedSubGenres.push(subGenre.name);
+        remainingQuery = remainingQuery.replace(new RegExp(matchedVariation, 'gi'), '').trim();
+      }
     });
 
-    // Detect moods
-    MOODS.forEach(mood => {
-      const moodLower = mood.toLowerCase();
-      if (lowerQuery.includes(moodLower)) {
-        detectedMoods.push(mood);
-        // Remove the detected mood from the remaining query
-        remainingQuery = remainingQuery.replace(new RegExp(moodLower, 'gi'), '').trim();
+    // Detect moods with variations
+    Object.entries(moodVariations).forEach(([moodName, variations]) => {
+      const matchedVariation = variations.find(variation => 
+        lowerQuery.includes(variation.toLowerCase())
+      );
+      
+      if (matchedVariation) {
+        detectedMoods.push(moodName);
+        remainingQuery = remainingQuery.replace(new RegExp(matchedVariation, 'gi'), '').trim();
       }
     });
 
@@ -118,14 +210,17 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
 
   const getPlaceholderText = () => {
     const examples = [
-      'hiphop energetic',
+      'hip-hop energetic',
+      'hip hop powerful',
       'electronic peaceful',
       'pop uplifting',
       'jazz romantic',
-      'rock powerful',
+      'rock dramatic',
       'energetic hiphop',
       'peaceful electronic',
-      'uplifting pop'
+      'uplifting pop',
+      'calm classical',
+      'upbeat r&b'
     ];
     return `Search by title, genre, mood, or any combination (e.g., "${examples[Math.floor(Math.random() * examples.length)]}")`;
   };
@@ -135,16 +230,39 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     if (filters.genres.length === 0) return [];
     
     const availableSubGenres: string[] = [];
-    filters.genres.forEach(genre => {
-      const genreKey = genre.toLowerCase();
-      if (SUB_GENRES[genreKey as keyof typeof SUB_GENRES]) {
-        availableSubGenres.push(...SUB_GENRES[genreKey as keyof typeof SUB_GENRES]);
+    filters.genres.forEach(genreName => {
+      const genre = genres.find(g => g.name === genreName);
+      if (genre && genre.sub_genres) {
+        availableSubGenres.push(...genre.sub_genres.map(sg => sg.name));
       }
     });
     return [...new Set(availableSubGenres)]; // Remove duplicates
   };
 
   const availableSubGenres = getAvailableSubGenres();
+
+  // Show loading state if data is still loading
+  if (dataLoading) {
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-400">Loading search options...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if data failed to load
+  if (dataError) {
+    return (
+      <div className="w-full max-w-4xl mx-auto">
+        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+          <p className="text-red-400 text-center">Failed to load search options. Please refresh the page.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -184,22 +302,22 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                   Genres (Primary Filter)
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {GENRES.map((genre) => (
-                    <label key={genre} className="flex items-center space-x-2">
+                  {genres.map((genre) => (
+                    <label key={genre.name} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={filters.genres.includes(genre)}
+                        checked={filters.genres.includes(genre.name)}
                         onChange={(e) => {
                           const newGenres = e.target.checked
-                            ? [...filters.genres, genre]
-                            : filters.genres.filter(g => g !== genre);
+                            ? [...filters.genres, genre.name]
+                            : filters.genres.filter(g => g !== genre.name);
                           handleFilterChange('genres', newGenres);
                           // Clear subgenres when genres change
                           handleFilterChange('subGenres', []);
                         }}
                         className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-gray-300">{genre}</span>
+                      <span className="text-gray-300">{genre.display_name}</span>
                     </label>
                   ))}
                 </div>
@@ -211,20 +329,20 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                   {availableSubGenres.length > 0 ? (
-                    availableSubGenres.map((subGenre) => (
-                      <label key={subGenre} className="flex items-center space-x-2">
+                    availableSubGenres.map((subGenreName) => (
+                      <label key={subGenreName} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          checked={filters.subGenres.includes(subGenre)}
+                          checked={filters.subGenres.includes(subGenreName)}
                           onChange={(e) => {
                             const newSubGenres = e.target.checked
-                              ? [...filters.subGenres, subGenre]
-                              : filters.subGenres.filter(sg => sg !== subGenre);
+                              ? [...filters.subGenres, subGenreName]
+                              : filters.subGenres.filter(sg => sg !== subGenreName);
                             handleFilterChange('subGenres', newSubGenres);
                           }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                         />
-                        <span className="text-gray-300">{subGenre}</span>
+                        <span className="text-gray-300">{subGenreName}</span>
                       </label>
                     ))
                   ) : (
@@ -238,20 +356,20 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                   Moods
                 </label>
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {MOODS.map((mood) => (
-                    <label key={mood} className="flex items-center space-x-2">
+                  {moods.map((mood) => (
+                    <label key={mood.name} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={filters.moods.includes(mood)}
+                        checked={filters.moods.includes(mood.name)}
                         onChange={(e) => {
                           const newMoods = e.target.checked
-                            ? [...filters.moods, mood]
-                            : filters.moods.filter(m => m !== mood);
+                            ? [...filters.moods, mood.name]
+                            : filters.moods.filter(m => m !== mood.name);
                           handleFilterChange('moods', newMoods);
                         }}
                         className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="text-gray-300">{mood}</span>
+                      <span className="text-gray-300">{mood.display_name}</span>
                     </label>
                   ))}
                 </div>

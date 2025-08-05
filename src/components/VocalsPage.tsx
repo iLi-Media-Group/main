@@ -7,6 +7,7 @@ import { TrackCard } from './TrackCard';
 import { SearchBox } from './SearchBox';
 import { useAuth } from '../contexts/AuthContext';
 import { SyncProposalDialog } from './SyncProposalDialog';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 export function VocalsPage() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export function VocalsPage() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { genres, subGenres, moods } = useDynamicSearchData();
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
 
@@ -77,25 +79,142 @@ export function VocalsPage() {
           searchConditions.push(`moods.ilike.%${filters.query}%`);
         }
 
-        // Genre filtering - if genres are selected, require ALL of them to match
+        // Genre filtering - if genres are selected, use OR logic with flexible matching
         if (filters?.genres?.length > 0) {
+          const genreConditions: string[] = [];
+          
+          // Create dynamic genre variations from database data
+          const genreVariations: { [key: string]: string[] } = {};
+          genres.forEach(genre => {
+            const variations = [
+              genre.name.toLowerCase(),
+              genre.display_name.toLowerCase(),
+              genre.name.toLowerCase().replace(/\s+/g, ''),
+              genre.name.toLowerCase().replace(/\s+/g, '-'),
+              genre.name.toLowerCase().replace(/\s+/g, '_'),
+              genre.display_name.toLowerCase().replace(/\s+/g, ''),
+              genre.display_name.toLowerCase().replace(/\s+/g, '-'),
+              genre.display_name.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add common variations for specific genres
+            if (genre.name.toLowerCase().includes('hip')) {
+              variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill');
+            }
+            if (genre.name.toLowerCase().includes('rnb') || genre.name.toLowerCase().includes('soul')) {
+              variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
+            }
+            if (genre.name.toLowerCase().includes('electronic')) {
+              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance');
+            }
+            
+            genreVariations[genre.name] = [...new Set(variations)];
+          });
+
           filters.genres.forEach((genre: string) => {
-            query = query.ilike('genres', `%${genre}%`);
+            // Get variations for this genre
+            const variations = genreVariations[genre.toLowerCase()] || [];
+            
+            // Add the original genre and its variations
+            const allVariations = [
+              genre.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              genre.toLowerCase().replace(/\s+/g, ''),
+              genre.toLowerCase().replace(/\s+/g, '-'),
+              genre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Remove duplicates
+            const uniqueVariations = [...new Set(allVariations)];
+            
+            uniqueVariations.forEach(variation => {
+              genreConditions.push(`genres.ilike.%${variation}%`);
+            });
           });
+          query = query.or(genreConditions.join(','));
         }
 
-        // Subgenre filtering - if subgenres are selected, require ALL of them to match
+        // Subgenre filtering - if subgenres are selected, use OR logic with flexible matching
         if (filters?.subGenres?.length > 0) {
+          const subGenreConditions: string[] = [];
           filters.subGenres.forEach((subGenre: string) => {
-            query = query.ilike('sub_genres', `%${subGenre}%`);
+            // Create multiple variations for each subgenre
+            const variations = [
+              subGenre.toLowerCase(),
+              subGenre.toLowerCase().replace(/\s+/g, ''),
+              subGenre.toLowerCase().replace(/\s+/g, '-'),
+              subGenre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              subGenreConditions.push(`sub_genres.ilike.%${variation}%`);
+            });
           });
+          query = query.or(subGenreConditions.join(','));
         }
 
-        // Mood filtering - if moods are selected, require ALL of them to match
+        // Mood filtering - if moods are selected, use OR logic with flexible matching
         if (filters?.moods?.length > 0) {
-          filters.moods.forEach((mood: string) => {
-            query = query.ilike('moods', `%${mood}%`);
+          const moodConditions: string[] = [];
+          
+          // Create dynamic mood variations from database data
+          const moodVariations: { [key: string]: string[] } = {};
+          moods.forEach(mood => {
+            const variations = [
+              mood.name.toLowerCase(),
+              mood.display_name.toLowerCase()
+            ];
+            
+            // Add common synonyms for moods
+            if (mood.name.toLowerCase().includes('energetic')) {
+              variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
+            }
+            if (mood.name.toLowerCase().includes('peaceful')) {
+              variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
+            }
+            if (mood.name.toLowerCase().includes('uplifting')) {
+              variations.push('inspiring', 'motivational', 'positive', 'encouraging');
+            }
+            if (mood.name.toLowerCase().includes('dramatic')) {
+              variations.push('intense', 'emotional', 'powerful', 'epic');
+            }
+            if (mood.name.toLowerCase().includes('romantic')) {
+              variations.push('love', 'passionate', 'intimate', 'sweet');
+            }
+            if (mood.name.toLowerCase().includes('mysterious')) {
+              variations.push('dark', 'moody', 'atmospheric', 'haunting');
+            }
+            if (mood.name.toLowerCase().includes('funky')) {
+              variations.push('groovy', 'rhythmic', 'danceable');
+            }
+            if (mood.name.toLowerCase().includes('melancholic')) {
+              variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
+            }
+            
+            moodVariations[mood.name] = [...new Set(variations)];
           });
+
+          filters.moods.forEach((mood: string) => {
+            // Get variations for this mood
+            const variations = moodVariations[mood.toLowerCase()] || [];
+            
+            // Add the original mood and its variations
+            const allVariations = [
+              mood.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              mood.toLowerCase().replace(/\s+/g, ''),
+              mood.toLowerCase().replace(/\s+/g, '-'),
+              mood.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Remove duplicates
+            const uniqueVariations = [...new Set(allVariations)];
+            
+            uniqueVariations.forEach(variation => {
+              moodConditions.push(`moods.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(moodConditions.join(','));
         }
 
         // Apply text search conditions with OR logic only for text search
