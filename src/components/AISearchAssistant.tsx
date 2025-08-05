@@ -792,7 +792,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         </div>
       </div>
     );
-  };
+  }, [isOpen, activeTab, query, error, searchExplanation, aiSuggestions, recentSearches, loading, isListening, handleExampleClick, handleSuggestionClick, handleRecentSearchClick, toggleVoiceInput, processNaturalLanguageQuery]);
 
   // Don't render anything if we should hide the AI Search Assistant
   if (shouldHide) {
