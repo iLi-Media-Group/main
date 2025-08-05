@@ -136,7 +136,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         if (inputRef.current) {
           inputRef.current.focus();
         }
-      }, 100);
+      }, 0); // Use 0ms delay to ensure DOM is mounted
       
       return () => clearTimeout(timeoutId);
     }
