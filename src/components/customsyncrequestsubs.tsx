@@ -1047,7 +1047,7 @@ export default function CustomSyncRequestSubs() {
                             <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
                             {sub.signed_mp3_url && (
                               <div className="my-2">
-                                <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" />
+                                <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" audioId={`customsync-${sub.id}`} />
                               </div>
                             )}
                             {/* Select button if not already selected */}

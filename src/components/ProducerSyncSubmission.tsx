@@ -614,7 +614,7 @@ export default function ProducerSyncSubmission() {
                     {/* Audio player for the submission */}
                     {sub.track_url && (
                       <div className="mt-2">
-                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" />
+                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" audioId={`submission-${sub.id}`} />
                       </div>
                     )}
                     <span className="mt-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1 w-max"><Hourglass className="w-3 h-3" /> In Consideration</span>

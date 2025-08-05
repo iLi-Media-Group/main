@@ -42,6 +42,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
       src={signedUrl}
       title={track.title}
       size="md"
+      audioId={`track-${track.id}`}
     />
   );
 }
