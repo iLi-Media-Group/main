@@ -123,7 +123,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       };
       loadSuggestions();
     }
-  }, [user, isOpen, activeTab]);
+  }, [user, isOpen, activeTab, generateAISuggestions]);
 
   useEffect(() => {
     loadRecentSearches();
@@ -142,7 +142,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     }
   }, [isOpen, activeTab]);
 
-  const loadRecentSearches = async () => {
+  const loadRecentSearches = React.useCallback(async () => {
     if (!user) return;
     
     try {
@@ -153,9 +153,9 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     } catch (err) {
       console.error('Error loading recent searches:', err);
     }
-  };
+  }, [user]);
 
-  const saveRecentSearch = (search: string) => {
+  const saveRecentSearch = React.useCallback((search: string) => {
     if (!user) return;
     
     try {
@@ -167,7 +167,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     } catch (err) {
       console.error('Error saving recent search:', err);
     }
-  };
+  }, [user]);
 
   const processNaturalLanguageQuery = React.useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -198,7 +198,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [onSearchApply]);
+  }, [onSearchApply, saveRecentSearch]);
 
   // Generate explanation of what the AI understood
   const generateSearchExplanation = (originalQuery: string, filters: SearchFilters) => {
@@ -500,22 +500,22 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     return filters;
   };
 
-  const handleExampleClick = (example: string) => {
+  const handleExampleClick = React.useCallback((example: string) => {
     setQuery(example);
     processNaturalLanguageQuery(example);
-  };
+  }, [processNaturalLanguageQuery]);
 
-  const handleRecentSearchClick = (search: string) => {
+  const handleRecentSearchClick = React.useCallback((search: string) => {
     setQuery(search);
     processNaturalLanguageQuery(search);
-  };
+  }, [processNaturalLanguageQuery]);
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = React.useCallback((suggestion: string) => {
     setQuery(suggestion);
     processNaturalLanguageQuery(suggestion);
-  };
+  }, [processNaturalLanguageQuery]);
 
-  const toggleVoiceInput = () => {
+  const toggleVoiceInput = React.useCallback(() => {
     setIsListening(!isListening);
     
     if (!isListening) {
@@ -539,10 +539,10 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         }, 500);
       }, 2000);
     }
-  };
+  }, [isListening, processNaturalLanguageQuery]);
 
   // Floating Button Component
-  const FloatingButton = () => (
+  const FloatingButton = React.useCallback(() => (
     <button
       onClick={() => setIsOpen(true)}
       className="fixed bottom-6 left-6 z-50 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-110 group"
@@ -555,10 +555,10 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         AI Search Assistant
       </div>
     </button>
-  );
+  ), []);
 
   // Modal Component
-  const Modal = () => {
+  const Modal = React.useCallback(() => {
     if (!isOpen) return null;
 
     return (
