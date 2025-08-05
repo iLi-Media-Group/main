@@ -119,15 +119,7 @@ export function AudioPlayer({
         if (onPause) onPause();
       } else {
         // Use global audio manager to play
-        play(uniqueAudioId, () => {
-          if (audioRef.current) {
-            audioRef.current.play().catch(err => {
-              console.error('Playback error:', err);
-              setError('Failed to play audio');
-              setInternalIsPlaying(false);
-            });
-          }
-        });
+        play(uniqueAudioId, audioRef.current);
         setInternalIsPlaying(true);
         if (onPlay) onPlay();
       }

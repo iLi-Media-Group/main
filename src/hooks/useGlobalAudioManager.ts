@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 
 interface GlobalAudioManager {
   currentPlayingId: string | null;
-  play: (audioId: string, playFunction: () => void) => void;
+  play: (audioId: string, audioElement: HTMLAudioElement) => void;
   stop: (audioId: string) => void;
   isPlaying: (audioId: string) => boolean;
 }
@@ -32,7 +32,9 @@ class AudioManager {
     this.currentAudioElement = audioElement;
     
     // Play the new audio
-    audioElement.play();
+    audioElement.play().catch(err => {
+      console.error('Error playing audio:', err);
+    });
   }
 
   stop(audioId: string): void {
@@ -57,8 +59,8 @@ export function useGlobalAudioManager(): GlobalAudioManager {
   const [currentPlayingId, setCurrentPlayingId] = useState<string | null>(null);
   const audioManager = useRef(AudioManager.getInstance());
 
-  const play = useCallback((audioId: string, playFunction: () => void) => {
-    audioManager.current.play(audioId, playFunction);
+  const play = useCallback((audioId: string, audioElement: HTMLAudioElement) => {
+    audioManager.current.play(audioId, audioElement);
     setCurrentPlayingId(audioId);
   }, []);
 
