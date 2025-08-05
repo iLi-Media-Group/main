@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Track } from '../types';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
+import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+import { ProducerProfileDialog } from './ProducerProfileDialog';
 
 interface TrackCardProps {
   track: Track;
@@ -176,11 +176,12 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             }}
           >
             <div className="p-3 rounded-full bg-blue-600/90 hover:bg-blue-600 transform transition-transform duration-300 hover:scale-110">
-                             <AudioPlayer
-                 src={audioSignedUrl || ''}
-                 title={track.title}
-                 size="sm"
-               />
+              <AudioPlayer
+                src={audioSignedUrl || ''}
+                title={track.title}
+                size="sm"
+                audioId={`track-${track.id}`}
+              />
             </div>
           </div>
         </div>

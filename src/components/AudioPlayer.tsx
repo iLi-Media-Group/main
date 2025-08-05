@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { useGlobalAudioManager } from '../hooks/useGlobalAudioManager';
 
 interface AudioPlayerProps {
   src: string;
@@ -10,6 +11,7 @@ interface AudioPlayerProps {
   onToggle?: () => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  audioId?: string; // Unique identifier for this audio player
 }
 
 export function AudioPlayer({ 
@@ -20,7 +22,8 @@ export function AudioPlayer({
   onPause, 
   onToggle,
   className = '',
-  size = 'md'
+  size = 'md',
+  audioId
 }: AudioPlayerProps) {
   console.log('🎵 AudioPlayer component rendered with src:', src);
   const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
@@ -28,6 +31,10 @@ export function AudioPlayer({
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { play, stop, isPlaying: isGlobalPlaying } = useGlobalAudioManager();
+  
+  // Generate a unique ID if not provided
+  const uniqueAudioId = audioId || `audio-${src}-${Date.now()}`;
 
   // Sync internal state with external control
   useEffect(() => {
@@ -45,6 +52,14 @@ export function AudioPlayer({
     }
   }, [isPlaying]);
 
+  // Check if this player is currently playing globally
+  useEffect(() => {
+    const isCurrentlyPlaying = isGlobalPlaying(uniqueAudioId);
+    if (!isCurrentlyPlaying && internalIsPlaying) {
+      setInternalIsPlaying(false);
+    }
+  }, [isGlobalPlaying, uniqueAudioId, internalIsPlaying]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -61,19 +76,34 @@ export function AudioPlayer({
 
     const handleEnded = () => {
       setInternalIsPlaying(false);
+      stop(uniqueAudioId);
+      if (onPause) onPause();
+    };
+
+    const handlePlay = () => {
+      setInternalIsPlaying(true);
+      if (onPlay) onPlay();
+    };
+
+    const handlePause = () => {
+      setInternalIsPlaying(false);
       if (onPause) onPause();
     };
 
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [uniqueAudioId]);
 
   const togglePlay = () => {
     if (onToggle) {
@@ -85,17 +115,21 @@ export function AudioPlayer({
       if (internalIsPlaying) {
         audioRef.current.pause();
         setInternalIsPlaying(false);
+        stop(uniqueAudioId);
         if (onPause) onPause();
       } else {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(err => {
-            console.error('Playback error:', err);
-            setError('Failed to play audio');
-          });
-          setInternalIsPlaying(true);
-          if (onPlay) onPlay();
-        }
+        // Use global audio manager to play
+        play(uniqueAudioId, () => {
+          if (audioRef.current) {
+            audioRef.current.play().catch(err => {
+              console.error('Playback error:', err);
+              setError('Failed to play audio');
+              setInternalIsPlaying(false);
+            });
+          }
+        });
+        setInternalIsPlaying(true);
+        if (onPlay) onPlay();
       }
     }
   };
