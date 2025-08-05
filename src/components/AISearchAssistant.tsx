@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight, Zap, Star } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
-import { GENRES, SUB_GENRES, MOODS } from '../types';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface SearchFilters {
   query: string;
@@ -24,6 +24,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const { genres, subGenres, moods, loading: dataLoading } = useDynamicSearchData();
   const [isOpen, setIsOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -246,69 +247,107 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     const lowerQuery = query.toLowerCase();
 
     // 1. ENHANCED CONTEXT-AWARE GENRE DETECTION
-    // Handle variations and synonyms with more precision - using dynamic GENRES from types
-    const genreSynonyms: { [key: string]: string[] } = {
-      'hiphop': ['hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music'],
-      'rnb': ['r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul'],
-      'pop': ['popular', 'mainstream', 'pop music', 'popular music'],
-      'rock': ['rock and roll', 'hard rock', 'soft rock', 'rock music', 'rock n roll'],
-      'electronic': ['edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music'],
-      'jazz': ['jazz fusion', 'smooth jazz', 'jazz music'],
-      'classical': ['orchestral', 'symphony', 'chamber', 'classical music', 'orchestra'],
-      'world': ['ethnic', 'cultural', 'traditional', 'world music'],
-      'religious': ['gospel', 'spiritual', 'worship', 'religious music'],
-      'childrens': ['kids', 'children', 'nursery', 'childrens music', 'kids music'],
-      'country': ['country western', 'bluegrass', 'americana', 'country music']
-    };
+    // Create dynamic genre variations from database data
+    const genreVariations: { [key: string]: string[] } = {};
+    genres.forEach(genre => {
+      const variations = [
+        genre.name.toLowerCase(),
+        genre.display_name.toLowerCase(),
+        genre.name.toLowerCase().replace(/\s+/g, ''),
+        genre.name.toLowerCase().replace(/\s+/g, '-'),
+        genre.name.toLowerCase().replace(/\s+/g, '_'),
+        genre.display_name.toLowerCase().replace(/\s+/g, ''),
+        genre.display_name.toLowerCase().replace(/\s+/g, '-'),
+        genre.display_name.toLowerCase().replace(/\s+/g, '_')
+      ];
+      
+      // Add common variations for specific genres
+      if (genre.name.toLowerCase().includes('hip')) {
+        variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill');
+      }
+      if (genre.name.toLowerCase().includes('rnb') || genre.name.toLowerCase().includes('soul')) {
+        variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
+      }
+      if (genre.name.toLowerCase().includes('electronic')) {
+        variations.push('edm', 'electronic dance', 'techno', 'house', 'trance');
+      }
+      
+      genreVariations[genre.name] = [...new Set(variations)];
+    });
 
-    // More precise genre detection - prioritize exact matches using dynamic GENRES
+    // 2. INTELLIGENT MOOD DETECTION
+    // Create dynamic mood variations from database data
+    const moodVariations: { [key: string]: string[] } = {};
+    moods.forEach(mood => {
+      const variations = [
+        mood.name.toLowerCase(),
+        mood.display_name.toLowerCase()
+      ];
+      
+      // Add common synonyms for moods
+      if (mood.name.toLowerCase().includes('energetic')) {
+        variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
+      }
+      if (mood.name.toLowerCase().includes('peaceful')) {
+        variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
+      }
+      if (mood.name.toLowerCase().includes('uplifting')) {
+        variations.push('inspiring', 'motivational', 'positive', 'encouraging');
+      }
+      if (mood.name.toLowerCase().includes('dramatic')) {
+        variations.push('intense', 'emotional', 'powerful', 'epic');
+      }
+      if (mood.name.toLowerCase().includes('romantic')) {
+        variations.push('love', 'passionate', 'intimate', 'sweet');
+      }
+      if (mood.name.toLowerCase().includes('mysterious')) {
+        variations.push('dark', 'moody', 'atmospheric', 'haunting');
+      }
+      if (mood.name.toLowerCase().includes('funky')) {
+        variations.push('groovy', 'rhythmic', 'danceable');
+      }
+      if (mood.name.toLowerCase().includes('melancholic')) {
+        variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
+      }
+      
+      moodVariations[mood.name] = [...new Set(variations)];
+    });
+
+    // More precise genre detection - prioritize exact matches using dynamic genres
     let genreDetected = false;
     
-    // First, check for exact matches in the GENRES array
-    GENRES.forEach(genre => {
-      if (lowerQuery.includes(genre.toLowerCase())) {
-        filters.genres.push(genre);
+    // First, check for exact matches in the genres array
+    genres.forEach(genre => {
+      if (lowerQuery.includes(genre.name.toLowerCase()) || lowerQuery.includes(genre.display_name.toLowerCase())) {
+        filters.genres.push(genre.name);
         genreDetected = true;
       }
     });
     
     // Then check for synonyms and variations
-    Object.entries(genreSynonyms).forEach(([genre, synonyms]) => {
+    Object.entries(genreVariations).forEach(([genreName, synonyms]) => {
       if (synonyms.some(syn => lowerQuery.includes(syn))) {
         // Only add if not already added
-        if (!filters.genres.includes(genre)) {
-          filters.genres.push(genre);
+        if (!filters.genres.includes(genreName)) {
+          filters.genres.push(genreName);
           genreDetected = true;
         }
       }
     });
 
-    // 2. INTELLIGENT MOOD DETECTION
-    // Handle mood variations and emotional context using dynamic MOODS from types
-    const moodSynonyms: { [key: string]: string[] } = {
-      'energetic': ['energetic', 'upbeat', 'high energy', 'powerful', 'intense', 'dynamic'],
-      'peaceful': ['peaceful', 'calm', 'relaxing', 'serene', 'tranquil', 'soothing'],
-      'uplifting': ['uplifting', 'inspiring', 'motivational', 'positive', 'encouraging'],
-      'dramatic': ['dramatic', 'intense', 'emotional', 'powerful', 'epic'],
-      'romantic': ['romantic', 'love', 'passionate', 'intimate', 'sweet'],
-      'mysterious': ['mysterious', 'dark', 'moody', 'atmospheric', 'haunting'],
-      'funky': ['funky', 'groovy', 'rhythmic', 'danceable'],
-      'melancholic': ['melancholic', 'sad', 'melancholy', 'sorrowful', 'emotional']
-    };
-
-    // First, check for exact matches in the MOODS array
-    MOODS.forEach(mood => {
-      if (lowerQuery.includes(mood.toLowerCase())) {
-        filters.moods.push(mood);
+    // First, check for exact matches in the moods array
+    moods.forEach(mood => {
+      if (lowerQuery.includes(mood.name.toLowerCase()) || lowerQuery.includes(mood.display_name.toLowerCase())) {
+        filters.moods.push(mood.name);
       }
     });
 
     // Then check for synonyms and variations
-    Object.entries(moodSynonyms).forEach(([mood, synonyms]) => {
+    Object.entries(moodVariations).forEach(([moodName, synonyms]) => {
       if (synonyms.some(syn => lowerQuery.includes(syn))) {
         // Only add if not already added
-        if (!filters.moods.includes(mood)) {
-          filters.moods.push(mood);
+        if (!filters.moods.includes(moodName)) {
+          filters.moods.push(moodName);
         }
       }
     });
@@ -348,76 +387,65 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'workout': { genres: ['hiphop', 'electronic'], moods: ['energetic'], bpmRange: [120, 180] },
       'meditation': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 90] },
       'commercial': { genres: ['pop', 'electronic'], moods: ['uplifting'], bpmRange: [90, 140] },
-      'trailer': { genres: ['classical', 'electronic'], moods: ['dramatic'], bpmRange: [80, 140] },
-      'restaurant': { genres: ['jazz', 'classical'], moods: ['peaceful'], bpmRange: [70, 110] },
-      'club': { genres: ['electronic', 'hiphop'], moods: ['energetic'], bpmRange: [120, 180] },
-      'party': { genres: ['pop', 'electronic'], moods: ['energetic'], bpmRange: [120, 160] },
-      'gaming': { genres: ['electronic', 'rock'], moods: ['energetic'], bpmRange: [100, 160] },
-      'fitness': { genres: ['hiphop', 'electronic'], moods: ['energetic'], bpmRange: [120, 180] },
-      'podcast': { genres: ['classical', 'jazz'], moods: ['peaceful'], bpmRange: [60, 100] },
-      'movie': { genres: ['classical', 'electronic'], moods: ['dramatic'], bpmRange: [80, 140] },
-      'documentary': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 100] },
-      'wedding': { genres: ['classical', 'jazz'], moods: ['romantic'], bpmRange: [70, 120] }
+      'movie': { genres: ['classical', 'electronic'], moods: ['dramatic'], bpmRange: [60, 140] },
+      'gaming': { genres: ['electronic', 'rock'], moods: ['energetic'], bpmRange: [120, 160] },
+      'restaurant': { genres: ['jazz', 'classical'], moods: ['peaceful'], bpmRange: [60, 100] },
+      'party': { genres: ['electronic', 'pop'], moods: ['energetic'], bpmRange: [120, 160] },
+      'wedding': { genres: ['classical', 'jazz'], moods: ['romantic'], bpmRange: [60, 120] }
     };
 
-    // 3.5. SUBGENRE DETECTION
-    // Check for subgenres using the dynamic SUB_GENRES from types
-    Object.entries(SUB_GENRES).forEach(([genre, subGenres]) => {
-      subGenres.forEach(subGenre => {
-        if (lowerQuery.includes(subGenre.toLowerCase())) {
-          filters.subGenres.push(subGenre);
-        }
-      });
-    });
-
-    // Check for specific use cases and apply strict genre requirements
-    for (const [useCase, context] of Object.entries(useCaseContexts)) {
+    // Check for use case keywords and apply context-specific filters
+    Object.entries(useCaseContexts).forEach(([useCase, context]) => {
       if (lowerQuery.includes(useCase)) {
-        filters.query = useCase;
-        
-        // For specific use cases, be more strict about genre requirements
-        if (filters.genres.length === 0) {
-          // If no genre was detected but we have a specific use case, use the use case genres
+        // Apply use case specific filters
+        if (context.genres && !filters.genres.length) {
           filters.genres.push(...context.genres);
-        } else {
-          // If genres were detected, ensure they match the use case requirements
-          const matchingGenres = filters.genres.filter(genre => 
-            context.genres.includes(genre)
-          );
-          if (matchingGenres.length > 0) {
-            // Keep only matching genres
-            filters.genres = matchingGenres;
-          } else {
-            // If no matching genres, use the use case genres
-            filters.genres = [...context.genres];
-          }
         }
-        
-        if (filters.moods.length === 0) {
+        if (context.moods && !filters.moods.length) {
           filters.moods.push(...context.moods);
         }
-        if (filters.minBpm === 0 && filters.maxBpm === 300) {
+        if (context.bpmRange && filters.minBpm === 0 && filters.maxBpm === 300) {
           filters.minBpm = context.bpmRange[0];
           filters.maxBpm = context.bpmRange[1];
         }
-        break;
       }
-    }
+    });
 
-    // 5. STRICT GENRE ENFORCEMENT
-    // If specific genres were mentioned in the query, prioritize them over user preferences
-    if (genreDetected) {
-      // Don't fall back to user preferences if specific genres were detected
-      // This ensures that "dramatic classical" returns only classical tracks
-      return filters;
-    }
+    // 3.5. SUBGENRE DETECTION
+    // Check for subgenres using the dynamic subGenres from database
+    subGenres.forEach(subGenre => {
+      if (lowerQuery.includes(subGenre.name.toLowerCase()) || lowerQuery.includes(subGenre.display_name.toLowerCase())) {
+        filters.subGenres.push(subGenre.name);
+      }
+    });
 
-    // 6. LEARNING-BASED SUGGESTIONS (only if no specific genres detected)
-    // Analyze user's search history to provide personalized suggestions
-    const userPreferences = await analyzeUserPreferences();
-    if (userPreferences && filters.genres.length === 0) {
-      filters.genres.push(...userPreferences.favoriteGenres.slice(0, 2));
-    }
+    // 5. CLEAN UP AND OPTIMIZE QUERY
+    // Remove detected terms from the remaining query text
+    let remainingQuery = query;
+    
+    // Remove detected genres
+    filters.genres.forEach(genre => {
+      const variations = genreVariations[genre] || [];
+      variations.forEach(variation => {
+        remainingQuery = remainingQuery.replace(new RegExp(variation, 'gi'), '').trim();
+      });
+    });
+
+    // Remove detected moods
+    filters.moods.forEach(mood => {
+      const variations = moodVariations[mood] || [];
+      variations.forEach(variation => {
+        remainingQuery = remainingQuery.replace(new RegExp(variation, 'gi'), '').trim();
+      });
+    });
+
+    // Remove detected subgenres
+    filters.subGenres.forEach(subGenre => {
+      remainingQuery = remainingQuery.replace(new RegExp(subGenre, 'gi'), '').trim();
+    });
+
+    // Set the cleaned query as the remaining search text
+    filters.query = remainingQuery;
 
     return filters;
   };
@@ -439,16 +467,16 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         const lowerSearch = search.toLowerCase();
         
         // Count genre mentions
-        GENRES.forEach(genre => {
-          if (lowerSearch.includes(genre.toLowerCase())) {
-            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+        genres.forEach(genre => {
+          if (lowerSearch.includes(genre.name.toLowerCase()) || lowerSearch.includes(genre.display_name.toLowerCase())) {
+            genreCounts[genre.name] = (genreCounts[genre.name] || 0) + 1;
           }
         });
 
         // Count mood mentions
-        MOODS.forEach(mood => {
-          if (lowerSearch.includes(mood.toLowerCase())) {
-            moodCounts[mood] = (moodCounts[mood] || 0) + 1;
+        moods.forEach(mood => {
+          if (lowerSearch.includes(mood.name.toLowerCase()) || lowerSearch.includes(mood.display_name.toLowerCase())) {
+            moodCounts[mood.name] = (moodCounts[mood.name] || 0) + 1;
           }
         });
       });
@@ -484,32 +512,30 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     const lowerQuery = query.toLowerCase();
 
     // Genre detection - check for exact matches first, then partial matches
-    GENRES.forEach(genre => {
-      const genreLower = genre.toLowerCase();
+    genres.forEach(genre => {
+      const genreLower = genre.name.toLowerCase();
       
       // Check for exact genre match
       if (lowerQuery.includes(genreLower)) {
-        filters.genres.push(genre);
+        filters.genres.push(genre.name);
         
         // Check if this genre has subgenres and if any are mentioned
         const genreKey = genreLower;
-        if (SUB_GENRES[genreKey as keyof typeof SUB_GENRES]) {
-          const subGenres = SUB_GENRES[genreKey as keyof typeof SUB_GENRES];
-          subGenres.forEach(subGenre => {
-            const subGenreLower = subGenre.toLowerCase();
-            if (lowerQuery.includes(subGenreLower)) {
-              filters.subGenres.push(subGenre);
-            }
-          });
-        }
+        const genreSubGenres = subGenres.filter(sg => sg.genre_id === genre.id);
+        genreSubGenres.forEach(subGenre => {
+          const subGenreLower = subGenre.name.toLowerCase();
+          if (lowerQuery.includes(subGenreLower)) {
+            filters.subGenres.push(subGenre.name);
+          }
+        });
       }
     });
 
     // Mood detection - use the actual MOODS from types
-    MOODS.forEach(mood => {
-      const moodLower = mood.toLowerCase();
+    moods.forEach(mood => {
+      const moodLower = mood.name.toLowerCase();
       if (lowerQuery.includes(moodLower)) {
-        filters.moods.push(mood);
+        filters.moods.push(mood.name);
       }
     });
 
