@@ -142,24 +142,39 @@ export function CatalogPage() {
             ];
             
             // Add common variations for specific genres
-            if (genre.name.toLowerCase().includes('hip')) {
-              variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill');
+            if (genre.name.toLowerCase().includes('hip_hop_rap')) {
+              variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music');
             }
-            if (genre.name.toLowerCase().includes('rnb') || genre.name.toLowerCase().includes('soul')) {
+            if (genre.name.toLowerCase().includes('rnb_soul')) {
               variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
             }
-            if (genre.name.toLowerCase().includes('electronic')) {
-              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance');
+            if (genre.name.toLowerCase().includes('electronic_dance')) {
+              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music');
+            }
+            if (genre.name.toLowerCase().includes('jazz')) {
+              variations.push('jazzy', 'jazz music', 'smooth jazz', 'bebop', 'fusion');
+            }
+            if (genre.name.toLowerCase().includes('classical_orchestral')) {
+              variations.push('orchestral', 'symphony', 'chamber', 'classical music', 'orchestra');
+            }
+            if (genre.name.toLowerCase().includes('world_global')) {
+              variations.push('ethnic', 'cultural', 'traditional', 'world music');
+            }
+            if (genre.name.toLowerCase().includes('religious_inspirational')) {
+              variations.push('gospel', 'spiritual', 'worship', 'religious music');
+            }
+            if (genre.name.toLowerCase().includes('childrens_family')) {
+              variations.push('kids', 'children', 'nursery', 'childrens music', 'kids music');
+            }
+            if (genre.name.toLowerCase().includes('country_folk_americana')) {
+              variations.push('country western', 'bluegrass', 'americana', 'country music');
             }
             
             genreVariations[genre.name] = [...new Set(variations)];
           });
 
           filters.genres.forEach((genre: string) => {
-            // Get variations for this genre
             const variations = genreVariations[genre.toLowerCase()] || [];
-            
-            // Add the original genre and its variations
             const allVariations = [
               genre.toLowerCase(),
               ...variations.map(v => v.toLowerCase()),
@@ -168,9 +183,15 @@ export function CatalogPage() {
               genre.toLowerCase().replace(/\s+/g, '_')
             ];
             
-            // Remove duplicates
-            const uniqueVariations = [...new Set(allVariations)];
+            // Add partial match variations
+            const genreWords = genre.toLowerCase().split(/[\s_-]+/);
+            genreWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
             
+            const uniqueVariations = [...new Set(allVariations)];
             uniqueVariations.forEach(variation => {
               genreConditions.push(`genres.ilike.%${variation}%`);
             });
@@ -239,10 +260,7 @@ export function CatalogPage() {
           });
 
           filters.moods.forEach((mood: string) => {
-            // Get variations for this mood
             const variations = moodVariations[mood.toLowerCase()] || [];
-            
-            // Add the original mood and its variations
             const allVariations = [
               mood.toLowerCase(),
               ...variations.map(v => v.toLowerCase()),
@@ -251,9 +269,15 @@ export function CatalogPage() {
               mood.toLowerCase().replace(/\s+/g, '_')
             ];
             
-            // Remove duplicates
-            const uniqueVariations = [...new Set(allVariations)];
+            // Add partial match variations
+            const moodWords = mood.toLowerCase().split(/[\s_-]+/);
+            moodWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
             
+            const uniqueVariations = [...new Set(allVariations)];
             uniqueVariations.forEach(variation => {
               moodConditions.push(`moods.ilike.%${variation}%`);
             });

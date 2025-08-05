@@ -342,6 +342,23 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       }
     });
     
+    // Then check for partial matches and fuzzy search
+    genres.forEach(genre => {
+      const genreNameLower = genre.name.toLowerCase();
+      const displayNameLower = genre.display_name.toLowerCase();
+      
+      // Check for partial matches (e.g., "hip" matches "hip_hop_rap")
+      if (lowerQuery.includes(genreNameLower.replace(/_/g, '')) || 
+          lowerQuery.includes(displayNameLower.replace(/\s+/g, '')) ||
+          genreNameLower.split('_').some(part => lowerQuery.includes(part)) ||
+          displayNameLower.split(' ').some(word => lowerQuery.includes(word))) {
+        if (!filters.genres.includes(genre.name)) {
+          filters.genres.push(genre.name);
+          genreDetected = true;
+        }
+      }
+    });
+    
     // Then check for synonyms and variations
     Object.entries(genreVariations).forEach(([genreName, synonyms]) => {
       if (synonyms.some(syn => lowerQuery.includes(syn))) {
@@ -360,6 +377,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'hiphop': 'hip_hop_rap',
       'hip hop': 'hip_hop_rap',
       'hip-hop': 'hip_hop_rap',
+      'hip': 'hip_hop_rap', // Partial match
       'rap': 'hip_hop_rap',
       'rnb': 'rnb_soul',
       'r&b': 'rnb_soul',
@@ -368,15 +386,39 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'edm': 'electronic_dance',
       'classical': 'classical_orchestral',
       'orchestral': 'classical_orchestral',
+      'orchestra': 'classical_orchestral', // Partial match
       'world': 'world_global',
       'global': 'world_global',
       'religious': 'religious_inspirational',
       'inspirational': 'religious_inspirational',
       'childrens': 'childrens_family',
       'family': 'childrens_family',
+      'kids': 'childrens_family', // Partial match
       'country': 'country_folk_americana',
       'folk': 'country_folk_americana',
-      'americana': 'country_folk_americana'
+      'americana': 'country_folk_americana',
+      'pop': 'pop',
+      'rock': 'rock',
+      'dance': 'electronic_dance', // Partial match
+      'techno': 'electronic_dance', // Partial match
+      'house': 'electronic_dance', // Partial match
+      'trance': 'electronic_dance', // Partial match
+      'ambient': 'electronic_dance', // Partial match
+      'smooth': 'jazz', // Partial match for smooth jazz
+      'bebop': 'jazz', // Partial match
+      'fusion': 'jazz', // Partial match
+      'swing': 'jazz', // Partial match
+      'baroque': 'classical_orchestral', // Partial match
+      'symphony': 'classical_orchestral', // Partial match
+      'chamber': 'classical_orchestral', // Partial match
+      'latin': 'world_global', // Partial match
+      'african': 'world_global', // Partial match
+      'asian': 'world_global', // Partial match
+      'gospel': 'religious_inspirational', // Partial match
+      'spiritual': 'religious_inspirational', // Partial match
+      'worship': 'religious_inspirational', // Partial match
+      'bluegrass': 'country_folk_americana', // Partial match
+      'western': 'country_folk_americana' // Partial match
     };
 
     // Check for mapped genres
@@ -395,6 +437,22 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     moods.forEach(mood => {
       if (lowerQuery.includes(mood.name.toLowerCase()) || lowerQuery.includes(mood.display_name.toLowerCase())) {
         filters.moods.push(mood.name);
+      }
+    });
+
+    // Then check for partial matches and fuzzy search for moods
+    moods.forEach(mood => {
+      const moodNameLower = mood.name.toLowerCase();
+      const displayNameLower = mood.display_name.toLowerCase();
+      
+      // Check for partial matches (e.g., "energ" matches "energetic")
+      if (lowerQuery.includes(moodNameLower.substring(0, 4)) || 
+          lowerQuery.includes(displayNameLower.substring(0, 4)) ||
+          moodNameLower.split('_').some(part => lowerQuery.includes(part)) ||
+          displayNameLower.split(' ').some(word => lowerQuery.includes(word))) {
+        if (!filters.moods.includes(mood.name)) {
+          filters.moods.push(mood.name);
+        }
       }
     });
 
