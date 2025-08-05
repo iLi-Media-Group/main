@@ -58,7 +58,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   ];
 
   // AI-powered suggestions based on context and user behavior
-  const generateAISuggestions = async () => {
+  const generateAISuggestions = React.useCallback(async () => {
     if (!user) return [];
 
     try {
@@ -109,7 +109,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.error('Error generating AI suggestions:', error);
       return [];
     }
-  };
+  }, [user]);
 
   // State for AI suggestions
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
@@ -117,7 +117,11 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   // Load AI suggestions when component mounts or user changes
   useEffect(() => {
     if (user && isOpen && activeTab === 'suggestions') {
-      generateAISuggestions().then(setAiSuggestions);
+      const loadSuggestions = async () => {
+        const suggestions = await generateAISuggestions();
+        setAiSuggestions(suggestions);
+      };
+      loadSuggestions();
     }
   }, [user, isOpen, activeTab]);
 
@@ -125,9 +129,9 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     loadRecentSearches();
   }, [user]);
 
+  // Focus input when modal opens or when switching to search tab
   useEffect(() => {
     if (isOpen && activeTab === 'search') {
-      // Focus the input when modal opens
       const timeoutId = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
@@ -136,20 +140,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       
       return () => clearTimeout(timeoutId);
     }
-  }, [isOpen]);
-
-  // Separate effect to focus when switching to search tab
-  useEffect(() => {
-    if (isOpen && activeTab === 'search' && inputRef.current) {
-      const timeoutId = setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.focus();
-        }
-      }, 50);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [activeTab]);
+  }, [isOpen, activeTab]);
 
   const loadRecentSearches = async () => {
     if (!user) return;
@@ -178,7 +169,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     }
   };
 
-  const processNaturalLanguageQuery = async (query: string) => {
+  const processNaturalLanguageQuery = React.useCallback(async (query: string) => {
     if (!query.trim()) return;
 
     setLoading(true);
@@ -199,15 +190,15 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         onSearchApply(filters);
       }
 
-      // Close modal after successful search
-      setTimeout(() => setIsOpen(false), 1000);
+      // Don't auto-close the modal - let user close it manually
+      // This prevents interference with typing
 
     } catch (err) {
       setError('Failed to process query. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [onSearchApply]);
 
   // Generate explanation of what the AI understood
   const generateSearchExplanation = (originalQuery: string, filters: SearchFilters) => {
