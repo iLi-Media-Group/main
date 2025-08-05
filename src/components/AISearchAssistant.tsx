@@ -246,31 +246,45 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     const lowerQuery = query.toLowerCase();
 
     // 1. ENHANCED CONTEXT-AWARE GENRE DETECTION
-    // Handle variations and synonyms with more precision
+    // Handle variations and synonyms with more precision - using dynamic GENRES from types
     const genreSynonyms: { [key: string]: string[] } = {
-      'hiphop': ['hip hop', 'hip-hop', 'rap', 'trap', 'drill'],
-      'electronic': ['edm', 'electronic dance', 'techno', 'house', 'trance'],
-      'pop': ['popular', 'mainstream'],
-      'rock': ['rock and roll', 'hard rock', 'soft rock'],
-      'jazz': ['jazz fusion', 'smooth jazz'],
-      'classical': ['orchestral', 'symphony', 'chamber', 'classical music'],
-      'world': ['ethnic', 'cultural', 'traditional'],
-      'religious': ['gospel', 'spiritual', 'worship'],
-      'childrens': ['kids', 'children', 'nursery'],
-      'country': ['country western', 'bluegrass', 'americana']
+      'hiphop': ['hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music'],
+      'rnb': ['r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul'],
+      'pop': ['popular', 'mainstream', 'pop music', 'popular music'],
+      'rock': ['rock and roll', 'hard rock', 'soft rock', 'rock music', 'rock n roll'],
+      'electronic': ['edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music'],
+      'jazz': ['jazz fusion', 'smooth jazz', 'jazz music'],
+      'classical': ['orchestral', 'symphony', 'chamber', 'classical music', 'orchestra'],
+      'world': ['ethnic', 'cultural', 'traditional', 'world music'],
+      'religious': ['gospel', 'spiritual', 'worship', 'religious music'],
+      'childrens': ['kids', 'children', 'nursery', 'childrens music', 'kids music'],
+      'country': ['country western', 'bluegrass', 'americana', 'country music']
     };
 
-    // More precise genre detection - prioritize exact matches
+    // More precise genre detection - prioritize exact matches using dynamic GENRES
     let genreDetected = false;
-    Object.entries(genreSynonyms).forEach(([genre, synonyms]) => {
-      if (lowerQuery.includes(genre) || synonyms.some(syn => lowerQuery.includes(syn))) {
+    
+    // First, check for exact matches in the GENRES array
+    GENRES.forEach(genre => {
+      if (lowerQuery.includes(genre.toLowerCase())) {
         filters.genres.push(genre);
         genreDetected = true;
       }
     });
+    
+    // Then check for synonyms and variations
+    Object.entries(genreSynonyms).forEach(([genre, synonyms]) => {
+      if (synonyms.some(syn => lowerQuery.includes(syn))) {
+        // Only add if not already added
+        if (!filters.genres.includes(genre)) {
+          filters.genres.push(genre);
+          genreDetected = true;
+        }
+      }
+    });
 
     // 2. INTELLIGENT MOOD DETECTION
-    // Handle mood variations and emotional context
+    // Handle mood variations and emotional context using dynamic MOODS from types
     const moodSynonyms: { [key: string]: string[] } = {
       'energetic': ['energetic', 'upbeat', 'high energy', 'powerful', 'intense', 'dynamic'],
       'peaceful': ['peaceful', 'calm', 'relaxing', 'serene', 'tranquil', 'soothing'],
@@ -282,9 +296,20 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'melancholic': ['melancholic', 'sad', 'melancholy', 'sorrowful', 'emotional']
     };
 
+    // First, check for exact matches in the MOODS array
+    MOODS.forEach(mood => {
+      if (lowerQuery.includes(mood.toLowerCase())) {
+        filters.moods.push(mood);
+      }
+    });
+
+    // Then check for synonyms and variations
     Object.entries(moodSynonyms).forEach(([mood, synonyms]) => {
       if (synonyms.some(syn => lowerQuery.includes(syn))) {
-        filters.moods.push(mood);
+        // Only add if not already added
+        if (!filters.moods.includes(mood)) {
+          filters.moods.push(mood);
+        }
       }
     });
 
@@ -334,6 +359,16 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       'documentary': { genres: ['classical', 'world'], moods: ['peaceful'], bpmRange: [60, 100] },
       'wedding': { genres: ['classical', 'jazz'], moods: ['romantic'], bpmRange: [70, 120] }
     };
+
+    // 3.5. SUBGENRE DETECTION
+    // Check for subgenres using the dynamic SUB_GENRES from types
+    Object.entries(SUB_GENRES).forEach(([genre, subGenres]) => {
+      subGenres.forEach(subGenre => {
+        if (lowerQuery.includes(subGenre.toLowerCase())) {
+          filters.subGenres.push(subGenre);
+        }
+      });
+    });
 
     // Check for specific use cases and apply strict genre requirements
     for (const [useCase, context] of Object.entries(useCaseContexts)) {
@@ -822,4 +857,3 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 };
 
 export default AISearchAssistant; 
-
