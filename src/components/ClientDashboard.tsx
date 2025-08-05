@@ -21,7 +21,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 import DiscountCodesSection from './DiscountCodesSection';
-import { AudioPlayer } from './SpotifyTrackAudioPlayer';
+import { AudioPlayer } from './AudioPlayer';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -108,21 +108,6 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  // Use the new AudioPlayer for all tracks
-  if (track) {
-    const { signedUrl, loading, error } = useSignedUrl('track-audio', audioUrl);
-    return (
-      <AudioPlayer
-        track={track}
-        signedUrl={signedUrl}
-        loading={loading}
-        error={!!error}
-        size={size}
-        showToggle={false}
-      />
-    );
-  }
-
   // For file paths, use signed URL with hardcoded bucket name
   const { signedUrl, loading, error } = useSignedUrl('track-audio', audioUrl);
 
@@ -143,21 +128,17 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  // Create a track object for the AudioPlayer
-  const trackObj = {
-    id: 'temp-id',
-    title: title,
-    audioUrl: audioUrl
-  };
+  // Generate a unique audioId for this player
+  const audioId = track ? `track-${track.id}` : `temp-${Date.now()}`;
 
   return (
     <AudioPlayer
-      track={trackObj}
-      signedUrl={signedUrl}
-      loading={loading}
-      error={!!error}
+      src={signedUrl}
+      title={title}
+      isPlaying={isPlaying}
+      onToggle={onToggle}
       size={size}
-      showToggle={false}
+      audioId={audioId}
     />
   );
 };
