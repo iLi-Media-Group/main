@@ -2909,10 +2909,10 @@ const getPlanLevel = (plan: string): number => {
 
       {/* Membership Management Dialog */}
       {showMembershipDialog && (
-        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Manage Your Membership</h3>
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white/5 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-purple-500/20 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-white">Manage Your Membership</h3>
               <button
                 onClick={() => setShowMembershipDialog(false)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -2921,7 +2921,7 @@ const getPlanLevel = (plan: string): number => {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Error Display */}
               {membershipError && (
                 <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
@@ -2951,12 +2951,12 @@ const getPlanLevel = (plan: string): number => {
               {/* Available Plans */}
               <div>
                 <h4 className="text-lg font-semibold text-white mb-4">Available Plans</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {/* Gold Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Gold Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Gold Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$34.99<span className="text-sm text-gray-400">/month</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Gold Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Gold Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$34.99<span className="text-xs sm:text-sm text-gray-400">/month</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• 10 track downloads per month</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -2991,10 +2991,10 @@ const getPlanLevel = (plan: string): number => {
                   </div>
 
                   {/* Platinum Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Platinum Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Platinum Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$59.99<span className="text-sm text-gray-400">/month</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Platinum Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Platinum Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$59.99<span className="text-xs sm:text-sm text-gray-400">/month</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• Unlimited track downloads</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -3030,10 +3030,10 @@ const getPlanLevel = (plan: string): number => {
                   </div>
 
                   {/* Ultimate Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Ultimate Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Ultimate Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$499.99<span className="text-sm text-gray-400">/year</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Ultimate Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Ultimate Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$499.99<span className="text-xs sm:text-sm text-gray-400">/year</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• Unlimited track downloads</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -3072,15 +3072,15 @@ const getPlanLevel = (plan: string): number => {
               </div>
 
               {/* Single Track - Pay As You Go */}
-              <div className="bg-gray-900/20 border border-gray-500/20 rounded-lg p-4">
-                <h4 className="text-lg font-semibold text-white mb-2">Single Track - Pay As You Go</h4>
-                <p className="text-gray-300 text-sm mb-4">
+              <div className="bg-gray-900/20 border border-gray-500/20 rounded-lg p-3 sm:p-4">
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-2">Single Track - Pay As You Go</h4>
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                   Perfect for one-off projects. Pay only for the tracks you need.
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <div>
-                    <p className="text-2xl font-bold text-gray-400">$9.99<span className="text-sm text-gray-500">/track</span></p>
-                    <ul className="text-sm text-gray-400 space-y-1 mt-2">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-400">$9.99<span className="text-xs sm:text-sm text-gray-500">/track</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-400 space-y-1 mt-2">
                       <li>• Single track download</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
