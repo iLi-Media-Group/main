@@ -239,7 +239,7 @@ export default function AdminServicesPage() {
       // Upload new images if files are selected
       if (imageFile) {
         try {
-          imageUrl = await (await import('../lib/storage')).uploadFile(imageFile, 'services-images');
+          imageUrl = await (await import('../lib/storage')).uploadFile(imageFile, 'service-images');
         } catch (uploadError) {
           throw new Error(`Failed to upload main image: ${uploadError}`);
         }
@@ -247,7 +247,7 @@ export default function AdminServicesPage() {
 
       if (imageFile2) {
         try {
-          imageUrl2 = await (await import('../lib/storage')).uploadFile(imageFile2, 'services-images');
+          imageUrl2 = await (await import('../lib/storage')).uploadFile(imageFile2, 'service-images');
         } catch (uploadError) {
           throw new Error(`Failed to upload additional image 1: ${uploadError}`);
         }
@@ -255,7 +255,7 @@ export default function AdminServicesPage() {
 
       if (imageFile3) {
         try {
-          imageUrl3 = await (await import('../lib/storage')).uploadFile(imageFile3, 'services-images');
+          imageUrl3 = await (await import('../lib/storage')).uploadFile(imageFile3, 'service-images');
         } catch (uploadError) {
           throw new Error(`Failed to upload additional image 2: ${uploadError}`);
         }
