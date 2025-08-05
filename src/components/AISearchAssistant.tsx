@@ -262,14 +262,32 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       ];
       
       // Add common variations for specific genres
-      if (genre.name.toLowerCase().includes('hip')) {
-        variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill');
+      if (genre.name.toLowerCase().includes('hip_hop_rap')) {
+        variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music');
       }
-      if (genre.name.toLowerCase().includes('rnb') || genre.name.toLowerCase().includes('soul')) {
+      if (genre.name.toLowerCase().includes('rnb_soul')) {
         variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
       }
-      if (genre.name.toLowerCase().includes('electronic')) {
-        variations.push('edm', 'electronic dance', 'techno', 'house', 'trance');
+      if (genre.name.toLowerCase().includes('electronic_dance')) {
+        variations.push('edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music');
+      }
+      if (genre.name.toLowerCase().includes('jazz')) {
+        variations.push('jazzy', 'jazz music', 'smooth jazz', 'bebop', 'fusion');
+      }
+      if (genre.name.toLowerCase().includes('classical_orchestral')) {
+        variations.push('orchestral', 'symphony', 'chamber', 'classical music', 'orchestra');
+      }
+      if (genre.name.toLowerCase().includes('world_global')) {
+        variations.push('ethnic', 'cultural', 'traditional', 'world music');
+      }
+      if (genre.name.toLowerCase().includes('religious_inspirational')) {
+        variations.push('gospel', 'spiritual', 'worship', 'religious music');
+      }
+      if (genre.name.toLowerCase().includes('childrens_family')) {
+        variations.push('kids', 'children', 'nursery', 'childrens music', 'kids music');
+      }
+      if (genre.name.toLowerCase().includes('country_folk_americana')) {
+        variations.push('country western', 'bluegrass', 'americana', 'country music');
       }
       
       genreVariations[genre.name] = [...new Set(variations)];
@@ -330,6 +348,44 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
         // Only add if not already added
         if (!filters.genres.includes(genreName)) {
           filters.genres.push(genreName);
+          genreDetected = true;
+        }
+      }
+    });
+
+    // Add specific mappings for common search terms to database genre names
+    const genreMappings: { [key: string]: string } = {
+      'jazz': 'jazz',
+      'jazzy': 'jazz',
+      'hiphop': 'hip_hop_rap',
+      'hip hop': 'hip_hop_rap',
+      'hip-hop': 'hip_hop_rap',
+      'rap': 'hip_hop_rap',
+      'rnb': 'rnb_soul',
+      'r&b': 'rnb_soul',
+      'soul': 'rnb_soul',
+      'electronic': 'electronic_dance',
+      'edm': 'electronic_dance',
+      'classical': 'classical_orchestral',
+      'orchestral': 'classical_orchestral',
+      'world': 'world_global',
+      'global': 'world_global',
+      'religious': 'religious_inspirational',
+      'inspirational': 'religious_inspirational',
+      'childrens': 'childrens_family',
+      'family': 'childrens_family',
+      'country': 'country_folk_americana',
+      'folk': 'country_folk_americana',
+      'americana': 'country_folk_americana'
+    };
+
+    // Check for mapped genres
+    Object.entries(genreMappings).forEach(([searchTerm, dbGenreName]) => {
+      if (lowerQuery.includes(searchTerm) && !filters.genres.includes(dbGenreName)) {
+        // Check if this genre exists in the database
+        const genreExists = genres.some(g => g.name === dbGenreName);
+        if (genreExists) {
+          filters.genres.push(dbGenreName);
           genreDetected = true;
         }
       }
