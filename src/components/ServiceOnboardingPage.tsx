@@ -175,13 +175,13 @@ export default function ServiceOnboardingPage({ publicMode = false }: { publicMo
       let imageUrl2 = form.image2;
       let imageUrl3 = form.image3;
       if (imageFile) {
-        imageUrl = await uploadFile(imageFile, 'service-images');
+        imageUrl = await uploadFile(imageFile, 'services-images');
       }
       if (imageFile2) {
-        imageUrl2 = await uploadFile(imageFile2, 'service-images');
+        imageUrl2 = await uploadFile(imageFile2, 'services-images');
       }
       if (imageFile3) {
-        imageUrl3 = await uploadFile(imageFile3, 'service-images');
+        imageUrl3 = await uploadFile(imageFile3, 'services-images');
       }
       const payload = { ...form, image: imageUrl, image2: imageUrl2, image3: imageUrl3 };
       await supabase.from('services').insert([payload]);
