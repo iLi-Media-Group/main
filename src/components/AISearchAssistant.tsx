@@ -25,7 +25,6 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const { user } = useAuth();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
-  const [query, setQuery] = useState('');
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +32,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [_suggestions, setSuggestions] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'search' | 'suggestions' | 'history'>('search');
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const queryRef = React.useRef('');
   const [searchExplanation, setSearchExplanation] = useState<string>('');
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
@@ -501,17 +501,26 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   };
 
   const handleExampleClick = React.useCallback((example: string) => {
-    setQuery(example);
+    queryRef.current = example;
+    if (inputRef.current) {
+      inputRef.current.value = example;
+    }
     processNaturalLanguageQuery(example);
   }, [processNaturalLanguageQuery]);
 
   const handleRecentSearchClick = React.useCallback((search: string) => {
-    setQuery(search);
+    queryRef.current = search;
+    if (inputRef.current) {
+      inputRef.current.value = search;
+    }
     processNaturalLanguageQuery(search);
   }, [processNaturalLanguageQuery]);
 
   const handleSuggestionClick = React.useCallback((suggestion: string) => {
-    setQuery(suggestion);
+    queryRef.current = suggestion;
+    if (inputRef.current) {
+      inputRef.current.value = suggestion;
+    }
     processNaturalLanguageQuery(suggestion);
   }, [processNaturalLanguageQuery]);
 
@@ -530,7 +539,10 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       
       setTimeout(() => {
         const randomExample = voiceExamples[Math.floor(Math.random() * voiceExamples.length)];
-        setQuery(randomExample);
+        queryRef.current = randomExample;
+        if (inputRef.current) {
+          inputRef.current.value = randomExample;
+        }
         setIsListening(false);
         
         // Auto-process the voice input
@@ -632,14 +644,16 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                     <input
                       ref={inputRef}
                       type="text"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
+                      defaultValue=""
+                      onChange={(e) => {
+                        queryRef.current = e.target.value;
+                      }}
                       placeholder="e.g., 'energetic hip hop for workout videos' or 'peaceful ambient for meditation'"
                       className="w-full pl-4 pr-20 py-4 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20 text-lg"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          processNaturalLanguageQuery(query);
+                          processNaturalLanguageQuery(queryRef.current);
                         }
                       }}
                     />
@@ -656,8 +670,8 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                         <Mic className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => processNaturalLanguageQuery(query)}
-                        disabled={loading || !query.trim()}
+                        onClick={() => processNaturalLanguageQuery(queryRef.current)}
+                        disabled={loading || !queryRef.current.trim()}
                         className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Search"
                       >
@@ -808,3 +822,4 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 };
 
 export default AISearchAssistant; 
+
