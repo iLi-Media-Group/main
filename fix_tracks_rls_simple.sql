@@ -38,7 +38,8 @@ SELECT
   permissive,
   roles,
   cmd,
-  qual
+  qual,
+  with_check
 FROM pg_policies 
 WHERE tablename = 'tracks'
 ORDER BY policyname;
