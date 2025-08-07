@@ -125,46 +125,91 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       const userPreferences = await analyzeUserPreferences();
       const suggestions = [];
 
+      // Get recent searches to analyze patterns
+      const recent = localStorage.getItem(`recent_searches_${user.id}`);
+      const recentSearches = recent ? JSON.parse(recent) : [];
+
       // Personalized suggestions based on user history
-      if (userPreferences) {
-        if (userPreferences.favoriteGenres.length > 0) {
-          suggestions.push(`Based on your love for ${userPreferences.favoriteGenres[0]}: "energetic ${userPreferences.favoriteGenres[0]} for workout"`);
+      if (userPreferences && userPreferences.favoriteGenres.length > 0) {
+        const topGenre = userPreferences.favoriteGenres[0];
+        suggestions.push(`Based on your love for ${topGenre}: "energetic ${topGenre} for workout videos"`);
+        suggestions.push(`Since you enjoy ${topGenre}: "peaceful ${topGenre} for meditation apps"`);
+      }
+
+      if (userPreferences && userPreferences.favoriteMoods.length > 0) {
+        const topMood = userPreferences.favoriteMoods[0];
+        suggestions.push(`Since you enjoy ${topMood} music: "dramatic ${topMood} for film trailers"`);
+        suggestions.push(`Based on your ${topMood} preference: "romantic ${topMood} for wedding ceremonies"`);
+      }
+
+      // Analyze recent search patterns and create variations
+      if (recentSearches.length > 0) {
+        const recentSearch = recentSearches[0]; // Most recent search
+        const lowerSearch = recentSearch.toLowerCase();
+        
+        // Extract genres from recent search
+        const genreTerms = ['jazz', 'hiphop', 'hip hop', 'rock', 'pop', 'classical', 'electronic', 'ambient', 'trap', 'r&b', 'soul', 'funk', 'reggae', 'country', 'folk', 'blues', 'orchestral', 'cinematic', 'acoustic'];
+        const foundGenres = genreTerms.filter(genre => lowerSearch.includes(genre));
+        
+        if (foundGenres.length > 0) {
+          const genre = foundGenres[0];
+          suggestions.push(`Similar to your recent ${genre} search: "energetic ${genre} for gaming content"`);
+          suggestions.push(`Based on your ${genre} interest: "peaceful ${genre} for restaurant background"`);
         }
-        if (userPreferences.favoriteMoods.length > 0) {
-          suggestions.push(`Since you enjoy ${userPreferences.favoriteMoods[0]} music: "peaceful ${userPreferences.favoriteMoods[0]} for meditation"`);
+
+        // Extract moods from recent search
+        const moodTerms = ['energetic', 'peaceful', 'uplifting', 'dramatic', 'romantic', 'mysterious', 'funky', 'smooth', 'upbeat', 'calm', 'relaxing', 'exciting', 'powerful', 'gentle', 'intense'];
+        const foundMoods = moodTerms.filter(mood => lowerSearch.includes(mood));
+        
+        if (foundMoods.length > 0) {
+          const mood = foundMoods[0];
+          suggestions.push(`Since you searched for ${mood} music: "dramatic ${mood} for movie trailers"`);
+          suggestions.push(`Based on your ${mood} preference: "uplifting ${mood} for social media"`);
+        }
+
+        // Media type analysis
+        const mediaTerms = ['television', 'TV', 'film', 'movie', 'podcast', 'YouTube', 'gaming', 'restaurant', 'cafe', 'wedding', 'fitness', 'workout'];
+        const foundMedia = mediaTerms.filter(media => lowerSearch.includes(media));
+        
+        if (foundMedia.length > 0) {
+          const media = foundMedia[0];
+          suggestions.push(`Similar to your ${media} search: "energetic electronic for ${media} content"`);
         }
       }
 
       // Context-aware suggestions based on time of day
       const hour = new Date().getHours();
       if (hour >= 6 && hour < 12) {
-        suggestions.push('Morning energy: "uplifting pop for commercials"');
+        suggestions.push('Morning energy: "uplifting pop for television commercials"');
       } else if (hour >= 12 && hour < 18) {
-        suggestions.push('Afternoon focus: "peaceful classical for work"');
+        suggestions.push('Afternoon focus: "peaceful classical for work background"');
       } else if (hour >= 18 && hour < 22) {
-        suggestions.push('Evening vibes: "energetic electronic for parties"');
+        suggestions.push('Evening vibes: "energetic electronic for party music"');
       } else {
-        suggestions.push('Late night: "mysterious electronic for documentaries"');
+        suggestions.push('Late night: "mysterious electronic for documentary films"');
       }
 
-      // Trending suggestions (simulated)
+      // Trending suggestions based on popular patterns
       const trendingSuggestions = [
         'Trending now: "energetic trap for fitness videos"',
-        'Popular this week: "peaceful ambient for meditation"',
-        'Hot right now: "dramatic orchestral for movie scenes"'
+        'Popular this week: "peaceful ambient for meditation apps"',
+        'Hot right now: "dramatic orchestral for movie trailers"',
+        'Viral content: "upbeat electronic for social media"'
       ];
       suggestions.push(...trendingSuggestions.slice(0, 2));
 
-      // Use case suggestions
+      // Use case suggestions based on common needs
       const useCaseSuggestions = [
         'For gaming: "energetic electronic with fast tempo"',
         'For restaurants: "peaceful jazz for background music"',
         'For weddings: "romantic classical for ceremonies"',
-        'For podcasts: "calm acoustic for intros"'
+        'For podcasts: "calm acoustic for intros"',
+        'For YouTube: "trending beats for viral content"',
+        'For fitness: "energetic hiphop for workout videos"'
       ];
       suggestions.push(...useCaseSuggestions.slice(0, 2));
 
-      return suggestions.slice(0, 6); // Limit to 6 suggestions
+      return suggestions.slice(0, 8); // Limit to 8 suggestions
     } catch (error) {
       console.error('Error generating AI suggestions:', error);
       return [];
@@ -183,7 +228,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       };
       loadSuggestions();
     }
-  }, [user, isOpen, activeTab, generateAISuggestions]);
+  }, [user, isOpen, activeTab, generateAISuggestions, recentSearches]); // Added recentSearches dependency
 
   useEffect(() => {
     loadRecentSearches();
@@ -661,6 +706,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     if (inputRef.current) {
       inputRef.current.value = search;
     }
+    // Process the search immediately
     processNaturalLanguageQuery(search);
   }, [processNaturalLanguageQuery]);
 
