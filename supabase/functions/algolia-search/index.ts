@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import algoliasearch from 'npm:algoliasearch@4.18.1'
+import algoliasearch from 'npm:algoliasearch@4.22.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
