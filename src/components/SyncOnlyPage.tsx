@@ -292,11 +292,11 @@ export function SyncOnlyPage() {
             hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
             producerId: track.track_producer_id || '',
-            producer: track.track_producer_id?.[0] ? {
-              id: track.track_producer_id[0].id,
-              firstName: track.track_producer_id[0].first_name || '',
-              lastName: track.track_producer_id[0].last_name || '',
-              email: track.track_producer_id[0].email
+            producer: track.track_producer_id ? {
+              id: track.track_producer_id.id,
+              firstName: track.track_producer_id.first_name || '',
+              lastName: track.track_producer_id.last_name || '',
+              email: track.track_producer_id.email
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
