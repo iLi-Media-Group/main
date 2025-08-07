@@ -297,6 +297,8 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
                 {track.producer.firstName} {track.producer.lastName}
               </button>
             )}
+            
+
           </div>
         </div>
       </div>

@@ -46,7 +46,7 @@ export function VocalsPage() {
           has_vocals,
           is_sync_only,
           track_producer_id,
-          producer:profiles!track_producer_id (
+          producer:profiles!inner (
             id,
             first_name,
             last_name,

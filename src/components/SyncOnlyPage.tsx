@@ -59,7 +59,7 @@ export function SyncOnlyPage() {
         .from('tracks')
         .select(`
           *,
-          track_producer_id:profiles!track_producer_id (
+          track_producer_id:profiles!inner (
             id,
             first_name,
             last_name,

@@ -89,7 +89,7 @@ export function CatalogPage() {
           vocals_usage_type,
           is_sync_only,
           track_producer_id,
-          profiles!track_producer_id (
+          profiles!inner (
             id,
             first_name,
             last_name,
@@ -317,48 +317,52 @@ export function CatalogPage() {
 
         const formattedTracks = data
           .filter(track => track && track.id)
-          .map(track => ({
-            id: track.id,
-            title: track.title || 'Untitled',
-            artist:
-              track.profiles?.[0]?.first_name ||
-              track.profiles?.[0]?.email?.split('@')[0] ||
-              'Unknown Artist',
-            genres: parseArrayField(track.genres),
-            subGenres: parseArrayField(track.sub_genres),
-            moods: parseArrayField(track.moods),
-            duration: track.duration || '3:30',
-            bpm: track.bpm,
-            audioUrl: track.audio_url,
-            image:
-              track.image_url ||
-              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasStingEnding: track.has_sting_ending,
-            isOneStop: track.is_one_stop,
-            mp3Url: track.mp3_url,
-            trackoutsUrl: track.trackouts_url,
-            stemsUrl: track.stems_url,
-            hasVocals: track.has_vocals || false,
-            isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id || '',
-            producer: track.profiles?.[0] ? {
-              id: track.profiles[0].id,
-              firstName: track.profiles[0].first_name || '',
-              lastName: track.profiles[0].last_name || '',
-              email: track.profiles[0].email || '',
-            } : undefined,
-            fileFormats: {
-              stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-              stems: { format: ['WAV'], url: track.trackouts_url || '' },
-              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
-            },
-            pricing: {
-              stereoMp3: 0,
-              stems: 0,
-              stemsWithVocals: 0
-            },
-            leaseAgreementUrl: ''
-          }));
+          .map(track => {
+
+            
+            return {
+              id: track.id,
+              title: track.title || 'Untitled',
+              artist:
+                track.profiles?.[0]?.first_name ||
+                track.profiles?.[0]?.email?.split('@')[0] ||
+                'Unknown Artist',
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
+              duration: track.duration || '3:30',
+              bpm: track.bpm,
+              audioUrl: track.audio_url,
+              image:
+                track.image_url ||
+                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
+              producer: track.profiles?.[0] ? {
+                id: track.profiles[0].id,
+                firstName: track.profiles[0].first_name || '',
+                lastName: track.profiles[0].last_name || '',
+                email: track.profiles[0].email || '',
+              } : undefined,
+              fileFormats: {
+                stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+                stems: { format: ['WAV'], url: track.trackouts_url || '' },
+                stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+              },
+              pricing: {
+                stereoMp3: 0,
+                stems: 0,
+                stemsWithVocals: 0
+              },
+              leaseAgreementUrl: ''
+            };
+          });
 
         if (currentPage === 1) {
           setTracks(formattedTracks);
