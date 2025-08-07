@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight, Zap, Star } from 'lucide-react';
+import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight, Zap, Star, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { searchTracks, getSearchSuggestions } from '../lib/algolia';
 
@@ -25,6 +25,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 }) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { genres, subGenres, moods, loading: dataLoading } = useDynamicSearchData();
   const [isOpen, setIsOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -37,6 +38,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const queryRef = React.useRef('');
   const [searchExplanation, setSearchExplanation] = useState<string>('');
   const [algoliaResults, setAlgoliaResults] = useState<any>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -130,6 +132,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
   useEffect(() => {
     loadRecentSearches();
+    loadFavorites();
   }, [user]);
 
   // Focus input when modal opens or when switching to search tab
@@ -171,6 +174,41 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.error('Error saving recent search:', err);
     }
   }, [user]);
+
+  const loadFavorites = React.useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const stored = localStorage.getItem(`favorites_${user.id}`);
+      if (stored) {
+        setFavorites(new Set(JSON.parse(stored)));
+      }
+    } catch (err) {
+      console.error('Error loading favorites:', err);
+    }
+  }, [user]);
+
+  const toggleFavorite = React.useCallback((trackId: string) => {
+    if (!user) return;
+    
+    try {
+      const newFavorites = new Set(favorites);
+      if (newFavorites.has(trackId)) {
+        newFavorites.delete(trackId);
+      } else {
+        newFavorites.add(trackId);
+      }
+      setFavorites(newFavorites);
+      localStorage.setItem(`favorites_${user.id}`, JSON.stringify([...newFavorites]));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  }, [user, favorites]);
+
+  const handleTrackClick = React.useCallback((trackId: string) => {
+    navigate(`/track/${trackId}`);
+    setIsOpen(false);
+  }, [navigate]);
 
   const processNaturalLanguageQuery = React.useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -551,7 +589,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                      </h3>
                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
                         {algoliaResults.tracks.map((track: any, index: number) => (
-                          <div key={track.id || index} className="bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+                          <div key={track.id || index} className="bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105 cursor-pointer" onClick={() => handleTrackClick(track.id)}>
                             {/* Track Image */}
                             <div className="relative aspect-square rounded-t-lg overflow-hidden">
                              {track.image_url ? (
@@ -588,6 +626,23 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                                   title={`Play ${track.title}`}
                                 >
                                   <span className="text-white text-lg">▶</span>
+                                </button>
+                              </div>
+                              
+                              {/* Favorite Button */}
+                              <div className="absolute top-2 right-2">
+                                <button
+                                  className="bg-black/50 backdrop-blur-sm rounded-full p-2 hover:bg-black/70 transition-colors"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toggleFavorite(track.id);
+                                  }}
+                                  title={favorites.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
+                                >
+                                  <Heart 
+                                    className={`w-4 h-4 ${favorites.has(track.id) ? 'text-red-500 fill-current' : 'text-white'}`} 
+                                  />
                                 </button>
                               </div>
                            </div>
