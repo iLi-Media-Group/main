@@ -568,12 +568,28 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                                  <span className="text-white text-2xl">🎵</span>
                                </div>
                              )}
-                             {/* Play Button Overlay */}
-                             <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                               <div className="bg-white/20 backdrop-blur-sm rounded-full p-3">
-                                 <span className="text-white text-lg">▶</span>
-                               </div>
-                             </div>
+                                                           {/* Play Button Overlay */}
+                              <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                <button 
+                                  className="bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-colors"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    // Handle play functionality here
+                                    console.log('Play track:', track.title);
+                                    if (track.audio_url) {
+                                      // Create a temporary audio element to play the track
+                                      const audio = new Audio(track.audio_url);
+                                      audio.play().catch(err => {
+                                        console.error('Error playing audio:', err);
+                                      });
+                                    }
+                                  }}
+                                  title={`Play ${track.title}`}
+                                >
+                                  <span className="text-white text-lg">▶</span>
+                                </button>
+                              </div>
                            </div>
                            
                            {/* Track Info */}
