@@ -40,6 +40,9 @@ serve(async (req) => {
     ))
   }
 
+  // For POST requests, allow without authentication for public search
+  console.log('Algolia search request received:', { method: req.method, url: req.url })
+
   try {
     console.log('Algolia search request received:', { method: req.method, url: req.url })
     
