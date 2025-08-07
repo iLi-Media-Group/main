@@ -188,30 +188,31 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.log('algoliaResults.tracks:', results?.tracks);
       console.log('algoliaResults.tracks.length:', results?.tracks?.length);
       
-             if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
-         console.log('Found tracks, generating explanation...');
-         // Store the results for display
-         setAlgoliaResults(results);
-         
-         // Clear any previous errors
-         setError(null);
-         
-         // Generate explanation of what the AI found
-         const explanation = generateAlgoliaSearchExplanation(query, results);
-         setSearchExplanation(explanation);
-       } else {
-         console.log('No tracks found or invalid response structure');
-         setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
-         setAlgoliaResults(null);
-       }
+                     if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
+          console.log('Found tracks, generating explanation...');
+          // Store the results for display
+          setAlgoliaResults(results);
+          
+          // Clear any previous errors
+          setError(null);
+          
+          // Generate explanation of what the AI found
+          const explanation = generateAlgoliaSearchExplanation(query, results);
+          setSearchExplanation(explanation);
+        } else {
+          console.log('No tracks found or invalid response structure');
+          setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
+          setAlgoliaResults(null);
+          // Clear error since this is a valid "no results" response, not a service error
+          setError(null);
+        }
 
-    } catch (err) {
-      console.error('Algolia search error:', err);
-      // Only show error if we don't have any results
-      if (!algoliaResults || !algoliaResults.tracks || algoliaResults.tracks.length === 0) {
-        setError('AI search is temporarily unavailable. Please try again.');
-      }
-    } finally {
+         } catch (err) {
+       console.error('Algolia search error:', err);
+       // Only show error for actual service failures (404, 500, 401, etc.)
+       // Don't show error for "no results found" - that's handled by the explanation
+       setError('AI search is temporarily unavailable. Please try again.');
+     } finally {
       setLoading(false);
     }
   }, [onSearchApply, saveRecentSearch]);
@@ -550,11 +551,11 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                        <Search className="w-5 h-5 mr-2 text-green-400" />
                        Found Tracks ({algoliaResults.tracks.length})
                      </h3>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                       {algoliaResults.tracks.map((track: any, index: number) => (
-                         <div key={track.id || index} className="bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
-                           {/* Track Image */}
-                           <div className="relative aspect-square rounded-t-lg overflow-hidden">
+                                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto">
+                        {algoliaResults.tracks.map((track: any, index: number) => (
+                          <div key={track.id || index} className="bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 hover:scale-105">
+                            {/* Track Image */}
+                            <div className="relative aspect-square rounded-t-lg overflow-hidden">
                              {track.image_url ? (
                                <img 
                                  src={track.image_url} 
