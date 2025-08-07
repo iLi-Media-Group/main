@@ -7,6 +7,7 @@ export interface Track {
   genres: string[];
   subGenres: string[];
   moods: string[];
+  instruments?: string[]; // Instruments used in the track
   mediaUsage?: string[]; // Media usage types for deep media search
   duration: string;
   bpm: number;
@@ -266,6 +267,53 @@ export const MEDIA_USAGE_CATEGORIES = {
     'School Projects': ['Student Films', 'Institutional Media', 'Academic Presentations', 'Research Videos']
   }
 } as const;
+
+// Comprehensive list of musical instruments
+export const INSTRUMENTS = {
+  'Strings': [
+    'Acoustic Guitar', 'Electric Guitar', 'Bass Guitar', 'Violin', 'Viola', 'Cello', 'Double Bass',
+    'Harp', 'Mandolin', 'Banjo', 'Ukulele', 'Sitar', 'Oud', 'Koto', 'Shamisen'
+  ],
+  'Percussion': [
+    'Drums', 'Drum Machine', 'Bass Drum', 'Snare Drum', 'Hi-Hat', 'Crash Cymbal', 'Ride Cymbal',
+    'Tom-Toms', 'Congas', 'Bongos', 'Djembe', 'Tambourine', 'Triangle', 'Maracas', 'Cowbell',
+    'Timpani', 'Xylophone', 'Vibraphone', 'Marimba', 'Glockenspiel'
+  ],
+  'Keyboards': [
+    'Piano', 'Electric Piano', 'Synthesizer', 'Organ', 'Hammond Organ', 'Clavinet', 'Harpsichord',
+    'Accordion', 'Melodica', 'Harmonium'
+  ],
+  'Brass': [
+    'Trumpet', 'Trombone', 'French Horn', 'Tuba', 'Cornet', 'Flugelhorn', 'Saxophone',
+    'Alto Sax', 'Tenor Sax', 'Baritone Sax', 'Soprano Sax'
+  ],
+  'Woodwinds': [
+    'Flute', 'Clarinet', 'Oboe', 'Bassoon', 'Piccolo', 'English Horn', 'Bass Clarinet',
+    'Recorder', 'Pan Flute', 'Harmonica'
+  ],
+  'Electronic': [
+    'Synthesizer', 'Drum Machine', 'Sampler', 'Sequencer', 'MIDI Controller', 'Theremin',
+    'Vocoder', 'Effects Pedals', 'Looper', 'Digital Audio Workstation (DAW)'
+  ],
+  'World & Ethnic': [
+    'Tabla', 'Dhol', 'Duduk', 'Kora', 'Kalimba', 'Steel Pan', 'Didgeridoo', 'Bagpipes',
+    'Hurdy-Gurdy', 'Gamelan', 'Taiko Drums', 'Erhu', 'Pipa', 'Guzheng'
+  ],
+  'Vocal': [
+    'Lead Vocals', 'Backing Vocals', 'Harmony Vocals', 'Rap', 'Spoken Word', 'Beatboxing',
+    'Choir', 'A Cappella', 'Vocal Samples'
+  ],
+  'Other': [
+    'Whistle', 'Hand Claps', 'Finger Snaps', 'Foot Stomps', 'Body Percussion', 'Field Recordings',
+    'Found Sounds', 'Environmental Sounds', 'Silence/Empty Space'
+  ]
+} as const;
+
+// Flatten all instruments for easier access
+export const ALL_INSTRUMENTS = Object.values(INSTRUMENTS).flat() as readonly string[];
+
+// Instrument categories for display
+export const INSTRUMENT_CATEGORIES = Object.keys(INSTRUMENTS) as readonly string[];
 
 // Flatten the media usage categories for easier access
 export const MEDIA_USAGE_TYPES = Object.entries(MEDIA_USAGE_CATEGORIES).reduce((acc, [category, subcategories]) => {

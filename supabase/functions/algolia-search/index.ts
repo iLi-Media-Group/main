@@ -202,6 +202,38 @@ serve(async (req) => {
              'magical': ['magical', 'enchanted', 'ethereal', 'mysterious', 'dreamy']
            }
            
+           // Instrument associations - map common words to actual instruments
+           const instrumentAssociations: { [key: string]: string[] } = {
+             'guitar': ['Acoustic Guitar', 'Electric Guitar'],
+             'bass': ['Bass Guitar'],
+             'piano': ['Piano', 'Electric Piano'],
+             'synth': ['Synthesizer'],
+             'drums': ['Drums', 'Drum Machine', 'Bass Drum', 'Snare Drum', 'Hi-Hat'],
+             'violin': ['Violin'],
+             'cello': ['Cello'],
+             'harp': ['Harp'],
+             'trumpet': ['Trumpet'],
+             'sax': ['Saxophone', 'Alto Sax', 'Tenor Sax', 'Baritone Sax', 'Soprano Sax'],
+             'flute': ['Flute'],
+             'clarinet': ['Clarinet'],
+             'organ': ['Organ', 'Hammond Organ'],
+             'accordion': ['Accordion'],
+             'mandolin': ['Mandolin'],
+             'banjo': ['Banjo'],
+             'ukulele': ['Ukulele'],
+             'harmonica': ['Harmonica'],
+             'vocal': ['Lead Vocals', 'Backing Vocals', 'Harmony Vocals'],
+             'vocals': ['Lead Vocals', 'Backing Vocals', 'Harmony Vocals'],
+             'singing': ['Lead Vocals', 'Backing Vocals', 'Harmony Vocals'],
+             'rap': ['Rap'],
+             'beatbox': ['Beatboxing'],
+             'beatboxing': ['Beatboxing'],
+             'electronic': ['Synthesizer', 'Drum Machine', 'Sampler', 'Sequencer'],
+             'acoustic': ['Acoustic Guitar', 'Piano', 'Violin', 'Cello', 'Harp', 'Flute', 'Clarinet'],
+             'orchestral': ['Violin', 'Viola', 'Cello', 'Double Bass', 'Trumpet', 'Trombone', 'French Horn', 'Tuba', 'Flute', 'Clarinet', 'Oboe', 'Bassoon'],
+             'percussion': ['Drums', 'Congas', 'Bongos', 'Djembe', 'Tambourine', 'Triangle', 'Maracas', 'Cowbell', 'Timpani', 'Xylophone', 'Vibraphone', 'Marimba', 'Glockenspiel']
+           }
+           
            // Genre partial word matching
            const genrePartialMatches: { [key: string]: string[] } = {
              'jaz': ['jazz'],
@@ -231,7 +263,7 @@ serve(async (req) => {
              'acousti': ['acoustic']
            }
            
-           // Extract words that are likely to be genres, moods, or other musical terms
+           // Extract words that are likely to be genres, moods, instruments, or other musical terms
            const words = lowerQuery.split(/\s+/)
            const processedWords: string[] = []
            
@@ -241,6 +273,12 @@ serve(async (req) => {
              // Check for mood associations
              if (moodAssociations[word]) {
                processedWords.push(...moodAssociations[word])
+               return
+             }
+             
+             // Check for instrument associations
+             if (instrumentAssociations[word]) {
+               processedWords.push(...instrumentAssociations[word])
                return
              }
              

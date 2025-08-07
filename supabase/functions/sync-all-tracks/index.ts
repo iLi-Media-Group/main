@@ -70,6 +70,7 @@ serve(async (req) => {
         genres,
         sub_genres,
         moods,
+        instruments,
         bpm,
         duration,
         audio_url,
@@ -121,6 +122,7 @@ serve(async (req) => {
       genres: track.genres || [],
       sub_genres: track.sub_genres || [],
       moods: track.moods || [],
+      instruments: track.instruments || [],
       bpm: track.bpm,
       duration: track.duration || '3:30',
       audio_url: track.audio_url,
@@ -150,7 +152,8 @@ serve(async (req) => {
         track.producer?.email?.split('@')[0],
         ...(track.genres || []),
         ...(track.sub_genres || []),
-        ...(track.moods || [])
+        ...(track.moods || []),
+        ...(track.instruments || [])
       ].filter(Boolean).join(' ')
     }))
 

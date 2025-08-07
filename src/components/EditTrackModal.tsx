@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Music, ChevronDown, ChevronRight } from 'lucide-react';
-import { GENRES, MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
+import { GENRES, MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES, INSTRUMENTS } from '../types';
 import { supabase } from '../lib/supabase';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -15,6 +15,7 @@ interface EditTrackModalProps {
     title: string;
     genres: string[];
     moods: string[];
+    instruments?: string[];
     mediaUsage?: string[];
     has_vocals?: boolean;
     vocals_usage_type?: 'normal' | 'sync_only';
@@ -33,6 +34,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
 
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
   const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>([]);
   const [hasVocals, setHasVocals] = useState(false);
   const [isSyncOnly, setIsSyncOnly] = useState(false);
@@ -80,6 +82,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
 
       setSelectedGenres(initialGenres);
       setSelectedMoods(Array.isArray(track.moods) ? track.moods : []);
+      setSelectedInstruments(Array.isArray(track.instruments) ? track.instruments : []);
       setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
       setHasVocals(track.has_vocals || false);
       setIsSyncOnly(track.is_sync_only || false);
@@ -234,6 +237,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       console.log('Updating track with data:', {
         genres: formattedGenres,
         moods: validMoods,
+        instruments: selectedInstruments,
         media_usage: selectedMediaUsage,
         has_vocals: hasVocals,
         is_sync_only: isSyncOnly,
@@ -248,6 +252,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         .update({
           genres: formattedGenres,
           moods: validMoods,
+          instruments: selectedInstruments,
           media_usage: selectedMediaUsage,
           has_vocals: hasVocals,
           is_sync_only: isSyncOnly,
@@ -308,6 +313,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               <div>
                 <p className="text-gray-400">Genres: <span className="text-white">{selectedGenres.length > 0 ? selectedGenres.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Moods: <span className="text-white">{selectedMoods.length > 0 ? selectedMoods.join(', ') : 'None set'}</span></p>
+                <p className="text-gray-400">Instruments: <span className="text-white">{selectedInstruments.length > 0 ? selectedInstruments.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Vocals: <span className="text-white">{hasVocals ? 'Full Track with Vocals' : 'Instrumental'}</span></p>
                 <p className="text-gray-400">Sync Only: <span className="text-white">{isSyncOnly ? 'Yes' : 'No'}</span></p>
               </div>
@@ -373,6 +379,43 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                           disabled={loading}
                         />
                         <span className="text-gray-300">{mood}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Instruments */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-4">
+              Instruments
+            </label>
+            <p className="text-sm text-gray-400 mb-4">
+              Select the instruments used in this track. This helps clients find music with specific instrumentation.
+            </p>
+            <div className="space-y-6">
+              {Object.entries(INSTRUMENTS).map(([category, instruments]) => (
+                <div key={category} className="bg-white/5 rounded-lg p-4">
+                  <h3 className="text-white font-medium mb-3">{category}</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {instruments.map((instrument) => (
+                      <label key={instrument} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedInstruments.includes(instrument)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInstruments([...selectedInstruments, instrument]);
+                            } else {
+                              setSelectedInstruments(selectedInstruments.filter(i => i !== instrument));
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={loading}
+                        />
+                        <span className="text-gray-300">{instrument}</span>
                       </label>
                     ))}
                   </div>

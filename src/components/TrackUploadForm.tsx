@@ -2,7 +2,7 @@
 // NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES, INSTRUMENTS } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,7 @@ interface FormData {
   selectedGenres: string[];
   selectedSubGenres: string[];
   selectedMoods: string[];
+  selectedInstruments: string[];
   selectedMediaUsage: string[];
   mp3Url: string;
   trackoutsUrl: string;
@@ -76,6 +77,7 @@ export function TrackUploadForm() {
     selectedGenres: [] as string[],
     selectedSubGenres: [] as string[],
     selectedMoods: [] as string[],
+    selectedInstruments: [] as string[],
     selectedMediaUsage: [] as string[],
     mp3Url: '',
     trackoutsUrl: '',
@@ -114,6 +116,7 @@ export function TrackUploadForm() {
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
+  const [expandedInstruments, setExpandedInstruments] = useState<string[]>([]);
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -373,6 +376,7 @@ export function TrackUploadForm() {
         genres: formattedGenres.join(','),
         sub_genres: formData.selectedSubGenres.join(','),
         moods: formData.selectedMoods,
+        instruments: formData.selectedInstruments,
         media_usage: formData.selectedMediaUsage,
         bpm: bpmNumber,
         key: formData.key,
@@ -1155,6 +1159,56 @@ export function TrackUploadForm() {
                             disabled={isSubmitting}
                           />
                           <span className="text-sm">{subMood}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Instruments Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Select the instruments used in this track. This helps clients find music with specific instrumentation.
+            </p>
+            <div className="space-y-4">
+              {(Object.entries(INSTRUMENTS) as [string, readonly string[]][]).map(([category, instruments]) => (
+                <div key={category} className="border-b border-blue-700 pb-4 mb-4">
+                  <button
+                    type="button"
+                    className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
+                    onClick={() => setExpandedInstruments(expandedInstruments.includes(category)
+                      ? expandedInstruments.filter(c => c !== category)
+                      : [...expandedInstruments, category])}
+                  >
+                    <span>{category}</span>
+                    <span>{expandedInstruments.includes(category) ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedInstruments.includes(category) && (
+                    <div className="pl-4 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {instruments.map((instrument: string) => (
+                        <label key={instrument} className="flex items-center space-x-2 text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={formData.selectedInstruments.includes(instrument)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                updateFormData({ 
+                                  selectedInstruments: [...formData.selectedInstruments, instrument] 
+                                });
+                              } else {
+                                updateFormData({
+                                  selectedInstruments: formData.selectedInstruments.filter((i) => i !== instrument)
+                                });
+                              }
+                            }}
+                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                            disabled={isSubmitting}
+                          />
+                          <span className="text-sm">{instrument}</span>
                         </label>
                       ))}
                     </div>
