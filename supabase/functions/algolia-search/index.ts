@@ -91,6 +91,7 @@ serve(async (req) => {
         'sub_genres',
         'moods',
         'instruments',
+        'media_usage',
         'bpm',
         'audio_url',
         'image_url',
@@ -107,7 +108,7 @@ serve(async (req) => {
         'producer',
         'created_at'
       ],
-      attributesToHighlight: ['title', 'artist', 'genres', 'moods', 'instruments'],
+      attributesToHighlight: ['title', 'artist', 'genres', 'moods', 'instruments', 'media_usage'],
       highlightPreTag: '<mark>',
       highlightPostTag: '</mark>'
     }
@@ -247,36 +248,102 @@ serve(async (req) => {
              'percussion': ['Drums', 'Congas', 'Bongos', 'Djembe', 'Tambourine', 'Triangle', 'Maracas', 'Cowbell', 'Timpani', 'Xylophone', 'Vibraphone', 'Marimba', 'Glockenspiel']
            }
            
-           // Genre partial word matching
-           const genrePartialMatches: { [key: string]: string[] } = {
-             'jaz': ['jazz'],
-             'jazz': ['jazz'],
-             'jazzy': ['jazz'],
-             'hip': ['hip-hop', 'hip hop'],
-             'rap': ['hip-hop', 'rap'],
-             'rock': ['rock'],
-             'pop': ['pop'],
-             'class': ['classical'],
-             'elect': ['electronic'],
-             'amb': ['ambient'],
-             'folk': ['folk'],
-             'count': ['country'],
-             'blues': ['blues'],
-             'regg': ['reggae'],
-             'funk': ['funk'],
-             'soul': ['soul', 'r&b'],
-             'r&b': ['r&b', 'soul'],
-             'rnb': ['r&b', 'soul'],
-             'trap': ['trap'],
-             'edm': ['electronic'],
-             'dance': ['electronic', 'dance'],
-             'orchestr': ['classical'],
-             'orchest': ['classical'],
-             'pian': ['classical'],
-             'violin': ['classical'],
-             'acoust': ['acoustic'],
-             'acousti': ['acoustic']
-           }
+                       // Genre partial word matching
+            const genrePartialMatches: { [key: string]: string[] } = {
+              'jaz': ['jazz'],
+              'jazz': ['jazz'],
+              'jazzy': ['jazz'],
+              'hip': ['hip-hop', 'hip hop'],
+              'rap': ['hip-hop', 'rap'],
+              'rock': ['rock'],
+              'pop': ['pop'],
+              'class': ['classical'],
+              'elect': ['electronic'],
+              'amb': ['ambient'],
+              'folk': ['folk'],
+              'count': ['country'],
+              'blues': ['blues'],
+              'regg': ['reggae'],
+              'funk': ['funk'],
+              'soul': ['soul', 'r&b'],
+              'r&b': ['r&b', 'soul'],
+              'rnb': ['r&b', 'soul'],
+              'trap': ['trap'],
+              'edm': ['electronic'],
+              'dance': ['electronic', 'dance'],
+              'orchestr': ['classical'],
+              'orchest': ['classical'],
+              'pian': ['classical'],
+              'violin': ['classical'],
+              'acoust': ['acoustic'],
+              'acousti': ['acoustic']
+            }
+            
+            // Media usage associations - map common words to media usage types
+            const mediaUsageAssociations: { [key: string]: string[] } = {
+              // Television & Film
+              'tv': ['Television (TV)'],
+              'television': ['Television (TV)'],
+              'film': ['Film & Cinema'],
+              'movie': ['Film & Cinema'],
+              'cinema': ['Film & Cinema'],
+              'trailer': ['Film & Cinema > Trailers/Teasers'],
+              'commercial': ['Advertising & Corporate > Brand Commercials'],
+              'ad': ['Advertising & Corporate > Brand Commercials'],
+              'advertisement': ['Advertising & Corporate > Brand Commercials'],
+              
+              // Streaming & Digital
+              'streaming': ['Streaming Platforms'],
+              'netflix': ['Streaming Platforms > Original Series'],
+              'youtube': ['YouTube & Digital Video'],
+              'tiktok': ['Social Media > Short-form Content'],
+              'instagram': ['Social Media > Short-form Content'],
+              'social': ['Social Media'],
+              
+              // Audio & Podcasts
+              'podcast': ['Podcasts'],
+              'radio': ['Podcasts'],
+              'audio': ['Podcasts'],
+              
+              // Gaming
+              'game': ['Games & Interactive Media'],
+              'gaming': ['Games & Interactive Media'],
+              'video game': ['Games & Interactive Media'],
+              
+              // Business & Corporate
+              'corporate': ['Advertising & Corporate'],
+              'business': ['Advertising & Corporate'],
+              'brand': ['Advertising & Corporate > Brand Commercials'],
+              'presentation': ['Advertising & Corporate > Corporate Presentations'],
+              
+              // Retail & Commercial
+              'retail': ['Advertising & Corporate > Brand Commercials'],
+              'store': ['Advertising & Corporate > Brand Commercials'],
+              'restaurant': ['Advertising & Corporate > Brand Commercials'],
+              'cafe': ['Advertising & Corporate > Brand Commercials'],
+              'background': ['Advertising & Corporate > Brand Commercials'],
+              'ambient': ['Advertising & Corporate > Brand Commercials'],
+              
+              // Events & Lifestyle
+              'wedding': ['Advertising & Corporate > Brand Commercials'],
+              'event': ['Advertising & Corporate > Brand Commercials'],
+              'party': ['Advertising & Corporate > Brand Commercials'],
+              'celebration': ['Advertising & Corporate > Brand Commercials'],
+              
+              // Fitness & Sports
+              'workout': ['Advertising & Corporate > Brand Commercials'],
+              'fitness': ['Advertising & Corporate > Brand Commercials'],
+              'gym': ['Advertising & Corporate > Brand Commercials'],
+              'sports': ['Television (TV) > Sports Broadcasting'],
+              'athletic': ['Television (TV) > Sports Broadcasting'],
+              
+              // Education & Non-Profit
+              'education': ['Education & Non-Profit'],
+              'educational': ['Education & Non-Profit'],
+              'training': ['Education & Non-Profit'],
+              'non-profit': ['Education & Non-Profit'],
+              'nonprofit': ['Education & Non-Profit']
+            }
            
            // Extract words that are likely to be genres, moods, instruments, or other musical terms
            const words = lowerQuery.split(/\s+/)
@@ -297,16 +364,22 @@ serve(async (req) => {
                return
              }
              
-             // Check for genre partial matches
-             for (const [partial, matches] of Object.entries(genrePartialMatches)) {
-               if (word.includes(partial) || partial.includes(word)) {
-                 processedWords.push(...matches)
-                 return
-               }
-             }
-             
-             // Add the original word if no associations found
-             processedWords.push(word)
+                           // Check for genre partial matches
+              for (const [partial, matches] of Object.entries(genrePartialMatches)) {
+                if (word.includes(partial) || partial.includes(word)) {
+                  processedWords.push(...matches)
+                  return
+                }
+              }
+              
+              // Check for media usage associations
+              if (mediaUsageAssociations[word]) {
+                processedWords.push(...mediaUsageAssociations[word])
+                return
+              }
+              
+              // Add the original word if no associations found
+              processedWords.push(word)
            })
            
            // Remove duplicates and filter out stop words again
