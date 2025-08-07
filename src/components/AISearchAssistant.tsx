@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { searchTracks, getSearchSuggestions } from '../lib/algolia';
+import { supabase } from '../lib/supabase';
 
 interface SearchFilters {
   query: string;
@@ -39,6 +40,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [searchExplanation, setSearchExplanation] = useState<string>('');
   const [algoliaResults, setAlgoliaResults] = useState<any>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -179,31 +181,66 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     if (!user) return;
     
     try {
-      const stored = localStorage.getItem(`favorites_${user.id}`);
-      if (stored) {
-        setFavorites(new Set(JSON.parse(stored)));
-      }
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('track_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      const favoriteTrackIds = data?.map(f => f.track_id) || [];
+      setFavorites(new Set(favoriteTrackIds));
     } catch (err) {
       console.error('Error loading favorites:', err);
     }
   }, [user]);
 
-  const toggleFavorite = React.useCallback((trackId: string) => {
-    if (!user) return;
+  const toggleFavorite = React.useCallback(async (trackId: string) => {
+    if (!user || favoriteLoading === trackId) return;
     
     try {
-      const newFavorites = new Set(favorites);
-      if (newFavorites.has(trackId)) {
-        newFavorites.delete(trackId);
+      setFavoriteLoading(trackId);
+      
+      const isCurrentlyFavorite = favorites.has(trackId);
+      
+      if (isCurrentlyFavorite) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('track_id', trackId);
+
+        if (error) throw error;
+        
+        setFavorites(prev => {
+          const newFavorites = new Set(prev);
+          newFavorites.delete(trackId);
+          return newFavorites;
+        });
       } else {
-        newFavorites.add(trackId);
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            track_id: trackId
+          });
+
+        if (error) throw error;
+        
+        setFavorites(prev => {
+          const newFavorites = new Set(prev);
+          newFavorites.add(trackId);
+          return newFavorites;
+        });
       }
-      setFavorites(newFavorites);
-      localStorage.setItem(`favorites_${user.id}`, JSON.stringify([...newFavorites]));
     } catch (err) {
       console.error('Error toggling favorite:', err);
+    } finally {
+      setFavoriteLoading(null);
     }
-  }, [user, favorites]);
+  }, [user, favorites, favoriteLoading]);
 
   const handleTrackClick = React.useCallback((trackId: string) => {
     navigate(`/track/${trackId}`);
@@ -632,17 +669,22 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                               {/* Favorite Button */}
                               <div className="absolute top-2 right-2">
                                 <button
-                                  className="bg-black/50 backdrop-blur-sm rounded-full p-2 hover:bg-black/70 transition-colors"
+                                  className="bg-black/50 backdrop-blur-sm rounded-full p-2 hover:bg-black/70 transition-colors disabled:opacity-50"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
                                     toggleFavorite(track.id);
                                   }}
+                                  disabled={favoriteLoading === track.id}
                                   title={favorites.has(track.id) ? 'Remove from favorites' : 'Add to favorites'}
                                 >
-                                  <Heart 
-                                    className={`w-4 h-4 ${favorites.has(track.id) ? 'text-red-500 fill-current' : 'text-white'}`} 
-                                  />
+                                  {favoriteLoading === track.id ? (
+                                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                  ) : (
+                                    <Heart 
+                                      className={`w-4 h-4 ${favorites.has(track.id) ? 'text-red-500 fill-current' : 'text-white'}`} 
+                                    />
+                                  )}
                                 </button>
                               </div>
                            </div>
