@@ -156,6 +156,8 @@ serve(async (req) => {
       totalPages: nbPages
     }
 
+    console.log('Returning results to frontend:', JSON.stringify(results, null, 2))
+
     return addCorsHeaders(new Response(
       JSON.stringify(results),
       { 
