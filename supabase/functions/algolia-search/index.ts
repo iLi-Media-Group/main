@@ -145,9 +145,35 @@ serve(async (req) => {
       }
     }
 
-    console.log('Executing Algolia search with params:', searchParams)
-    const { hits, nbHits, page, nbPages } = await tracksIndex.search(query, searchParams)
-    console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
+             // Extract key terms from natural language queries
+         const extractKeyTerms = (query: string) => {
+           const lowerQuery = query.toLowerCase()
+           
+           // Common words to ignore
+           const stopWords = ['i', 'need', 'a', 'an', 'the', 'for', 'my', 'want', 'looking', 'searching', 'find', 'get', 'some', 'any', 'track', 'tracks', 'music', 'song', 'songs']
+           
+           // Extract words that are likely to be genres, moods, or other musical terms
+           const words = lowerQuery.split(/\s+/)
+           const keyTerms = words.filter(word => 
+             !stopWords.includes(word) && 
+             word.length > 2 && 
+             !word.match(/^(for|my|the|and|or|but|in|on|at|to|of|with|by)$/)
+           )
+           
+           console.log('Extracted key terms:', keyTerms)
+           return keyTerms.length > 0 ? keyTerms.join(' ') : query
+         }
+         
+         const processedQuery = extractKeyTerms(query)
+         console.log('Original query:', query)
+         console.log('Processed query:', processedQuery)
+         
+         // Update search params with processed query
+         searchParams.query = processedQuery
+         
+         console.log('Executing Algolia search with params:', searchParams)
+         const { hits, nbHits, page, nbPages } = await tracksIndex.search(processedQuery, searchParams)
+         console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
     
     const results = {
       tracks: hits,
