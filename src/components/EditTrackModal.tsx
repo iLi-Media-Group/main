@@ -46,6 +46,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const [expandedInstruments, setExpandedInstruments] = useState<string[]>([]);
+  const [expandedMoods, setExpandedMoods] = useState<Set<string>>(new Set());
+  const [expandedInstrumentsSection, setExpandedInstrumentsSection] = useState(false);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
 
@@ -140,6 +142,18 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       newExpanded.add(category);
     }
     setExpandedMediaCategories(newExpanded);
+  };
+
+  const toggleMoodsSection = () => {
+    if (expandedMoods.size > 0) {
+      setExpandedMoods(new Set());
+    } else {
+      setExpandedMoods(new Set(['expanded']));
+    }
+  };
+
+  const toggleInstrumentsSection = () => {
+    setExpandedInstrumentsSection(!expandedInstrumentsSection);
   };
 
   const handleMediaUsageChange = (usageType: string, checked: boolean) => {
@@ -377,85 +391,113 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
 
           {/* Moods */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              Moods
-            </label>
-            <div className="space-y-6">
-              {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
-                <div key={category} className="bg-white/5 rounded-lg p-4">
-                  <h3 className="text-white font-medium mb-3">{category}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {moods.map((mood) => (
-                      <label key={mood} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedMoods.includes(mood)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedMoods([...selectedMoods, mood]);
-                            } else {
-                              setSelectedMoods(selectedMoods.filter(m => m !== mood));
-                            }
-                          }}
-                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                          disabled={loading}
-                        />
-                        <span className="text-gray-300">{mood}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Instruments */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              Instruments
-            </label>
-            <p className="text-sm text-gray-400 mb-4">
-              Select the instruments used in this track. This helps clients find music with specific instrumentation.
-            </p>
-            <div className="space-y-6">
-              {(() => {
-                // Group instruments by category
-                const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
-                instruments.forEach(instrument => {
-                  const categoryName = instrument.category_info?.display_name || instrument.category;
-                  if (!groupedInstruments[categoryName]) {
-                    groupedInstruments[categoryName] = [];
-                  }
-                  groupedInstruments[categoryName].push(instrument);
-                });
-
-                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
-                  <div key={categoryName} className="bg-white/5 rounded-lg p-4">
-                    <h3 className="text-white font-medium mb-3">{categoryName}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {categoryInstruments.map((instrument) => (
-                        <label key={instrument.id} className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={toggleMoodsSection}
+              className="flex items-center justify-between w-full text-left mb-4"
+            >
+              <label className="block text-sm font-medium text-gray-300">
+                Moods {selectedMoods.length > 0 && <span className="text-blue-400">({selectedMoods.length} selected)</span>}
+              </label>
+              {expandedMoods.size > 0 ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            {expandedMoods.size > 0 && (
+              <div className="space-y-6">
+                {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
+                  <div key={category} className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-3">{category}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {moods.map((mood) => (
+                        <label key={mood} className="flex items-center space-x-2">
                           <input
                             type="checkbox"
-                            checked={(selectedInstruments || []).includes(instrument.display_name)}
+                            checked={selectedMoods.includes(mood)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedInstruments([...(selectedInstruments || []), instrument.display_name]);
+                                setSelectedMoods([...selectedMoods, mood]);
                               } else {
-                                setSelectedInstruments((selectedInstruments || []).filter(i => i !== instrument.display_name));
+                                setSelectedMoods(selectedMoods.filter(m => m !== mood));
                               }
                             }}
                             className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                             disabled={loading}
                           />
-                          <span className="text-gray-300">{instrument.display_name}</span>
+                          <span className="text-gray-300">{mood}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                ));
-              })()}
-            </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Instruments */}
+          <div>
+            <button
+              type="button"
+              onClick={toggleInstrumentsSection}
+              className="flex items-center justify-between w-full text-left mb-4"
+            >
+              <label className="block text-sm font-medium text-gray-300">
+                Instruments {selectedInstruments.length > 0 && <span className="text-blue-400">({selectedInstruments.length} selected)</span>}
+              </label>
+              {expandedInstrumentsSection ? (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            {expandedInstrumentsSection && (
+              <>
+                <p className="text-sm text-gray-400 mb-4">
+                  Select the instruments used in this track. This helps clients find music with specific instrumentation.
+                </p>
+                <div className="space-y-6">
+                  {(() => {
+                    // Group instruments by category
+                    const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
+                    instruments.forEach(instrument => {
+                      const categoryName = instrument.category_info?.display_name || instrument.category;
+                      if (!groupedInstruments[categoryName]) {
+                        groupedInstruments[categoryName] = [];
+                      }
+                      groupedInstruments[categoryName].push(instrument);
+                    });
+
+                    return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
+                      <div key={categoryName} className="bg-white/5 rounded-lg p-4">
+                        <h3 className="text-white font-medium mb-3">{categoryName}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {categoryInstruments.map((instrument) => (
+                            <label key={instrument.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={(selectedInstruments || []).includes(instrument.display_name)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInstruments([...(selectedInstruments || []), instrument.display_name]);
+                                  } else {
+                                    setSelectedInstruments((selectedInstruments || []).filter(i => i !== instrument.display_name));
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={loading}
+                              />
+                              <span className="text-gray-300">{instrument.display_name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Media Usage - Show feature or premium notice */}
