@@ -292,6 +292,39 @@ export function TrackUploadForm() {
       return;
     }
 
+    // Debug authentication status
+    console.log('[DEBUG] User authentication check:', {
+      userId: user.id,
+      userEmail: user.email,
+      userRole: user.role,
+      userAppMetadata: user.app_metadata,
+      userUserMetadata: user.user_metadata
+    });
+
+    // Check current session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('[DEBUG] Current session:', {
+      session: session ? {
+        access_token: session.access_token ? 'EXISTS' : 'MISSING',
+        refresh_token: session.refresh_token ? 'EXISTS' : 'MISSING',
+        user_id: session.user?.id
+      } : 'NO_SESSION',
+      sessionError
+    });
+
+    // Test if user can access their own profile (this should work if RLS is working)
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, account_type')
+      .eq('id', user.id)
+      .single();
+    
+    console.log('[DEBUG] Profile access test:', {
+      profileData,
+      profileError,
+      canAccessProfile: !profileError
+    });
+
     try {
       setIsSubmitting(true);
       setIsUploading(true);
