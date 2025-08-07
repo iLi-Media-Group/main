@@ -404,12 +404,12 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                       <label key={instrument} className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          checked={selectedInstruments.includes(instrument)}
+                          checked={(selectedInstruments || []).includes(instrument)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedInstruments([...selectedInstruments, instrument]);
+                              setSelectedInstruments([...(selectedInstruments || []), instrument]);
                             } else {
-                              setSelectedInstruments(selectedInstruments.filter(i => i !== instrument));
+                              setSelectedInstruments((selectedInstruments || []).filter(i => i !== instrument));
                             }
                           }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"

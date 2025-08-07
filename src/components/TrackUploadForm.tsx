@@ -1193,15 +1193,15 @@ export function TrackUploadForm() {
                         <label key={instrument} className="flex items-center space-x-2 text-gray-300">
                           <input
                             type="checkbox"
-                            checked={formData.selectedInstruments.includes(instrument)}
+                            checked={(formData.selectedInstruments || []).includes(instrument)}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 updateFormData({ 
-                                  selectedInstruments: [...formData.selectedInstruments, instrument] 
+                                  selectedInstruments: [...(formData.selectedInstruments || []), instrument] 
                                 });
                               } else {
                                 updateFormData({
-                                  selectedInstruments: formData.selectedInstruments.filter((i) => i !== instrument)
+                                  selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== instrument)
                                 });
                               }
                             }}
