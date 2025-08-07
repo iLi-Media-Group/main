@@ -178,6 +178,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     setLoading(true);
     setError(null);
     setSearchExplanation('');
+    setAlgoliaResults(null);
     saveRecentSearch(query);
 
     try {
@@ -188,31 +189,28 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.log('algoliaResults.tracks:', results?.tracks);
       console.log('algoliaResults.tracks.length:', results?.tracks?.length);
       
-                     if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
-          console.log('Found tracks, generating explanation...');
-          // Store the results for display
-          setAlgoliaResults(results);
-          
-          // Clear any previous errors
-          setError(null);
-          
-          // Generate explanation of what the AI found
-          const explanation = generateAlgoliaSearchExplanation(query, results);
-          setSearchExplanation(explanation);
-        } else {
-          console.log('No tracks found or invalid response structure');
-          setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
-          setAlgoliaResults(null);
-          // Clear error since this is a valid "no results" response, not a service error
-          setError(null);
-        }
+      // Clear error immediately when we get any response (success or no results)
+      setError(null);
+      
+      if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
+        console.log('Found tracks, generating explanation...');
+        // Store the results for display
+        setAlgoliaResults(results);
+        
+        // Generate explanation of what the AI found
+        const explanation = generateAlgoliaSearchExplanation(query, results);
+        setSearchExplanation(explanation);
+      } else {
+        console.log('No tracks found or invalid response structure');
+        setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
+        setAlgoliaResults(null);
+      }
 
-         } catch (err) {
-       console.error('Algolia search error:', err);
-       // Only show error for actual service failures (404, 500, 401, etc.)
-       // Don't show error for "no results found" - that's handled by the explanation
-       setError('AI search is temporarily unavailable. Please try again.');
-     } finally {
+    } catch (err) {
+      console.error('Algolia search error:', err);
+      // Only show error for actual service failures (404, 500, 401, etc.)
+      setError('AI search is temporarily unavailable. Please try again.');
+    } finally {
       setLoading(false);
     }
   }, [onSearchApply, saveRecentSearch]);
