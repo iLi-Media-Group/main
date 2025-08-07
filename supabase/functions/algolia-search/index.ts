@@ -316,9 +316,15 @@ serve(async (req) => {
          // Update search params with processed query
          searchParams.query = processedQuery
          
-         console.log('Executing Algolia search with params:', searchParams)
-         const { hits, nbHits, page, nbPages } = await tracksIndex.search(processedQuery, searchParams)
-         console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
+                   console.log('Executing Algolia search with params:', searchParams)
+          
+          // Execute search with naturalLanguages parameter
+          const { hits, nbHits, page, nbPages } = await tracksIndex.search(processedQuery, {
+            ...searchParams,
+            naturalLanguages: ['en'] // Ensure natural language processing is enabled
+          })
+          
+          console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
     
     const results = {
       tracks: hits,
