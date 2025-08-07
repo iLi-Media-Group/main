@@ -3,7 +3,8 @@ import { Search, Sparkles, Mic, Clock, Brain, X, Lightbulb, Loader2, ArrowRight,
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
-import { searchTracks, getSearchSuggestions } from '../lib/algolia';
+// Temporarily disable Algolia import until properly configured
+// import { searchTracks, getSearchSuggestions } from '../lib/algolia';
 
 interface SearchFilters {
   query: string;
@@ -180,27 +181,12 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     saveRecentSearch(query);
 
     try {
-      // Use Algolia for AI-powered search
-      const algoliaResults = await searchTracks(query);
-      
-      if (algoliaResults && algoliaResults.tracks && algoliaResults.tracks.length > 0) {
-        // Generate explanation of what the AI found
-        const explanation = generateAlgoliaSearchExplanation(query, algoliaResults);
-        setSearchExplanation(explanation);
-        
-        // Convert Algolia results to the expected format for the parent component
-        const filters = convertAlgoliaResultsToFilters(algoliaResults, query);
-        
-        // Apply the search
-        if (onSearchApply) {
-          onSearchApply(filters);
-        }
-      } else {
-        setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
-      }
+      // Temporarily disabled Algolia search
+      setSearchExplanation(`🤖 AI Search Assistant is temporarily unavailable. Please use the regular search functionality.`);
+      setError('AI search is temporarily unavailable. Please try again.');
 
     } catch (err) {
-      console.error('Algolia search error:', err);
+      console.error('AI search error:', err);
       setError('AI search is temporarily unavailable. Please try again.');
     } finally {
       setLoading(false);
@@ -275,13 +261,13 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     return filters;
   };
 
-  // Algolia-powered search processing for AI Search Assistant
+  // Temporarily disabled Algolia search processing
   const processAlgoliaSearch = async (query: string) => {
     try {
-      const results = await searchTracks(query);
-      return results;
+      // Temporarily return empty results
+      return { tracks: [], totalHits: 0, currentPage: 0, totalPages: 0 };
     } catch (error) {
-      console.error('Algolia search error:', error);
+      console.error('AI search error:', error);
       throw error;
     }
   };
