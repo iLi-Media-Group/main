@@ -446,6 +446,28 @@ export function TrackUploadForm() {
         .select();
       
       console.log('✅ Track insertion result:', { insertResult, trackError });
+      
+      // Log detailed error information
+      if (trackError) {
+        console.error('[DEBUG] Track insertion error details:', {
+          message: trackError.message,
+          details: trackError.details,
+          hint: trackError.hint,
+          code: trackError.code
+        });
+        
+        // Check if it's an RLS policy issue
+        if (trackError.message?.includes('policy') || trackError.message?.includes('row level security')) {
+          console.error('[DEBUG] RLS policy error detected');
+        }
+        
+        // Check if it's an instruments-related error
+        if (trackError.message?.includes('instruments') || trackError.details?.includes('instruments')) {
+          console.error('[DEBUG] Instruments-related error detected');
+          console.error('[DEBUG] Instruments data that caused error:', formData.selectedInstruments);
+        }
+      }
+      
       console.log('[DEBUG] Inserted track DB values:', {
         audio_url: `${user.id}/${formData.title}/audio.mp3`,
         image_url: imageUrl,
