@@ -5,6 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { searchTracks, getSearchSuggestions } from '../lib/algolia';
 import { supabase } from '../lib/supabase';
+import { AudioPlayer } from './AudioPlayer';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 
 interface SearchFilters {
   query: string;
@@ -41,6 +43,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const [algoliaResults, setAlgoliaResults] = useState<any>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [favoriteLoading, setFavoriteLoading] = useState<string | null>(null);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -246,6 +249,46 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     navigate(`/track/${trackId}`);
     setIsOpen(false);
   }, [navigate]);
+
+  const togglePlay = React.useCallback((trackId: string) => {
+    if (currentlyPlaying === trackId) {
+      setCurrentlyPlaying(null);
+    } else {
+      setCurrentlyPlaying(trackId);
+    }
+  }, [currentlyPlaying]);
+
+  // Audio Player Component for AI Search Assistant tracks
+  const AISearchAudioPlayer = React.useCallback(({ track }: { track: any }) => {
+    const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
+
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center w-8 h-8">
+          <Loader2 className="w-4 h-4 animate-spin text-white" />
+        </div>
+      );
+    }
+
+    if (error || !signedUrl) {
+      return (
+        <div className="flex items-center justify-center w-8 h-8">
+          <span className="text-red-400 text-xs">!</span>
+        </div>
+      );
+    }
+
+    return (
+      <AudioPlayer
+        src={signedUrl}
+        title={track.title}
+        isPlaying={currentlyPlaying === track.id}
+        onToggle={() => togglePlay(track.id)}
+        size="sm"
+        audioId={`ai-search-${track.id}`}
+      />
+    );
+  }, [currentlyPlaying, togglePlay]);
 
   const processNaturalLanguageQuery = React.useCallback(async (query: string) => {
     if (!query.trim()) return;
@@ -643,27 +686,17 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                                  <span className="text-white text-2xl">🎵</span>
                                </div>
                              )}
-                                                           {/* Play Button Overlay */}
+                                                           {/* Audio Player Overlay */}
                               <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                <button 
+                                <div 
                                   className="bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-colors"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    // Handle play functionality here
-                                    console.log('Play track:', track.title);
-                                    if (track.audio_url) {
-                                      // Create a temporary audio element to play the track
-                                      const audio = new Audio(track.audio_url);
-                                      audio.play().catch(err => {
-                                        console.error('Error playing audio:', err);
-                                      });
-                                    }
                                   }}
-                                  title={`Play ${track.title}`}
                                 >
-                                  <span className="text-white text-lg">▶</span>
-                                </button>
+                                  <AISearchAudioPlayer track={track} />
+                                </div>
                               </div>
                               
                               {/* Favorite Button */}
