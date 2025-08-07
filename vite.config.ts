@@ -11,7 +11,6 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
-    include: ['algoliasearch'],
     esbuildOptions: {
       target: 'es2020',
     },
