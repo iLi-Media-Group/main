@@ -475,8 +475,7 @@ export function TrackUploadForm() {
       console.log('🎵 Inserting track with data:', JSON.stringify(insertData, null, 2));
       const { data: insertResult, error: trackError } = await supabase
         .from('tracks')
-        .insert(insertData)
-        .select();
+        .insert(insertData);
       
       console.log('✅ Track insertion result:', { insertResult, trackError });
       
@@ -741,6 +740,8 @@ export function TrackUploadForm() {
                   Track Title *
                 </label>
                 <input
+                  id="track-title"
+                  name="track-title"
                   type="text"
                   value={formData.title}
                   onChange={(e) => updateFormData({ title: e.target.value })}
@@ -758,6 +759,8 @@ export function TrackUploadForm() {
                   BPM *
                 </label>
                 <input
+                  id="track-bpm"
+                  name="track-bpm"
                   type="number"
                   value={formData.bpm}
                   onChange={(e) => updateFormData({ bpm: e.target.value })}
@@ -775,6 +778,8 @@ export function TrackUploadForm() {
                   Musical Key
                 </label>
                 <select
+                  id="track-key"
+                  name="track-key"
                   value={formData.key}
                   onChange={(e) => updateFormData({ key: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
@@ -792,6 +797,8 @@ export function TrackUploadForm() {
               <div className="flex items-center space-x-4">
                 <label className="flex items-center space-x-2 text-gray-300">
                   <input
+                    id="track-has-sting-ending"
+                    name="track-has-sting-ending"
                     type="checkbox"
                     checked={formData.hasStingEnding}
                     onChange={(e) => updateFormData({ hasStingEnding: e.target.checked })}
@@ -803,6 +810,8 @@ export function TrackUploadForm() {
 
                 <label className="flex items-center space-x-2 text-gray-300">
                   <input
+                    id="track-is-one-stop"
+                    name="track-is-one-stop"
                     type="checkbox"
                     checked={formData.isOneStop}
                     onChange={(e) => updateFormData({ isOneStop: e.target.checked })}
@@ -828,6 +837,8 @@ export function TrackUploadForm() {
                   Upload Cover Image
                 </label>
                 <input
+                  id="track-cover-image"
+                  name="track-cover-image"
                   type="file"
                   accept="image/*"
                   onChange={handleImageChange}
@@ -865,6 +876,8 @@ export function TrackUploadForm() {
                   Upload Audio File *
                 </label>
                 <input
+                  id="track-audio-file"
+                  name="track-audio-file"
                   type="file"
                   accept="audio/mp3"
                   onChange={handleFileChange}
@@ -915,6 +928,8 @@ export function TrackUploadForm() {
                   Full Trackouts Link
                 </label>
                 <input
+                  id="track-trackouts-file"
+                  name="track-trackouts-file"
                   type="file"
                   accept=".zip,.rar"
                   onChange={async (e) => {
@@ -954,6 +969,8 @@ export function TrackUploadForm() {
                   Stems Link
                 </label>
                 <input
+                  id="track-stems-file"
+                  name="track-stems-file"
                   type="file"
                   accept=".zip,.rar"
                   onChange={async (e) => {
@@ -993,6 +1010,8 @@ export function TrackUploadForm() {
                   Split Sheet PDF
                 </label>
                 <input
+                  id="track-split-sheet-file"
+                  name="track-split-sheet-file"
                   type="file"
                   accept=".pdf"
                   onChange={(e) => {
