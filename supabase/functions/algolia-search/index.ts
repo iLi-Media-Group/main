@@ -78,12 +78,11 @@ serve(async (req) => {
     const tracksIndex = searchClient.initIndex('tracks')
     console.log('Algolia client initialized successfully')
 
-    const searchParams: any = {
-      query,
-      hitsPerPage: 20,
-      naturalLanguages: ['en'], // Enable natural language processing
-      synonyms: true, // Enable synonym matching
-      queryType: 'prefixAll', // Enable prefix matching
+         const searchParams: any = {
+       query,
+       hitsPerPage: 20,
+       synonyms: true, // Enable synonym matching
+       queryType: 'prefixAll', // Enable prefix matching
       attributesToRetrieve: [
         'id',
         'title',
@@ -241,6 +240,8 @@ serve(async (req) => {
            // Genre partial word matching
            const genrePartialMatches: { [key: string]: string[] } = {
              'jaz': ['jazz'],
+             'jazz': ['jazz'],
+             'jazzy': ['jazz'],
              'hip': ['hip-hop', 'hip hop'],
              'rap': ['hip-hop', 'rap'],
              'rock': ['rock'],
@@ -288,7 +289,7 @@ serve(async (req) => {
              
              // Check for genre partial matches
              for (const [partial, matches] of Object.entries(genrePartialMatches)) {
-               if (word.includes(partial)) {
+               if (word.includes(partial) || partial.includes(word)) {
                  processedWords.push(...matches)
                  return
                }
@@ -321,7 +322,8 @@ serve(async (req) => {
           // Execute search with naturalLanguages parameter
           const { hits, nbHits, page, nbPages } = await tracksIndex.search(processedQuery, {
             ...searchParams,
-            naturalLanguages: ['en'] // Ensure natural language processing is enabled
+            naturalLanguages: ['en'], // Ensure natural language processing is enabled
+            queryType: 'prefixAll' // Enable prefix matching for partial words
           })
           
           console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
