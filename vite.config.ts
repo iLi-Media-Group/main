@@ -11,6 +11,7 @@ export default defineConfig({
   ],
   optimizeDeps: {
     exclude: ['lucide-react'],
+    include: ['algoliasearch'],
   },
   server: {
     historyApiFallback: true,
