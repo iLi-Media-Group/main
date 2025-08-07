@@ -81,7 +81,7 @@ export function ProducerTracksPage() {
           mp3_url,
           trackouts_url,
           track_producer_id,
-          producer:profiles!track_producer_id (
+          profiles!track_producer_id (
             id,
             first_name,
             last_name,
@@ -97,8 +97,8 @@ export function ProducerTracksPage() {
       const formattedTracks = tracksData.map(track => ({
         id: track.id,
         title: track.title || 'Untitled',
-        artist: track.producer?.[0]?.first_name || 
-                track.producer?.[0]?.email?.split('@')[0] || 
+        artist: track.profiles?.[0]?.first_name || 
+                track.profiles?.[0]?.email?.split('@')[0] || 
                 'Unknown Artist',
         genres: parseArrayField(track.genres),
         subGenres: parseArrayField(track.sub_genres),
@@ -112,11 +112,11 @@ export function ProducerTracksPage() {
         hasVocals: track.has_vocals || false,
         isSyncOnly: track.is_sync_only || false,
         producerId: track.track_producer_id || '',
-        producer: track.producer?.[0] ? {
-          id: track.producer[0].id,
-          firstName: track.producer[0].first_name || '',
-          lastName: track.producer[0].last_name || '',
-          email: track.producer[0].email || '',
+        producer: track.profiles?.[0] ? {
+          id: track.profiles[0].id,
+          firstName: track.profiles[0].first_name || '',
+          lastName: track.profiles[0].last_name || '',
+          email: track.profiles[0].email || '',
         } : undefined,
         fileFormats: {
           stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },

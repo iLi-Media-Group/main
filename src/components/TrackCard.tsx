@@ -190,15 +190,6 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
         <div className="p-3 space-y-2">
           <div>
             <h3 className="text-sm font-bold text-white mb-0.5 truncate">{track.title}</h3>
-            {track.producer && (
-              <button
-                onClick={handleProducerClick}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center"
-              >
-                <User className="w-3 h-3 mr-1" />
-                {track.producer.firstName} {track.producer.lastName}
-              </button>
-            )}
           </div>
 
           {/* Track Details */}
@@ -295,6 +286,17 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             >
               {isSyncOnly ? 'Submit Proposal' : 'License Track'}
             </button>
+            
+            {/* Producer Name in Bottom Right */}
+            {track.producer && (
+              <button
+                onClick={handleProducerClick}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center"
+              >
+                <User className="w-3 h-3 mr-1" />
+                {track.producer.firstName} {track.producer.lastName}
+              </button>
+            )}
           </div>
         </div>
       </div>
