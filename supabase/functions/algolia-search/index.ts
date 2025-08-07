@@ -145,23 +145,126 @@ serve(async (req) => {
       }
     }
 
-             // Extract key terms from natural language queries
+             // Enhanced natural language processing with mood associations and partial word matching
          const extractKeyTerms = (query: string) => {
            const lowerQuery = query.toLowerCase()
            
            // Common words to ignore
-           const stopWords = ['i', 'need', 'a', 'an', 'the', 'for', 'my', 'want', 'looking', 'searching', 'find', 'get', 'some', 'any', 'track', 'tracks', 'music', 'song', 'songs']
+           const stopWords = ['i', 'need', 'a', 'an', 'the', 'for', 'my', 'want', 'looking', 'searching', 'find', 'get', 'some', 'any', 'track', 'tracks', 'music', 'song', 'songs', 'please', 'help', 'me', 'with', 'that', 'this', 'these', 'those']
+           
+           // Mood associations - map common words to actual moods in the database
+           const moodAssociations: { [key: string]: string[] } = {
+             'fun': ['cheerful', 'playful', 'joyful', 'bouncy', 'energetic'],
+             'dark': ['mysterious', 'haunting', 'tense', 'dramatic', 'melancholic'],
+             'happy': ['cheerful', 'joyful', 'uplifting', 'positive', 'optimistic'],
+             'sad': ['melancholic', 'melancholy', 'sorrowful', 'emotional'],
+             'energetic': ['energetic', 'lively', 'bouncy', 'upbeat', 'dynamic'],
+             'calm': ['peaceful', 'soothing', 'gentle', 'relaxing', 'tranquil'],
+             'romantic': ['romantic', 'intimate', 'passionate', 'emotional'],
+             'epic': ['dramatic', 'majestic', 'powerful', 'heroic', 'grand'],
+             'chill': ['chill', 'laid back', 'relaxing', 'soothing', 'peaceful'],
+             'upbeat': ['upbeat', 'energetic', 'lively', 'bouncy', 'cheerful'],
+             'mysterious': ['mysterious', 'haunting', 'dark', 'enigmatic', 'atmospheric'],
+             'peaceful': ['peaceful', 'soothing', 'gentle', 'calm', 'tranquil'],
+             'dramatic': ['dramatic', 'intense', 'powerful', 'emotional', 'epic'],
+             'relaxing': ['relaxing', 'soothing', 'peaceful', 'gentle', 'calm'],
+             'exciting': ['energetic', 'lively', 'dynamic', 'powerful', 'intense'],
+             'smooth': ['smooth', 'gentle', 'soothing', 'peaceful', 'relaxing'],
+             'powerful': ['powerful', 'dramatic', 'intense', 'energetic', 'dynamic'],
+             'soft': ['gentle', 'soft', 'peaceful', 'soothing', 'calm'],
+             'intense': ['intense', 'dramatic', 'powerful', 'energetic', 'dynamic'],
+             'gentle': ['gentle', 'soft', 'peaceful', 'soothing', 'calm'],
+             'lively': ['lively', 'energetic', 'bouncy', 'cheerful', 'dynamic'],
+             'melancholic': ['melancholic', 'melancholy', 'sorrowful', 'emotional'],
+             'euphoric': ['euphoric', 'uplifting', 'energetic', 'positive', 'cheerful'],
+             'dreamy': ['dreamy', 'ethereal', 'peaceful', 'soothing', 'gentle'],
+             'stylish': ['stylish', 'cool', 'smooth', 'elegant', 'sophisticated'],
+             'cool': ['cool', 'stylish', 'smooth', 'elegant', 'sophisticated'],
+             'catchy': ['catchy', 'bouncy', 'cheerful', 'energetic', 'lively'],
+             'encouraging': ['encouraging', 'uplifting', 'positive', 'energetic', 'cheerful'],
+             'funky': ['funky', 'groovy', 'energetic', 'bouncy', 'lively'],
+             'ethereal': ['ethereal', 'dreamy', 'peaceful', 'soothing', 'gentle'],
+             'enchanted': ['enchanted', 'mysterious', 'ethereal', 'dreamy', 'magical'],
+             'dreamlike': ['dreamlike', 'ethereal', 'dreamy', 'peaceful', 'soothing'],
+             'carefree': ['carefree', 'cheerful', 'playful', 'joyful', 'bouncy'],
+             'celebratory': ['celebratory', 'joyful', 'cheerful', 'energetic', 'bouncy'],
+             'confident': ['confident', 'powerful', 'energetic', 'dynamic', 'positive'],
+             'optimistic': ['optimistic', 'positive', 'cheerful', 'uplifting', 'energetic'],
+             'cheerful': ['cheerful', 'joyful', 'bouncy', 'playful', 'energetic'],
+             'uplifting': ['uplifting', 'positive', 'energetic', 'cheerful', 'encouraging'],
+             'positive': ['positive', 'cheerful', 'optimistic', 'uplifting', 'energetic'],
+             'tense': ['tense', 'dramatic', 'intense', 'mysterious', 'haunting'],
+             'haunting': ['haunting', 'mysterious', 'dark', 'ethereal', 'atmospheric'],
+             'soothing': ['soothing', 'peaceful', 'gentle', 'relaxing', 'calm'],
+             'intimate': ['intimate', 'romantic', 'gentle', 'emotional', 'passionate'],
+             'elegant': ['elegant', 'sophisticated', 'stylish', 'smooth', 'cool'],
+             'sophisticated': ['sophisticated', 'elegant', 'stylish', 'smooth', 'cool'],
+             'magical': ['magical', 'enchanted', 'ethereal', 'mysterious', 'dreamy']
+           }
+           
+           // Genre partial word matching
+           const genrePartialMatches: { [key: string]: string[] } = {
+             'jaz': ['jazz'],
+             'hip': ['hip-hop', 'hip hop'],
+             'rap': ['hip-hop', 'rap'],
+             'rock': ['rock'],
+             'pop': ['pop'],
+             'class': ['classical'],
+             'elect': ['electronic'],
+             'amb': ['ambient'],
+             'folk': ['folk'],
+             'count': ['country'],
+             'blues': ['blues'],
+             'regg': ['reggae'],
+             'funk': ['funk'],
+             'soul': ['soul', 'r&b'],
+             'r&b': ['r&b', 'soul'],
+             'rnb': ['r&b', 'soul'],
+             'trap': ['trap'],
+             'edm': ['electronic'],
+             'dance': ['electronic', 'dance'],
+             'orchestr': ['classical'],
+             'orchest': ['classical'],
+             'pian': ['classical'],
+             'violin': ['classical'],
+             'acoust': ['acoustic'],
+             'acousti': ['acoustic']
+           }
            
            // Extract words that are likely to be genres, moods, or other musical terms
            const words = lowerQuery.split(/\s+/)
-           const keyTerms = words.filter(word => 
-             !stopWords.includes(word) && 
-             word.length > 2 && 
-             !word.match(/^(for|my|the|and|or|but|in|on|at|to|of|with|by)$/)
+           const processedWords: string[] = []
+           
+           words.forEach(word => {
+             if (stopWords.includes(word) || word.length < 2) return
+             
+             // Check for mood associations
+             if (moodAssociations[word]) {
+               processedWords.push(...moodAssociations[word])
+               return
+             }
+             
+             // Check for genre partial matches
+             for (const [partial, matches] of Object.entries(genrePartialMatches)) {
+               if (word.includes(partial)) {
+                 processedWords.push(...matches)
+                 return
+               }
+             }
+             
+             // Add the original word if no associations found
+             processedWords.push(word)
+           })
+           
+           // Remove duplicates and filter out stop words again
+           const uniqueTerms = [...new Set(processedWords)].filter(term => 
+             !stopWords.includes(term) && 
+             term.length > 2
            )
            
-           console.log('Extracted key terms:', keyTerms)
-           return keyTerms.length > 0 ? keyTerms.join(' ') : query
+           console.log('Original query:', query)
+           console.log('Extracted key terms:', uniqueTerms)
+           return uniqueTerms.length > 0 ? uniqueTerms.join(' ') : query
          }
          
          const processedQuery = extractKeyTerms(query)
