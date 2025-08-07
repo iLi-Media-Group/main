@@ -183,7 +183,12 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       // Use Algolia for AI-powered search
       const algoliaResults = await searchTracks(query);
       
-      if (algoliaResults && algoliaResults.tracks && algoliaResults.tracks.length > 0) {
+      console.log('Frontend received algoliaResults:', algoliaResults);
+      console.log('algoliaResults.tracks:', algoliaResults?.tracks);
+      console.log('algoliaResults.tracks.length:', algoliaResults?.tracks?.length);
+      
+      if (algoliaResults && algoliaResults.tracks && Array.isArray(algoliaResults.tracks) && algoliaResults.tracks.length > 0) {
+        console.log('Found tracks, generating explanation...');
         // Generate explanation of what the AI found
         const explanation = generateAlgoliaSearchExplanation(query, algoliaResults);
         setSearchExplanation(explanation);
@@ -196,6 +201,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
           onSearchApply(filters);
         }
       } else {
+        console.log('No tracks found or invalid response structure');
         setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
       }
 
