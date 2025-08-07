@@ -36,6 +36,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const queryRef = React.useRef('');
   const [searchExplanation, setSearchExplanation] = useState<string>('');
+  const [algoliaResults, setAlgoliaResults] = useState<any>(null);
 
   // Hide AI Search Assistant on login pages and other pages where it might interfere
   const shouldHide = [
@@ -181,28 +182,24 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     try {
       // Use Algolia for AI-powered search
-      const algoliaResults = await searchTracks(query);
+      const results = await searchTracks(query);
       
-      console.log('Frontend received algoliaResults:', algoliaResults);
-      console.log('algoliaResults.tracks:', algoliaResults?.tracks);
-      console.log('algoliaResults.tracks.length:', algoliaResults?.tracks?.length);
+      console.log('Frontend received algoliaResults:', results);
+      console.log('algoliaResults.tracks:', results?.tracks);
+      console.log('algoliaResults.tracks.length:', results?.tracks?.length);
       
-      if (algoliaResults && algoliaResults.tracks && Array.isArray(algoliaResults.tracks) && algoliaResults.tracks.length > 0) {
+      if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
         console.log('Found tracks, generating explanation...');
+        // Store the results for display
+        setAlgoliaResults(results);
+        
         // Generate explanation of what the AI found
-        const explanation = generateAlgoliaSearchExplanation(query, algoliaResults);
+        const explanation = generateAlgoliaSearchExplanation(query, results);
         setSearchExplanation(explanation);
-        
-        // Convert Algolia results to the expected format for the parent component
-        const filters = convertAlgoliaResultsToFilters(algoliaResults, query);
-        
-        // Apply the search
-        if (onSearchApply) {
-          onSearchApply(filters);
-        }
       } else {
         console.log('No tracks found or invalid response structure');
         setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
+        setAlgoliaResults(null);
       }
 
     } catch (err) {
@@ -537,6 +534,52 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                 {searchExplanation && (
                   <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
                     <p className="text-blue-400 text-sm">{searchExplanation}</p>
+                  </div>
+                )}
+
+                {/* Search Results */}
+                {algoliaResults && algoliaResults.tracks && algoliaResults.tracks.length > 0 && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                      <Search className="w-5 h-5 mr-2 text-green-400" />
+                      Found Tracks ({algoliaResults.tracks.length})
+                    </h3>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {algoliaResults.tracks.map((track: any, index: number) => (
+                        <div key={track.id || index} className="p-4 bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                          <div className="flex items-start space-x-3">
+                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                              <span className="text-white text-xs font-bold">🎵</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-white font-medium text-sm truncate">{track.title}</h4>
+                              <p className="text-gray-400 text-xs">{track.artist}</p>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {track.genres && track.genres.split(',').map((genre: string, i: number) => (
+                                  <span key={i} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
+                                    {genre.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                              {track.bpm && (
+                                <p className="text-gray-500 text-xs mt-1">BPM: {track.bpm}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (onSearchApply) {
+                          const filters = convertAlgoliaResultsToFilters(algoliaResults, queryRef.current);
+                          onSearchApply(filters);
+                        }
+                      }}
+                      className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+                    >
+                      Apply Search to Current Page
+                    </button>
                   </div>
                 )}
 
