@@ -81,6 +81,9 @@ serve(async (req) => {
     const searchParams: any = {
       query,
       hitsPerPage: 20,
+      naturalLanguages: ['en'], // Enable natural language processing
+      synonyms: true, // Enable synonym matching
+      queryType: 'prefixAll', // Enable prefix matching
       attributesToRetrieve: [
         'id',
         'title',
@@ -88,6 +91,7 @@ serve(async (req) => {
         'genres',
         'sub_genres',
         'moods',
+        'instruments',
         'bpm',
         'audio_url',
         'image_url',
@@ -104,7 +108,7 @@ serve(async (req) => {
         'producer',
         'created_at'
       ],
-      attributesToHighlight: ['title', 'artist', 'genres', 'moods'],
+      attributesToHighlight: ['title', 'artist', 'genres', 'moods', 'instruments'],
       highlightPreTag: '<mark>',
       highlightPostTag: '</mark>'
     }
