@@ -5,13 +5,13 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
-    <!-- Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="
+    <!-- Content Security Policy - Temporarily disabled for debugging -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://*.supabase.co;
       style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: https: blob: https://*.stripe.com https://maps.googleapis.com https://maps.gstatic.com;
+      img-src 'self' data: https: blob: https://*.stripe.com https://maps.googleapis.com https://maps.gstatic.com https://*.supabase.co;
       media-src 'self' https: blob: https://*.supabase.co;
       connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://maps.googleapis.com wss://*.supabase.co;
       frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://www.google.com/recaptcha/;
@@ -20,7 +20,7 @@
       form-action 'self' https://checkout.stripe.com;
       frame-ancestors 'none';
       upgrade-insecure-requests;
-    ">
+    "> -->
     
     <!-- Security Headers -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
