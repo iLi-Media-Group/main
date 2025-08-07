@@ -43,15 +43,24 @@ serve(async (req) => {
   try {
     console.log('Algolia search request received:', { method: req.method, url: req.url })
     
-    const { query, filters } = await req.json()
+    const body = await req.json()
+    console.log('Request body:', body)
+    
+    const { query, filters } = body
 
     // Initialize Algolia client
     const appId = Deno.env.get('VITE_ALGOLIA_APP_ID') || ''
     const searchKey = Deno.env.get('VITE_ALGOLIA_SEARCH_KEY') || ''
     
-    console.log('Algolia credentials:', { appId: appId ? 'set' : 'missing', searchKey: searchKey ? 'set' : 'missing' })
+    console.log('Algolia credentials:', { 
+      appId: appId ? 'set' : 'missing', 
+      searchKey: searchKey ? 'set' : 'missing',
+      appIdLength: appId.length,
+      searchKeyLength: searchKey.length
+    })
     
     if (!appId || !searchKey) {
+      console.error('Missing Algolia credentials')
       return addCorsHeaders(new Response(
         JSON.stringify({ error: 'Algolia credentials not configured' }),
         { 
@@ -61,8 +70,10 @@ serve(async (req) => {
       ))
     }
     
+    console.log('Initializing Algolia client...')
     const searchClient = algoliasearch(appId, searchKey)
     const tracksIndex = searchClient.initIndex('tracks')
+    console.log('Algolia client initialized successfully')
 
     const searchParams: any = {
       query,
@@ -131,7 +142,9 @@ serve(async (req) => {
       }
     }
 
+    console.log('Executing Algolia search with params:', searchParams)
     const { hits, nbHits, page, nbPages } = await tracksIndex.search(query, searchParams)
+    console.log('Algolia search completed:', { hitsCount: hits.length, totalHits: nbHits })
     
     const results = {
       tracks: hits,
