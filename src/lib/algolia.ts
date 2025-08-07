@@ -6,18 +6,25 @@ export const searchTracks = async (query: string, filters?: any) => {
   try {
     console.log('Calling algolia-search function with query:', query);
     
-    const { data, error } = await supabase.functions.invoke('algolia-search', {
+    const response = await supabase.functions.invoke('algolia-search', {
       body: { query, filters }
     });
 
-    console.log('Algolia search response:', { data, error });
+    console.log('Full supabase response:', response);
+    console.log('Response data:', response.data);
+    console.log('Response error:', response.error);
 
-    if (error) {
-      console.error('Algolia search error:', error);
-      throw error;
+    if (response.error) {
+      console.error('Algolia search error:', response.error);
+      throw response.error;
     }
 
-    return data;
+    if (!response.data) {
+      console.error('No data received from algolia-search');
+      throw new Error('No data received from search function');
+    }
+
+    return response.data;
   } catch (error) {
     console.error('Algolia search error:', error);
     throw error;
