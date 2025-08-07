@@ -4,22 +4,32 @@ import algoliasearch from 'https://esm.sh/algoliasearch@4.18.1'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
+    // Log the request for debugging
+    console.log('Algolia search request received:', { method: req.method, url: req.url });
+    
     const { query, filters } = await req.json()
 
     // Initialize Algolia client
-    const searchClient = algoliasearch(
-      Deno.env.get('VITE_ALGOLIA_APP_ID') || '',
-      Deno.env.get('VITE_ALGOLIA_SEARCH_KEY') || ''
-    )
+    const appId = Deno.env.get('VITE_ALGOLIA_APP_ID') || '';
+    const searchKey = Deno.env.get('VITE_ALGOLIA_SEARCH_KEY') || '';
+    
+    console.log('Algolia credentials:', { appId: appId ? 'set' : 'missing', searchKey: searchKey ? 'set' : 'missing' });
+    
+    const searchClient = algoliasearch(appId, searchKey)
 
     const tracksIndex = searchClient.initIndex('tracks')
 
