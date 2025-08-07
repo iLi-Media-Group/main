@@ -53,19 +53,69 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     '/reset-password'
   ].some(path => location.pathname.includes(path));
 
-  // Enhanced popular search examples with natural language
-  const popularExamples = [
-    'I need energetic hiphop for my workout routine',
-    'Looking for peaceful classical music for meditation',
-    'Want uplifting pop songs for commercials',
-    'Need dramatic classical music for movie trailers',
-    'Searching for funky jazz for restaurant background',
-    'Find electronic dance music for club nights',
-    'Looking for romantic classical for wedding ceremonies',
-    'Need mysterious electronic for documentary films',
-    'Want energetic rock for gaming content',
-    'Looking for peaceful ambient for relaxation'
+  // Dynamic popular searches based on trending patterns and media types
+  const [popularExamples, setPopularExamples] = useState<string[]>([]);
+  
+  // Media types for enhanced search context
+  const mediaTypes = [
+    'television', 'TV', 'film', 'movie', 'podcast', 'YouTube', 'streaming', 
+    'commercial', 'advertisement', 'trailer', 'documentary', 'series',
+    'gaming', 'video game', 'streaming', 'social media', 'TikTok', 'Instagram',
+    'restaurant', 'cafe', 'retail', 'store', 'background', 'ambient',
+    'wedding', 'ceremony', 'event', 'party', 'celebration', 'corporate',
+    'workout', 'fitness', 'exercise', 'sports', 'athletic', 'gym'
   ];
+  
+  // Generate dynamic popular searches
+  const generateDynamicPopularSearches = React.useCallback(() => {
+    const baseSearches = [
+      'energetic hiphop for workout videos',
+      'peaceful classical for meditation apps',
+      'uplifting pop for television commercials',
+      'dramatic orchestral for movie trailers',
+      'funky jazz for restaurant background',
+      'electronic dance for gaming content',
+      'romantic classical for wedding ceremonies',
+      'mysterious electronic for documentary films',
+      'energetic rock for fitness videos',
+      'peaceful ambient for podcast intros',
+      'upbeat electronic for social media',
+      'dramatic cinematic for film scenes',
+      'smooth jazz for cafe atmosphere',
+      'energetic trap for YouTube content',
+      'peaceful acoustic for relaxation apps'
+    ];
+    
+    // Add media type context to searches
+    const mediaContextSearches = [
+      'television commercial music',
+      'film trailer soundtrack',
+      'podcast intro theme',
+      'YouTube background music',
+      'restaurant ambient jazz',
+      'gaming electronic beats',
+      'wedding ceremony classical',
+      'documentary atmospheric music',
+      'fitness workout hiphop',
+      'meditation peaceful sounds',
+      'corporate presentation music',
+      'social media trending beats',
+      'cafe background jazz',
+      'streaming platform music',
+      'retail store ambient'
+    ];
+    
+    // Combine and shuffle for variety
+    const allSearches = [...baseSearches, ...mediaContextSearches];
+    const shuffled = allSearches.sort(() => Math.random() - 0.5);
+    
+    return shuffled.slice(0, 10);
+  }, []);
+  
+  // Load dynamic popular searches
+  useEffect(() => {
+    setPopularExamples(generateDynamicPopularSearches());
+  }, [generateDynamicPopularSearches]);
 
   // AI-powered suggestions based on context and user behavior
   const generateAISuggestions = React.useCallback(async () => {
@@ -290,6 +340,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     );
   }, [currentlyPlaying, togglePlay]);
 
+  // Enhanced search processing with intelligent parsing
   const processNaturalLanguageQuery = React.useCallback(async (query: string) => {
     if (!query.trim()) return;
 
@@ -300,8 +351,13 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
     saveRecentSearch(query);
 
     try {
+      // Enhanced query processing for better matching
+      const enhancedQuery = enhanceSearchQuery(query);
+      console.log('Original query:', query);
+      console.log('Enhanced query:', enhancedQuery);
+      
       // Use Algolia for AI-powered search
-      const results = await searchTracks(query);
+      const results = await searchTracks(enhancedQuery);
       
       console.log('Frontend received algoliaResults:', results);
       console.log('algoliaResults.tracks:', results?.tracks);
@@ -328,6 +384,137 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       setLoading(false);
     }
   }, [onSearchApply, saveRecentSearch]);
+
+  // Enhanced query processing for better search matching
+  const enhanceSearchQuery = (query: string): string => {
+    const lowerQuery = query.toLowerCase();
+    
+    // Extract and enhance media type context
+    let enhancedQuery = query;
+    
+    // Add media type context to search
+    mediaTypes.forEach(mediaType => {
+      if (lowerQuery.includes(mediaType.toLowerCase())) {
+        // Add related terms for better matching
+        const mediaContext = getMediaContext(mediaType);
+        if (mediaContext) {
+          enhancedQuery += ` ${mediaContext}`;
+        }
+      }
+    });
+    
+    // Extract genres, moods, and other musical terms
+    const extractedTerms = extractMusicalTerms(lowerQuery);
+    if (extractedTerms.length > 0) {
+      enhancedQuery += ` ${extractedTerms.join(' ')}`;
+    }
+    
+    // Add common variations for better matching
+    const variations = getSearchVariations(lowerQuery);
+    enhancedQuery += ` ${variations.join(' ')}`;
+    
+    return enhancedQuery.trim();
+  };
+
+  // Get media context for enhanced search
+  const getMediaContext = (mediaType: string): string => {
+    const contextMap: { [key: string]: string } = {
+      'television': 'TV commercial background',
+      'TV': 'television commercial background',
+      'film': 'movie soundtrack cinematic',
+      'movie': 'film soundtrack cinematic',
+      'podcast': 'intro outro background',
+      'YouTube': 'video background trending',
+      'streaming': 'platform background',
+      'commercial': 'advertisement marketing',
+      'advertisement': 'commercial marketing',
+      'trailer': 'cinematic dramatic',
+      'documentary': 'atmospheric ambient',
+      'series': 'television show',
+      'gaming': 'video game electronic',
+      'video game': 'gaming electronic',
+      'social media': 'trending viral',
+      'TikTok': 'trending viral short',
+      'Instagram': 'social media trending',
+      'restaurant': 'cafe background ambient',
+      'cafe': 'restaurant background ambient',
+      'retail': 'store background',
+      'store': 'retail background',
+      'background': 'ambient atmospheric',
+      'ambient': 'background atmospheric',
+      'wedding': 'ceremony romantic',
+      'ceremony': 'wedding romantic',
+      'event': 'celebration party',
+      'party': 'celebration event',
+      'celebration': 'party event',
+      'corporate': 'business professional',
+      'workout': 'fitness exercise energetic',
+      'fitness': 'workout exercise energetic',
+      'exercise': 'fitness workout energetic',
+      'sports': 'athletic energetic',
+      'athletic': 'sports energetic',
+      'gym': 'fitness workout'
+    };
+    
+    return contextMap[mediaType] || '';
+  };
+
+  // Extract musical terms from query
+  const extractMusicalTerms = (query: string): string[] => {
+    const terms: string[] = [];
+    
+    // Extract genres
+    const genreTerms = ['jazz', 'hiphop', 'hip hop', 'rock', 'pop', 'classical', 'electronic', 'ambient', 'trap', 'r&b', 'soul', 'funk', 'reggae', 'country', 'folk', 'blues', 'orchestral', 'cinematic', 'acoustic'];
+    genreTerms.forEach(genre => {
+      if (query.includes(genre)) {
+        terms.push(genre);
+      }
+    });
+    
+    // Extract moods
+    const moodTerms = ['energetic', 'peaceful', 'uplifting', 'dramatic', 'romantic', 'mysterious', 'funky', 'smooth', 'upbeat', 'calm', 'relaxing', 'exciting', 'powerful', 'gentle', 'intense', 'melancholic', 'euphoric', 'dreamy', 'stylish', 'cool', 'catchy', 'encouraging'];
+    moodTerms.forEach(mood => {
+      if (query.includes(mood)) {
+        terms.push(mood);
+      }
+    });
+    
+    return terms;
+  };
+
+  // Get search variations for better matching
+  const getSearchVariations = (query: string): string[] => {
+    const variations: string[] = [];
+    
+    // Common word variations
+    const wordVariations: { [key: string]: string[] } = {
+      'energetic': ['energetic', 'energy', 'energizing'],
+      'peaceful': ['peaceful', 'peace', 'calm', 'tranquil'],
+      'uplifting': ['uplifting', 'positive', 'inspiring'],
+      'dramatic': ['dramatic', 'intense', 'powerful'],
+      'romantic': ['romantic', 'romance', 'love'],
+      'mysterious': ['mysterious', 'mystery', 'haunting'],
+      'funky': ['funky', 'groovy', 'soulful'],
+      'smooth': ['smooth', 'gentle', 'soft'],
+      'upbeat': ['upbeat', 'cheerful', 'lively'],
+      'jazz': ['jazz', 'jazzy'],
+      'hiphop': ['hiphop', 'hip hop', 'rap'],
+      'electronic': ['electronic', 'electronic dance', 'edm'],
+      'classical': ['classical', 'orchestral', 'symphonic']
+    };
+    
+    Object.entries(wordVariations).forEach(([key, variations]) => {
+      if (query.includes(key)) {
+        variations.forEach(variation => {
+          if (!variations.includes(variation)) {
+            variations.push(variation);
+          }
+        });
+      }
+    });
+    
+    return variations;
+  };
 
   // Generate explanation of what the AI found using Algolia
   const generateAlgoliaSearchExplanation = (originalQuery: string, results: any) => {
