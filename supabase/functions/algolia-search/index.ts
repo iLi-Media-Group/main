@@ -9,6 +9,19 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Always add CORS headers to all responses
+  const addCorsHeaders = (response: Response) => {
+    const newHeaders = new Headers(response.headers)
+    Object.entries(corsHeaders).forEach(([key, value]) => {
+      newHeaders.set(key, value)
+    })
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: newHeaders
+    })
+  }
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
@@ -18,19 +31,27 @@ serve(async (req) => {
   }
 
   try {
-    // Log the request for debugging
-    console.log('Algolia search request received:', { method: req.method, url: req.url });
+    console.log('Algolia search request received:', { method: req.method, url: req.url })
     
     const { query, filters } = await req.json()
 
     // Initialize Algolia client
-    const appId = Deno.env.get('VITE_ALGOLIA_APP_ID') || '';
-    const searchKey = Deno.env.get('VITE_ALGOLIA_SEARCH_KEY') || '';
+    const appId = Deno.env.get('VITE_ALGOLIA_APP_ID') || ''
+    const searchKey = Deno.env.get('VITE_ALGOLIA_SEARCH_KEY') || ''
     
-    console.log('Algolia credentials:', { appId: appId ? 'set' : 'missing', searchKey: searchKey ? 'set' : 'missing' });
+    console.log('Algolia credentials:', { appId: appId ? 'set' : 'missing', searchKey: searchKey ? 'set' : 'missing' })
+    
+    if (!appId || !searchKey) {
+      return addCorsHeaders(new Response(
+        JSON.stringify({ error: 'Algolia credentials not configured' }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      ))
+    }
     
     const searchClient = algoliasearch(appId, searchKey)
-
     const tracksIndex = searchClient.initIndex('tracks')
 
     const searchParams: any = {
@@ -109,27 +130,21 @@ serve(async (req) => {
       totalPages: nbPages
     }
 
-    return new Response(
+    return addCorsHeaders(new Response(
       JSON.stringify(results),
       { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+        headers: { 'Content-Type': 'application/json' } 
       }
-    )
+    ))
 
   } catch (error) {
     console.error('Algolia search error:', error)
-    return new Response(
-      JSON.stringify({ error: 'Search failed' }),
+    return addCorsHeaders(new Response(
+      JSON.stringify({ error: 'Search failed', details: error.message }),
       { 
         status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json' 
-        } 
+        headers: { 'Content-Type': 'application/json' } 
       }
-    )
+    ))
   }
 })
