@@ -148,12 +148,22 @@ serve(async (req) => {
       }
     }
 
-             // Enhanced natural language processing with mood associations and partial word matching
-         const extractKeyTerms = (query: string) => {
-           const lowerQuery = query.toLowerCase()
-           
-           // Common words to ignore
-           const stopWords = ['i', 'need', 'a', 'an', 'the', 'for', 'my', 'want', 'looking', 'searching', 'find', 'get', 'some', 'any', 'track', 'tracks', 'music', 'song', 'songs', 'please', 'help', 'me', 'with', 'that', 'this', 'these', 'those']
+                       // Clean query by removing natural language filler words
+          const cleanQuery = (query: string): string => {
+            const stopWords = ["i", "need", "a", "an", "the", "please", "track", "song", "music", "give", "me", "find", "for", "my", "want", "looking", "searching", "get", "some", "any", "tracks", "songs", "help", "with", "that", "this", "these", "those"]
+            return query
+              .toLowerCase()
+              .split(" ")
+              .filter(word => !stopWords.includes(word))
+              .join(" ");
+          }
+          
+          // Enhanced natural language processing with mood associations and partial word matching
+          const extractKeyTerms = (query: string) => {
+            const lowerQuery = query.toLowerCase()
+            
+            // Common words to ignore
+            const stopWords = ['i', 'need', 'a', 'an', 'the', 'for', 'my', 'want', 'looking', 'searching', 'find', 'get', 'some', 'any', 'track', 'tracks', 'music', 'song', 'songs', 'please', 'help', 'me', 'with', 'that', 'this', 'these', 'those']
            
            // Mood associations - map common words to actual moods in the database
            const moodAssociations: { [key: string]: string[] } = {
@@ -310,12 +320,17 @@ serve(async (req) => {
            return uniqueTerms.length > 0 ? uniqueTerms.join(' ') : query
          }
          
-         const processedQuery = extractKeyTerms(query)
-         console.log('Original query:', query)
-         console.log('Processed query:', processedQuery)
-         
-         // Update search params with processed query
-         searchParams.query = processedQuery
+                   // First clean the query to remove natural language filler
+          const cleanedQuery = cleanQuery(query)
+          console.log('Original query:', query)
+          console.log('Cleaned query:', cleanedQuery)
+          
+          // Then process the cleaned query for enhanced matching
+          const processedQuery = extractKeyTerms(cleanedQuery)
+          console.log('Processed query:', processedQuery)
+          
+          // Update search params with processed query
+          searchParams.query = processedQuery
          
                    console.log('Executing Algolia search with params:', searchParams)
           
