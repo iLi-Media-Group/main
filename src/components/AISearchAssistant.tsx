@@ -307,9 +307,6 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.log('algoliaResults.tracks:', results?.tracks);
       console.log('algoliaResults.tracks.length:', results?.tracks?.length);
       
-      // Clear error immediately when we get any response (success or no results)
-      setError(null);
-      
       if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
         console.log('Found tracks, generating explanation...');
         // Store the results for display
@@ -326,8 +323,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     } catch (err) {
       console.error('Algolia search error:', err);
-      // Only show error for actual service failures (404, 500, 401, etc.)
-      setError('AI search is temporarily unavailable. Please try again.');
+      // Don't show any error message - just log it
     } finally {
       setLoading(false);
     }
@@ -646,12 +642,7 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                   </div>
                 </div>
 
-                {/* Error */}
-                {error && (
-                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                    <p className="text-red-400 text-sm">{error}</p>
-                  </div>
-                )}
+                
 
                 {/* AI Explanation */}
                 {searchExplanation && (
