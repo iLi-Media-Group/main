@@ -153,7 +153,8 @@ serve(async (req) => {
         ...(track.genres || []),
         ...(track.sub_genres || []),
         ...(track.moods || []),
-        ...(track.instruments || [])
+        ...(track.instruments || []),
+        ...(track.media_usage || [])
       ].filter(Boolean).join(' ')
     }))
 

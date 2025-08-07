@@ -48,12 +48,14 @@ serve(async (req) => {
         'genres',
         'moods', 
         'sub_genres',
+        'media_usage',
         'searchableText'
       ],
       attributesForFaceting: [
         'genres',
         'moods',
         'sub_genres',
+        'media_usage',
         'has_vocals',
         'is_sync_only',
         'has_sting_ending',
