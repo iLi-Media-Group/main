@@ -18,6 +18,21 @@ serve(async (req) => {
     })
   }
 
+  // Check for authorization header
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: 'Missing authorization header' }),
+      { 
+        status: 401,
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json' 
+        } 
+      }
+    )
+  }
+
   try {
     console.log('Starting manual sync of all tracks to Algolia...')
 
