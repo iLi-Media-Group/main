@@ -89,11 +89,12 @@ export function CatalogPage() {
           vocals_usage_type,
           is_sync_only,
           track_producer_id,
-          profiles!inner (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
-            email
+            email,
+            avatar_path
           )
         `)
         .is('deleted_at', null)
@@ -324,8 +325,8 @@ export function CatalogPage() {
               id: track.id,
               title: track.title || 'Untitled',
               artist:
-                track.profiles?.[0]?.first_name ||
-                track.profiles?.[0]?.email?.split('@')[0] ||
+                track.producer?.first_name ||
+                track.producer?.email?.split('@')[0] ||
                 'Unknown Artist',
               genres: parseArrayField(track.genres),
               subGenres: parseArrayField(track.sub_genres),
@@ -344,11 +345,11 @@ export function CatalogPage() {
               hasVocals: track.has_vocals || false,
               isSyncOnly: track.is_sync_only || false,
               producerId: track.track_producer_id || '',
-              producer: track.profiles?.[0] ? {
-                id: track.profiles[0].id,
-                firstName: track.profiles[0].first_name || '',
-                lastName: track.profiles[0].last_name || '',
-                email: track.profiles[0].email || '',
+              producer: track.producer ? {
+                id: track.producer.id,
+                firstName: track.producer.first_name || '',
+                lastName: track.producer.last_name || '',
+                email: track.producer.email || '',
               } : undefined,
               fileFormats: {
                 stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
