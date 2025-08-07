@@ -420,6 +420,14 @@ export function TrackUploadForm() {
       
       console.log('[DEBUG] Full insert data:', insertData);
       
+      // Debug instruments specifically
+      console.log('[DEBUG] Instruments data:', {
+        selectedInstruments: formData.selectedInstruments,
+        instrumentsLength: formData.selectedInstruments?.length || 0,
+        instrumentsType: typeof formData.selectedInstruments,
+        instrumentsIsArray: Array.isArray(formData.selectedInstruments)
+      });
+      
       // Log the exact data being sent to help debug the 400 error
       console.log('[DEBUG] Inserting track with data:', JSON.stringify(insertData, null, 2));
       
@@ -453,6 +461,13 @@ export function TrackUploadForm() {
           hint: trackError.hint,
           code: trackError.code
         });
+        
+        // Additional debugging for instruments-related errors
+        if (trackError.message?.includes('instruments') || trackError.details?.includes('instruments')) {
+          console.error('[DEBUG] Instruments-related error detected');
+          console.error('[DEBUG] Instruments data that caused error:', formData.selectedInstruments);
+        }
+        
         throw trackError;
       }
 
