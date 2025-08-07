@@ -12,6 +12,9 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
     include: ['algoliasearch'],
+    esbuildOptions: {
+      target: 'es2020',
+    },
   },
   server: {
     historyApiFallback: true,
@@ -26,6 +29,8 @@ export default defineConfig({
         // Security: Prevent source map exposure in production
         sourcemap: false,
       },
+      // Ensure algoliasearch is properly bundled
+      external: [],
     },
     // Security: Minify and obfuscate code
     minify: 'terser',
