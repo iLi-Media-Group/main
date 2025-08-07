@@ -179,22 +179,16 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
             )}
 
             <div 
-              className="bg-white/5 rounded-lg p-4 text-center max-w-xs mx-auto cursor-pointer hover:bg-white/10 hover:border-purple-500/30 border border-transparent transition-all duration-200 group relative"
+              className="bg-white/5 rounded-lg p-4 text-center max-w-xs mx-auto cursor-pointer hover:bg-white/10 hover:border-purple-500/30 border border-transparent transition-all duration-200"
               onClick={() => {
                 onClose();
                 navigate(`/producer/${producerId}/tracks`);
               }}
               title="Click to view producer's track portfolio"
             >
-              <Music className="w-6 h-6 text-purple-400 mx-auto mb-2 group-hover:text-purple-300 transition-colors" />
-              <p className="text-2xl font-bold text-white group-hover:text-purple-100 transition-colors">{profile.stats?.totalTracks}</p>
-              <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors">Tracks</p>
-              
-              {/* Tooltip */}
-              <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                View track portfolio
-                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-800 rotate-45"></div>
-              </div>
+              <Music className="w-6 h-6 text-purple-400 mx-auto mb-2 hover:text-purple-300 transition-colors" />
+              <p className="text-2xl font-bold text-white hover:text-purple-100 transition-colors">{profile.stats?.totalTracks}</p>
+              <p className="text-sm text-gray-400 hover:text-gray-300 transition-colors">Tracks</p>
             </div>
           </div>
         )}
