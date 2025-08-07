@@ -4,11 +4,16 @@ import { supabase } from './supabase';
 // Search function for tracks
 export const searchTracks = async (query: string, filters?: any) => {
   try {
+    console.log('Calling algolia-search function with query:', query);
+    
     const { data, error } = await supabase.functions.invoke('algolia-search', {
       body: { query, filters }
     });
 
+    console.log('Algolia search response:', { data, error });
+
     if (error) {
+      console.error('Algolia search error:', error);
       throw error;
     }
 
