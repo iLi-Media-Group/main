@@ -30,6 +30,16 @@ serve(async (req) => {
     })
   }
 
+  // Simple health check endpoint
+  if (req.method === 'GET') {
+    return addCorsHeaders(new Response(
+      JSON.stringify({ status: 'ok', message: 'Algolia search function is running' }),
+      { 
+        headers: { 'Content-Type': 'application/json' } 
+      }
+    ))
+  }
+
   try {
     console.log('Algolia search request received:', { method: req.method, url: req.url })
     
