@@ -359,29 +359,37 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
 
     if (loading) {
       return (
-        <div className="flex items-center justify-center w-8 h-8">
-          <Loader2 className="w-4 h-4 animate-spin text-white" />
+        <div className="flex items-center justify-center w-12 h-12 bg-white/20 backdrop-blur-sm rounded-full">
+          <Loader2 className="w-6 h-6 animate-spin text-white" />
         </div>
       );
     }
 
     if (error || !signedUrl) {
       return (
-        <div className="flex items-center justify-center w-8 h-8">
-          <span className="text-red-400 text-xs">!</span>
+        <div className="flex items-center justify-center w-12 h-12 bg-red-500/20 backdrop-blur-sm rounded-full">
+          <span className="text-red-400 text-sm">!</span>
         </div>
       );
     }
 
     return (
-      <AudioPlayer
-        src={signedUrl}
-        title={track.title}
-        isPlaying={currentlyPlaying === track.id}
-        onToggle={() => togglePlay(track.id)}
-        size="sm"
-        audioId={`ai-search-${track.id}`}
-      />
+      <div 
+        className="bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-colors cursor-pointer"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+      >
+        <AudioPlayer
+          src={signedUrl}
+          title={track.title}
+          isPlaying={currentlyPlaying === track.id}
+          onToggle={() => togglePlay(track.id)}
+          size="sm"
+          audioId={`ai-search-${track.id}`}
+        />
+      </div>
     );
   }, [currentlyPlaying, togglePlay]);
 
@@ -911,16 +919,8 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                                </div>
                              )}
                                                            {/* Audio Player Overlay */}
-                              <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                                <div 
-                                  className="bg-white/20 backdrop-blur-sm rounded-full p-3 hover:bg-white/30 transition-colors"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                >
-                                  <AISearchAudioPlayer track={track} />
-                                </div>
+                              <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <AISearchAudioPlayer track={track} />
                               </div>
                               
                               {/* Favorite Button */}
