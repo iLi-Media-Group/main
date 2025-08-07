@@ -48,6 +48,7 @@ serve(async (req) => {
         'genres',
         'moods', 
         'sub_genres',
+        'instruments',
         'media_usage',
         'searchableText'
       ],
@@ -55,6 +56,7 @@ serve(async (req) => {
         'genres',
         'moods',
         'sub_genres',
+        'instruments',
         'media_usage',
         'has_vocals',
         'is_sync_only',
@@ -78,7 +80,8 @@ serve(async (req) => {
         'title',
         'artist',
         'genres',
-        'moods'
+        'moods',
+        'instruments'
       ],
       highlightPreTag: '<mark>',
       highlightPostTag: '</mark>'
