@@ -1,5 +1,5 @@
--- Fix the net.http_post issue by temporarily disabling problematic triggers
--- This will allow track uploads to work while we fix the underlying issue
+-- Simple fix for net.http_post issue
+-- This script will drop all dependencies and recreate the functions with proper error handling
 
 -- First, let's see what triggers exist on the tracks table
 SELECT 
@@ -15,62 +15,11 @@ ORDER BY trigger_name;
 -- Check if the net extension is installed
 SELECT * FROM pg_extension WHERE extname = 'net';
 
--- If net extension is not installed, we need to install it
--- CREATE EXTENSION IF NOT EXISTS "net" WITH SCHEMA "extensions";
-
--- Let's identify which specific triggers are causing the issue
--- We'll only disable user-created triggers, not system triggers
-SELECT 
-    t.trigger_name,
-    t.event_manipulation,
-    t.action_timing,
-    t.action_statement,
-    t.action_orientation,
-    p.proname as function_name
-FROM information_schema.triggers t
-JOIN pg_trigger tr ON t.trigger_name = tr.tgname
-JOIN pg_proc p ON tr.tgfoid = p.oid
-WHERE t.event_object_table = 'tracks'
-  AND tr.tgisinternal = false  -- Only user-created triggers
-ORDER BY t.trigger_name;
-
--- Disable specific user-created triggers that might be calling net.http_post
--- We'll identify them by name pattern or function content
--- For now, let's try to disable triggers that might be related to our problematic functions
-
--- Check if any of our problematic functions are being called by triggers
-SELECT 
-    t.trigger_name,
-    t.event_manipulation,
-    t.action_timing,
-    p.proname as function_name
-FROM information_schema.triggers t
-JOIN pg_trigger tr ON t.trigger_name = tr.tgname
-JOIN pg_proc p ON tr.tgfoid = p.oid
-WHERE t.event_object_table = 'tracks'
-  AND tr.tgisinternal = false
-  AND p.proname IN ('call_sync_track', 'notify_algolia', 'notify_track_change', 'notify_track_delete')
-ORDER BY t.trigger_name;
-
--- If we find specific triggers, disable them individually
--- Example (uncomment and modify based on actual trigger names found):
--- ALTER TABLE tracks DISABLE TRIGGER "trigger_name_here";
-
--- Alternative approach: Drop and recreate the problematic functions with proper error handling
--- This will prevent the functions from failing when net.http_post is not available
-
--- First, drop the triggers that depend on these functions
--- We need to find the actual trigger names first
-DROP TRIGGER IF EXISTS trigger_sync_track ON tracks;
-DROP TRIGGER IF EXISTS trigger_algolia ON tracks;
-DROP TRIGGER IF EXISTS trigger_notify_track_change ON tracks;
-DROP TRIGGER IF EXISTS trigger_notify_track_delete ON tracks;
-
--- Now drop the problematic functions
-DROP FUNCTION IF EXISTS call_sync_track();
-DROP FUNCTION IF EXISTS notify_algolia();
-DROP FUNCTION IF EXISTS notify_track_change();
-DROP FUNCTION IF EXISTS notify_track_delete();
+-- Drop the problematic functions with CASCADE to handle all dependencies
+DROP FUNCTION IF EXISTS call_sync_track() CASCADE;
+DROP FUNCTION IF EXISTS notify_algolia() CASCADE;
+DROP FUNCTION IF EXISTS notify_track_change() CASCADE;
+DROP FUNCTION IF EXISTS notify_track_delete() CASCADE;
 
 -- Recreate them with proper error handling
 CREATE OR REPLACE FUNCTION call_sync_track()
@@ -163,6 +112,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Now recreate the triggers with the fixed functions
+-- Using the actual trigger names we discovered
 CREATE TRIGGER trigger_sync_track
     AFTER INSERT ON tracks
     FOR EACH ROW
@@ -173,8 +123,13 @@ CREATE TRIGGER trigger_algolia
     FOR EACH ROW
     EXECUTE FUNCTION notify_algolia();
 
-CREATE TRIGGER trigger_notify_track_change
-    AFTER INSERT OR UPDATE ON tracks
+CREATE TRIGGER on_track_insert
+    AFTER INSERT ON tracks
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_track_change();
+
+CREATE TRIGGER on_track_update
+    AFTER UPDATE ON tracks
     FOR EACH ROW
     EXECUTE FUNCTION notify_track_change();
 
@@ -183,20 +138,13 @@ CREATE TRIGGER trigger_notify_track_delete
     FOR EACH ROW
     EXECUTE FUNCTION notify_track_delete();
 
--- Test if we can now insert into tracks
--- (This will be commented out to avoid actual insertion during debugging)
-/*
-INSERT INTO tracks (
-    title, 
-    artist, 
-    track_producer_id,
-    created_at,
-    updated_at
-) VALUES (
-    'TEST_TRACK_FIX',
-    'TEST_ARTIST',
-    '83e21f94-aced-452a-bafb-6eb9629e3b18',
-    NOW(),
-    NOW()
-);
-*/
+-- Verify the triggers were recreated
+SELECT 
+    trigger_name,
+    event_manipulation,
+    action_timing,
+    action_statement,
+    action_orientation
+FROM information_schema.triggers 
+WHERE event_object_table = 'tracks'
+ORDER BY trigger_name;
