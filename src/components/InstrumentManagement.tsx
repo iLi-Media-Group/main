@@ -52,17 +52,21 @@ export function InstrumentManagement() {
       setLoading(true);
       setError(null);
 
-      // Fetch instruments with their sub-instruments
+      // Fetch instruments with their category info
       const { data: instrumentsData, error: instrumentsError } = await supabase
         .from('instruments')
-        .select(`
-          *,
-          sub_instruments (*)
-        `)
+        .select('*')
         .order('display_name');
 
       if (instrumentsError) throw instrumentsError;
-      setInstruments(instrumentsData || []);
+      
+      // Transform the data to match the expected interface
+      const instrumentsWithCategory = (instrumentsData || []).map(instrument => ({
+        ...instrument,
+        sub_instruments: [] // Empty array since we don't have sub_instruments table
+      }));
+      
+      setInstruments(instrumentsWithCategory);
     } catch (err) {
       console.error('Error fetching instruments:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch instruments');
