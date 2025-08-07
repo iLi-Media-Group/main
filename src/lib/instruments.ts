@@ -1,49 +1,61 @@
 import { supabase } from './supabase';
 
+export interface InstrumentCategory {
+  id: string;
+  name: string;
+  display_name: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Instrument {
   id: string;
   name: string;
   display_name: string;
+  category: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface SubInstrument {
-  id: string;
-  instrument_id: string;
-  name: string;
-  display_name: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface InstrumentWithSubInstruments extends Instrument {
-  sub_instruments: SubInstrument[];
+export interface InstrumentWithCategory extends Instrument {
+  category_info?: InstrumentCategory;
 }
 
 export interface InstrumentsData {
-  instruments: InstrumentWithSubInstruments[];
-  allSubInstruments: SubInstrument[];
+  categories: InstrumentCategory[];
+  instruments: InstrumentWithCategory[];
 }
 
 export async function fetchInstrumentsData(): Promise<InstrumentsData> {
   try {
+    // Fetch categories
+    const { data: categoriesData, error: categoriesError } = await supabase
+      .from('instrument_categories')
+      .select('*')
+      .order('display_name');
+
+    if (categoriesError) throw categoriesError;
+
+    // Fetch instruments with category info
     const { data: instrumentsData, error: instrumentsError } = await supabase
       .from('instruments')
-      .select(`
-        *,
-        sub_instruments (*)
-      `)
+      .select('*')
       .order('display_name');
 
     if (instrumentsError) throw instrumentsError;
 
+    const categories = categoriesData || [];
     const instruments = instrumentsData || [];
-    const allSubInstruments = instruments.flatMap(instrument => instrument.sub_instruments);
+
+    // Add category info to instruments
+    const instrumentsWithCategory: InstrumentWithCategory[] = instruments.map(instrument => ({
+      ...instrument,
+      category_info: categories.find(cat => cat.name === instrument.category)
+    }));
 
     return {
-      instruments,
-      allSubInstruments
+      categories,
+      instruments: instrumentsWithCategory
     };
   } catch (error) {
     console.error('Error fetching instruments:', error);
@@ -51,30 +63,45 @@ export async function fetchInstrumentsData(): Promise<InstrumentsData> {
   }
 }
 
-export function formatInstrumentsForDisplay(instruments: InstrumentWithSubInstruments[]): Record<string, string[]> {
+export function formatInstrumentsForDisplay(instruments: InstrumentWithCategory[]): Record<string, string[]> {
   const formatted: Record<string, string[]> = {};
-  
+
   instruments.forEach(instrument => {
-    formatted[instrument.display_name] = instrument.sub_instruments.map(sub => sub.display_name);
+    const categoryName = instrument.category_info?.display_name || instrument.category;
+    if (!formatted[categoryName]) {
+      formatted[categoryName] = [];
+    }
+    formatted[categoryName].push(instrument.display_name);
   });
-  
+
   return formatted;
 }
 
-export function getAllSubInstruments(instruments: InstrumentWithSubInstruments[]): string[] {
-  return instruments.flatMap(instrument => 
-    instrument.sub_instruments.map(sub => sub.display_name)
+export function getAllInstruments(instruments: InstrumentWithCategory[]): string[] {
+  return instruments.map(instrument => instrument.display_name);
+}
+
+export function getInstrumentCategory(instrumentName: string, instruments: InstrumentWithCategory[]): string | null {
+  const instrument = instruments.find(inst => 
+    inst.display_name.toLowerCase() === instrumentName.toLowerCase()
+  );
+  return instrument?.category_info?.display_name || instrument?.category || null;
+}
+
+export function getInstrumentsByCategory(categoryName: string, instruments: InstrumentWithCategory[]): InstrumentWithCategory[] {
+  return instruments.filter(instrument => 
+    instrument.category_info?.display_name === categoryName || 
+    instrument.category === categoryName
   );
 }
 
-export function getInstrumentCategory(subInstrumentName: string, instruments: InstrumentWithSubInstruments[]): string | null {
-  for (const instrument of instruments) {
-    const found = instrument.sub_instruments.find(sub => 
-      sub.display_name.toLowerCase() === subInstrumentName.toLowerCase()
-    );
-    if (found) {
-      return instrument.display_name;
+export function getCategories(instruments: InstrumentWithCategory[]): string[] {
+  const categories = new Set<string>();
+  instruments.forEach(instrument => {
+    const categoryName = instrument.category_info?.display_name || instrument.category;
+    if (categoryName) {
+      categories.add(categoryName);
     }
-  }
-  return null;
+  });
+  return Array.from(categories).sort();
 }

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
-import { fetchInstrumentsData, type InstrumentWithSubInstruments } from '../lib/instruments';
+import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -114,7 +114,7 @@ export function TrackUploadForm() {
   const [successCountdown, setSuccessCountdown] = useState(10);
   const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
-  const [instruments, setInstruments] = useState<InstrumentWithSubInstruments[]>([]);
+  const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
@@ -1197,46 +1197,58 @@ export function TrackUploadForm() {
               Select the instruments used in this track. This helps clients find music with specific instrumentation.
             </p>
             <div className="space-y-4">
-              {instruments.map((instrument) => (
-                <div key={instrument.id} className="border-b border-blue-700 pb-4 mb-4">
-                  <button
-                    type="button"
-                    className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
-                    onClick={() => setExpandedInstruments(expandedInstruments.includes(instrument.display_name)
-                      ? expandedInstruments.filter(c => c !== instrument.display_name)
-                      : [...expandedInstruments, instrument.display_name])}
-                  >
-                    <span>{instrument.display_name}</span>
-                    <span>{expandedInstruments.includes(instrument.display_name) ? '▲' : '▼'}</span>
-                  </button>
-                  {expandedInstruments.includes(instrument.display_name) && (
-                    <div className="pl-4 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                      {instrument.sub_instruments.map((subInstrument) => (
-                        <label key={subInstrument.id} className="flex items-center space-x-2 text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={(formData.selectedInstruments || []).includes(subInstrument.display_name)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateFormData({ 
-                                  selectedInstruments: [...(formData.selectedInstruments || []), subInstrument.display_name] 
-                                });
-                              } else {
-                                updateFormData({
-                                  selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== subInstrument.display_name)
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                            disabled={isSubmitting}
-                          />
-                          <span className="text-sm">{subInstrument.display_name}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+              {(() => {
+                // Group instruments by category
+                const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
+                instruments.forEach(instrument => {
+                  const categoryName = instrument.category_info?.display_name || instrument.category;
+                  if (!groupedInstruments[categoryName]) {
+                    groupedInstruments[categoryName] = [];
+                  }
+                  groupedInstruments[categoryName].push(instrument);
+                });
+
+                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
+                  <div key={categoryName} className="border-b border-blue-700 pb-4 mb-4">
+                    <button
+                      type="button"
+                      className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
+                      onClick={() => setExpandedInstruments(expandedInstruments.includes(categoryName)
+                        ? expandedInstruments.filter(c => c !== categoryName)
+                        : [...expandedInstruments, categoryName])}
+                    >
+                      <span>{categoryName}</span>
+                      <span>{expandedInstruments.includes(categoryName) ? '▲' : '▼'}</span>
+                    </button>
+                    {expandedInstruments.includes(categoryName) && (
+                      <div className="pl-4 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {categoryInstruments.map((instrument) => (
+                          <label key={instrument.id} className="flex items-center space-x-2 text-gray-300">
+                            <input
+                              type="checkbox"
+                              checked={(formData.selectedInstruments || []).includes(instrument.display_name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  updateFormData({ 
+                                    selectedInstruments: [...(formData.selectedInstruments || []), instrument.display_name] 
+                                  });
+                                } else {
+                                  updateFormData({
+                                    selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== instrument.display_name)
+                                  });
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                            />
+                            <span className="text-sm">{instrument.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ));
+              })()}
             </div>
           </div>
 

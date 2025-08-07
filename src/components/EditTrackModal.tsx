@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Music, ChevronDown, ChevronRight } from 'lucide-react';
 import { GENRES, MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
-import { fetchInstrumentsData, type InstrumentWithSubInstruments } from '../lib/instruments';
+import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
@@ -43,7 +43,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [error, setError] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
-  const [instruments, setInstruments] = useState<InstrumentWithSubInstruments[]>([]);
+  const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const [expandedInstruments, setExpandedInstruments] = useState<string[]>([]);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
@@ -418,31 +418,43 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
               Select the instruments used in this track. This helps clients find music with specific instrumentation.
             </p>
             <div className="space-y-6">
-              {instruments.map((instrument) => (
-                <div key={instrument.id} className="bg-white/5 rounded-lg p-4">
-                  <h3 className="text-white font-medium mb-3">{instrument.display_name}</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {instrument.sub_instruments.map((subInstrument) => (
-                      <label key={subInstrument.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={(selectedInstruments || []).includes(subInstrument.display_name)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedInstruments([...(selectedInstruments || []), subInstrument.display_name]);
-                            } else {
-                              setSelectedInstruments((selectedInstruments || []).filter(i => i !== subInstrument.display_name));
-                            }
-                          }}
-                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                          disabled={loading}
-                        />
-                        <span className="text-gray-300">{subInstrument.display_name}</span>
-                      </label>
-                    ))}
+              {(() => {
+                // Group instruments by category
+                const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
+                instruments.forEach(instrument => {
+                  const categoryName = instrument.category_info?.display_name || instrument.category;
+                  if (!groupedInstruments[categoryName]) {
+                    groupedInstruments[categoryName] = [];
+                  }
+                  groupedInstruments[categoryName].push(instrument);
+                });
+
+                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
+                  <div key={categoryName} className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-3">{categoryName}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {categoryInstruments.map((instrument) => (
+                        <label key={instrument.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={(selectedInstruments || []).includes(instrument.display_name)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedInstruments([...(selectedInstruments || []), instrument.display_name]);
+                              } else {
+                                setSelectedInstruments((selectedInstruments || []).filter(i => i !== instrument.display_name));
+                              }
+                            }}
+                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                            disabled={loading}
+                          />
+                          <span className="text-gray-300">{instrument.display_name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
 
