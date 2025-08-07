@@ -70,6 +70,7 @@ import { useSecurity } from './hooks/useSecurity';
 import SecurityBlock from './components/SecurityBlock';
 import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
+import { ProducerTracksPage } from './components/ProducerTracksPage';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -286,6 +287,7 @@ const App = () => {
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+        <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
         <Route path="/producers" element={<ProducerLandingPage />} />

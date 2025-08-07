@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, MapPin, Music } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
@@ -28,6 +29,7 @@ interface ProducerProfile {
 }
 
 export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerProfileDialogProps) {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProducerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +178,13 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               </div>
             )}
 
-            <div className="bg-white/5 rounded-lg p-4 text-center max-w-xs mx-auto">
+            <div 
+              className="bg-white/5 rounded-lg p-4 text-center max-w-xs mx-auto cursor-pointer hover:bg-white/10 transition-colors"
+              onClick={() => {
+                onClose();
+                navigate(`/producer/${producerId}/tracks`);
+              }}
+            >
               <Music className="w-6 h-6 text-purple-400 mx-auto mb-2" />
               <p className="text-2xl font-bold text-white">{profile.stats?.totalTracks}</p>
               <p className="text-sm text-gray-400">Tracks</p>
