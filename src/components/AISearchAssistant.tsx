@@ -188,23 +188,29 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
       console.log('algoliaResults.tracks:', results?.tracks);
       console.log('algoliaResults.tracks.length:', results?.tracks?.length);
       
-      if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
-        console.log('Found tracks, generating explanation...');
-        // Store the results for display
-        setAlgoliaResults(results);
-        
-        // Generate explanation of what the AI found
-        const explanation = generateAlgoliaSearchExplanation(query, results);
-        setSearchExplanation(explanation);
-      } else {
-        console.log('No tracks found or invalid response structure');
-        setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
-        setAlgoliaResults(null);
-      }
+             if (results && results.tracks && Array.isArray(results.tracks) && results.tracks.length > 0) {
+         console.log('Found tracks, generating explanation...');
+         // Store the results for display
+         setAlgoliaResults(results);
+         
+         // Clear any previous errors
+         setError(null);
+         
+         // Generate explanation of what the AI found
+         const explanation = generateAlgoliaSearchExplanation(query, results);
+         setSearchExplanation(explanation);
+       } else {
+         console.log('No tracks found or invalid response structure');
+         setSearchExplanation(`🤖 AI found no tracks matching "${query}". Try different keywords or be more specific.`);
+         setAlgoliaResults(null);
+       }
 
     } catch (err) {
       console.error('Algolia search error:', err);
-      setError('AI search is temporarily unavailable. Please try again.');
+      // Only show error if we don't have any results
+      if (!algoliaResults || !algoliaResults.tracks || algoliaResults.tracks.length === 0) {
+        setError('AI search is temporarily unavailable. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -537,38 +543,65 @@ const AISearchAssistant: React.FC<AISearchAssistantProps> = ({
                   </div>
                 )}
 
-                {/* Search Results */}
-                {algoliaResults && algoliaResults.tracks && algoliaResults.tracks.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
-                      <Search className="w-5 h-5 mr-2 text-green-400" />
-                      Found Tracks ({algoliaResults.tracks.length})
-                    </h3>
-                    <div className="space-y-3 max-h-60 overflow-y-auto">
-                      {algoliaResults.tracks.map((track: any, index: number) => (
-                        <div key={track.id || index} className="p-4 bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-colors">
-                          <div className="flex items-start space-x-3">
-                            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">🎵</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="text-white font-medium text-sm truncate">{track.title}</h4>
-                              <p className="text-gray-400 text-xs">{track.artist}</p>
-                              <div className="flex flex-wrap gap-1 mt-1">
-                                {track.genres && track.genres.split(',').map((genre: string, i: number) => (
-                                  <span key={i} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
-                                    {genre.trim()}
-                                  </span>
-                                ))}
-                              </div>
-                              {track.bpm && (
-                                <p className="text-gray-500 text-xs mt-1">BPM: {track.bpm}</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                                 {/* Search Results */}
+                 {algoliaResults && algoliaResults.tracks && algoliaResults.tracks.length > 0 && (
+                   <div className="space-y-4">
+                     <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                       <Search className="w-5 h-5 mr-2 text-green-400" />
+                       Found Tracks ({algoliaResults.tracks.length})
+                     </h3>
+                     <div className="space-y-3 max-h-60 overflow-y-auto">
+                       {algoliaResults.tracks.map((track: any, index: number) => (
+                         <div key={track.id || index} className="p-4 bg-white/5 rounded-lg border border-blue-500/20 hover:border-blue-500/40 transition-colors">
+                           <div className="flex items-start space-x-3">
+                             {/* Track Image */}
+                             <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
+                               {track.image_url ? (
+                                 <img 
+                                   src={track.image_url} 
+                                   alt={track.title}
+                                   className="w-full h-full object-cover"
+                                   onError={(e) => {
+                                     e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjM0I4M0Y2Ii8+CjxwYXRoIGQ9Ik0zMiAxNkMyMy4xNjM0IDE2IDE2IDIzLjE2MzQgMTYgMzJDMTYgNDAuODM2NiAyMy4xNjM0IDQ4IDMyIDQ4QzQwLjgzNjYgNDggNDggNDAuODM2NiA0OCAzMkM0OCAyMy4xNjM0IDQwLjgzNjYgMTYgMzIgMTZaIiBmaWxsPSIjNjM2NkY3Ii8+CjxwYXRoIGQ9Ik0zMiAyOEMzNC4yMDkxIDI4IDM2IDI5Ljc5MDkgMzYgMzJDMzYgMzQuMjA5MSAzNC4yMDkxIDM2IDMyIDM2QzI5Ljc5MDkgMzYgMjggMzQuMjA5MSAyOCAzMkMyOCAyOS43OTA5IDI5Ljc5MDkgMjggMzIgMjhaIiBmaWxsPSIjM0I4M0Y2Ii8+Cjwvc3ZnPgo=';
+                                   }}
+                                 />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center">
+                                   <span className="text-white text-xs font-bold">🎵</span>
+                                 </div>
+                               )}
+                             </div>
+                             <div className="flex-1 min-w-0">
+                               <h4 className="text-white font-medium text-sm truncate">{track.title}</h4>
+                               <p className="text-gray-400 text-xs">{track.artist}</p>
+                               <div className="flex flex-wrap gap-1 mt-1">
+                                 {track.genres && track.genres.split(',').map((genre: string, i: number) => (
+                                   <span key={i} className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded">
+                                     {genre.trim()}
+                                   </span>
+                                 ))}
+                               </div>
+                               {track.bpm && (
+                                 <p className="text-gray-500 text-xs mt-1">BPM: {track.bpm}</p>
+                               )}
+                             </div>
+                             {/* Audio Player */}
+                             <div className="flex-shrink-0">
+                               {track.audio_url && (
+                                 <audio 
+                                   controls 
+                                   className="w-32 h-8"
+                                   preload="none"
+                                 >
+                                   <source src={`https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/track-audio/${track.audio_url}?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV84YjZjNjA4MC1mOGJjLTQxZDYtODQxNC05ZTAwMGRlY2MyNTMiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJ0cmFjay1hdWRpby8iLCJpYXQiOjE3NTQwNTMxNTYsImV4cCI6MTc4NTU4OTE1Nn0.ddcqfK5C88JmnOcIimaqTiOEOFpc8Lxmlhh9ehHP2d4`} type="audio/mpeg" />
+                                   Your browser does not support the audio element.
+                                 </audio>
+                               )}
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
                     <button
                       onClick={() => {
                         if (onSearchApply) {
