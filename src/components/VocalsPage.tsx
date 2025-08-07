@@ -46,11 +46,12 @@ export function VocalsPage() {
           has_vocals,
           is_sync_only,
           track_producer_id,
-          producer:profiles!inner (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
-            email
+            email,
+            avatar_path
           )
         `)
         .eq('has_vocals', true);
@@ -258,7 +259,7 @@ export function VocalsPage() {
         const formattedTracks = validTracks.map(track => ({
           id: track.id,
           title: track.title,
-          artist: track.producer?.[0]?.first_name || track.producer?.[0]?.email?.split('@')[0] || 'Unknown Artist',
+          artist: track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
           genres: Array.isArray(track.genres)
             ? track.genres
             : track.genres?.split(',').map((g: string) => g.trim()) || [],
@@ -279,11 +280,11 @@ export function VocalsPage() {
           hasVocals: track.has_vocals || false,
           isSyncOnly: track.is_sync_only || false,
           producerId: track.track_producer_id || '',
-          producer: track.producer?.[0] ? {
-            id: track.producer[0].id,
-            firstName: track.producer[0].first_name || '',
-            lastName: track.producer[0].last_name || '',
-            email: track.producer[0].email
+          producer: track.producer ? {
+            id: track.producer.id,
+            firstName: track.producer.first_name || '',
+            lastName: track.producer.last_name || '',
+            email: track.producer.email
           } : undefined,
           fileFormats: {
             stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },

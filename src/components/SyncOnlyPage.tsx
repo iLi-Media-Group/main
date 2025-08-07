@@ -59,11 +59,12 @@ export function SyncOnlyPage() {
         .from('tracks')
         .select(`
           *,
-          track_producer_id:profiles!inner (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
-            email
+            email,
+            avatar_path
           )
         `)
         .eq('is_sync_only', true)
@@ -273,8 +274,8 @@ export function SyncOnlyPage() {
             id: track.id,
             title: track.title || 'Untitled',
             artist:
-              track.track_producer_id?.first_name ||
-              track.track_producer_id?.email?.split('@')[0] ||
+              track.producer?.first_name ||
+              track.producer?.email?.split('@')[0] ||
               'Unknown Artist',
             genres: parseArrayField(track.genres),
             subGenres: parseArrayField(track.sub_genres),
@@ -292,11 +293,11 @@ export function SyncOnlyPage() {
             hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
             producerId: track.track_producer_id || '',
-            producer: track.track_producer_id ? {
-              id: track.track_producer_id.id,
-              firstName: track.track_producer_id.first_name || '',
-              lastName: track.track_producer_id.last_name || '',
-              email: track.track_producer_id.email
+            producer: track.producer ? {
+              id: track.producer.id,
+              firstName: track.producer.first_name || '',
+              lastName: track.producer.last_name || '',
+              email: track.producer.email
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
