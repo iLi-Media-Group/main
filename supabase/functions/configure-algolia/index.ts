@@ -99,6 +99,8 @@ serve(async (req) => {
           'genres',
           'moods',
           'sub_genres',
+          'instruments',
+          'media_usage',
           'searchableText'
         ]
       }),
