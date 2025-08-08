@@ -137,11 +137,40 @@ const calculateMatchScore = (track: any, searchTerms: string[]): number => {
     }
   });
   
-  // Check media usage (+1 for each match)
+  // Check media usage with enhanced sports detection
   const trackMediaUsage = parseArrayField(track.media_usage);
+  const searchQueryLower = searchQuery.toLowerCase();
+  const hasSportsTerm = searchQueryLower.includes('sports') || searchQueryLower.includes('sport') || 
+                       searchQueryLower.includes('football') || searchQueryLower.includes('basketball') ||
+                       searchQueryLower.includes('baseball') || searchQueryLower.includes('soccer') ||
+                       searchQueryLower.includes('hockey') || searchQueryLower.includes('tennis') ||
+                       searchQueryLower.includes('golf') || searchQueryLower.includes('racing') ||
+                       searchQueryLower.includes('olympics') || searchQueryLower.includes('nfl') ||
+                       searchQueryLower.includes('nba') || searchQueryLower.includes('mlb') ||
+                       searchQueryLower.includes('nhl') || searchQueryLower.includes('ncaa');
+  
   trackMediaUsage.forEach((mediaType: string) => {
-    if (expandedTerms.some(term => mediaType.toLowerCase().includes(term))) {
-      score += 1;
+    const mediaTypeLower = mediaType.toLowerCase();
+    
+    // If searching for sports, give higher score to sports-related media
+    if (hasSportsTerm) {
+      if (mediaTypeLower.includes('sports') || mediaTypeLower.includes('sport') ||
+          mediaTypeLower.includes('football') || mediaTypeLower.includes('basketball') ||
+          mediaTypeLower.includes('baseball') || mediaTypeLower.includes('soccer') ||
+          mediaTypeLower.includes('hockey') || mediaTypeLower.includes('tennis') ||
+          mediaTypeLower.includes('golf') || mediaTypeLower.includes('racing') ||
+          mediaTypeLower.includes('olympics') || mediaTypeLower.includes('nfl') ||
+          mediaTypeLower.includes('nba') || mediaTypeLower.includes('mlb') ||
+          mediaTypeLower.includes('nhl') || mediaTypeLower.includes('ncaa')) {
+        score += 5; // Higher score for sports-related media when searching for sports
+      } else if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
+        score += 1; // Lower score for general matches
+      }
+    } else {
+      // Regular media usage scoring
+      if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
+        score += 1;
+      }
     }
   });
   
@@ -599,13 +628,36 @@ export function CatalogPage() {
     tracks.forEach(track => {
       const score = track.searchScore || 0;
       
-      // Higher thresholds for better categorization
-      if (score >= 10) {
-        exactMatches.push(track);
-      } else if (score >= 5) {
-        partialMatches.push(track);
+      // Enhanced thresholds for better categorization
+      // For sports searches, require higher scores for exact matches
+      const searchQuery = filters?.query?.toLowerCase() || '';
+      const hasSportsTerm = searchQuery.includes('sports') || searchQuery.includes('sport') || 
+                           searchQuery.includes('football') || searchQuery.includes('basketball') ||
+                           searchQuery.includes('baseball') || searchQuery.includes('soccer') ||
+                           searchQuery.includes('hockey') || searchQuery.includes('tennis') ||
+                           searchQuery.includes('golf') || searchQuery.includes('racing') ||
+                           searchQuery.includes('olympics') || searchQuery.includes('nfl') ||
+                           searchQuery.includes('nba') || searchQuery.includes('mlb') ||
+                           searchQuery.includes('nhl') || searchQuery.includes('ncaa');
+      
+      if (hasSportsTerm) {
+        // Higher thresholds for sports searches to ensure quality matches
+        if (score >= 15) {
+          exactMatches.push(track);
+        } else if (score >= 8) {
+          partialMatches.push(track);
+        } else {
+          otherTracks.push(track);
+        }
       } else {
-        otherTracks.push(track);
+        // Regular thresholds for non-sports searches
+        if (score >= 10) {
+          exactMatches.push(track);
+        } else if (score >= 5) {
+          partialMatches.push(track);
+        } else {
+          otherTracks.push(track);
+        }
       }
     });
     
