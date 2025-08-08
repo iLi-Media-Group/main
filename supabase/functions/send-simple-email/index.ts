@@ -11,8 +11,12 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('Email function called with method:', req.method)
+  console.log('Email function headers:', Object.fromEntries(req.headers.entries()))
+
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request for email function')
     return new Response(null, { 
       status: 200,
       headers: corsHeaders 
@@ -20,9 +24,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Email function called with method:', req.method)
-    console.log('Email function headers:', Object.fromEntries(req.headers.entries()))
-    
     const { to, subject, html, text, producerData } = await req.json()
     console.log('Email function received data:', { to, subject, hasHtml: !!html, hasText: !!text })
 
