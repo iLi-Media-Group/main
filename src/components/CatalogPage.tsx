@@ -254,25 +254,75 @@ export function CatalogPage() {
         if (filters?.mediaTypes?.length) searchTerms.push(...filters.mediaTypes);
 
         if (searchTerms.length > 0) {
-          // Expand search terms with synonyms
-          const expandedTerms = expandSearchTerms(searchTerms);
-          
-          // Build search conditions for all expanded terms
-          const searchConditions: string[] = [];
-          
-          expandedTerms.forEach(term => {
-            searchConditions.push(`title.ilike.%${term}%`);
-            searchConditions.push(`artist.ilike.%${term}%`);
-            searchConditions.push(`genres.ilike.%${term}%`);
-            searchConditions.push(`sub_genres.ilike.%${term}%`);
-            searchConditions.push(`moods.ilike.%${term}%`);
-            searchConditions.push(`instruments.ilike.%${term}%`);
-            searchConditions.push(`media_usage.ilike.%${term}%`);
-          });
-          
-          // Apply search conditions with OR logic for flexible matching
-          if (searchConditions.length > 0) {
-            query = query.or(searchConditions.join(','));
+          // Use our enhanced search API instead of complex OR conditions
+          const searchPayload = {
+            query: filters?.query || '',
+            genres: filters?.genres || [],
+            subgenres: filters?.subGenres || [],
+            moods: filters?.moods || [],
+            usageTypes: filters?.mediaTypes || [],
+            limit: TRACKS_PER_PAGE
+          };
+
+          try {
+            const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/search-tracks', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(searchPayload)
+            });
+
+            const searchData = await response.json();
+            
+            if (searchData.ok && searchData.results) {
+                             // Format the results to match our expected structure
+               const formattedTracks = searchData.results.map((track: any) => ({
+                 id: track.id,
+                 title: track.title || 'Untitled',
+                 artist: track.artist || 'Unknown Artist',
+                 genres: parseArrayField(track.genres),
+                 subGenres: parseArrayField(track.sub_genres),
+                 moods: parseArrayField(track.moods),
+                 instruments: parseArrayField(track.instruments),
+                 mediaUsage: parseArrayField(track.media_usage),
+                 duration: track.duration || '3:30',
+                 bpm: track.bpm,
+                 audioUrl: track.audio_url,
+                 image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+                 hasStingEnding: track.has_sting_ending,
+                 isOneStop: track.is_one_stop,
+                 mp3Url: track.mp3_url,
+                 trackoutsUrl: track.trackouts_url,
+                 stemsUrl: track.stems_url,
+                 hasVocals: track.has_vocals || false,
+                 isSyncOnly: track.is_sync_only || false,
+                 producerId: track.track_producer_id || '',
+                 producer: track.producer ? {
+                   id: track.producer.id,
+                   firstName: track.producer.first_name || '',
+                   lastName: track.producer.last_name || '',
+                   email: track.producer.email || '',
+                 } : undefined,
+                 fileFormats: {
+                   stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+                   stems: { format: ['WAV'], url: track.trackouts_url || '' },
+                   stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+                 },
+                 pricing: {
+                   stereoMp3: 0,
+                   stems: 0,
+                   stemsWithVocals: 0
+                 },
+                 leaseAgreementUrl: '',
+                 searchScore: track.relevance || 0
+               }));
+
+                             setTracks(formattedTracks);
+               setHasMore(formattedTracks.length >= TRACKS_PER_PAGE);
+               return;
+            }
+          } catch (searchError) {
+            console.error('Enhanced search failed, falling back to simple search:', searchError);
+            // Fall back to simple search if enhanced search fails
           }
         }
       }
@@ -331,52 +381,52 @@ export function CatalogPage() {
         }
 
         const formattedTracks = scoredTracks.map(track => {
-          return {
-            id: track.id,
-            title: track.title || 'Untitled',
-            artist:
-              track.producer?.first_name ||
-              track.producer?.email?.split('@')[0] ||
-              'Unknown Artist',
-            genres: parseArrayField(track.genres),
-            subGenres: parseArrayField(track.sub_genres),
-            moods: parseArrayField(track.moods),
+            return {
+              id: track.id,
+              title: track.title || 'Untitled',
+              artist:
+                track.producer?.first_name ||
+                track.producer?.email?.split('@')[0] ||
+                'Unknown Artist',
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
             instruments: parseArrayField(track.instruments),
             mediaUsage: parseArrayField(track.media_usage),
-            duration: track.duration || '3:30',
-            bpm: track.bpm,
-            audioUrl: track.audio_url,
-            image:
-              track.image_url ||
-              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasStingEnding: track.has_sting_ending,
-            isOneStop: track.is_one_stop,
-            mp3Url: track.mp3_url,
-            trackoutsUrl: track.trackouts_url,
-            stemsUrl: track.stems_url,
-            hasVocals: track.has_vocals || false,
-            isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id || '',
-            producer: track.producer ? {
-              id: track.producer.id,
-              firstName: track.producer.first_name || '',
-              lastName: track.producer.last_name || '',
-              email: track.producer.email || '',
-            } : undefined,
-            fileFormats: {
-              stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-              stems: { format: ['WAV'], url: track.trackouts_url || '' },
-              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
-            },
-            pricing: {
-              stereoMp3: 0,
-              stems: 0,
-              stemsWithVocals: 0
-            },
+              duration: track.duration || '3:30',
+              bpm: track.bpm,
+              audioUrl: track.audio_url,
+              image:
+                track.image_url ||
+                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
+              producer: track.producer ? {
+                id: track.producer.id,
+                firstName: track.producer.first_name || '',
+                lastName: track.producer.last_name || '',
+                email: track.producer.email || '',
+              } : undefined,
+              fileFormats: {
+                stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+                stems: { format: ['WAV'], url: track.trackouts_url || '' },
+                stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+              },
+              pricing: {
+                stereoMp3: 0,
+                stems: 0,
+                stemsWithVocals: 0
+              },
             leaseAgreementUrl: '',
             searchScore: track._searchScore || 0
-          };
-        });
+            };
+          });
 
         if (currentPage === 1) {
           setTracks(formattedTracks);
