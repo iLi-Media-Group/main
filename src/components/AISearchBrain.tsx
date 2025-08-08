@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, Clock, Lightbulb, X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useServiceLevel } from '../hooks/useServiceLevel';
 
 interface SearchInsight {
   query: string;
@@ -22,6 +23,10 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
   const [suggestedSearches, setSuggestedSearches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const { hasAISearch, level } = useServiceLevel();
+
+  // Check if user has access to AI Search Brain
+  const hasAccess = hasAISearch || level === 'both';
 
   // Fetch popular searches (aggregated across all users)
   const fetchPopularSearches = async () => {
@@ -81,12 +86,13 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
     }
   };
 
-  // Generate suggested searches based on user's recent activity
+  // Generate suggested searches based on user's recent activity and license history
   const generateSuggestedSearches = async () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      // Get search history
+      const { data: searchData, error: searchError } = await supabase
         .from('search_queries')
         .select('query')
         .eq('user_id', user.id)
@@ -94,10 +100,32 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
         .order('created_at', { ascending: false })
         .limit(20);
 
-      if (error) throw error;
+      if (searchError) throw searchError;
+
+      // Get license history
+      const { data: licenseData, error: licenseError } = await supabase
+        .from('licenses')
+        .select(`
+          track_id,
+          tracks!inner (
+            id,
+            title,
+            artist,
+            genres,
+            sub_genres,
+            moods,
+            instruments,
+            media_usage
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (licenseError) throw licenseError;
 
       // Extract common terms from user's search history
-      const searchTerms = data?.map(item => item.query.toLowerCase()) || [];
+      const searchTerms = searchData?.map(item => item.query.toLowerCase()) || [];
       const termFrequency: { [key: string]: number } = {};
 
       searchTerms.forEach(query => {
@@ -109,14 +137,56 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
         });
       });
 
-      // Generate suggestions based on frequent terms
+      // Extract patterns from licensed tracks
+      const licensedTrackPatterns: { [key: string]: number } = {};
+      licenseData?.forEach(license => {
+        const track = license.tracks;
+        if (track) {
+          // Analyze genres
+          if (track.genres) {
+            const genres = Array.isArray(track.genres) ? track.genres : [track.genres];
+            genres.forEach(genre => {
+              if (genre) {
+                licensedTrackPatterns[genre.toLowerCase()] = (licensedTrackPatterns[genre.toLowerCase()] || 0) + 1;
+              }
+            });
+          }
+          
+          // Analyze moods
+          if (track.moods) {
+            const moods = Array.isArray(track.moods) ? track.moods : [track.moods];
+            moods.forEach(mood => {
+              if (mood) {
+                licensedTrackPatterns[mood.toLowerCase()] = (licensedTrackPatterns[mood.toLowerCase()] || 0) + 1;
+              }
+            });
+          }
+          
+          // Analyze instruments
+          if (track.instruments) {
+            const instruments = Array.isArray(track.instruments) ? track.instruments : [track.instruments];
+            instruments.forEach(instrument => {
+              if (instrument) {
+                licensedTrackPatterns[instrument.toLowerCase()] = (licensedTrackPatterns[instrument.toLowerCase()] || 0) + 1;
+              }
+            });
+          }
+        }
+      });
+
+      // Generate suggestions based on frequent terms and license patterns
       const suggestions: string[] = [];
       const frequentTerms = Object.entries(termFrequency)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([term]) => term);
 
-      // Create combination suggestions
+      const frequentLicensedPatterns = Object.entries(licensedTrackPatterns)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([pattern]) => pattern);
+
+      // Create combination suggestions from search history
       if (frequentTerms.length >= 2) {
         suggestions.push(`${frequentTerms[0]} ${frequentTerms[1]}`);
       }
@@ -124,7 +194,20 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
         suggestions.push(`${frequentTerms[0]} ${frequentTerms[2]}`);
       }
 
-      // Add genre-based suggestions
+      // Create suggestions based on license patterns
+      if (frequentLicensedPatterns.length >= 2) {
+        suggestions.push(`${frequentLicensedPatterns[0]} ${frequentLicensedPatterns[1]}`);
+      }
+      if (frequentLicensedPatterns.length >= 3) {
+        suggestions.push(`${frequentLicensedPatterns[0]} ${frequentLicensedPatterns[2]}`);
+      }
+
+      // Mix search and license patterns
+      if (frequentTerms.length > 0 && frequentLicensedPatterns.length > 0) {
+        suggestions.push(`${frequentTerms[0]} ${frequentLicensedPatterns[0]}`);
+      }
+
+      // Add genre-based fallback suggestions
       const genreSuggestions = [
         'jazzy energetic guitar',
         'peaceful piano meditation',
@@ -155,6 +238,11 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
     onSearchApply(query);
     setIsOpen(false);
   };
+
+  // Don't render if user doesn't have access
+  if (!hasAccess) {
+    return null;
+  }
 
   return (
     <div className={`ai-search-brain ${className}`}>

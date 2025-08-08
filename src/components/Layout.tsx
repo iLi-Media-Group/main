@@ -282,7 +282,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
       <Footer />
       
-      {/* AI Search Brain - Only show on catalog page */}
+      {/* AI Search Brain - Only show on catalog page for users with AI Search access */}
       {location.pathname === '/catalog' && (
         <AISearchBrain 
           onSearchApply={(query) => {
