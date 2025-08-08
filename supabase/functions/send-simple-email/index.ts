@@ -7,18 +7,28 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Max-Age': '86400',
+  'Access-Control-Allow-Credentials': 'true',
 }
 
 serve(async (req) => {
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response(null, { 
+      status: 200,
+      headers: corsHeaders 
+    })
   }
 
   try {
+    console.log('Email function called with method:', req.method)
+    console.log('Email function headers:', Object.fromEntries(req.headers.entries()))
+    
     const { to, subject, html, text, producerData } = await req.json()
+    console.log('Email function received data:', { to, subject, hasHtml: !!html, hasText: !!text })
 
     // Validate required fields
     if (!to || !subject || (!html && !text)) {
+      console.error('Missing required fields:', { to, subject, hasHtml: !!html, hasText: !!text })
       return new Response(
         JSON.stringify({ error: 'Missing required fields: to, subject, and html or text' }),
         { 
