@@ -99,7 +99,14 @@ const App = () => {
         '/admin/resources',
         '/admin/banking',
         '/admin/analytics',
-        '/producer/dashboard'
+        '/producer/dashboard',
+        '/dashboard',
+        '/producer/banking',
+        '/producer/payouts',
+        '/producer/withdrawals',
+        '/producer/resources',
+        '/producer/upload',
+        '/white-label-dashboard'
       ]
     });
   }, []);
