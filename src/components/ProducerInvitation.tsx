@@ -228,7 +228,7 @@ export function ProducerInvitation() {
 
       if (error) throw error;
 
-      setSuccess('Congratulations email logged successfully! Check email_logs table for details.');
+      setSuccess('Congratulations email sent successfully via Gmail!');
       
       // Update application status if coming from application
       if (applicationId) {
