@@ -49,7 +49,7 @@ export interface UseSearchAPI {
   lastResults: SearchResponse | null;
 }
 
-const SEARCH_API_URL = process.env.REACT_APP_SEARCH_API_URL || 'http://localhost:4001';
+const SEARCH_API_URL = process.env.REACT_APP_SEARCH_API_URL || 'https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/search-tracks';
 
 export function useSearchAPI(): UseSearchAPI {
   const [loading, setLoading] = useState(false);
