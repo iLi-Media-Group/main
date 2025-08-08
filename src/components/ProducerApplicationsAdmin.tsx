@@ -145,6 +145,7 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.new,status.is.null').is('review_tier', null).eq('is_auto_rejected', false);
           break;
         case 'invited':
+          // Show applications with status 'invited' (regardless of review_tier)
           query = query.eq('status', 'invited');
           break;
         case 'save_for_later':
@@ -197,8 +198,17 @@ export default function ProducerApplicationsAdmin() {
 
   const updateApplicationStatus = async (applicationId: string, newStatus: string, reviewTier?: string) => {
     try {
-      const updateData: any = { status: newStatus };
-      if (reviewTier) {
+      const updateData: any = { 
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Handle review_tier based on the new status
+      if (newStatus === 'new') {
+        // When moving to 'new', clear the review_tier
+        updateData.review_tier = null;
+      } else if (reviewTier) {
+        // When setting a specific review tier
         updateData.review_tier = reviewTier;
       }
       
