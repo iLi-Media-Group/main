@@ -32,11 +32,14 @@ async function expandWithSynonyms(terms: string[]): Promise<string[]> {
 }
 
 // Helper function to calculate relevance score with fuzzy matching
-function calculateRelevanceScore(track: any, searchTerms: string[]): number {
+function calculateRelevanceScore(track: any, searchTerms: string[], serviceParams?: { subgenres?: string[], instruments?: string[], usageTypes?: string[] }): number {
   let score = 0;
   const titleLower = track.title?.toLowerCase() || '';
   const artistLower = track.artist?.toLowerCase() || '';
   const genresLower = track.genres?.toLowerCase() || '';
+  const subGenresLower = track.sub_genres?.toLowerCase() || '';
+  const instrumentsLower = track.instruments?.toLowerCase() || '';
+  const mediaUsageLower = track.media_usage?.toLowerCase() || '';
   
   for (const term of searchTerms) {
     const termLower = term.toLowerCase();
@@ -50,6 +53,11 @@ function calculateRelevanceScore(track: any, searchTerms: string[]): number {
     if (titleLower.includes(termLower)) score += 5;
     if (artistLower.includes(termLower)) score += 4;
     if (genresLower.includes(termLower)) score += 3;
+    
+    // Service-specific scoring
+    if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) score += 4;
+    if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) score += 3;
+    if (serviceParams?.usageTypes?.length && mediaUsageLower.includes(termLower)) score += 3;
     
     // Fuzzy matches (lower priority) - using simple similarity
     const titleSimilarity = calculateSimilarity(titleLower, termLower);
@@ -105,11 +113,12 @@ serve(async (req) => {
       genres = [], 
       subgenres = [], 
       moods = [], 
+      instruments = [],
       usageTypes = [],
       limit = 40 
     } = body;
 
-    console.log('Parsed parameters:', { query, genres, subgenres, moods, usageTypes, limit });
+    console.log('Parsed parameters:', { query, genres, subgenres, moods, instruments, usageTypes, limit });
 
     // Parse search terms
     const searchTerms = query.toLowerCase().split(/\s+/).map(t => t.trim()).filter(Boolean);
@@ -141,6 +150,25 @@ serve(async (req) => {
         conditions.push(`genres.ilike.%${term}%`);
       }
       
+      // Add service-specific search conditions
+      if (subgenres && subgenres.length > 0) {
+        for (const subgenre of subgenres) {
+          conditions.push(`sub_genres.ilike.%${subgenre}%`);
+        }
+      }
+      
+      if (instruments && instruments.length > 0) {
+        for (const instrument of instruments) {
+          conditions.push(`instruments.ilike.%${instrument}%`);
+        }
+      }
+      
+      if (usageTypes && usageTypes.length > 0) {
+        for (const usageType of usageTypes) {
+          conditions.push(`media_usage.ilike.%${usageType}%`);
+        }
+      }
+      
       searchQuery = searchQuery.or(conditions.join(','));
     }
 
@@ -157,7 +185,7 @@ serve(async (req) => {
     // Calculate relevance scores with fuzzy matching
     const scoredResults = (results || []).map(track => ({
       ...track,
-      relevance: calculateRelevanceScore(track, allSearchTerms)
+      relevance: calculateRelevanceScore(track, allSearchTerms, { subgenres, instruments, usageTypes })
     }));
 
     // Sort by relevance score (highest first)
