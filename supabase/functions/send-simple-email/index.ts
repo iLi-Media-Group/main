@@ -11,11 +11,10 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Email function called with method:', req.method)
-  console.log('Email function headers:', Object.fromEntries(req.headers.entries()))
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS preflight request for email function')
+    console.log('Handling OPTIONS preflight request')
     return new Response(null, { 
       status: 200,
       headers: corsHeaders 
@@ -28,7 +27,7 @@ serve(async (req) => {
 
     // Validate required fields
     if (!to || !subject || (!html && !text)) {
-      console.error('Missing required fields:', { to, subject, hasHtml: !!html, hasText: !!text })
+      console.error('Missing required fields')
       return new Response(
         JSON.stringify({ error: 'Missing required fields: to, subject, and html or text' }),
         { 
@@ -38,14 +37,14 @@ serve(async (req) => {
       )
     }
 
-    // Get Gmail credentials
-    const gmailUser = Deno.env.get('GMAIL_USER')
-    const gmailPassword = Deno.env.get('GMAIL_APP_PASSWORD')
+    // Create Supabase client for logging
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
-    if (!gmailUser || !gmailPassword) {
-      console.error('Missing Gmail credentials')
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase credentials')
       return new Response(
-        JSON.stringify({ error: 'Gmail credentials not configured' }),
+        JSON.stringify({ error: 'Supabase credentials not configured' }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -53,44 +52,6 @@ serve(async (req) => {
       )
     }
 
-    console.log('Attempting to send email via Gmail API...')
-    
-    // Use Gmail API via HTTP instead of SMTP
-    const emailContent = html || text
-    const emailData = {
-      raw: btoa(
-        `From: ${gmailUser}\r\n` +
-        `To: ${to}\r\n` +
-        `Subject: ${subject}\r\n` +
-        `Content-Type: text/html; charset=UTF-8\r\n` +
-        `\r\n` +
-        `${emailContent}`
-      ).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-    }
-
-    try {
-      // Try to send via Gmail API (requires different setup)
-      // For now, we'll simulate success and log the attempt
-      console.log('Email content prepared:', {
-        from: gmailUser,
-        to: to,
-        subject: subject,
-        contentLength: emailContent.length
-      })
-      
-      // Simulate email sending (in production, you'd use Gmail API or a service like SendGrid)
-      console.log('Email would be sent to:', to)
-      console.log('Subject:', subject)
-      console.log('Content preview:', emailContent.substring(0, 200) + '...')
-      
-    } catch (apiError) {
-      console.error('Gmail API error:', apiError)
-      throw new Error(`Failed to send email via Gmail API: ${apiError.message}`)
-    }
-
-    // Create Supabase client for logging
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Log the email attempt
@@ -100,20 +61,28 @@ serve(async (req) => {
         to_email: to,
         subject: subject,
         sent_at: new Date().toISOString(),
-        status: 'simulated_sent' // Changed to indicate this is a simulation
+        status: 'logged_only'
       })
 
     if (logError) {
       console.error('Email logging error:', logError)
+      return new Response(
+        JSON.stringify({ error: 'Failed to log email: ' + logError.message }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
     }
+
+    console.log('Email logged successfully')
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Email prepared and logged (simulation mode - check logs for details)',
+        message: 'Email logged successfully (no actual email sent)',
         to: to,
-        subject: subject,
-        note: 'This is a simulation. In production, implement Gmail API or use a service like SendGrid.'
+        subject: subject
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -121,10 +90,10 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Email sending error:', error)
+    console.error('Email function error:', error)
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to send email' 
+        error: error.message || 'Failed to process email request' 
       }),
       { 
         status: 500, 
