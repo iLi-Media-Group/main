@@ -27,7 +27,42 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client
+    // Get Resend API key
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      console.error('Missing Resend API key');
+      return new Response(JSON.stringify({ error: "Resend API key not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Send email via Resend
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${resendApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: Deno.env.get("FROM_EMAIL") || "noreply@mybeatfi.io",
+        to: [to],
+        subject: subject,
+        html: html,
+        text: text,
+      }),
+    });
+
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error('Resend API error:', errorText);
+      throw new Error(`Resend failed: ${errorText}`);
+    }
+
+    const resendResult = await resendResponse.json();
+    console.log('Resend success:', resendResult);
+
+    // Create Supabase client for logging
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     
@@ -41,31 +76,28 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Log to DB (simulate email sending)
+    // Log to DB
     const { error: logError } = await supabase.from("email_logs").insert({
       to_email: to,
       subject,
       sent_at: new Date().toISOString(),
-      status: "logged_only",
-      provider: "simulation",
+      status: "sent",
+      provider: "resend",
     });
 
     if (logError) {
       console.error("Logging error:", logError);
-      return new Response(JSON.stringify({ error: "Failed to log email: " + logError.message }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
-    console.log('Email logged successfully');
+    console.log('Email sent and logged successfully');
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Email logged successfully (simulation mode)",
+        message: "Email sent successfully via Resend",
         to: to,
-        subject: subject
+        subject: subject,
+        provider: "resend"
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
