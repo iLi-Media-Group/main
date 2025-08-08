@@ -61,7 +61,7 @@ export function useSearchAPI(): UseSearchAPI {
     setError(null);
 
     try {
-      const res = await fetch(`${SEARCH_API_URL}/search`, {
+      const res = await fetch(`${SEARCH_API_URL}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, limit: payload.limit || 40 })
@@ -94,7 +94,7 @@ export function useSearchAPI(): UseSearchAPI {
 
 // Convenience function for direct API calls (similar to ChatGPT's example)
 export async function querySearch(payload: SearchPayload): Promise<SearchResponse> {
-  const res = await fetch(`${SEARCH_API_URL}/search`, {
+  const res = await fetch(`${SEARCH_API_URL}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...payload, limit: payload.limit || 40 })
