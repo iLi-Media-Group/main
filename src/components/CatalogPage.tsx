@@ -581,88 +581,120 @@ export function CatalogPage() {
         </div>
       ) : (
         <>
-          {/* Check if this is a search result or just browsing */}
-          {filters?.query || filters?.genres?.length || filters?.moods?.length || 
-           filters?.instruments?.length || filters?.mediaTypes?.length ? (
-            // Search Results - Show categorized sections
-            <div className="space-y-8">
-              {(() => {
-                const { exactMatches, partialMatches, otherTracks } = categorizeTracks(tracks);
-                
-                return (
-                  <>
-                    {/* Exact Matches */}
-                    {exactMatches.length > 0 && (
-                      <div>
-                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                          <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded-full text-sm mr-3">
-                            Exact Matches
-                          </span>
-                          {exactMatches.length} track{exactMatches.length !== 1 ? 's' : ''}
-                        </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                          {exactMatches.map((track) =>
-                            track && track.id ? (
-                              <TrackCard
-                                key={track.id}
-                                track={track}
-                                onSelect={() => handleTrackSelect(track)}
-                              />
-                            ) : null
-                          )}
-                        </div>
-                      </div>
-                    )}
+                     {/* Check if this is a search result or just browsing */}
+           {filters?.query || filters?.genres?.length || filters?.moods?.length || 
+            filters?.instruments?.length || filters?.mediaTypes?.length ? (
+             // Search Results - Show categorized sections
+             <div className="space-y-8">
+               {/* Search Terms Display */}
+               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+                 <h3 className="text-lg font-semibold text-white mb-2">Search Results</h3>
+                 <div className="flex flex-wrap gap-2">
+                   {filters?.query && (
+                     <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">
+                       Query: "{filters.query}"
+                     </span>
+                   )}
+                   {filters?.genres?.length > 0 && (
+                     <span className="bg-green-500/20 text-green-300 px-3 py-1 rounded-full text-sm">
+                       Genres: {filters.genres.join(', ')}
+                     </span>
+                   )}
+                   {filters?.moods?.length > 0 && (
+                     <span className="bg-purple-500/20 text-purple-300 px-3 py-1 rounded-full text-sm">
+                       Moods: {filters.moods.join(', ')}
+                     </span>
+                   )}
+                   {filters?.instruments?.length > 0 && (
+                     <span className="bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full text-sm">
+                       Instruments: {filters.instruments.join(', ')}
+                     </span>
+                   )}
+                   {filters?.mediaTypes?.length > 0 && (
+                     <span className="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-sm">
+                       Media Types: {filters.mediaTypes.join(', ')}
+                     </span>
+                   )}
+                 </div>
+               </div>
 
-                    {/* Partial Matches */}
-                    {partialMatches.length > 0 && (
-                      <div>
-                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                          <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-sm mr-3">
-                            Partial Matches
-                          </span>
-                          {partialMatches.length} track{partialMatches.length !== 1 ? 's' : ''}
-                        </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                          {partialMatches.map((track) =>
-                            track && track.id ? (
-                              <TrackCard
-                                key={track.id}
-                                track={track}
-                                onSelect={() => handleTrackSelect(track)}
-                              />
-                            ) : null
-                          )}
-                        </div>
-                      </div>
-                    )}
+               {(() => {
+                 const { exactMatches, partialMatches, otherTracks } = categorizeTracks(tracks);
+                 
+                 return (
+                   <>
+                     {/* Exact Matches */}
+                     {exactMatches.length > 0 && (
+                       <div>
+                         <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                           <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded-full text-sm mr-3">
+                             Exact Matches
+                           </span>
+                           {exactMatches.length} track{exactMatches.length !== 1 ? 's' : ''}
+                         </h2>
+                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                           {exactMatches.map((track) =>
+                             track && track.id ? (
+                               <TrackCard
+                                 key={track.id}
+                                 track={track}
+                                 onSelect={() => handleTrackSelect(track)}
+                               />
+                             ) : null
+                           )}
+                         </div>
+                       </div>
+                     )}
 
-                    {/* Other Tracks */}
-                    {otherTracks.length > 0 && (
-                      <div>
-                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                          <span className="bg-gray-500/20 text-gray-300 px-2 py-1 rounded-full text-sm mr-3">
-                            Other Results
-                          </span>
-                          {otherTracks.length} track{otherTracks.length !== 1 ? 's' : ''}
-                        </h2>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                          {otherTracks.map((track) =>
-                            track && track.id ? (
-                              <TrackCard
-                                key={track.id}
-                                track={track}
-                                onSelect={() => handleTrackSelect(track)}
-                              />
-                            ) : null
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+                     {/* Partial Matches */}
+                     {partialMatches.length > 0 && (
+                       <div>
+                         <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                           <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-sm mr-3">
+                             Partial Matches
+                           </span>
+                           {partialMatches.length} track{partialMatches.length !== 1 ? 's' : ''}
+                         </h2>
+                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                           {partialMatches.map((track) =>
+                             track && track.id ? (
+                               <TrackCard
+                                 key={track.id}
+                                 track={track}
+                                 onSelect={() => handleTrackSelect(track)}
+                               />
+                             ) : null
+                           )}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Other Tracks */}
+                     {otherTracks.length > 0 && (
+                       <div>
+                         <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                           <span className="bg-gray-500/20 text-gray-300 px-2 py-1 rounded-full text-sm mr-3">
+                             Other Results
+                           </span>
+                           {otherTracks.length} track{otherTracks.length !== 1 ? 's' : ''}
+                         </h2>
+                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                           {otherTracks.map((track) =>
+                             track && track.id ? (
+                               <TrackCard
+                                 key={track.id}
+                                 track={track}
+                                 onSelect={() => handleTrackSelect(track)}
+                               />
+                             ) : null
+                           )}
+                         </div>
+                       </div>
+                     )}
+                   </>
+                 );
+               })()}
+             </div>
           ) : (
             // Regular browsing - Show all tracks in one grid
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">

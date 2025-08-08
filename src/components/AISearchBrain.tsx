@@ -249,7 +249,7 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
       {/* AI Brain Icon Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        className="fixed bottom-6 left-6 z-50 p-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
         title="AI Search Brain - Get search insights and suggestions"
       >
         <Brain className="w-6 h-6" />
