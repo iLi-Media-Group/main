@@ -616,13 +616,17 @@ export function CatalogPage() {
       ) : (
         <>
                      {/* Check if this is a search result or just browsing */}
-           {filters?.query || filters?.genres?.length || filters?.moods?.length || 
-            filters?.instruments?.length || filters?.mediaTypes?.length ? (
+           {(filters?.query || filters?.genres?.length || filters?.moods?.length || 
+            filters?.instruments?.length || filters?.mediaTypes?.length) ? (
              // Search Results - Show categorized sections
              <div className="space-y-8">
                {/* Search Terms Display */}
                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
                  <h3 className="text-lg font-semibold text-white mb-2">Search Results</h3>
+                 {/* Debug info */}
+                 <div className="text-xs text-gray-400 mb-2">
+                   Debug: filters = {JSON.stringify(filters)}
+                 </div>
                  <div className="flex flex-wrap gap-2">
                    {filters?.query && (
                      <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">
@@ -737,27 +741,33 @@ export function CatalogPage() {
              </div>
                      ) : (
              // Regular browsing or fallback - Show all tracks with colored borders based on search score
-             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-               {tracks.map((track) =>
-                 track && track.id ? (
-                   <div key={track.id} className="relative">
-                     {/* Color-coded border based on search score */}
-                     {track.searchScore >= 10 && (
-                       <div className="absolute inset-0 border-2 border-green-500/50 rounded-lg pointer-events-none z-10"></div>
-                     )}
-                     {track.searchScore >= 5 && track.searchScore < 10 && (
-                       <div className="absolute inset-0 border-2 border-yellow-500/50 rounded-lg pointer-events-none z-10"></div>
-                     )}
-                     {track.searchScore > 0 && track.searchScore < 5 && (
-                       <div className="absolute inset-0 border-2 border-gray-500/30 rounded-lg pointer-events-none z-10"></div>
-                     )}
-                     <TrackCard
-                       track={track}
-                       onSelect={() => handleTrackSelect(track)}
-                     />
-                   </div>
-                 ) : null
-               )}
+             <div>
+               {/* Debug info for fallback */}
+               <div className="text-xs text-gray-400 mb-2">
+                 Debug: Using fallback view. filters = {JSON.stringify(filters)}
+               </div>
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                 {tracks.map((track) =>
+                   track && track.id ? (
+                     <div key={track.id} className="relative">
+                       {/* Color-coded border based on search score */}
+                       {track.searchScore >= 10 && (
+                         <div className="absolute inset-0 border-2 border-green-500/50 rounded-lg pointer-events-none z-10"></div>
+                       )}
+                       {track.searchScore >= 5 && track.searchScore < 10 && (
+                         <div className="absolute inset-0 border-2 border-yellow-500/50 rounded-lg pointer-events-none z-10"></div>
+                       )}
+                       {track.searchScore > 0 && track.searchScore < 5 && (
+                         <div className="absolute inset-0 border-2 border-gray-500/30 rounded-lg pointer-events-none z-10"></div>
+                       )}
+                       <TrackCard
+                         track={track}
+                         onSelect={() => handleTrackSelect(track)}
+                       />
+                     </div>
+                   ) : null
+                 )}
+               </div>
              </div>
            )}
 
