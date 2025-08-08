@@ -530,18 +530,9 @@ export default function ProducerApplicationsAdmin() {
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white">Producer Applications</h1>
-        <div className="flex space-x-2">
-          <Button 
-            onClick={debugAllApplications} 
-            className="bg-gray-600 hover:bg-gray-700 text-white"
-            size="sm"
-          >
-            Debug All Apps
-          </Button>
-          <Button onClick={exportPDF} className="bg-blue-600 hover:bg-blue-700">
-            Export PDF
-          </Button>
-        </div>
+        <Button onClick={exportPDF} className="bg-blue-600 hover:bg-blue-700">
+          Export PDF
+        </Button>
       </div>
 
       {/* Tab Navigation */}

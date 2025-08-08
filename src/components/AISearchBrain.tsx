@@ -268,58 +268,61 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
 
       {/* Modal Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-4">
-          <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl border border-purple-500/20 max-w-2xl w-full max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-gray-900/95 backdrop-blur-sm rounded-xl border border-purple-500/20 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-purple-500/20">
-              <div className="flex items-center space-x-3">
-                <Brain className="w-6 h-6 text-purple-400" />
-                <h2 className="text-xl font-bold text-white">AI Search Brain</h2>
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-purple-500/20">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+                <h2 className="text-lg sm:text-xl font-bold text-white">AI Search Brain</h2>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-gray-400 hover:text-white transition-colors"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)] sm:max-h-[calc(80vh-120px)]">
               {/* Tab Navigation */}
-              <div className="flex space-x-1 mb-6 bg-gray-800/50 rounded-lg p-1">
+              <div className="flex space-x-1 mb-4 sm:mb-6 bg-gray-800/50 rounded-lg p-1">
                 <button
                   onClick={() => setActiveTab('popular')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'popular'
                       ? 'bg-purple-600 text-white'
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  <TrendingUp className="w-4 h-4 inline mr-2" />
-                  Popular
+                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Popular</span>
+                  <span className="sm:hidden">Pop</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('recent')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'recent'
                       ? 'bg-purple-600 text-white'
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  <Clock className="w-4 h-4 inline mr-2" />
-                  Recent
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Recent</span>
+                  <span className="sm:hidden">Rec</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('suggested')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-2 sm:px-4 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                     activeTab === 'suggested'
                       ? 'bg-purple-600 text-white'
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  <Lightbulb className="w-4 h-4 inline mr-2" />
-                  Suggested
+                  <Lightbulb className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Suggested</span>
+                  <span className="sm:hidden">Sug</span>
                 </button>
               </div>
 
