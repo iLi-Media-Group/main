@@ -4,6 +4,7 @@ import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Libra
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
+import AISearchBrain from './AISearchBrain';
 
 
 interface LayoutProps {
@@ -280,6 +281,16 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
 
 
       <Footer />
+      
+      {/* AI Search Brain - Only show on catalog page */}
+      {location.pathname === '/catalog' && (
+        <AISearchBrain 
+          onSearchApply={(query) => {
+            // Navigate to catalog with the search query
+            navigate(`/catalog?q=${encodeURIComponent(query)}`);
+          }} 
+        />
+      )}
     </div>
   );
 }
