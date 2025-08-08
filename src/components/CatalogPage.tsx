@@ -260,86 +260,120 @@ export function CatalogPage() {
         if (filters?.instruments?.length) searchTerms.push(...filters.instruments);
         if (filters?.mediaTypes?.length) searchTerms.push(...filters.mediaTypes);
 
-        if (searchTerms.length > 0) {
-          // Route to appropriate search based on service level
-          if (hasAISearch || hasDeepMedia) {
-            // Enhanced search for AI Search or Deep Media clients
-            const searchPayload = {
-              query: filters?.query || '',
-              genres: filters?.genres || [],
-              subgenres: hasAISearch ? (filters?.subGenres || []) : [],
-              moods: filters?.moods || [],
-              instruments: hasAISearch ? (filters?.instruments || []) : [],
-              usageTypes: hasDeepMedia ? (filters?.mediaTypes || []) : [],
-              limit: TRACKS_PER_PAGE
-            };
+                 if (searchTerms.length > 0) {
+           // For all search types, get ALL tracks and then filter/score them client-side
+           // This ensures we get complete results for proper categorization
+           console.log('Searching with terms:', searchTerms);
+           
+           // Get all tracks (we'll filter and score them client-side)
+           const { data: allTracks, error } = await supabase
+             .from('tracks')
+             .select(`
+               id,
+               title,
+               artist,
+               genres,
+               sub_genres,
+               moods,
+               instruments,
+               media_usage,
+               bpm,
+               audio_url,
+               image_url,
+               has_sting_ending,
+               is_one_stop,
+               duration,
+               mp3_url,
+               trackouts_url,
+               stems_url,
+               has_vocals,
+               vocals_usage_type,
+               is_sync_only,
+               track_producer_id,
+               created_at,
+               producer:profiles!track_producer_id (
+                 id,
+                 first_name,
+                 last_name,
+                 email,
+                 avatar_path
+               )
+             `)
+             .is('deleted_at', null)
+             .eq('is_sync_only', false);
 
-            try {
-              const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/search-tracks', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(searchPayload)
-              });
+           if (error) throw error;
 
-              const searchData = await response.json();
-              
-              if (searchData.ok && searchData.results) {
-                // Format the results to match our expected structure
-                const formattedTracks = searchData.results.map((track: any) => ({
-                  id: track.id,
-                  title: track.title || 'Untitled',
-                  artist: track.artist || 'Unknown Artist',
-                  genres: parseArrayField(track.genres),
-                  subGenres: parseArrayField(track.sub_genres),
-                  moods: parseArrayField(track.moods),
-                  instruments: parseArrayField(track.instruments),
-                  mediaUsage: parseArrayField(track.media_usage),
-                  duration: track.duration || '3:30',
-                  bpm: track.bpm,
-                  audioUrl: track.audio_url,
-                  image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-                  hasStingEnding: track.has_sting_ending,
-                  isOneStop: track.is_one_stop,
-                  mp3Url: track.mp3_url,
-                  trackoutsUrl: track.trackouts_url,
-                  stemsUrl: track.stems_url,
-                  hasVocals: track.has_vocals || false,
-                  isSyncOnly: track.is_sync_only || false,
-                  producerId: track.track_producer_id || '',
-                  producer: track.producer ? {
-                    id: track.producer.id,
-                    firstName: track.producer.first_name || '',
-                    lastName: track.producer.last_name || '',
-                    email: track.producer.email || '',
-                  } : undefined,
-                  fileFormats: {
-                    stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-                    stems: { format: ['WAV'], url: track.trackouts_url || '' },
-                    stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
-                  },
-                  pricing: {
-                    stereoMp3: 0,
-                    stems: 0,
-                    stemsWithVocals: 0
-                  },
-                  leaseAgreementUrl: '',
-                  searchScore: track.relevance || 0
-                }));
+           if (allTracks) {
+             // Calculate scores for each track
+             const scoredTracks = allTracks.map(track => ({
+               ...track,
+               _searchScore: calculateMatchScore(track, searchTerms)
+             }));
 
-                setTracks(formattedTracks);
-                setHasMore(formattedTracks.length >= TRACKS_PER_PAGE);
-                return;
-              }
-            } catch (searchError) {
-              console.error('Enhanced search failed, falling back to simple search:', searchError);
-              // Fall back to simple search if enhanced search fails
-            }
-          } else {
-            // Normal search for basic clients - use simple Supabase query
-            console.log('Using normal search for service level:', level);
-            // Continue with the existing simple query logic below
-          }
-        }
+             // Filter out tracks with zero score (no matches)
+             const matchingTracks = scoredTracks.filter(track => track._searchScore > 0);
+
+             // Sort by score (highest first) and then by creation date
+             matchingTracks.sort((a, b) => {
+               if (b._searchScore !== a._searchScore) {
+                 return b._searchScore - a._searchScore;
+               }
+               return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+             });
+
+             // Format tracks for display
+             const formattedTracks = matchingTracks.map(track => ({
+               id: track.id,
+               title: track.title || 'Untitled',
+               artist:
+                 track.producer?.first_name ||
+                 track.producer?.email?.split('@')[0] ||
+                 'Unknown Artist',
+               genres: parseArrayField(track.genres),
+               subGenres: parseArrayField(track.sub_genres),
+               moods: parseArrayField(track.moods),
+               instruments: parseArrayField(track.instruments),
+               mediaUsage: parseArrayField(track.media_usage),
+               duration: track.duration || '3:30',
+               bpm: track.bpm,
+               audioUrl: track.audio_url,
+               image:
+                 track.image_url ||
+                 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+               hasStingEnding: track.has_sting_ending,
+               isOneStop: track.is_one_stop,
+               mp3Url: track.mp3_url,
+               trackoutsUrl: track.trackouts_url,
+               stemsUrl: track.stems_url,
+               hasVocals: track.has_vocals || false,
+               isSyncOnly: track.is_sync_only || false,
+               producerId: track.track_producer_id || '',
+               producer: track.producer ? {
+                 id: track.producer.id,
+                 firstName: track.producer.first_name || '',
+                 lastName: track.producer.last_name || '',
+                 email: track.producer.email || '',
+               } : undefined,
+               fileFormats: {
+                 stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+                 stems: { format: ['WAV'], url: track.trackouts_url || '' },
+                 stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+               },
+               pricing: {
+                 stereoMp3: 0,
+                 stems: 0,
+                 stemsWithVocals: 0
+               },
+               leaseAgreementUrl: '',
+               searchScore: track._searchScore || 0
+             }));
+
+             setTracks(formattedTracks);
+             setHasMore(false); // No pagination for search results
+             return;
+           }
+         }
       }
 
       // Add pagination
@@ -635,11 +669,13 @@ export function CatalogPage() {
                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                            {exactMatches.map((track) =>
                              track && track.id ? (
-                               <TrackCard
-                                 key={track.id}
-                                 track={track}
-                                 onSelect={() => handleTrackSelect(track)}
-                               />
+                               <div key={track.id} className="relative">
+                                 <div className="absolute inset-0 border-2 border-green-500/50 rounded-lg pointer-events-none z-10"></div>
+                                 <TrackCard
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
+                               </div>
                              ) : null
                            )}
                          </div>
@@ -658,11 +694,13 @@ export function CatalogPage() {
                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                            {partialMatches.map((track) =>
                              track && track.id ? (
-                               <TrackCard
-                                 key={track.id}
-                                 track={track}
-                                 onSelect={() => handleTrackSelect(track)}
-                               />
+                               <div key={track.id} className="relative">
+                                 <div className="absolute inset-0 border-2 border-yellow-500/50 rounded-lg pointer-events-none z-10"></div>
+                                 <TrackCard
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
+                               </div>
                              ) : null
                            )}
                          </div>
@@ -681,11 +719,13 @@ export function CatalogPage() {
                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                            {otherTracks.map((track) =>
                              track && track.id ? (
-                               <TrackCard
-                                 key={track.id}
-                                 track={track}
-                                 onSelect={() => handleTrackSelect(track)}
-                               />
+                               <div key={track.id} className="relative">
+                                 <div className="absolute inset-0 border-2 border-gray-500/30 rounded-lg pointer-events-none z-10"></div>
+                                 <TrackCard
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
+                               </div>
                              ) : null
                            )}
                          </div>
@@ -695,20 +735,31 @@ export function CatalogPage() {
                  );
                })()}
              </div>
-          ) : (
-            // Regular browsing - Show all tracks in one grid
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {tracks.map((track) =>
-                track && track.id ? (
-                  <TrackCard
-                    key={track.id}
-                    track={track}
-                    onSelect={() => handleTrackSelect(track)}
-                  />
-                ) : null
-              )}
-            </div>
-          )}
+                     ) : (
+             // Regular browsing or fallback - Show all tracks with colored borders based on search score
+             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+               {tracks.map((track) =>
+                 track && track.id ? (
+                   <div key={track.id} className="relative">
+                     {/* Color-coded border based on search score */}
+                     {track.searchScore >= 10 && (
+                       <div className="absolute inset-0 border-2 border-green-500/50 rounded-lg pointer-events-none z-10"></div>
+                     )}
+                     {track.searchScore >= 5 && track.searchScore < 10 && (
+                       <div className="absolute inset-0 border-2 border-yellow-500/50 rounded-lg pointer-events-none z-10"></div>
+                     )}
+                     {track.searchScore > 0 && track.searchScore < 5 && (
+                       <div className="absolute inset-0 border-2 border-gray-500/30 rounded-lg pointer-events-none z-10"></div>
+                     )}
+                     <TrackCard
+                       track={track}
+                       onSelect={() => handleTrackSelect(track)}
+                     />
+                   </div>
+                 ) : null
+               )}
+             </div>
+           )}
 
           {hasMore && (
             <div className="mt-8 text-center">
