@@ -506,14 +506,22 @@ export default function ProducerApplicationsAdmin() {
             </ul>
           </div>
           
+          <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>🔑 Your Invitation Code:</h3>
+            <p><strong>${invitationCode}</strong></p>
+            <p style="font-size: 14px; color: #92400e;">Use this code when signing up as a producer</p>
+          </div>
+          
           <h3>🔑 Next Steps:</h3>
           <ol>
-            <li>Use your Producer Number (${producerNumber}) to sign up at: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+            <li>Go to: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+            <li>Select "Sign Up as Producer"</li>
+            <li>Enter your invitation code: <strong>${invitationCode}</strong></li>
             <li>Complete your profile setup</li>
             <li>Start uploading your tracks and connecting with clients</li>
           </ol>
           
-          <p><strong>🎯 Your Producer Number is your unique identifier - keep it safe!</strong></p>
+          <p><strong>🎯 Keep your invitation code safe - you'll need it to create your account!</strong></p>
           
           <p>Welcome to MyBeatFi!</p>
           
