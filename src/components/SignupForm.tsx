@@ -55,19 +55,21 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         throw new Error('Password does not meet requirements');
       }
 
-      if (!executeRecaptcha) {
-        console.warn('reCAPTCHA not loaded, proceeding without verification');
-        // For now, allow signup to proceed without reCAPTCHA for testing
-        // In production, you might want to throw an error here
-      } else {
-        console.log('Executing reCAPTCHA...');
-        // Execute reCAPTCHA
-        const token = await executeRecaptcha('signup');
-        if (!token) {
-          throw new Error('Please complete the reCAPTCHA verification');
-        }
-        console.log('reCAPTCHA token received:', token ? 'YES' : 'NO');
-      }
+      // Temporarily disable reCAPTCHA due to CSP issues
+      console.log('reCAPTCHA disabled for testing');
+      // if (!executeRecaptcha) {
+      //   console.warn('reCAPTCHA not loaded, proceeding without verification');
+      //   // For now, allow signup to proceed without reCAPTCHA for testing
+      //   // In production, you might want to throw an error here
+      // } else {
+      //   console.log('Executing reCAPTCHA...');
+      //   // Execute reCAPTCHA
+      //   const token = await executeRecaptcha('signup');
+      //   if (!token) {
+      //     throw new Error('Please complete the reCAPTCHA verification');
+      //   }
+      //   console.log('reCAPTCHA token received:', token ? 'YES' : 'NO');
+      // }
 
       // Check invitation code for producer accounts
       if (accountType === 'producer') {
