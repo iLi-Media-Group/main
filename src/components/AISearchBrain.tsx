@@ -3,6 +3,7 @@ import { Brain, TrendingUp, Clock, Lightbulb, X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useServiceLevel } from '../hooks/useServiceLevel';
+import { logSearchQuery } from '../lib/searchLogger';
 
 interface SearchInsight {
   query: string;
@@ -234,7 +235,17 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
     }
   }, [isOpen, user]);
 
-  const handleSearchClick = (query: string) => {
+  const handleSearchClick = async (query: string) => {
+    // Log the search query to the database
+    await logSearchQuery({ query });
+    
+    // Refresh the data to include the new search
+    await Promise.all([
+      fetchPopularSearches(),
+      fetchRecentSearches(),
+      generateSuggestedSearches()
+    ]);
+    
     onSearchApply(query);
     setIsOpen(false);
   };

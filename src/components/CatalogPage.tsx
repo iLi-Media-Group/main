@@ -10,6 +10,7 @@ import { parseArrayField } from '../lib/utils';
 import AIRecommendationWidget from './AIRecommendationWidget';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { useServiceLevel } from '../hooks/useServiceLevel';
+import { logSearchFromFilters } from '../lib/searchLogger';
 
 // Inside your page component:
 <AIRecommendationWidget />
@@ -544,9 +545,12 @@ export function CatalogPage() {
      if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
      if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 
-    // Update URL without reloading the page
-    navigate(`/catalog?${params.toString()}`, { replace: true });
-  };
+         // Update URL without reloading the page
+     navigate(`/catalog?${params.toString()}`, { replace: true });
+     
+     // Log the search query to the database
+     await logSearchFromFilters(normalizedFilters);
+   };
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
