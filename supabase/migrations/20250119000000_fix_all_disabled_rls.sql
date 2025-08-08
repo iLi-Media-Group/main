@@ -14,6 +14,29 @@ WHERE schemaname = 'public'
     AND tablename NOT LIKE 'information_schema%'
 ORDER BY tablename;
 
+-- Check which tables actually exist before proceeding
+SELECT 'Checking table existence:' as info;
+SELECT 
+    tablename,
+    CASE 
+        WHEN EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = tablename) 
+        THEN '✅ EXISTS' 
+        ELSE '❌ MISSING' 
+    END as status
+FROM (VALUES 
+    ('tracks'),
+    ('instrument_categories'),
+    ('instruments'),
+    ('genres'),
+    ('sub_genres'),
+    ('media_usage_types'),
+    ('producer_applications'),
+    ('white_label_clients'),
+    ('white_label_features'),
+    ('site_settings'),
+    ('clients')
+) AS t(tablename);
+
 -- ============================================
 -- 1. FIX TRACKS TABLE RLS
 -- ============================================
@@ -188,38 +211,6 @@ CREATE POLICY "sub_genres_update_policy" ON sub_genres
     );
 
 CREATE POLICY "sub_genres_delete_policy" ON sub_genres
-    FOR DELETE USING (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
-
--- Enable RLS on moods table
-ALTER TABLE moods ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "moods_select_policy" ON moods;
-DROP POLICY IF EXISTS "moods_insert_policy" ON moods;
-DROP POLICY IF EXISTS "moods_update_policy" ON moods;
-DROP POLICY IF EXISTS "moods_delete_policy" ON moods;
-
--- Create policies for moods
--- Public read access
-CREATE POLICY "moods_select_policy" ON moods
-    FOR SELECT USING (true);
-
--- Only admins can manage moods
-CREATE POLICY "moods_insert_policy" ON moods
-    FOR INSERT WITH CHECK (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
-
-CREATE POLICY "moods_update_policy" ON moods
-    FOR UPDATE USING (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    ) WITH CHECK (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
-
-CREATE POLICY "moods_delete_policy" ON moods
     FOR DELETE USING (
         auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
     );
