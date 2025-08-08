@@ -72,6 +72,7 @@ import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import SearchTest from './components/SearchTest';
+import { initializeRefreshPrevention } from './utils/preventRefresh';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -79,6 +80,22 @@ const App = () => {
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
+  
+  // Initialize refresh prevention system
+  useEffect(() => {
+    initializeRefreshPrevention({
+      enabled: true,
+      excludePaths: [
+        '/success',
+        '/checkout',
+        '/payment',
+        '/login',
+        '/signup',
+        '/admin',
+        '/producer/dashboard'
+      ]
+    });
+  }, []);
   
   // Security hook for the entire application
   const {

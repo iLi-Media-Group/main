@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, User, Mail, Music, Briefcase, Info, ArrowRight, Loader2, AlertCircle, Plus, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useRefreshPrevention, clearUnsavedChanges } from '../utils/preventRefresh';
 
 const proOptions = [
   '',
@@ -138,6 +139,14 @@ const ProducerApplicationForm: React.FC = () => {
   const [step, setStep] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = Object.values(formData).some(value => 
+    typeof value === 'string' && value.trim() !== ''
+  );
+
+  // Use refresh prevention hook
+  useRefreshPrevention(hasUnsavedChanges);
+
   // Load saved form data on component mount
   useEffect(() => {
     const savedFormData = localStorage.getItem(FORM_STORAGE_KEY);
@@ -186,6 +195,7 @@ const ProducerApplicationForm: React.FC = () => {
   const clearSavedFormData = () => {
     localStorage.removeItem(FORM_STORAGE_KEY);
     localStorage.removeItem(FORM_STEP_KEY);
+    clearUnsavedChanges(); // Clear refresh prevention
   };
 
   // Validation functions for each step
