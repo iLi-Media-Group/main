@@ -11,57 +11,18 @@ import AIRecommendationWidget from './AIRecommendationWidget';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { useServiceLevel } from '../hooks/useServiceLevel';
 import { logSearchFromFilters } from '../lib/searchLogger';
+import { useSynonyms } from '../hooks/useSynonyms';
 
 // Inside your page component:
 <AIRecommendationWidget />
 
 const TRACKS_PER_PAGE = 20;
 
-// Synonym expansion map for flexible search
-const synonymsMap: { [key: string]: string[] } = {
-  // Genres
-  jazz: ['jazzy', 'smooth', 'groovy', 'swing', 'bluesy', 'soulful', 'jazz'],
-  hiphop: ['rap', 'trap', 'drill', 'grime', 'hip hop', 'hip-hop', 'hiphop'],
-  electronic: ['edm', 'techno', 'house', 'trance', 'dubstep', 'electronic dance'],
-  rock: ['rocky', 'guitar', 'electric', 'hard rock', 'classic rock'],
-  pop: ['popular', 'mainstream', 'radio', 'chart'],
-  classical: ['orchestral', 'symphonic', 'orchestra', 'symphony'],
-  country: ['western', 'folk', 'americana', 'bluegrass'],
-  rnb: ['r&b', 'rhythm and blues', 'soul', 'neo soul', 'rnb'],
-  
-  // Moods
-  energetic: ['upbeat', 'high energy', 'powerful', 'intense', 'dynamic', 'energetic'],
-  peaceful: ['calm', 'relaxing', 'serene', 'tranquil', 'soothing', 'peaceful'],
-  uplifting: ['inspiring', 'motivational', 'positive', 'encouraging', 'uplifting'],
-  dramatic: ['intense', 'emotional', 'powerful', 'epic', 'dramatic'],
-  romantic: ['love', 'passionate', 'intimate', 'sweet', 'romantic'],
-  mysterious: ['dark', 'moody', 'atmospheric', 'haunting', 'mysterious'],
-  funky: ['groovy', 'rhythmic', 'danceable', 'funky'],
-  melancholic: ['sad', 'melancholy', 'sorrowful', 'emotional', 'melancholic'],
-  
-  // Instruments
-  guitar: ['acoustic guitar', 'electric guitar', 'bass guitar', 'guitar'],
-  piano: ['keyboard', 'keys', 'piano'],
-  drums: ['drum', 'percussion', 'beat', 'drums'],
-  vocals: ['voice', 'singing', 'vocal', 'vocals'],
-  synth: ['synthesizer', 'electronic', 'synth'],
-  bass: ['bass guitar', 'bass', 'low end'],
-  violin: ['fiddle', 'violin', 'string'],
-  saxophone: ['sax', 'saxophone', 'brass'],
-  
-  // Media Types
-  television: ['tv', 'television', 'broadcast', 'network'],
-  film: ['movie', 'cinema', 'film', 'motion picture'],
-  podcast: ['podcast', 'audio', 'broadcast'],
-  youtube: ['youtube', 'video', 'online'],
-  commercial: ['advertisement', 'ad', 'commercial', 'marketing'],
-  gaming: ['video game', 'game', 'gaming', 'interactive'],
-  social: ['social media', 'instagram', 'tiktok', 'social'],
-  corporate: ['business', 'corporate', 'professional', 'commercial']
-};
+// Synonym expansion map for flexible search - now loaded from database
+// This will be replaced by the useSynonyms hook
 
 // Helper function to expand search terms with synonyms
-const expandSearchTerms = (searchTerms: string[]): string[] => {
+const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: string[] }): string[] => {
   const expandedTerms = new Set<string>();
   
   searchTerms.forEach(term => {
@@ -90,9 +51,9 @@ const expandSearchTerms = (searchTerms: string[]): string[] => {
 };
 
 // Helper function to calculate match score for a track
-const calculateMatchScore = (track: any, searchTerms: string[]): number => {
+const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [key: string]: string[] }): number => {
   let score = 0;
-  const expandedTerms = expandSearchTerms(searchTerms);
+  const expandedTerms = expandSearchTerms(searchTerms, synonymsMap);
   
   // Parse search terms for special filters
   const searchQuery = searchTerms.join(' ').toLowerCase();
@@ -199,6 +160,7 @@ export function CatalogPage() {
   const [currentFilters, setCurrentFilters] = useState<any>(null);
   const { genres, subGenres, moods } = useDynamicSearchData();
   const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
+  const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
 
      useEffect(() => {
      // Get search params
@@ -389,7 +351,7 @@ export function CatalogPage() {
              // Calculate scores for each track
              const scoredTracks = allTracks.map(track => ({
                ...track,
-               _searchScore: calculateMatchScore(track, searchTerms)
+               _searchScore: calculateMatchScore(track, searchTerms, synonymsMap)
              }));
 
              // Filter out tracks with zero score (no matches)
@@ -498,7 +460,7 @@ export function CatalogPage() {
           // Calculate scores for each track
           scoredTracks = scoredTracks.map(track => ({
             ...track,
-            _searchScore: calculateMatchScore(track, searchTerms)
+            _searchScore: calculateMatchScore(track, searchTerms, synonymsMap)
           }));
           
           // Sort by score (highest first) and then by creation date

@@ -21,6 +21,7 @@ import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
 import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { SynonymManager } from './SynonymManager';
 
 
 interface UserStats {
@@ -176,7 +177,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1422,6 +1423,7 @@ if (subscription.price_id) {
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
+            { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -2003,7 +2005,11 @@ if (subscription.price_id) {
           </div>
         )}
 
-
+        {activeTab === 'synonyms' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <SynonymManager />
+          </div>
+        )}
 
       {/* Producer Analytics Modal */}
       {selectedProducer && (
