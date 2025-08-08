@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle, User, Mail, Music, Briefcase, Info, ArrowRight, Loader2, AlertCircle, Plus, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -58,44 +58,31 @@ const quizQuestions = [
   },
   {
     id: 4,
-    question: "What is the typical structure of a sync-ready track?",
+    question: "What is the main difference between a master license and a sync license?",
     options: [
-      "Long intro, unpredictable changes, no clear ending",
-      "Repetitive loop with no development",
-      "Clear edit points, structured sections, and a clean ending",
-      "Just a beat with no melody or progression"
+      "A master license is more expensive",
+      "A sync license is only for film and TV",
+      "A master license covers the recording, a sync license covers the composition",
+      "A sync license is only for streaming platforms"
     ],
     correctAnswer: "C",
-    explanation: "Sync-ready tracks need clear edit points, structured sections, and a clean ending for easy editing."
+    explanation: "A master license covers the recording itself, while a sync license covers the composition and its use in visual media."
   },
   {
     id: 5,
-    question: "You used a loop from Splice to create your melody. Can this track be offered as one-stop for sync?",
+    question: "Which of the following is typically NOT included in a sync license?",
     options: [
-      "Yes, as long as I mixed it myself",
-      "No, because it contains third-party content",
-      "Yes, if I give credit to Splice",
-      "Only if I remove the loop after licensing"
+      "The right to use the music in a film",
+      "The right to modify the music",
+      "The right to use the music in a TV commercial",
+      "The right to use the music in a video game"
     ],
     correctAnswer: "B",
-    explanation: "Even though Splice loops are royalty-free, using third-party content disqualifies it from true one-stop control because you don't own 100% of the composition or sound recording."
+    explanation: "Modifying the music typically requires separate permission and is not automatically included in a sync license."
   }
 ];
 
-const steps = [
-  'Contact Info',
-  'Experience',
-  'Music & Links',
-  'Business Details',
-  'Sync Licensing',
-  'Sync Quiz',
-  'Additional Info',
-];
-
-interface Instrument {
-  name: string;
-  proficiency: string;
-}
+const steps = ['Contact Info', 'Experience', 'Music & Links', 'Business Details', 'Sync Licensing Course', 'Quiz', 'Additional Info'];
 
 const initialFormData = {
   name: '',
@@ -139,6 +126,10 @@ const initialFormData = {
   quiz_completed: false,
 };
 
+// Local storage key for form data persistence
+const FORM_STORAGE_KEY = 'producer_application_form_data';
+const FORM_STEP_KEY = 'producer_application_form_step';
+
 const ProducerApplicationForm: React.FC = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [submitting, setSubmitting] = useState(false);
@@ -147,12 +138,54 @@ const ProducerApplicationForm: React.FC = () => {
   const [step, setStep] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
+  // Load saved form data on component mount
+  useEffect(() => {
+    const savedFormData = localStorage.getItem(FORM_STORAGE_KEY);
+    const savedStep = localStorage.getItem(FORM_STEP_KEY);
+    
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData);
+        setFormData(parsedData);
+      } catch (error) {
+        console.error('Error loading saved form data:', error);
+      }
+    }
+    
+    if (savedStep) {
+      try {
+        const parsedStep = parseInt(savedStep);
+        if (!isNaN(parsedStep) && parsedStep >= 0 && parsedStep < steps.length) {
+          setStep(parsedStep);
+        }
+      } catch (error) {
+        console.error('Error loading saved step:', error);
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+  }, [formData]);
+
+  // Save current step to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(FORM_STEP_KEY, step.toString());
+  }, [step]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
     // Clear validation errors when user starts typing
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
+  };
+
+  // Clear saved form data when application is successfully submitted
+  const clearSavedFormData = () => {
+    localStorage.removeItem(FORM_STORAGE_KEY);
+    localStorage.removeItem(FORM_STEP_KEY);
   };
 
   // Validation functions for each step
@@ -193,16 +226,15 @@ const ProducerApplicationForm: React.FC = () => {
         if (!formData.sync_licensing_course) errors.push('Please select whether you have completed a sync licensing course');
         break;
       
-      case 5: // Sync Quiz
-        if (!formData.quiz_question_1) errors.push('Please answer question 1');
-        if (!formData.quiz_question_2) errors.push('Please answer question 2');
-        if (!formData.quiz_question_3) errors.push('Please answer question 3');
-        if (!formData.quiz_question_4) errors.push('Please answer question 4');
-        if (!formData.quiz_question_5) errors.push('Please answer question 5');
+      case 5: // Quiz
+        if (!formData.quiz_question_1) errors.push('Please answer quiz question 1');
+        if (!formData.quiz_question_2) errors.push('Please answer quiz question 2');
+        if (!formData.quiz_question_3) errors.push('Please answer quiz question 3');
+        if (!formData.quiz_question_4) errors.push('Please answer quiz question 4');
+        if (!formData.quiz_question_5) errors.push('Please answer quiz question 5');
         break;
       
-      case 6: // Additional Info
-        // Additional info is optional, so no validation needed
+      default:
         break;
     }
 
@@ -212,34 +244,39 @@ const ProducerApplicationForm: React.FC = () => {
 
   const nextStep = () => {
     if (validateStep(step)) {
-      setStep((s) => Math.min(s + 1, steps.length - 1));
+      setStep(step + 1);
     }
   };
 
-  const prevStep = () => setStep((s) => Math.max(s - 1, 0));
+  const prevStep = () => {
+    setStep(step - 1);
+  };
 
-  // Calculate quiz score
   const calculateQuizScore = () => {
     let score = 0;
-    
-    // Question 1
-    if (formData.quiz_question_1 === 'C') score++;
-    
-    // Question 2
-    if (formData.quiz_question_2 === 'B') score++;
-    
-    // Question 3 (multiple choice - both B and C must be selected)
-    if (formData.quiz_question_3 && formData.quiz_question_3.includes('B') && formData.quiz_question_3.includes('C')) {
-      score++;
-    }
-    
-    // Question 4
-    if (formData.quiz_question_4 === 'C') score++;
-    
-    // Question 5
-    if (formData.quiz_question_5 === 'B') score++;
-    
-    return score;
+    const totalQuestions = quizQuestions.length;
+
+    quizQuestions.forEach((question, index) => {
+      const userAnswer = formData[`quiz_question_${index + 1}` as keyof typeof formData] as string;
+      
+      if (question.isMultipleChoice) {
+        // For multiple choice questions, check if user selected all correct answers
+        const userAnswers = userAnswer ? userAnswer.split(',').sort() : [];
+        const correctAnswers = question.correctAnswers ? question.correctAnswers.sort() : [];
+        
+        if (userAnswers.length === correctAnswers.length && 
+            userAnswers.every((answer, i) => answer === correctAnswers[i])) {
+          score++;
+        }
+      } else {
+        // For single choice questions
+        if (userAnswer === question.correctAnswer) {
+          score++;
+        }
+      }
+    });
+
+    return Math.round((score / totalQuestions) * 100);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -273,6 +310,7 @@ const ProducerApplicationForm: React.FC = () => {
     } else {
       setSuccess(true);
       setFormData(initialFormData);
+      clearSavedFormData(); // Clear saved data after successful submission
     }
     setSubmitting(false);
   };
@@ -341,7 +379,7 @@ const ProducerApplicationForm: React.FC = () => {
             <option value="Band">Band</option>
             <option value="Other">Other</option>
           </select>
-          <input name="tracks_per_week" placeholder="Tracks Produced Per Week *" value={formData.tracks_per_week} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
+          <input name="tracks_per_week" placeholder="Tracks per Week *" value={formData.tracks_per_week} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
         </div>
       )}
       {step === 2 && (
@@ -462,25 +500,14 @@ const ProducerApplicationForm: React.FC = () => {
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
-          
-          {/* Recording Artists Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Recording Artists</h3>
-            <select name="records_artists" value={formData.records_artists} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-              <option value="">Do you record artists? *</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {formData.records_artists === 'Yes' && (
-              <input 
-                name="artist_example_link" 
-                placeholder="Example link to an artist you work with" 
-                value={formData.artist_example_link} 
-                onChange={handleChange} 
-                className="w-full border p-3 rounded text-black" 
-              />
-            )}
-          </div>
+          <select name="records_artists" value={formData.records_artists} onChange={handleChange} required className="w-full border p-3 rounded text-black">
+            <option value="">Do you record artists? *</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+          {formData.records_artists === 'Yes' && (
+            <input name="artist_example_link" placeholder="Link to example of artist recording (optional)" value={formData.artist_example_link} onChange={handleChange} className="w-full border p-3 rounded text-black" />
+          )}
         </div>
       )}
       {step === 3 && (
@@ -508,121 +535,63 @@ const ProducerApplicationForm: React.FC = () => {
       )}
       {step === 5 && (
         <div className="space-y-6 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Quiz</h2>
-          <p className="text-white text-sm mb-4">Please answer these 5 questions about sync licensing. This helps us understand your knowledge level.</p>
+          <h2 className="text-xl font-bold mb-4 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Quiz</h2>
+          <p className="text-white text-sm mb-6">Please answer these questions about sync licensing. This helps us understand your knowledge level.</p>
           
-          {/* Question 1 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-white">1. {quizQuestions[0].question}</h3>
-            <div className="space-y-2">
-              {quizQuestions[0].options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="quiz_question_1"
-                    value={String.fromCharCode(65 + index)} // A, B, C, D
-                    checked={formData.quiz_question_1 === String.fromCharCode(65 + index)}
-                    onChange={handleChange}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
-                </label>
-              ))}
+          {quizQuestions.map((question, index) => (
+            <div key={question.id} className="bg-white/5 p-4 rounded-lg">
+              <h3 className="font-semibold mb-3 text-white">
+                Question {index + 1}: {question.question}
+              </h3>
+              
+              {question.isMultipleChoice ? (
+                <div className="space-y-2">
+                  {question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name={`quiz_question_${index + 1}`}
+                        value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
+                        checked={formData[`quiz_question_${index + 1}` as keyof typeof formData]?.includes(String.fromCharCode(65 + optionIndex))}
+                        onChange={(e) => {
+                          const currentAnswers = formData[`quiz_question_${index + 1}` as keyof typeof formData] as string || '';
+                          const answer = e.target.value;
+                          
+                          if (e.target.checked) {
+                            // Add answer
+                            const newAnswers = currentAnswers ? `${currentAnswers},${answer}` : answer;
+                            setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
+                          } else {
+                            // Remove answer
+                            const newAnswers = currentAnswers.split(',').filter(a => a !== answer).join(',');
+                            setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
+                          }
+                        }}
+                        className="rounded"
+                      />
+                      <span className="text-white">{option}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {question.options.map((option, optionIndex) => (
+                    <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`quiz_question_${index + 1}`}
+                        value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
+                        checked={formData[`quiz_question_${index + 1}` as keyof typeof formData] === String.fromCharCode(65 + optionIndex)}
+                        onChange={handleChange}
+                        className="rounded"
+                      />
+                      <span className="text-white">{option}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Question 2 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-white">2. {quizQuestions[1].question}</h3>
-            <div className="space-y-2">
-              {quizQuestions[1].options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="quiz_question_2"
-                    value={String.fromCharCode(65 + index)} // A, B, C, D
-                    checked={formData.quiz_question_2 === String.fromCharCode(65 + index)}
-                    onChange={handleChange}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 3 - Multiple Choice */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-white">3. {quizQuestions[2].question}</h3>
-            <p className="text-sm text-gray-300">Select all that apply:</p>
-            <div className="space-y-2">
-              {quizQuestions[2].options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="quiz_question_3"
-                    value={String.fromCharCode(65 + index)} // A, B, C, D
-                    checked={!!(formData.quiz_question_3 && formData.quiz_question_3.includes(String.fromCharCode(65 + index)))}
-                    onChange={(e) => {
-                      const currentAnswers = formData.quiz_question_3 ? formData.quiz_question_3.split(',') : [];
-                      let newAnswers;
-                      if (e.target.checked) {
-                        newAnswers = [...currentAnswers, e.target.value];
-                      } else {
-                        newAnswers = currentAnswers.filter(ans => ans !== e.target.value);
-                      }
-                      setFormData({
-                        ...formData,
-                        quiz_question_3: newAnswers.join(',')
-                      });
-                    }}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 4 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-white">4. {quizQuestions[3].question}</h3>
-            <div className="space-y-2">
-              {quizQuestions[3].options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="quiz_question_4"
-                    value={String.fromCharCode(65 + index)} // A, B, C, D
-                    checked={formData.quiz_question_4 === String.fromCharCode(65 + index)}
-                    onChange={handleChange}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Question 5 */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-white">5. {quizQuestions[4].question}</h3>
-            <div className="space-y-2">
-              {quizQuestions[4].options.map((option, index) => (
-                <label key={index} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="quiz_question_5"
-                    value={String.fromCharCode(65 + index)} // A, B, C, D
-                    checked={formData.quiz_question_5 === String.fromCharCode(65 + index)}
-                    onChange={handleChange}
-                    className="text-blue-600"
-                  />
-                  <span className="text-white">{String.fromCharCode(65 + index)}) {option}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       )}
       {step === 6 && (
