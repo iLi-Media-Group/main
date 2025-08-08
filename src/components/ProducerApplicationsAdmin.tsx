@@ -786,7 +786,7 @@ export default function ProducerApplicationsAdmin() {
                         size="sm"
                       >
                         <CheckCircle className="w-4 h-4 mr-1" />
-                        Quick Invite (Tier 2)
+                        Tier 2 - Review
                       </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
