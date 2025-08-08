@@ -10,31 +10,31 @@ ALTER TABLE public.tracks ADD COLUMN IF NOT EXISTS media_usage_arr text[];
 -- 2) Convert existing text columns to arrays
 UPDATE public.tracks
 SET genres_arr = CASE
-  WHEN genres IS NULL OR genres = '' THEN '{}'
+  WHEN genres IS NULL OR trim(genres) = '' THEN ARRAY[]::text[]
   ELSE array_remove(ARRAY(SELECT trim(x) FROM unnest(string_to_array(genres, ',')) AS x), '')
 END;
 
 UPDATE public.tracks
 SET sub_genres_arr = CASE
-  WHEN sub_genres IS NULL OR sub_genres = '' THEN '{}'
+  WHEN sub_genres IS NULL OR trim(sub_genres) = '' THEN ARRAY[]::text[]
   ELSE array_remove(ARRAY(SELECT trim(x) FROM unnest(string_to_array(sub_genres, ',')) AS x), '')
 END;
 
 UPDATE public.tracks
 SET moods_arr = CASE
-  WHEN moods IS NULL OR moods = '' THEN '{}'
+  WHEN moods IS NULL OR trim(moods) = '' THEN ARRAY[]::text[]
   ELSE array_remove(ARRAY(SELECT trim(x) FROM unnest(string_to_array(moods, ',')) AS x), '')
 END;
 
 UPDATE public.tracks
 SET instruments_arr = CASE
-  WHEN instruments IS NULL OR instruments = '' THEN '{}'
+  WHEN instruments IS NULL OR trim(instruments) = '' THEN ARRAY[]::text[]
   ELSE array_remove(ARRAY(SELECT trim(x) FROM unnest(string_to_array(instruments, ',')) AS x), '')
 END;
 
 UPDATE public.tracks
 SET media_usage_arr = CASE
-  WHEN media_usage IS NULL OR media_usage = '' THEN '{}'
+  WHEN media_usage IS NULL OR trim(media_usage) = '' THEN ARRAY[]::text[]
   ELSE array_remove(ARRAY(SELECT trim(x) FROM unnest(string_to_array(media_usage, ',')) AS x), '')
 END;
 
