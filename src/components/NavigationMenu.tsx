@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Home, ShoppingCart, User, Plus, Settings, Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useRef } from 'react';
@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase';
 
 export function NavigationMenu() {
   const { accountType, user } = useAuth();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -68,16 +69,16 @@ export function NavigationMenu() {
       case 'renewal_rejected':
       case 'renewal_complete':
         if (notification.data && notification.data.licenseId) {
-          window.location.href = `/license-agreement/${notification.data.licenseId}`;
+          navigate(`/license-agreement/${notification.data.licenseId}`);
         }
         break;
       case 'proposal_update':
         if (notification.data && notification.data.proposalId) {
-          window.location.href = `/sync-proposal/${notification.data.proposalId}`;
+          navigate(`/sync-proposal/${notification.data.proposalId}`);
         }
         break;
       case 'payout':
-        window.location.href = '/payouts';
+        navigate('/payouts');
         break;
       // Add more types as needed
       default:

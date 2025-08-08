@@ -70,8 +70,8 @@ export function SyncProposalAcceptDialog({
       } else {
         // Show waiting message
         setWaitingMessage('Your acceptance has been recorded. Waiting for the producer to accept the proposal. You will be notified when payment is ready.');
-        // Fallback: reload the page to ensure UI is up to date
-        setTimeout(() => window.location.reload(), 1500);
+        // Update UI state instead of reloading
+        onAccept();
       }
     } catch (err) {
       console.error('Error accepting proposal:', err);
@@ -141,8 +141,8 @@ export function SyncProposalAcceptDialog({
       });
 
       onClose();
-      // Fallback: reload the page to ensure UI is up to date after decline
-      setTimeout(() => window.location.reload(), 1500);
+      // Update UI state instead of reloading
+      onAccept();
     } catch (err) {
       console.error('Error declining proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to decline proposal');
