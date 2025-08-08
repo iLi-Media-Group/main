@@ -22,38 +22,30 @@ serve(async (req) => {
   try {
     console.log('Search function called');
     
-    const body = await req.json();
-    console.log('Request body:', body);
-    
-    const { 
-      query = '', 
-      genres = [], 
-      subgenres = [], 
-      moods = [], 
-      usageTypes = [],
-      limit = 40 
-    } = body;
-
-    console.log('Parsed parameters:', { query, genres, subgenres, moods, usageTypes, limit });
-
-    // Simple test query first
-    const { data: testResults, error: testError } = await supabase
+    // Simple search - just get all tracks
+    const { data: results, error: searchError } = await supabase
       .from("tracks")
       .select("*")
-      .limit(5);
-
-    console.log('Test query results:', testResults?.length || 0);
-    if (testError) {
-      console.error('Test query error:', testError);
-      throw testError;
+      .limit(10);
+    
+    if (searchError) {
+      console.error('Search error:', searchError);
+      throw searchError;
     }
 
-    // For now, return a simple response
+    console.log('Search results count:', results?.length || 0);
+
+    // Add simple relevance scores
+    const scoredResults = (results || []).map(track => ({
+      ...track,
+      relevance: Math.floor(Math.random() * 10) // Random score for now
+    }));
+
     return new Response(JSON.stringify({
       ok: true,
-      results: testResults || [],
+      results: scoredResults,
       meta: {
-        count: testResults?.length || 0,
+        count: scoredResults.length,
         popularSearches: [],
         recentSearches: []
       }
@@ -71,8 +63,7 @@ serve(async (req) => {
     console.error('Search function error:', err);
     return new Response(JSON.stringify({ 
       ok: false, 
-      error: err.message || String(err),
-      stack: err.stack
+      error: err.message || String(err)
     }), {
       status: 500,
       headers: { 
