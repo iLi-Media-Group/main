@@ -63,9 +63,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (accountType === 'white_label') {
       return '/white-label-dashboard';
     }
-    // Check for producer access (including dual roles)
+    // For producers, return the main dashboard (not producer dashboard since it's shown separately)
     if (accountType && accountType.includes('producer')) {
-      return '/producer/dashboard';
+      return '/dashboard';
     }
     return '/dashboard';
   };
@@ -77,6 +77,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (accountType === 'white_label') {
       return <UserCog className="w-4 h-4 mr-2" />;
     }
+    // For producers, return the main dashboard icon (not producer dashboard since it's shown separately)
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
 
@@ -87,9 +88,9 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
     if (accountType === 'white_label') {
       return 'White Label Dashboard';
     }
-    // Check for producer access (including dual roles)
+    // For producers, return the main dashboard label (not producer dashboard since it's shown separately)
     if (accountType && accountType.includes('producer')) {
-      return 'Producer Dashboard';
+      return 'Dashboard';
     }
     return 'Dashboard';
   };
