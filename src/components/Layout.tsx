@@ -281,7 +281,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
         {children}
       </main>
 
-      {aiSearchEnabled && (
+      {aiSearchEnabled && !location.pathname.startsWith('/admin') && (
         <AISearchAssistant onSearchApply={(filters) => {
           const params = new URLSearchParams();
           if (filters.query) params.set('q', filters.query);
