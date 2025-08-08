@@ -145,6 +145,7 @@ export function CatalogPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<any>(null);
   const [membershipActive, setMembershipActive] = useState(true);
   const [currentFilters, setCurrentFilters] = useState<any>(null);
   const { genres, subGenres, moods } = useDynamicSearchData();
@@ -454,17 +455,20 @@ export function CatalogPage() {
     }
   };
 
-  const handleSearch = async (filters: any) => {
+  const handleSearch = async (searchFilters: any) => {
     // Convert search terms to lowercase and remove extra spaces
     const normalizedFilters = {
-      ...filters,
-      query: filters.query?.toLowerCase().trim(),
-      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
-      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
-      moods: filters.moods?.map((m: string) => m.toLowerCase().trim()),
-      instruments: filters.instruments?.map((i: string) => i.toLowerCase().trim()),
-      mediaTypes: filters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim())
+      ...searchFilters,
+      query: searchFilters.query?.toLowerCase().trim(),
+      genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+      subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
+      moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+      instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+      mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim())
     };
+
+    // Set filters for categorization
+    setFilters(normalizedFilters);
 
     // Update URL with search params
     const params = new URLSearchParams();
@@ -487,6 +491,27 @@ export function CatalogPage() {
       setPage(nextPage);
       fetchTracks(currentFilters, nextPage);
     }
+  };
+
+  // Helper function to categorize tracks into sections
+  const categorizeTracks = (tracks: Track[]) => {
+    const exactMatches: Track[] = [];
+    const partialMatches: Track[] = [];
+    const otherTracks: Track[] = [];
+    
+    tracks.forEach(track => {
+      const score = track.searchScore || 0;
+      
+      if (score >= 8) {
+        exactMatches.push(track);
+      } else if (score >= 4) {
+        partialMatches.push(track);
+      } else {
+        otherTracks.push(track);
+      }
+    });
+    
+    return { exactMatches, partialMatches, otherTracks };
   };
 
   const handleTrackSelect = (track: Track) => {
@@ -551,17 +576,102 @@ export function CatalogPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {tracks.map((track) =>
-              track && track.id ? (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  onSelect={() => handleTrackSelect(track)}
-                />
-              ) : null
-            )}
-          </div>
+          {/* Check if this is a search result or just browsing */}
+          {filters?.query || filters?.genres?.length || filters?.moods?.length || 
+           filters?.instruments?.length || filters?.mediaTypes?.length ? (
+            // Search Results - Show categorized sections
+            <div className="space-y-8">
+              {(() => {
+                const { exactMatches, partialMatches, otherTracks } = categorizeTracks(tracks);
+                
+                return (
+                  <>
+                    {/* Exact Matches */}
+                    {exactMatches.length > 0 && (
+                      <div>
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                          <span className="bg-green-500/20 text-green-300 px-2 py-1 rounded-full text-sm mr-3">
+                            Exact Matches
+                          </span>
+                          {exactMatches.length} track{exactMatches.length !== 1 ? 's' : ''}
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          {exactMatches.map((track) =>
+                            track && track.id ? (
+                              <TrackCard
+                                key={track.id}
+                                track={track}
+                                onSelect={() => handleTrackSelect(track)}
+                              />
+                            ) : null
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Partial Matches */}
+                    {partialMatches.length > 0 && (
+                      <div>
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                          <span className="bg-yellow-500/20 text-yellow-300 px-2 py-1 rounded-full text-sm mr-3">
+                            Partial Matches
+                          </span>
+                          {partialMatches.length} track{partialMatches.length !== 1 ? 's' : ''}
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          {partialMatches.map((track) =>
+                            track && track.id ? (
+                              <TrackCard
+                                key={track.id}
+                                track={track}
+                                onSelect={() => handleTrackSelect(track)}
+                              />
+                            ) : null
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Other Tracks */}
+                    {otherTracks.length > 0 && (
+                      <div>
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                          <span className="bg-gray-500/20 text-gray-300 px-2 py-1 rounded-full text-sm mr-3">
+                            Other Results
+                          </span>
+                          {otherTracks.length} track{otherTracks.length !== 1 ? 's' : ''}
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                          {otherTracks.map((track) =>
+                            track && track.id ? (
+                              <TrackCard
+                                key={track.id}
+                                track={track}
+                                onSelect={() => handleTrackSelect(track)}
+                              />
+                            ) : null
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          ) : (
+            // Regular browsing - Show all tracks in one grid
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {tracks.map((track) =>
+                track && track.id ? (
+                  <TrackCard
+                    key={track.id}
+                    track={track}
+                    onSelect={() => handleTrackSelect(track)}
+                  />
+                ) : null
+              )}
+            </div>
+          )}
 
           {hasMore && (
             <div className="mt-8 text-center">
