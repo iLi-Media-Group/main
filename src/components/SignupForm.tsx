@@ -86,7 +86,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
           throw new Error('Performing Rights Organization is required for producers');
         }
 
-        // Validate the invitation code
+        // Validate the invitation code and get producer details
         const { data: isValid, error: validationError } = await supabase
           .rpc('validate_producer_invitation', {
             code: invitationCode,
@@ -96,6 +96,19 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         if (validationError || !isValid) {
           throw new Error('Invalid or expired producer invitation code');
         }
+
+        // Get the invitation details to get the producer number
+        const { data: invitation, error: invitationError } = await supabase
+          .from('producer_invitations')
+          .select('producer_number')
+          .eq('invitation_code', invitationCode)
+          .single();
+
+        if (invitationError || !invitation) {
+          throw new Error('Failed to get producer details');
+        }
+
+        const producerNumber = invitation.producer_number;
       }
 
       console.log('Creating user account...');
@@ -154,6 +167,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             membership_plan: 'Single Track',
             age_verified: ageVerified, 
             invitation_code: accountType === 'producer' ? invitationCode : null,
+            producer_number: accountType === 'producer' ? producerNumber : null,
             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
             updated_at: new Date().toISOString()
@@ -175,6 +189,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             membership_plan: 'Single Track',
             age_verified: ageVerified, 
             invitation_code: accountType === 'producer' ? invitationCode : null,
+            producer_number: accountType === 'producer' ? producerNumber : null,
             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
             created_at: new Date().toISOString(),
