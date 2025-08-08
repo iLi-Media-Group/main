@@ -65,20 +65,64 @@ ALTER TABLE instrument_categories ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "instrument_categories_select_policy" ON instrument_categories;
+DROP POLICY IF EXISTS "instrument_categories_insert_policy" ON instrument_categories;
+DROP POLICY IF EXISTS "instrument_categories_update_policy" ON instrument_categories;
+DROP POLICY IF EXISTS "instrument_categories_delete_policy" ON instrument_categories;
 
--- Create policy for instrument_categories (public read access)
+-- Create policies for instrument_categories
+-- Public read access
 CREATE POLICY "instrument_categories_select_policy" ON instrument_categories
     FOR SELECT USING (true);
+
+-- Only admins can manage instrument categories
+CREATE POLICY "instrument_categories_insert_policy" ON instrument_categories
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "instrument_categories_update_policy" ON instrument_categories
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "instrument_categories_delete_policy" ON instrument_categories
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- Enable RLS on instruments table
 ALTER TABLE instruments ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "instruments_select_policy" ON instruments;
+DROP POLICY IF EXISTS "instruments_insert_policy" ON instruments;
+DROP POLICY IF EXISTS "instruments_update_policy" ON instruments;
+DROP POLICY IF EXISTS "instruments_delete_policy" ON instruments;
 
--- Create policy for instruments (public read access)
+-- Create policies for instruments
+-- Public read access
 CREATE POLICY "instruments_select_policy" ON instruments
     FOR SELECT USING (true);
+
+-- Only admins can manage instruments
+CREATE POLICY "instruments_insert_policy" ON instruments
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "instruments_update_policy" ON instruments
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "instruments_delete_policy" ON instruments
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- ============================================
 -- 3. FIX GENRE TABLES RLS
@@ -89,40 +133,128 @@ ALTER TABLE genres ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "genres_select_policy" ON genres;
+DROP POLICY IF EXISTS "genres_insert_policy" ON genres;
+DROP POLICY IF EXISTS "genres_update_policy" ON genres;
+DROP POLICY IF EXISTS "genres_delete_policy" ON genres;
 
--- Create policy for genres (public read access)
+-- Create policies for genres
+-- Public read access
 CREATE POLICY "genres_select_policy" ON genres
     FOR SELECT USING (true);
+
+-- Only admins can manage genres
+CREATE POLICY "genres_insert_policy" ON genres
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "genres_update_policy" ON genres
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "genres_delete_policy" ON genres
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- Enable RLS on sub_genres table
 ALTER TABLE sub_genres ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "sub_genres_select_policy" ON sub_genres;
+DROP POLICY IF EXISTS "sub_genres_insert_policy" ON sub_genres;
+DROP POLICY IF EXISTS "sub_genres_update_policy" ON sub_genres;
+DROP POLICY IF EXISTS "sub_genres_delete_policy" ON sub_genres;
 
--- Create policy for sub_genres (public read access)
+-- Create policies for sub_genres
+-- Public read access
 CREATE POLICY "sub_genres_select_policy" ON sub_genres
     FOR SELECT USING (true);
+
+-- Only admins can manage sub_genres
+CREATE POLICY "sub_genres_insert_policy" ON sub_genres
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "sub_genres_update_policy" ON sub_genres
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "sub_genres_delete_policy" ON sub_genres
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- Enable RLS on moods table
 ALTER TABLE moods ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "moods_select_policy" ON moods;
+DROP POLICY IF EXISTS "moods_insert_policy" ON moods;
+DROP POLICY IF EXISTS "moods_update_policy" ON moods;
+DROP POLICY IF EXISTS "moods_delete_policy" ON moods;
 
--- Create policy for moods (public read access)
+-- Create policies for moods
+-- Public read access
 CREATE POLICY "moods_select_policy" ON moods
     FOR SELECT USING (true);
+
+-- Only admins can manage moods
+CREATE POLICY "moods_insert_policy" ON moods
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "moods_update_policy" ON moods
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "moods_delete_policy" ON moods
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- Enable RLS on media_usage_types table
 ALTER TABLE media_usage_types ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if they exist
 DROP POLICY IF EXISTS "media_usage_types_select_policy" ON media_usage_types;
+DROP POLICY IF EXISTS "media_usage_types_insert_policy" ON media_usage_types;
+DROP POLICY IF EXISTS "media_usage_types_update_policy" ON media_usage_types;
+DROP POLICY IF EXISTS "media_usage_types_delete_policy" ON media_usage_types;
 
--- Create policy for media_usage_types (public read access)
+-- Create policies for media_usage_types
+-- Public read access
 CREATE POLICY "media_usage_types_select_policy" ON media_usage_types
     FOR SELECT USING (true);
+
+-- Only admins can manage media_usage_types
+CREATE POLICY "media_usage_types_insert_policy" ON media_usage_types
+    FOR INSERT WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "media_usage_types_update_policy" ON media_usage_types
+    FOR UPDATE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    ) WITH CHECK (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
+
+CREATE POLICY "media_usage_types_delete_policy" ON media_usage_types
+    FOR DELETE USING (
+        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
+    );
 
 -- ============================================
 -- 4. FIX PRODUCER APPLICATIONS RLS
