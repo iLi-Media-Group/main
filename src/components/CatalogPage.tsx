@@ -15,6 +15,126 @@ import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 const TRACKS_PER_PAGE = 20;
 
+// Synonym expansion map for flexible search
+const synonymsMap: { [key: string]: string[] } = {
+  // Genres
+  jazz: ['jazzy', 'smooth', 'groovy', 'swing', 'bluesy', 'soulful'],
+  hiphop: ['rap', 'trap', 'drill', 'grime', 'hip hop', 'hip-hop'],
+  electronic: ['edm', 'techno', 'house', 'trance', 'dubstep', 'electronic dance'],
+  rock: ['rocky', 'guitar', 'electric', 'hard rock', 'classic rock'],
+  pop: ['popular', 'mainstream', 'radio', 'chart'],
+  classical: ['orchestral', 'symphonic', 'orchestra', 'symphony'],
+  country: ['western', 'folk', 'americana', 'bluegrass'],
+  rnb: ['r&b', 'rhythm and blues', 'soul', 'neo soul', 'rnb'],
+  
+  // Moods
+  energetic: ['upbeat', 'high energy', 'powerful', 'intense', 'dynamic', 'energetic'],
+  peaceful: ['calm', 'relaxing', 'serene', 'tranquil', 'soothing', 'peaceful'],
+  uplifting: ['inspiring', 'motivational', 'positive', 'encouraging', 'uplifting'],
+  dramatic: ['intense', 'emotional', 'powerful', 'epic', 'dramatic'],
+  romantic: ['love', 'passionate', 'intimate', 'sweet', 'romantic'],
+  mysterious: ['dark', 'moody', 'atmospheric', 'haunting', 'mysterious'],
+  funky: ['groovy', 'rhythmic', 'danceable', 'funky'],
+  melancholic: ['sad', 'melancholy', 'sorrowful', 'emotional', 'melancholic'],
+  
+  // Instruments
+  guitar: ['acoustic guitar', 'electric guitar', 'bass guitar', 'guitar'],
+  piano: ['keyboard', 'keys', 'piano'],
+  drums: ['drum', 'percussion', 'beat', 'drums'],
+  vocals: ['voice', 'singing', 'vocal', 'vocals'],
+  synth: ['synthesizer', 'electronic', 'synth'],
+  bass: ['bass guitar', 'bass', 'low end'],
+  violin: ['fiddle', 'violin', 'string'],
+  saxophone: ['sax', 'saxophone', 'brass'],
+  
+  // Media Types
+  television: ['tv', 'television', 'broadcast', 'network'],
+  film: ['movie', 'cinema', 'film', 'motion picture'],
+  podcast: ['podcast', 'audio', 'broadcast'],
+  youtube: ['youtube', 'video', 'online'],
+  commercial: ['advertisement', 'ad', 'commercial', 'marketing'],
+  gaming: ['video game', 'game', 'gaming', 'interactive'],
+  social: ['social media', 'instagram', 'tiktok', 'social'],
+  corporate: ['business', 'corporate', 'professional', 'commercial']
+};
+
+// Helper function to expand search terms with synonyms
+const expandSearchTerms = (searchTerms: string[]): string[] => {
+  const expandedTerms = new Set<string>();
+  
+  searchTerms.forEach(term => {
+    const lowerTerm = term.toLowerCase();
+    expandedTerms.add(lowerTerm);
+    
+    // Add synonyms for this term
+    if (synonymsMap[lowerTerm]) {
+      synonymsMap[lowerTerm].forEach(synonym => {
+        expandedTerms.add(synonym.toLowerCase());
+      });
+    }
+    
+    // Check if this term is a synonym of any main term
+    Object.entries(synonymsMap).forEach(([mainTerm, synonyms]) => {
+      if (synonyms.includes(lowerTerm)) {
+        expandedTerms.add(mainTerm);
+        synonyms.forEach(synonym => {
+          expandedTerms.add(synonym.toLowerCase());
+        });
+      }
+    });
+  });
+  
+  return Array.from(expandedTerms);
+};
+
+// Helper function to calculate match score for a track
+const calculateMatchScore = (track: any, searchTerms: string[]): number => {
+  let score = 0;
+  const expandedTerms = expandSearchTerms(searchTerms);
+  
+  // Check genres (+3 for each match)
+  const trackGenres = parseArrayField(track.genres);
+  trackGenres.forEach((genre: string) => {
+    if (expandedTerms.some(term => genre.toLowerCase().includes(term))) {
+      score += 3;
+    }
+  });
+  
+  // Check sub-genres (+2 for each match)
+  const trackSubGenres = parseArrayField(track.sub_genres);
+  trackSubGenres.forEach((subGenre: string) => {
+    if (expandedTerms.some(term => subGenre.toLowerCase().includes(term))) {
+      score += 2;
+    }
+  });
+  
+  // Check moods (+2 for each match)
+  const trackMoods = parseArrayField(track.moods);
+  trackMoods.forEach((mood: string) => {
+    if (expandedTerms.some(term => mood.toLowerCase().includes(term))) {
+      score += 2;
+    }
+  });
+  
+  // Check media usage (+1 for each match)
+  const trackMediaUsage = parseArrayField(track.media_usage);
+  trackMediaUsage.forEach((mediaType: string) => {
+    if (expandedTerms.some(term => mediaType.toLowerCase().includes(term))) {
+      score += 1;
+    }
+  });
+  
+  // Check instruments (+1 for each match)
+  const trackInstruments = parseArrayField(track.instruments);
+  trackInstruments.forEach((instrument: string) => {
+    if (expandedTerms.some(term => instrument.toLowerCase().includes(term))) {
+      score += 1;
+    }
+  });
+  
+  return score;
+};
+
 export function CatalogPage() {
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
@@ -34,6 +154,8 @@ export function CatalogPage() {
     const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
     const subGenres = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
     const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
+    const instruments = searchParams.get('instruments')?.split(',').filter(Boolean) || [];
+    const mediaTypes = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
     const minBpm = searchParams.get('minBpm');
     const maxBpm = searchParams.get('maxBpm');
     const trackId = searchParams.get('track');
@@ -44,6 +166,8 @@ export function CatalogPage() {
       genres,
       subGenres,
       moods,
+      instruments,
+      mediaTypes,
       minBpm: minBpm ? parseInt(minBpm) : undefined,
       maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
       trackId
@@ -76,6 +200,8 @@ export function CatalogPage() {
           genres,
           sub_genres,
           moods,
+          instruments,
+          media_usage,
           bpm,
           audio_url,
           image_url,
@@ -104,9 +230,6 @@ export function CatalogPage() {
       if (filters?.trackId) {
         query = query.eq('id', filters.trackId);
       } else {
-        // Build search conditions - make it more precise and require ALL conditions
-        const searchConditions = [];
-
         // Apply BPM filters first (these are always applied)
         if (filters?.minBpm !== undefined) {
           query = query.gte('bpm', filters.minBpm);
@@ -115,180 +238,42 @@ export function CatalogPage() {
           query = query.lte('bpm', filters.maxBpm);
         }
 
-        // Text search in title and artist - this should always work
+        // Build flexible search with synonym expansion
+        const searchTerms: string[] = [];
+        
+        // Add text query terms
         if (filters?.query) {
-          searchConditions.push(`title.ilike.%${filters.query}%`);
-          searchConditions.push(`artist.ilike.%${filters.query}%`);
-          searchConditions.push(`genres.ilike.%${filters.query}%`);
-          searchConditions.push(`sub_genres.ilike.%${filters.query}%`);
-          searchConditions.push(`moods.ilike.%${filters.query}%`);
+          searchTerms.push(...filters.query.split(/\s+/).filter(Boolean));
         }
+        
+        // Add filter terms
+        if (filters?.genres?.length) searchTerms.push(...filters.genres);
+        if (filters?.subGenres?.length) searchTerms.push(...filters.subGenres);
+        if (filters?.moods?.length) searchTerms.push(...filters.moods);
+        if (filters?.instruments?.length) searchTerms.push(...filters.instruments);
+        if (filters?.mediaTypes?.length) searchTerms.push(...filters.mediaTypes);
 
-        // Genre filtering - if genres are selected, use OR logic with flexible matching
-        if (filters?.genres?.length > 0) {
-          const genreConditions: string[] = [];
+        if (searchTerms.length > 0) {
+          // Expand search terms with synonyms
+          const expandedTerms = expandSearchTerms(searchTerms);
           
-          // Create dynamic genre variations from database data
-          const genreVariations: { [key: string]: string[] } = {};
-          genres.forEach(genre => {
-            const variations = [
-              genre.name.toLowerCase(),
-              genre.display_name.toLowerCase(),
-              genre.name.toLowerCase().replace(/\s+/g, ''),
-              genre.name.toLowerCase().replace(/\s+/g, '-'),
-              genre.name.toLowerCase().replace(/\s+/g, '_'),
-              genre.display_name.toLowerCase().replace(/\s+/g, ''),
-              genre.display_name.toLowerCase().replace(/\s+/g, '-'),
-              genre.display_name.toLowerCase().replace(/\s+/g, '_')
-            ];
-            
-            // Add common variations for specific genres
-            if (genre.name.toLowerCase().includes('hip_hop_rap')) {
-              variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music');
-            }
-            if (genre.name.toLowerCase().includes('rnb_soul')) {
-              variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
-            }
-            if (genre.name.toLowerCase().includes('electronic_dance')) {
-              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music');
-            }
-            if (genre.name.toLowerCase().includes('jazz')) {
-              variations.push('jazzy', 'jazz music', 'smooth jazz', 'bebop', 'fusion');
-            }
-            if (genre.name.toLowerCase().includes('classical_orchestral')) {
-              variations.push('orchestral', 'symphony', 'chamber', 'classical music', 'orchestra');
-            }
-            if (genre.name.toLowerCase().includes('world_global')) {
-              variations.push('ethnic', 'cultural', 'traditional', 'world music');
-            }
-            if (genre.name.toLowerCase().includes('religious_inspirational')) {
-              variations.push('gospel', 'spiritual', 'worship', 'religious music');
-            }
-            if (genre.name.toLowerCase().includes('childrens_family')) {
-              variations.push('kids', 'children', 'nursery', 'childrens music', 'kids music');
-            }
-            if (genre.name.toLowerCase().includes('country_folk_americana')) {
-              variations.push('country western', 'bluegrass', 'americana', 'country music');
-            }
-            
-            genreVariations[genre.name] = [...new Set(variations)];
-          });
-
-          filters.genres.forEach((genre: string) => {
-            const variations = genreVariations[genre.toLowerCase()] || [];
-            const allVariations = [
-              genre.toLowerCase(),
-              ...variations.map(v => v.toLowerCase()),
-              genre.toLowerCase().replace(/\s+/g, ''),
-              genre.toLowerCase().replace(/\s+/g, '-'),
-              genre.toLowerCase().replace(/\s+/g, '_')
-            ];
-            
-            // Add partial match variations
-            const genreWords = genre.toLowerCase().split(/[\s_-]+/);
-            genreWords.forEach(word => {
-              if (word.length >= 3) { // Only add meaningful partial matches
-                allVariations.push(word);
-              }
-            });
-            
-            const uniqueVariations = [...new Set(allVariations)];
-            uniqueVariations.forEach(variation => {
-              genreConditions.push(`genres.ilike.%${variation}%`);
-            });
-          });
-          query = query.or(genreConditions.join(','));
-        }
-
-        // Subgenre filtering - if subgenres are selected, use OR logic with flexible matching
-        if (filters?.subGenres?.length > 0) {
-          const subGenreConditions: string[] = [];
-          filters.subGenres.forEach((subGenre: string) => {
-            // Create multiple variations for each subgenre
-            const variations = [
-              subGenre.toLowerCase(),
-              subGenre.toLowerCase().replace(/\s+/g, ''),
-              subGenre.toLowerCase().replace(/\s+/g, '-'),
-              subGenre.toLowerCase().replace(/\s+/g, '_')
-            ];
-            
-            variations.forEach(variation => {
-              subGenreConditions.push(`sub_genres.ilike.%${variation}%`);
-            });
-          });
-          query = query.or(subGenreConditions.join(','));
-        }
-
-        // Mood filtering - if moods are selected, use OR logic with flexible matching
-        if (filters?.moods?.length > 0) {
-          const moodConditions: string[] = [];
+          // Build search conditions for all expanded terms
+          const searchConditions: string[] = [];
           
-          // Create dynamic mood variations from database data
-          const moodVariations: { [key: string]: string[] } = {};
-          moods.forEach(mood => {
-            const variations = [
-              mood.name.toLowerCase(),
-              mood.display_name.toLowerCase()
-            ];
-            
-            // Add common synonyms for moods
-            if (mood.name.toLowerCase().includes('energetic')) {
-              variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
-            }
-            if (mood.name.toLowerCase().includes('peaceful')) {
-              variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
-            }
-            if (mood.name.toLowerCase().includes('uplifting')) {
-              variations.push('inspiring', 'motivational', 'positive', 'encouraging');
-            }
-            if (mood.name.toLowerCase().includes('dramatic')) {
-              variations.push('intense', 'emotional', 'powerful', 'epic');
-            }
-            if (mood.name.toLowerCase().includes('romantic')) {
-              variations.push('love', 'passionate', 'intimate', 'sweet');
-            }
-            if (mood.name.toLowerCase().includes('mysterious')) {
-              variations.push('dark', 'moody', 'atmospheric', 'haunting');
-            }
-            if (mood.name.toLowerCase().includes('funky')) {
-              variations.push('groovy', 'rhythmic', 'danceable');
-            }
-            if (mood.name.toLowerCase().includes('melancholic')) {
-              variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
-            }
-            
-            moodVariations[mood.name] = [...new Set(variations)];
+          expandedTerms.forEach(term => {
+            searchConditions.push(`title.ilike.%${term}%`);
+            searchConditions.push(`artist.ilike.%${term}%`);
+            searchConditions.push(`genres.ilike.%${term}%`);
+            searchConditions.push(`sub_genres.ilike.%${term}%`);
+            searchConditions.push(`moods.ilike.%${term}%`);
+            searchConditions.push(`instruments.ilike.%${term}%`);
+            searchConditions.push(`media_usage.ilike.%${term}%`);
           });
-
-          filters.moods.forEach((mood: string) => {
-            const variations = moodVariations[mood.toLowerCase()] || [];
-            const allVariations = [
-              mood.toLowerCase(),
-              ...variations.map(v => v.toLowerCase()),
-              mood.toLowerCase().replace(/\s+/g, ''),
-              mood.toLowerCase().replace(/\s+/g, '-'),
-              mood.toLowerCase().replace(/\s+/g, '_')
-            ];
-            
-            // Add partial match variations
-            const moodWords = mood.toLowerCase().split(/[\s_-]+/);
-            moodWords.forEach(word => {
-              if (word.length >= 3) { // Only add meaningful partial matches
-                allVariations.push(word);
-              }
-            });
-            
-            const uniqueVariations = [...new Set(allVariations)];
-            uniqueVariations.forEach(variation => {
-              moodConditions.push(`moods.ilike.%${variation}%`);
-            });
-          });
-          query = query.or(moodConditions.join(','));
-        }
-
-        // Apply text search conditions with OR logic only for text search
-        if (searchConditions.length > 0) {
-          query = query.or(searchConditions.join(','));
+          
+          // Apply search conditions with OR logic for flexible matching
+          if (searchConditions.length > 0) {
+            query = query.or(searchConditions.join(','));
+          }
         }
       }
 
@@ -297,7 +282,7 @@ export function CatalogPage() {
       const to = from + TRACKS_PER_PAGE - 1;
       query = query.range(from, to);
 
-      // Order by most recent first
+      // Order by most recent first initially
       query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
@@ -316,54 +301,82 @@ export function CatalogPage() {
           });
         }
 
-        const formattedTracks = data
-          .filter(track => track && track.id)
-          .map(track => {
-
-            
-            return {
-              id: track.id,
-              title: track.title || 'Untitled',
-              artist:
-                track.producer?.first_name ||
-                track.producer?.email?.split('@')[0] ||
-                'Unknown Artist',
-              genres: parseArrayField(track.genres),
-              subGenres: parseArrayField(track.sub_genres),
-              moods: parseArrayField(track.moods),
-              duration: track.duration || '3:30',
-              bpm: track.bpm,
-              audioUrl: track.audio_url,
-              image:
-                track.image_url ||
-                'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-              hasStingEnding: track.has_sting_ending,
-              isOneStop: track.is_one_stop,
-              mp3Url: track.mp3_url,
-              trackoutsUrl: track.trackouts_url,
-              stemsUrl: track.stems_url,
-              hasVocals: track.has_vocals || false,
-              isSyncOnly: track.is_sync_only || false,
-              producerId: track.track_producer_id || '',
-              producer: track.producer ? {
-                id: track.producer.id,
-                firstName: track.producer.first_name || '',
-                lastName: track.producer.last_name || '',
-                email: track.producer.email || '',
-              } : undefined,
-              fileFormats: {
-                stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-                stems: { format: ['WAV'], url: track.trackouts_url || '' },
-                stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
-              },
-              pricing: {
-                stereoMp3: 0,
-                stems: 0,
-                stemsWithVocals: 0
-              },
-              leaseAgreementUrl: ''
-            };
+        // Calculate scores and sort by relevance if there are search terms
+        let scoredTracks = data.filter(track => track && track.id);
+        
+        if (filters?.query || filters?.genres?.length || filters?.moods?.length || 
+            filters?.instruments?.length || filters?.mediaTypes?.length) {
+          
+          const searchTerms: string[] = [];
+          if (filters?.query) searchTerms.push(...filters.query.split(/\s+/).filter(Boolean));
+          if (filters?.genres?.length) searchTerms.push(...filters.genres);
+          if (filters?.subGenres?.length) searchTerms.push(...filters.subGenres);
+          if (filters?.moods?.length) searchTerms.push(...filters.moods);
+          if (filters?.instruments?.length) searchTerms.push(...filters.instruments);
+          if (filters?.mediaTypes?.length) searchTerms.push(...filters.mediaTypes);
+          
+          // Calculate scores for each track
+          scoredTracks = scoredTracks.map(track => ({
+            ...track,
+            _searchScore: calculateMatchScore(track, searchTerms)
+          }));
+          
+          // Sort by score (highest first) and then by creation date
+          scoredTracks.sort((a, b) => {
+            if (b._searchScore !== a._searchScore) {
+              return b._searchScore - a._searchScore;
+            }
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           });
+        }
+
+        const formattedTracks = scoredTracks.map(track => {
+          return {
+            id: track.id,
+            title: track.title || 'Untitled',
+            artist:
+              track.producer?.first_name ||
+              track.producer?.email?.split('@')[0] ||
+              'Unknown Artist',
+            genres: parseArrayField(track.genres),
+            subGenres: parseArrayField(track.sub_genres),
+            moods: parseArrayField(track.moods),
+            instruments: parseArrayField(track.instruments),
+            mediaUsage: parseArrayField(track.media_usage),
+            duration: track.duration || '3:30',
+            bpm: track.bpm,
+            audioUrl: track.audio_url,
+            image:
+              track.image_url ||
+              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            hasStingEnding: track.has_sting_ending,
+            isOneStop: track.is_one_stop,
+            mp3Url: track.mp3_url,
+            trackoutsUrl: track.trackouts_url,
+            stemsUrl: track.stems_url,
+            hasVocals: track.has_vocals || false,
+            isSyncOnly: track.is_sync_only || false,
+            producerId: track.track_producer_id || '',
+            producer: track.producer ? {
+              id: track.producer.id,
+              firstName: track.producer.first_name || '',
+              lastName: track.producer.last_name || '',
+              email: track.producer.email || '',
+            } : undefined,
+            fileFormats: {
+              stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+              stems: { format: ['WAV'], url: track.trackouts_url || '' },
+              stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+            },
+            pricing: {
+              stereoMp3: 0,
+              stems: 0,
+              stemsWithVocals: 0
+            },
+            leaseAgreementUrl: '',
+            searchScore: track._searchScore || 0
+          };
+        });
 
         if (currentPage === 1) {
           setTracks(formattedTracks);
@@ -388,7 +401,9 @@ export function CatalogPage() {
       query: filters.query?.toLowerCase().trim(),
       genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
       subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
-      moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
+      moods: filters.moods?.map((m: string) => m.toLowerCase().trim()),
+      instruments: filters.instruments?.map((i: string) => i.toLowerCase().trim()),
+      mediaTypes: filters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim())
     };
 
     // Update URL with search params
@@ -397,6 +412,8 @@ export function CatalogPage() {
     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
     if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
+    if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
+    if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
     if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
     if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 

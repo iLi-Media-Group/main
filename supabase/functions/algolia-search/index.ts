@@ -144,6 +144,10 @@ serve(async (req) => {
         facetFilters.push(`moods:${filters.moods.join(' OR ')}`)
       }
       
+      if (filters.instruments && filters.instruments.length > 0) {
+        facetFilters.push(`instruments:${filters.instruments.join(' OR ')}`)
+      }
+      
       if (facetFilters.length > 0) {
         searchParams.facetFilters = facetFilters
       }

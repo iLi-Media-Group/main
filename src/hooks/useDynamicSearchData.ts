@@ -22,10 +22,26 @@ export interface DynamicMood {
   category: string;
 }
 
+export interface DynamicInstrument {
+  id: string;
+  name: string;
+  display_name: string;
+  category: string;
+}
+
+export interface DynamicMediaType {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
 export interface DynamicSearchData {
   genres: DynamicGenre[];
   subGenres: DynamicSubGenre[];
   moods: DynamicMood[];
+  instruments: DynamicInstrument[];
+  mediaTypes: DynamicMediaType[];
   loading: boolean;
   error: string | null;
 }
@@ -34,6 +50,8 @@ export function useDynamicSearchData(): DynamicSearchData {
   const [genres, setGenres] = useState<DynamicGenre[]>([]);
   const [subGenres, setSubGenres] = useState<DynamicSubGenre[]>([]);
   const [moods, setMoods] = useState<DynamicMood[]>([]);
+  const [instruments, setInstruments] = useState<DynamicInstrument[]>([]);
+  const [mediaTypes, setMediaTypes] = useState<DynamicMediaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +95,32 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (subGenresError) throw subGenresError;
 
+      // Fetch instruments
+      const { data: instrumentsData, error: instrumentsError } = await supabase
+        .from('instruments')
+        .select(`
+          id,
+          name,
+          display_name,
+          category
+        `)
+        .order('display_name');
+
+      if (instrumentsError) throw instrumentsError;
+
+      // Fetch media types
+      const { data: mediaTypesData, error: mediaTypesError } = await supabase
+        .from('media_types')
+        .select(`
+          id,
+          name,
+          description,
+          category
+        `)
+        .order('name');
+
+      if (mediaTypesError) throw mediaTypesError;
+
       // Fetch moods from the moods_categories table or use a fallback
       // For now, we'll use a fallback since moods might not be in a separate table
       const moodsData: DynamicMood[] = [
@@ -94,6 +138,8 @@ export function useDynamicSearchData(): DynamicSearchData {
       setGenres(genresData || []);
       setSubGenres(subGenresData || []);
       setMoods(moodsData);
+      setInstruments(instrumentsData || []);
+      setMediaTypes(mediaTypesData || []);
 
     } catch (err) {
       console.error('Error fetching dynamic search data:', err);
@@ -103,6 +149,8 @@ export function useDynamicSearchData(): DynamicSearchData {
       setGenres([]);
       setSubGenres([]);
       setMoods([]);
+      setInstruments([]);
+      setMediaTypes([]);
     } finally {
       setLoading(false);
     }
@@ -112,6 +160,8 @@ export function useDynamicSearchData(): DynamicSearchData {
     genres,
     subGenres,
     moods,
+    instruments,
+    mediaTypes,
     loading,
     error
   };
