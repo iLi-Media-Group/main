@@ -341,6 +341,126 @@ export default function ProducerApplicationsAdmin() {
     navigate(`/admin/invite-producer?${params.toString()}`);
   };
 
+  const handleQuickInvite = async (application: Application) => {
+    try {
+      // Extract first and last name from the full name
+      const nameParts = application.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Generate producer number
+      const { data: nextNumber } = await supabase
+        .from('profiles')
+        .select('producer_number')
+        .not('producer_number', 'is', null)
+        .order('producer_number', { ascending: false })
+        .limit(1);
+
+      let producerNumber = 'mbfpr-001';
+      if (nextNumber && nextNumber.length > 0) {
+        const lastNumber = nextNumber[0].producer_number;
+        const match = lastNumber.match(/mbfpr-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          producerNumber = `mbfpr-${nextNum.toString().padStart(3, '0')}`;
+        }
+      }
+
+      // Generate invitation code
+      const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      // Create invitation
+      const { error: insertError } = await supabase
+        .from('producer_invitations')
+        .insert({
+          email: application.email,
+          first_name: firstName,
+          last_name: lastName,
+          invitation_code: invitationCode,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          producer_number: producerNumber
+        });
+
+      if (insertError) throw insertError;
+
+      // Send email
+      const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #6366f1;">🎵 Welcome to MyBeatFi! 🎵</h1>
+          <h2>CONGRATULATIONS!</h2>
+          
+          <p>Dear ${firstName} ${lastName},</p>
+          
+          <p>We are thrilled to inform you that your producer application has been reviewed and <strong>ACCEPTED</strong>!</p>
+          
+          <div style="background: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>📋 Your Producer Details:</h3>
+            <ul>
+              <li><strong>Producer Number:</strong> ${producerNumber}</li>
+              <li><strong>Email:</strong> ${application.email}</li>
+              <li><strong>Status:</strong> ACCEPTED</li>
+            </ul>
+          </div>
+          
+          <h3>🔑 Next Steps:</h3>
+          <ol>
+            <li>Use your Producer Number (${producerNumber}) to sign up at: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+            <li>Complete your profile setup</li>
+            <li>Start uploading your tracks and connecting with clients</li>
+          </ol>
+          
+          <p><strong>🎯 Your Producer Number is your unique identifier - keep it safe!</strong></p>
+          
+          <p>Welcome to MyBeatFi!</p>
+          
+          <p>Best regards,<br>The MyBeatFi Team</p>
+        </div>
+      `;
+
+      const { error: emailError } = await supabase.functions.invoke('send-simple-email', {
+        body: {
+          to: application.email,
+          subject: emailSubject,
+          html: emailHtml,
+          producerData: {
+            email: application.email,
+            firstName,
+            lastName,
+            producerNumber,
+            invitationCode
+          }
+        }
+      });
+
+      if (emailError) {
+        console.error('Email error:', emailError);
+        // Don't fail the whole process if email fails
+      }
+
+      // Update application status
+      await supabase
+        .from('producer_applications')
+        .update({ 
+          status: 'invited',
+          review_tier: 'Tier 1',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Refresh the applications list
+      fetchAllApplications();
+      fetchApplications();
+
+      // Show success message
+      alert(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
+
+    } catch (error) {
+      console.error('Quick invite error:', error);
+      alert('Failed to invite producer. Please try again.');
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -561,6 +681,16 @@ export default function ProducerApplicationsAdmin() {
                       <Eye className="w-4 h-4 mr-1" />
                       View Details
                     </Button>
+                    {activeTab === 'new' && (
+                      <Button
+                        onClick={() => handleQuickInvite(app)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Quick Invite
+                      </Button>
+                    )}
                   </div>
                 </div>
 

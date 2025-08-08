@@ -175,19 +175,60 @@ export function ProducerInvitation() {
     
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('send-producer-invitation', {
+      // Create email content
+      const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #6366f1;">🎵 Welcome to MyBeatFi! 🎵</h1>
+          <h2>CONGRATULATIONS!</h2>
+          
+          <p>Dear ${invitationData.firstName} ${invitationData.lastName},</p>
+          
+          <p>We are thrilled to inform you that your producer application has been reviewed and <strong>ACCEPTED</strong>!</p>
+          
+          <div style="background: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>📋 Your Producer Details:</h3>
+            <ul>
+              <li><strong>Producer Number:</strong> ${invitationData.producerNumber}</li>
+              <li><strong>Email:</strong> ${invitationData.email}</li>
+              <strong>Status:</strong> ACCEPTED</li>
+            </ul>
+          </div>
+          
+          <h3>🔑 Next Steps:</h3>
+          <ol>
+            <li>Use your Producer Number (${invitationData.producerNumber}) to sign up at: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+            <li>Complete your profile setup</li>
+            <li>Start uploading your tracks and connecting with clients</li>
+          </ol>
+          
+          <p><strong>🎯 Your Producer Number is your unique identifier - keep it safe!</strong></p>
+          
+          <p>Welcome to MyBeatFi!</p>
+          
+          <p>Best regards,<br>The MyBeatFi Team</p>
+        </div>
+      `;
+
+      // Send email using simple email function
+      const { error } = await supabase.functions.invoke('send-simple-email', {
         body: {
-          email: invitationData.email,
-          firstName: invitationData.firstName,
-          lastName: invitationData.lastName,
-          producerNumber: invitationData.producerNumber,
-          invitationCode: invitationData.invitationCode
+          to: invitationData.email,
+          subject: emailSubject,
+          html: emailHtml,
+          producerData: {
+            email: invitationData.email,
+            firstName: invitationData.firstName,
+            lastName: invitationData.lastName,
+            producerNumber: invitationData.producerNumber,
+            invitationCode: invitationData.invitationCode
+          }
         }
       });
 
       if (error) throw error;
 
-      setSuccess('Congratulations email sent successfully!');
+      setSuccess('Congratulations email logged successfully! Check email_logs table for details.');
       
       // Update application status if coming from application
       if (applicationId) {
