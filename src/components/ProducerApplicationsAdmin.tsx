@@ -778,7 +778,7 @@ export default function ProducerApplicationsAdmin() {
                         size="sm"
                       >
                         <UserPlus className="w-4 h-4 mr-1" />
-                        Invite Producer
+                        Manual Invite
                       </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
