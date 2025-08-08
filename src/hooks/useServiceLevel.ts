@@ -10,6 +10,8 @@ export interface ServiceLevelInfo {
   hasDeepMedia: boolean;
   hasProducerOnboarding: boolean;
   isPaid: boolean;
+  isProLevel: boolean;
+  isEnterpriseLevel: boolean;
 }
 
 export function useServiceLevel(): ServiceLevelInfo {
@@ -25,7 +27,9 @@ export function useServiceLevel(): ServiceLevelInfo {
       hasAISearch: true,
       hasDeepMedia: true,
       hasProducerOnboarding: true,
-      isPaid: true
+      isPaid: true,
+      isProLevel: true,
+      isEnterpriseLevel: true
     };
   }
 
@@ -36,8 +40,19 @@ export function useServiceLevel(): ServiceLevelInfo {
 
   // Determine service level based on enabled and paid features
   let level: ServiceLevel = 'normal';
+  let isProLevel = false;
+  let isEnterpriseLevel = false;
   
-  if (hasAISearch && hasDeepMedia) {
+  // Check if this is Pro level (has Producer Onboarding included)
+  if (hasProducerOnboarding) {
+    isProLevel = true;
+  }
+  
+  // Check if this is Enterprise level (has everything)
+  if (hasAISearch && hasDeepMedia && hasProducerOnboarding) {
+    isEnterpriseLevel = true;
+    level = 'both';
+  } else if (hasAISearch && hasDeepMedia) {
     level = 'both';
   } else if (hasAISearch) {
     level = 'ai_search';
@@ -50,6 +65,8 @@ export function useServiceLevel(): ServiceLevelInfo {
     hasAISearch,
     hasDeepMedia,
     hasProducerOnboarding,
-    isPaid: hasAISearch || hasDeepMedia || hasProducerOnboarding
+    isPaid: hasAISearch || hasDeepMedia || hasProducerOnboarding,
+    isProLevel,
+    isEnterpriseLevel
   };
 }

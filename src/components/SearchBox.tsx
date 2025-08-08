@@ -20,7 +20,7 @@ export interface SearchFilters {
 
 export function SearchBox({ onSearch }: SearchBoxProps) {
   const { genres, subGenres, moods, instruments, mediaTypes, loading: dataLoading, error: dataError } = useDynamicSearchData();
-  const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
+  const { level, hasAISearch, hasDeepMedia, hasProducerOnboarding, isProLevel, isEnterpriseLevel } = useServiceLevel();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
@@ -126,6 +126,39 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
 
   return (
     <div className="glass-card rounded-lg p-6 mb-8">
+      {/* Service Level Indicator */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-300">Service Level:</span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            isEnterpriseLevel 
+              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+              : isProLevel 
+              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+          }`}>
+            {isEnterpriseLevel ? 'Enterprise' : isProLevel ? 'Pro' : 'Starter'}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1">
+          {hasAISearch && (
+            <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-300 border border-green-500/30">
+              AI Search
+            </span>
+          )}
+          {hasDeepMedia && (
+            <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30">
+              Deep Media
+            </span>
+          )}
+          {hasProducerOnboarding && (
+            <span className="px-2 py-1 rounded-full text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Producer Onboarding
+            </span>
+          )}
+        </div>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Search Input */}
         <div className="relative">
