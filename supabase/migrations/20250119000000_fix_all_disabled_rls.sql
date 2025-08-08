@@ -29,7 +29,6 @@ FROM (VALUES
     ('instruments'),
     ('genres'),
     ('sub_genres'),
-    ('media_usage_types'),
     ('producer_applications'),
     ('white_label_clients'),
     ('white_label_features'),
@@ -215,37 +214,7 @@ CREATE POLICY "sub_genres_delete_policy" ON sub_genres
         auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
     );
 
--- Enable RLS on media_usage_types table
-ALTER TABLE media_usage_types ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist
-DROP POLICY IF EXISTS "media_usage_types_select_policy" ON media_usage_types;
-DROP POLICY IF EXISTS "media_usage_types_insert_policy" ON media_usage_types;
-DROP POLICY IF EXISTS "media_usage_types_update_policy" ON media_usage_types;
-DROP POLICY IF EXISTS "media_usage_types_delete_policy" ON media_usage_types;
-
--- Create policies for media_usage_types
--- Public read access
-CREATE POLICY "media_usage_types_select_policy" ON media_usage_types
-    FOR SELECT USING (true);
-
--- Only admins can manage media_usage_types
-CREATE POLICY "media_usage_types_insert_policy" ON media_usage_types
-    FOR INSERT WITH CHECK (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
-
-CREATE POLICY "media_usage_types_update_policy" ON media_usage_types
-    FOR UPDATE USING (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    ) WITH CHECK (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
-
-CREATE POLICY "media_usage_types_delete_policy" ON media_usage_types
-    FOR DELETE USING (
-        auth.uid() IN (SELECT id FROM profiles WHERE account_type = 'admin')
-    );
 
 -- ============================================
 -- 4. FIX PRODUCER APPLICATIONS RLS
