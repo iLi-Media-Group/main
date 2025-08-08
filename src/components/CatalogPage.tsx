@@ -19,8 +19,8 @@ const TRACKS_PER_PAGE = 20;
 // Synonym expansion map for flexible search
 const synonymsMap: { [key: string]: string[] } = {
   // Genres
-  jazz: ['jazzy', 'smooth', 'groovy', 'swing', 'bluesy', 'soulful'],
-  hiphop: ['rap', 'trap', 'drill', 'grime', 'hip hop', 'hip-hop'],
+  jazz: ['jazzy', 'smooth', 'groovy', 'swing', 'bluesy', 'soulful', 'jazz'],
+  hiphop: ['rap', 'trap', 'drill', 'grime', 'hip hop', 'hip-hop', 'hiphop'],
   electronic: ['edm', 'techno', 'house', 'trance', 'dubstep', 'electronic dance'],
   rock: ['rocky', 'guitar', 'electric', 'hard rock', 'classic rock'],
   pop: ['popular', 'mainstream', 'radio', 'chart'],
@@ -93,10 +93,14 @@ const calculateMatchScore = (track: any, searchTerms: string[]): number => {
   let score = 0;
   const expandedTerms = expandSearchTerms(searchTerms);
   
-  // Check genres (+3 for each match)
+  // Check genres (+5 for exact match, +3 for partial match)
   const trackGenres = parseArrayField(track.genres);
   trackGenres.forEach((genre: string) => {
-    if (expandedTerms.some(term => genre.toLowerCase().includes(term))) {
+    const genreLower = genre.toLowerCase();
+    // Check for exact matches first
+    if (expandedTerms.some(term => genreLower === term)) {
+      score += 5;
+    } else if (expandedTerms.some(term => genreLower.includes(term) || term.includes(genreLower))) {
       score += 3;
     }
   });
@@ -502,9 +506,10 @@ export function CatalogPage() {
     tracks.forEach(track => {
       const score = track.searchScore || 0;
       
-      if (score >= 8) {
+      // Higher thresholds for better categorization
+      if (score >= 10) {
         exactMatches.push(track);
-      } else if (score >= 4) {
+      } else if (score >= 5) {
         partialMatches.push(track);
       } else {
         otherTracks.push(track);
