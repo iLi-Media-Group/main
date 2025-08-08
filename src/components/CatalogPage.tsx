@@ -155,30 +155,34 @@ export function CatalogPage() {
   const { genres, subGenres, moods } = useDynamicSearchData();
   const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
 
-  useEffect(() => {
-    // Get search params
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
-    const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
-    const subGenres = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
-    const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
-    const instruments = searchParams.get('instruments')?.split(',').filter(Boolean) || [];
-    const mediaTypes = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
-    const minBpm = searchParams.get('minBpm');
-    const maxBpm = searchParams.get('maxBpm');
-    const trackId = searchParams.get('track');
-
-    // Create filters object
-    const filters = {
-      query,
-      genres,
-      subGenres,
-      moods,
-      instruments,
-      mediaTypes,
-      minBpm: minBpm ? parseInt(minBpm) : undefined,
-      maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
-      trackId
-    };
+     useEffect(() => {
+     // Get search params
+     const query = searchParams.get('q')?.toLowerCase().trim() || '';
+     const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
+     const subGenres = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
+     const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
+     const instruments = searchParams.get('instruments')?.split(',').filter(Boolean) || [];
+     const mediaTypes = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
+     const syncOnly = searchParams.get('syncOnly') === 'true';
+     const hasVocals = searchParams.get('hasVocals') === 'true';
+     const minBpm = searchParams.get('minBpm');
+     const maxBpm = searchParams.get('maxBpm');
+     const trackId = searchParams.get('track');
+ 
+     // Create filters object
+     const filters = {
+       query,
+       genres,
+       subGenres,
+       moods,
+       instruments,
+       mediaTypes,
+       syncOnly,
+       hasVocals,
+       minBpm: minBpm ? parseInt(minBpm) : undefined,
+       maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
+       trackId
+     };
 
     // Reset page and tracks when filters change
     setPage(1);
@@ -233,17 +237,31 @@ export function CatalogPage() {
         .is('deleted_at', null)
         .eq('is_sync_only', false); // Exclude sync-only tracks from main catalog
 
-      // If a specific track ID is provided, fetch only that track
-      if (filters?.trackId) {
-        query = query.eq('id', filters.trackId);
-      } else {
-        // Apply BPM filters first (these are always applied)
-        if (filters?.minBpm !== undefined) {
-          query = query.gte('bpm', filters.minBpm);
-        }
-        if (filters?.maxBpm !== undefined) {
-          query = query.lte('bpm', filters.maxBpm);
-        }
+             // If a specific track ID is provided, fetch only that track
+       if (filters?.trackId) {
+         query = query.eq('id', filters.trackId);
+       } else {
+         // Apply BPM filters first (these are always applied)
+         if (filters?.minBpm !== undefined) {
+           query = query.gte('bpm', filters.minBpm);
+         }
+         if (filters?.maxBpm !== undefined) {
+           query = query.lte('bpm', filters.maxBpm);
+         }
+         
+         // Apply Sync Only filter
+         if (filters?.syncOnly === true) {
+           query = query.eq('is_sync_only', true);
+         } else if (filters?.syncOnly === false) {
+           query = query.eq('is_sync_only', false);
+         }
+         
+         // Apply Vocals filter
+         if (filters?.hasVocals === true) {
+           query = query.eq('has_vocals', true);
+         } else if (filters?.hasVocals === false) {
+           query = query.eq('has_vocals', false);
+         }
 
         // Build flexible search with synonym expansion
         const searchTerms: string[] = [];
@@ -493,31 +511,35 @@ export function CatalogPage() {
     }
   };
 
-  const handleSearch = async (searchFilters: any) => {
-    // Convert search terms to lowercase and remove extra spaces
-    const normalizedFilters = {
-      ...searchFilters,
-      query: searchFilters.query?.toLowerCase().trim(),
-      genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
-      subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
-      moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
-      instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
-      mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim())
-    };
+     const handleSearch = async (searchFilters: any) => {
+     // Convert search terms to lowercase and remove extra spaces
+     const normalizedFilters = {
+       ...searchFilters,
+       query: searchFilters.query?.toLowerCase().trim(),
+       genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+       subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
+       moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+       instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+       mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
+       syncOnly: searchFilters.syncOnly,
+       hasVocals: searchFilters.hasVocals
+     };
 
     // Set filters for categorization
     setFilters(normalizedFilters);
 
-    // Update URL with search params
-    const params = new URLSearchParams();
-    if (normalizedFilters.query) params.set('q', normalizedFilters.query);
-    if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
-    if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
-    if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
-    if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
-    if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
-    if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
-    if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+         // Update URL with search params
+     const params = new URLSearchParams();
+     if (normalizedFilters.query) params.set('q', normalizedFilters.query);
+     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
+     if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
+     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
+     if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
+     if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
+     if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
+     if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
+     if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
+     if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 
     // Update URL without reloading the page
     navigate(`/catalog?${params.toString()}`, { replace: true });
@@ -617,7 +639,8 @@ export function CatalogPage() {
         <>
                      {/* Check if this is a search result or just browsing */}
            {(filters?.query || filters?.genres?.length || filters?.moods?.length || 
-            filters?.instruments?.length || filters?.mediaTypes?.length) ? (
+            filters?.instruments?.length || filters?.mediaTypes?.length || 
+            filters?.syncOnly !== undefined || filters?.hasVocals !== undefined) ? (
              // Search Results - Show categorized sections
              <div className="space-y-8">
                {/* Search Terms Display */}
@@ -651,6 +674,16 @@ export function CatalogPage() {
                    {filters?.mediaTypes?.length > 0 && (
                      <span className="bg-pink-500/20 text-pink-300 px-3 py-1 rounded-full text-sm">
                        Media Types: {filters.mediaTypes.join(', ')}
+                     </span>
+                   )}
+                   {filters?.syncOnly !== undefined && (
+                     <span className="bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full text-sm">
+                       Sync Only: {filters.syncOnly ? 'Yes' : 'No'}
+                     </span>
+                   )}
+                   {filters?.hasVocals !== undefined && (
+                     <span className="bg-teal-500/20 text-teal-300 px-3 py-1 rounded-full text-sm">
+                       Vocals: {filters.hasVocals ? 'Yes' : 'No'}
                      </span>
                    )}
                  </div>

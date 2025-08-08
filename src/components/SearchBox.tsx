@@ -14,6 +14,8 @@ export interface SearchFilters {
   moods: string[];
   instruments: string[];
   mediaTypes: string[];
+  syncOnly?: boolean;
+  hasVocals?: boolean;
   minBpm: number;
   maxBpm: number;
 }
@@ -29,6 +31,8 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     moods: [],
     instruments: [],
     mediaTypes: [],
+    syncOnly: undefined,
+    hasVocals: undefined,
     minBpm: 0,
     maxBpm: 200
   });
@@ -100,6 +104,8 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
       moods: [],
       instruments: [],
       mediaTypes: [],
+      syncOnly: undefined,
+      hasVocals: undefined,
       minBpm: 0,
       maxBpm: 200
     });
@@ -370,6 +376,35 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                     min="0"
                     max="300"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Track Options */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Track Options</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.syncOnly === true}
+                      onChange={(e) => handleFilterChange('syncOnly', e.target.checked ? true : undefined)}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">Sync Only Tracks</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.hasVocals === true}
+                      onChange={(e) => handleFilterChange('hasVocals', e.target.checked ? true : undefined)}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">Tracks with Vocals</span>
+                  </label>
                 </div>
               </div>
             </div>
