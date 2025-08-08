@@ -311,7 +311,9 @@ const ProducerApplicationForm: React.FC = () => {
       ...formData,
       quiz_score: quizScore,
       quiz_completed: true,
-      auto_disqualified: isDisqualified
+      auto_disqualified: isDisqualified,
+      status: 'new', // Ensure new applications have 'new' status
+      is_auto_rejected: false // Ensure new applications are not auto-rejected
     };
     
     const { error } = await supabase.from('producer_applications').insert([submissionData]);
