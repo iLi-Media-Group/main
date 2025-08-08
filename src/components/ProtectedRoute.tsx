@@ -38,7 +38,8 @@ export function ProtectedRoute({
   }
 
   // Route-specific checks for non-admin users
-  if (requiresAdmin) {
+  // Only redirect if we're certain the user is not an admin and accountType is loaded
+  if (requiresAdmin && accountType && accountType !== 'admin' && accountType !== 'admin,producer') {
     return <Navigate to="/dashboard" replace />;
   }
 
@@ -47,8 +48,17 @@ export function ProtectedRoute({
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresClient && accountType !== 'client' && accountType !== 'white_label') {
+  if (requiresClient && accountType && accountType !== 'client' && accountType !== 'white_label') {
     return <Navigate to="/producer/dashboard" replace />;
+  }
+
+  // If accountType is still loading or null, show loading instead of redirecting
+  if (requiresAdmin && !accountType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
   }
 
   return <>{children}</>;
