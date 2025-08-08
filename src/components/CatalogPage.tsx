@@ -94,6 +94,21 @@ const calculateMatchScore = (track: any, searchTerms: string[]): number => {
   let score = 0;
   const expandedTerms = expandSearchTerms(searchTerms);
   
+  // Parse search terms for special filters
+  const searchQuery = searchTerms.join(' ').toLowerCase();
+  const hasSyncOnlyTerm = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
+  const hasVocalsTerm = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
+  
+  // Check Sync Only (+8 for exact match when searching for sync only)
+  if (hasSyncOnlyTerm && track.is_sync_only === true) {
+    score += 8;
+  }
+  
+  // Check Vocals (+8 for exact match when searching for vocals)
+  if (hasVocalsTerm && track.has_vocals === true) {
+    score += 8;
+  }
+  
   // Check genres (+5 for exact match, +3 for partial match)
   const trackGenres = parseArrayField(track.genres);
   trackGenres.forEach((genre: string) => {
@@ -206,40 +221,40 @@ export function CatalogPage() {
         setLoadingMore(true);
       }
 
-      let query = supabase
-        .from('tracks')
-        .select(`
-          id,
-          title,
-          artist,
-          genres,
-          sub_genres,
-          moods,
-          instruments,
-          media_usage,
-          bpm,
-          audio_url,
-          image_url,
-          has_sting_ending,
-          is_one_stop,
-          duration,
-          mp3_url,
-          trackouts_url,
-          stems_url,
-          has_vocals,
-          vocals_usage_type,
-          is_sync_only,
-          track_producer_id,
-          producer:profiles!track_producer_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            avatar_path
-          )
-        `)
-        .is('deleted_at', null)
-        .eq('is_sync_only', false); // Exclude sync-only tracks from main catalog
+             let query = supabase
+         .from('tracks')
+         .select(`
+           id,
+           title,
+           artist,
+           genres,
+           sub_genres,
+           moods,
+           instruments,
+           media_usage,
+           bpm,
+           audio_url,
+           image_url,
+           has_sting_ending,
+           is_one_stop,
+           duration,
+           mp3_url,
+           trackouts_url,
+           stems_url,
+           has_vocals,
+           vocals_usage_type,
+           is_sync_only,
+           track_producer_id,
+           producer:profiles!track_producer_id (
+             id,
+             first_name,
+             last_name,
+             email,
+             avatar_path
+           )
+         `)
+         .is('deleted_at', null);
+         // Removed the .eq('is_sync_only', false) to include all tracks in main catalog
 
              // If a specific track ID is provided, fetch only that track
        if (filters?.trackId) {
@@ -282,13 +297,18 @@ export function CatalogPage() {
         if (filters?.instruments?.length) searchTerms.push(...filters.instruments);
         if (filters?.mediaTypes?.length) searchTerms.push(...filters.mediaTypes);
 
+        // Parse search query for special filters
+        const searchQuery = filters?.query?.toLowerCase() || '';
+        const hasSyncOnlyTerm = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
+        const hasVocalsTerm = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
+
                  if (searchTerms.length > 0) {
            // For all search types, get ALL tracks and then filter/score them client-side
            // This ensures we get complete results for proper categorization
            console.log('Searching with terms:', searchTerms);
            
-           // Get all tracks (we'll filter and score them client-side)
-           const { data: allTracks, error } = await supabase
+           // Build query with special filters
+           let query = supabase
              .from('tracks')
              .select(`
                id,
@@ -321,8 +341,18 @@ export function CatalogPage() {
                  avatar_path
                )
              `)
-             .is('deleted_at', null)
-             .eq('is_sync_only', false);
+             .is('deleted_at', null);
+
+                       // Apply special filters based on search terms
+            if (hasSyncOnlyTerm) {
+              query = query.eq('is_sync_only', true);
+            }
+            
+            if (hasVocalsTerm) {
+              query = query.eq('has_vocals', true);
+            }
+
+           const { data: allTracks, error } = await query;
 
            if (error) throw error;
 

@@ -18,7 +18,7 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
   const searchSuggestions = [
     'jazzy energetic guitar for tv commercials',
     'peaceful piano for meditation apps',
-    'dramatic orchestral for movie trailers',
+      'dramatic orchestral for movie trailers',
     'funky bass for restaurant background',
     'uplifting pop for social media'
   ];
@@ -51,7 +51,7 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
     onTrackSelect?.(track);
   };
 
-  return (
+    return (
     <div className={`ai-search-assistant ${className}`}>
       {/* Search Input */}
       <div className="search-input-container mb-6">
@@ -65,14 +65,14 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
             className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button
+            <button
             onClick={handleSearch}
             disabled={loading}
             className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
+            >
             {loading ? 'Searching...' : 'Search'}
-          </button>
-        </div>
+            </button>
+          </div>
 
         {/* Search Suggestions */}
         {showSuggestions && (
@@ -80,40 +80,40 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
             <h4 className="text-sm font-semibold text-gray-700 mb-2">Try these examples:</h4>
             <div className="space-y-2">
               {searchSuggestions.map((suggestion, index) => (
-                <button
+              <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
                   className="block w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded"
                 >
                   "{suggestion}"
-                </button>
+              </button>
               ))}
-            </div>
-          </div>
+                    </div>
+                  </div>
         )}
-      </div>
+                </div>
 
       {/* Error Display */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-red-700">Error: {error}</p>
-        </div>
-      )}
+                  </div>
+                )}
 
-      {/* Search Results */}
+                                                  {/* Search Results */}
       {lastResults && (
         <div className="search-results">
           <div className="mb-4 flex justify-between items-center">
             <h3 className="text-xl font-semibold">
               Found {lastResults.meta.count} tracks
-            </h3>
+                     </h3>
             {lastResults.meta.popularSearches.length > 0 && (
               <div className="text-sm text-gray-600">
                 Popular: {lastResults.meta.popularSearches[0]?.query}
-              </div>
-            )}
-          </div>
-
+                               </div>
+                             )}
+                              </div>
+                              
           {/* Results Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {lastResults.results.map((track) => (
@@ -137,9 +137,9 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
                           {track.genres.slice(0, 3).map((genre) => (
                             <span key={genre} className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">
                               {genre}
-                            </span>
-                          ))}
-                        </div>
+                                 </span>
+                               ))}
+                             </div>
                       )}
                       {track.moods.length > 0 && (
                         <div className="flex flex-wrap gap-1">
@@ -148,9 +148,9 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
                               {mood}
                             </span>
                           ))}
-                        </div>
-                      )}
-                    </div>
+                   </div>
+                 )}
+                  </div>
                     <div className="mt-2 text-xs text-gray-500">
                       Relevance: {track.relevance} • {track.duration} • {track.bpm} BPM
                     </div>
@@ -166,18 +166,18 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
               <h4 className="font-semibold text-gray-700 mb-2">Popular Searches</h4>
               <div className="flex flex-wrap gap-2">
                 {lastResults.meta.popularSearches.slice(0, 5).map((item, index) => (
-                  <button
-                    key={index}
+                        <button
+                          key={index}
                     onClick={() => setQuery(item.query)}
                     className="px-3 py-1 text-sm bg-white border border-gray-200 rounded-full hover:bg-gray-50"
-                  >
+                        >
                     {item.query} ({item.hits})
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+                        </button>
+                      ))}
+                    </div>
+                    </div>
+                  )}
+                </div>
       )}
 
       {/* Loading State */}
@@ -185,8 +185,8 @@ export default function AISearchAssistant({ onTrackSelect, className = '' }: AIS
         <div className="flex items-center justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <span className="ml-2 text-gray-600">Searching...</span>
-        </div>
-      )}
-    </div>
-  );
+              </div>
+            )}
+      </div>
+    );
 } 
