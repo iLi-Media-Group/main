@@ -141,7 +141,8 @@ export default function ProducerApplicationsAdmin() {
       // Filter by status based on active tab
       switch (activeTab) {
         case 'new':
-          query = query.eq('status', 'new').is('review_tier', null).eq('is_auto_rejected', false);
+          // Show applications that are new or don't have a status set
+          query = query.or('status.eq.new,status.is.null').is('review_tier', null).eq('is_auto_rejected', false);
           break;
         case 'invited':
           query = query.eq('status', 'invited');
@@ -162,6 +163,24 @@ export default function ProducerApplicationsAdmin() {
       console.log('Active tab:', activeTab);
       console.log('Query result:', { data, error });
       console.log('Applications count:', data?.length || 0);
+      
+      // Log each application for debugging
+      if (data && data.length > 0) {
+        console.log('Applications found:');
+        data.forEach((app, index) => {
+          console.log(`App ${index + 1}:`, {
+            id: app.id,
+            name: app.name,
+            email: app.email,
+            status: app.status,
+            is_auto_rejected: app.is_auto_rejected,
+            review_tier: app.review_tier,
+            created_at: app.created_at
+          });
+        });
+      } else {
+        console.log('No applications found for current tab');
+      }
       
       if (error) {
         console.error('Error fetching applications:', error);
@@ -313,15 +332,61 @@ export default function ProducerApplicationsAdmin() {
   };
 
   const getTabCount = (tab: TabType) => {
-    return allApplications.filter(app => { // Use allApplications instead of applications
-      switch (tab) {
-        case 'new': return app.status === 'new' && !app.review_tier && !app.is_auto_rejected;
-        case 'invited': return app.status === 'invited';
-        case 'save_for_later': return app.status === 'save_for_later';
-        case 'declined': return app.status === 'declined' || app.is_auto_rejected === true;
-        default: return false;
+    switch (tab) {
+      case 'new':
+        return allApplications.filter(app => 
+          (app.status === 'new' || !app.status) && 
+          !app.review_tier && 
+          !app.is_auto_rejected
+        ).length;
+      case 'invited':
+        return allApplications.filter(app => app.status === 'invited').length;
+      case 'save_for_later':
+        return allApplications.filter(app => app.status === 'save_for_later').length;
+      case 'declined':
+        return allApplications.filter(app => 
+          app.status === 'declined' || app.is_auto_rejected
+        ).length;
+      default:
+        return 0;
+    }
+  };
+
+  // Debug function to show all applications
+  const debugAllApplications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('producer_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      console.log('=== DEBUG: ALL APPLICATIONS ===');
+      console.log('Total applications in database:', data?.length || 0);
+      
+      if (data && data.length > 0) {
+        data.forEach((app, index) => {
+          console.log(`Application ${index + 1}:`, {
+            id: app.id,
+            name: app.name,
+            email: app.email,
+            status: app.status || 'NULL',
+            is_auto_rejected: app.is_auto_rejected,
+            review_tier: app.review_tier,
+            created_at: app.created_at,
+            quiz_score: app.quiz_score,
+            quiz_completed: app.quiz_completed
+          });
+        });
+      } else {
+        console.log('No applications found in database');
       }
-    }).length;
+      
+      if (error) {
+        console.error('Error in debug query:', error);
+      }
+    } catch (error) {
+      console.error('Error in debug function:', error);
+    }
   };
 
   const handleInviteProducer = (application: Application) => {
@@ -465,9 +530,18 @@ export default function ProducerApplicationsAdmin() {
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-white">Producer Applications</h1>
-        <Button onClick={exportPDF} className="bg-blue-600 hover:bg-blue-700">
-          Export PDF
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            onClick={debugAllApplications} 
+            className="bg-gray-600 hover:bg-gray-700 text-white"
+            size="sm"
+          >
+            Debug All Apps
+          </Button>
+          <Button onClick={exportPDF} className="bg-blue-600 hover:bg-blue-700">
+            Export PDF
+          </Button>
+        </div>
       </div>
 
       {/* Tab Navigation */}
