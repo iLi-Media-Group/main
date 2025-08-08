@@ -30,9 +30,11 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    let providerUsed = "gmail";
+    // Try Gmail SMTP with retry logic
+    let emailSent = false;
+    let lastError = null;
 
-    // Try Gmail first
+    // Try port 465 first (more reliable)
     try {
       const gmailUser = Deno.env.get("GMAIL_USER");
       const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -58,34 +60,46 @@ serve(async (req) => {
       });
 
       await client.close();
-    } catch (gmailErr) {
-      console.error("Gmail failed, falling back to SendGrid:", gmailErr.message);
-      providerUsed = "sendgrid";
+      emailSent = true;
+      console.log("Email sent successfully via Gmail SMTP (port 465)");
+      
+    } catch (error) {
+      console.error("Gmail SMTP failed on port 465:", error.message);
+      lastError = error;
+      
+      // Try port 587 as fallback
+      try {
+        const gmailUser = Deno.env.get("GMAIL_USER");
+        const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
 
-      const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
-      if (!sendgridApiKey) {
-        throw new Error("SendGrid API key not set");
-      }
+        const client = new SmtpClient();
+        await client.connectTLS({
+          hostname: "smtp.gmail.com",
+          port: 587, // Alternative port
+          username: gmailUser,
+          password: gmailPassword,
+        });
 
-      const resp = await fetch("https://api.sendgrid.com/v3/mail/send", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${sendgridApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to }] }],
-          from: { email: Deno.env.get("FROM_EMAIL") || "no-reply@yourdomain.com" },
+        await client.send({
+          from: gmailUser,
+          to,
           subject,
-          content: [
-            html ? { type: "text/html", value: html } : { type: "text/plain", value: text },
-          ],
-        }),
-      });
+          content: text || html,
+          html,
+        });
 
-      if (!resp.ok) {
-        throw new Error(`SendGrid failed: ${await resp.text()}`);
+        await client.close();
+        emailSent = true;
+        console.log("Email sent successfully via Gmail SMTP (port 587)");
+        
+      } catch (fallbackError) {
+        console.error("Gmail SMTP failed on port 587:", fallbackError.message);
+        lastError = fallbackError;
       }
+    }
+
+    if (!emailSent) {
+      throw new Error(`Gmail SMTP failed: ${lastError?.message || 'Unknown error'}`);
     }
 
     // Log to DB
@@ -94,7 +108,7 @@ serve(async (req) => {
       subject,
       sent_at: new Date().toISOString(),
       status: "sent",
-      provider: providerUsed,
+      provider: "gmail",
     });
 
     if (logError) {
@@ -102,7 +116,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, provider: providerUsed }),
+      JSON.stringify({ success: true, provider: "gmail" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
