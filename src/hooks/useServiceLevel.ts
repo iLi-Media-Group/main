@@ -1,5 +1,6 @@
 import { useContext } from 'react';
 import { WhiteLabelFeatureFlagsContext } from '../contexts/WhiteLabelFeatureFlagsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 export type ServiceLevel = 'normal' | 'ai_search' | 'deep_media' | 'both';
 
@@ -13,18 +14,22 @@ export interface ServiceLevelInfo {
 
 export function useServiceLevel(): ServiceLevelInfo {
   const flags = useContext(WhiteLabelFeatureFlagsContext);
+  const { user, accountType } = useAuth();
   
-  // Default to normal service level
-  if (!flags) {
+  // MyBeatFi.io users (admin, clients) always have full access
+  const isMyBeatFiUser = !flags || accountType === 'admin' || accountType === 'client';
+  
+  if (isMyBeatFiUser) {
     return {
-      level: 'normal',
-      hasAISearch: false,
-      hasDeepMedia: false,
-      hasProducerOnboarding: false,
-      isPaid: false
+      level: 'both',
+      hasAISearch: true,
+      hasDeepMedia: true,
+      hasProducerOnboarding: true,
+      isPaid: true
     };
   }
 
+  // White label clients - check their paid features
   const hasAISearch = flags.ai_search_assistance_enabled && flags.ai_search_assistance_paid;
   const hasDeepMedia = flags.deep_media_search_enabled && flags.deep_media_search_paid;
   const hasProducerOnboarding = flags.producer_onboarding_enabled && flags.producer_onboarding_paid;
