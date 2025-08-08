@@ -28,7 +28,6 @@ export default defineConfig({
         // Security: Prevent source map exposure in production
         sourcemap: false,
       },
-      // Ensure algoliasearch is properly bundled
       external: [],
     },
     // Security: Minify and obfuscate code
