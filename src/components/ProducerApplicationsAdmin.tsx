@@ -456,6 +456,37 @@ export default function ProducerApplicationsAdmin() {
       if (insertError) throw insertError;
 
       // Send email
+      const emailResult = await sendProducerInvitationEmail(application.email, firstName, lastName, producerNumber, invitationCode);
+
+      // Update application status
+      await supabase
+        .from('producer_applications')
+        .update({ 
+          status: 'invited',
+          review_tier: 'Tier 1',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Refresh the applications list
+      fetchAllApplications();
+      fetchApplications();
+
+      // Show success message
+      if (emailResult.success) {
+        alert(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
+      } else {
+        alert(`Producer ${firstName} ${lastName} has been invited, but email failed. Producer Number: ${producerNumber}. You can resend the email later.`);
+      }
+
+    } catch (error) {
+      console.error('Quick invite error:', error);
+      alert('Failed to invite producer. Please try again.');
+    }
+  };
+
+  const sendProducerInvitationEmail = async (email: string, firstName: string, lastName: string, producerNumber: string, invitationCode: string) => {
+    try {
       const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
       const emailHtml = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -470,7 +501,7 @@ export default function ProducerApplicationsAdmin() {
             <h3>📋 Your Producer Details:</h3>
             <ul>
               <li><strong>Producer Number:</strong> ${producerNumber}</li>
-              <li><strong>Email:</strong> ${application.email}</li>
+              <li><strong>Email:</strong> ${email}</li>
               <li><strong>Status:</strong> ACCEPTED</li>
             </ul>
           </div>
@@ -492,11 +523,11 @@ export default function ProducerApplicationsAdmin() {
 
       const { error: emailError } = await supabase.functions.invoke('send-simple-email', {
         body: {
-          to: application.email,
+          to: email,
           subject: emailSubject,
           html: emailHtml,
           producerData: {
-            email: application.email,
+            email,
             firstName,
             lastName,
             producerNumber,
@@ -507,29 +538,50 @@ export default function ProducerApplicationsAdmin() {
 
       if (emailError) {
         console.error('Email error:', emailError);
-        // Don't fail the whole process if email fails
+        return { success: false, error: emailError };
       }
 
-      // Update application status
-      await supabase
-        .from('producer_applications')
-        .update({ 
-          status: 'invited',
-          review_tier: 'Tier 1',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', application.id);
-
-      // Refresh the applications list
-      fetchAllApplications();
-      fetchApplications();
-
-      // Show success message
-      alert(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
-
+      return { success: true };
     } catch (error) {
-      console.error('Quick invite error:', error);
-      alert('Failed to invite producer. Please try again.');
+      console.error('Email sending error:', error);
+      return { success: false, error };
+    }
+  };
+
+  const handleResendEmail = async (application: Application) => {
+    try {
+      // Get the invitation data
+      const { data: invitation } = await supabase
+        .from('producer_invitations')
+        .select('*')
+        .eq('email', application.email)
+        .single();
+
+      if (!invitation) {
+        alert('No invitation found for this producer. Please use Quick Invite first.');
+        return;
+      }
+
+      const nameParts = application.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      const emailResult = await sendProducerInvitationEmail(
+        application.email, 
+        firstName, 
+        lastName, 
+        invitation.producer_number, 
+        invitation.invitation_code
+      );
+
+      if (emailResult.success) {
+        alert('Email resent successfully!');
+      } else {
+        alert('Failed to resend email. Please try again.');
+      }
+    } catch (error) {
+      console.error('Resend email error:', error);
+      alert('Failed to resend email. Please try again.');
     }
   };
 
@@ -812,6 +864,14 @@ export default function ProducerApplicationsAdmin() {
                   )}
                   {activeTab === 'invited' && (
                     <>
+                      <Button
+                        onClick={() => handleResendEmail(app)}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <Mail className="w-4 h-4 mr-1" />
+                        Resend Email
+                      </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
