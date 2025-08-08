@@ -73,6 +73,7 @@ import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import SearchTest from './components/SearchTest';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
+import { setupDevelopmentProtection } from './utils/developmentMode';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -112,6 +113,9 @@ const App = () => {
         '/white-label-dashboard'
       ]
     });
+    
+    // Setup development mode protection
+    setupDevelopmentProtection();
   }, []);
   
   // Security hook for the entire application

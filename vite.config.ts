@@ -18,6 +18,10 @@ export default defineConfig({
   server: {
     historyApiFallback: true,
     headers: getSecurityHeaders(),
+    // Disable hot reload for admin and dashboard pages to prevent unwanted refreshes
+    hmr: {
+      overlay: false, // Disable error overlay
+    },
   },
   preview: {
     headers: getSecurityHeaders(),

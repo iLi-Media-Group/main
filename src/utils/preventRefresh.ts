@@ -45,6 +45,16 @@ class RefreshPreventionManager {
         return false;
       }
     }
+    
+    // In development mode, be more aggressive about preventing refreshes
+    if (process.env.NODE_ENV === 'development') {
+      // Prevent any keyboard shortcuts that might trigger reload
+      if (event.ctrlKey && (event.key === 'r' || event.key === 'R')) {
+        event.preventDefault();
+        console.log('Prevented refresh in development mode');
+        return false;
+      }
+    }
   }
 
   private handleBeforeUnload(event: BeforeUnloadEvent) {
@@ -52,6 +62,18 @@ class RefreshPreventionManager {
       event.preventDefault();
       event.returnValue = this.warningMessage;
       return this.warningMessage;
+    }
+    
+    // In development mode, be more aggressive about preventing unload
+    if (process.env.NODE_ENV === 'development') {
+      // Always prevent unload in development mode for certain paths
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/admin') || currentPath.includes('/dashboard') || currentPath.includes('/producer')) {
+        console.log('Prevented unload in development mode for:', currentPath);
+        event.preventDefault();
+        event.returnValue = 'Development mode: Page refresh prevented';
+        return 'Development mode: Page refresh prevented';
+      }
     }
   }
 
