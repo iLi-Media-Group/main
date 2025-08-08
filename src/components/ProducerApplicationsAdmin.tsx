@@ -102,11 +102,8 @@ export default function ProducerApplicationsAdmin() {
         rejection_reason: ranking.rejectionReason
       };
 
-      // If the application is auto-rejected and hasn't been updated in the database yet,
-      // update its status to 'declined'
-      if (ranking.isAutoRejected && app.status !== 'declined' && !app.is_auto_rejected) {
-        updateApplicationStatus(app.id, 'declined');
-      }
+      // Note: Auto-rejection status updates are handled separately to avoid infinite loops
+      // The ranking calculation is for display purposes only
 
       return updatedApp;
     });

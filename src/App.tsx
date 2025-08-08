@@ -92,6 +92,13 @@ const App = () => {
         '/login',
         '/signup',
         '/admin',
+        '/admin/dashboard',
+        '/admin/producer-applications',
+        '/admin/white-label-clients',
+        '/admin/services',
+        '/admin/resources',
+        '/admin/banking',
+        '/admin/analytics',
         '/producer/dashboard'
       ]
     });
