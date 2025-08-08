@@ -144,12 +144,12 @@ export const ProducerResourcesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Producer Resources</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-2">Producer Resources</h1>
+          <p className="text-gray-300">
             Essential tools, templates, and resources to help you succeed in the music industry.
           </p>
         </div>
@@ -162,17 +162,17 @@ export const ProducerResourcesPage: React.FC = () => {
               placeholder="Search resources..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-600 bg-gray-800 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">All Categories</option>
+            <option value="all" className="bg-gray-800 text-white">All Categories</option>
             {categories.map(category => (
-              <option key={category.id} value={category.id}>
+              <option key={category.id} value={category.id} className="bg-gray-800 text-white">
                 {category.title}
               </option>
             ))}
@@ -186,16 +186,16 @@ export const ProducerResourcesPage: React.FC = () => {
               key={category.id}
               className={`p-6 rounded-lg border-2 cursor-pointer transition-all ${
                 selectedCategory === category.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-900/20'
+                  : 'border-gray-600 bg-gray-800/50 hover:border-gray-500'
               }`}
               onClick={() => setSelectedCategory(category.id)}
             >
               <div className={`w-12 h-12 rounded-lg ${category.color} flex items-center justify-center text-white mb-4`}>
                 {category.icon}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{category.title}</h3>
-              <p className="text-sm text-gray-600">{category.description}</p>
+              <h3 className="text-lg font-semibold text-white mb-2">{category.title}</h3>
+              <p className="text-sm text-gray-300">{category.description}</p>
             </div>
           ))}
         </div>
@@ -204,15 +204,15 @@ export const ProducerResourcesPage: React.FC = () => {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading resources...</p>
+            <p className="mt-4 text-gray-300">Loading resources...</p>
           </div>
         ) : filteredResources.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No resources found</h3>
-            <p className="text-gray-600">
+            <h3 className="text-lg font-medium text-white mb-2">No resources found</h3>
+            <p className="text-gray-300">
               {searchTerm || selectedCategory !== 'all'
                 ? 'Try adjusting your search or filter criteria.'
                 : 'Resources will appear here once they are added by administrators.'}
@@ -223,18 +223,18 @@ export const ProducerResourcesPage: React.FC = () => {
             {filteredResources.map(resource => {
               const categoryInfo = getCategoryInfo(resource.category);
               return (
-                <div key={resource.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div key={resource.id} className="bg-gray-800/50 rounded-lg shadow-sm border border-gray-600 p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`w-10 h-10 rounded-lg ${categoryInfo?.color} flex items-center justify-center text-white`}>
                       {categoryInfo?.icon}
                     </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                    <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded">
                       {categoryInfo?.title}
                     </span>
                   </div>
                   
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{resource.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4" 
+                  <h3 className="text-lg font-semibold text-white mb-2">{resource.title}</h3>
+                  <p className="text-gray-300 text-sm mb-4" 
                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(resource.description) }} />
                   
                   <div className="flex gap-2">
@@ -250,7 +250,7 @@ export const ProducerResourcesPage: React.FC = () => {
                     {resource.external_url && (
                       <button
                         onClick={() => handleExternalLink(resource)}
-                        className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Visit
@@ -258,7 +258,7 @@ export const ProducerResourcesPage: React.FC = () => {
                     )}
                   </div>
                   
-                  <div className="mt-4 text-xs text-gray-500">
+                  <div className="mt-4 text-xs text-gray-400">
                     Added {new Date(resource.created_at).toLocaleDateString()}
                   </div>
                 </div>

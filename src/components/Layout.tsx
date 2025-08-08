@@ -195,6 +195,11 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   <Link to="/pricing" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
                   </Link>
+                  {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
+                    <Link to="/producer/resources" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                      <FileText className="w-4 h-4 mr-2" />Producer Resources
+                    </Link>
+                  )}
                   <Link to="/services" className="flex items-center px-4 py-2 text-purple-400 hover:text-white hover:bg-blue-800/50 font-semibold" onClick={() => setIsMenuOpen(false)}>
                     <Settings className="w-4 h-4 mr-2" />Services Directory
                   </Link>
@@ -241,10 +246,19 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   )}
                   {/* Dashboard links */}
                   {user && (
-                    <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                      {getDashboardIcon()}
-                      {getDashboardLabel()}
-                    </Link>
+                    <>
+                      <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        {getDashboardIcon()}
+                        {getDashboardLabel()}
+                      </Link>
+                      {/* Always show Producer Dashboard for admin/producer users */}
+                      {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
+                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                          <Music className="w-4 h-4 mr-2" />
+                          Producer Dashboard
+                        </Link>
+                      )}
+                    </>
                   )}
                   {/* Authentication links */}
                   {user ? (
