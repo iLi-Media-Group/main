@@ -142,7 +142,8 @@ export default function ProducerApplicationsAdmin() {
       switch (activeTab) {
         case 'new':
           // Show applications that are new or don't have a status set
-          query = query.or('status.eq.new,status.is.null').is('review_tier', null).eq('is_auto_rejected', false);
+          // Also include applications with status 'new' regardless of review_tier to prevent data loss
+          query = query.or('status.eq.new,status.is.null').eq('is_auto_rejected', false);
           break;
         case 'invited':
           // Show applications with status 'invited' (regardless of review_tier)
@@ -346,7 +347,6 @@ export default function ProducerApplicationsAdmin() {
       case 'new':
         return allApplications.filter(app => 
           (app.status === 'new' || !app.status) && 
-          !app.review_tier && 
           !app.is_auto_rejected
         ).length;
       case 'invited':
@@ -721,6 +721,12 @@ export default function ProducerApplicationsAdmin() {
                       {app.auto_disqualified && (
                         <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
                           Auto-Disqualified
+                        </span>
+                      )}
+                      {/* Show warning for inconsistent status */}
+                      {app.status === 'new' && app.review_tier && (
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                          Status Inconsistent
                         </span>
                       )}
                     </div>
