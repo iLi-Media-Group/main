@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Save, X } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, Search, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Synonym {
@@ -17,6 +17,8 @@ export function SynonymManager() {
   const [newSynonyms, setNewSynonyms] = useState('');
   const [editingTerm, setEditingTerm] = useState('');
   const [editingSynonyms, setEditingSynonyms] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchSynonyms();
@@ -121,6 +123,21 @@ export function SynonymManager() {
     setEditingSynonyms('');
   };
 
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
+  };
+
+  const filteredSynonyms = synonyms.filter(synonym =>
+    synonym.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    synonym.synonyms.some(syn => syn.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -179,96 +196,145 @@ export function SynonymManager() {
         </div>
       </div>
 
-      {/* Synonyms List */}
+      {/* Search and Synonyms List */}
       <div className="bg-gray-800/50 rounded-lg p-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Current Synonyms</h2>
-        <div className="space-y-4">
-          {synonyms.map((synonym) => (
-            <div key={synonym.id} className="bg-gray-700/50 rounded-lg p-4">
-              {editingId === synonym.id ? (
-                // Edit Mode
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Main Term
-                    </label>
-                    <input
-                      type="text"
-                      value={editingTerm}
-                      onChange={(e) => setEditingTerm(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Synonyms
-                    </label>
-                    <input
-                      type="text"
-                      value={editingSynonyms}
-                      onChange={(e) => setEditingSynonyms(e.target.value)}
-                      className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEdit(synonym.id)}
-                      className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-                    >
-                      <Save className="w-4 h-4 mr-2" />
-                      Save
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                      className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                // View Mode
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-medium text-white mb-2">
-                      {synonym.term}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {synonym.synonyms.map((syn, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm"
-                        >
-                          {syn}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-gray-400 text-sm mt-2">
-                      Created: {new Date(synonym.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => startEditing(synonym)}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(synonym.id)}
-                      className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-white">Current Synonyms</h2>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search terms or synonyms..."
+              className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-64"
+            />
+          </div>
         </div>
+
+        {filteredSynonyms.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">
+              {searchTerm ? 'No synonyms found matching your search.' : 'No synonyms available.'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredSynonyms.map((synonym) => (
+              <div key={synonym.id} className="bg-gray-700/50 rounded-lg border border-gray-600/50">
+                {editingId === synonym.id ? (
+                  // Edit Mode
+                  <div className="p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Main Term
+                        </label>
+                        <input
+                          type="text"
+                          value={editingTerm}
+                          onChange={(e) => setEditingTerm(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Synonyms
+                        </label>
+                        <input
+                          type="text"
+                          value={editingSynonyms}
+                          onChange={(e) => setEditingSynonyms(e.target.value)}
+                          className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(synonym.id)}
+                          className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
+                        >
+                          <Save className="w-4 h-4 mr-2" />
+                          Save
+                        </button>
+                        <button
+                          onClick={cancelEditing}
+                          className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // View Mode
+                  <div>
+                    <div 
+                      className="p-4 cursor-pointer hover:bg-gray-600/30 transition-colors flex items-center justify-between"
+                      onClick={() => toggleExpanded(synonym.id)}
+                    >
+                      <div className="flex items-center space-x-3">
+                        {expandedItems.has(synonym.id) ? (
+                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                        )}
+                        <div>
+                          <h3 className="text-lg font-medium text-white">
+                            {synonym.term}
+                          </h3>
+                          <p className="text-gray-400 text-sm">
+                            {synonym.synonyms.length} synonym{synonym.synonyms.length !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            startEditing(synonym);
+                          }}
+                          className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(synonym.id);
+                          }}
+                          className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {expandedItems.has(synonym.id) && (
+                      <div className="px-4 pb-4 border-t border-gray-600/50 pt-4">
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {synonym.synonyms.map((syn, index) => (
+                            <span
+                              key={index}
+                              className="px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm border border-blue-500/30"
+                            >
+                              {syn}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-gray-400 text-sm">
+                          Created: {new Date(synonym.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
