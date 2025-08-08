@@ -45,6 +45,17 @@ CREATE INDEX IF NOT EXISTS idx_tracks_moods_arr ON public.tracks USING GIN (mood
 CREATE INDEX IF NOT EXISTS idx_tracks_instruments_arr ON public.tracks USING GIN (instruments_arr);
 CREATE INDEX IF NOT EXISTS idx_tracks_media_usage_arr ON public.tracks USING GIN (media_usage_arr);
 
+-- 4) Performance optimization indexes for original columns (if they exist)
+CREATE INDEX IF NOT EXISTS idx_tracks_genres_gin ON public.tracks USING GIN (genres);
+CREATE INDEX IF NOT EXISTS idx_tracks_sub_genres_gin ON public.tracks USING GIN (sub_genres);
+CREATE INDEX IF NOT EXISTS idx_tracks_moods_gin ON public.tracks USING GIN (moods);
+CREATE INDEX IF NOT EXISTS idx_tracks_usage_gin ON public.tracks USING GIN (usage_types);
+
+-- 5) Text search optimization with trigram indexes
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS idx_tracks_title_trgm ON public.tracks USING gin (title gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_tracks_artist_trgm ON public.tracks USING gin (artist gin_trgm_ops);
+
 -- 4) Add comments for documentation
 COMMENT ON COLUMN public.tracks.genres_arr IS 'Array version of genres for efficient search queries';
 COMMENT ON COLUMN public.tracks.sub_genres_arr IS 'Array version of sub_genres for efficient search queries';

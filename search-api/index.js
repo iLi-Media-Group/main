@@ -13,7 +13,11 @@ app.use(cors({
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // Supabase DATABASE_URL
-  ssl: { rejectUnauthorized: false } // depending on your hosting
+  ssl: { rejectUnauthorized: false }, // depending on your hosting
+  max: 20, // Maximum number of clients in the pool
+  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
+  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+  maxUses: 7500 // Close (and replace) a connection after it has been used 7500 times
 });
 
 /**
@@ -273,6 +277,27 @@ app.post('/search', async (req, res) => {
     res.status(500).json({ ok:false, error: err.message || String(err) });
   } finally {
     client.release();
+  }
+});
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      database: 'connected'
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'error', 
+      timestamp: new Date().toISOString(),
+      database: 'disconnected',
+      error: err.message 
+    });
   }
 });
 
