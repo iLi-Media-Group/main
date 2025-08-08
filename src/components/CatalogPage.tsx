@@ -184,11 +184,14 @@ export function CatalogPage() {
        trackId
      };
 
-    // Reset page and tracks when filters change
-    setPage(1);
-    setTracks([]);
-    setHasMore(true);
-    setCurrentFilters(filters);
+         // Reset page and tracks when filters change
+     setPage(1);
+     setTracks([]);
+     setHasMore(true);
+     setCurrentFilters(filters);
+     
+     // Set filters state for categorization display
+     setFilters(filters);
 
     // Fetch tracks with filters
     fetchTracks(filters, 1);
@@ -644,13 +647,9 @@ export function CatalogPage() {
              // Search Results - Show categorized sections
              <div className="space-y-8">
                {/* Search Terms Display */}
-               <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
-                 <h3 className="text-lg font-semibold text-white mb-2">Search Results</h3>
-                 {/* Debug info */}
-                 <div className="text-xs text-gray-400 mb-2">
-                   Debug: filters = {JSON.stringify(filters)}
-                 </div>
-                 <div className="flex flex-wrap gap-2">
+                                <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-6">
+                   <h3 className="text-lg font-semibold text-white mb-2">Search Results</h3>
+                   <div className="flex flex-wrap gap-2">
                    {filters?.query && (
                      <span className="bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full text-sm">
                        Query: "{filters.query}"
@@ -774,12 +773,7 @@ export function CatalogPage() {
              </div>
                      ) : (
              // Regular browsing or fallback - Show all tracks with colored borders based on search score
-             <div>
-               {/* Debug info for fallback */}
-               <div className="text-xs text-gray-400 mb-2">
-                 Debug: Using fallback view. filters = {JSON.stringify(filters)}
-               </div>
-               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                  {tracks.map((track) =>
                    track && track.id ? (
                      <div key={track.id} className="relative">
@@ -801,7 +795,6 @@ export function CatalogPage() {
                    ) : null
                  )}
                </div>
-             </div>
            )}
 
           {hasMore && (
