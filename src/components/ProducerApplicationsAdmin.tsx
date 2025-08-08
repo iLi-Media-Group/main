@@ -521,7 +521,7 @@ export default function ProducerApplicationsAdmin() {
         </div>
       `;
 
-                                       const { error: emailError } = await supabase.functions.invoke('send-email-resend', {
+                                       const { error: emailError } = await supabase.functions.invoke('test-basic', {
         body: {
           to: email,
           subject: emailSubject,
