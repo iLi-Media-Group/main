@@ -13,6 +13,7 @@ interface WhiteLabelFeatureFlags {
 
 const WhiteLabelFeatureFlagsContext = createContext<WhiteLabelFeatureFlags | null>(null);
 
+export { WhiteLabelFeatureFlagsContext };
 export const useWhiteLabelFeatureFlags = () => useContext(WhiteLabelFeatureFlagsContext);
 
 export function WhiteLabelFeatureFlagsProvider({ clientId, children }: { clientId: string, children: React.ReactNode }) {
