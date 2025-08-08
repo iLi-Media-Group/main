@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Sliders } from 'lucide-react';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { useServiceLevel } from '../hooks/useServiceLevel';
 
 interface SearchBoxProps {
   onSearch: (filters: SearchFilters) => void;
@@ -19,6 +20,7 @@ export interface SearchFilters {
 
 export function SearchBox({ onSearch }: SearchBoxProps) {
   const { genres, subGenres, moods, instruments, mediaTypes, loading: dataLoading, error: dataError } = useDynamicSearchData();
+  const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
@@ -132,7 +134,15 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
             type="text"
             value={filters.query}
             onChange={handleInputChange}
-            placeholder="Search tracks, artists, genres, moods, instruments, or media types..."
+            placeholder={
+              level === 'normal' 
+                ? "Search tracks, artists, genres, or moods..."
+                : level === 'ai_search'
+                ? "Search tracks, artists, genres, moods, sub-genres, or instruments..."
+                : level === 'deep_media'
+                ? "Search tracks, artists, genres, moods, or media types..."
+                : "Search tracks, artists, genres, moods, sub-genres, instruments, or media types..."
+            }
             className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
@@ -169,7 +179,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
         {/* Advanced Filters */}
         {isFiltersOpen && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-white/20">
-            {/* Genres */}
+            {/* Genres - Always Available */}
             <div>
               <h3 className="text-white font-semibold mb-3">Genres</h3>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -193,31 +203,33 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
               </div>
             </div>
 
-            {/* Sub Genres */}
-            <div>
-              <h3 className="text-white font-semibold mb-3">Sub Genres</h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {subGenres.map(subGenre => (
-                  <label key={subGenre.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.subGenres.includes(subGenre.name)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          handleFilterChange('subGenres', [...filters.subGenres, subGenre.name]);
-                        } else {
-                          handleFilterChange('subGenres', filters.subGenres.filter(sg => sg !== subGenre.name));
-                        }
-                      }}
-                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-white text-sm">{subGenre.display_name}</span>
-                  </label>
-                ))}
+            {/* Sub Genres - AI Search Only */}
+            {hasAISearch && (
+              <div>
+                <h3 className="text-white font-semibold mb-3">Sub Genres</h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {subGenres.map(subGenre => (
+                    <label key={subGenre.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={filters.subGenres.includes(subGenre.name)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleFilterChange('subGenres', [...filters.subGenres, subGenre.name]);
+                          } else {
+                            handleFilterChange('subGenres', filters.subGenres.filter(sg => sg !== subGenre.name));
+                          }
+                        }}
+                        className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-white text-sm">{subGenre.display_name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Moods */}
+            {/* Moods - Always Available */}
             <div>
               <h3 className="text-white font-semibold mb-3">Moods</h3>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -241,60 +253,64 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
               </div>
             </div>
 
-            {/* Instruments */}
-            <div>
-              <h3 className="text-white font-semibold mb-3">Instruments</h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {instruments.map(instrument => (
-                  <label key={instrument.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.instruments.includes(instrument.name)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          handleFilterChange('instruments', [...filters.instruments, instrument.name]);
-                        } else {
-                          handleFilterChange('instruments', filters.instruments.filter(i => i !== instrument.name));
-                        }
-                      }}
-                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-white text-sm">{instrument.display_name}</span>
-                  </label>
-                ))}
+            {/* Instruments - AI Search Only */}
+            {hasAISearch && (
+              <div>
+                <h3 className="text-white font-semibold mb-3">Instruments</h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {instruments.map(instrument => (
+                    <label key={instrument.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={filters.instruments.includes(instrument.name)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            handleFilterChange('instruments', [...filters.instruments, instrument.name]);
+                          } else {
+                            handleFilterChange('instruments', filters.instruments.filter(i => i !== instrument.name));
+                          }
+                        }}
+                        className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                      />
+                      <span className="text-white text-sm">{instrument.display_name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Media Types */}
-            <div>
-              <h3 className="text-white font-semibold mb-3">Media Types</h3>
-              <div className="space-y-4 max-h-40 overflow-y-auto">
-                {Object.entries(mediaTypesByCategory).map(([category, types]) => (
-                  <div key={category}>
-                    <h4 className="text-white/80 text-xs font-medium mb-2">{category}</h4>
-                    <div className="space-y-1">
-                      {types.map(mediaType => (
-                        <label key={mediaType.id} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            checked={filters.mediaTypes.includes(mediaType.name)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                handleFilterChange('mediaTypes', [...filters.mediaTypes, mediaType.name]);
-                              } else {
-                                handleFilterChange('mediaTypes', filters.mediaTypes.filter(mt => mt !== mediaType.name));
-                              }
-                            }}
-                            className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-white text-xs">{mediaType.name}</span>
-                        </label>
-                      ))}
+            {/* Media Types - Deep Media Search Only */}
+            {hasDeepMedia && (
+              <div>
+                <h3 className="text-white font-semibold mb-3">Media Types</h3>
+                <div className="space-y-4 max-h-40 overflow-y-auto">
+                  {Object.entries(mediaTypesByCategory).map(([category, types]) => (
+                    <div key={category}>
+                      <h4 className="text-white/80 text-xs font-medium mb-2">{category}</h4>
+                      <div className="space-y-1">
+                        {types.map(mediaType => (
+                          <label key={mediaType.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={filters.mediaTypes.includes(mediaType.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  handleFilterChange('mediaTypes', [...filters.mediaTypes, mediaType.name]);
+                                } else {
+                                  handleFilterChange('mediaTypes', filters.mediaTypes.filter(mt => mt !== mediaType.name));
+                                }
+                              }}
+                              className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-white text-xs">{mediaType.name}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* BPM Range */}
             <div>
