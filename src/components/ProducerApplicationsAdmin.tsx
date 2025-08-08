@@ -551,11 +551,23 @@ export default function ProducerApplicationsAdmin() {
   const handleResendEmail = async (application: Application) => {
     try {
       // Get the invitation data
-      const { data: invitation } = await supabase
+      const { data: invitation, error: invitationError } = await supabase
         .from('producer_invitations')
         .select('*')
         .eq('email', application.email)
         .single();
+
+      if (invitationError) {
+        console.error('Error fetching invitation:', invitationError);
+        if (invitationError.code === 'PGRST116') {
+          // No rows returned
+          alert('No invitation found for this producer. Please use Quick Invite first.');
+          return;
+        } else {
+          alert('Error accessing invitation data. Please try again.');
+          return;
+        }
+      }
 
       if (!invitation) {
         alert('No invitation found for this producer. Please use Quick Invite first.');
