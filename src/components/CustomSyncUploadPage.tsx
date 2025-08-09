@@ -29,6 +29,17 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    mp3: boolean;
+    trackouts: boolean;
+    stems: boolean;
+    splitSheet: boolean;
+  }>({
+    mp3: false,
+    trackouts: false,
+    stems: false,
+    splitSheet: false
+  });
   const [syncRequest, setSyncRequest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -212,6 +223,14 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
         console.log('[DEBUG] Successfully updated custom_sync_requests');
       }
 
+      // Track which files were successfully uploaded
+      const newUploadedFiles = {
+        mp3: !!updates.mp3_url,
+        trackouts: !!updates.trackouts_url,
+        stems: !!updates.stems_url,
+        splitSheet: !!updates.split_sheet_url
+      };
+      setUploadedFiles(newUploadedFiles);
       setSuccess(true);
       
       // Redirect back to producer dashboard after a short delay
@@ -235,6 +254,12 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
     setSplitSheetFile(null);
     setError('');
     setSuccess(false);
+    setUploadedFiles({
+      mp3: false,
+      trackouts: false,
+      stems: false,
+      splitSheet: false
+    });
     
     // Reset file inputs
     const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
@@ -352,7 +377,33 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
 
         {success && (
           <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
-            <p className="text-green-400 font-medium">✓ Files uploaded successfully! Redirecting to dashboard...</p>
+            <p className="text-green-400 font-medium mb-3">✓ Files uploaded successfully! Redirecting to dashboard...</p>
+            <div className="space-y-2">
+              {uploadedFiles.mp3 && (
+                <div className="flex items-center text-green-400">
+                  <span className="text-lg mr-2">✓</span>
+                  <span className="text-sm">MP3 File uploaded</span>
+                </div>
+              )}
+              {uploadedFiles.trackouts && (
+                <div className="flex items-center text-green-400">
+                  <span className="text-lg mr-2">✓</span>
+                  <span className="text-sm">Trackouts ZIP uploaded</span>
+                </div>
+              )}
+              {uploadedFiles.stems && (
+                <div className="flex items-center text-green-400">
+                  <span className="text-lg mr-2">✓</span>
+                  <span className="text-sm">Stems ZIP uploaded</span>
+                </div>
+              )}
+              {uploadedFiles.splitSheet && (
+                <div className="flex items-center text-green-400">
+                  <span className="text-lg mr-2">✓</span>
+                  <span className="text-sm">Split Sheet PDF uploaded</span>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

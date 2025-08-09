@@ -310,12 +310,28 @@ const handleDownloadSupabase = async (bucket: string, path: string, filename: st
     
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60);
     if (data?.signedUrl) {
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // For MP3 files, use fetch to force download instead of letting browser play
+      if (filename.toLowerCase().endsWith('.mp3')) {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        // For other files, use the original method
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } else {
       console.error('Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
@@ -2655,7 +2671,56 @@ const getPlanLevel = (plan: string): number => {
                                   <FileText className="w-4 h-4 mr-2" />
                                   History
                                 </button>
-
+                                {proposal.track.mp3_url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                    className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download MP3"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download MP3
+                                  </button>
+                                )}
+                                {proposal.track.trackouts_url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                                    className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Trackouts"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Trackouts
+                                  </button>
+                                )}
+                                {proposal.track.stems_url && (
+                                  <button
+                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
+                                    className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Stems"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Stems
+                                  </button>
+                                )}
+                                {proposal.track.split_sheet_url && (
+                                  <button
+                                    onClick={() => {
+                                      // Clean the path to remove any double encoding or URL issues
+                                      const cleanPath = proposal.track.split_sheet_url
+                                        .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                        .replace(/\?.*$/, '')
+                                        .replace(/^split-sheets\//, '');
+                                      handleDownloadSupabase('split-sheets', cleanPath, `${proposal.track.title}_SplitSheet.pdf`);
+                                    }}
+                                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Split Sheet"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Split Sheet
+                                  </button>
+                                )}
+                                {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (
+                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
+                                )}
                               </div>
                             </div>
                           </div>

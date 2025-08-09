@@ -48,85 +48,6 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     setter(prev => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleUpload = useCallback(async (e?: React.MouseEvent) => {
-    console.log('[DEBUG] Upload button clicked');
-    if (e) {
-      preventDefault(e);
-    }
-    
-    setUploading(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      const updates: any = {};
-
-      if (mp3Files.length > 0) {
-        console.log('[DEBUG] Uploading MP3 file:', mp3Files[0].name, mp3Files[0].size);
-        const mp3Url = await uploadFile(mp3Files[0], 'track-audio', undefined, `custom_syncs/${request.id}`, 'main.mp3');
-        updates.mp3_url = mp3Url;
-        console.log('[DEBUG] Uploaded MP3 URL:', mp3Url);
-      }
-
-      if (trackoutsFiles.length > 0) {
-        console.log('[DEBUG] Uploading trackouts file:', trackoutsFiles[0].name, trackoutsFiles[0].size);
-        const trackoutsUrl = await uploadFile(trackoutsFiles[0], 'trackouts', undefined, `custom_syncs/${request.id}`, 'trackouts.zip');
-        updates.trackouts_url = trackoutsUrl;
-        console.log('[DEBUG] Uploaded trackouts URL:', trackoutsUrl);
-      }
-
-      if (stemsFiles.length > 0) {
-        console.log('[DEBUG] Uploading stems file:', stemsFiles[0].name, stemsFiles[0].size);
-        const stemsUrl = await uploadFile(stemsFiles[0], 'stems', undefined, `custom_syncs/${request.id}`, 'stems.zip');
-        updates.stems_url = stemsUrl;
-        console.log('[DEBUG] Uploaded stems URL:', stemsUrl);
-      }
-
-      if (splitSheetFiles.length > 0) {
-        console.log('[DEBUG] Uploading split sheet file:', splitSheetFiles[0].name, splitSheetFiles[0].size);
-        const splitSheetUrl = await uploadFile(splitSheetFiles[0], 'split-sheets', undefined, `custom_syncs/${request.id}`, 'split_sheet.pdf');
-        updates.split_sheet_url = splitSheetUrl;
-        console.log('[DEBUG] Uploaded split sheet URL:', splitSheetUrl);
-      }
-
-      if (Object.keys(updates).length > 0) {
-        console.log('[DEBUG] Updating custom_sync_requests with:', updates);
-        const { error: updateError } = await supabase
-          .from('custom_sync_requests')
-          .update(updates)
-          .eq('id', request.id);
-        if (updateError) throw updateError;
-        console.log('[DEBUG] Successfully updated custom_sync_requests');
-      }
-
-      setSuccess(true);
-      onUploaded();
-      clearAllFiles();
-    } catch (err: any) {
-      console.error('[DEBUG] Upload error:', err);
-      setError(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  }, [mp3Files, trackoutsFiles, stemsFiles, splitSheetFiles, request.id, onUploaded, preventDefault]);
-
-  const clearAllFiles = useCallback((e?: React.MouseEvent) => {
-    console.log('[DEBUG] Clear all files clicked');
-    if (e) {
-      preventDefault(e);
-    }
-    setMp3Files([]);
-    setTrackoutsFiles([]);
-    setStemsFiles([]);
-    setSplitSheetFiles([]);
-    setError(null);
-    // Reset file inputs
-    const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
-    fileInputs.forEach(input => {
-      input.value = '';
-    });
-  }, [preventDefault]);
-
   const FilePreview = useCallback(({ files, onRemove }: { files: File[]; onRemove: (index: number) => void }) => (
     <>
       {files.length > 0 && (
@@ -150,6 +71,104 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
       )}
     </>
   ), [preventDefault]);
+
+  // Track which files were successfully uploaded
+  const [uploadedFiles, setUploadedFiles] = useState<{
+    mp3: boolean;
+    trackouts: boolean;
+    stems: boolean;
+    splitSheet: boolean;
+  }>({
+    mp3: false,
+    trackouts: false,
+    stems: false,
+    splitSheet: false
+  });
+
+  const handleUpload = useCallback(async (e?: React.MouseEvent) => {
+    console.log('[DEBUG] Upload button clicked');
+    if (e) {
+      preventDefault(e);
+    }
+    
+    setUploading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const updates: any = {};
+      const newUploadedFiles = { ...uploadedFiles };
+
+      if (mp3Files.length > 0) {
+        console.log('[DEBUG] Uploading MP3 file:', mp3Files[0].name, mp3Files[0].size);
+        const mp3Url = await uploadFile(mp3Files[0], 'track-audio', undefined, `custom_syncs/${request.id}`, 'main.mp3');
+        updates.mp3_url = mp3Url;
+        newUploadedFiles.mp3 = true;
+        console.log('[DEBUG] Uploaded MP3 URL:', mp3Url);
+      }
+
+      if (trackoutsFiles.length > 0) {
+        console.log('[DEBUG] Uploading trackouts file:', trackoutsFiles[0].name, trackoutsFiles[0].size);
+        const trackoutsUrl = await uploadFile(trackoutsFiles[0], 'trackouts', undefined, `custom_syncs/${request.id}`, 'trackouts.zip');
+        updates.trackouts_url = trackoutsUrl;
+        newUploadedFiles.trackouts = true;
+        console.log('[DEBUG] Uploaded trackouts URL:', trackoutsUrl);
+      }
+
+      if (stemsFiles.length > 0) {
+        console.log('[DEBUG] Uploading stems file:', stemsFiles[0].name, stemsFiles[0].size);
+        const stemsUrl = await uploadFile(stemsFiles[0], 'stems', undefined, `custom_syncs/${request.id}`, 'stems.zip');
+        updates.stems_url = stemsUrl;
+        newUploadedFiles.stems = true;
+        console.log('[DEBUG] Uploaded stems URL:', stemsUrl);
+      }
+
+      if (splitSheetFiles.length > 0) {
+        console.log('[DEBUG] Uploading split sheet file:', splitSheetFiles[0].name, splitSheetFiles[0].size);
+        const splitSheetUrl = await uploadFile(splitSheetFiles[0], 'split-sheets', undefined, `custom_syncs/${request.id}`, 'split_sheet.pdf');
+        updates.split_sheet_url = splitSheetUrl;
+        newUploadedFiles.splitSheet = true;
+        console.log('[DEBUG] Uploaded split sheet URL:', splitSheetUrl);
+      }
+
+      if (Object.keys(updates).length > 0) {
+        console.log('[DEBUG] Updating custom_sync_requests with:', updates);
+        const { error: updateError } = await supabase
+          .from('custom_sync_requests')
+          .update(updates)
+          .eq('id', request.id);
+        if (updateError) throw updateError;
+        console.log('[DEBUG] Successfully updated custom_sync_requests');
+      }
+
+      setUploadedFiles(newUploadedFiles);
+      setSuccess(true);
+      onUploaded();
+      clearAllFiles();
+    } catch (err: any) {
+      console.error('[DEBUG] Upload error:', err);
+      setError(err.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }, [mp3Files, trackoutsFiles, stemsFiles, splitSheetFiles, request.id, onUploaded, preventDefault, uploadedFiles]);
+
+  const clearAllFiles = useCallback((e?: React.MouseEvent) => {
+    console.log('[DEBUG] Clear all files clicked');
+    if (e) {
+      preventDefault(e);
+    }
+    setMp3Files([]);
+    setTrackoutsFiles([]);
+    setStemsFiles([]);
+    setSplitSheetFiles([]);
+    setError(null);
+    // Reset file inputs
+    const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
+    fileInputs.forEach(input => {
+      input.value = '';
+    });
+  }, [preventDefault]);
 
   return (
     <div 
@@ -240,7 +259,13 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
 
       {success && (
         <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-          <p className="text-green-400 text-sm font-medium">✓ Upload successful!</p>
+          <p className="text-green-400 text-sm font-medium mb-2">✓ Files uploaded successfully:</p>
+          <div className="space-y-1 text-xs text-green-300">
+            {uploadedFiles.mp3 && <div>✓ MP3 File</div>}
+            {uploadedFiles.trackouts && <div>✓ Trackouts (ZIP)</div>}
+            {uploadedFiles.stems && <div>✓ Stems (ZIP)</div>}
+            {uploadedFiles.splitSheet && <div>✓ Split Sheet (PDF)</div>}
+          </div>
         </div>
       )}
 
