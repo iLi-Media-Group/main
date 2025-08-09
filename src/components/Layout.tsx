@@ -98,7 +98,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex flex-col">
       
-      <header className="py-4 px-4 bg-blue-900/80 backdrop-solid-sm border-b border-blue-500/20 sticky top-0 z-50">
+      <header className="py-6 px-4 bg-blue-900/80 backdrop-solid-sm border-b border-blue-500/20 sticky top-0 z-50">
         <nav className="container mx-auto flex justify-between items-center relative">
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
@@ -106,23 +106,24 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                 <img
                   src={logoUrl}
                   alt="Logo"
-                  className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain"
+                  className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto object-contain drop-shadow-lg"
                   style={{ 
                     border: 'none', 
                     boxShadow: 'none', 
                     background: 'transparent', 
                     padding: 0, 
                     margin: 0,
-                    mixBlendMode: 'normal'
+                    mixBlendMode: 'normal',
+                    filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
                   }}
                 />
               ) : (
-                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto flex items-center justify-center">
+                <div className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto flex items-center justify-center">
                   <Music className="w-full h-full text-blue-400" />
                 </div>
               )}
-              <div className="ml-3 hidden sm:block">
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
+              <div className="ml-4 hidden sm:block">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
                   MYBEATFI <span className="text-blue-400">SYNC</span>
                 </h1>
               </div>
