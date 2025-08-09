@@ -9,7 +9,7 @@
 
   /* Modern Glassmorphism */
   .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-blue-500/20 shadow-xl;
+    @apply bg-white/10 backdrop-blur-md border border-blue-500/20 shadow-xl;
   }
 
   /* Animated Gradient Background */
