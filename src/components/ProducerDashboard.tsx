@@ -13,9 +13,10 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
-import { CustomSyncTrackUploadForm } from './CustomSyncTrackUploadForm';
+
 import { respondRenewalRequest } from '../api/renewal';
 import { AudioPlayer } from './AudioPlayer';
+import { InlineCustomSyncUploadForm } from './InlineCustomSyncUploadForm';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -236,6 +237,7 @@ export function ProducerDashboard() {
   const [syncRequestsError, setSyncRequestsError] = useState<string | null>(null);
   const [showCustomSyncUpload, setShowCustomSyncUpload] = useState<{ open: boolean, request: any | null }>({ open: false, request: null });
   const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
+  const [expandedUploadRequest, setExpandedUploadRequest] = useState<string | null>(null);
   // Add state for tab selection
   const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
   // Add state for pagination and search
@@ -1063,31 +1065,46 @@ export function ProducerDashboard() {
         <div className="space-y-4">
           {completedCustomSyncRequests.map((req) => {
             const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
+            const isExpanded = expandedUploadRequest === req.id;
+            
             return (
-              <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
-                  <div className="text-gray-300 mb-1">{req.project_description}</div>
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
-                    <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
-                    <span><strong>Genre:</strong> {req.genre}</span>
-                    <span><strong>Status:</strong> {req.status}</span>
+              <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                    <div className="text-gray-300 mb-1">{req.project_description}</div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                      <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                      <span><strong>Genre:</strong> {req.genre}</span>
+                      <span><strong>Status:</strong> {req.status}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
+                    {!allFilesUploaded && (
+                      <button
+                        onClick={() => setExpandedUploadRequest(isExpanded ? null : req.id)}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                      >
+                        <Upload className="w-5 h-5 mr-2" />
+                        {isExpanded ? 'Hide Upload' : 'Upload Files'}
+                      </button>
+                    )}
+                    {allFilesUploaded && (
+                      <span className="text-green-400 font-semibold">All files uploaded</span>
+                    )}
                   </div>
                 </div>
-                <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
-                  {!allFilesUploaded && (
-                    <button
-                      onClick={() => setShowCustomSyncUpload({ open: true, request: req })}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
-                    >
-                      <Upload className="w-5 h-5 mr-2" />
-                      Upload Files
-                    </button>
-                  )}
-                  {allFilesUploaded && (
-                    <span className="text-green-400 font-semibold">All files uploaded</span>
-                  )}
-                </div>
+                
+                {/* Inline Upload Form */}
+                {isExpanded && !allFilesUploaded && (
+                  <InlineCustomSyncUploadForm 
+                    request={req}
+                    onUploaded={() => {
+                      setExpandedUploadRequest(null);
+                      fetchDashboardData();
+                    }}
+                  />
+                )}
               </div>
             );
           })}
@@ -1096,17 +1113,6 @@ export function ProducerDashboard() {
     )}
   </div>
 </div>
-{showCustomSyncUpload.open && showCustomSyncUpload.request && (
-  <CustomSyncTrackUploadForm
-    key={showCustomSyncUpload.request.id}
-    request={showCustomSyncUpload.request}
-    onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
-    onUploaded={() => {
-      setShowCustomSyncUpload({ open: false, request: null });
-      fetchDashboardData();
-    }}
-  />
-)}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -1821,17 +1827,7 @@ export function ProducerDashboard() {
         />
       )}
 
-      {showCustomSyncUpload.open && showCustomSyncUpload.request && (
-        <CustomSyncTrackUploadForm
-          key={showCustomSyncUpload.request.id}
-          request={showCustomSyncUpload.request}
-          onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
-          onUploaded={() => {
-            setShowCustomSyncUpload({ open: false, request: null });
-            fetchDashboardData();
-          }}
-        />
-      )}
+
 
       {selectedTrack && showRestoreDialog && (
         <DeleteTrackDialog
