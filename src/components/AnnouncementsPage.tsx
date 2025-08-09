@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play, X } from 'lucide-react';
+import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
@@ -208,7 +208,7 @@ export function AnnouncementsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'feature' | 'event' | 'youtube'>('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -392,7 +392,7 @@ export function AnnouncementsPage() {
                     className="w-full h-40 object-cover rounded-lg bg-black cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedImage(announcement.image_url);
+                      setSelectedAnnouncement(announcement);
                     }}
                   />
                 </div>
@@ -432,24 +432,7 @@ export function AnnouncementsPage() {
         />
       )}
 
-      {/* Image Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-full">
-            <button
-              onClick={() => setSelectedImage(null)}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors p-2"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <img
-              src={selectedImage}
-              alt="Full size image"
-              className="max-w-full max-h-full object-contain rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
