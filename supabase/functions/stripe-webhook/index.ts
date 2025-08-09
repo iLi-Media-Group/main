@@ -344,6 +344,57 @@ Deno.serve(async (req) => {
                 console.error('Error sending payment notification:', notifyError);
               }
               
+              // Create producer transaction record for sync proposal payment
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('sync_fee_rate')
+                  .single();
+
+                const syncFeeRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (syncFeeRate / 100);
+
+                // Update producer balance
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: proposalData.track.track_producer_id,
+                    pending_balance: producerAmount,
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: proposalData.track.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Sync Proposal: ${proposalData.track.title}`,
+                    track_title: proposalData.track.title,
+                    reference_id: metadata.proposal_id,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for sync proposal: ${metadata.proposal_id}`);
+                }
+              } catch (syncError) {
+                console.error('Error creating producer transaction for sync proposal:', syncError);
+              }
+              
               // Return after processing sync proposal payment
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
@@ -528,6 +579,58 @@ Deno.serve(async (req) => {
               } catch (emailError) {
                 console.error('Error sending license email:', emailError);
               }
+              
+              // Create producer transaction record for single track sale
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('standard_rate')
+                  .single();
+
+                const standardRate = compensationSettings?.standard_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (standardRate / 100);
+
+                // Update producer balance
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: trackData.track_producer_id,
+                    pending_balance: producerAmount,
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: trackData.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Single Track License: ${trackData.id}`,
+                    track_title: trackData.id,
+                    reference_id: trackId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for single track sale: ${trackId}`);
+                }
+              } catch (saleError) {
+                console.error('Error creating producer transaction for single track sale:', saleError);
+              }
+              
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
           } catch (error) {
