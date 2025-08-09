@@ -107,7 +107,14 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
                   src={logoUrl}
                   alt="Logo"
                   className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto object-contain"
-                  style={{ border: 'none', boxShadow: 'none', background: 'none', padding: 0, margin: 0 }}
+                  style={{ 
+                    border: 'none', 
+                    boxShadow: 'none', 
+                    background: 'transparent', 
+                    padding: 0, 
+                    margin: 0,
+                    mixBlendMode: 'normal'
+                  }}
                 />
               ) : (
                 <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto flex items-center justify-center">

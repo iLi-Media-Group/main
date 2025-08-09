@@ -1722,7 +1722,8 @@ if (subscription.price_id) {
                               <img 
                                 src={client.logo_url} 
                                 alt={client.display_name}
-                                className="w-8 h-8 rounded-full mr-3 object-cover"
+                                className="w-8 h-8 rounded-full mr-3 object-contain"
+                                style={{ background: 'transparent' }}
                               />
                             )}
                             <div>
