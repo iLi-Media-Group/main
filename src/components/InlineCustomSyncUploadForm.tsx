@@ -19,6 +19,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
 
   // File change handlers based on working TrackUploadForm
   const handleMp3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault(); // Prevent any form submission
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -32,6 +33,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   };
 
   const handleTrackoutsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault(); // Prevent any form submission
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -45,6 +47,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   };
 
   const handleStemsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault(); // Prevent any form submission
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -58,6 +61,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   };
 
   const handleSplitSheetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault(); // Prevent any form submission
     const file = e.target.files?.[0];
     if (!file) return;
     
@@ -70,7 +74,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     setError('');
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault(); // Prevent form submission and page refresh
     setUploading(true);
     setError(null);
     setSuccess(false);
@@ -155,7 +160,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     }
   };
 
-  const clearAllFiles = () => {
+  const clearAllFiles = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault(); // Prevent any form submission
     setMp3File(null);
     setTrackoutsFile(null);
     setStemsFile(null);
@@ -169,7 +175,12 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   };
 
   return (
-    <div className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg">
+    <div className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg" onKeyDown={(e) => {
+      // Prevent form submission on Enter key
+      if (e.key === 'Enter') {
+        e.preventDefault();
+      }
+    }}>
       <h3 className="text-lg font-semibold text-white mb-4">Upload Files</h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
