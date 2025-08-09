@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Globe, Award, Users, Music, Star, Zap, Heart, Shield, Target, TrendingUp, CheckCircle, Clock, DollarSign, Users as TeamIcon } from 'lucide-react';
 import { AboutPagePhotoUpload } from './AboutPagePhotoUpload';
 import { supabase } from '../lib/supabase';
+import FloatingLogo from './FloatingLogo';
 
 interface TeamMember {
   id: string;
@@ -64,6 +65,7 @@ export function AboutPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
+      <FloatingLogo />
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">About MyBeatFi Sync</h1>
