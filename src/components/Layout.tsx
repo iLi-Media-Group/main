@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings, Disc } from 'lucide-react';
+import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings, Guitar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
@@ -178,7 +178,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
               ) : (
-                <Disc className={`w-6 h-6 ${isMenuOpen ? 'animate-spin' : 'hover:animate-spin'}`} />
+                <Guitar className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
               )}
             </button>
 
@@ -339,7 +339,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
               ) : (
-                <Disc className={`w-6 h-6 ${isMenuOpen ? 'animate-spin' : 'hover:animate-spin'}`} />
+                <Guitar className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
               )}
             </button>
 
