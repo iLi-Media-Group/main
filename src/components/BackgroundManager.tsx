@@ -34,7 +34,9 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
     { id: 'client-login', name: 'Client Login' },
     { id: 'producer-login', name: 'Producer Login' },
     { id: 'white-label-login', name: 'White Label Login' },
-    { id: 'signup', name: 'Create Account' }
+    { id: 'signup', name: 'Create Account' },
+    { id: 'about', name: 'About Us' },
+    { id: 'contact', name: 'Contact Us' }
   ];
 
   const fetchAssets = async () => {
