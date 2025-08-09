@@ -22,12 +22,12 @@ const FloatingLogo = () => {
   }, []);
 
   return (
-    <div className="fixed top-8 right-8 z-40">
+    <div className="fixed top-1/2 right-8 transform -translate-y-1/2 z-40">
       {logoUrl ? (
         <img
           src={logoUrl}
           alt="MyBeatFi Sync"
-          className="h-16 w-auto object-contain drop-shadow-lg"
+          className="h-32 w-auto object-contain drop-shadow-lg"
           style={{ 
             border: 'none', 
             boxShadow: 'none', 
@@ -39,7 +39,7 @@ const FloatingLogo = () => {
           }}
         />
       ) : (
-        <div className="h-16 w-16 flex items-center justify-center">
+        <div className="h-32 w-32 flex items-center justify-center">
           <Music className="w-full h-full text-blue-400 drop-shadow-lg" />
         </div>
       )}
