@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Clock, DollarSign, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Track } from '../types';
@@ -14,6 +15,7 @@ interface SyncProposalDialogProps {
 
 export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncProposalDialogProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [projectType, setProjectType] = useState('');
   const [duration, setDuration] = useState('');
   const [isExclusive, setIsExclusive] = useState(false);
@@ -113,6 +115,12 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
 
       setSuccess(true);
       if (onSuccess) onSuccess();
+      
+      // Automatically redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        onClose();
+        navigate('/dashboard');
+      }, 3000);
     } catch (err) {
       console.error('Error submitting proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to submit proposal');
@@ -152,10 +160,13 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
             <h3 className="text-2xl font-bold text-white mb-4">Your Sync Proposal Has Been Submitted Successfully</h3>
             <p className="text-gray-300 mb-6">Monitor your dashboard for updates and responses from the producer.</p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                navigate('/dashboard');
+              }}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
-              Close
+              Go to Dashboard
             </button>
           </div>
         ) : (
