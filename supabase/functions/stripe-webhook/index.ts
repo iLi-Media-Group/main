@@ -355,12 +355,38 @@ Deno.serve(async (req) => {
               const clientId = metadata.client_id;
               
               try {
-                // Update custom sync request status and payment info
+                // First, get the selected submission to ensure we have the correct producer_id
+                const { data: selectedSubmission, error: selectionError } = await supabase
+                  .from('sync_request_selections')
+                  .select('selected_submission_id')
+                  .eq('sync_request_id', syncRequestId)
+                  .eq('client_id', clientId)
+                  .single();
+                
+                if (selectionError) {
+                  console.error('Error fetching selected submission:', selectionError);
+                  return new Response('Error fetching selected submission', { status: 500, headers: corsHeaders });
+                }
+                
+                // Get the submission details to get the producer_id
+                const { data: submissionData, error: submissionError } = await supabase
+                  .from('sync_submissions')
+                  .select('producer_id')
+                  .eq('id', selectedSubmission.selected_submission_id)
+                  .single();
+                
+                if (submissionError) {
+                  console.error('Error fetching submission data:', submissionError);
+                  return new Response('Error fetching submission data', { status: 500, headers: corsHeaders });
+                }
+                
+                // Update custom sync request status and payment info with the correct selected_producer_id
                 const { error: requestError } = await supabase
                   .from('custom_sync_requests')
                   .update({
                     status: 'completed',
                     payment_status: 'paid',
+                    selected_producer_id: submissionData.producer_id,
                     stripe_invoice_id: payment_intent,
                     final_amount: (amount_total / 100).toString(),
                     updated_at: new Date().toISOString()
@@ -374,7 +400,7 @@ Deno.serve(async (req) => {
                 
                 // (Optional) Add any other logic for notifications, etc.
                 
-                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId}`);
+                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId} with producer ${submissionData.producer_id}`);
                 return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
               } catch (syncError) {
                 console.error('Error processing sync payment:', syncError);
