@@ -468,6 +468,153 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               </>
             )}
 
+        <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
+          {/* Hidden fields to prevent autofill */}
+          <input type="text" style={{ display: 'none' }} />
+          <input type="password" style={{ display: 'none' }} />
+          
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                First Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Last Name
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2"
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Company Name (Optional)
+            </label>
+            <div className="relative">
+              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                className="w-full pl-10 pr-4 py-2"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Account Type
+            </label>
+            <select
+              value={accountType}
+              onChange={(e) => setAccountType(e.target.value as 'client' | 'producer')}
+              className="w-full px-4 py-2"
+              disabled={loading}
+            >
+              <option value="client">Sign Up as Client</option>
+              <option value="producer">Sign Up as Producer</option>
+            </select>
+          </div>
+
+          {accountType === 'producer' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Producer Invitation Code
+              </label>
+              <input
+                type="text"
+                value={invitationCode}
+                onChange={(e) => setInvitationCode(e.target.value)}
+                className="w-full px-4 py-2"
+                required
+                disabled={loading}
+                placeholder="Enter your invitation code"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                A valid invitation code is required to create a producer account
+              </p>
+            </div>
+          )}
+            
+          {accountType === 'producer' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  IPI Number <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Music className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={ipiNumber}
+                    onChange={(e) => setIpiNumber(e.target.value)}
+                    className={`w-full pl-10 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
+                    required
+                    disabled={loading}
+                    placeholder="Enter your IPI number"
+                  />
+                </div>
+                {!ipiNumber.trim() && (
+                  <p className="mt-1 text-sm text-red-400">IPI Number is required</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Performing Rights Organization <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <Info className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <select
+                    value={performingRightsOrg}
+                    onChange={(e) => setPerformingRightsOrg(e.target.value)}
+                    className={`w-full pl-10 ${!performingRightsOrg ? 'border-red-500' : ''}`}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="">Select your PRO</option>
+                    <option value="ASCAP">ASCAP</option>
+                    <option value="BMI">BMI</option>
+                    <option value="SESAC">SESAC</option>
+                    <option value="GMR">Global Music Rights</option>
+                    <option value="PRS">PRS for Music (UK)</option>
+                    <option value="SOCAN">SOCAN (Canada)</option>
+                    <option value="APRA">APRA AMCOS (Australia/NZ)</option>
+                    <option value="SACEM">SACEM (France)</option>
+                    <option value="GEMA">GEMA (Germany)</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                {!performingRightsOrg && (
+                  <p className="mt-1 text-sm text-red-400">PRO is required</p>
+                )}
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Email
