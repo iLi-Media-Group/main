@@ -291,7 +291,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       />
       
       <div className="relative z-10 w-full max-w-md">
-        <div className="glass-card p-8 rounded-xl backdrop-blur-sm max-h-[90vh] overflow-y-auto">
+        <div className="bg-white/20 backdrop-blur-md p-8 rounded-xl border border-blue-500/20 shadow-xl max-h-[90vh] overflow-y-auto">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
