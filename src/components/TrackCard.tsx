@@ -57,7 +57,7 @@ function TrackImage({ track }: { track: Track }) {
 }
 
 export function TrackCard({ track, onSelect }: TrackCardProps) {
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -276,6 +276,13 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                
+                // Check if user is a producer and prevent licensing
+                if (accountType && (accountType === 'producer' || accountType === 'admin,producer')) {
+                  alert('Producers cannot license tracks. Please use a client account to license tracks.');
+                  return;
+                }
+                
                 navigate(`/track/${track.id}`);
               }}
               className={`py-1.5 px-3 rounded text-xs font-medium transition-all duration-300 ${

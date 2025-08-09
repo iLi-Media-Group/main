@@ -92,7 +92,7 @@ interface UserStats {
 
 export function TrackPage() {
   const { trackId } = useParams();
-  const { user, membershipPlan, refreshMembership } = useAuth();
+  const { user, membershipPlan, refreshMembership, accountType } = useAuth();
   const navigate = useNavigate();
   const [track, setTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
@@ -294,6 +294,12 @@ export function TrackPage() {
   const handleActionClick = async () => {
     if (!user) {
       navigate('/login');
+      return;
+    }
+
+    // Check if user is a producer and prevent licensing
+    if (accountType && (accountType === 'producer' || accountType === 'admin,producer')) {
+      alert('Producers cannot license tracks. Please use a client account to license tracks.');
       return;
     }
 
