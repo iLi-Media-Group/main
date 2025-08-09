@@ -115,22 +115,22 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-          <button 
-            onClick={() => navigate('/pricing')}
-            className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
-          >
-            <Play className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-            Start Licensing
-            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-          </button>
+                     <button 
+             onClick={() => navigate('/pricing')}
+             className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
+           >
+             <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
+             Start Licensing
+             <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+           </button>
           
-          <button 
-            onClick={() => navigate('/catalog')}
-            className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center"
-          >
-            <Search className="w-5 h-5 mr-2" />
-            Browse Catalog
-          </button>
+                     <button 
+             onClick={() => navigate('/catalog')}
+             className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center"
+           >
+             <Search className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
+             Browse Catalog
+           </button>
         </div>
       </div>
 
