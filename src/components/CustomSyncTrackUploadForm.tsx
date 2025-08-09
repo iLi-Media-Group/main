@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -17,15 +17,8 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Debug logging
-  useEffect(() => {
-    console.log('CustomSyncTrackUploadForm mounted for request:', request?.id);
-  }, [request?.id]);
-
   const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    console.log('File selected:', file?.name, 'File size:', file?.size); // Debug log
-    console.log('Event target files:', e.target.files); // Debug log
     setter(file);
   };
 
@@ -247,4 +240,4 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
       </div>
     </div>
   );
-} 
+}
