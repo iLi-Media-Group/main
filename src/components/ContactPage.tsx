@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Send, Loader2, Mail, Phone, MapPin } from 'lucide-react';
-import FloatingLogo from './FloatingLogo';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -42,7 +41,6 @@ export default function ContactPage() {
 
   return (
     <div className="container mx-auto px-4 py-12">
-      <FloatingLogo />
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Contact Us</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
