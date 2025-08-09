@@ -73,6 +73,7 @@ import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import SearchTest from './components/SearchTest';
+import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -439,6 +440,12 @@ const App = () => {
             <LayoutWrapper>
               <TrackUploadForm />
             </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/custom-sync-upload" element={
+          <ProtectedRoute requiresProducer>
+            <CustomSyncUploadPage />
           </ProtectedRoute>
         } />
 

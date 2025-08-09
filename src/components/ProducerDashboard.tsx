@@ -16,7 +16,7 @@ import { EditTrackModal } from './EditTrackModal';
 
 import { respondRenewalRequest } from '../api/renewal';
 import { AudioPlayer } from './AudioPlayer';
-import { InlineCustomSyncUploadForm } from './InlineCustomSyncUploadForm';
+
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -237,7 +237,7 @@ export function ProducerDashboard() {
   const [syncRequestsError, setSyncRequestsError] = useState<string | null>(null);
   const [showCustomSyncUpload, setShowCustomSyncUpload] = useState<{ open: boolean, request: any | null }>({ open: false, request: null });
   const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
-  const [expandedUploadRequest, setExpandedUploadRequest] = useState<string | null>(null);
+
   // Add state for tab selection
   const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
   // Add state for pagination and search
@@ -1065,7 +1065,7 @@ export function ProducerDashboard() {
         <div className="space-y-4">
           {completedCustomSyncRequests.map((req) => {
             const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
-            const isExpanded = expandedUploadRequest === req.id;
+            
             
             return (
               <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
@@ -1082,11 +1082,11 @@ export function ProducerDashboard() {
                   <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
                     {!allFilesUploaded && (
                       <button
-                        onClick={() => setExpandedUploadRequest(isExpanded ? null : req.id)}
+                        onClick={() => navigate(`/producer/custom-sync-upload?requestId=${req.id}`)}
                         className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
                       >
                         <Upload className="w-5 h-5 mr-2" />
-                        {isExpanded ? 'Hide Upload' : 'Upload Files'}
+                        Upload Files
                       </button>
                     )}
                     {allFilesUploaded && (
@@ -1095,16 +1095,7 @@ export function ProducerDashboard() {
                   </div>
                 </div>
                 
-                {/* Inline Upload Form */}
-                {isExpanded && !allFilesUploaded && (
-                  <InlineCustomSyncUploadForm 
-                    request={req}
-                    onUploaded={() => {
-                      setExpandedUploadRequest(null);
-                      fetchDashboardData();
-                    }}
-                  />
-                )}
+
               </div>
             );
           })}
