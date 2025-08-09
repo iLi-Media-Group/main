@@ -1708,7 +1708,7 @@ const getPlanLevel = (plan: string): number => {
                     <div className="flex flex-wrap gap-2 mt-2">
                       {request.mp3_url && (
                         <button
-                          onClick={() => handleDownloadSupabase('sync-submissions', request.mp3_url || '', `${request.project_title}_MP3.mp3`)}
+                          onClick={() => handleDownloadSupabase('track-audio', request.mp3_url || '', `${request.project_title}_MP3.mp3`)}
                           className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
                         >
                           Download MP3

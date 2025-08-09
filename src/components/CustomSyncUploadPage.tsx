@@ -329,10 +329,10 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
                 <span className="font-medium">Email:</span> {syncRequest.client?.email}
               </div>
               <div>
-                <span className="font-medium">Project Type:</span> {syncRequest.project_type}
+                <span className="font-medium">Genre:</span> {syncRequest.genre}
               </div>
               <div>
-                <span className="font-medium">Budget:</span> ${syncRequest.budget}
+                <span className="font-medium">Sync Fee:</span> ${syncRequest.sync_fee}
               </div>
               <div>
                 <span className="font-medium">Paid Amount:</span> ${syncRequest.sync_fee || syncRequest.budget}

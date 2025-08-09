@@ -1090,7 +1090,16 @@ export function ProducerDashboard() {
                       </button>
                     )}
                     {allFilesUploaded && (
-                      <span className="text-green-400 font-semibold">All files uploaded</span>
+                      <>
+                        <span className="text-green-400 font-semibold">All files uploaded</span>
+                        <button
+                          onClick={() => navigate(`/producer/custom-sync-upload?requestId=${req.id}`)}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                        >
+                          <Upload className="w-5 h-5 mr-2" />
+                          Re-upload Files
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
