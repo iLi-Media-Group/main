@@ -10,9 +10,10 @@ import AISearchBrain from './AISearchBrain';
 interface LayoutProps {
   children: React.ReactNode;
   onSignupClick?: () => void;
+  hideHeader?: boolean;
 }
 
-export function Layout({ children, onSignupClick }: LayoutProps) {
+export function Layout({ children, onSignupClick, hideHeader = false }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { user, accountType, signOut } = useAuth();
@@ -98,7 +99,8 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 flex flex-col">
       
-      <header className="py-6 px-4 sticky top-0 z-50">
+      {!hideHeader && (
+        <header className="py-6 px-4 sticky top-0 z-50">
         <nav className="container mx-auto flex justify-between items-center relative">
           <div className="flex items-center w-1/3">
             <Link to="/" className="flex items-center">
@@ -293,6 +295,7 @@ export function Layout({ children, onSignupClick }: LayoutProps) {
           </div>
         </nav>
       </header>
+      )}
 
       <main className="flex-1">
         {children}

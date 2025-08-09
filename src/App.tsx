@@ -173,6 +173,12 @@ const App = () => {
     </Layout>
   );
 
+  const HomeLayoutWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+      {children}
+    </Layout>
+  );
+
   const handleSearch = (filters: { query?: string; genres?: string[]; moods?: string[]; minBpm?: number; maxBpm?: number }) => {
     const params = new URLSearchParams();
     if (filters.query) params.set('q', filters.query);
@@ -240,7 +246,7 @@ const App = () => {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={
-          <LayoutWrapper>
+          <HomeLayoutWrapper>
             <HeroSection onSearch={handleSearch} />
 
             <section className="py-12 bg-black/20">
@@ -300,7 +306,7 @@ const App = () => {
                 <ClientsCarousel />
               </div>
             </section>
-          </LayoutWrapper>
+          </HomeLayoutWrapper>
         } />
 
         <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />

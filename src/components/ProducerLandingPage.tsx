@@ -37,22 +37,29 @@ const ProducerLandingPage = () => {
             {/* Logo Container - fills header height and flexes with screen size */}
             <div className="flex items-center">
               <Link to="/" className="flex items-center">
-                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
-                  {logoUrl ? (
-                    <img 
-                      src={logoUrl} 
-                      alt="MyBeatFi Sync" 
-                      className="h-full w-auto object-contain"
-                    />
-                  ) : (
-                    <div className="h-full w-auto flex items-center justify-center">
-                      <Music className="w-full h-full text-blue-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="ml-3 hidden sm:block">
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                    MyBeatFi <span className="text-blue-400">Sync</span>
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo"
+                    className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto object-contain drop-shadow-lg"
+                    style={{ 
+                      border: 'none', 
+                      boxShadow: 'none', 
+                      background: 'transparent', 
+                      padding: 0, 
+                      margin: 0,
+                      mixBlendMode: 'normal',
+                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+                    }}
+                  />
+                ) : (
+                  <div className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto flex items-center justify-center">
+                    <Music className="w-full h-full text-blue-400" />
+                  </div>
+                )}
+                <div className="ml-4 hidden sm:block">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
+                    MYBEATFI <span className="text-blue-400">SYNC</span>
                   </h1>
                 </div>
               </Link>
