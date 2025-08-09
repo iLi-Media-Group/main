@@ -590,22 +590,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
             </div>
           </div>
 
-          {/* Stems URL */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Stems URL (External Link)
-            </label>
-            <input
-              type="url"
-              value={stemsUrl}
-              onChange={e => setStemsUrl(e.target.value)}
-              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-              placeholder="https://..."
-            />
-            {stemsUrl && (
-              <p className="text-blue-400 text-xs mt-1">✓ External stems link set</p>
-            )}
-          </div>
+
 
           {/* Split Sheet PDF */}
           <div className="mb-4">

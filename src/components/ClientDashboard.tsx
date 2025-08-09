@@ -291,8 +291,24 @@ function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
   try {
-    const decodedPath = decodeURIComponent(path);
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
+    // Clean the path to remove any URL encoding or full URLs
+    let cleanPath = path;
+    
+    // Remove full URLs and extract just the path
+    if (path.includes('http')) {
+      cleanPath = path.replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '');
+      cleanPath = cleanPath.replace(/\?.*$/, ''); // Remove query parameters
+    }
+    
+    // Remove bucket prefix if present
+    cleanPath = cleanPath.replace(new RegExp(`^${bucket}/`), '');
+    
+    // Decode URI components
+    cleanPath = decodeURIComponent(cleanPath);
+    
+    console.log('Downloading from bucket:', bucket, 'path:', cleanPath);
+    
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60);
     if (data?.signedUrl) {
       const link = document.createElement('a');
       link.href = data.signedUrl;
@@ -2491,7 +2507,14 @@ const getPlanLevel = (plan: string): number => {
                                 )}
                                 {license.track.splitSheetUrl && (
                                   <button
-                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
+                                    onClick={() => {
+                                      // Clean the path to remove any double encoding or URL issues
+                                      const cleanPath = license.track.splitSheetUrl
+                                        .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                        .replace(/\?.*$/, '')
+                                        .replace(/^split-sheets\//, '');
+                                      handleDownloadSupabase('split-sheets', cleanPath, `${license.track.title}_SplitSheet.pdf`);
+                                    }}
                                     className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Split Sheet"
                                   >
@@ -2501,11 +2524,6 @@ const getPlanLevel = (plan: string): number => {
                                 )}
                                 {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
-                                )}
-                                {license.track.splitSheetUrl && !license.track.splitSheetUrl.endsWith('split_sheet.pdf') && (
-                                  <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
-                                    Warning: Split sheet path does not match expected pattern. Please check upload logic and database.
-                                  </div>
                                 )}
                               </div>
                               <button
