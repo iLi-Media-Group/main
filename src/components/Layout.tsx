@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings } from 'lucide-react';
+import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings, Disc } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
@@ -170,15 +170,15 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                 </div>
               </>
             )}
-            {/* Mobile menu button */}
+            {/* Music menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-300 hover:text-white transition-colors p-2"
+              className="text-gray-300 hover:text-white transition-all duration-300 p-2"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Disc className={`w-6 h-6 ${isMenuOpen ? 'animate-spin' : 'hover:animate-spin'}`} />
               )}
             </button>
 
@@ -331,15 +331,15 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
               </div>
             </Link>
             
-            {/* Hamburger Menu */}
+            {/* Music Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-white hover:text-blue-300 transition-colors p-2 bg-black/20 backdrop-blur-sm rounded-lg"
+              className="text-white hover:text-blue-300 transition-all duration-300 p-2 bg-black/20 backdrop-blur-sm rounded-lg"
             >
               {isMenuOpen ? (
                 <X className="w-6 h-6" />
               ) : (
-                <Menu className="w-6 h-6" />
+                <Disc className={`w-6 h-6 ${isMenuOpen ? 'animate-spin' : 'hover:animate-spin'}`} />
               )}
             </button>
 
