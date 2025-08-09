@@ -1098,6 +1098,7 @@ export function ProducerDashboard() {
 </div>
 {showCustomSyncUpload.open && showCustomSyncUpload.request && (
   <CustomSyncTrackUploadForm
+    key={showCustomSyncUpload.request.id}
     request={showCustomSyncUpload.request}
     onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
     onUploaded={() => {
@@ -1822,6 +1823,7 @@ export function ProducerDashboard() {
 
       {showCustomSyncUpload.open && showCustomSyncUpload.request && (
         <CustomSyncTrackUploadForm
+          key={showCustomSyncUpload.request.id}
           request={showCustomSyncUpload.request}
           onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
           onUploaded={() => {
