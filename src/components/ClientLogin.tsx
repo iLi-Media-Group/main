@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { LogIn, KeyRound } from 'lucide-react';
+import { LogIn, KeyRound, Music, Headphones, Mic } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession } from '../lib/stripe';
+import { VideoBackground } from './VideoBackground';
 
 export function ClientLogin() {
   const [searchParams] = useSearchParams();
@@ -122,15 +123,27 @@ export function ClientLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="glass-card p-8 rounded-xl">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      {/* Music Production Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        alt="Music production background"
+      />
+      
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-card p-8 rounded-xl backdrop-blur-sm">
           <div className="flex items-center justify-center mb-8">
-            <LogIn className="w-12 h-12 text-blue-500" />
+            <div className="flex items-center space-x-3">
+              <Music className="w-8 h-8 text-blue-400" />
+              <LogIn className="w-12 h-12 text-blue-500" />
+              <Headphones className="w-8 h-8 text-purple-400" />
+            </div>
           </div>
           <h2 className="text-2xl font-bold text-white text-center mb-8">
             Client Login
           </h2>
+          <p className="text-gray-300 text-center mb-6">Access your music licensing dashboard</p>
           {error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
               <p className="text-red-400 text-center font-medium">{error}</p>
