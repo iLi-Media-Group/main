@@ -6,22 +6,49 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_ANON_KEY")!
 );
 
-// Helper function to expand search terms with synonyms
+// Helper function to expand search terms with synonyms - FIXED VERSION
 async function expandWithSynonyms(terms: string[]): Promise<string[]> {
   if (!terms || terms.length === 0) return [];
   
   const normalized = terms.map(t => t.trim().toLowerCase()).filter(Boolean);
   const expanded = new Set(normalized);
   
-  // Get synonyms for each term
+  // Get synonyms for each term using improved logic
   for (const term of normalized) {
-    const { data: synonyms } = await supabase
+    // First, try to find direct matches (term is a main term)
+    const { data: directMatches } = await supabase
       .from("search_synonyms")
       .select("term, synonyms")
-      .or(`term.ilike.%${term}%,synonyms.cs.{${term}}`);
+      .ilike("term", `%${term}%`);
     
-    if (synonyms) {
-      for (const row of synonyms) {
+    if (directMatches) {
+      for (const row of directMatches) {
+        expanded.add(row.term.toLowerCase());
+        row.synonyms.forEach((s: string) => expanded.add(s.toLowerCase()));
+      }
+    }
+    
+    // Then, try to find reverse matches (term is a synonym)
+    const { data: reverseMatches } = await supabase
+      .from("search_synonyms")
+      .select("term, synonyms")
+      .contains("synonyms", [term]);
+    
+    if (reverseMatches) {
+      for (const row of reverseMatches) {
+        expanded.add(row.term.toLowerCase());
+        row.synonyms.forEach((s: string) => expanded.add(s.toLowerCase()));
+      }
+    }
+    
+    // Also check for partial matches in synonyms
+    const { data: partialMatches } = await supabase
+      .from("search_synonyms")
+      .select("term, synonyms")
+      .or(`synonyms.cs.{${term}}`);
+    
+    if (partialMatches) {
+      for (const row of partialMatches) {
         expanded.add(row.term.toLowerCase());
         row.synonyms.forEach((s: string) => expanded.add(s.toLowerCase()));
       }
@@ -123,7 +150,7 @@ serve(async (req) => {
     // Parse search terms
     const searchTerms = query.toLowerCase().split(/\s+/).map(t => t.trim()).filter(Boolean);
     
-    // Expand terms with synonyms
+    // Expand terms with synonyms using the improved function
     const expandedTerms = await expandWithSynonyms(searchTerms);
     const allSearchTerms = [...new Set([...searchTerms, ...expandedTerms])];
     
@@ -195,44 +222,46 @@ serve(async (req) => {
     const finalResults = scoredResults.slice(0, limit);
 
     console.log('Final results count:', finalResults.length);
-    console.log('Top relevance scores:', finalResults.slice(0, 3).map(r => ({ title: r.title, score: r.relevance })));
 
-    return new Response(JSON.stringify({
-      ok: true,
-      results: finalResults,
-      meta: {
-        count: finalResults.length,
-        popularSearches: [],
-        recentSearches: [],
-        searchInfo: {
-          originalTerms: searchTerms,
-          expandedTerms: expandedTerms,
-          totalTerms: allSearchTerms.length
-        }
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        tracks: finalResults,
+        totalResults: finalResults.length,
+        searchTerms: allSearchTerms,
+        originalTerms: searchTerms,
+        expandedTerms: expandedTerms
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
       }
-    }), {
-      status: 200,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+    );
 
-  } catch (err) {
-    console.error('Search function error:', err);
-    return new Response(JSON.stringify({ 
-      ok: false, 
-      error: err.message || String(err)
-    }), {
-      status: 500,
-      headers: { 
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
-    });
+  } catch (error) {
+    console.error('Search function error:', error);
+    
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: error instanceof Error ? error.message : 'Search failed',
+        tracks: [],
+        totalResults: 0
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      }
+    );
   }
 });
