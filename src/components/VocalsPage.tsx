@@ -346,26 +346,13 @@ export function VocalsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-4 flex items-center">
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
           <Mic className="w-8 h-8 mr-3" />
           Licensable Full Tracks with Vocals
         </h1>
-        <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
-            <div>
-              <p className="text-gray-300">
-                Browse our collection of full tracks featuring vocals. Perfect for:
-              </p>
-              <ul className="list-disc list-inside mt-2 text-gray-300 space-y-1">
-                <li>TV shows and films</li>
-                <li>Advertising campaigns</li>
-                <li>Video game soundtracks</li>
-                <li>Corporate videos</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <p className="text-gray-300 mb-6 text-lg">
+          Browse our collection of full tracks featuring vocals. Perfect for TV shows and films, advertising campaigns, video game soundtracks, and corporate videos.
+        </p>
         <SearchBox onSearch={handleSearch} />
       </div>
 
