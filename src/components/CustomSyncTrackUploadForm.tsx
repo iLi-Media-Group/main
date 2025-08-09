@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { uploadFile } from '../lib/storage';
 
 interface CustomSyncTrackUploadFormProps {
   request: any;
@@ -17,15 +18,57 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setter(file);
+  // File change handlers based on working TrackUploadForm
+  const handleMp3Change = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('audio/')) {
+      setError('Please upload an audio file');
+      return;
+    }
+    
+    setMp3File(file);
+    setError('');
   };
 
-  const uploadFile = async (bucket: string, file: File, path: string) => {
-    const { data, error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
-    if (error) throw error;
-    return data.path;
+  const handleTrackoutsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/zip') {
+      setError('Please upload a ZIP file for trackouts');
+      return;
+    }
+    
+    setTrackoutsFile(file);
+    setError('');
+  };
+
+  const handleStemsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/zip') {
+      setError('Please upload a ZIP file for stems');
+      return;
+    }
+    
+    setStemsFile(file);
+    setError('');
+  };
+
+  const handleSplitSheetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (file.type !== 'application/pdf') {
+      setError('Please upload a PDF file for split sheet');
+      return;
+    }
+    
+    setSplitSheetFile(file);
+    setError('');
   };
 
   const handleUpload = async () => {
@@ -36,42 +79,78 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     try {
       const updates: any = {};
       
-      // MP3
+      // Upload MP3 using the same pattern as TrackUploadForm
       if (mp3File) {
+        console.log('[DEBUG] Uploading MP3 file:', mp3File.name, mp3File.size);
         const mp3Path = `custom_syncs/${request.id}/main.mp3`;
-        updates.mp3_url = await uploadFile('track-audio', mp3File, mp3Path);
+        const mp3Url = await uploadFile(
+          mp3File,
+          'track-audio',
+          undefined,
+          `custom_syncs/${request.id}`,
+          'main.mp3'
+        );
+        updates.mp3_url = mp3Url;
+        console.log('[DEBUG] Uploaded MP3 URL:', mp3Url);
       }
       
-      // Trackouts
+      // Upload Trackouts
       if (trackoutsFile) {
-        const trackoutsPath = `custom_syncs/${request.id}/trackouts.zip`;
-        updates.trackouts_url = await uploadFile('trackouts', trackoutsFile, trackoutsPath);
+        console.log('[DEBUG] Uploading trackouts file:', trackoutsFile.name, trackoutsFile.size);
+        const trackoutsUrl = await uploadFile(
+          trackoutsFile,
+          'trackouts',
+          undefined,
+          `custom_syncs/${request.id}`,
+          'trackouts.zip'
+        );
+        updates.trackouts_url = trackoutsUrl;
+        console.log('[DEBUG] Uploaded trackouts URL:', trackoutsUrl);
       }
       
-      // Stems
+      // Upload Stems
       if (stemsFile) {
-        const stemsPath = `custom_syncs/${request.id}/stems.zip`;
-        updates.stems_url = await uploadFile('stems', stemsFile, stemsPath);
+        console.log('[DEBUG] Uploading stems file:', stemsFile.name, stemsFile.size);
+        const stemsUrl = await uploadFile(
+          stemsFile,
+          'stems',
+          undefined,
+          `custom_syncs/${request.id}`,
+          'stems.zip'
+        );
+        updates.stems_url = stemsUrl;
+        console.log('[DEBUG] Uploaded stems URL:', stemsUrl);
       }
       
-      // Split Sheet
+      // Upload Split Sheet
       if (splitSheetFile) {
-        const splitSheetPath = `custom_syncs/${request.id}/split_sheet.pdf`;
-        updates.split_sheet_url = await uploadFile('split-sheets', splitSheetFile, splitSheetPath);
+        console.log('[DEBUG] Uploading split sheet file:', splitSheetFile.name, splitSheetFile.size);
+        const splitSheetUrl = await uploadFile(
+          splitSheetFile,
+          'split-sheets',
+          undefined,
+          `custom_syncs/${request.id}`,
+          'split_sheet.pdf'
+        );
+        updates.split_sheet_url = splitSheetUrl;
+        console.log('[DEBUG] Uploaded split sheet URL:', splitSheetUrl);
       }
       
       // Update custom_sync_requests table
       if (Object.keys(updates).length > 0) {
+        console.log('[DEBUG] Updating custom_sync_requests with:', updates);
         const { error: updateError } = await supabase
           .from('custom_sync_requests')
           .update(updates)
           .eq('id', request.id);
         if (updateError) throw updateError;
+        console.log('[DEBUG] Successfully updated custom_sync_requests');
       }
       
       setSuccess(true);
       onUploaded();
     } catch (err: any) {
+      console.error('[DEBUG] Upload error:', err);
       setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);
@@ -83,6 +162,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     setTrackoutsFile(null);
     setStemsFile(null);
     setSplitSheetFile(null);
+    setError(null);
     // Reset file inputs
     const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
     fileInputs.forEach(input => {
@@ -108,7 +188,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="audio/mp3,audio/mpeg" 
-                onChange={handleFileChange(setMp3File)} 
+                onChange={handleMp3Change} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -134,7 +214,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/zip" 
-                onChange={handleFileChange(setTrackoutsFile)} 
+                onChange={handleTrackoutsChange} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -160,7 +240,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/zip" 
-                onChange={handleFileChange(setStemsFile)} 
+                onChange={handleStemsChange} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -186,7 +266,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/pdf" 
-                onChange={handleFileChange(setSplitSheetFile)} 
+                onChange={handleSplitSheetChange} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
