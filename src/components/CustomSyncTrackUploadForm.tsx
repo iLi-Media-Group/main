@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -18,7 +18,9 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
   const [success, setSuccess] = useState(false);
 
   const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
     const file = e.target.files?.[0] || null;
+    console.log('File selected:', file?.name); // Debug log
     setter(file);
   };
 
@@ -28,8 +30,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     return data.path;
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpload = async () => {
     setUploading(true);
     setError(null);
     setSuccess(false);
@@ -101,7 +102,8 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
           <X className="w-5 h-5" />
         </button>
         <h2 className="text-2xl font-bold text-white mb-6 text-center">Upload Files for Custom Sync</h2>
-        <form onSubmit={handleUpload} className="space-y-4">
+        
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">MP3 File</label>
             <div className="relative">
@@ -227,7 +229,8 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               Clear All
             </button>
             <button
-              type="submit"
+              type="button"
+              onClick={handleUpload}
               disabled={uploading || (!mp3File && !trackoutsFile && !stemsFile && !splitSheetFile)}
               className="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -235,7 +238,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               {uploading ? 'Uploading...' : 'Upload Files'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
