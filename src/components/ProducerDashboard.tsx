@@ -966,7 +966,7 @@ export function ProducerDashboard() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Tracks</p>
@@ -976,7 +976,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Sales</p>
@@ -986,7 +986,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 cursor-pointer" onClick={() => setShowRevenueBreakdown(true)}>
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors cursor-pointer" onClick={() => setShowRevenueBreakdown(true)}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Revenue</p>
@@ -996,7 +996,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Pending Proposals</p>
@@ -1007,7 +1007,7 @@ export function ProducerDashboard() {
           </div>
         </div>
 
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors p-6">
   <div className="flex items-center mb-6">
     <button
       className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
@@ -1183,7 +1183,7 @@ export function ProducerDashboard() {
                   {paginatedTracks.map((track) => (
                     <div
                       key={track.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors"
                     >
                       <div className="flex items-start space-x-4">
                         <TrackImage track={track} />
@@ -1287,7 +1287,7 @@ export function ProducerDashboard() {
                   {deletedTracks.map((track) => (
                     <div
                       key={track.id}
-                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20 hover:border-red-500/40 transition-colors"
                     >
                       <div className="flex items-start space-x-4">
                         <TrackImage track={track} />
@@ -1428,7 +1428,7 @@ export function ProducerDashboard() {
                       {filteredPendingProposals.map((proposal: Proposal) => (
                         <div
                           key={proposal.id}
-                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors relative"
                         >
                           {/* Notification Badge */}
                           {user && hasPendingAction(proposal, user.id) && (
@@ -1509,7 +1509,7 @@ export function ProducerDashboard() {
                         return (
                           <div
                             key={proposal.id}
-                            className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 relative"
+                            className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 hover:border-green-500/40 transition-colors relative"
                           >
                             {/* Payment Pending Badge - moved to bottom */}
                             {isPaymentPending && (
@@ -1580,7 +1580,7 @@ export function ProducerDashboard() {
                       {filteredPaidProposals.map((proposal: Proposal) => (
                         <div
                           key={proposal.id}
-                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 relative"
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:border-purple-500/40 transition-colors relative"
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div>
@@ -1624,7 +1624,7 @@ export function ProducerDashboard() {
                       {filteredDeclinedProposals.map((proposal: Proposal) => (
                       <div
                         key={proposal.id}
-                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20 hover:border-red-500/40 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -1665,7 +1665,7 @@ export function ProducerDashboard() {
                 <BarChart3 className="w-5 h-5 mr-2 text-blue-500" />
                 Sales Overview
               </h3>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
