@@ -23,28 +23,26 @@ const FloatingLogo = () => {
 
   return (
     <div className="fixed top-8 right-8 z-40">
-      <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-blue-500/20 p-4 shadow-lg">
-        {logoUrl ? (
-          <img
-            src={logoUrl}
-            alt="MyBeatFi Sync"
-            className="h-16 w-auto object-contain drop-shadow-lg"
-            style={{ 
-              border: 'none', 
-              boxShadow: 'none', 
-              background: 'transparent', 
-              padding: 0, 
-              margin: 0,
-              mixBlendMode: 'normal',
-              filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
-            }}
-          />
-        ) : (
-          <div className="h-16 w-16 flex items-center justify-center">
-            <Music className="w-full h-full text-blue-400" />
-          </div>
-        )}
-      </div>
+      {logoUrl ? (
+        <img
+          src={logoUrl}
+          alt="MyBeatFi Sync"
+          className="h-16 w-auto object-contain drop-shadow-lg"
+          style={{ 
+            border: 'none', 
+            boxShadow: 'none', 
+            background: 'transparent', 
+            padding: 0, 
+            margin: 0,
+            mixBlendMode: 'normal',
+            filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
+          }}
+        />
+      ) : (
+        <div className="h-16 w-16 flex items-center justify-center">
+          <Music className="w-full h-full text-blue-400 drop-shadow-lg" />
+        </div>
+      )}
     </div>
   );
 };
