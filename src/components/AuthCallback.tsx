@@ -40,6 +40,25 @@ export function AuthCallback() {
 
             if (insertError) {
               console.error('Error creating profile:', insertError);
+            } else {
+              // Send welcome email for new client accounts
+              try {
+                console.log('Sending welcome email after email verification...');
+                const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+                  body: {
+                    email: data.session.user.email,
+                    first_name: data.session.user.user_metadata?.first_name || 'there'
+                  }
+                });
+                
+                if (emailError) {
+                  console.error('Welcome email error:', emailError);
+                } else {
+                  console.log('Welcome email sent successfully after verification');
+                }
+              } catch (emailErr) {
+                console.error('Welcome email failed after verification:', emailErr);
+              }
             }
           }
 

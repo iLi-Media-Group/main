@@ -204,6 +204,29 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       }
       console.log('Profile created successfully');
 
+      // Send welcome email for client accounts
+      if (accountType === 'client') {
+        try {
+          console.log('Sending welcome email...');
+          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              email: email,
+              first_name: firstName
+            }
+          });
+          
+          if (emailError) {
+            console.error('Welcome email error:', emailError);
+            // Don't throw error - welcome email failure shouldn't prevent signup
+          } else {
+            console.log('Welcome email sent successfully');
+          }
+        } catch (emailErr) {
+          console.error('Welcome email failed:', emailErr);
+          // Don't throw error - welcome email failure shouldn't prevent signup
+        }
+      }
+
       // Mark invitation as used if it's a producer
       if (accountType === 'producer') {
         await supabase.rpc('use_producer_invitation', {

@@ -19,6 +19,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { PricingCarousel } from './components/PricingCarousel';
 import { ClientsCarousel } from './components/ClientsCarousel';
+import { HeroSection } from './components/HeroSection';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
 import { LicenseAgreement } from './components/LicenseAgreement';
@@ -240,14 +241,7 @@ const App = () => {
       <Routes>
         <Route path="/" element={
           <LayoutWrapper>
-            <section className="py-20 text-center">
-              <div className="container mx-auto px-4">
-                <h1 className="text-5xl font-bold mb-6">License Music for Your Media Productions</h1>
-                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                  One-Stop Licensing. Simple, Clear Rights. No Hidden Fees.
-                </p>
-              </div>
-            </section>
+            <HeroSection onSearch={handleSearch} />
 
             <section className="py-12 bg-black/20">
               <div className="container mx-auto px-4">
