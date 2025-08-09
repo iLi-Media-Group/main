@@ -39,7 +39,6 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
           .select('*')
           .eq('page', page)
           .eq('isActive', true)
-          .eq('type', 'video')
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
@@ -68,12 +67,12 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   };
 
   // Use database asset if available, otherwise use provided props
-  const finalVideoUrl = backgroundAsset?.url || videoUrl;
-  const finalFallbackImage = backgroundAsset?.url || fallbackImage;
+  const finalVideoUrl = backgroundAsset?.type === 'video' ? backgroundAsset.url : videoUrl;
+  const finalFallbackImage = backgroundAsset?.type === 'image' ? backgroundAsset.url : fallbackImage;
 
   return (
     <div className="absolute inset-0 w-full h-full">
-      {!isVideoError && !loading ? (
+      {backgroundAsset?.type === 'video' && !isVideoError && !loading ? (
         <video
           autoPlay
           muted
