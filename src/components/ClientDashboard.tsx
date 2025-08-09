@@ -1881,6 +1881,15 @@ const getPlanLevel = (plan: string): number => {
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
                       </span>
                     )}
+                    
+                    {/* Urgent Badge */}
+                    {proposal.is_urgent && (
+                      <div className="absolute bottom-2 right-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                          ⚡ URGENT
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
@@ -1938,12 +1947,20 @@ const getPlanLevel = (plan: string): number => {
                 </div>
               ) : (
                 sortedPaymentPendingProposals.map((proposal) => (
-                  <div
-                    key={proposal.id}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
-                  >
-                    {/* Payment Pending Badge */}
-                    <div className="absolute bottom-2 right-2">
+                                          <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
+                        >
+                                                    {/* Urgent Badge */}
+                          {proposal.is_urgent && (
+                            <div className="absolute bottom-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                ⚡ URGENT
+                              </span>
+                            </div>
+                          )}
+                      {/* Payment Pending Badge */}
+                      <div className="absolute bottom-2 left-2">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                         Payment Pending
                       </span>
