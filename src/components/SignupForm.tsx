@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Mail, Lock, User, X, Building2, Music, Info } from 'lucide-react';
+import { Mail, Lock, User, X, Building2, Music, Info, UserPlus, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+import { VideoBackground } from './VideoBackground';
 
 interface SignupFormProps {
   onClose: () => void;
@@ -278,8 +279,16 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card p-8 rounded-xl w-full max-w-md relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-hidden">
+      {/* Creative/Media Production Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        alt="Creative media production background"
+      />
+      
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-card p-8 rounded-xl backdrop-blur-sm max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
@@ -287,9 +296,17 @@ function SignupFormContent({ onClose }: SignupFormProps) {
           <X className="w-5 h-5" />
         </button>
 
+        <div className="flex items-center justify-center mb-6">
+          <div className="flex items-center space-x-3">
+            <Sparkles className="w-8 h-8 text-purple-400" />
+            <UserPlus className="w-12 h-12 text-blue-500" />
+            <Music className="w-8 h-8 text-green-400" />
+          </div>
+        </div>
         <h2 className="text-2xl font-bold text-white text-center mb-6">
           Create Your Account
         </h2>
+        <p className="text-gray-300 text-center mb-6">Join the MyBeatFi community</p>
 
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
