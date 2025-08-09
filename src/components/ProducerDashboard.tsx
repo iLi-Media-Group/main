@@ -1080,27 +1080,47 @@ export function ProducerDashboard() {
                     </div>
                   </div>
                   <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
-                    {!allFilesUploaded && (
+                    <div className="flex flex-col gap-2">
+                      <div className="space-y-1">
+                        {req.mp3_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>MP3 File</span>
+                          </div>
+                        )}
+                        {req.trackouts_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Trackouts ZIP</span>
+                          </div>
+                        )}
+                        {req.stems_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Stems ZIP</span>
+                          </div>
+                        )}
+                        {req.split_sheet_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Split Sheet PDF</span>
+                          </div>
+                        )}
+                        {!req.mp3_url && !req.trackouts_url && !req.stems_url && !req.split_sheet_url && (
+                          <div className="flex items-center text-gray-400 text-sm">
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            <span>No files uploaded</span>
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => navigate(`/producer/custom-sync-upload?requestId=${req.id}`)}
-                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center"
                       >
                         <Upload className="w-5 h-5 mr-2" />
-                        Upload Files
+                        {allFilesUploaded ? 'Re-upload Files' : 'Upload Files'}
                       </button>
-                    )}
-                    {allFilesUploaded && (
-                      <>
-                        <span className="text-green-400 font-semibold">All files uploaded</span>
-                        <button
-                          onClick={() => navigate(`/producer/custom-sync-upload?requestId=${req.id}`)}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center"
-                        >
-                          <Upload className="w-5 h-5 mr-2" />
-                          Re-upload Files
-                        </button>
-                      </>
-                    )}
+                    </div>
                   </div>
                 </div>
                 
