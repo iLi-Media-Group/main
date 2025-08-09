@@ -122,7 +122,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-white/10 backdrop-blur-lg p-8 rounded-xl w-full max-w-md border border-purple-500/30 relative">
+      <div className="bg-blue-900/90 backdrop-blur-lg p-8 rounded-xl w-full max-w-md border border-purple-500/30 relative">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
