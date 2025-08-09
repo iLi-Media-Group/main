@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Loader2, Upload, X } from 'lucide-react';
-import { FilePersistenceManager } from '../utils/filePersistence';
 
 interface CustomSyncTrackUploadFormProps {
   request: any;
   onClose: () => void;
   onUploaded: () => void;
 }
-
-const FORM_KEY = 'customSyncUpload';
 
 export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: CustomSyncTrackUploadFormProps) {
   const [mp3File, setMp3File] = useState<File | null>(null);
@@ -20,42 +17,9 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Load saved files on mount
-  useEffect(() => {
-    const loadSavedFiles = () => {
-      const savedMp3File = FilePersistenceManager.restoreFile(FORM_KEY, 'mp3File');
-      if (savedMp3File) {
-        setMp3File(savedMp3File);
-      }
-
-      const savedTrackoutsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'trackoutsFile');
-      if (savedTrackoutsFile) {
-        setTrackoutsFile(savedTrackoutsFile);
-      }
-
-      const savedStemsFile = FilePersistenceManager.restoreFile(FORM_KEY, 'stemsFile');
-      if (savedStemsFile) {
-        setStemsFile(savedStemsFile);
-      }
-
-      const savedSplitSheetFile = FilePersistenceManager.restoreFile(FORM_KEY, 'splitSheetFile');
-      if (savedSplitSheetFile) {
-        setSplitSheetFile(savedSplitSheetFile);
-      }
-    };
-
-    loadSavedFiles();
-  }, []);
-
-  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>, fileKey: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setter(file);
-      FilePersistenceManager.saveFileMetadata(file, FORM_KEY, fileKey);
-    } else {
-      setter(null);
-      FilePersistenceManager.clearFile(FORM_KEY, fileKey);
-    }
+  const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setter(file);
   };
 
   const uploadFile = async (bucket: string, file: File, path: string) => {
@@ -69,28 +33,34 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     setUploading(true);
     setError(null);
     setSuccess(false);
+    
     try {
       const updates: any = {};
+      
       // MP3
       if (mp3File) {
         const mp3Path = `custom_syncs/${request.id}/main.mp3`;
         updates.mp3_url = await uploadFile('track-audio', mp3File, mp3Path);
       }
+      
       // Trackouts
       if (trackoutsFile) {
         const trackoutsPath = `custom_syncs/${request.id}/trackouts.zip`;
         updates.trackouts_url = await uploadFile('trackouts', trackoutsFile, trackoutsPath);
       }
+      
       // Stems
       if (stemsFile) {
         const stemsPath = `custom_syncs/${request.id}/stems.zip`;
         updates.stems_url = await uploadFile('stems', stemsFile, stemsPath);
       }
+      
       // Split Sheet
       if (splitSheetFile) {
         const splitSheetPath = `custom_syncs/${request.id}/split_sheet.pdf`;
         updates.split_sheet_url = await uploadFile('split-sheets', splitSheetFile, splitSheetPath);
       }
+      
       // Update custom_sync_requests table
       if (Object.keys(updates).length > 0) {
         const { error: updateError } = await supabase
@@ -99,11 +69,8 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
           .eq('id', request.id);
         if (updateError) throw updateError;
       }
+      
       setSuccess(true);
-      
-      // Clear saved files after successful upload
-      FilePersistenceManager.clearAllFiles(FORM_KEY);
-      
       onUploaded();
     } catch (err: any) {
       setError(err.message || 'Upload failed');
@@ -117,7 +84,11 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     setTrackoutsFile(null);
     setStemsFile(null);
     setSplitSheetFile(null);
-    FilePersistenceManager.clearAllFiles(FORM_KEY);
+    // Reset file inputs
+    const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
+    fileInputs.forEach(input => {
+      input.value = '';
+    });
   };
 
   return (
@@ -137,7 +108,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="audio/mp3,audio/mpeg" 
-                onChange={handleFileChange(setMp3File, 'mp3File')} 
+                onChange={handleFileChange(setMp3File)} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -163,7 +134,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/zip" 
-                onChange={handleFileChange(setTrackoutsFile, 'trackoutsFile')} 
+                onChange={handleFileChange(setTrackoutsFile)} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -189,7 +160,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/zip" 
-                onChange={handleFileChange(setStemsFile, 'stemsFile')} 
+                onChange={handleFileChange(setStemsFile)} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
@@ -215,7 +186,7 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
               <input 
                 type="file" 
                 accept="application/pdf" 
-                onChange={handleFileChange(setSplitSheetFile, 'splitSheetFile')} 
+                onChange={handleFileChange(setSplitSheetFile)} 
                 className="block w-full text-sm text-gray-300
                   file:mr-4 file:py-2 file:px-4
                   file:rounded-lg file:border-0
