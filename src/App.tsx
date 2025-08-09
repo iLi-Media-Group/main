@@ -179,6 +179,12 @@ const App = () => {
     </Layout>
   );
 
+  const ProducerLandingWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+      {children}
+    </Layout>
+  );
+
   const handleSearch = (filters: { query?: string; genres?: string[]; moods?: string[]; minBpm?: number; maxBpm?: number }) => {
     const params = new URLSearchParams();
     if (filters.query) params.set('q', filters.query);
@@ -330,7 +336,7 @@ const App = () => {
         <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
-        <Route path="/producers" element={<ProducerLandingPage />} />
+                 <Route path="/producers" element={<ProducerLandingWrapper><ProducerLandingPage /></ProducerLandingWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={
           <ProtectedRoute requiresAdmin>

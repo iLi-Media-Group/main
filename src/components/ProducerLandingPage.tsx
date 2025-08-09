@@ -24,55 +24,22 @@ const ProducerLandingPage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Studio Background */}
-      <div 
-        className="relative bg-cover bg-center bg-no-repeat min-h-screen flex items-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`
-        }}
-      >
-        {/* Header */}
-        <header className="absolute top-0 left-0 right-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-            {/* Logo Container - fills header height and flexes with screen size */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                {logoUrl ? (
-                  <img
-                    src={logoUrl}
-                    alt="Logo"
-                    className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto object-contain drop-shadow-lg"
-                    style={{ 
-                      border: 'none', 
-                      boxShadow: 'none', 
-                      background: 'transparent', 
-                      padding: 0, 
-                      margin: 0,
-                      mixBlendMode: 'normal',
-                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))'
-                    }}
-                  />
-                ) : (
-                  <div className="h-16 sm:h-20 md:h-24 lg:h-28 w-auto flex items-center justify-center">
-                    <Music className="w-full h-full text-blue-400" />
-                  </div>
-                )}
-                <div className="ml-4 hidden sm:block">
-                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
-                    MYBEATFI <span className="text-blue-400">SYNC</span>
-                  </h1>
-                </div>
-              </Link>
-            </div>
-            
-            <Link
-              to="/producer-application"
-              className="bg-blue-600 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
-            >
-              Apply Now
-            </Link>
-          </div>
-        </header>
+             {/* Hero Section with Studio Background */}
+       <div 
+         className="relative bg-cover bg-center bg-no-repeat min-h-screen flex items-center"
+         style={{
+           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`
+         }}
+       >
+         {/* Apply Now Button - positioned in top right */}
+         <div className="absolute top-4 right-4 z-10">
+           <Link
+             to="/producer-application"
+             className="bg-blue-600 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
+           >
+             Apply Now
+           </Link>
+         </div>
 
         {/* Hero Content */}
         <div className="max-w-7xl mx-auto px-4 text-center text-white relative z-10">
