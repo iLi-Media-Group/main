@@ -72,6 +72,8 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       //   console.log('reCAPTCHA token received:', token ? 'YES' : 'NO');
       // }
 
+      let producerNumber: string | null = null;
+      
       // Check invitation code for producer accounts
       if (accountType === 'producer') {
         if (!invitationCode.trim()) {
@@ -109,7 +111,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
           throw new Error('Failed to get producer details');
         }
 
-        const producerNumber = invitation.producer_number;
+        producerNumber = invitation.producer_number;
       }
 
       console.log('Creating user account...');
@@ -289,129 +291,129 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       
       <div className="relative z-10 w-full max-w-md">
         <div className="glass-card p-8 rounded-xl backdrop-blur-sm max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex items-center space-x-3">
-            <Sparkles className="w-8 h-8 text-purple-400" />
-            <UserPlus className="w-12 h-12 text-blue-500" />
-            <Music className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold text-white text-center mb-6">
-          Create Your Account
-        </h2>
-        <p className="text-gray-300 text-center mb-6">Join the MyBeatFi community</p>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-        
-        {success && (
-          <div className="mb-4 p-4 bg-green-500/20 border border-green-500/40 rounded-lg text-green-300 text-center">
-            <div className="font-semibold text-lg mb-2">✅ Account Created Successfully!</div>
-            <div className="text-sm">Redirecting to your dashboard...</div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
-          {/* Hidden fields to prevent autofill */}
-          <input type="text" style={{ display: 'none' }} />
-          <input type="password" style={{ display: 'none' }} />
-          
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                First Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Last Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2"
-                  required
-                  disabled={loading}
-                />
-              </div>
+          <div className="flex items-center justify-center mb-6">
+            <div className="flex items-center space-x-3">
+              <Sparkles className="w-8 h-8 text-purple-400" />
+              <UserPlus className="w-12 h-12 text-blue-500" />
+              <Music className="w-8 h-8 text-green-400" />
             </div>
           </div>
+          <h2 className="text-2xl font-bold text-white text-center mb-6">
+            Create Your Account
+          </h2>
+          <p className="text-gray-300 text-center mb-6">Join the MyBeatFi community</p>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Company Name (Optional)
-            </label>
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2"
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Account Type
-            </label>
-            <select
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value as 'client' | 'producer')}
-              className="w-full px-4 py-2"
-              disabled={loading}
-            >
-              <option value="client">Sign Up as Client</option>
-              <option value="producer">Sign Up as Producer</option>
-            </select>
-          </div>
-
-          {accountType === 'producer' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Producer Invitation Code
-              </label>
-              <input
-                type="text"
-                value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value)}
-                className="w-full px-4 py-2"
-                required
-                disabled={loading}
-                placeholder="Enter your invitation code"
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                A valid invitation code is required to create a producer account
-              </p>
+          {error && (
+            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+              {error}
             </div>
           )}
+          
+          {success && (
+            <div className="mb-4 p-4 bg-green-500/20 border border-green-500/40 rounded-lg text-green-300 text-center">
+              <div className="font-semibold text-lg mb-2">✅ Account Created Successfully!</div>
+              <div className="text-sm">Redirecting to your dashboard...</div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
+            {/* Hidden fields to prevent autofill */}
+            <input type="text" style={{ display: 'none' }} />
+            <input type="password" style={{ display: 'none' }} />
             
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  First Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Last Name
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2"
+                    required
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Company Name (Optional)
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Account Type
+              </label>
+              <select
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as 'client' | 'producer')}
+                className="w-full px-4 py-2"
+                disabled={loading}
+              >
+                <option value="client">Sign Up as Client</option>
+                <option value="producer">Sign Up as Producer</option>
+              </select>
+            </div>
+
+            {accountType === 'producer' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Producer Invitation Code
+                </label>
+                <input
+                  type="text"
+                  value={invitationCode}
+                  onChange={(e) => setInvitationCode(e.target.value)}
+                  className="w-full px-4 py-2"
+                  required
+                  disabled={loading}
+                  placeholder="Enter your invitation code"
+                />
+                <p className="mt-1 text-xs text-gray-400">
+                  A valid invitation code is required to create a producer account
+                </p>
+              </div>
+            )}
+              
             {accountType === 'producer' && (
               <>
                 <div>
@@ -468,219 +470,73 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               </>
             )}
 
-        <form onSubmit={handleSubmit} className="space-y-4" style={{ opacity: success ? 0.6 : 1, pointerEvents: success ? 'none' : 'auto' }}>
-          {/* Hidden fields to prevent autofill */}
-          <input type="text" style={{ display: 'none' }} />
-          <input type="password" style={{ display: 'none' }} />
-          
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                First Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-300 mb-1">
-                Last Name
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Company Name (Optional)
-            </label>
-            <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                className="w-full pl-10 pr-4 py-2"
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Account Type
-            </label>
-            <select
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value as 'client' | 'producer')}
-              className="w-full px-4 py-2"
-              disabled={loading}
-            >
-              <option value="client">Sign Up as Client</option>
-              <option value="producer">Sign Up as Producer</option>
-            </select>
-          </div>
-
-          {accountType === 'producer' && (
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Producer Invitation Code
+                Email
               </label>
-              <input
-                type="text"
-                value={invitationCode}
-                onChange={(e) => setInvitationCode(e.target.value)}
-                className="w-full px-4 py-2"
-                required
-                disabled={loading}
-                placeholder="Enter your invitation code"
-              />
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2"
+                  required
+                  disabled={loading}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2"
+                  required
+                  disabled={loading}
+                  autoComplete="new-password"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
+              </div>
               <p className="mt-1 text-xs text-gray-400">
-                A valid invitation code is required to create a producer account
+                Password must contain at least 8 characters, including uppercase, lowercase, and special characters.
               </p>
             </div>
-          )}
-            
-          {accountType === 'producer' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  IPI Number <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <Music className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={ipiNumber}
-                    onChange={(e) => setIpiNumber(e.target.value)}
-                    className={`w-full pl-10 ${!ipiNumber.trim() ? 'border-red-500' : ''}`}
-                    required
-                    disabled={loading}
-                    placeholder="Enter your IPI number"
-                  />
-                </div>
-                {!ipiNumber.trim() && (
-                  <p className="mt-1 text-sm text-red-400">IPI Number is required</p>
-                )}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Performing Rights Organization <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <Info className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <select
-                    value={performingRightsOrg}
-                    onChange={(e) => setPerformingRightsOrg(e.target.value)}
-                    className={`w-full pl-10 ${!performingRightsOrg ? 'border-red-500' : ''}`}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select your PRO</option>
-                    <option value="ASCAP">ASCAP</option>
-                    <option value="BMI">BMI</option>
-                    <option value="SESAC">SESAC</option>
-                    <option value="GMR">Global Music Rights</option>
-                    <option value="PRS">PRS for Music (UK)</option>
-                    <option value="SOCAN">SOCAN (Canada)</option>
-                    <option value="APRA">APRA AMCOS (Australia/NZ)</option>
-                    <option value="SACEM">SACEM (France)</option>
-                    <option value="GEMA">GEMA (Germany)</option>
-                    <option value="OTHER">Other</option>
-                  </select>
-                </div>
-                {!performingRightsOrg && (
-                  <p className="mt-1 text-sm text-red-400">PRO is required</p>
-                )}
-              </div>
-            </>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Email
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <label className="flex items-center space-x-2">
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-10 pr-4 py-2"
+                type="checkbox"
+                checked={ageVerified}
+                onChange={(e) => setAgeVerified(e.target.checked)}
+                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                 required
-                disabled={loading}
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
               />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Password
+              <span className="text-sm text-gray-300">
+                I am 18 years or older
+              </span>
             </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-2"
-                required
-                disabled={loading}
-                autoComplete="new-password"
-                autoCorrect="off"
-                autoCapitalize="off"
-                spellCheck="false"
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-400">
-              Password must contain at least 8 characters, including uppercase, lowercase, and special characters.
-            </p>
-          </div>
 
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={ageVerified}
-              onChange={(e) => setAgeVerified(e.target.checked)}
-              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-              required
-            />
-            <span className="text-sm text-gray-300">
-              I am 18 years or older
-            </span>
-          </label>
-
-          <button
-            type="submit"
-            disabled={loading || success}
-            className="btn-primary w-full"
-          >
-            {success ? '✅ Account Created!' : loading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading || success}
+              className="btn-primary w-full"
+            >
+              {success ? '✅ Account Created!' : loading ? 'Creating Account...' : 'Create Account'}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
