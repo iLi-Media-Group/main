@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Upload, Loader2, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { uploadFile } from '../lib/storage';
@@ -17,12 +17,24 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFileChange = (
+  // Comprehensive event prevention
+  const preventDefault = useCallback((e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }, []);
+
+  const handleFileChange = useCallback((
     setter: React.Dispatch<React.SetStateAction<File[]>>,
     validTypes: string[],
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    console.log('[DEBUG] File change event triggered');
+    preventDefault(e);
+    
     const files = Array.from(e.target.files || []);
+    console.log('[DEBUG] Files selected:', files.length);
+    
     const invalid = files.find(file => !validTypes.some(type => file.type === type || file.type.startsWith(type)));
     if (invalid) {
       setError(`Invalid file: ${invalid.name}`);
@@ -30,13 +42,18 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     }
     setter(prev => [...prev, ...files]);
     setError(null);
-  };
+  }, [preventDefault]);
 
-  const removeFile = (setter: React.Dispatch<React.SetStateAction<File[]>>, index: number) => {
+  const removeFile = useCallback((setter: React.Dispatch<React.SetStateAction<File[]>>, index: number) => {
     setter(prev => prev.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async (e?: React.MouseEvent) => {
+    console.log('[DEBUG] Upload button clicked');
+    if (e) {
+      preventDefault(e);
+    }
+    
     setUploading(true);
     setError(null);
     setSuccess(false);
@@ -91,9 +108,13 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     } finally {
       setUploading(false);
     }
-  };
+  }, [mp3Files, trackoutsFiles, stemsFiles, splitSheetFiles, request.id, onUploaded, preventDefault]);
 
-  const clearAllFiles = () => {
+  const clearAllFiles = useCallback((e?: React.MouseEvent) => {
+    console.log('[DEBUG] Clear all files clicked');
+    if (e) {
+      preventDefault(e);
+    }
     setMp3Files([]);
     setTrackoutsFiles([]);
     setStemsFiles([]);
@@ -104,16 +125,23 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     fileInputs.forEach(input => {
       input.value = '';
     });
-  };
+  }, [preventDefault]);
 
-  const FilePreview = ({ files, onRemove }: { files: File[]; onRemove: (index: number) => void }) => (
+  const FilePreview = useCallback(({ files, onRemove }: { files: File[]; onRemove: (index: number) => void }) => (
     <>
       {files.length > 0 && (
         <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
           {files.map((file, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs text-gray-400 mb-1">
               <span>{file.name} — {(file.size / 1024 / 1024).toFixed(2)} MB</span>
-              <button type="button" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-600 transition">
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  preventDefault(e);
+                  onRemove(idx);
+                }} 
+                className="text-red-400 hover:text-red-600 transition"
+              >
                 <X size={14} />
               </button>
             </div>
@@ -121,10 +149,25 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
         </div>
       )}
     </>
-  );
+  ), [preventDefault]);
 
   return (
-    <div className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg">
+    <div 
+      className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg"
+      onClick={preventDefault}
+      onKeyDown={preventDefault}
+      onKeyUp={preventDefault}
+      onKeyPress={preventDefault}
+      onMouseDown={preventDefault}
+      onMouseUp={preventDefault}
+      onMouseEnter={preventDefault}
+      onMouseLeave={preventDefault}
+      onFocus={preventDefault}
+      onBlur={preventDefault}
+      onSubmit={preventDefault}
+      onReset={preventDefault}
+      onInvalid={preventDefault}
+    >
       <h3 className="text-lg font-semibold text-white mb-4">Upload Files</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -136,6 +179,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
             accept="audio/mp3,audio/mpeg"
             multiple
             onChange={(e) => handleFileChange(setMp3Files, ['audio/'], e)}
+            onClick={preventDefault}
+            onKeyDown={preventDefault}
             className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer bg-gray-800/50 border border-gray-700 rounded-lg p-2"
           />
           <FilePreview files={mp3Files} onRemove={(idx) => removeFile(setMp3Files, idx)} />
@@ -149,6 +194,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
             accept="application/zip"
             multiple
             onChange={(e) => handleFileChange(setTrackoutsFiles, ['application/zip'], e)}
+            onClick={preventDefault}
+            onKeyDown={preventDefault}
             className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer bg-gray-800/50 border border-gray-700 rounded-lg p-2"
           />
           <FilePreview files={trackoutsFiles} onRemove={(idx) => removeFile(setTrackoutsFiles, idx)} />
@@ -162,6 +209,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
             accept="application/zip"
             multiple
             onChange={(e) => handleFileChange(setStemsFiles, ['application/zip'], e)}
+            onClick={preventDefault}
+            onKeyDown={preventDefault}
             className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer bg-gray-800/50 border border-gray-700 rounded-lg p-2"
           />
           <FilePreview files={stemsFiles} onRemove={(idx) => removeFile(setStemsFiles, idx)} />
@@ -175,6 +224,8 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
             accept="application/pdf"
             multiple
             onChange={(e) => handleFileChange(setSplitSheetFiles, ['application/pdf'], e)}
+            onClick={preventDefault}
+            onKeyDown={preventDefault}
             className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer bg-gray-800/50 border border-gray-700 rounded-lg p-2"
           />
           <FilePreview files={splitSheetFiles} onRemove={(idx) => removeFile(setSplitSheetFiles, idx)} />
