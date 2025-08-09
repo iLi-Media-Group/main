@@ -131,7 +131,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
   }, {} as Record<string, typeof mediaTypes>);
 
   return (
-    <div className="glass-card rounded-lg p-6 mb-8">
+    <div className="glass-card rounded-lg p-6 mb-8 hover:border-blue-500/40 transition-colors">
       {/* Service Level Indicator */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
@@ -182,7 +182,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                 ? "Search tracks, artists, genres, moods, or media types..."
                 : "Search tracks, artists, genres, moods, sub-genres, instruments, or media types..."
             }
-            className="w-full pl-10 pr-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
           />
         </div>
 
@@ -361,7 +361,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                     type="number"
                     value={filters.minBpm}
                     onChange={(e) => handleFilterChange('minBpm', parseInt(e.target.value) || 0)}
-                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
+                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded text-white text-sm transition-colors"
                     min="0"
                     max="300"
                   />
@@ -372,7 +372,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                     type="number"
                     value={filters.maxBpm}
                     onChange={(e) => handleFilterChange('maxBpm', parseInt(e.target.value) || 200)}
-                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-white/20 rounded text-white text-sm"
+                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded text-white text-sm transition-colors"
                     min="0"
                     max="300"
                   />
