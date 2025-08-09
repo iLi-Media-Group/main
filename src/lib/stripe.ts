@@ -13,7 +13,28 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
     let checkoutMetadata = customData || {};
     if (trackId) {
       checkoutMetadata.track_id = trackId;
-      checkoutMetadata.track_id = trackId;
+    }
+
+    // Extract custom_amount from customData if it exists
+    const customAmount = customData?.amount;
+    
+    // Remove amount from metadata to avoid duplication
+    if (checkoutMetadata.amount) {
+      delete checkoutMetadata.amount;
+    }
+
+    const requestBody: any = {
+      price_id: priceId,
+      success_url: customSuccessUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${window.location.origin}/pricing`,
+      mode,
+      metadata: checkoutMetadata,
+      payment_method_types: ['card', 'us_bank_account', 'customer_balance']
+    };
+
+    // Only add custom_amount if it exists and price_id is 'price_custom'
+    if (customAmount && priceId === 'price_custom') {
+      requestBody.custom_amount = customAmount;
     }
 
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
@@ -22,15 +43,7 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({
-        price_id: priceId,
-        success_url: customSuccessUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${window.location.origin}/pricing`,
-        mode,
-        metadata: checkoutMetadata,
-        payment_method_types: ['card', 'us_bank_account', 'customer_balance'],
-        custom_amount: customData?.amount
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
