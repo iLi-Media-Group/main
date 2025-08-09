@@ -2671,9 +2671,9 @@ const getPlanLevel = (plan: string): number => {
                                   <FileText className="w-4 h-4 mr-2" />
                                   History
                                 </button>
-                                {proposal.track.mp3_url && (
+                                {(proposal.track.mp3_url || proposal.track.audio_url) && (
                                   <button
-                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url || proposal.track.audio_url, `${proposal.track.title}_MP3.mp3`)}
                                     className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download MP3"
                                   >
@@ -2718,7 +2718,7 @@ const getPlanLevel = (plan: string): number => {
                                     Download Split Sheet
                                   </button>
                                 )}
-                                {!proposal.track.mp3_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (
+                                {!proposal.track.mp3_url && !proposal.track.audio_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
                                 )}
                               </div>

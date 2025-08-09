@@ -47,6 +47,8 @@ interface UserStats {
   new_memberships_count: number;
   white_label_pending_subscriptions_count: number;
   white_label_pending_monthly_amount: number;
+  membership_subscriptions_count: number;
+  membership_monthly_amount: number;
 }
 
 interface UserDetails {
@@ -147,6 +149,8 @@ function AdminDashboard() {
     new_memberships_count: number;
     white_label_pending_subscriptions_count: number;
     white_label_pending_monthly_amount: number;
+    membership_subscriptions_count: number;
+    membership_monthly_amount: number;
   }>({
     total_clients: 0,
     total_producers: 0,
@@ -169,6 +173,8 @@ function AdminDashboard() {
     new_memberships_count: 0,
     white_label_pending_subscriptions_count: 0,
     white_label_pending_monthly_amount: 0,
+    membership_subscriptions_count: 0,
+    membership_monthly_amount: 0,
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
@@ -515,13 +521,55 @@ if (subscription.price_id) {
           }
         });
 
+        // Fetch membership subscriptions (Gold, Platinum, Ultimate Access)
+        const { data: membershipSubscriptionsData, error: membershipSubscriptionsError } = await supabase
+          .from('stripe_subscriptions')
+          .select('id, subscription_id, status, price_id, created_at')
+          .eq('status', 'active')
+          .in('price_id', [
+            'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
+            'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
+            'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+          ]);
+
+        if (membershipSubscriptionsError) {
+          console.error('Error fetching membership subscriptions:', membershipSubscriptionsError);
+        }
+        const membershipSubscriptions = membershipSubscriptionsData || [];
+        const membership_subscriptions_count = membershipSubscriptions.length;
+        
+        // Calculate membership monthly revenue based on price IDs
+        let membership_monthly_amount = 0;
+        membershipSubscriptions.forEach(subscription => {
+          if (subscription.price_id) {
+            // Map price IDs to monthly amounts based on stripe.ts
+            switch (subscription.price_id) {
+              case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+                membership_monthly_amount += 299; // Ultimate Access monthly
+                break;
+              case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+                membership_monthly_amount += 199; // Platinum Access monthly
+                break;
+              case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+                membership_monthly_amount += 99; // Gold Access monthly
+                break;
+              default:
+                membership_monthly_amount += 99; // Default to Gold Access amount
+            }
+          }
+        });
+
+        console.log('Membership Subscriptions found:', membershipSubscriptions.length);
+        console.log('Membership Subscriptions data:', membershipSubscriptions);
+        console.log('Membership monthly revenue:', membership_monthly_amount);
+
         // Update stats with comprehensive data
         setStats((prev: typeof stats) => ({
           ...prev,
           total_clients: clients.length,
           total_producers: producerUsers.length,
           total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count + white_label_setup_count,
-          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount + white_label_setup_amount + white_label_monthly_amount,
+          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount + white_label_setup_amount + white_label_monthly_amount + membership_monthly_amount,
           track_sales_count,
           track_sales_amount,
           sync_proposals_paid_count,
@@ -539,6 +587,8 @@ if (subscription.price_id) {
           new_memberships_count,
           white_label_pending_subscriptions_count,
           white_label_pending_monthly_amount,
+          membership_subscriptions_count,
+          membership_monthly_amount,
         }));
 
         // Fetch producer analytics using the existing function
