@@ -1672,16 +1672,18 @@ const getPlanLevel = (plan: string): number => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setShowEditDialog(true);
-                        }}
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
-                        title="Edit request"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                      {request.payment_status !== 'paid' && (
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowEditDialog(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-white transition-colors"
+                          title="Edit request"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
                       {request.status !== 'completed' && (
                         <button
                           onClick={() => handleUpdateRequest(request.id, { status: 'completed' })}
@@ -1691,13 +1693,15 @@ const getPlanLevel = (plan: string): number => {
                           <Check className="w-4 h-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => handleDeleteRequest(request.id)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {request.payment_status !== 'paid' && (
+                        <button
+                          onClick={() => handleDeleteRequest(request.id)}
+                          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Delete request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   {request.payment_status === 'paid' && (
