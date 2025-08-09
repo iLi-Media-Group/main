@@ -132,56 +132,122 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
         <h2 className="text-2xl font-bold text-white mb-6 text-center">Upload Files for Custom Sync</h2>
         <form onSubmit={handleUpload} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">MP3 File</label>
-            <input 
-              type="file" 
-              accept="audio/mp3,audio/mpeg" 
-              onChange={handleFileChange(setMp3File, 'mp3File')} 
-              className="w-full" 
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-2">MP3 File</label>
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="audio/mp3,audio/mpeg" 
+                onChange={handleFileChange(setMp3File, 'mp3File')} 
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-600 file:text-white
+                  hover:file:bg-blue-700
+                  file:cursor-pointer file:transition-colors
+                  bg-gray-800/50 border border-gray-700 rounded-lg p-2" 
+              />
+            </div>
             {mp3File && (
-              <p className="text-xs text-gray-400 mt-1">Selected: {mp3File.name}</p>
+              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-sm text-green-400 font-medium">✓ MP3 Selected</p>
+                <p className="text-xs text-gray-400">{mp3File.name}</p>
+                <p className="text-xs text-gray-400">{(mp3File.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
             )}
           </div>
+          
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Trackouts (ZIP)</label>
-            <input 
-              type="file" 
-              accept="application/zip" 
-              onChange={handleFileChange(setTrackoutsFile, 'trackoutsFile')} 
-              className="w-full" 
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-2">Trackouts (ZIP)</label>
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="application/zip" 
+                onChange={handleFileChange(setTrackoutsFile, 'trackoutsFile')} 
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-600 file:text-white
+                  hover:file:bg-blue-700
+                  file:cursor-pointer file:transition-colors
+                  bg-gray-800/50 border border-gray-700 rounded-lg p-2" 
+              />
+            </div>
             {trackoutsFile && (
-              <p className="text-xs text-gray-400 mt-1">Selected: {trackoutsFile.name}</p>
+              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-sm text-green-400 font-medium">✓ Trackouts Selected</p>
+                <p className="text-xs text-gray-400">{trackoutsFile.name}</p>
+                <p className="text-xs text-gray-400">{(trackoutsFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
             )}
           </div>
+          
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Stems (ZIP)</label>
-            <input 
-              type="file" 
-              accept="application/zip" 
-              onChange={handleFileChange(setStemsFile, 'stemsFile')} 
-              className="w-full" 
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-2">Stems (ZIP)</label>
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="application/zip" 
+                onChange={handleFileChange(setStemsFile, 'stemsFile')} 
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-600 file:text-white
+                  hover:file:bg-blue-700
+                  file:cursor-pointer file:transition-colors
+                  bg-gray-800/50 border border-gray-700 rounded-lg p-2" 
+              />
+            </div>
             {stemsFile && (
-              <p className="text-xs text-gray-400 mt-1">Selected: {stemsFile.name}</p>
+              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-sm text-green-400 font-medium">✓ Stems Selected</p>
+                <p className="text-xs text-gray-400">{stemsFile.name}</p>
+                <p className="text-xs text-gray-400">{(stemsFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
             )}
           </div>
+          
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Split Sheet (PDF)</label>
-            <input 
-              type="file" 
-              accept="application/pdf" 
-              onChange={handleFileChange(setSplitSheetFile, 'splitSheetFile')} 
-              className="w-full" 
-            />
+            <label className="block text-sm font-medium text-gray-300 mb-2">Split Sheet (PDF)</label>
+            <div className="relative">
+              <input 
+                type="file" 
+                accept="application/pdf" 
+                onChange={handleFileChange(setSplitSheetFile, 'splitSheetFile')} 
+                className="block w-full text-sm text-gray-300
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-lg file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-600 file:text-white
+                  hover:file:bg-blue-700
+                  file:cursor-pointer file:transition-colors
+                  bg-gray-800/50 border border-gray-700 rounded-lg p-2" 
+              />
+            </div>
             {splitSheetFile && (
-              <p className="text-xs text-gray-400 mt-1">Selected: {splitSheetFile.name}</p>
+              <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
+                <p className="text-sm text-green-400 font-medium">✓ Split Sheet Selected</p>
+                <p className="text-xs text-gray-400">{splitSheetFile.name}</p>
+                <p className="text-xs text-gray-400">{(splitSheetFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
             )}
           </div>
-          {error && <div className="text-red-400 text-sm">{error}</div>}
-          {success && <div className="text-green-400 text-sm">Upload successful!</div>}
-          <div className="flex space-x-2">
+          
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+          
+          {success && (
+            <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <p className="text-green-400 text-sm font-medium">✓ Upload successful!</p>
+            </div>
+          )}
+          
+          <div className="flex space-x-2 pt-2">
             <button
               type="button"
               onClick={clearAllFiles}
@@ -191,8 +257,8 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
             </button>
             <button
               type="submit"
-              disabled={uploading}
-              className="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold disabled:opacity-50"
+              disabled={uploading || (!mp3File && !trackoutsFile && !stemsFile && !splitSheetFile)}
+              className="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Upload className="w-5 h-5 mr-2" />}
               {uploading ? 'Uploading...' : 'Upload Files'}
@@ -202,4 +268,5 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
       </div>
     </div>
   );
+} 
 } 
