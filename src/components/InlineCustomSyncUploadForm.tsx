@@ -22,14 +22,13 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     validTypes: string[],
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
-    e.preventDefault(); // Prevent any form submission
     const files = Array.from(e.target.files || []);
     const invalid = files.find(file => !validTypes.some(type => file.type === type || file.type.startsWith(type)));
     if (invalid) {
       setError(`Invalid file: ${invalid.name}`);
       return;
     }
-    setter(prev => [...prev, ...files]); // append instead of replace
+    setter(prev => [...prev, ...files]);
     setError(null);
   };
 
@@ -37,8 +36,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     setter(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault(); // Prevent page refresh
+  const handleUpload = async () => {
     setUploading(true);
     setError(null);
     setSuccess(false);
@@ -46,63 +44,34 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     try {
       const updates: any = {};
 
-      // Upload MP3 files (take the first one for single URL field)
       if (mp3Files.length > 0) {
         console.log('[DEBUG] Uploading MP3 file:', mp3Files[0].name, mp3Files[0].size);
-        const mp3Url = await uploadFile(
-          mp3Files[0],
-          'track-audio',
-          undefined,
-          `custom_syncs/${request.id}`,
-          'main.mp3'
-        );
-        updates.mp3_url = mp3Url; // Single URL field, not array
+        const mp3Url = await uploadFile(mp3Files[0], 'track-audio', undefined, `custom_syncs/${request.id}`, 'main.mp3');
+        updates.mp3_url = mp3Url;
         console.log('[DEBUG] Uploaded MP3 URL:', mp3Url);
       }
 
-      // Upload Trackouts files (take the first one for single URL field)
       if (trackoutsFiles.length > 0) {
         console.log('[DEBUG] Uploading trackouts file:', trackoutsFiles[0].name, trackoutsFiles[0].size);
-        const trackoutsUrl = await uploadFile(
-          trackoutsFiles[0],
-          'trackouts',
-          undefined,
-          `custom_syncs/${request.id}`,
-          'trackouts.zip'
-        );
-        updates.trackouts_url = trackoutsUrl; // Single URL field, not array
+        const trackoutsUrl = await uploadFile(trackoutsFiles[0], 'trackouts', undefined, `custom_syncs/${request.id}`, 'trackouts.zip');
+        updates.trackouts_url = trackoutsUrl;
         console.log('[DEBUG] Uploaded trackouts URL:', trackoutsUrl);
       }
 
-      // Upload Stems files (take the first one for single URL field)
       if (stemsFiles.length > 0) {
         console.log('[DEBUG] Uploading stems file:', stemsFiles[0].name, stemsFiles[0].size);
-        const stemsUrl = await uploadFile(
-          stemsFiles[0],
-          'stems',
-          undefined,
-          `custom_syncs/${request.id}`,
-          'stems.zip'
-        );
-        updates.stems_url = stemsUrl; // Single URL field, not array
+        const stemsUrl = await uploadFile(stemsFiles[0], 'stems', undefined, `custom_syncs/${request.id}`, 'stems.zip');
+        updates.stems_url = stemsUrl;
         console.log('[DEBUG] Uploaded stems URL:', stemsUrl);
       }
 
-      // Upload Split Sheet files (take the first one for single URL field)
       if (splitSheetFiles.length > 0) {
         console.log('[DEBUG] Uploading split sheet file:', splitSheetFiles[0].name, splitSheetFiles[0].size);
-        const splitSheetUrl = await uploadFile(
-          splitSheetFiles[0],
-          'split-sheets',
-          undefined,
-          `custom_syncs/${request.id}`,
-          'split_sheet.pdf'
-        );
-        updates.split_sheet_url = splitSheetUrl; // Single URL field, not array
+        const splitSheetUrl = await uploadFile(splitSheetFiles[0], 'split-sheets', undefined, `custom_syncs/${request.id}`, 'split_sheet.pdf');
+        updates.split_sheet_url = splitSheetUrl;
         console.log('[DEBUG] Uploaded split sheet URL:', splitSheetUrl);
       }
 
-      // Update custom_sync_requests table
       if (Object.keys(updates).length > 0) {
         console.log('[DEBUG] Updating custom_sync_requests with:', updates);
         const { error: updateError } = await supabase
@@ -124,8 +93,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     }
   };
 
-  const clearAllFiles = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault(); // Prevent any form submission
+  const clearAllFiles = () => {
     setMp3Files([]);
     setTrackoutsFiles([]);
     setStemsFiles([]);
@@ -138,27 +106,14 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     });
   };
 
-  const FilePreview = ({
-    files,
-    onRemove
-  }: {
-    files: File[];
-    onRemove: (index: number) => void;
-  }) => (
+  const FilePreview = ({ files, onRemove }: { files: File[]; onRemove: (index: number) => void }) => (
     <>
       {files.length > 0 && (
         <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded-lg">
           {files.map((file, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs text-gray-400 mb-1">
-              <span>
-                {file.name} — {(file.size / 1024 / 1024).toFixed(2)} MB
-              </span>
-              <button
-                type="button"
-                onClick={() => onRemove(idx)}
-                className="text-red-400 hover:text-red-600 transition"
-                title="Remove file"
-              >
+              <span>{file.name} — {(file.size / 1024 / 1024).toFixed(2)} MB</span>
+              <button type="button" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-600 transition">
                 <X size={14} />
               </button>
             </div>
@@ -169,12 +124,7 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
   );
 
   return (
-    <form onSubmit={handleUpload} className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg" onKeyDown={(e) => {
-      // Prevent form submission on Enter key
-      if (e.key === 'Enter') {
-        e.preventDefault();
-      }
-    }}>
+    <div className="mt-4 p-4 bg-purple-800/20 border border-purple-500/20 rounded-lg">
       <h3 className="text-lg font-semibold text-white mb-4">Upload Files</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -252,17 +202,15 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
           Clear All
         </button>
         <button
-          type="submit"
-          disabled={
-            uploading ||
-            (!mp3Files.length && !trackoutsFiles.length && !stemsFiles.length && !splitSheetFiles.length)
-          }
+          type="button"
+          onClick={handleUpload}
+          disabled={uploading || (!mp3Files.length && !trackoutsFiles.length && !stemsFiles.length && !splitSheetFiles.length)}
           className="flex-1 flex items-center justify-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {uploading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Upload className="w-5 h-5 mr-2" />}
           {uploading ? 'Uploading...' : 'Upload Files'}
         </button>
       </div>
-    </form>
+    </div>
   );
 }
