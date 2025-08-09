@@ -111,10 +111,10 @@ const ProducerLandingPage = () => {
                   <span className="text-green-400 mr-3 text-xl">✅</span>
                   Get paid for every sync license sold
                 </li>
-                <li className="flex items-center">
-                  <span className="text-green-400 mr-3 text-xl">✅</span>
-                  Automated payouts (Stripe + USDC Crypto)
-                </li>
+                                 <li className="flex items-center">
+                   <span className="text-green-400 mr-3 text-xl">✅</span>
+                   Automated payouts (Stripe)
+                 </li>
                 <li className="flex items-center">
                   <span className="text-green-400 mr-3 text-xl">✅</span>
                   Detailed monthly reporting
