@@ -334,8 +334,6 @@ export default function CustomSyncRequest() {
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-white">How to Submit</h3>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Special Instructions
