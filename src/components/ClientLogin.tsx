@@ -128,6 +128,7 @@ export function ClientLogin() {
       <VideoBackground 
         videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
         fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        page="client-login"
         alt="Music production background"
       />
       

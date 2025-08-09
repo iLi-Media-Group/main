@@ -1,18 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Search, ArrowRight, Music, Video, Mic } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface HeroSectionProps {
   onSearch?: (filters: any) => void;
+}
+
+interface BackgroundAsset {
+  id: string;
+  name: string;
+  url: string;
+  type: 'video' | 'image';
+  page: string;
+  isActive: boolean;
+  created_at: string;
+  file_size: number;
 }
 
 export function HeroSection({ onSearch }: HeroSectionProps) {
   const navigate = useNavigate();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoError, setIsVideoError] = useState(false);
+  const [backgroundAssets, setBackgroundAssets] = useState<BackgroundAsset[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Video options - you can easily swap these
-  const videoOptions = [
+  // Fetch active background assets for hero section
+  useEffect(() => {
+    const fetchBackgroundAssets = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('background_assets')
+          .select('*')
+          .eq('page', 'hero')
+          .eq('isActive', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching background assets:', error);
+        } else {
+          setBackgroundAssets(data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching background assets:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBackgroundAssets();
+  }, []);
+
+  // Fallback video options if no custom backgrounds are set
+  const fallbackVideoOptions = [
     {
       url: 'https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761',
       fallback: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
@@ -23,15 +63,25 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
     }
   ];
 
+  // Use custom backgrounds if available, otherwise use fallback
+  const videoOptions = backgroundAssets.length > 0 
+    ? backgroundAssets.map(asset => ({
+        url: asset.url,
+        fallback: asset.url // For now, use the same URL as fallback
+      }))
+    : fallbackVideoOptions;
+
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
   useEffect(() => {
-    // Cycle through videos every 15 seconds (slower transition)
-    const interval = setInterval(() => {
-      setCurrentVideoIndex((prev) => (prev + 1) % videoOptions.length);
-    }, 15000);
+    // Only cycle through videos if we have multiple options
+    if (videoOptions.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentVideoIndex((prev) => (prev + 1) % videoOptions.length);
+      }, 15000);
 
-    return () => clearInterval(interval);
+      return () => clearInterval(interval);
+    }
   }, [videoOptions.length]);
 
   const handleVideoLoad = () => {
@@ -42,11 +92,24 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
     setIsVideoError(true);
   };
 
+  // Show loading state while fetching backgrounds
+  if (loading) {
+    return (
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 w-full h-full bg-gray-900">
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0 w-full h-full">
-        {!isVideoError ? (
+        {!isVideoError && videoOptions.length > 0 ? (
           <video
             autoPlay
             muted
@@ -64,7 +127,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
           <div 
             className="w-full h-full bg-cover bg-center"
             style={{
-              backgroundImage: `url(${videoOptions[currentVideoIndex].fallback})`
+              backgroundImage: `url(${videoOptions[currentVideoIndex]?.fallback || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'})`
             }}
           />
         )}
