@@ -319,6 +319,9 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6 mb-6">
             <h2 className="text-xl font-semibold text-white mb-4">Sync Request Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
+              <div className="md:col-span-2">
+                <span className="font-medium">Project Title:</span> {syncRequest.project_title || 'Untitled Project'}
+              </div>
               <div>
                 <span className="font-medium">Client:</span> {syncRequest.client?.first_name} {syncRequest.client?.last_name}
               </div>
@@ -330,6 +333,9 @@ export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
               </div>
               <div>
                 <span className="font-medium">Budget:</span> ${syncRequest.budget}
+              </div>
+              <div>
+                <span className="font-medium">Paid Amount:</span> ${syncRequest.sync_fee || syncRequest.budget}
               </div>
               <div className="md:col-span-2">
                 <span className="font-medium">Description:</span> {syncRequest.description}
