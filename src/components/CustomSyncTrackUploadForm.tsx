@@ -269,4 +269,3 @@ export function CustomSyncTrackUploadForm({ request, onClose, onUploaded }: Cust
     </div>
   );
 } 
-} 
