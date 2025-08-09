@@ -397,6 +397,52 @@ Deno.serve(async (req) => {
                   console.error('Error updating sync request:', requestError);
                   return new Response('Error updating sync request', { status: 500, headers: corsHeaders });
                 }
+
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('sync_fee_rate')
+                  .single();
+
+                const customSyncRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (customSyncRate / 100);
+
+                // Update producer balance
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: submissionData.producer_id,
+                    pending_balance: producerAmount,
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                  return new Response('Error updating producer balance', { status: 500, headers: corsHeaders });
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: submissionData.producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Custom Sync: ${metadata.project_title || 'Custom Sync Request'}`,
+                    track_title: metadata.project_title || 'Custom Sync Request',
+                    reference_id: syncRequestId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                  return new Response('Error creating transaction record', { status: 500, headers: corsHeaders });
+                }
                 
                 // (Optional) Add any other logic for notifications, etc.
                 

@@ -149,7 +149,7 @@ export function RevenueBreakdownDialog({
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests
+      // Fetch paid custom sync requests
       let customSyncQuery = supabase
         .from('custom_sync_requests')
         .select(`
@@ -158,15 +158,16 @@ export function RevenueBreakdownDialog({
           final_amount,
           negotiated_amount,
           status,
+          payment_status,
           created_at,
-          preferred_producer_id
+          selected_producer_id
         `)
-        .eq('status', 'completed')
+        .eq('payment_status', 'paid')
         .gte('created_at', startDate.toISOString());
 
       // Filter by producer if specified
       if (producerId) {
-        customSyncQuery = customSyncQuery.eq('preferred_producer_id', producerId);
+        customSyncQuery = customSyncQuery.eq('selected_producer_id', producerId);
       }
 
       const { data: customSyncData, error: customSyncError } = await customSyncQuery;
