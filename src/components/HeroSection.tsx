@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Search, ArrowRight, Music, Video, Mic } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface HeroSectionProps {
   onSearch?: (filters: any) => void;
 }
 
 export function HeroSection({ onSearch }: HeroSectionProps) {
+  const navigate = useNavigate();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoError, setIsVideoError] = useState(false);
 
@@ -24,10 +26,10 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
   useEffect(() => {
-    // Cycle through videos every 10 seconds
+    // Cycle through videos every 15 seconds (slower transition)
     const interval = setInterval(() => {
       setCurrentVideoIndex((prev) => (prev + 1) % videoOptions.length);
-    }, 10000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [videoOptions.length]);
@@ -53,7 +55,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
             className="w-full h-full object-cover"
             onLoadedData={handleVideoLoad}
             onError={handleVideoError}
-            style={{ opacity: isVideoLoaded ? 1 : 0 }}
+            style={{ opacity: isVideoLoaded ? 1 : 0, transition: 'opacity 1.5s ease-in-out' }}
           >
             <source src={videoOptions[currentVideoIndex].url} type="video/mp4" />
             Your browser does not support the video tag.
@@ -113,40 +115,22 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-          <button className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center">
+          <button 
+            onClick={() => navigate('/pricing')}
+            className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
+          >
             <Play className="w-5 h-5 mr-2 group-hover:animate-pulse" />
             Start Licensing
             <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
           </button>
           
-          <button className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center">
+          <button 
+            onClick={() => navigate('/catalog')}
+            className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center"
+          >
             <Search className="w-5 h-5 mr-2" />
             Browse Catalog
           </button>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-          <div className="text-center group">
-            <div className="text-3xl md:text-4xl font-bold text-blue-400 mb-2 group-hover:scale-110 transition-transform">
-              10K+
-            </div>
-            <div className="text-gray-300">Tracks Available</div>
-          </div>
-          
-          <div className="text-center group">
-            <div className="text-3xl md:text-4xl font-bold text-purple-400 mb-2 group-hover:scale-110 transition-transform">
-              500+
-            </div>
-            <div className="text-gray-300">Producers</div>
-          </div>
-          
-          <div className="text-center group">
-            <div className="text-3xl md:text-4xl font-bold text-green-400 mb-2 group-hover:scale-110 transition-transform">
-              24/7
-            </div>
-            <div className="text-gray-300">Support</div>
-          </div>
         </div>
       </div>
 
