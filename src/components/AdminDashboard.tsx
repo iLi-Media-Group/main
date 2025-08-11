@@ -23,6 +23,7 @@ import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { SynonymManager } from './SynonymManager';
 import { BackgroundManager } from './BackgroundManager';
+import { MediaTypeManagement } from './MediaTypeManagement';
 
 
 interface UserStats {
@@ -184,7 +185,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1485,6 +1486,7 @@ if (subscription.price_id) {
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
             { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
             { id: 'backgrounds', label: 'Background Manager', icon: <Video className="w-4 h-4 mr-2" /> },
+            { id: 'media_types', label: 'Media Types', icon: <Video className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -2076,6 +2078,13 @@ if (subscription.price_id) {
         {/* Background Manager */}
         {activeTab === 'backgrounds' && (
           <BackgroundManager />
+        )}
+
+        {/* Media Types Management */}
+        {activeTab === 'media_types' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <MediaTypeManagement />
+          </div>
         )}
 
       {/* Producer Analytics Modal */}
