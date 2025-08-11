@@ -71,13 +71,8 @@ export function MediaTypeManagement() {
       setLoading(true);
       setError(null);
 
-      // Fetch media types with their sub-types using the new function
-      const { data: hierarchicalData, error: hierarchicalError } = await supabase
-        .rpc('get_media_types_with_subtypes');
-
-      if (hierarchicalError) throw hierarchicalError;
-
-      // Also fetch all media types for the dropdown
+      // Temporarily use direct table queries instead of RPC functions
+      // Fetch all media types
       const { data: allData, error: allError } = await supabase
         .from('media_types')
         .select('*')
@@ -85,7 +80,14 @@ export function MediaTypeManagement() {
 
       if (allError) throw allError;
 
-      setMediaTypes(hierarchicalData || []);
+      // Build hierarchical structure manually
+      const parentTypes = allData?.filter(mt => mt.is_parent || mt.parent_id === null) || [];
+      const hierarchicalData = parentTypes.map(parent => ({
+        ...parent,
+        sub_types: allData?.filter(mt => mt.parent_id === parent.id) || []
+      }));
+
+      setMediaTypes(hierarchicalData);
       setAllMediaTypes(allData || []);
     } catch (err) {
       console.error('Error fetching media types:', err);

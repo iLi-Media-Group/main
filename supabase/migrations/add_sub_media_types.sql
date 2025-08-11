@@ -195,9 +195,7 @@ ORDER BY
     mt.display_order,
     mt.name;
 
--- 17. Add RLS to the view
-ALTER VIEW media_types_hierarchy SET (security_invoker = true);
-
--- 18. Create a policy for the view
-CREATE POLICY "Allow read access to media types hierarchy" ON media_types_hierarchy
-    FOR SELECT USING (auth.role() = 'authenticated');
+-- 17. Add comments for documentation
+COMMENT ON COLUMN media_types.parent_id IS 'Reference to parent media type for hierarchical organization';
+COMMENT ON COLUMN media_types.is_parent IS 'Indicates if this media type can have sub-types';
+COMMENT ON COLUMN media_types.display_order IS 'Order for displaying media types within their category/parent';

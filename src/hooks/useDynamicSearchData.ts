@@ -112,11 +112,21 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (instrumentsError) throw instrumentsError;
 
-      // Fetch media types using the new hierarchical function
+      // Fetch media types using direct query (temporarily)
       const { data: mediaTypesData, error: mediaTypesError } = await supabase
-        .rpc('get_all_media_types_for_selection');
+        .from('media_types')
+        .select('*')
+        .order('display_order, name');
 
       if (mediaTypesError) throw mediaTypesError;
+
+      // Build full_name manually for hierarchical display
+      const mediaTypesWithFullName = mediaTypesData?.map(mt => ({
+        ...mt,
+        full_name: mt.parent_id 
+          ? `${mediaTypesData.find(p => p.id === mt.parent_id)?.name || ''} > ${mt.name}`
+          : mt.name
+      })) || [];
 
       // Fetch moods from the moods_categories table or use a fallback
       // For now, we'll use a fallback since moods might not be in a separate table
@@ -136,7 +146,7 @@ export function useDynamicSearchData(): DynamicSearchData {
       setSubGenres(subGenresData || []);
       setMoods(moodsData);
       setInstruments(instrumentsData || []);
-      setMediaTypes(mediaTypesData || []);
+      setMediaTypes(mediaTypesWithFullName);
 
     } catch (err) {
       console.error('Error fetching dynamic search data:', err);
