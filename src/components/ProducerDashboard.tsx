@@ -518,9 +518,17 @@ export function ProducerDashboard() {
       // Fetch completed custom sync requests where this producer is the selected producer
       const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
-        .select('*')
+        .select(`
+          *,
+          client:profiles!client_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .eq('selected_producer_id', user.id)
-        .eq('payment_status', 'paid');
+        .eq('payment_status', 'paid')
+        .order('updated_at', { ascending: false });
 
       if (customSyncError) throw customSyncError;
 
@@ -650,7 +658,12 @@ export function ProducerDashboard() {
         pendingProposals: pendingProposalsCount
       });
 
-      setCompletedCustomSyncRequests(completedCustomSyncRequestsData || []);
+      // Flatten client data for easier access
+      const flattenedCustomSyncs = (completedCustomSyncRequestsData || []).map((req: any) => ({
+        ...req,
+        client: Array.isArray(req.client) ? req.client[0] : req.client,
+      }));
+      setCompletedCustomSyncRequests(flattenedCustomSyncs);
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -1065,7 +1078,8 @@ export function ProducerDashboard() {
         <div className="space-y-4">
           {completedCustomSyncRequests.map((req) => {
             const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
-            
+            const client = req.client;
+            const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email : 'Unknown Client';
             
             return (
               <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
@@ -1074,9 +1088,15 @@ export function ProducerDashboard() {
                     <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
                     <div className="text-gray-300 mb-1">{req.project_description}</div>
                     <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                      <span><strong>Client:</strong> {clientName}</span>
                       <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                      <span><strong>Final Amount:</strong> ${req.final_amount?.toFixed(2) || req.sync_fee?.toFixed(2)}</span>
                       <span><strong>Genre:</strong> {req.genre}</span>
                       <span><strong>Status:</strong> {req.status}</span>
+                      <span><strong>Payment Status:</strong> <span className="text-green-400">{req.payment_status}</span></span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      <span><strong>Completed:</strong> {new Date(req.updated_at || req.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                   <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">

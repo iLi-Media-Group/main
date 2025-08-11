@@ -905,22 +905,50 @@ const getPlanLevel = (plan: string): number => {
         // Fetch the selected submission for this sync request
         let mp3Url = sync.mp3_url || '';
         try {
-          const { data: selectedSub } = await supabase
-            .from('sync_submissions')
-            .select('track_url, producer_id')
+          // First try to get from sync_request_selections (more reliable)
+          const { data: selectionData } = await supabase
+            .from('sync_request_selections')
+            .select('selected_submission_id')
             .eq('sync_request_id', sync.id)
-            .eq('selected', true)
+            .eq('client_id', user.id)
             .maybeSingle();
+          
+          let selectedSub = null;
+          if (selectionData) {
+            // Get the submission details
+            const { data: subData } = await supabase
+              .from('sync_submissions')
+              .select('track_url, producer_id')
+              .eq('id', selectionData.selected_submission_id)
+              .maybeSingle();
+            selectedSub = subData;
+          } else {
+            // Fallback to sync_submissions with selected = true
+            const { data: subData } = await supabase
+              .from('sync_submissions')
+              .select('track_url, producer_id')
+              .eq('sync_request_id', sync.id)
+              .eq('selected', true)
+              .maybeSingle();
+            selectedSub = subData;
+          }
+          
           if (selectedSub && selectedSub.track_url) {
             mp3Url = selectedSub.track_url;
-            // Only update selected_producer_id if selectedSub is defined
-            await supabase
-              .from('custom_sync_requests')
-              .update({ selected_producer_id: selectedSub.producer_id })
-              .eq('id', sync.id);
+            // Update selected_producer_id if it's missing or different
+            if (sync.selected_producer_id !== selectedSub.producer_id) {
+              await supabase
+                .from('custom_sync_requests')
+                .update({ 
+                  selected_producer_id: selectedSub.producer_id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', sync.id);
+            }
           }
         } catch (e) {
           // Ignore errors, fallback to sync.mp3_url
+          console.error('Error fetching selected submission for sync request:', sync.id, e);
         }
         formattedCustomSyncs.push({
           id: sync.id,
