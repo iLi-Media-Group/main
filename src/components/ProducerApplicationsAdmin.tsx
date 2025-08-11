@@ -61,7 +61,7 @@ type Application = {
   rejection_reason?: string;
 };
 
-type TabType = 'new' | 'invited' | 'save_for_later' | 'declined';
+type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined';
 
 export default function ProducerApplicationsAdmin() {
   const navigate = useNavigate();
@@ -77,6 +77,13 @@ export default function ProducerApplicationsAdmin() {
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showRankingBreakdown, setShowRankingBreakdown] = useState(false);
+  const [tabCounts, setTabCounts] = useState<Record<TabType, number>>({
+    new: 0,
+    invited: 0,
+    onboarded: 0,
+    save_for_later: 0,
+    declined: 0
+  });
 
   useEffect(() => {
     fetchAllApplications(); // Fetch all applications first
@@ -87,6 +94,52 @@ export default function ProducerApplicationsAdmin() {
   useEffect(() => {
     fetchAllApplications();
   }, []);
+
+  // Update tab counts when allApplications changes
+  useEffect(() => {
+    updateTabCounts();
+  }, [allApplications]);
+
+  // Function to update tab counts
+  const updateTabCounts = async () => {
+    const newCounts = {
+      new: allApplications.filter(app => 
+        (app.status === 'new' || !app.status) && 
+        !app.is_auto_rejected
+      ).length,
+      invited: 0,
+      onboarded: 0,
+      save_for_later: allApplications.filter(app => app.status === 'save_for_later').length,
+      declined: allApplications.filter(app => 
+        app.status === 'declined' || app.is_auto_rejected
+      ).length
+    };
+
+    // Get invited applications
+    const invitedApps = allApplications.filter(app => app.status === 'invited');
+    
+    if (invitedApps.length > 0) {
+      // Get unused invitations
+      const { data: unusedInvitations } = await supabase
+        .from('producer_invitations')
+        .select('email')
+        .eq('used', false);
+      
+      const unusedEmails = new Set(unusedInvitations?.map(inv => inv.email) || []);
+      newCounts.invited = invitedApps.filter(app => unusedEmails.has(app.email)).length;
+
+      // Get used invitations
+      const { data: usedInvitations } = await supabase
+        .from('producer_invitations')
+        .select('email')
+        .eq('used', true);
+      
+      const usedEmails = new Set(usedInvitations?.map(inv => inv.email) || []);
+      newCounts.onboarded = invitedApps.filter(app => usedEmails.has(app.email)).length;
+    }
+
+    setTabCounts(newCounts);
+  };
 
   // Calculate rankings for applications
   const calculateRankings = (apps: Application[]): Application[] => {
@@ -121,6 +174,8 @@ export default function ProducerApplicationsAdmin() {
         console.error('Error fetching all applications:', error);
       } else {
         setAllApplications(data || []);
+        // Update tab counts after fetching all applications
+        await updateTabCounts();
       }
     } catch (error) {
       console.error('Error fetching all applications:', error);
@@ -143,7 +198,12 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.new,status.is.null').eq('is_auto_rejected', false);
           break;
         case 'invited':
-          // Show applications with status 'invited' (regardless of review_tier)
+          // Show applications with status 'invited' that haven't completed their invitation yet
+          query = query.eq('status', 'invited');
+          break;
+        case 'onboarded':
+          // Show applications with status 'invited' that have completed their invitation
+          // We'll filter this after fetching to check producer_invitations table
           query = query.eq('status', 'invited');
           break;
         case 'save_for_later':
@@ -184,7 +244,31 @@ export default function ProducerApplicationsAdmin() {
       if (error) {
         console.error('Error fetching applications:', error);
       } else {
-        const appsWithRankings = calculateRankings(data || []);
+        let filteredData = data || [];
+        
+        // For onboarded tab, filter to only show applications where the invitation has been used
+        if (activeTab === 'onboarded') {
+          const { data: invitations } = await supabase
+            .from('producer_invitations')
+            .select('email, used')
+            .eq('used', true);
+          
+          const usedEmails = new Set(invitations?.map(inv => inv.email) || []);
+          filteredData = filteredData.filter(app => usedEmails.has(app.email));
+        }
+        
+        // For invited tab, filter to only show applications where the invitation has NOT been used
+        if (activeTab === 'invited') {
+          const { data: invitations } = await supabase
+            .from('producer_invitations')
+            .select('email, used')
+            .eq('used', false);
+          
+          const unusedEmails = new Set(invitations?.map(inv => inv.email) || []);
+          filteredData = filteredData.filter(app => unusedEmails.has(app.email));
+        }
+        
+        const appsWithRankings = calculateRankings(filteredData);
         setApplications(appsWithRankings);
       }
     } catch (error) {
@@ -340,23 +424,7 @@ export default function ProducerApplicationsAdmin() {
   };
 
   const getTabCount = (tab: TabType) => {
-    switch (tab) {
-      case 'new':
-        return allApplications.filter(app => 
-          (app.status === 'new' || !app.status) && 
-          !app.is_auto_rejected
-        ).length;
-      case 'invited':
-        return allApplications.filter(app => app.status === 'invited').length;
-      case 'save_for_later':
-        return allApplications.filter(app => app.status === 'save_for_later').length;
-      case 'declined':
-        return allApplications.filter(app => 
-          app.status === 'declined' || app.is_auto_rejected
-        ).length;
-      default:
-        return 0;
-    }
+    return tabCounts[tab] || 0;
   };
 
   // Debug function to show all applications
@@ -649,6 +717,22 @@ export default function ProducerApplicationsAdmin() {
           </div>
         </button>
         <button
+          onClick={() => setActiveTab('onboarded')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'onboarded'
+              ? 'bg-purple-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-purple-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <UserPlus className="w-4 h-4" />
+            <span>Onboarded</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('onboarded')}
+            </span>
+          </div>
+        </button>
+        <button
           onClick={() => setActiveTab('save_for_later')}
           className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
             activeTab === 'save_for_later'
@@ -885,13 +969,33 @@ export default function ProducerApplicationsAdmin() {
                   {activeTab === 'invited' && (
                     <>
                       <Button
-                        onClick={() => handleResendEmail(app)}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
                         size="sm"
                       >
-                        <Mail className="w-4 h-4 mr-1" />
-                        Resend Email
+                        Move to New
                       </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+
+                  {activeTab === 'onboarded' && (
+                    <>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -917,6 +1021,7 @@ export default function ProducerApplicationsAdmin() {
                       </Button>
                     </>
                   )}
+
                   {activeTab === 'save_for_later' && (
                     <>
                       <Button

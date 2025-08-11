@@ -21,7 +21,7 @@ const TRACKS_PER_PAGE = 20;
 // Synonym expansion map for flexible search - now loaded from database
 // This will be replaced by the useSynonyms hook
 
-// Helper function to expand search terms with synonyms
+// Helper function to expand search terms with synonyms and comprehensive variations
 const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: string[] }): string[] => {
   const expandedTerms = new Set<string>();
   
@@ -43,6 +43,73 @@ const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: 
         synonyms.forEach(synonym => {
           expandedTerms.add(synonym.toLowerCase());
         });
+      }
+    });
+    
+    // Add comprehensive variations for hip-hop
+    if (lowerTerm === 'hiphop' || lowerTerm === 'hip hop' || lowerTerm === 'hip-hop') {
+      expandedTerms.add('hiphop');
+      expandedTerms.add('hip hop');
+      expandedTerms.add('hip-hop');
+      expandedTerms.add('hip_hop_rap');
+      expandedTerms.add('rap');
+      expandedTerms.add('trap');
+      expandedTerms.add('drill');
+      expandedTerms.add('grime');
+      expandedTerms.add('hip hop music');
+      expandedTerms.add('hip-hop music');
+      expandedTerms.add('hiphop music');
+      expandedTerms.add('hip hop rap');
+      expandedTerms.add('hip-hop rap');
+      expandedTerms.add('hiphop rap');
+      expandedTerms.add('rap music');
+      expandedTerms.add('trap music');
+      expandedTerms.add('drill music');
+    }
+    
+    // Add comprehensive variations for R&B
+    if (lowerTerm === 'rnb' || lowerTerm === 'r&b' || lowerTerm === 'rhythm and blues') {
+      expandedTerms.add('rnb');
+      expandedTerms.add('r&b');
+      expandedTerms.add('rhythm and blues');
+      expandedTerms.add('rnb_soul');
+      expandedTerms.add('soul');
+      expandedTerms.add('neo soul');
+      expandedTerms.add('contemporary r&b');
+      expandedTerms.add('urban');
+    }
+    
+    // Add comprehensive variations for electronic
+    if (lowerTerm === 'edm' || lowerTerm === 'electronic' || lowerTerm === 'electronic dance') {
+      expandedTerms.add('edm');
+      expandedTerms.add('electronic');
+      expandedTerms.add('electronic dance');
+      expandedTerms.add('electronic_dance');
+      expandedTerms.add('techno');
+      expandedTerms.add('house');
+      expandedTerms.add('trance');
+      expandedTerms.add('dubstep');
+      expandedTerms.add('electronic music');
+      expandedTerms.add('edm music');
+    }
+    
+    // Add space/hyphen/underscore variations for any term
+    const variations = [
+      lowerTerm,
+      lowerTerm.replace(/\s+/g, ''),
+      lowerTerm.replace(/\s+/g, '-'),
+      lowerTerm.replace(/\s+/g, '_'),
+      lowerTerm.replace(/-/g, ' '),
+      lowerTerm.replace(/-/g, ''),
+      lowerTerm.replace(/-/g, '_'),
+      lowerTerm.replace(/_/g, ' '),
+      lowerTerm.replace(/_/g, '-'),
+      lowerTerm.replace(/_/g, '')
+    ];
+    
+    variations.forEach(variation => {
+      if (variation && variation.length > 0) {
+        expandedTerms.add(variation);
       }
     });
   });

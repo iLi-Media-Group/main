@@ -100,7 +100,11 @@ export function VocalsPage() {
             
             // Add common variations for specific genres
             if (genre.name.toLowerCase().includes('hip_hop_rap')) {
-              variations.push('hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'hip hop music', 'hip-hop music');
+              variations.push(
+                'hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'grime',
+                'hip hop music', 'hip-hop music', 'hiphop music', 'hip hop rap',
+                'hip-hop rap', 'hiphop rap', 'rap music', 'trap music', 'drill music'
+              );
             }
             if (genre.name.toLowerCase().includes('rnb_soul')) {
               variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');

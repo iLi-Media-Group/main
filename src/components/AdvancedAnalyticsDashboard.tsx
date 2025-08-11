@@ -22,6 +22,7 @@ interface AnalyticsData {
     track_license: number;
     sync_proposal: number;
     custom_sync: number;
+    membership: number;
   }>;
   licenseData: Array<{
     name: string;
@@ -238,8 +239,29 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
 
       if (customError) throw customError;
 
+      // Fetch membership subscriptions (Gold, Platinum, Ultimate Access)
+      const { data: membershipSubscriptions, error: membershipError } = await supabase
+        .from('stripe_subscriptions')
+        .select('id, subscription_id, status, price_id, created_at')
+        .eq('status', 'active')
+        .in('price_id', [
+          'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
+          'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
+          'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+        ])
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', now.toISOString());
+
+      console.log('Analytics Debug - Membership Subscriptions:', {
+        count: membershipSubscriptions?.length || 0,
+        data: membershipSubscriptions?.slice(0, 3), // First 3 for debugging
+        error: membershipError
+      });
+
+      if (membershipError) throw membershipError;
+
       // Check if we have any data at all
-      const totalData = (trackSales?.length || 0) + (syncProposals?.length || 0) + (customSyncRequests?.length || 0);
+      const totalData = (trackSales?.length || 0) + (syncProposals?.length || 0) + (customSyncRequests?.length || 0) + (membershipSubscriptions?.length || 0);
       console.log('Analytics Debug - Total Data Found:', totalData);
 
       if (totalData === 0) {
@@ -274,7 +296,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
       }
 
       // Process the data
-      const processedData = processAnalyticsData(trackSales || [], syncProposals || [], customSyncRequests || []);
+      const processedData = processAnalyticsData(trackSales || [], syncProposals || [], customSyncRequests || [], membershipSubscriptions || []);
       console.log('Analytics Debug - Processed Data:', {
         revenueDataLength: processedData.revenueData.length,
         licenseDataLength: processedData.licenseData.length,
@@ -291,13 +313,19 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
     }
   };
 
-  const processAnalyticsData = (trackSales: any[], syncProposals: any[], customSyncRequests: any[]): AnalyticsData => {
+  const processAnalyticsData = (trackSales: any[], syncProposals: any[], customSyncRequests: any[], membershipSubscriptions: any[]): AnalyticsData => {
     // Monthly revenue data
     const monthlyData = new Map();
     const allSales = [
       ...trackSales.map(sale => ({ ...sale, type: 'track_license', revenue: sale.amount })),
       ...syncProposals.map(proposal => ({ ...proposal, type: 'sync_proposal', revenue: proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee })),
-      ...customSyncRequests.map(request => ({ ...request, type: 'custom_sync', revenue: request.final_amount || request.negotiated_amount || request.sync_fee }))
+      ...customSyncRequests.map(request => ({ ...request, type: 'custom_sync', revenue: request.final_amount || request.negotiated_amount || request.sync_fee })),
+      ...membershipSubscriptions.map(subscription => ({ 
+        ...subscription, 
+        type: 'membership', 
+        revenue: subscription.price_id === 'price_1RdAfqR8RYA8TFzwKP7zrKsm' ? 299 : 
+                subscription.price_id === 'price_1RdAfXR8RYA8TFzwFZyaSREP' ? 199 : 99
+      }))
     ];
 
     allSales.forEach(sale => {
@@ -313,13 +341,14 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
 
     const revenueData = Array.from(monthlyData.entries()).map(([month, data]) => {
       // Calculate per-type revenue for this month
-      let track_license = 0, sync_proposal = 0, custom_sync = 0;
+      let track_license = 0, sync_proposal = 0, custom_sync = 0, membership = 0;
       allSales.forEach(sale => {
         const saleMonth = new Date(sale.created_at).toLocaleDateString('en-US', { month: 'short' });
         if (saleMonth === month) {
           if (sale.type === 'track_license') track_license += sale.revenue || 0;
           if (sale.type === 'sync_proposal') sync_proposal += sale.revenue || 0;
           if (sale.type === 'custom_sync') custom_sync += sale.revenue || 0;
+          if (sale.type === 'membership') membership += sale.revenue || 0;
         }
       });
       return {
@@ -329,7 +358,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         clients: data.clients.size,
         track_license,
         sync_proposal,
-        custom_sync
+        custom_sync,
+        membership
       };
     });
 
@@ -926,6 +956,12 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                         <td className="text-gray-300 py-1">Custom Sync Requests</td>
                         <td className="text-right text-green-400 py-1">
                           ${analyticsData.revenueData.reduce((sum, row) => sum + (row.custom_sync || 0), 0).toFixed(2)}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="text-gray-300 py-1">Membership Subscriptions</td>
+                        <td className="text-right text-green-400 py-1">
+                          ${analyticsData.revenueData.reduce((sum, row) => sum + (row.membership || 0), 0).toFixed(2)}
                         </td>
                       </tr>
                     </tbody>
