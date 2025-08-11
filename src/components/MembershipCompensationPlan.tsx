@@ -18,6 +18,7 @@ interface CompensationSettings {
   standard_rate: number;
   exclusive_rate: number;
   sync_fee_rate: number;
+  custom_sync_rate: number;
   no_sales_bucket_rate: number;
   growth_bonus_rate: number;
   no_sale_bonus_rate: number;
@@ -252,6 +253,10 @@ export function MembershipCompensationPlan() {
             <div>
               <p className="text-sm text-gray-400">Sync Fee Rate</p>
               <p className="text-lg font-semibold text-white">{settings.sync_fee_rate}%</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Custom Sync Rate</p>
+              <p className="text-lg font-semibold text-white">{settings.custom_sync_rate}%</p>
             </div>
             <div>
               <p className="text-sm text-gray-400">No Sales Bucket Rate</p>
