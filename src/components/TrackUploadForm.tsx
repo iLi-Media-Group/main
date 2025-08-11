@@ -1501,35 +1501,29 @@ export function TrackUploadForm() {
                                 <input
                                   type="checkbox"
                                   checked={formData.selectedMediaUsage.includes(parentType.name)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      // Add parent and all its children
-                                      const newSelection = [...formData.selectedMediaUsage, parentType.name];
-                                      childTypesForParent.forEach(child => {
-                                        newSelection.push(child.full_name);
-                                      });
-                                      updateFormData({ selectedMediaUsage: newSelection });
-                                      
-                                      // Expand the category to show children
-                                      if (hasChildren) {
-                                        setExpandedMediaCategories(prev => new Set([...prev, parentType.id]));
-                                      }
-                                    } else {
-                                      // Remove parent and all its children
-                                      const newSelection = formData.selectedMediaUsage.filter(u => 
-                                        u !== parentType.name && 
-                                        !childTypesForParent.some(child => child.full_name === u)
-                                      );
-                                      updateFormData({ selectedMediaUsage: newSelection });
-                                      
-                                      // Collapse the category
-                                      setExpandedMediaCategories(prev => {
-                                        const newSet = new Set(prev);
-                                        newSet.delete(parentType.id);
-                                        return newSet;
-                                      });
-                                    }
-                                  }}
+                                                                   onChange={(e) => {
+                                   if (e.target.checked) {
+                                     // Add only the parent category
+                                     const newSelection = [...formData.selectedMediaUsage, parentType.name];
+                                     updateFormData({ selectedMediaUsage: newSelection });
+                                     
+                                     // Expand the category to show children
+                                     if (hasChildren) {
+                                       setExpandedMediaCategories(prev => new Set([...prev, parentType.id]));
+                                     }
+                                   } else {
+                                     // Remove only the parent category (keep children if individually selected)
+                                     const newSelection = formData.selectedMediaUsage.filter(u => u !== parentType.name);
+                                     updateFormData({ selectedMediaUsage: newSelection });
+                                     
+                                     // Collapse the category
+                                     setExpandedMediaCategories(prev => {
+                                       const newSet = new Set(prev);
+                                       newSet.delete(parentType.id);
+                                       return newSet;
+                                     });
+                                   }
+                                 }}
                                   className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                   disabled={isSubmitting}
                                 />
