@@ -2,7 +2,7 @@
 // NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_CATEGORIES } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -14,6 +14,7 @@ import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { useFormPersistence } from '../hooks/useFormPersistence';
 import { FilePersistenceManager } from '../utils/filePersistence';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
@@ -118,6 +119,7 @@ export function TrackUploadForm() {
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
+  const { mediaTypes } = useDynamicSearchData();
   const [expandedMoods, setExpandedMoods] = useState<string[]>([]);
   const [expandedInstruments, setExpandedInstruments] = useState<string[]>([]);
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
@@ -432,7 +434,6 @@ export function TrackUploadForm() {
         sub_genres: formData.selectedSubGenres.join(','),
         moods: formData.selectedMoods,
         instruments: formData.selectedInstruments,
-        media_usage: formData.selectedMediaUsage,
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
@@ -537,6 +538,30 @@ export function TrackUploadForm() {
         .single();
 
       if (trackFetchError) throw trackFetchError;
+
+      // Insert media types into track_media_types table if any are selected
+      if (formData.selectedMediaUsage.length > 0 && trackData?.id) {
+        // Get media type IDs for the selected media types
+        const selectedMediaTypeIds = mediaTypes
+          .filter(mt => formData.selectedMediaUsage.includes(mt.name))
+          .map(mt => mt.id);
+
+        if (selectedMediaTypeIds.length > 0) {
+          const trackMediaTypesData = selectedMediaTypeIds.map(mediaTypeId => ({
+            track_id: trackData.id,
+            media_type_id: mediaTypeId
+          }));
+
+          const { error: mediaTypesError } = await supabase
+            .from('track_media_types')
+            .insert(trackMediaTypesData);
+
+          if (mediaTypesError) {
+            console.error('[DEBUG] Media types insertion error:', mediaTypesError);
+            // Don't throw error here as the track was already created successfully
+          }
+        }
+      }
 
       // Set success state
       setUploadedTrackId(trackData?.id || null);
@@ -1351,45 +1376,46 @@ export function TrackUploadForm() {
                 Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
               </p>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, subcategories]) => (
-                  <div key={category} className="bg-white/5 rounded-lg p-4">
-                    <h3 className="text-white font-medium mb-3">{category}</h3>
-                    <div className="space-y-3">
-                      {Object.entries(subcategories).map(([subcategory, types]) => (
-                        <div key={subcategory} className="ml-4">
-                          <h4 className="text-blue-300 font-medium mb-2 text-sm">{subcategory}</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {types.map((type: string) => {
-                              const fullType = `${category} > ${subcategory} > ${type}`;
-                              return (
-                                <label key={fullType} className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.selectedMediaUsage.includes(fullType)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        updateFormData({ 
-                                          selectedMediaUsage: [...formData.selectedMediaUsage, fullType] 
-                                        });
-                                      } else {
-                                        updateFormData({
-                                          selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== fullType)
-                                        });
-                                      }
-                                    }}
-                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                    disabled={isSubmitting}
-                                  />
-                                  <span className="text-gray-300 text-sm">{type}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
+                {/* Group media types by category */}
+                {(() => {
+                  const mediaTypesByCategory = mediaTypes.reduce((acc, mediaType) => {
+                    if (!acc[mediaType.category]) {
+                      acc[mediaType.category] = [];
+                    }
+                    acc[mediaType.category].push(mediaType);
+                    return acc;
+                  }, {} as Record<string, typeof mediaTypes>);
+
+                  return Object.entries(mediaTypesByCategory).map(([category, types]) => (
+                    <div key={category} className="bg-white/5 rounded-lg p-4">
+                      <h3 className="text-white font-medium mb-3">{category}</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {types.map((mediaType) => (
+                          <label key={mediaType.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedMediaUsage.includes(mediaType.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  updateFormData({ 
+                                    selectedMediaUsage: [...formData.selectedMediaUsage, mediaType.name] 
+                                  });
+                                } else {
+                                  updateFormData({
+                                    selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType.name)
+                                  });
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                            />
+                            <span className="text-gray-300 text-sm">{mediaType.name}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ));
+                })()}
               </div>
             </div>
           ) : (

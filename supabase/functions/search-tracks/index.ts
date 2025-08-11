@@ -66,7 +66,13 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
   const genresLower = track.genres?.toLowerCase() || '';
   const subGenresLower = track.sub_genres?.toLowerCase() || '';
   const instrumentsLower = track.instruments?.toLowerCase() || '';
-  const mediaUsageLower = track.media_usage?.toLowerCase() || '';
+  
+  // Extract media types from the new structure
+  const trackMediaTypes = track.track_media_types || [];
+  const mediaTypeNames = trackMediaTypes
+    .map((tmt: any) => tmt.media_types?.name)
+    .filter(Boolean)
+    .join(' ').toLowerCase();
   
   for (const term of searchTerms) {
     const termLower = term.toLowerCase();
@@ -84,7 +90,7 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     // Service-specific scoring
     if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) score += 4;
     if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) score += 3;
-    if (serviceParams?.usageTypes?.length && mediaUsageLower.includes(termLower)) score += 3;
+    if (serviceParams?.usageTypes?.length && mediaTypeNames.includes(termLower)) score += 3;
     
     // Fuzzy matches (lower priority) - using simple similarity
     const titleSimilarity = calculateSimilarity(titleLower, termLower);
@@ -92,6 +98,23 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     
     if (titleSimilarity > 0.3) score += titleSimilarity * 2;
     if (artistSimilarity > 0.3) score += artistSimilarity * 1.5;
+  }
+  
+  // Additional scoring for media type filters
+  if (serviceParams?.usageTypes?.length) {
+    const selectedMediaTypes = serviceParams.usageTypes.map((t: string) => t.toLowerCase());
+    const trackMediaTypeNames = trackMediaTypes
+      .map((tmt: any) => tmt.media_types?.name?.toLowerCase())
+      .filter(Boolean);
+    
+    // Check if any of the selected media types match the track's media types
+    const matchingMediaTypes = selectedMediaTypes.filter(selected => 
+      trackMediaTypeNames.some(trackType => trackType.includes(selected) || selected.includes(trackType))
+    );
+    
+    if (matchingMediaTypes.length > 0) {
+      score += matchingMediaTypes.length * 5; // Bonus points for each matching media type
+    }
   }
   
   return score;
@@ -159,7 +182,18 @@ serve(async (req) => {
     console.log('All search terms:', allSearchTerms);
 
     // Build search query with fuzzy matching
-    let searchQuery = supabase.from("tracks").select("*");
+    let searchQuery = supabase.from("tracks").select(`
+      *,
+      track_media_types (
+        media_type_id,
+        media_types (
+          id,
+          name,
+          description,
+          category
+        )
+      )
+    `);
     
     if (allSearchTerms.length > 0) {
       // Create conditions for exact, partial, and fuzzy matching
@@ -191,9 +225,9 @@ serve(async (req) => {
       }
       
       if (usageTypes && usageTypes.length > 0) {
-        for (const usageType of usageTypes) {
-          conditions.push(`media_usage.ilike.%${usageType}%`);
-        }
+        // For media types, we need to check the track_media_types relationship
+        // This will be handled in the relevance scoring function
+        console.log('Media types filter applied:', usageTypes);
       }
       
       searchQuery = searchQuery.or(conditions.join(','));
@@ -215,11 +249,31 @@ serve(async (req) => {
       relevance: calculateRelevanceScore(track, allSearchTerms, { subgenres, instruments, usageTypes })
     }));
 
+    // Filter results based on media types if specified
+    let filteredResults = scoredResults;
+    if (usageTypes && usageTypes.length > 0) {
+      filteredResults = scoredResults.filter(track => {
+        const trackMediaTypes = track.track_media_types || [];
+        const trackMediaTypeNames = trackMediaTypes
+          .map((tmt: any) => tmt.media_types?.name?.toLowerCase())
+          .filter(Boolean);
+        
+        const selectedMediaTypes = usageTypes.map((t: string) => t.toLowerCase());
+        
+        // Check if any of the selected media types match the track's media types
+        return selectedMediaTypes.some(selected => 
+          trackMediaTypeNames.some(trackType => 
+            trackType.includes(selected) || selected.includes(trackType)
+          )
+        );
+      });
+    }
+
     // Sort by relevance score (highest first)
-    scoredResults.sort((a, b) => b.relevance - a.relevance);
+    filteredResults.sort((a, b) => b.relevance - a.relevance);
 
     // Take top results
-    const finalResults = scoredResults.slice(0, limit);
+    const finalResults = filteredResults.slice(0, limit);
 
     console.log('Final results count:', finalResults.length);
 
