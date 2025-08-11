@@ -160,7 +160,8 @@ export function RevenueBreakdownDialog({
           status,
           payment_status,
           created_at,
-          selected_producer_id
+          selected_producer_id,
+          updated_at
         `)
         .eq('payment_status', 'paid')
         .gte('created_at', startDate.toISOString());
@@ -173,6 +174,48 @@ export function RevenueBreakdownDialog({
       const { data: customSyncData, error: customSyncError } = await customSyncQuery;
 
       if (customSyncError) throw customSyncError;
+
+      // Debug logging for custom sync data
+      console.log('=== CUSTOM SYNC DEBUG ===');
+      console.log('Custom sync query result:', customSyncData);
+      console.log('Producer ID filter:', producerId);
+      console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+      console.log('=== END CUSTOM SYNC DEBUG ===');
+
+      // Fallback: Also check for any recent custom sync requests that might have been missed
+      let fallbackCustomSyncQuery = supabase
+        .from('custom_sync_requests')
+        .select(`
+          id,
+          sync_fee,
+          final_amount,
+          negotiated_amount,
+          status,
+          payment_status,
+          created_at,
+          selected_producer_id,
+          updated_at
+        `)
+        .eq('payment_status', 'paid')
+        .gte('updated_at', startDate.toISOString());
+
+      if (producerId) {
+        fallbackCustomSyncQuery = fallbackCustomSyncQuery.eq('selected_producer_id', producerId);
+      }
+
+      const { data: fallbackCustomSyncData, error: fallbackCustomSyncError } = await fallbackCustomSyncQuery;
+      
+      if (fallbackCustomSyncError) {
+        console.warn('Fallback custom sync query error:', fallbackCustomSyncError);
+      }
+
+      // Combine and deduplicate custom sync data
+      const allCustomSyncData = [...(customSyncData || []), ...(fallbackCustomSyncData || [])];
+      const uniqueCustomSyncData = allCustomSyncData.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id)
+      );
+
+      console.log('Combined custom sync data count:', uniqueCustomSyncData.length);
 
       // Fetch white label setup fees
       let whiteLabelSetupQuery = supabase
@@ -417,8 +460,8 @@ export function RevenueBreakdownDialog({
 
       // Process custom sync requests
       const customSyncRevenue = {
-        count: customSyncData?.length || 0,
-        amount: customSyncData?.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
+        count: uniqueCustomSyncData.length,
+        amount: uniqueCustomSyncData.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
       };
 
       // Process white label setup fees
@@ -577,9 +620,10 @@ export function RevenueBreakdownDialog({
       console.log('Timeframe:', timeframe);
       console.log('Month count:', monthCount);
       console.log('Initialized months:', months);
+      console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
       console.log('Sales data count:', salesData?.length || 0);
       console.log('Sync proposals count:', syncProposalsData?.length || 0);
-      console.log('Custom sync count:', customSyncData?.length || 0);
+      console.log('Custom sync count:', uniqueCustomSyncData.length);
       console.log('White Label Setup count:', whiteLabelSetupData?.length || 0);
       console.log('White Label Monthly (paid) count:', paidMonthly.length);
       console.log('White Label Monthly (pending) count:', pendingMonthly.length);
@@ -610,12 +654,16 @@ export function RevenueBreakdownDialog({
       });
       
       // Add custom sync requests to months
-      customSyncData?.forEach(req => {
-        const date = new Date(req.created_at);
-        const monthKey = getMonthKey(date);
-        console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.final_amount || req.sync_fee}`);
+      uniqueCustomSyncData.forEach(req => {
+        // Use updated_at for payment date, fallback to created_at
+        const paymentDate = req.updated_at ? new Date(req.updated_at) : new Date(req.created_at);
+        const monthKey = getMonthKey(paymentDate);
+        const amount = req.final_amount || req.sync_fee || 0;
+        console.log(`Custom sync: ${paymentDate.toISOString()} -> ${monthKey}, amount: ${amount}, ID: ${req.id}`);
         if (months[monthKey] !== undefined) {
-          months[monthKey] += (req.final_amount || req.sync_fee) || 0;
+          months[monthKey] += amount;
+        } else {
+          console.log(`Month key ${monthKey} not found in months object`);
         }
       });
 
