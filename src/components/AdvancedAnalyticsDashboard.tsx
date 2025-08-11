@@ -33,6 +33,31 @@ interface AnalyticsData {
     name: string;
     churnRisk: number;
     lastActivity: string;
+    riskLevel: string;
+    lifetimeValue: number;
+    isSeasonal: boolean;
+  }>;
+  churnRiskSummary: {
+    total_clients: number;
+    low_risk_count: number;
+    moderate_risk_count: number;
+    high_risk_count: number;
+    critical_risk_count: number;
+    avg_risk_score: number;
+    high_value_at_risk_count: number;
+    seasonal_buyers_count: number;
+  } | null;
+  clientsAtRisk: Array<{
+    client_id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    risk_score: number;
+    risk_level: string;
+    days_since_last_activity: number;
+    lifetime_value: number;
+    last_purchase_date: string;
+    recommended_action: string;
   }>;
   topTracks: Array<{
     title: string;
@@ -260,6 +285,19 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
 
       if (membershipError) throw membershipError;
 
+      // Fetch adaptive churn risk data
+      const { data: churnRiskSummary } = await supabase
+        .rpc('get_churn_risk_summary');
+
+      // Fetch clients at risk for detailed analysis
+      const { data: clientsAtRisk } = await supabase
+        .rpc('get_clients_at_risk', { risk_threshold: 40 });
+
+      console.log('Analytics Debug - Churn Risk Data:', {
+        churnRiskSummary,
+        clientsAtRiskCount: clientsAtRisk?.length || 0
+      });
+
       // Check if we have any data at all
       const totalData = (trackSales?.length || 0) + (syncProposals?.length || 0) + (customSyncRequests?.length || 0) + (membershipSubscriptions?.length || 0);
       console.log('Analytics Debug - Total Data Found:', totalData);
@@ -296,7 +334,14 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
       }
 
       // Process the data
-      const processedData = processAnalyticsData(trackSales || [], syncProposals || [], customSyncRequests || [], membershipSubscriptions || []);
+      const processedData = processAnalyticsData(
+        trackSales || [], 
+        syncProposals || [], 
+        customSyncRequests || [], 
+        membershipSubscriptions || [],
+        churnRiskSummary,
+        clientsAtRisk || []
+      );
       console.log('Analytics Debug - Processed Data:', {
         revenueDataLength: processedData.revenueData.length,
         licenseDataLength: processedData.licenseData.length,
@@ -313,7 +358,14 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
     }
   };
 
-  const processAnalyticsData = (trackSales: any[], syncProposals: any[], customSyncRequests: any[], membershipSubscriptions: any[]): AnalyticsData => {
+  const processAnalyticsData = (
+    trackSales: any[], 
+    syncProposals: any[], 
+    customSyncRequests: any[], 
+    membershipSubscriptions: any[],
+    churnRiskSummary: any = null,
+    clientsAtRisk: any[] = []
+  ): AnalyticsData => {
     // Monthly revenue data
     const monthlyData = new Map();
     const allSales = [
@@ -470,32 +522,18 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
 
     console.log('Analytics Debug - Final Genre Data:', genreData);
 
-    // Churn risk analysis - calculate based on client activity patterns
-    const churnData = Array.from(clientMap.values()).map(client => {
-      // Calculate churn risk based on:
-      // 1. Days since last activity
-      // 2. Total purchases made
-      // 3. Average purchase frequency
-      
-      const lastActivity = client.lastActivity ? new Date(client.lastActivity) : new Date();
-      const daysSinceLastActivity = Math.floor((new Date().getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
-      
-      // Base churn risk on days since last activity
-      let churnRisk = 0;
-      if (daysSinceLastActivity > 90) churnRisk = 85; // High risk if inactive for 3+ months
-      else if (daysSinceLastActivity > 60) churnRisk = 65; // Medium-high risk if inactive for 2+ months
-      else if (daysSinceLastActivity > 30) churnRisk = 45; // Medium risk if inactive for 1+ month
-      else if (daysSinceLastActivity > 14) churnRisk = 25; // Low-medium risk if inactive for 2+ weeks
-      else churnRisk = 10; // Low risk if active recently
-      
-      // Adjust based on purchase history (more purchases = lower churn risk)
-      if (client.totalPurchases > 10) churnRisk *= 0.7; // 30% reduction for high-value clients
-      else if (client.totalPurchases > 5) churnRisk *= 0.85; // 15% reduction for medium-value clients
+    // Adaptive churn risk analysis using the new system
+    const churnData = clientsAtRisk.map(client => {
+      const lastActivity = new Date();
+      lastActivity.setDate(lastActivity.getDate() - client.days_since_last_activity);
       
       return {
-        name: client.name,
-        churnRisk: Math.round(churnRisk),
-        lastActivity: lastActivity.toISOString().split('T')[0]
+        name: `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email,
+        churnRisk: client.risk_score,
+        lastActivity: lastActivity.toISOString().split('T')[0],
+        riskLevel: client.risk_level,
+        lifetimeValue: client.lifetime_value,
+        isSeasonal: false // This would come from the database if we had seasonal detection
       };
     }).sort((a, b) => b.churnRisk - a.churnRisk); // Sort by highest churn risk first
 
@@ -520,6 +558,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
       revenueData,
       licenseData,
       churnData,
+      churnRiskSummary,
+      clientsAtRisk,
       topTracks,
       forecastData,
       genreData,
@@ -1231,16 +1271,39 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
             </CardContent>
           </Card>
 
-          {/* Client Churn Risk */}
+          {/* Adaptive Client Churn Risk */}
           <Card>
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-red-500" />
-                Client Churn Risk Analysis
+                Adaptive Churn Risk Analysis
               </h2>
               <p className="text-sm text-gray-400 mb-4">
-                Risk assessment based on client inactivity and purchase history. Higher percentages indicate clients more likely to stop using the service.
+                Personalized risk assessment that adapts to each client's buying patterns, activity history, and lifetime value.
               </p>
+              
+              {/* Churn Risk Summary */}
+              {analyticsData.churnRiskSummary && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-green-400">{analyticsData.churnRiskSummary.low_risk_count}</div>
+                    <div className="text-xs text-gray-400">Low Risk</div>
+                  </div>
+                  <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-yellow-400">{analyticsData.churnRiskSummary.moderate_risk_count}</div>
+                    <div className="text-xs text-gray-400">Moderate Risk</div>
+                  </div>
+                  <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-orange-400">{analyticsData.churnRiskSummary.high_risk_count}</div>
+                    <div className="text-xs text-gray-400">High Risk</div>
+                  </div>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                    <div className="text-2xl font-bold text-red-400">{analyticsData.churnRiskSummary.critical_risk_count}</div>
+                    <div className="text-xs text-gray-400">Critical Risk</div>
+                  </div>
+                </div>
+              )}
+
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analyticsData.churnData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -1259,9 +1322,26 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                     labelFormatter={(label) => `Client: ${label}`}
                   />
                   <Legend />
-                  <Bar dataKey="churnRisk" fill="#ef4444" name="Churn Risk (%)" />
+                  <Bar 
+                    dataKey="churnRisk" 
+                    fill="#ef4444"
+                    name="Churn Risk (%)" 
+                  />
                 </BarChart>
               </ResponsiveContainer>
+
+              {/* High-Value Clients at Risk */}
+              {analyticsData.churnRiskSummary && analyticsData.churnRiskSummary.high_value_at_risk_count > 0 && (
+                <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <div className="flex items-center gap-2 text-red-400 font-semibold">
+                    <AlertTriangle className="w-4 h-4" />
+                    {analyticsData.churnRiskSummary.high_value_at_risk_count} High-Value Clients at Risk
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    These clients have spent over $1,000 and are showing high churn risk. Consider personalized outreach.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
