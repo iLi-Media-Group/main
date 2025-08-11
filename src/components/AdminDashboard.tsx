@@ -1440,13 +1440,20 @@ if (subscription.price_id) {
                   <td className="py-3 px-4 text-right text-gray-400">-</td>
                   <td className="py-3 px-4 text-right text-gray-400">-</td>
                 </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">Membership Subscriptions</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.membership_subscriptions_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.membership_monthly_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                </tr>
                 <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
                   <td className="py-3 px-4 text-white font-semibold">Totals</td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
-                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count}
+                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count + stats.membership_subscriptions_count}
                   </td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
-                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount).toFixed(2)}
+                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount + stats.membership_monthly_amount).toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
                     {stats.sync_proposals_pending_count + stats.custom_syncs_pending_count}
