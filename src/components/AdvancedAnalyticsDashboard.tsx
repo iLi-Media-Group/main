@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { CalendarDays, FileText, Download, TrendingUp, AlertTriangle, Sparkles, BarChart3, Users, DollarSign, Music, Eye, Target } from 'lucide-react';
+import { CalendarDays, FileText, Download, TrendingUp, AlertTriangle, Sparkles, BarChart3, Users, DollarSign, Music, Eye, Target, X, Maximize2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { supabase } from '../lib/supabase';
@@ -103,6 +103,9 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
   const [selectedCover, setSelectedCover] = useState<string>("");
   const [defaultCover, setDefaultCover] = useState<string>("");
   const [settingDefault, setSettingDefault] = useState(false);
+  
+  // Modal state
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
   // Fetch default cover from report_settings on mount
   useEffect(() => {
@@ -932,12 +935,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         {/* Analytics Grid */}
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {/* Revenue Chart */}
-          <Card className="md:col-span-2 xl:col-span-2">
+          <Card className="md:col-span-2 xl:col-span-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('revenue')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-green-400" />
-                Monthly Revenue & Performance
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-green-400" />
+                  Monthly Revenue & Performance
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={analyticsData.revenueData}>
                   <defs>
@@ -1072,12 +1078,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Licenses Per Client */}
-          <Card>
+          <Card className="cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('licenses')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Users className="w-5 h-5 text-blue-400" />
-                Licenses Per Client
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-400" />
+                  Licenses Per Client
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart layout="vertical" data={analyticsData.licenseData}>
                   <defs>
@@ -1123,12 +1132,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Top Performing Tracks - Made narrower */}
-          <Card className="xl:col-span-1">
+          <Card className="xl:col-span-1 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('tracks')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Music className="w-5 h-5 text-purple-400" />
-                Top Performing Tracks
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Music className="w-5 h-5 text-purple-400" />
+                  Top Performing Tracks
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <div className="space-y-3">
                 {analyticsData.topTracks.map((track, idx) => (
                   <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/10">
@@ -1150,12 +1162,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Genre Distribution - Made wider */}
-          <Card className="xl:col-span-2">
+          <Card className="xl:col-span-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('genres')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-yellow-400" />
-                Genre Distribution
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-yellow-400" />
+                  Genre Distribution
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               {analyticsData.genreData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
@@ -1205,12 +1220,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Revenue Forecast */}
-          <Card>
+          <Card className="cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('forecast')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-500" />
-                Revenue Forecast (Next 3 Months)
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-green-500" />
+                  Revenue Forecast (Next 3 Months)
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analyticsData.forecastData}>
                   <defs>
@@ -1272,12 +1290,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* Adaptive Client Churn Risk */}
-          <Card>
+          <Card className="cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('churn')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                Adaptive Churn Risk Analysis
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-red-500" />
+                  Adaptive Churn Risk Analysis
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <p className="text-sm text-gray-400 mb-4">
                 Personalized risk assessment that adapts to each client's buying patterns, activity history, and lifetime value.
               </p>
@@ -1346,12 +1367,15 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
           </Card>
 
           {/* AI Recommendations */}
-          <Card className="xl:col-span-2">
+          <Card className="xl:col-span-2 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setActiveModal('ai')}>
             <CardContent>
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-violet-400" />
-                AI-Powered Business Insights
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-violet-400" />
+                  AI-Powered Business Insights
+                </h2>
+                <Maximize2 className="w-4 h-4 text-gray-400 hover:text-white transition-colors" />
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <h3 className="text-lg font-semibold text-white mb-3">Strategic Recommendations</h3>
@@ -1382,6 +1406,446 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
             </CardContent>
           </Card>
         </div>
+        
+        {/* Modal System */}
+        {activeModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-slate-800 rounded-xl border border-white/20 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <h2 className="text-2xl font-bold text-white">
+                  {activeModal === 'revenue' && 'Revenue & Performance Analysis'}
+                  {activeModal === 'licenses' && 'Client License Analysis'}
+                  {activeModal === 'tracks' && 'Top Performing Tracks'}
+                  {activeModal === 'genres' && 'Genre Distribution Analysis'}
+                  {activeModal === 'forecast' && 'Revenue Forecast'}
+                  {activeModal === 'churn' && 'Client Churn Risk Analysis'}
+                  {activeModal === 'ai' && 'AI-Powered Business Insights'}
+                </h2>
+                <button
+                  onClick={() => setActiveModal(null)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-6 h-6 text-white" />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                {/* Revenue Modal */}
+                {activeModal === 'revenue' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white/5 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-green-400">
+                          ${analyticsData.revenueData.reduce((sum, row) => sum + (row.total || 0), 0).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-400">Total Revenue</div>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-400">
+                          {analyticsData.revenueData.reduce((sum, row) => sum + (row.licenses || 0), 0)}
+                        </div>
+                        <div className="text-sm text-gray-400">Total Licenses</div>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-purple-400">
+                          {analyticsData.revenueData.reduce((sum, row) => sum + (row.clients || 0), 0)}
+                        </div>
+                        <div className="text-sm text-gray-400">Active Clients</div>
+                      </div>
+                      <div className="bg-white/5 p-4 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-400">
+                          ${(analyticsData.revenueData.reduce((sum, row) => sum + (row.total || 0), 0) / Math.max(1, analyticsData.revenueData.length)).toFixed(2)}
+                        </div>
+                        <div className="text-sm text-gray-400">Avg Monthly Revenue</div>
+                      </div>
+                    </div>
+                    
+                    <div className="h-96">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={analyticsData.revenueData}>
+                          <defs>
+                            <linearGradient id="modalRevenueGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                            </linearGradient>
+                            <linearGradient id="modalLicensesGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
+                          <YAxis stroke="rgba(255,255,255,0.7)" tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#ffffff' }} />
+                          <Legend />
+                          <Area type="monotone" dataKey="total" stackId="1" stroke="#3b82f6" strokeWidth={3} fill="url(#modalRevenueGradient)" fillOpacity={0.8} name="Revenue ($)" />
+                          <Area type="monotone" dataKey="licenses" stackId="2" stroke="#10b981" strokeWidth={3} fill="url(#modalLicensesGradient)" fillOpacity={0.8} name="Licenses" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Revenue Breakdown</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <div className="text-sm text-gray-400">Track Licenses</div>
+                          <div className="text-lg font-bold text-green-400">
+                            ${analyticsData.revenueData.reduce((sum, row) => sum + (row.track_license || 0), 0).toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-400">Sync Proposals</div>
+                          <div className="text-lg font-bold text-blue-400">
+                            ${analyticsData.revenueData.reduce((sum, row) => sum + (row.sync_proposal || 0), 0).toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-400">Custom Sync</div>
+                          <div className="text-lg font-bold text-purple-400">
+                            ${analyticsData.revenueData.reduce((sum, row) => sum + (row.custom_sync || 0), 0).toFixed(2)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-sm text-gray-400">Memberships</div>
+                          <div className="text-lg font-bold text-yellow-400">
+                            ${analyticsData.revenueData.reduce((sum, row) => sum + (row.membership || 0), 0).toFixed(2)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Licenses Modal */}
+                {activeModal === 'licenses' && (
+                  <div className="space-y-6">
+                    <div className="h-96">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart layout="vertical" data={analyticsData.licenseData}>
+                          <defs>
+                            <linearGradient id="modalBarGradient" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                              <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis type="number" stroke="rgba(255,255,255,0.7)" />
+                          <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.7)" />
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#ffffff' }} />
+                          <Bar dataKey="licenses" fill="url(#modalBarGradient)" name="Licenses" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Client License Details</h3>
+                      <div className="space-y-3">
+                        {analyticsData.licenseData.map((client, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                              <div className="font-semibold text-white">{client.name}</div>
+                              <div className="text-sm text-gray-400">Licenses: {client.licenses}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-400">${client.revenue}</div>
+                              <div className="text-sm text-gray-400">Revenue</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tracks Modal */}
+                {activeModal === 'tracks' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {analyticsData.topTracks.map((track, idx) => (
+                        <div key={idx} className="bg-white/5 p-4 rounded-lg border border-white/10">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-gray-400">#{idx + 1}</span>
+                            <span className="text-sm text-green-400 font-bold">${track.revenue}</span>
+                          </div>
+                          <h3 className="font-semibold text-white mb-2 truncate">{track.title}</h3>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Plays:</span>
+                              <span className="text-white">{track.plays}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Licenses:</span>
+                              <span className="text-white">{track.licenses}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Avg Revenue:</span>
+                              <span className="text-green-400">${(track.revenue / Math.max(1, track.licenses)).toFixed(2)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Performance Summary</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                          <div className="text-2xl font-bold text-green-400">
+                            ${analyticsData.topTracks.reduce((sum, track) => sum + track.revenue, 0).toFixed(2)}
+                          </div>
+                          <div className="text-sm text-gray-400">Total Revenue</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-blue-400">
+                            {analyticsData.topTracks.reduce((sum, track) => sum + track.licenses, 0)}
+                          </div>
+                          <div className="text-sm text-gray-400">Total Licenses</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-400">
+                            {analyticsData.topTracks.reduce((sum, track) => sum + track.plays, 0)}
+                          </div>
+                          <div className="text-sm text-gray-400">Total Plays</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-yellow-400">
+                            {analyticsData.topTracks.length}
+                          </div>
+                          <div className="text-sm text-gray-400">Top Tracks</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Genres Modal */}
+                {activeModal === 'genres' && (
+                  <div className="space-y-6">
+                    <div className="h-96">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={analyticsData.genreData}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                          >
+                            {analyticsData.genreData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#ffffff' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Genre Performance Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {analyticsData.genreData.map((genre, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div className="flex items-center gap-3">
+                              <div className="w-4 h-4 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></div>
+                              <span className="font-semibold text-white">{genre.name}</span>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-400">{genre.value}</div>
+                              <div className="text-sm text-gray-400">Sales</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Forecast Modal */}
+                {activeModal === 'forecast' && (
+                  <div className="space-y-6">
+                    <div className="h-96">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsData.forecastData}>
+                          <defs>
+                            <linearGradient id="modalProjectedGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                              <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                            </linearGradient>
+                            <linearGradient id="modalActualGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                              <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
+                          <YAxis stroke="rgba(255,255,255,0.7)" tickFormatter={(value) => `$${value.toLocaleString()}`} />
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.95)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '12px', color: '#ffffff' }} />
+                          <Legend />
+                          <Bar dataKey="projected" fill="url(#modalProjectedGradient)" name="Projected ($)" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="actual" fill="url(#modalActualGradient)" name="Actual ($)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Forecast Analysis</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {analyticsData.forecastData.map((forecast, idx) => (
+                          <div key={idx} className="p-4 bg-white/5 rounded-lg">
+                            <div className="text-sm text-gray-400 mb-2">{forecast.month}</div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between">
+                                <span className="text-yellow-400">Projected:</span>
+                                <span className="text-white">${forecast.projected.toFixed(2)}</span>
+                              </div>
+                              {forecast.actual !== null && (
+                                <div className="flex justify-between">
+                                  <span className="text-green-400">Actual:</span>
+                                  <span className="text-white">${forecast.actual.toFixed(2)}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Churn Modal */}
+                {activeModal === 'churn' && (
+                  <div className="space-y-6">
+                    {analyticsData.churnRiskSummary && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+                          <div className="text-3xl font-bold text-green-400">{analyticsData.churnRiskSummary.low_risk_count}</div>
+                          <div className="text-sm text-gray-400">Low Risk</div>
+                        </div>
+                        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
+                          <div className="text-3xl font-bold text-yellow-400">{analyticsData.churnRiskSummary.moderate_risk_count}</div>
+                          <div className="text-sm text-gray-400">Moderate Risk</div>
+                        </div>
+                        <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                          <div className="text-3xl font-bold text-orange-400">{analyticsData.churnRiskSummary.high_risk_count}</div>
+                          <div className="text-sm text-gray-400">High Risk</div>
+                        </div>
+                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                          <div className="text-3xl font-bold text-red-400">{analyticsData.churnRiskSummary.critical_risk_count}</div>
+                          <div className="text-sm text-gray-400">Critical Risk</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="h-96">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsData.churnData} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis type="number" domain={[0, 100]} stroke="rgba(255,255,255,0.7)" />
+                          <YAxis type="category" dataKey="name" stroke="rgba(255,255,255,0.7)" />
+                          <Tooltip contentStyle={{ backgroundColor: 'rgba(0,0,0,0.9)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', color: '#ffffff' }} formatter={(value: any) => [`${value}%`, 'Churn Risk']} />
+                          <Bar dataKey="churnRisk" fill="#ef4444" name="Churn Risk (%)" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Clients at Risk</h3>
+                      <div className="space-y-3">
+                        {analyticsData.clientsAtRisk.map((client, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                              <div className="font-semibold text-white">{client.first_name} {client.last_name}</div>
+                              <div className="text-sm text-gray-400">{client.email}</div>
+                              <div className="text-xs text-gray-500">{client.recommended_action}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-lg font-bold ${client.risk_score > 70 ? 'text-red-400' : client.risk_score > 40 ? 'text-orange-400' : 'text-yellow-400'}`}>
+                                {client.risk_score}%
+                              </div>
+                              <div className="text-sm text-gray-400">{client.risk_level}</div>
+                              <div className="text-xs text-gray-500">${client.lifetime_value}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Modal */}
+                {activeModal === 'ai' && (
+                  <div className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <div className="bg-white/5 p-6 rounded-lg">
+                        <h3 className="text-lg font-semibold text-white mb-4">Strategic Recommendations</h3>
+                        <ul className="space-y-3">
+                          {aiSuggestions.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-3">
+                              <div className="w-2 h-2 bg-violet-400 rounded-full mt-2 flex-shrink-0"></div>
+                              <span className="text-white/90">{item.suggestion}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                      
+                      <div className="bg-white/5 p-6 rounded-lg">
+                        <h3 className="text-lg font-semibold text-white mb-4">Key Performance Metrics</h3>
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                              <div className="text-sm text-gray-400">Total Revenue</div>
+                              <div className="text-lg font-bold text-green-400">${analyticsData.keyMetrics.totalRevenue.toFixed(2)}</div>
+                            </div>
+                            <DollarSign className="w-8 h-8 text-green-400" />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                              <div className="text-sm text-gray-400">Active Clients</div>
+                              <div className="text-lg font-bold text-blue-400">{analyticsData.keyMetrics.activeClients}</div>
+                            </div>
+                            <Users className="w-8 h-8 text-blue-400" />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                            <div>
+                              <div className="text-sm text-gray-400">Retention Rate</div>
+                              <div className="text-lg font-bold text-purple-400">{analyticsData.keyMetrics.retentionRate}%</div>
+                            </div>
+                            <Target className="w-8 h-8 text-purple-400" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/5 p-6 rounded-lg">
+                      <h3 className="text-lg font-semibold text-white mb-4">Business Insights</h3>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <div className="text-center p-4 bg-white/5 rounded-lg">
+                          <TrendingUp className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                          <div className="text-sm text-gray-400">Growth Trend</div>
+                          <div className="text-lg font-bold text-white">Positive</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded-lg">
+                          <AlertTriangle className="w-8 h-8 text-yellow-400 mx-auto mb-2" />
+                          <div className="text-sm text-gray-400">Risk Level</div>
+                          <div className="text-lg font-bold text-white">Low</div>
+                        </div>
+                        <div className="text-center p-4 bg-white/5 rounded-lg">
+                          <Sparkles className="w-8 h-8 text-violet-400 mx-auto mb-2" />
+                          <div className="text-sm text-gray-400">Opportunity</div>
+                          <div className="text-lg font-bold text-white">High</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Cover Picker - at the bottom */}
         <div className="mt-8 mb-2">
           <h3 className="text-lg font-semibold text-white mb-2">Report Cover Pages</h3>
