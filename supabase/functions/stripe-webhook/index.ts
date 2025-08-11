@@ -355,12 +355,12 @@ Deno.serve(async (req) => {
                 const syncFeeRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
                 const producerAmount = (amount_total / 100) * (syncFeeRate / 100);
 
-                // Update producer balance
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
                 const { error: balanceError } = await supabase
                   .from('producer_balances')
                   .upsert({
                     balance_producer_id: proposalData.track.track_producer_id,
-                    pending_balance: producerAmount,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
                     available_balance: 0,
                     lifetime_earnings: producerAmount
                   }, {
@@ -458,12 +458,12 @@ Deno.serve(async (req) => {
                 const customSyncRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
                 const producerAmount = (amount_total / 100) * (customSyncRate / 100);
 
-                // Update producer balance
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
                 const { error: balanceError } = await supabase
                   .from('producer_balances')
                   .upsert({
                     balance_producer_id: submissionData.producer_id,
-                    pending_balance: producerAmount,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
                     available_balance: 0,
                     lifetime_earnings: producerAmount
                   }, {
@@ -591,12 +591,12 @@ Deno.serve(async (req) => {
                 const standardRate = compensationSettings?.standard_rate || 70; // Default to 70%
                 const producerAmount = (amount_total / 100) * (standardRate / 100);
 
-                // Update producer balance
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
                 const { error: balanceError } = await supabase
                   .from('producer_balances')
                   .upsert({
                     balance_producer_id: trackData.track_producer_id,
-                    pending_balance: producerAmount,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
                     available_balance: 0,
                     lifetime_earnings: producerAmount
                   }, {

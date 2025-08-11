@@ -678,15 +678,15 @@ if (subscription.price_id) {
             }
           }
 
-          // Fetch custom sync requests for these producers (where they are the preferred producer)
+          // Fetch custom sync requests for these producers (where they are the selected producer)
           let customSyncRequestsData: any[] = [];
           const producerIds = producersNotInAnalytics.map(p => p.id);
           if (producerIds.length > 0) {
             const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
               .from('custom_sync_requests')
-              .select('id, preferred_producer_id, sync_fee, status')
-              .in('preferred_producer_id', producerIds)
-              .eq('status', 'completed');
+              .select('id, selected_producer_id, sync_fee, status, payment_status')
+              .in('selected_producer_id', producerIds)
+              .eq('payment_status', 'paid');
 
             if (customSyncRequestsError) {
               console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
@@ -701,7 +701,7 @@ if (subscription.price_id) {
             const producerTrackIds = producerTracks.map(t => t.id);
             const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
             const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
-            const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
+            const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.selected_producer_id === producer.id);
 
             producerAnalyticsMap[producer.id] = {
               total_tracks: producerTracks.length,
