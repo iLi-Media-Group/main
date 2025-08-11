@@ -98,6 +98,7 @@ export function TrackUploadForm() {
 
   // File states (not persisted in localStorage)
   const [audioFile, setAudioFile] = useState<File | null>(null);
+  const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
@@ -1378,44 +1379,108 @@ export function TrackUploadForm() {
               <div className="space-y-4 max-h-96 overflow-y-auto">
                 {/* Group media types by category with hierarchical display */}
                 {(() => {
-                  const mediaTypesByCategory = mediaTypes.reduce((acc, mediaType) => {
+                  // Separate parent and child media types
+                  const parentTypes = mediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
+                  const childTypes = mediaTypes.filter(mt => mt.parent_id !== null);
+                  
+                  // Group parent types by category
+                  const parentTypesByCategory = parentTypes.reduce((acc, mediaType) => {
                     if (!acc[mediaType.category]) {
                       acc[mediaType.category] = [];
                     }
                     acc[mediaType.category].push(mediaType);
                     return acc;
-                  }, {} as Record<string, typeof mediaTypes>);
+                  }, {} as Record<string, typeof parentTypes>);
 
-                  return Object.entries(mediaTypesByCategory).map(([category, types]) => (
+                  return Object.entries(parentTypesByCategory).map(([category, types]) => (
                     <div key={category} className="bg-white/5 rounded-lg p-4">
                       <h3 className="text-white font-medium mb-3">{category}</h3>
                       <div className="space-y-3">
-                        {types.map((mediaType) => (
-                          <div key={mediaType.id} className="space-y-2">
-                            <label className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                checked={formData.selectedMediaUsage.includes(mediaType.full_name)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    updateFormData({ 
-                                      selectedMediaUsage: [...formData.selectedMediaUsage, mediaType.full_name] 
-                                    });
-                                  } else {
-                                    updateFormData({
-                                      selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType.full_name)
-                                    });
-                                  }
-                                }}
-                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                disabled={isSubmitting}
-                              />
-                              <span className={`text-gray-300 text-sm ${mediaType.parent_id ? 'ml-4' : 'font-medium'}`}>
-                                {mediaType.full_name}
-                              </span>
-                            </label>
-                          </div>
-                        ))}
+                        {types.map((parentType) => {
+                          const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
+                          const isExpanded = expandedMediaCategories.has(parentType.id);
+                          const hasChildren = childTypesForParent.length > 0;
+                          
+                          return (
+                            <div key={parentType.id} className="space-y-2">
+                              <label className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.selectedMediaUsage.includes(parentType.name)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      // Add parent and all its children
+                                      const newSelection = [...formData.selectedMediaUsage, parentType.name];
+                                      childTypesForParent.forEach(child => {
+                                        newSelection.push(child.full_name);
+                                      });
+                                      updateFormData({ selectedMediaUsage: newSelection });
+                                      
+                                      // Expand the category to show children
+                                      if (hasChildren) {
+                                        setExpandedMediaCategories(prev => new Set([...prev, parentType.id]));
+                                      }
+                                    } else {
+                                      // Remove parent and all its children
+                                      const newSelection = formData.selectedMediaUsage.filter(u => 
+                                        u !== parentType.name && 
+                                        !childTypesForParent.some(child => child.full_name === u)
+                                      );
+                                      updateFormData({ selectedMediaUsage: newSelection });
+                                      
+                                      // Collapse the category
+                                      setExpandedMediaCategories(prev => {
+                                        const newSet = new Set(prev);
+                                        newSet.delete(parentType.id);
+                                        return newSet;
+                                      });
+                                    }
+                                  }}
+                                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                  disabled={isSubmitting}
+                                />
+                                <span className="text-gray-300 text-sm font-medium">
+                                  {parentType.name}
+                                </span>
+                                {hasChildren && (
+                                  <span className="text-xs text-gray-500">
+                                    ({childTypesForParent.length} sub-types)
+                                  </span>
+                                )}
+                              </label>
+                              
+                              {/* Show child types when parent is checked and expanded */}
+                              {hasChildren && isExpanded && (
+                                <div className="ml-6 space-y-2">
+                                  {childTypesForParent.map((childType) => (
+                                    <label key={childType.id} className="flex items-center space-x-2">
+                                      <input
+                                        type="checkbox"
+                                        checked={formData.selectedMediaUsage.includes(childType.full_name)}
+                                        onChange={(e) => {
+                                          if (e.target.checked) {
+                                            updateFormData({ 
+                                              selectedMediaUsage: [...formData.selectedMediaUsage, childType.full_name] 
+                                            });
+                                          } else {
+                                            updateFormData({
+                                              selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== childType.full_name)
+                                            });
+                                          }
+                                        }}
+                                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                        disabled={isSubmitting}
+                                      />
+                                      <span className="text-gray-300 text-sm">
+                                        {childType.name}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   ));
