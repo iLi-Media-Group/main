@@ -1261,47 +1261,92 @@ export function TrackUploadForm() {
           {/* Moods Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
-            <div className="space-y-2">
-              {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => (
-                <div key={mainMood} className="border-b border-blue-700 pb-2 mb-2">
-                  <button
-                    type="button"
-                    className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
-                    onClick={() => setExpandedMoods(expandedMoods.includes(mainMood)
-                      ? expandedMoods.filter(m => m !== mainMood)
-                      : [...expandedMoods, mainMood])}
-                  >
-                    <span>{mainMood}</span>
-                    <span>{expandedMoods.includes(mainMood) ? '▲' : '▼'}</span>
-                  </button>
-                  {expandedMoods.includes(mainMood) && (
-                    <div className="pl-4 pt-2 grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {subMoods.map((subMood: string) => (
-                        <label key={subMood} className="flex items-center space-x-2 text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={formData.selectedMoods.includes(subMood)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateFormData({ 
-                                  selectedMoods: [...formData.selectedMoods, subMood] 
-                                });
-                              } else {
-                                updateFormData({
-                                  selectedMoods: formData.selectedMoods.filter((m) => m !== subMood)
-                                });
+            <div className="space-y-4">
+              {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => {
+                const isExpanded = expandedMoods.includes(mainMood);
+                const selectedMoodsInCategory = formData.selectedMoods.filter(mood => subMoods.includes(mood));
+                const allSelected = selectedMoodsInCategory.length === subMoods.length;
+                const someSelected = selectedMoodsInCategory.length > 0 && selectedMoodsInCategory.length < subMoods.length;
+                
+                return (
+                  <div key={mainMood} className="bg-white/5 rounded-lg p-4">
+                    <h3 className="text-white font-medium mb-3">{mainMood}</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={(input) => {
+                            if (input) input.indeterminate = someSelected;
+                          }}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Select all moods in this category
+                              const newSelection = [...formData.selectedMoods];
+                              subMoods.forEach(mood => {
+                                if (!newSelection.includes(mood)) {
+                                  newSelection.push(mood);
+                                }
+                              });
+                              updateFormData({ selectedMoods: newSelection });
+                              
+                              // Expand the category to show individual moods
+                              if (!isExpanded) {
+                                setExpandedMoods([...expandedMoods, mainMood]);
                               }
-                            }}
-                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                            disabled={isSubmitting}
-                          />
-                          <span className="text-sm">{subMood}</span>
-                        </label>
-                      ))}
+                            } else {
+                              // Deselect all moods in this category
+                              const newSelection = formData.selectedMoods.filter(mood => !subMoods.includes(mood));
+                              updateFormData({ selectedMoods: newSelection });
+                              
+                              // Collapse the category
+                              setExpandedMoods(expandedMoods.filter(m => m !== mainMood));
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-gray-300 text-sm font-medium">
+                          {mainMood}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          ({subMoods.length} moods)
+                        </span>
+                      </label>
+                      
+                      {/* Show individual moods when category is expanded */}
+                      {isExpanded && (
+                        <div className="ml-6 space-y-2">
+                          {subMoods.map((subMood: string) => (
+                            <label key={subMood} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedMoods.includes(subMood)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    updateFormData({ 
+                                      selectedMoods: [...formData.selectedMoods, subMood] 
+                                    });
+                                  } else {
+                                    updateFormData({
+                                      selectedMoods: formData.selectedMoods.filter((m) => m !== subMood)
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={isSubmitting}
+                              />
+                              <span className="text-gray-300 text-sm">
+                                {subMood}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1323,46 +1368,95 @@ export function TrackUploadForm() {
                   groupedInstruments[categoryName].push(instrument);
                 });
 
-                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
-                  <div key={categoryName} className="border-b border-blue-700 pb-4 mb-4">
-                    <button
-                      type="button"
-                      className="w-full flex justify-between items-center text-left text-white font-medium py-2 focus:outline-none"
-                      onClick={() => setExpandedInstruments(expandedInstruments.includes(categoryName)
-                        ? expandedInstruments.filter(c => c !== categoryName)
-                        : [...expandedInstruments, categoryName])}
-                    >
-                      <span>{categoryName}</span>
-                      <span>{expandedInstruments.includes(categoryName) ? '▲' : '▼'}</span>
-                    </button>
-                    {expandedInstruments.includes(categoryName) && (
-                      <div className="pl-4 pt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {categoryInstruments.map((instrument) => (
-                          <label key={instrument.id} className="flex items-center space-x-2 text-gray-300">
-                            <input
-                              type="checkbox"
-                              checked={(formData.selectedInstruments || []).includes(instrument.display_name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  updateFormData({ 
-                                    selectedInstruments: [...(formData.selectedInstruments || []), instrument.display_name] 
-                                  });
-                                } else {
-                                  updateFormData({
-                                    selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== instrument.display_name)
-                                  });
+                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => {
+                  const isExpanded = expandedInstruments.includes(categoryName);
+                  const selectedInstrumentsInCategory = (formData.selectedInstruments || []).filter(instrumentName => 
+                    categoryInstruments.some(instrument => instrument.display_name === instrumentName)
+                  );
+                  const allSelected = selectedInstrumentsInCategory.length === categoryInstruments.length;
+                  const someSelected = selectedInstrumentsInCategory.length > 0 && selectedInstrumentsInCategory.length < categoryInstruments.length;
+                  
+                  return (
+                    <div key={categoryName} className="bg-white/5 rounded-lg p-4">
+                      <h3 className="text-white font-medium mb-3">{categoryName}</h3>
+                      <div className="space-y-3">
+                        <label className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={allSelected}
+                            ref={(input) => {
+                              if (input) input.indeterminate = someSelected;
+                            }}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                // Select all instruments in this category
+                                const newSelection = [...(formData.selectedInstruments || [])];
+                                categoryInstruments.forEach(instrument => {
+                                  if (!newSelection.includes(instrument.display_name)) {
+                                    newSelection.push(instrument.display_name);
+                                  }
+                                });
+                                updateFormData({ selectedInstruments: newSelection });
+                                
+                                // Expand the category to show individual instruments
+                                if (!isExpanded) {
+                                  setExpandedInstruments([...expandedInstruments, categoryName]);
                                 }
-                              }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                              disabled={isSubmitting}
-                            />
-                            <span className="text-sm">{instrument.display_name}</span>
-                          </label>
-                        ))}
+                              } else {
+                                // Deselect all instruments in this category
+                                const newSelection = (formData.selectedInstruments || []).filter(instrumentName => 
+                                  !categoryInstruments.some(instrument => instrument.display_name === instrumentName)
+                                );
+                                updateFormData({ selectedInstruments: newSelection });
+                                
+                                // Collapse the category
+                                setExpandedInstruments(expandedInstruments.filter(c => c !== categoryName));
+                              }
+                            }}
+                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                            disabled={isSubmitting}
+                          />
+                          <span className="text-gray-300 text-sm font-medium">
+                            {categoryName}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            ({categoryInstruments.length} instruments)
+                          </span>
+                        </label>
+                        
+                        {/* Show individual instruments when category is expanded */}
+                        {isExpanded && (
+                          <div className="ml-6 space-y-2">
+                            {categoryInstruments.map((instrument) => (
+                              <label key={instrument.id} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  checked={(formData.selectedInstruments || []).includes(instrument.display_name)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      updateFormData({ 
+                                        selectedInstruments: [...(formData.selectedInstruments || []), instrument.display_name] 
+                                      });
+                                    } else {
+                                      updateFormData({
+                                        selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== instrument.display_name)
+                                      });
+                                    }
+                                  }}
+                                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                  disabled={isSubmitting}
+                                />
+                                <span className="text-gray-300 text-sm">
+                                  {instrument.display_name}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ));
+                    </div>
+                  );
+                });
               })()}
             </div>
           </div>
