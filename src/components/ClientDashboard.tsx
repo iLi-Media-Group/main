@@ -1750,14 +1750,31 @@ const getPlanLevel = (plan: string): number => {
                   </div>
                   {request.payment_status === 'paid' && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {request.mp3_url && (
-                        <button
-                          onClick={() => handleDownloadSupabase('track-audio', request.mp3_url || '', `${request.project_title}_MP3.mp3`)}
-                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-                        >
-                          Download MP3
-                        </button>
-                      )}
+                      {/* MP3 Download - Use producer's uploaded file from sync_submissions */}
+                      {(() => {
+                        // Find the selected submission for this request
+                        const selectedSub = customSyncLicenses.find(license => 
+                          license.type === 'custom_sync' && license.data.id === request.id
+                        );
+                        
+                        if (selectedSub?.track?.mp3Url) {
+                          return (
+                            <button
+                              onClick={() => {
+                                const match = selectedSub.track.mp3Url.match(/sync-submissions\/(.+)$/);
+                                const filePath = match ? match[1] : selectedSub.track.mp3Url;
+                                handleDownloadSupabase('sync-submissions', filePath, `${request.project_title}_MP3.mp3`);
+                              }}
+                              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+                            >
+                              Download MP3
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      {/* Additional files - these would be uploaded separately by producer if needed */}
                       {request.trackouts_url && (
                         <button
                           onClick={() => handleDownloadSupabase('trackouts', request.trackouts_url || '', `${request.project_title}_Trackouts.zip`)}

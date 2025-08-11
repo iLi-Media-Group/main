@@ -4,11 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { AlertTriangle, CheckCircle, Building2, FileText, Clock, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from './ui/alert';
 
 interface BusinessInfo {
   business_name: string;
@@ -172,13 +168,16 @@ export function BusinessVerificationForm() {
         {verificationStatus.badge}
       </div>
 
-      <Alert>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Net Payment Terms:</strong> To qualify for net30, net60, or net90 payment terms, 
-          you must provide verified business information including business name, structure, and EIN number.
-        </AlertDescription>
-      </Alert>
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div className="text-sm text-yellow-800">
+            <p className="font-medium mb-1"><strong>Net Payment Terms:</strong></p>
+            <p>To qualify for net30, net60, or net90 payment terms, 
+            you must provide verified business information including business name, structure, and EIN number.</p>
+          </div>
+        </div>
+      </div>
 
       <div className="flex items-start gap-4">
         {verificationStatus.icon}
@@ -199,71 +198,77 @@ export function BusinessVerificationForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="business_name">Business Name *</Label>
-                <Input
-                  id="business_name"
-                  value={businessInfo.business_name}
-                  onChange={(e) => setBusinessInfo(prev => ({ ...prev, business_name: e.target.value }))}
-                  placeholder="Enter your business name"
-                  disabled={businessInfo.business_verified}
-                />
-              </div>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <label htmlFor="business_name" className="block text-sm font-medium text-gray-700">Business Name *</label>
+                 <input
+                   id="business_name"
+                   type="text"
+                   value={businessInfo.business_name}
+                   onChange={(e) => setBusinessInfo(prev => ({ ...prev, business_name: e.target.value }))}
+                   placeholder="Enter your business name"
+                   disabled={businessInfo.business_verified}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                 />
+               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="business_structure">Business Structure *</Label>
-                <Select
-                  value={businessInfo.business_structure}
-                  onValueChange={(value) => setBusinessInfo(prev => ({ ...prev, business_structure: value }))}
-                  disabled={businessInfo.business_verified}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select business structure" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LLC">LLC</SelectItem>
-                    <SelectItem value="Corporation">Corporation</SelectItem>
-                    <SelectItem value="S-Corporation">S-Corporation</SelectItem>
-                    <SelectItem value="Partnership">Partnership</SelectItem>
-                    <SelectItem value="Sole Proprietorship">Sole Proprietorship</SelectItem>
-                    <SelectItem value="Non-Profit">Non-Profit</SelectItem>
-                    <SelectItem value="Government">Government</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+               <div className="space-y-2">
+                 <label htmlFor="business_structure" className="block text-sm font-medium text-gray-700">Business Structure *</label>
+                 <select
+                   id="business_structure"
+                   value={businessInfo.business_structure}
+                   onChange={(e) => setBusinessInfo(prev => ({ ...prev, business_structure: e.target.value }))}
+                   disabled={businessInfo.business_verified}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+                 >
+                   <option value="">Select business structure</option>
+                   <option value="LLC">LLC</option>
+                   <option value="Corporation">Corporation</option>
+                   <option value="S-Corporation">S-Corporation</option>
+                   <option value="Partnership">Partnership</option>
+                   <option value="Sole Proprietorship">Sole Proprietorship</option>
+                   <option value="Non-Profit">Non-Profit</option>
+                   <option value="Government">Government</option>
+                   <option value="Other">Other</option>
+                 </select>
+               </div>
+             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ein_number">EIN Number *</Label>
-              <Input
-                id="ein_number"
-                value={businessInfo.ein_number}
-                onChange={(e) => setBusinessInfo(prev => ({ ...prev, ein_number: e.target.value }))}
-                placeholder="XX-XXXXXXX"
-                disabled={businessInfo.business_verified}
-              />
-              <p className="text-sm text-gray-500">
-                Enter your Employer Identification Number in format XX-XXXXXXX
-              </p>
-            </div>
+             <div className="space-y-2">
+               <label htmlFor="ein_number" className="block text-sm font-medium text-gray-700">EIN Number *</label>
+               <input
+                 id="ein_number"
+                 type="text"
+                 value={businessInfo.ein_number}
+                 onChange={(e) => setBusinessInfo(prev => ({ ...prev, ein_number: e.target.value }))}
+                 placeholder="XX-XXXXXXX"
+                 disabled={businessInfo.business_verified}
+                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500"
+               />
+               <p className="text-sm text-gray-500">
+                 Enter your Employer Identification Number in format XX-XXXXXXX
+               </p>
+             </div>
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+                         {error && (
+               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                 <div className="flex items-start gap-3">
+                   <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                   <div className="text-sm text-red-800">{error}</div>
+                 </div>
+               </div>
+             )}
 
-            {success && (
-              <Alert>
-                <CheckCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Business information updated successfully! Your information will be reviewed for verification.
-                </AlertDescription>
-              </Alert>
-            )}
+             {success && (
+               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                 <div className="flex items-start gap-3">
+                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                   <div className="text-sm text-green-800">
+                     Business information updated successfully! Your information will be reviewed for verification.
+                   </div>
+                 </div>
+               </div>
+             )}
 
             {!businessInfo.business_verified && (
               <Button 

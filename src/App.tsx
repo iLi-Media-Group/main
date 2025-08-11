@@ -74,6 +74,8 @@ import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import SearchTest from './components/SearchTest';
 import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
+import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
+import { BusinessVerificationForm } from './components/BusinessVerificationForm';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -477,6 +479,22 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerResourcesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/file-releases" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerFileReleaseManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/business-verification" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <BusinessVerificationForm />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
