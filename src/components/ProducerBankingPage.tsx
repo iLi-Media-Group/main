@@ -373,8 +373,7 @@ export function ProducerBankingPage() {
                   (out of {bucketPercentage.totalLicenses} total licenses across all producers)
                 </p>
                 <p>
-                  <strong>Estimated Earnings:</strong> ${bucketPercentage.estimatedEarnings.toFixed(2)} 
-                  from membership revenue sharing
+                  <strong>Estimated Earnings:</strong> ${bucketPercentage.estimatedEarnings.toFixed(2)} from membership revenue sharing
                 </p>
                 <p className="text-xs text-gray-400 mt-3">
                   The 45% producer bucket is distributed among all producers based on their track license activity. 

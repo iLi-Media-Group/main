@@ -7,44 +7,20 @@ RETURNS INTEGER AS $$
 DECLARE
     last_activity_date TIMESTAMP WITH TIME ZONE;
 BEGIN
-    -- Get the most recent activity from various sources
-    SELECT GREATEST(
-        COALESCE(last_sign_in_at, '1970-01-01'::timestamp),
-        COALESCE(last_search_date, '1970-01-01'::timestamp),
-        COALESCE(last_preview_date, '1970-01-01'::timestamp),
-        COALESCE(last_purchase_date, '1970-01-01'::timestamp)
-    ) INTO last_activity_date
-    FROM profiles p
-    LEFT JOIN (
+    -- Get the most recent purchase activity
+    SELECT COALESCE(last_purchase_date, '1970-01-01'::timestamp) INTO last_activity_date
+    FROM (
         SELECT 
-            user_id,
-            MAX(created_at) as last_search_date
-        FROM search_logs 
-        WHERE user_id = client_id
-        GROUP BY user_id
-    ) sl ON p.id = sl.user_id
-    LEFT JOIN (
-        SELECT 
-            user_id,
-            MAX(created_at) as last_preview_date
-        FROM track_previews 
-        WHERE user_id = client_id
-        GROUP BY user_id
-    ) tp ON p.id = tp.user_id
-    LEFT JOIN (
-        SELECT 
-            user_id,
+            client_id,
             MAX(created_at) as last_purchase_date
         FROM (
-            SELECT user_id, created_at FROM licenses WHERE user_id = client_id
+            SELECT client_id, created_at FROM sync_proposals WHERE client_id = client_id AND payment_status = 'paid'
             UNION ALL
-            SELECT user_id, created_at FROM sync_proposals WHERE user_id = client_id AND payment_status = 'paid'
-            UNION ALL
-            SELECT client_id as user_id, created_at FROM custom_sync_requests WHERE client_id = client_id AND payment_status = 'paid'
+            SELECT client_id, created_at FROM custom_sync_requests WHERE client_id = client_id AND payment_status = 'paid'
         ) all_purchases
-        GROUP BY user_id
-    ) ap ON p.id = ap.user_id
-    WHERE p.id = client_id;
+        GROUP BY client_id
+    ) ap
+    WHERE ap.client_id = client_id;
     
     RETURN EXTRACT(EPOCH FROM (NOW() - last_activity_date)) / 86400;
 END;
@@ -62,22 +38,12 @@ RETURNS TABLE(
 BEGIN
     RETURN QUERY
     WITH all_purchases AS (
-        -- Single track licenses
-        SELECT 
-            created_at as purchase_date,
-            amount as purchase_amount
-        FROM licenses 
-        WHERE user_id = client_id 
-        AND created_at >= NOW() - INTERVAL '12 months'
-        
-        UNION ALL
-        
         -- Sync proposals
         SELECT 
             created_at as purchase_date,
-            amount as purchase_amount
+            COALESCE(final_amount, negotiated_amount, sync_fee) as purchase_amount
         FROM sync_proposals 
-        WHERE user_id = client_id 
+        WHERE client_id = client_id 
         AND payment_status = 'paid'
         AND created_at >= NOW() - INTERVAL '12 months'
         
@@ -126,17 +92,10 @@ DECLARE
 BEGIN
     SELECT COALESCE(SUM(total_amount), 0) INTO total_value
     FROM (
-        -- Single track licenses
-        SELECT amount as total_amount
-        FROM licenses 
-        WHERE user_id = client_id
-        
-        UNION ALL
-        
         -- Sync proposals
-        SELECT amount as total_amount
+        SELECT COALESCE(final_amount, negotiated_amount, sync_fee) as total_amount
         FROM sync_proposals 
-        WHERE user_id = client_id 
+        WHERE client_id = client_id 
         AND payment_status = 'paid'
         
         UNION ALL
@@ -158,29 +117,35 @@ RETURNS BOOLEAN AS $$
 DECLARE
     seasonal_pattern BOOLEAN := FALSE;
     purchase_months INTEGER[];
-    month_counts INTEGER[];
+    holiday_count INTEGER := 0;
+    summer_count INTEGER := 0;
+    total_purchases INTEGER;
 BEGIN
     -- Get purchase months for the last 2 years
     SELECT ARRAY_AGG(EXTRACT(MONTH FROM purchase_date)::INTEGER ORDER BY purchase_date)
     INTO purchase_months
     FROM (
-        SELECT created_at as purchase_date FROM licenses WHERE user_id = client_id AND created_at >= NOW() - INTERVAL '2 years'
-        UNION ALL
-        SELECT created_at as purchase_date FROM sync_proposals WHERE user_id = client_id AND payment_status = 'paid' AND created_at >= NOW() - INTERVAL '2 years'
+        SELECT created_at as purchase_date FROM sync_proposals WHERE client_id = client_id AND payment_status = 'paid' AND created_at >= NOW() - INTERVAL '2 years'
         UNION ALL
         SELECT created_at as purchase_date FROM custom_sync_requests WHERE client_id = client_id AND payment_status = 'paid' AND created_at >= NOW() - INTERVAL '2 years'
     ) all_purchases;
     
     -- If we have enough data, check for seasonal patterns
     IF ARRAY_LENGTH(purchase_months, 1) >= 6 THEN
-        -- Check if purchases are concentrated in specific months (e.g., holiday seasons)
-        -- This is a simplified check - you could make this more sophisticated
-        SELECT COUNT(*) INTO month_counts[1] FROM UNNEST(purchase_months) WHERE UNNEST IN (11, 12); -- Nov/Dec
-        SELECT COUNT(*) INTO month_counts[2] FROM UNNEST(purchase_months) WHERE UNNEST IN (6, 7, 8); -- Summer
+        total_purchases := ARRAY_LENGTH(purchase_months, 1);
+        
+        -- Count holiday season purchases (Nov/Dec)
+        SELECT COUNT(*) INTO holiday_count 
+        FROM UNNEST(purchase_months) AS month 
+        WHERE month IN (11, 12);
+        
+        -- Count summer season purchases (Jun/Jul/Aug)
+        SELECT COUNT(*) INTO summer_count 
+        FROM UNNEST(purchase_months) AS month 
+        WHERE month IN (6, 7, 8);
         
         -- If more than 50% of purchases are in seasonal months, consider them seasonal
-        IF month_counts[1] > ARRAY_LENGTH(purchase_months, 1) * 0.5 OR 
-           month_counts[2] > ARRAY_LENGTH(purchase_months, 1) * 0.5 THEN
+        IF holiday_count > total_purchases * 0.5 OR summer_count > total_purchases * 0.5 THEN
             seasonal_pattern := TRUE;
         END IF;
     END IF;
@@ -190,7 +155,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Main adaptive churn risk calculation function
-CREATE OR REPLACE FUNCTION calculate_adaptive_churn_risk(client_id UUID)
+CREATE OR REPLACE FUNCTION calculate_adaptive_churn_risk(input_client_id UUID)
 RETURNS TABLE(
     client_id UUID,
     risk_score INTEGER,
@@ -223,7 +188,7 @@ DECLARE
     final_risk INTEGER;
 BEGIN
     -- Get all the required data
-    SELECT get_days_since_last_activity(client_id) INTO dsla;
+    SELECT get_days_since_last_activity(input_client_id) INTO dsla;
     
     SELECT 
         ph.purchase_count,
@@ -231,10 +196,10 @@ BEGIN
         ph.avg_purchase_interval,
         ph.days_since_last_purchase
     INTO pl12, total_spent_12mo, adbp, dslp
-    FROM get_purchase_history_12mo(client_id) ph;
+    FROM get_purchase_history_12mo(input_client_id) ph;
     
-    SELECT get_client_lifetime_value(client_id) INTO clv;
-    SELECT is_seasonal_buyer(client_id) INTO seasonal;
+    SELECT get_client_lifetime_value(input_client_id) INTO clv;
+    SELECT is_seasonal_buyer(input_client_id) INTO seasonal;
     
     -- Calculate base risk based on inactivity relative to their normal buying pattern
     IF dsla <= adbp * 1.5 THEN
@@ -291,7 +256,7 @@ BEGIN
         END IF;
         
         RETURN QUERY SELECT 
-            client_id,
+            input_client_id,
             final_risk::INTEGER,
             risk_level_text,
             dsla,
@@ -397,18 +362,11 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Add indexes for performance
-CREATE INDEX IF NOT EXISTS idx_licenses_user_created ON licenses(user_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_sync_proposals_user_created ON sync_proposals(user_id, created_at, payment_status);
+CREATE INDEX IF NOT EXISTS idx_sync_proposals_client_created ON sync_proposals(client_id, created_at, payment_status);
 CREATE INDEX IF NOT EXISTS idx_custom_sync_client_created ON custom_sync_requests(client_id, created_at, payment_status);
-CREATE INDEX IF NOT EXISTS idx_profiles_last_sign_in ON profiles(last_sign_in_at) WHERE last_sign_in_at IS NOT NULL;
 
 -- Create a scheduled function to update churn risk daily (optional)
 -- This would require pg_cron extension to be enabled
 -- SELECT cron.schedule('update-churn-risk', '0 2 * * *', 'SELECT calculate_adaptive_churn_risk(client_id) FROM profiles WHERE account_type IN (''client'', ''white_label'');');
-
--- Log the migration
-INSERT INTO schema_migrations (version, applied_at) 
-VALUES ('adaptive_churn_risk_system', NOW())
-ON CONFLICT (version) DO NOTHING;
 
 SELECT 'Adaptive churn risk system implemented successfully. Migration completed.' AS result;
