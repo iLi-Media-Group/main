@@ -1,6 +1,7 @@
 -- Fix Producer Analytics Function to Include All Sales Types Correctly
 -- The issue: get_producer_analytics() function is not correctly including custom sync requests
 -- It should use selected_producer_id for completed custom sync requests, not preferred_producer_id
+-- Also fix COALESCE type mismatch by explicitly casting to NUMERIC
 
 -- 1. First, let's see what the current function returns
 SELECT * FROM get_producer_analytics();
@@ -17,7 +18,11 @@ SELECT
     COUNT(DISTINCT sp.id) as sync_proposals_count,
     COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) as sync_proposals_revenue,
     COUNT(DISTINCT csr.id) as custom_sync_count,
-    COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0) as custom_sync_revenue
+    COALESCE(SUM(COALESCE(
+        csr.final_amount::NUMERIC, 
+        csr.negotiated_amount::NUMERIC, 
+        csr.sync_fee::NUMERIC
+    )), 0) as custom_sync_revenue
 FROM profiles p
 LEFT JOIN tracks t ON p.id = t.track_producer_id
 LEFT JOIN sales s ON t.id = s.track_id
@@ -25,7 +30,7 @@ LEFT JOIN sync_proposals sp ON t.id = sp.track_id AND sp.payment_status = 'paid'
 LEFT JOIN custom_sync_requests csr ON p.id = csr.selected_producer_id AND csr.payment_status = 'paid'
 WHERE p.account_type = 'producer'
 GROUP BY p.id, p.email, p.first_name, p.last_name
-ORDER BY (COALESCE(SUM(s.amount), 0) + COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0)) DESC;
+ORDER BY (COALESCE(SUM(s.amount), 0) + COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + COALESCE(SUM(COALESCE(csr.final_amount::NUMERIC, csr.negotiated_amount::NUMERIC, csr.sync_fee::NUMERIC)), 0)) DESC;
 
 -- 3. Fix the get_producer_analytics function
 DROP FUNCTION IF EXISTS get_producer_analytics();
@@ -45,7 +50,11 @@ BEGIN
         COUNT(DISTINCT s.id) + COUNT(DISTINCT sp.id) + COUNT(DISTINCT csr.id) AS total_sales,
         COALESCE(SUM(s.amount), 0) + 
         COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + 
-        COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0) AS total_revenue
+        COALESCE(SUM(COALESCE(
+            csr.final_amount::NUMERIC, 
+            csr.negotiated_amount::NUMERIC, 
+            csr.sync_fee::NUMERIC
+        )), 0) AS total_revenue
     FROM
         profiles p
     LEFT JOIN
@@ -75,7 +84,11 @@ SELECT
     COUNT(DISTINCT s.id) + COUNT(DISTINCT sp.id) + COUNT(DISTINCT csr.id) as total_sales,
     COALESCE(SUM(s.amount), 0) + 
     COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + 
-    COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0) as total_revenue
+    COALESCE(SUM(COALESCE(
+        csr.final_amount::NUMERIC, 
+        csr.negotiated_amount::NUMERIC, 
+        csr.sync_fee::NUMERIC
+    )), 0) as total_revenue
 FROM profiles p
 LEFT JOIN tracks t ON p.id = t.track_producer_id
 LEFT JOIN sales s ON t.id = s.track_id
@@ -83,7 +96,7 @@ LEFT JOIN sync_proposals sp ON t.id = sp.track_id AND sp.payment_status = 'paid'
 LEFT JOIN custom_sync_requests csr ON p.id = csr.selected_producer_id AND csr.payment_status = 'paid'
 WHERE p.account_type = 'producer'
 GROUP BY p.id, p.email
-ORDER BY (COALESCE(SUM(s.amount), 0) + COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0)) DESC;
+ORDER BY (COALESCE(SUM(s.amount), 0) + COALESCE(SUM(COALESCE(sp.final_amount, sp.negotiated_amount, sp.sync_fee)), 0) + COALESCE(SUM(COALESCE(csr.final_amount::NUMERIC, csr.negotiated_amount::NUMERIC, csr.sync_fee::NUMERIC)), 0)) DESC;
 
 -- 6. Show breakdown by sales type for verification
 SELECT 
@@ -118,7 +131,11 @@ SELECT
     p.email,
     'Custom Sync Requests' as sales_type,
     COUNT(DISTINCT csr.id) as count,
-    COALESCE(SUM(COALESCE(csr.final_amount, csr.negotiated_amount, csr.sync_fee)), 0) as revenue
+    COALESCE(SUM(COALESCE(
+        csr.final_amount::NUMERIC, 
+        csr.negotiated_amount::NUMERIC, 
+        csr.sync_fee::NUMERIC
+    )), 0) as revenue
 FROM profiles p
 LEFT JOIN custom_sync_requests csr ON p.id = csr.selected_producer_id AND csr.payment_status = 'paid'
 WHERE p.account_type = 'producer'

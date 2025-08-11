@@ -440,12 +440,34 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
 
     console.log('Analytics Debug - Final Genre Data:', genreData);
 
-    // Churn risk analysis (simplified - based on last activity)
-    const churnData = Array.from(clientMap.values()).map(client => ({
-      name: client.name,
-      churnRisk: Math.random() * 100, // Simplified - in real app, calculate based on activity patterns
-      lastActivity: new Date().toISOString().split('T')[0]
-    }));
+    // Churn risk analysis - calculate based on client activity patterns
+    const churnData = Array.from(clientMap.values()).map(client => {
+      // Calculate churn risk based on:
+      // 1. Days since last activity
+      // 2. Total purchases made
+      // 3. Average purchase frequency
+      
+      const lastActivity = client.lastActivity ? new Date(client.lastActivity) : new Date();
+      const daysSinceLastActivity = Math.floor((new Date().getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Base churn risk on days since last activity
+      let churnRisk = 0;
+      if (daysSinceLastActivity > 90) churnRisk = 85; // High risk if inactive for 3+ months
+      else if (daysSinceLastActivity > 60) churnRisk = 65; // Medium-high risk if inactive for 2+ months
+      else if (daysSinceLastActivity > 30) churnRisk = 45; // Medium risk if inactive for 1+ month
+      else if (daysSinceLastActivity > 14) churnRisk = 25; // Low-medium risk if inactive for 2+ weeks
+      else churnRisk = 10; // Low risk if active recently
+      
+      // Adjust based on purchase history (more purchases = lower churn risk)
+      if (client.totalPurchases > 10) churnRisk *= 0.7; // 30% reduction for high-value clients
+      else if (client.totalPurchases > 5) churnRisk *= 0.85; // 15% reduction for medium-value clients
+      
+      return {
+        name: client.name,
+        churnRisk: Math.round(churnRisk),
+        lastActivity: lastActivity.toISOString().split('T')[0]
+      };
+    }).sort((a, b) => b.churnRisk - a.churnRisk); // Sort by highest churn risk first
 
     // Revenue forecast (simplified projection)
     const totalRevenue = allSales.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
@@ -838,9 +860,9 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         </div>
 
         {/* Analytics Grid */}
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
           {/* Revenue Chart */}
-          <Card className="md:col-span-2">
+          <Card className="md:col-span-2 xl:col-span-2">
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-green-400" />
@@ -941,8 +963,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
             </CardContent>
           </Card>
 
-          {/* Top Performing Tracks */}
-          <Card>
+          {/* Top Performing Tracks - Made narrower */}
+          <Card className="xl:col-span-1">
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <Music className="w-5 h-5 text-purple-400" />
@@ -950,17 +972,16 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
               </h2>
               <div className="space-y-3">
                 {analyticsData.topTracks.map((track, idx) => (
-                  <div key={idx} className="bg-white/5 p-4 rounded-xl border border-white/10">
+                  <div key={idx} className="bg-white/5 p-3 rounded-xl border border-white/10">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-semibold text-white">{track.title}</div>
-                        <div className="text-sm text-gray-400">
-                          Plays: {track.plays} | Licenses: {track.licenses} | Revenue: ${track.revenue}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-white text-sm truncate">{track.title}</div>
+                        <div className="text-xs text-gray-400">
+                          Plays: {track.plays} | Licenses: {track.licenses}
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-green-400">${track.revenue}</div>
-                        <div className="text-xs text-gray-400">Revenue</div>
+                      <div className="text-right ml-2">
+                        <div className="text-sm font-bold text-green-400">${track.revenue}</div>
                       </div>
                     </div>
                   </div>
@@ -969,8 +990,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
             </CardContent>
           </Card>
 
-          {/* Genre Distribution */}
-          <Card>
+          {/* Genre Distribution - Made wider */}
+          <Card className="xl:col-span-2">
             <CardContent>
               <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-yellow-400" />
@@ -985,7 +1006,7 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                       cy="50%"
                       labelLine={false}
                       label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      outerRadius={100}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -1060,6 +1081,9 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                 <AlertTriangle className="w-5 h-5 text-red-500" />
                 Client Churn Risk Analysis
               </h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Risk assessment based on client inactivity and purchase history. Higher percentages indicate clients more likely to stop using the service.
+              </p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analyticsData.churnData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
@@ -1074,6 +1098,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                       fontSize: '12px',
                       fontWeight: '500'
                     }}
+                    formatter={(value: any, name: any) => [`${value}%`, 'Churn Risk']}
+                    labelFormatter={(label) => `Client: ${label}`}
                   />
                   <Legend />
                   <Bar dataKey="churnRisk" fill="#ef4444" name="Churn Risk (%)" />
