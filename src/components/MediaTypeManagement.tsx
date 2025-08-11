@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Video, X, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Video, X, Save, AlertCircle, CheckCircle, ChevronDown, ChevronRight, Folder, File } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface MediaType {
@@ -7,14 +7,31 @@ interface MediaType {
   name: string;
   description: string | null;
   category: 'video' | 'audio' | 'digital' | 'other';
+  parent_id: string | null;
+  is_parent: boolean;
+  display_order: number;
   created_at: string;
   updated_at: string;
+}
+
+interface MediaTypeWithSubtypes {
+  id: string;
+  name: string;
+  description: string | null;
+  category: 'video' | 'audio' | 'digital' | 'other';
+  parent_id: string | null;
+  is_parent: boolean;
+  display_order: number;
+  sub_types: MediaType[];
 }
 
 interface MediaTypeFormData {
   name: string;
   description: string;
   category: 'video' | 'audio' | 'digital' | 'other';
+  parent_id: string | null;
+  is_parent: boolean;
+  display_order: number;
 }
 
 const CATEGORIES = [
@@ -25,7 +42,8 @@ const CATEGORIES = [
 ];
 
 export function MediaTypeManagement() {
-  const [mediaTypes, setMediaTypes] = useState<MediaType[]>([]);
+  const [mediaTypes, setMediaTypes] = useState<MediaTypeWithSubtypes[]>([]);
+  const [allMediaTypes, setAllMediaTypes] = useState<MediaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -33,11 +51,15 @@ export function MediaTypeManagement() {
   const [editingMediaType, setEditingMediaType] = useState<MediaType | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingMediaType, setDeletingMediaType] = useState<string | null>(null);
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState<MediaTypeFormData>({
     name: '',
     description: '',
     category: 'video',
+    parent_id: null,
+    is_parent: false,
+    display_order: 0,
   });
 
   useEffect(() => {
@@ -49,14 +71,22 @@ export function MediaTypeManagement() {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      // Fetch media types with their sub-types using the new function
+      const { data: hierarchicalData, error: hierarchicalError } = await supabase
+        .rpc('get_media_types_with_subtypes');
+
+      if (hierarchicalError) throw hierarchicalError;
+
+      // Also fetch all media types for the dropdown
+      const { data: allData, error: allError } = await supabase
         .from('media_types')
         .select('*')
-        .order('category, name');
+        .order('display_order, name');
 
-      if (error) throw error;
+      if (allError) throw allError;
 
-      setMediaTypes(data || []);
+      setMediaTypes(hierarchicalData || []);
+      setAllMediaTypes(allData || []);
     } catch (err) {
       console.error('Error fetching media types:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch media types');
@@ -71,6 +101,22 @@ export function MediaTypeManagement() {
       name: '',
       description: '',
       category: 'video',
+      parent_id: null,
+      is_parent: false,
+      display_order: 0,
+    });
+    setShowForm(true);
+  };
+
+  const handleAddSubType = (parentMediaType: MediaType) => {
+    setEditingMediaType(null);
+    setFormData({
+      name: '',
+      description: '',
+      category: parentMediaType.category,
+      parent_id: parentMediaType.id,
+      is_parent: false,
+      display_order: 0,
     });
     setShowForm(true);
   };
@@ -81,12 +127,19 @@ export function MediaTypeManagement() {
       name: mediaType.name,
       description: mediaType.description || '',
       category: mediaType.category,
+      parent_id: mediaType.parent_id,
+      is_parent: mediaType.is_parent,
+      display_order: mediaType.display_order,
     });
     setShowForm(true);
   };
 
   const handleDelete = async (mediaType: MediaType) => {
-    if (!confirm(`Are you sure you want to delete "${mediaType.name}"? This will also remove it from any tracks that use it.`)) {
+    const message = mediaType.is_parent 
+      ? `Are you sure you want to delete "${mediaType.name}"? This will also delete all its sub-types and remove them from any tracks that use them.`
+      : `Are you sure you want to delete "${mediaType.name}"? This will also remove it from any tracks that use it.`;
+
+    if (!confirm(message)) {
       return;
     }
 
@@ -102,7 +155,7 @@ export function MediaTypeManagement() {
 
       if (trackError) throw trackError;
 
-      // Then delete the media type
+      // Then delete the media type (cascade will handle sub-types if it's a parent)
       const { error } = await supabase
         .from('media_types')
         .delete()
@@ -132,16 +185,21 @@ export function MediaTypeManagement() {
       setSaving(true);
       setError(null);
 
+      const mediaTypeData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        category: formData.category,
+        parent_id: formData.parent_id,
+        is_parent: formData.is_parent,
+        display_order: formData.display_order,
+        updated_at: new Date().toISOString(),
+      };
+
       if (editingMediaType) {
         // Update existing media type
         const { error } = await supabase
           .from('media_types')
-          .update({
-            name: formData.name.trim(),
-            description: formData.description.trim() || null,
-            category: formData.category,
-            updated_at: new Date().toISOString(),
-          })
+          .update(mediaTypeData)
           .eq('id', editingMediaType.id);
 
         if (error) throw error;
@@ -151,11 +209,7 @@ export function MediaTypeManagement() {
         // Create new media type
         const { error } = await supabase
           .from('media_types')
-          .insert({
-            name: formData.name.trim(),
-            description: formData.description.trim() || null,
-            category: formData.category,
-          });
+          .insert(mediaTypeData);
 
         if (error) throw error;
 
@@ -177,6 +231,9 @@ export function MediaTypeManagement() {
       name: '',
       description: '',
       category: 'video',
+      parent_id: null,
+      is_parent: false,
+      display_order: 0,
     });
     setEditingMediaType(null);
     setShowForm(false);
@@ -192,13 +249,27 @@ export function MediaTypeManagement() {
     return categoryData ? categoryData.label : category;
   };
 
+  const toggleExpanded = (mediaTypeId: string) => {
+    const newExpanded = new Set(expandedParents);
+    if (newExpanded.has(mediaTypeId)) {
+      newExpanded.delete(mediaTypeId);
+    } else {
+      newExpanded.add(mediaTypeId);
+    }
+    setExpandedParents(newExpanded);
+  };
+
+  const getParentOptions = () => {
+    return allMediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
+  };
+
   const groupedMediaTypes = mediaTypes.reduce((groups, mediaType) => {
     if (!groups[mediaType.category]) {
       groups[mediaType.category] = [];
     }
     groups[mediaType.category].push(mediaType);
     return groups;
-  }, {} as Record<string, MediaType[]>);
+  }, {} as Record<string, MediaTypeWithSubtypes[]>);
 
   if (loading) {
     return (
@@ -213,7 +284,7 @@ export function MediaTypeManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">Media Types Management</h2>
-          <p className="text-gray-400">Manage media types for Deep Media Search feature</p>
+          <p className="text-gray-400">Manage media types and sub-types for Deep Media Search feature</p>
         </div>
         <button
           onClick={handleAdd}
@@ -264,7 +335,7 @@ export function MediaTypeManagement() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., TV Shows, Podcasts, Video Games"
+                placeholder="e.g., NFL, Reality TV, Action Games"
                 required
               />
             </div>
@@ -282,22 +353,69 @@ export function MediaTypeManagement() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Category *
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                {CATEGORIES.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  {CATEGORIES.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Parent Media Type
+                </label>
+                <select
+                  value={formData.parent_id || ''}
+                  onChange={(e) => setFormData({ ...formData, parent_id: e.target.value || null })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No Parent (Main Media Type)</option>
+                  {getParentOptions().map((parent) => (
+                    <option key={parent.id} value={parent.id}>
+                      {parent.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_parent}
+                    onChange={(e) => setFormData({ ...formData, is_parent: e.target.checked })}
+                    className="rounded border-blue-500/20 bg-white/5 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-300">Can have sub-types</span>
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Display Order
+                </label>
+                <input
+                  type="number"
+                  value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                />
+              </div>
             </div>
 
             <div className="flex justify-end space-x-3 pt-4">
@@ -335,39 +453,111 @@ export function MediaTypeManagement() {
               <span className="text-sm text-gray-400">({types.length})</span>
             </div>
 
-            <div className="grid gap-4">
+            <div className="space-y-4">
               {types.map((mediaType) => (
-                <div
-                  key={mediaType.id}
-                  className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-blue-500/10"
-                >
-                  <div className="flex-1">
-                    <h4 className="font-medium text-white">{mediaType.name}</h4>
-                    {mediaType.description && (
-                      <p className="text-sm text-gray-400 mt-1">{mediaType.description}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEdit(mediaType)}
-                      className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
-                      title="Edit media type"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(mediaType)}
-                      disabled={deletingMediaType === mediaType.id}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
-                      title="Delete media type"
-                    >
-                      {deletingMediaType === mediaType.id ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
+                <div key={mediaType.id} className="space-y-2">
+                  {/* Parent Media Type */}
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-blue-500/10">
+                    <div className="flex items-center space-x-3 flex-1">
+                      {mediaType.is_parent ? (
+                        <button
+                          onClick={() => toggleExpanded(mediaType.id)}
+                          className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                        >
+                          {expandedParents.has(mediaType.id) ? (
+                            <ChevronDown className="w-4 h-4" />
+                          ) : (
+                            <ChevronRight className="w-4 h-4" />
+                          )}
+                        </button>
+                      ) : null}
+                      <Folder className="w-4 h-4 text-blue-400" />
+                      <div className="flex-1">
+                        <h4 className="font-medium text-white">{mediaType.name}</h4>
+                        {mediaType.description && (
+                          <p className="text-sm text-gray-400 mt-1">{mediaType.description}</p>
+                        )}
+                        {mediaType.is_parent && (
+                          <p className="text-xs text-blue-400 mt-1">
+                            {mediaType.sub_types.length} sub-type{mediaType.sub_types.length !== 1 ? 's' : ''}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {mediaType.is_parent && (
+                        <button
+                          onClick={() => handleAddSubType(mediaType)}
+                          className="p-2 text-green-400 hover:text-green-300 hover:bg-green-500/10 rounded transition-colors"
+                          title="Add sub-type"
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                       )}
-                    </button>
+                      <button
+                        onClick={() => handleEdit(mediaType)}
+                        className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                        title="Edit media type"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(mediaType)}
+                        disabled={deletingMediaType === mediaType.id}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+                        title="Delete media type"
+                      >
+                        {deletingMediaType === mediaType.id ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Sub-types */}
+                  {mediaType.is_parent && expandedParents.has(mediaType.id) && (
+                    <div className="ml-8 space-y-2">
+                      {mediaType.sub_types.map((subType) => (
+                        <div
+                          key={subType.id}
+                          className="flex items-center justify-between p-3 bg-white/3 rounded-lg border border-blue-500/5"
+                        >
+                          <div className="flex items-center space-x-3 flex-1">
+                            <File className="w-4 h-4 text-gray-400" />
+                            <div>
+                              <h5 className="font-medium text-white">{subType.name}</h5>
+                              {subType.description && (
+                                <p className="text-sm text-gray-400">{subType.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleEdit(subType)}
+                              className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                              title="Edit sub-type"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(subType)}
+                              disabled={deletingMediaType === subType.id}
+                              className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+                              title="Delete sub-type"
+                            >
+                              {deletingMediaType === subType.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

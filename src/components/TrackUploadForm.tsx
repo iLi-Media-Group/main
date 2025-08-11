@@ -541,9 +541,9 @@ export function TrackUploadForm() {
 
       // Insert media types into track_media_types table if any are selected
       if (formData.selectedMediaUsage.length > 0 && trackData?.id) {
-        // Get media type IDs for the selected media types
+        // Get media type IDs for the selected media types using full_name
         const selectedMediaTypeIds = mediaTypes
-          .filter(mt => formData.selectedMediaUsage.includes(mt.name))
+          .filter(mt => formData.selectedMediaUsage.includes(mt.full_name))
           .map(mt => mt.id);
 
         if (selectedMediaTypeIds.length > 0) {
@@ -1376,7 +1376,7 @@ export function TrackUploadForm() {
                 Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
               </p>
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {/* Group media types by category */}
+                {/* Group media types by category with hierarchical display */}
                 {(() => {
                   const mediaTypesByCategory = mediaTypes.reduce((acc, mediaType) => {
                     if (!acc[mediaType.category]) {
@@ -1389,28 +1389,32 @@ export function TrackUploadForm() {
                   return Object.entries(mediaTypesByCategory).map(([category, types]) => (
                     <div key={category} className="bg-white/5 rounded-lg p-4">
                       <h3 className="text-white font-medium mb-3">{category}</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <div className="space-y-3">
                         {types.map((mediaType) => (
-                          <label key={mediaType.id} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedMediaUsage.includes(mediaType.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  updateFormData({ 
-                                    selectedMediaUsage: [...formData.selectedMediaUsage, mediaType.name] 
-                                  });
-                                } else {
-                                  updateFormData({
-                                    selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType.name)
-                                  });
-                                }
-                              }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                              disabled={isSubmitting}
-                            />
-                            <span className="text-gray-300 text-sm">{mediaType.name}</span>
-                          </label>
+                          <div key={mediaType.id} className="space-y-2">
+                            <label className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedMediaUsage.includes(mediaType.full_name)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    updateFormData({ 
+                                      selectedMediaUsage: [...formData.selectedMediaUsage, mediaType.full_name] 
+                                    });
+                                  } else {
+                                    updateFormData({
+                                      selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType.full_name)
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={isSubmitting}
+                              />
+                              <span className={`text-gray-300 text-sm ${mediaType.parent_id ? 'ml-4' : 'font-medium'}`}>
+                                {mediaType.full_name}
+                              </span>
+                            </label>
+                          </div>
                         ))}
                       </div>
                     </div>

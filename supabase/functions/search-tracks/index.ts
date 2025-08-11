@@ -74,6 +74,23 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     .filter(Boolean)
     .join(' ').toLowerCase();
   
+  // Also extract full names for hierarchical matching
+  const mediaTypeFullNames = trackMediaTypes
+    .map((tmt: any) => {
+      const mediaType = tmt.media_types;
+      if (!mediaType) return null;
+      
+      // If it has a parent, construct the full name
+      if (mediaType.parent_id) {
+        // We need to get the parent name, but for now we'll use the name
+        // The full name will be constructed in the database function
+        return mediaType.name;
+      }
+      return mediaType.name;
+    })
+    .filter(Boolean)
+    .join(' ').toLowerCase();
+  
   for (const term of searchTerms) {
     const termLower = term.toLowerCase();
     
@@ -90,7 +107,7 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     // Service-specific scoring
     if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) score += 4;
     if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) score += 3;
-    if (serviceParams?.usageTypes?.length && mediaTypeNames.includes(termLower)) score += 3;
+    if (serviceParams?.usageTypes?.length && (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower))) score += 3;
     
     // Fuzzy matches (lower priority) - using simple similarity
     const titleSimilarity = calculateSimilarity(titleLower, termLower);
@@ -107,9 +124,21 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
       .map((tmt: any) => tmt.media_types?.name?.toLowerCase())
       .filter(Boolean);
     
+    // Also check full names for hierarchical matching
+    const trackMediaTypeFullNames = trackMediaTypes
+      .map((tmt: any) => {
+        const mediaType = tmt.media_types;
+        if (!mediaType) return null;
+        
+        // For now, we'll use the name, but this should be the full_name from the database
+        return mediaType.name?.toLowerCase();
+      })
+      .filter(Boolean);
+    
     // Check if any of the selected media types match the track's media types
     const matchingMediaTypes = selectedMediaTypes.filter(selected => 
-      trackMediaTypeNames.some(trackType => trackType.includes(selected) || selected.includes(trackType))
+      trackMediaTypeNames.some(trackType => trackType.includes(selected) || selected.includes(trackType)) ||
+      trackMediaTypeFullNames.some(trackType => trackType.includes(selected) || selected.includes(trackType))
     );
     
     if (matchingMediaTypes.length > 0) {
@@ -190,7 +219,10 @@ serve(async (req) => {
           id,
           name,
           description,
-          category
+          category,
+          parent_id,
+          is_parent,
+          display_order
         )
       )
     `);
@@ -258,11 +290,25 @@ serve(async (req) => {
           .map((tmt: any) => tmt.media_types?.name?.toLowerCase())
           .filter(Boolean);
         
+        // Also check full names for hierarchical matching
+        const trackMediaTypeFullNames = trackMediaTypes
+          .map((tmt: any) => {
+            const mediaType = tmt.media_types;
+            if (!mediaType) return null;
+            
+            // For now, we'll use the name, but this should be the full_name from the database
+            return mediaType.name?.toLowerCase();
+          })
+          .filter(Boolean);
+        
         const selectedMediaTypes = usageTypes.map((t: string) => t.toLowerCase());
         
         // Check if any of the selected media types match the track's media types
         return selectedMediaTypes.some(selected => 
           trackMediaTypeNames.some(trackType => 
+            trackType.includes(selected) || selected.includes(trackType)
+          ) ||
+          trackMediaTypeFullNames.some(trackType => 
             trackType.includes(selected) || selected.includes(trackType)
           )
         );

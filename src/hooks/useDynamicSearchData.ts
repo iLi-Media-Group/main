@@ -32,8 +32,12 @@ export interface DynamicInstrument {
 export interface DynamicMediaType {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   category: string;
+  parent_id: string | null;
+  is_parent: boolean;
+  display_order: number;
+  full_name: string;
 }
 
 export interface DynamicSearchData {
@@ -108,16 +112,9 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (instrumentsError) throw instrumentsError;
 
-      // Fetch media types
+      // Fetch media types using the new hierarchical function
       const { data: mediaTypesData, error: mediaTypesError } = await supabase
-        .from('media_types')
-        .select(`
-          id,
-          name,
-          description,
-          category
-        `)
-        .order('name');
+        .rpc('get_all_media_types_for_selection');
 
       if (mediaTypesError) throw mediaTypesError;
 
