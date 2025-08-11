@@ -222,6 +222,7 @@ export function LicenseDialog({
       // Redirect to dashboard for Gold, Platinum, or Ultimate
       if (["Gold Access", "Platinum Access", "Ultimate Access"].includes(membershipType)) {
         setTimeout(() => {
+          // Use React Router navigation instead of window.location.href
           window.location.href = "/client-dashboard";
         }, 2000); // 2 seconds delay
       }

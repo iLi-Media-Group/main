@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdminRealTime } from '../hooks/useRealTimeUpdates';
 import { Link, useNavigate } from 'react-router-dom';
 import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
@@ -229,6 +230,15 @@ function AdminDashboard() {
       fetchWhiteLabelClients();
     }
   }, [user]);
+
+  // Set up real-time subscription for admin data
+  const handleAdminUpdate = useCallback((payload: any) => {
+    console.log('Admin real-time update:', payload);
+    fetchData();
+    fetchWhiteLabelClients();
+  }, []);
+
+  useAdminRealTime(handleAdminUpdate);
 
   useEffect(() => {
     if (!user) return;

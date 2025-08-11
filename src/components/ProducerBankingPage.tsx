@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useProducerBalancesRealTime } from '../hooks/useRealTimeUpdates';
 import { BankAccountForm } from './BankAccountForm';
 import { WithdrawalRequestForm } from './WithdrawalRequestForm';
 import { Card, CardContent } from './ui/card';
@@ -62,6 +63,15 @@ export function ProducerBankingPage() {
       fetchBucketPercentage();
     }
   }, [user, filterType, dateRange, sortField, sortOrder]);
+
+  // Set up real-time subscription for producer balances
+  const handleBalanceUpdate = useCallback((payload: any) => {
+    console.log('Producer balance real-time update:', payload);
+    fetchData();
+    fetchBucketPercentage();
+  }, []);
+
+  useProducerBalancesRealTime(handleBalanceUpdate);
 
   // Add manual refresh function
   const handleManualRefresh = async () => {

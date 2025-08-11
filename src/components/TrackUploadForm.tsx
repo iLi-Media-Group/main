@@ -124,6 +124,11 @@ export function TrackUploadForm() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  
+  // State for tracking expanded categories
+  const [expandedMoodCategories, setExpandedMoodCategories] = useState<string[]>([]);
+  const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<string[]>([]);
+  const [expandedMediaCategories, setExpandedMediaCategories] = useState<string[]>([]);
 
   // Load saved files on mount
   useEffect(() => {
@@ -171,12 +176,12 @@ export function TrackUploadForm() {
       }, 1000);
       return () => clearTimeout(timer);
     } else if (showSuccessModal && successCountdown === 0) {
-      // Auto-dismiss after countdown reaches 0
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setSuccessCountdown(10);
-        navigate('/producer/dashboard?refresh=true');
-      }, 1000);
+              // Auto-dismiss after countdown reaches 0
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          setSuccessCountdown(10);
+          navigate('/producer/dashboard');
+        }, 1000);
     }
   }, [showSuccessModal, successCountdown, navigate]);
 
@@ -692,7 +697,7 @@ export function TrackUploadForm() {
                   onClick={() => {
                     setShowSuccessModal(false);
                     setSuccessCountdown(10);
-                    navigate('/producer/dashboard?refresh=true');
+                    navigate('/producer/dashboard');
                   }}
                   className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
@@ -1275,14 +1280,8 @@ export function TrackUploadForm() {
                         checked={formData.selectedMoods.some(mood => subMoods.includes(mood))}
                         onChange={(e) => {
                           if (e.target.checked) {
-                            // Add all moods in this category
-                            const newSelection = [...formData.selectedMoods];
-                            subMoods.forEach(mood => {
-                              if (!newSelection.includes(mood)) {
-                                newSelection.push(mood);
-                              }
-                            });
-                            updateFormData({ selectedMoods: newSelection });
+                            // Don't auto-select sub-moods, just show them
+                            // The main category checkbox is just for visual organization
                           } else {
                             // Remove all moods in this category
                             const newSelection = formData.selectedMoods.filter(mood => !subMoods.includes(mood));
@@ -1380,14 +1379,8 @@ export function TrackUploadForm() {
                           )}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              // Add all instruments in this category
-                              const newSelection = [...(formData.selectedInstruments || [])];
-                              categoryInstruments.forEach(instrument => {
-                                if (!newSelection.includes(instrument.display_name)) {
-                                  newSelection.push(instrument.display_name);
-                                }
-                              });
-                              updateFormData({ selectedInstruments: newSelection });
+                              // Don't auto-select instruments, just show them
+                              // The main category checkbox is just for visual organization
                             } else {
                               // Remove all instruments in this category
                               const newSelection = (formData.selectedInstruments || []).filter(instrumentName => 
@@ -1515,9 +1508,8 @@ export function TrackUploadForm() {
                                 checked={isSelected}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    // Add parent category
-                                    const newSelection = [...formData.selectedMediaUsage, parentType.name];
-                                    updateFormData({ selectedMediaUsage: newSelection });
+                                    // Don't auto-select parent category, just show sub-types
+                                    // The main category checkbox is just for visual organization
                                   } else {
                                     // Remove parent category and all its children
                                     const newSelection = formData.selectedMediaUsage.filter(u => 

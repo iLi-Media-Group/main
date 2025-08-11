@@ -3,6 +3,7 @@ import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filte
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSalesRealTime, useSyncProposalsRealTime, useCustomSyncRequestsRealTime, useProfileRealTime } from '../hooks/useRealTimeUpdates';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
 import { createCheckoutSession, cancelUserSubscription, resumeUserSubscription } from '../lib/stripe';
 
@@ -479,17 +480,33 @@ const getPlanLevel = (plan: string): number => {
     }
   }, [user]);
 
-  // Periodic refresh of membership plan (every 30 seconds)
-  useEffect(() => {
-    if (!user) return;
+  // Set up real-time subscriptions
+  const handleSalesUpdate = useCallback((payload: any) => {
+    console.log('Sales real-time update:', payload);
+    fetchDashboardData();
+  }, []);
 
-    const interval = setInterval(async () => {
-      console.log('Performing periodic membership refresh...');
-      await refreshMembership();
-    }, 30000); // 30 seconds
+  const handleSyncProposalsUpdate = useCallback((payload: any) => {
+    console.log('Sync proposals real-time update:', payload);
+    fetchSyncProposals();
+  }, []);
 
-    return () => clearInterval(interval);
-  }, [user]);
+  const handleCustomSyncUpdate = useCallback((payload: any) => {
+    console.log('Custom sync real-time update:', payload);
+    fetchDashboardData();
+  }, []);
+
+  const handleProfileUpdate = useCallback((payload: any) => {
+    console.log('Profile real-time update:', payload);
+    refreshMembership();
+    fetchDashboardData();
+  }, []);
+
+  // Initialize real-time subscriptions
+  useSalesRealTime(handleSalesUpdate);
+  useSyncProposalsRealTime(handleSyncProposalsUpdate);
+  useCustomSyncRequestsRealTime(handleCustomSyncUpdate);
+  useProfileRealTime(handleProfileUpdate);
 
   // Handle plan update success message
   useEffect(() => {

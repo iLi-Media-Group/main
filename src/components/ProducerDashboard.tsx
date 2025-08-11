@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseArrayField } from '../lib/utils';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { useTracksRealTime, useProducerProposalsRealTime, useProducerCustomSyncRealTime } from '../hooks/useRealTimeUpdates';
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
@@ -271,17 +272,26 @@ export function ProducerDashboard() {
     }
   }, [user, searchParams]);
 
-  // Refresh data when component comes into focus (e.g., after upload)
-  useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        fetchDashboardData();
-      }
-    };
+  // Set up real-time subscriptions
+  const handleTracksUpdate = useCallback((payload: any) => {
+    console.log('Tracks real-time update:', payload);
+    fetchDashboardData();
+  }, []);
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
+  const handleProposalsUpdate = useCallback((payload: any) => {
+    console.log('Proposals real-time update:', payload);
+    fetchDashboardData();
+  }, []);
+
+  const handleCustomSyncUpdate = useCallback((payload: any) => {
+    console.log('Custom sync real-time update:', payload);
+    fetchDashboardData();
+  }, []);
+
+  // Initialize real-time subscriptions
+  useTracksRealTime(handleTracksUpdate);
+  useProducerProposalsRealTime(handleProposalsUpdate);
+  useProducerCustomSyncRealTime(handleCustomSyncUpdate);
 
   useEffect(() => {
     const fetchOpenSyncRequests = async () => {
