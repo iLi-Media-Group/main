@@ -452,10 +452,10 @@ Deno.serve(async (req) => {
                 // Get compensation settings for producer share calculation
                 const { data: compensationSettings } = await supabase
                   .from('compensation_settings')
-                  .select('sync_fee_rate')
+                  .select('custom_sync_rate')
                   .single();
 
-                const customSyncRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
+                const customSyncRate = compensationSettings?.custom_sync_rate || 90; // Default to 90%
                 const producerAmount = (amount_total / 100) * (customSyncRate / 100);
 
                 // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger

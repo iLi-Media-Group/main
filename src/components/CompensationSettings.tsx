@@ -9,6 +9,7 @@ export function CompensationSettings() {
   const [standardRate, setStandardRate] = useState(75); // Updated to 75%
   const [exclusiveRate, setExclusiveRate] = useState(80);
   const [syncFeeRate, setSyncFeeRate] = useState(90); // Updated to 90%
+  const [customSyncRate, setCustomSyncRate] = useState(90); // Added custom sync rate
   const [holdingPeriod, setHoldingPeriod] = useState(30);
   const [minimumWithdrawal, setMinimumWithdrawal] = useState(50);
   const [processingFee, setProcessingFee] = useState(2);
@@ -55,6 +56,7 @@ export function CompensationSettings() {
         setStandardRate(data.standard_rate);
         setExclusiveRate(data.exclusive_rate);
         setSyncFeeRate(data.sync_fee_rate);
+        setCustomSyncRate(data.custom_sync_rate || 90); // Load custom sync rate
         setHoldingPeriod(data.holding_period);
         setMinimumWithdrawal(data.minimum_withdrawal);
         setProcessingFee(data.processing_fee);
@@ -88,6 +90,9 @@ export function CompensationSettings() {
       if (syncFeeRate < 0 || syncFeeRate > 100) {
         throw new Error('Sync fee rate must be between 0 and 100');
       }
+      if (customSyncRate < 0 || customSyncRate > 100) {
+        throw new Error('Custom sync rate must be between 0 and 100');
+      }
       if (holdingPeriod < 0) {
         throw new Error('Holding period must be a positive number');
       }
@@ -115,6 +120,7 @@ export function CompensationSettings() {
           standard_rate: standardRate,
           exclusive_rate: exclusiveRate,
           sync_fee_rate: syncFeeRate,
+          custom_sync_rate: customSyncRate, // Save custom sync rate
           holding_period: holdingPeriod,
           minimum_withdrawal: minimumWithdrawal,
           processing_fee: processingFee,
@@ -278,6 +284,33 @@ export function CompensationSettings() {
                   </div>
                   <p className="mt-1 text-xs text-gray-400">
                     Percentage of sync proposal fees that goes to producers
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Sync Request Compensation */}
+            <div className="p-4 bg-purple-900/20 border border-purple-500/20 rounded-lg">
+              <h3 className="text-lg font-semibold text-white mb-4">Custom Sync Request Compensation</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Custom Sync Rate (%)
+                  </label>
+                  <div className="relative">
+                    <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="number"
+                      value={customSyncRate}
+                      onChange={(e) => setCustomSyncRate(parseInt(e.target.value))}
+                      className="w-full pl-10"
+                      min="0"
+                      max="100"
+                      required
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Percentage of custom sync request fees that goes to producers
                   </p>
                 </div>
               </div>
