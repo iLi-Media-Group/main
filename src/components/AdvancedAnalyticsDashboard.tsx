@@ -900,37 +900,97 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={analyticsData.revenueData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    </linearGradient>
+                    <linearGradient id="licensesGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.1}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
-                  <YAxis stroke="rgba(255,255,255,0.7)" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                  />
+                  <YAxis 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.9)', 
+                      backgroundColor: 'rgba(0,0,0,0.95)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: '500'
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
+                    }}
+                    labelStyle={{
+                      color: '#3b82f6',
+                      fontWeight: 'bold',
+                      fontSize: '14px'
                     }}
                   />
-                  <Legend />
+                  <Legend 
+                    wrapperStyle={{
+                      paddingTop: '10px',
+                      fontSize: '13px',
+                      color: 'rgba(255,255,255,0.9)'
+                    }}
+                  />
                   <Area 
                     type="monotone" 
                     dataKey="total" 
                     stackId="1"
                     stroke="#3b82f6" 
-                    fill="#3b82f6" 
-                    fillOpacity={0.3}
-                    name="Revenue ($)" 
+                    strokeWidth={3}
+                    fill="url(#revenueGradient)"
+                    fillOpacity={0.8}
+                    name="Revenue ($)"
+                    dot={{
+                      fill: '#3b82f6',
+                      stroke: '#ffffff',
+                      strokeWidth: 2,
+                      r: 6,
+                      strokeDasharray: '0'
+                    }}
+                    activeDot={{
+                      r: 8,
+                      stroke: '#ffffff',
+                      strokeWidth: 3,
+                      fill: '#3b82f6'
+                    }}
                   />
                   <Area 
                     type="monotone" 
                     dataKey="licenses" 
                     stackId="2"
                     stroke="#10b981" 
-                    fill="#10b981" 
-                    fillOpacity={0.3}
-                    name="Licenses" 
+                    strokeWidth={3}
+                    fill="url(#licensesGradient)"
+                    fillOpacity={0.8}
+                    name="Licenses"
+                    dot={{
+                      fill: '#10b981',
+                      stroke: '#ffffff',
+                      strokeWidth: 2,
+                      r: 6,
+                      strokeDasharray: '0'
+                    }}
+                    activeDot={{
+                      r: 8,
+                      stroke: '#ffffff',
+                      strokeWidth: 3,
+                      fill: '#10b981'
+                    }}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -980,20 +1040,43 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart layout="vertical" data={analyticsData.licenseData}>
+                  <defs>
+                    <linearGradient id="barGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis type="number" stroke="rgba(255,255,255,0.7)" />
-                  <YAxis dataKey="name" type="category" stroke="rgba(255,255,255,0.7)" />
+                  <XAxis 
+                    type="number" 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                  />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                  />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.9)', 
+                      backgroundColor: 'rgba(0,0,0,0.95)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: '500'
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                     }}
                   />
-                  <Bar dataKey="licenses" fill="#10b981" name="Licenses" />
+                  <Bar 
+                    dataKey="licenses" 
+                    fill="url(#barGradient)" 
+                    name="Licenses"
+                    radius={[0, 4, 4, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -1052,12 +1135,13 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.9)', 
+                        backgroundColor: 'rgba(0,0,0,0.95)', 
                         border: '1px solid rgba(255,255,255,0.2)',
-                        borderRadius: '8px',
+                        borderRadius: '12px',
                         color: '#ffffff',
-                        fontSize: '12px',
-                        fontWeight: '500'
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                       }}
                       itemStyle={{
                         color: '#fff',
@@ -1089,22 +1173,59 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={analyticsData.forecastData}>
+                  <defs>
+                    <linearGradient id="projectedGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#d97706" stopOpacity={1}/>
+                    </linearGradient>
+                    <linearGradient id="actualGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#059669" stopOpacity={1}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                  <XAxis dataKey="month" stroke="rgba(255,255,255,0.7)" />
-                  <YAxis stroke="rgba(255,255,255,0.7)" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                  />
+                  <YAxis 
+                    stroke="rgba(255,255,255,0.7)"
+                    tick={{ fontSize: 12, fill: 'rgba(255,255,255,0.8)' }}
+                    axisLine={{ stroke: 'rgba(255,255,255,0.3)' }}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
+                  />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'rgba(0,0,0,0.9)', 
+                      backgroundColor: 'rgba(0,0,0,0.95)', 
                       border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: '8px',
+                      borderRadius: '12px',
                       color: '#ffffff',
-                      fontSize: '12px',
-                      fontWeight: '500'
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      boxShadow: '0 10px 25px rgba(0,0,0,0.3)'
                     }}
                   />
-                  <Legend />
-                  <Bar dataKey="projected" fill="#f59e0b" name="Projected ($)" />
-                  <Bar dataKey="actual" fill="#10b981" name="Actual ($)" />
+                  <Legend 
+                    wrapperStyle={{
+                      paddingTop: '10px',
+                      fontSize: '13px',
+                      color: 'rgba(255,255,255,0.9)'
+                    }}
+                  />
+                  <Bar 
+                    dataKey="projected" 
+                    fill="url(#projectedGradient)" 
+                    name="Projected ($)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="actual" 
+                    fill="url(#actualGradient)" 
+                    name="Actual ($)"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
