@@ -108,6 +108,8 @@ export function MediaTypeManagement() {
       display_order: 0,
     });
     setShowForm(true);
+    // Scroll to top when form opens
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleAddSubType = (parentMediaType: MediaType) => {
@@ -121,6 +123,8 @@ export function MediaTypeManagement() {
       display_order: 0,
     });
     setShowForm(true);
+    // Scroll to top when form opens
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEdit = (mediaType: MediaType) => {
@@ -134,6 +138,8 @@ export function MediaTypeManagement() {
       display_order: mediaType.display_order,
     });
     setShowForm(true);
+    // Scroll to top when form opens
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (mediaType: MediaType) => {
