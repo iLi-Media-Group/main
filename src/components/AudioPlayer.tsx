@@ -25,7 +25,7 @@ export function AudioPlayer({
   size = 'md',
   audioId
 }: AudioPlayerProps) {
-  console.log('🎵 AudioPlayer component rendered with src:', src);
+  console.log('🎵 AudioPlayer component rendered with src:', src, 'title:', title, 'audioId:', audioId);
   const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -35,6 +35,23 @@ export function AudioPlayer({
   
   // Generate a unique ID if not provided
   const uniqueAudioId = audioId || `audio-${src}-${Date.now()}`;
+
+  // Validate audio source when it changes
+  useEffect(() => {
+    if (!src || src.trim() === '') {
+      setError('No audio source available');
+      return;
+    }
+    
+    // Clear any previous errors when source changes
+    setError(null);
+    
+    // Test if the audio can be loaded
+    const audio = audioRef.current;
+    if (audio) {
+      audio.load();
+    }
+  }, [src]);
 
   // Sync internal state with external control
   useEffect(() => {
@@ -69,7 +86,15 @@ export function AudioPlayer({
       setProgress(isNaN(value) ? 0 : value);
     };
 
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error('Audio error:', e);
+      const audio = e.target as HTMLAudioElement;
+      console.error('Audio error details:', {
+        error: audio.error,
+        src: audio.src,
+        networkState: audio.networkState,
+        readyState: audio.readyState
+      });
       setError('Failed to load audio');
       setInternalIsPlaying(false);
     };
@@ -108,6 +133,12 @@ export function AudioPlayer({
   const togglePlay = () => {
     if (onToggle) {
       onToggle();
+      return;
+    }
+
+    if (!src || src.trim() === '') {
+      console.error('No audio source provided');
+      setError('No audio source available');
       return;
     }
 

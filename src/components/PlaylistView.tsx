@@ -73,7 +73,15 @@ export function PlaylistView() {
     } else {
       setCurrentPlayingTrack(track.id);
       // Use mp3_url if available, otherwise fall back to audio_url
-      const trackUrl = track.mp3_url || track.audio_url;
+      let trackUrl = track.mp3_url || track.audio_url;
+      
+      // If the URL is not a full URL, construct the Supabase storage URL
+      if (trackUrl && !trackUrl.startsWith('http')) {
+        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
+        trackUrl = `${supabaseUrl}/storage/v1/object/public/tracks/${trackUrl}`;
+      }
+      
+      console.log('Setting audio URL:', trackUrl);
       setAudioUrl(trackUrl);
     }
   };
