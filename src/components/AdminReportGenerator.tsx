@@ -209,9 +209,9 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
         .select('id, subscription_id, status, price_id, created_at')
         .eq('status', 'active')
         .in('price_id', [
-          'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
-          'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
-          'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+          'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+          'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+          'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
         ])
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
@@ -274,11 +274,11 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
     const membershipSubscriptionRevenue = membershipSubscriptions.reduce((sum, subscription) => {
       // Map price IDs to monthly amounts
       switch (subscription.price_id) {
-        case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+        case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
           return sum + 299;
-        case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+        case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
           return sum + 199;
-        case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+        case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
           return sum + 99;
         default:
           return sum + 99; // Default to Gold Access amount
@@ -500,13 +500,13 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
       // Calculate revenue based on price ID
       let revenue = 99; // Default to Gold Access
       switch (subscription.price_id) {
-        case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+        case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
           revenue = 299;
           break;
-        case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+        case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
           revenue = 199;
           break;
-        case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+        case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
           revenue = 99;
           break;
       }
@@ -569,13 +569,13 @@ export function AdminReportGenerator({ isOpen, onClose }: AdminReportGeneratorPr
         // Calculate revenue based on price ID
         let revenue = 99; // Default to Gold Access
         switch (sale.price_id) {
-          case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+          case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
             revenue = 299;
             break;
-          case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+          case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
             revenue = 199;
             break;
-          case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+          case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
             revenue = 99;
             break;
         }

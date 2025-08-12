@@ -264,9 +264,9 @@ export function RevenueBreakdownDialog({
         .select('id, subscription_id, status, price_id, created_at')
         .eq('status', 'active')
         .in('price_id', [
-          'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
-          'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
-          'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+          'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+          'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+          'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
         ])
         .gte('created_at', startDate.toISOString());
 
@@ -482,11 +482,11 @@ export function RevenueBreakdownDialog({
         amount: (membershipSubscriptionsData || []).reduce((sum, subscription) => {
           // Calculate monthly revenue based on price IDs
           switch (subscription.price_id) {
-            case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+            case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
               return sum + 299; // Ultimate Access monthly
-            case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+            case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
               return sum + 199; // Platinum Access monthly
-            case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+            case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
               return sum + 99; // Gold Access monthly
             default:
               return sum + 99; // Default to Gold Access amount

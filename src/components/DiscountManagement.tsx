@@ -60,10 +60,10 @@ const APPLICABLE_ITEMS = [
 
 // Mapping of product names to Stripe price IDs for discount application
 const PRODUCT_PRICE_MAPPING = {
-  'single_track': 'price_1RdAeZR8RYA8TFzwVH3MHECa',
-  'gold_access': 'price_1RdAfER8RYA8TFzw7RrrNmtt',
-  'platinum_access': 'price_1RdAfXR8RYA8TFzwFZyaSREP',
-  'ultimate_access': 'price_1RdAfqR8RYA8TFzwKP7zrKsm',
+  'single_track': 'price_1RvLJCA4Yw5viczUrWeCZjom',
+  'gold_access': 'price_1RvLJyA4Yw5viczUwdHhIYAQ',
+  'platinum_access': 'price_1RvLKcA4Yw5viczUItn56P2m',
+  'ultimate_access': 'price_1RvLLRA4Yw5viczUCAGuLpKh',
   'starter': 'white_label_starter', // Custom pricing handled in white-label-checkout
   'pro': 'white_label_pro', // Custom pricing handled in white-label-checkout
   'enterprise': 'white_label_enterprise', // Custom pricing handled in white-label-checkout

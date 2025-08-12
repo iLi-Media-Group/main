@@ -538,9 +538,9 @@ if (subscription.price_id) {
           .select('id, subscription_id, status, price_id, created_at')
           .eq('status', 'active')
           .in('price_id', [
-            'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
-            'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
-            'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+            'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+            'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+            'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
           ]);
 
         if (membershipSubscriptionsError) {
@@ -555,13 +555,13 @@ if (subscription.price_id) {
           if (subscription.price_id) {
             // Map price IDs to monthly amounts based on stripe.ts
             switch (subscription.price_id) {
-              case 'price_1RdAfqR8RYA8TFzwKP7zrKsm': // Ultimate Access
+              case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
                 membership_monthly_amount += 299; // Ultimate Access monthly
                 break;
-              case 'price_1RdAfXR8RYA8TFzwFZyaSREP': // Platinum Access
+              case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
                 membership_monthly_amount += 199; // Platinum Access monthly
                 break;
-              case 'price_1RdAfER8RYA8TFzw7RrrNmtt': // Gold Access
+              case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
                 membership_monthly_amount += 99; // Gold Access monthly
                 break;
               default:

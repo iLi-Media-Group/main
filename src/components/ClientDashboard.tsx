@@ -563,13 +563,13 @@ const getPlanLevel = (plan: string): number => {
       let priceId = '';
       switch (targetPlan) {
         case 'Gold Access':
-          priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+          priceId = 'price_1RvLJyA4Yw5viczUwdHhIYAQ';
           break;
         case 'Platinum Access':
-          priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+          priceId = 'price_1RvLKcA4Yw5viczUItn56P2m';
           break;
         case 'Ultimate Access':
-          priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+          priceId = 'price_1RvLLRA4Yw5viczUCAGuLpKh';
           break;
         default:
           throw new Error('Invalid plan selected');
@@ -1499,13 +1499,13 @@ const getPlanLevel = (plan: string): number => {
       // Find the priceId for this license type
       let priceId = '';
       if (license.license_type === 'Single Track') {
-        priceId = 'price_1RdAeZR8RYA8TFzwVH3MHECa';
+        priceId = 'price_1RvLJCA4Yw5viczUrWeCZjom';
       } else if (license.license_type === 'Gold Access') {
-        priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+        priceId = 'price_1RvLJyA4Yw5viczUwdHhIYAQ';
       } else if (license.license_type === 'Platinum Access') {
-        priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+        priceId = 'price_1RvLKcA4Yw5viczUItn56P2m';
       } else if (license.license_type === 'Ultimate Access') {
-        priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+        priceId = 'price_1RvLLRA4Yw5viczUCAGuLpKh';
       }
       if (!priceId) throw new Error('Unknown license type');
       const url = await createCheckoutSession(priceId, 'payment', license.track.id, { renewal: true, licenseId: license.id });

@@ -273,9 +273,9 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
         .select('id, subscription_id, status, price_id, created_at')
         .eq('status', 'active')
         .in('price_id', [
-          'price_1RdAfqR8RYA8TFzwKP7zrKsm', // Ultimate Access
-          'price_1RdAfXR8RYA8TFzwFZyaSREP', // Platinum Access
-          'price_1RdAfER8RYA8TFzw7RrrNmtt'  // Gold Access
+          'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+          'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+          'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
         ])
         .gte('created_at', startDate.toISOString())
         .lte('created_at', now.toISOString());
@@ -378,8 +378,8 @@ export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email
       ...membershipSubscriptions.map(subscription => ({ 
         ...subscription, 
         type: 'membership', 
-        revenue: subscription.price_id === 'price_1RdAfqR8RYA8TFzwKP7zrKsm' ? 299 : 
-                subscription.price_id === 'price_1RdAfXR8RYA8TFzwFZyaSREP' ? 199 : 99
+        revenue: subscription.price_id === 'price_1RvLLRA4Yw5viczUCAGuLpKh' ? 299 : 
+                subscription.price_id === 'price_1RvLKcA4Yw5viczUItn56P2m' ? 199 : 99
       }))
     ];
 

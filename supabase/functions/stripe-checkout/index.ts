@@ -83,10 +83,10 @@ async function calculateDiscountedPrice(originalPrice: number, itemName: string,
 
 // Mapping of price IDs to product names for discount lookup
 const PRICE_TO_PRODUCT_MAPPING: Record<string, string> = {
-  'price_1RdAeZR8RYA8TFzwVH3MHECa': 'single_track',
-  'price_1RdAfER8RYA8TFzw7RrrNmtt': 'gold_access',
-  'price_1RdAfXR8RYA8TFzwFZyaSREP': 'platinum_access',
-  'price_1RdAfqR8RYA8TFzwKP7zrKsm': 'ultimate_access'
+  'price_1RvLJCA4Yw5viczUrWeCZjom': 'single_track',
+  'price_1RvLJyA4Yw5viczUwdHhIYAQ': 'gold_access',
+  'price_1RvLKcA4Yw5viczUItn56P2m': 'platinum_access',
+  'price_1RvLLRA4Yw5viczUCAGuLpKh': 'ultimate_access'
 };
 
 Deno.serve(async (req) => {

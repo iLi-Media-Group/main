@@ -218,13 +218,13 @@ export function formatDate(timestamp: number) {
 
 export function getMembershipPlanFromPriceId(priceId: string) {
   switch (priceId) {
-    case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
+    case 'price_1RvLLRA4Yw5viczUCAGuLpKh':
       return 'Ultimate Access';
-    case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
+    case 'price_1RvLKcA4Yw5viczUItn56P2m':
       return 'Platinum Access';
-    case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
+    case 'price_1RvLJyA4Yw5viczUwdHhIYAQ':
       return 'Gold Access';
-    case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
+    case 'price_1RvLJCA4Yw5viczUrWeCZjom':
       return 'Single Track';
     default:
       return 'Unknown Plan';
