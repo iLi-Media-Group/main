@@ -21,11 +21,27 @@ const TRACKS_PER_PAGE = 20;
 // Synonym expansion map for flexible search - now loaded from database
 // This will be replaced by the useSynonyms hook
 
+// Common stop words to filter out from search
+const STOP_WORDS = new Set([
+  'and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'his', 'hers', 'ours', 'theirs'
+]);
+
+// Helper function to filter out stop words from search terms
+const filterStopWords = (terms: string[]): string[] => {
+  return terms.filter(term => {
+    const lowerTerm = term.toLowerCase();
+    return !STOP_WORDS.has(lowerTerm) && lowerTerm.length > 1;
+  });
+};
+
 // Helper function to expand search terms with synonyms and comprehensive variations
 const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: string[] }): string[] => {
   const expandedTerms = new Set<string>();
   
-  searchTerms.forEach(term => {
+  // Filter out stop words first
+  const filteredTerms = filterStopWords(searchTerms);
+  
+  filteredTerms.forEach(term => {
     const lowerTerm = term.toLowerCase();
     expandedTerms.add(lowerTerm);
     
@@ -347,7 +363,9 @@ export function CatalogPage() {
         
         // Add text query terms
         if (filters?.query) {
-          searchTerms.push(...filters.query.split(/\s+/).filter(Boolean));
+                      const queryTerms = filters.query.split(/\s+/).filter(Boolean);
+            const filteredTerms = filterStopWords(queryTerms);
+            searchTerms.push(...filteredTerms);
         }
         
         // Add filter terms
@@ -519,7 +537,11 @@ export function CatalogPage() {
             filters?.instruments?.length || filters?.mediaTypes?.length) {
           
           const searchTerms: string[] = [];
-          if (filters?.query) searchTerms.push(...filters.query.split(/\s+/).filter(Boolean));
+          if (filters?.query) {
+          const queryTerms = filters.query.split(/\s+/).filter(Boolean);
+          const filteredTerms = filterStopWords(queryTerms);
+          searchTerms.push(...filteredTerms);
+        }
           if (filters?.genres?.length) searchTerms.push(...filters.genres);
           if (filters?.subGenres?.length) searchTerms.push(...filters.subGenres);
           if (filters?.moods?.length) searchTerms.push(...filters.moods);

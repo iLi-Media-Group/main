@@ -203,8 +203,14 @@ serve(async (req) => {
 
     console.log('Parsed parameters:', { query, genres, subgenres, moods, instruments, usageTypes, limit });
 
-    // Parse search terms
-    const searchTerms = query.toLowerCase().split(/\s+/).map(t => t.trim()).filter(Boolean);
+    // Common stop words to filter out
+    const STOP_WORDS = new Set([
+      'and', 'or', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'mine', 'yours', 'his', 'hers', 'ours', 'theirs'
+    ]);
+
+    // Parse search terms and filter out stop words
+    const rawSearchTerms = query.toLowerCase().split(/\s+/).map(t => t.trim()).filter(Boolean);
+    const searchTerms = rawSearchTerms.filter(term => !STOP_WORDS.has(term) && term.length > 1);
     
     // Expand terms with synonyms using the improved function
     const expandedTerms = await expandWithSynonyms(searchTerms);
