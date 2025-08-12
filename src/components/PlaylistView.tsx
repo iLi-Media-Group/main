@@ -19,7 +19,7 @@ import { parseArrayField } from '../lib/utils';
 import { LoginModal } from './LoginModal';
 
 export function PlaylistView() {
-  const { producerSlug, playlistSlug } = useParams<{ producerSlug: string; playlistSlug: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
@@ -32,19 +32,17 @@ export function PlaylistView() {
   const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
-    if (producerSlug && playlistSlug) {
+    if (slug) {
       loadPlaylist();
     }
-  }, [producerSlug, playlistSlug]);
+  }, [slug]);
 
   const loadPlaylist = async () => {
     try {
       setLoading(true);
-      if (!producerSlug || !playlistSlug) return;
+      if (!slug) return;
 
-      // Construct the full slug from producer and playlist slugs
-      const fullSlug = `${producerSlug}/${playlistSlug}`;
-      const playlistData = await PlaylistService.getPlaylist(fullSlug);
+      const playlistData = await PlaylistService.getPlaylist(slug);
       if (!playlistData) {
         setError('Playlist not found');
         return;

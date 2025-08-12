@@ -246,7 +246,7 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8">
           {playlists.map((playlist) => (
             <div key={playlist.id} className="bg-blue-800/20 rounded-xl border border-blue-500/20 p-6 hover:bg-blue-800/30 transition-colors">
               <div className="flex flex-col h-full">
