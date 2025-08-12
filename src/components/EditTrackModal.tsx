@@ -327,7 +327,24 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                 <p className="text-gray-400">Genres: <span className="text-white">{selectedGenres.length > 0 ? selectedGenres.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Moods: <span className="text-white">{selectedMoods.length > 0 ? selectedMoods.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Instruments: <span className="text-white">{selectedInstruments.length > 0 ? selectedInstruments.join(', ') : 'None set'}</span></p>
-                <p className="text-gray-400">Media Usage: <span className="text-white">{selectedMediaUsage.length > 0 ? selectedMediaUsage.join(', ') : 'None set'}</span></p>
+                <div className="text-gray-400">
+                  Media Usage: 
+                  {selectedMediaUsage.length > 0 ? (
+                    <div className="mt-1">
+                      <span className="text-white text-xs bg-blue-600/20 px-2 py-1 rounded mr-1 mb-1 inline-block">
+                        {selectedMediaUsage.length} selected
+                      </span>
+                      <div className="text-white text-xs mt-1">
+                        {selectedMediaUsage.slice(0, 3).join(', ')}
+                        {selectedMediaUsage.length > 3 && (
+                          <span className="text-gray-400"> +{selectedMediaUsage.length - 3} more</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <span className="text-white">None set</span>
+                  )}
+                </div>
                 <p className="text-gray-400">Vocals: <span className="text-white">{hasVocals ? 'Full Track with Vocals' : 'Instrumental'}</span></p>
                 <p className="text-gray-400">Sync Only: <span className="text-white">{isSyncOnly ? 'Yes' : 'No'}</span></p>
               </div>
