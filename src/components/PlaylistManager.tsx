@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Edit, 
@@ -24,6 +25,7 @@ interface PlaylistManagerProps {
 
 export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,11 +55,18 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
   const loadPlaylists = async () => {
     try {
       setLoading(true);
+      setError(''); // Clear any previous errors
       const playlistsData = await PlaylistService.getProducerPlaylists();
       setPlaylists(playlistsData);
     } catch (err) {
-      setError('Failed to load playlists');
-      console.error(err);
+      console.error('Failed to load playlists:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load playlists';
+      setError(errorMessage);
+      
+      // If it's a 406 error, it might be a permissions issue
+      if (err instanceof Error && err.message.includes('406')) {
+        setError('Permission denied. Please check your authentication status.');
+      }
     } finally {
       setLoading(false);
     }
@@ -156,12 +165,20 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
     if (!selectedPlaylist) return;
 
     try {
+      console.log('Adding track to playlist:', { playlistId: selectedPlaylist.id, trackId });
       await PlaylistService.addTrackToPlaylist(selectedPlaylist.id, trackId);
       // Refresh the playlists to show updated track count
       await loadPlaylists();
+      setError(''); // Clear any previous errors
     } catch (err) {
-      setError('Failed to add track to playlist');
-      console.error(err);
+      console.error('Failed to add track to playlist:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add track to playlist';
+      setError(errorMessage);
+      
+      // If it's a 406 error, it might be a permissions issue
+      if (err instanceof Error && err.message.includes('406')) {
+        setError('Permission denied. Please check if you have access to this playlist.');
+      }
     }
   };
 

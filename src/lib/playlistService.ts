@@ -50,6 +50,8 @@ export class PlaylistService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('Fetching playlists for user:', user.id);
+
     const { data: playlists, error } = await supabase
       .from('playlists')
       .select(`
@@ -60,14 +62,32 @@ export class PlaylistService {
           last_name,
           email,
           avatar_path
-        ),
-        tracks_count:playlist_tracks(count)
+        )
       `)
       .eq('producer_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return playlists || [];
+    if (error) {
+      console.error('Error fetching playlists:', error);
+      throw error;
+    }
+
+    // Get track counts separately to avoid complex joins
+    const playlistsWithCounts = await Promise.all(
+      (playlists || []).map(async (playlist) => {
+        const { count } = await supabase
+          .from('playlist_tracks')
+          .select('*', { count: 'exact', head: true })
+          .eq('playlist_id', playlist.id);
+        
+        return {
+          ...playlist,
+          tracks_count: count || 0
+        };
+      })
+    );
+
+    return playlistsWithCounts;
   }
 
   // Get a single playlist with tracks
@@ -181,18 +201,25 @@ export class PlaylistService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('Adding track to playlist:', { playlistId, trackId, userId: user.id });
+
     // Verify playlist belongs to user
-    const { data: playlist } = await supabase
+    const { data: playlist, error: playlistError } = await supabase
       .from('playlists')
       .select('id')
       .eq('id', playlistId)
       .eq('producer_id', user.id)
       .single();
 
+    if (playlistError) {
+      console.error('Error verifying playlist ownership:', playlistError);
+      throw new Error('Playlist not found or access denied');
+    }
+
     if (!playlist) throw new Error('Playlist not found or access denied');
 
     // Get current max position
-    const { data: maxPosition } = await supabase
+    const { data: maxPosition, error: positionError } = await supabase
       .from('playlist_tracks')
       .select('position')
       .eq('playlist_id', playlistId)
@@ -200,7 +227,14 @@ export class PlaylistService {
       .limit(1)
       .single();
 
+    if (positionError && positionError.code !== 'PGRST116') {
+      console.error('Error getting max position:', positionError);
+      throw positionError;
+    }
+
     const newPosition = (maxPosition?.position || 0) + 1;
+
+    console.log('Inserting playlist track with position:', newPosition);
 
     const { data: playlistTrack, error } = await supabase
       .from('playlist_tracks')
@@ -243,7 +277,11 @@ export class PlaylistService {
       `)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error adding track to playlist:', error);
+      throw error;
+    }
+    
     return playlistTrack;
   }
 
