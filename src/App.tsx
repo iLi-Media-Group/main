@@ -79,6 +79,7 @@ import { BusinessVerificationForm } from './components/BusinessVerificationForm'
 import { PlaylistManager } from './components/PlaylistManager';
 import { PlaylistView } from './components/PlaylistView';
 import { PlaylistAnalytics } from './components/PlaylistAnalytics';
+import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -507,7 +508,14 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-        <Route path="/playlist/:producerSlug/:playlistSlug" element={<PlaylistView />} />
+                 <Route path="/playlist/:producerSlug/:playlistSlug" element={<PlaylistView />} />
+         <Route path="/favorited-playlists" element={
+           <ProtectedRoute>
+             <LayoutWrapper>
+               <FavoritedPlaylistsPage />
+             </LayoutWrapper>
+           </ProtectedRoute>
+         } />
 
         <Route path="/business-verification" element={
           <ProtectedRoute>

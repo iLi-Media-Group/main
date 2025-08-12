@@ -10,7 +10,8 @@ import {
   Eye, 
   BarChart3,
   Search,
-  X
+  X,
+  Heart
 } from 'lucide-react';
 import { PlaylistService } from '../lib/playlistService';
 import { Playlist, CreatePlaylistData, UpdatePlaylistData } from '../types/playlist';
@@ -53,7 +54,7 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
-      const playlistsData = await PlaylistService.getProducerPlaylists();
+      const playlistsData = await PlaylistService.getProducerPlaylistsWithFavorites();
       setPlaylists(playlistsData);
     } catch (err) {
       console.error('Failed to load playlists:', err);
@@ -128,7 +129,15 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
   };
 
   const handleDeletePlaylist = async (playlistId: string) => {
-    if (!confirm('Are you sure you want to delete this playlist?')) return;
+    const playlist = playlists.find(p => p.id === playlistId);
+    const favoriteCount = (playlist as any)?.favorite_count || 0;
+    
+    let confirmMessage = 'Are you sure you want to delete this playlist?';
+    if (favoriteCount > 0) {
+      confirmMessage = `This playlist is favorited by ${favoriteCount} client${favoriteCount === 1 ? '' : 's'}. Are you sure you want to delete it? This action cannot be undone.`;
+    }
+    
+    if (!confirm(confirmMessage)) return;
 
     try {
       await PlaylistService.deletePlaylist(playlistId);
@@ -244,7 +253,18 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                 {/* Playlist Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-white truncate mb-1">{playlist.name}</h3>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <h3 className="text-lg font-semibold text-white truncate">{playlist.name}</h3>
+                      {(playlist as any).favorite_count > 0 && (
+                        <div 
+                          className="flex items-center space-x-1 bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs cursor-help"
+                          title={`${(playlist as any).favorite_count} client${(playlist as any).favorite_count === 1 ? '' : 's'} favorited this playlist`}
+                        >
+                          <Heart className="w-3 h-3" />
+                          <span>{(playlist as any).favorite_count}</span>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-400">
                       {playlist.tracks_count || 0} tracks
                     </p>

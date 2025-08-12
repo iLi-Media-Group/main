@@ -16,6 +16,7 @@ import { PlaylistWithTracks } from '../types/playlist';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioPlayer } from './AudioPlayer';
 import { parseArrayField } from '../lib/utils';
+import { LoginModal } from './LoginModal';
 
 export function PlaylistView() {
   const { producerSlug, playlistSlug } = useParams<{ producerSlug: string; playlistSlug: string }>();
@@ -26,6 +27,9 @@ export function PlaylistView() {
   const [error, setError] = useState('');
   const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (producerSlug && playlistSlug) {
@@ -47,6 +51,12 @@ export function PlaylistView() {
       }
 
       setPlaylist(playlistData);
+      
+      // Check if playlist is favorited by current user
+      if (user) {
+        const favorited = await PlaylistService.isFavorited(playlistData.id);
+        setIsFavorited(favorited);
+      }
       
       // Record the view
       await PlaylistService.recordPlaylistView(playlistData.id);
@@ -78,6 +88,30 @@ export function PlaylistView() {
       // User is not logged in, show login/register modal
       // This will be handled by the track card component
     }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (!playlist) return;
+
+    try {
+      setFavoriteLoading(true);
+      const newFavorited = await PlaylistService.toggleFavorite(playlist.id);
+      setIsFavorited(newFavorited);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    // Refresh the page to update the user state and favorite status
+    window.location.reload();
   };
 
   const getProducerName = () => {
@@ -205,7 +239,23 @@ export function PlaylistView() {
 
           {/* Playlist Info */}
           <div className="text-center mb-12">
-            <h2 className="text-5xl font-bold text-white mb-4">{playlist.name}</h2>
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              <h2 className="text-5xl font-bold text-white">{playlist.name}</h2>
+              {user && (
+                <button
+                  onClick={handleToggleFavorite}
+                  className="p-3 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+                  title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                  disabled={favoriteLoading}
+                >
+                  {favoriteLoading ? (
+                    <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-red-400"></div>
+                  ) : (
+                    <Heart className={`w-6 h-6 ${isFavorited ? 'text-red-400 fill-current' : 'text-gray-400'}`} />
+                  )}
+                </button>
+              )}
+            </div>
             {playlist.description && (
               <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
                 {playlist.description}
@@ -307,10 +357,16 @@ export function PlaylistView() {
                             <ExternalLink className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={handleToggleFavorite}
                             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                             title="Add to favorites"
+                            disabled={favoriteLoading}
                           >
-                            <Heart className="w-4 h-4" />
+                            {favoriteLoading ? (
+                              <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
+                            ) : (
+                              <Heart className={`w-4 h-4 ${isFavorited ? 'text-red-400' : 'text-gray-400'}`} />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -343,20 +399,20 @@ export function PlaylistView() {
                 Log in or create a FREE account to license these tracks directly!
               </p>
               
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                <button
-                  onClick={() => navigate('/login')}
-                  className="btn-primary px-8 py-3 text-lg"
-                >
-                  Log In to Your Account
-                </button>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="btn-secondary px-8 py-3 text-lg"
-                >
-                  Create FREE Account
-                </button>
-              </div>
+                             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                 <button
+                   onClick={() => setShowLoginModal(true)}
+                   className="btn-primary px-8 py-3 text-lg"
+                 >
+                   Log In to Your Account
+                 </button>
+                 <button
+                   onClick={() => setShowLoginModal(true)}
+                   className="btn-secondary px-8 py-3 text-lg"
+                 >
+                   Create FREE Account
+                 </button>
+               </div>
               
               <p className="text-sm text-gray-400 mt-4">
                 Join thousands of music supervisors and content creators who trust MyBeatFi for their music licensing needs.
@@ -367,9 +423,16 @@ export function PlaylistView() {
           {/* Footer */}
           <div className="mt-12 text-center text-gray-400 text-sm">
             <p>Powered by MyBeatFi • Professional Music Licensing Platform</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+                     </div>
+         </div>
+       </div>
+
+       {/* Login Modal */}
+       <LoginModal
+         isOpen={showLoginModal}
+         onClose={() => setShowLoginModal(false)}
+         onLoginSuccess={handleLoginSuccess}
+       />
+     </div>
+   );
+ }

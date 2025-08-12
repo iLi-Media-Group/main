@@ -641,4 +641,91 @@ export class PlaylistService {
       return uniqueSlug;
     }
   }
+
+  // Get user's favorited playlists
+  static async getFavoritedPlaylists(limit: number = 10): Promise<any[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase.rpc('get_user_favorited_playlists', {
+      p_limit: limit
+    });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  // Toggle playlist favorite status
+  static async toggleFavorite(playlistId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await supabase.rpc('toggle_playlist_favorite', {
+      p_playlist_id: playlistId
+    });
+
+    if (error) throw error;
+    return data;
+  }
+
+  // Check if a playlist is favorited by the current user
+  static async isFavorited(playlistId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { data, error } = await supabase
+      .from('playlist_favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('playlist_id', playlistId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return !!data;
+  }
+
+  // Check if a playlist is favorited by any clients
+  static async getPlaylistFavoriteCount(playlistId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('playlist_favorites')
+      .select('id', { count: 'exact', head: true })
+      .eq('playlist_id', playlistId);
+
+    if (error) {
+      console.error('Error getting playlist favorite count:', error);
+      return 0;
+    }
+
+    return data?.length || 0;
+  }
+
+  // Get all playlists with their favorite counts for a producer
+  static async getProducerPlaylistsWithFavorites(): Promise<any[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: playlists, error: playlistError } = await supabase
+      .from('playlists')
+      .select(`
+        *,
+        producer:profiles!playlists_producer_id_fkey(first_name, last_name, email)
+      `)
+      .eq('producer_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (playlistError) throw playlistError;
+
+    // Get favorite counts for each playlist
+    const playlistsWithFavorites = await Promise.all(
+      playlists.map(async (playlist) => {
+        const favoriteCount = await this.getPlaylistFavoriteCount(playlist.id);
+        return {
+          ...playlist,
+          favorite_count: favoriteCount
+        };
+      })
+    );
+
+    return playlistsWithFavorites;
+  }
 }
