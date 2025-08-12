@@ -210,25 +210,18 @@ export function ProducerInvitation() {
         </div>
       `;
 
-      // Send email using simple email function
-      const { error } = await supabase.functions.invoke('send-simple-email', {
+      // Send email using resend email function
+      const { error } = await supabase.functions.invoke('send-email-resend', {
         body: {
           to: invitationData.email,
           subject: emailSubject,
-          html: emailHtml,
-          producerData: {
-            email: invitationData.email,
-            firstName: invitationData.firstName,
-            lastName: invitationData.lastName,
-            producerNumber: invitationData.producerNumber,
-            invitationCode: invitationData.invitationCode
-          }
+          html: emailHtml
         }
       });
 
       if (error) throw error;
 
-      setSuccess('Congratulations email sent successfully via Gmail!');
+      setSuccess('Producer invitation email sent successfully!');
       
       // Update application status if coming from application
       if (applicationId) {
