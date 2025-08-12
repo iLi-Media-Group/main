@@ -17,6 +17,37 @@ import { useAuth } from '../contexts/AuthContext';
 import { AudioPlayer } from './AudioPlayer';
 import { parseArrayField } from '../lib/utils';
 import { LoginModal } from './LoginModal';
+import { useSignedUrl } from '../hooks/useSignedUrl';
+import { supabase } from '../lib/supabase';
+
+// Component to handle signed URL generation for track audio
+function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: string }) {
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.mp3_url || track.audio_url);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={track.title}
+      audioId={audioId}
+    />
+  );
+}
 
 export function PlaylistView() {
   const { slug } = useParams<{ slug: string }>();
@@ -72,36 +103,7 @@ export function PlaylistView() {
       setAudioUrl(null);
     } else {
       setCurrentPlayingTrack(track.id);
-      
-      console.log('Track data for audio:', {
-        id: track.id,
-        title: track.title,
-        mp3_url: track.mp3_url,
-        audio_url: track.audio_url,
-        fullTrack: track
-      });
-      
-      // Use mp3_url if available, otherwise fall back to audio_url
-      let trackUrl = track.mp3_url || track.audio_url;
-      
-      console.log('Initial track URL:', trackUrl);
-      
-      // If the URL is not a full URL, construct the Supabase storage URL
-      if (trackUrl && !trackUrl.startsWith('http')) {
-        const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-        // Try different possible bucket names for audio files
-        const possibleBuckets = ['tracks', 'audio', 'music', 'files', 'public'];
-        
-        for (const bucket of possibleBuckets) {
-          const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${trackUrl}`;
-          console.log('Trying audio URL:', url);
-          trackUrl = url;
-          break; // Use the first bucket for now
-        }
-      }
-      
-      console.log('Final audio URL:', trackUrl);
-      setAudioUrl(trackUrl);
+      setAudioUrl(track.mp3_url || track.audio_url);
     }
   };
 
@@ -155,81 +157,62 @@ export function PlaylistView() {
   const getProducerImage = () => {
     if (!playlist?.producer) return null;
     
-    console.log('Producer data:', playlist.producer);
-    console.log('Playlist photo_url:', playlist.photo_url);
-    
     // First try to use the producer's avatar_path
     if (playlist.producer.avatar_path) {
-      console.log('Producer avatar_path:', playlist.producer.avatar_path);
-      
       // If it's a full URL, use it directly
       if (playlist.producer.avatar_path.startsWith('http')) {
-        console.log('Using full URL for avatar:', playlist.producer.avatar_path);
         return playlist.producer.avatar_path;
       }
       
-      // If it's a path, construct the Supabase storage URL
-      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      const possibleBuckets = ['avatars', 'profiles', 'images', 'public'];
-      
-      for (const bucket of possibleBuckets) {
-        const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.producer.avatar_path}`;
-        console.log('Trying producer image URL:', url);
-        return url;
+      // If it's a path, use the same approach as ProfilePhotoUpload
+      try {
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(playlist.producer.avatar_path.replace('profile-photos/', ''));
+        return publicUrl;
+      } catch (error) {
+        console.error('Error getting producer image URL:', error);
       }
     }
     
     // Then try to use the playlist's photo_url (which might be the producer's photo)
     if (playlist.photo_url) {
-      console.log('Playlist photo_url:', playlist.photo_url);
-      
       // If it's a full URL, use it directly
       if (playlist.photo_url.startsWith('http')) {
-        console.log('Using full URL for playlist photo:', playlist.photo_url);
         return playlist.photo_url;
       }
       
-      // If it's a path, construct the Supabase storage URL
-      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      const possibleBuckets = ['avatars', 'profiles', 'images', 'public'];
-      
-      for (const bucket of possibleBuckets) {
-        const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.photo_url}`;
-        console.log('Trying playlist photo URL:', url);
-        return url;
+      // If it's a path, use the same approach as ProfilePhotoUpload
+      try {
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(playlist.photo_url.replace('profile-photos/', ''));
+        return publicUrl;
+      } catch (error) {
+        console.error('Error getting playlist photo URL:', error);
       }
     }
     
-    console.log('No image found, returning null');
     return null;
   };
 
   const getTotalDuration = () => {
     if (!playlist?.tracks) return '0:00';
     
-    console.log('Calculating total duration for tracks:', playlist.tracks.map(pt => ({
-      title: pt.track?.title,
-      duration: pt.track?.duration,
-      durationType: typeof pt.track?.duration
-    })));
-    
     const totalSeconds = playlist.tracks.reduce((total, playlistTrack) => {
       const track = playlistTrack.track;
       if (!track?.duration) {
-        console.log(`No duration for track: ${track?.title}`);
         return total;
       }
       
       // Handle different duration formats
       let duration = track.duration;
-      console.log(`Processing duration for ${track.title}:`, duration, 'type:', typeof duration);
       
       // If duration is in seconds (number), convert to MM:SS format
       if (typeof duration === 'number') {
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
         duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        console.log(`Converted number duration to string: ${duration}`);
       }
       
       // Parse MM:SS format
@@ -239,26 +222,20 @@ export function PlaylistView() {
           const minutes = parseInt(parts[0]) || 0;
           const seconds = parseInt(parts[1]) || 0;
           const trackSeconds = (minutes * 60) + seconds;
-          console.log(`Track ${track.title}: ${duration} = ${trackSeconds} seconds`);
           return total + trackSeconds;
         } else if (parts.length === 1) {
           // If it's just seconds
           const seconds = parseInt(parts[0]) || 0;
-          console.log(`Track ${track.title}: ${duration} = ${seconds} seconds`);
           return total + seconds;
         }
       }
       
-      console.log(`Could not parse duration for track ${track.title}: ${duration}`);
       return total;
     }, 0);
     
-    console.log('Total seconds:', totalSeconds);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    const result = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    console.log('Final duration:', result);
-    return result;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (loading) {
@@ -304,12 +281,8 @@ export function PlaylistView() {
                    alt={getProducerName()}
                    className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
                    onError={(e) => {
-                     console.log('Image failed to load:', getProducerImage());
                      e.currentTarget.style.display = 'none';
                      e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                   }}
-                   onLoad={(e) => {
-                     console.log('Image loaded successfully:', getProducerImage());
                    }}
                  />
                ) : null}
@@ -480,16 +453,15 @@ export function PlaylistView() {
                         </div>
                       </div>
 
-                      {/* Audio Player */}
-                      {currentPlayingTrack === track.id && audioUrl && audioUrl.trim() !== '' && (
-                        <div className="mt-4">
-                          <AudioPlayer 
-                            src={audioUrl as string} 
-                            title={track.title}
-                            audioId={`playlist-track-${track.id}`}
-                          />
-                        </div>
-                      )}
+                                             {/* Audio Player */}
+                       {currentPlayingTrack === track.id && (
+                         <div className="mt-4">
+                           <PlaylistTrackAudioPlayer 
+                             track={track}
+                             audioId={`playlist-track-${track.id}`}
+                           />
+                         </div>
+                       )}
                     </div>
                   );
                 })
