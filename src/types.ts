@@ -55,13 +55,6 @@ export interface Track {
   payment_terms?: string;
   is_exclusive?: boolean;
   explicit_lyrics?: boolean;
-  // Spotify integration fields
-  spotify_track_id?: string;
-  spotify_preview_url?: string;
-  spotify_external_url?: string;
-  use_spotify_preview?: boolean;
-  spotify_search_attempted?: boolean;
-  spotify_last_searched?: string;
 }
 
 export interface SyncProposal {

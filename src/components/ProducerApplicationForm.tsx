@@ -94,7 +94,6 @@ const initialFormData = {
   daws_used: '',
   team_type: '',
   tracks_per_week: '',
-  spotify_link: '',
   instruments: '', // Keep for backward compatibility
   sample_use: '',
   splice_use: '',
@@ -230,7 +229,6 @@ const ProducerApplicationForm: React.FC = () => {
         break;
       
       case 2: // Music & Links
-        if (!formData.spotify_link.trim()) errors.push('Spotify link is required');
         if (!formData.sample_use) errors.push('Please select whether you use samples');
         if (!formData.splice_use) errors.push('Please select whether you use Splice');
         if (!formData.loop_use) errors.push('Please select whether you use loops');
@@ -418,7 +416,6 @@ const ProducerApplicationForm: React.FC = () => {
       {step === 2 && (
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-xl font-bold mb-2 flex items-center"><Music className="w-5 h-5 mr-2" />Music & Links</h2>
-          <input name="spotify_link" placeholder="Best Spotify Link to Your Work *" value={formData.spotify_link} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
           
           {/* Instruments Section */}
           <div className="space-y-4">

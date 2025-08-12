@@ -17,7 +17,6 @@ type Application = {
   daws_used: string;
   team_type: string;
   tracks_per_week: string;
-  spotify_link: string;
   instruments: string; // Keep for backward compatibility
   sample_use: string;
   splice_use: string;
@@ -1195,7 +1194,6 @@ export default function ProducerApplicationsAdmin() {
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-white">Music Creation</h3>
                 <div className="space-y-2 text-sm text-white">
-                  <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.spotify_link}</a></p>
                   <p><strong>Sample Use:</strong> {selectedApplication.sample_use}</p>
                   <p><strong>Splice Use:</strong> {selectedApplication.splice_use}</p>
                   <p><strong>Loop Use:</strong> {selectedApplication.loop_use}</p>

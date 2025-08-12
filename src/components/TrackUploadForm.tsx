@@ -290,7 +290,7 @@ export function TrackUploadForm() {
     FilePersistenceManager.saveFileMetadata(file, FORM_KEY, 'imageFile');
   };
 
-  // Handle Spotify URL input
+
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -427,8 +427,6 @@ export function TrackUploadForm() {
         console.log('[DEBUG] No stems file to upload, using existing stemsUrl:', formData.stemsUrl);
       }
       // --- End new logic ---
-
-      // Prepare Spotify data if available
 
       // Insert or update track in DB
       const insertData = {

@@ -91,34 +91,119 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     .filter(Boolean)
     .join(' ').toLowerCase();
   
+  // Track which search terms are matched
+  const matchedTerms = new Set<string>();
+  const genreTerms = new Set<string>();
+  const mediaTerms = new Set<string>();
+  
+  // First pass: identify what type of terms we're dealing with
+  for (const term of searchTerms) {
+    const termLower = term.toLowerCase();
+    
+    // Check if this is a genre term by looking for common genre keywords
+    const genreKeywords = ['pop', 'rock', 'jazz', 'hip', 'hop', 'rap', 'country', 'blues', 'folk', 'electronic', 'edm', 'classical', 'r&b', 'rnb', 'soul', 'reggae', 'latin', 'world', 'ambient', 'chill', 'dance', 'house', 'techno', 'trance', 'dubstep', 'trap', 'drill', 'grime'];
+    if (genreKeywords.some(keyword => termLower.includes(keyword))) {
+      genreTerms.add(termLower);
+    }
+    
+    // Check if this is a media type term
+    const mediaKeywords = ['television', 'tv', 'commercial', 'film', 'movie', 'advertisement', 'radio', 'podcast', 'video', 'youtube', 'streaming', 'gaming', 'game', 'sports', 'fitness', 'corporate', 'business', 'retail', 'restaurant', 'hospitality', 'education', 'training', 'presentation', 'event', 'wedding', 'party', 'celebration'];
+    if (mediaKeywords.some(keyword => termLower.includes(keyword))) {
+      mediaTerms.add(termLower);
+    }
+  }
+  
+  // Second pass: calculate scores with priority for genre matches
   for (const term of searchTerms) {
     const termLower = term.toLowerCase();
     
     // Exact matches (highest priority)
-    if (titleLower === termLower) score += 10;
-    if (artistLower === termLower) score += 8;
-    if (genresLower === termLower) score += 6;
+    if (titleLower === termLower) {
+      score += 10;
+      matchedTerms.add(termLower);
+    }
+    if (artistLower === termLower) {
+      score += 8;
+      matchedTerms.add(termLower);
+    }
+    if (genresLower === termLower) {
+      score += 12; // Higher score for exact genre match
+      matchedTerms.add(termLower);
+    }
     
     // Partial matches (medium priority)
-    if (titleLower.includes(termLower)) score += 5;
-    if (artistLower.includes(termLower)) score += 4;
-    if (genresLower.includes(termLower)) score += 3;
+    if (titleLower.includes(termLower)) {
+      score += 5;
+      matchedTerms.add(termLower);
+    }
+    if (artistLower.includes(termLower)) {
+      score += 4;
+      matchedTerms.add(termLower);
+    }
+    if (genresLower.includes(termLower)) {
+      score += 8; // Higher score for partial genre match
+      matchedTerms.add(termLower);
+    }
     
     // Media types - equal weight to genres
-    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) score += 6; // Same as genres exact match
-    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) score += 3; // Same as genres partial match
+    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) {
+      score += 6; // Same as genres exact match
+      matchedTerms.add(termLower);
+    }
+    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) {
+      score += 3; // Same as genres partial match
+      matchedTerms.add(termLower);
+    }
     
     // Service-specific scoring
-    if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) score += 4;
-    if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) score += 3;
-    if (serviceParams?.usageTypes?.length && (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower))) score += 3;
+    if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) {
+      score += 4;
+      matchedTerms.add(termLower);
+    }
+    if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) {
+      score += 3;
+      matchedTerms.add(termLower);
+    }
+    if (serviceParams?.usageTypes?.length && (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower))) {
+      score += 3;
+      matchedTerms.add(termLower);
+    }
     
     // Fuzzy matches (lower priority) - using simple similarity
     const titleSimilarity = calculateSimilarity(titleLower, termLower);
     const artistSimilarity = calculateSimilarity(artistLower, termLower);
     
-    if (titleSimilarity > 0.3) score += titleSimilarity * 2;
-    if (artistSimilarity > 0.3) score += artistSimilarity * 1.5;
+    if (titleSimilarity > 0.3) {
+      score += titleSimilarity * 2;
+      matchedTerms.add(termLower);
+    }
+    if (artistSimilarity > 0.3) {
+      score += artistSimilarity * 1.5;
+      matchedTerms.add(termLower);
+    }
+  }
+  
+  // Heavy penalty for tracks that don't match genre terms when genre terms are present
+  if (genreTerms.size > 0) {
+    const matchedGenreTerms = Array.from(genreTerms).filter(term => matchedTerms.has(term));
+    const genreMatchRatio = matchedGenreTerms.length / genreTerms.size;
+    
+    if (genreMatchRatio === 0) {
+      // No genre terms matched - heavy penalty
+      score -= 50;
+    } else if (genreMatchRatio < 1) {
+      // Some genre terms matched - moderate penalty
+      score -= (1 - genreMatchRatio) * 20;
+    } else {
+      // All genre terms matched - bonus
+      score += 10;
+    }
+  }
+  
+  // Bonus for tracks that match multiple search terms
+  const matchRatio = matchedTerms.size / searchTerms.length;
+  if (matchRatio > 0.5) {
+    score += matchRatio * 5;
   }
   
   // Additional scoring for media type filters

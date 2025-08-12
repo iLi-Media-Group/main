@@ -207,10 +207,7 @@ export function TrackPage() {
             stemsWithVocals: 0 
           },
           leaseAgreementUrl: '',
-          explicit_lyrics: trackData.explicit_lyrics || false,
-          spotify_track_id: trackData.spotify_track_id,
-          spotify_external_url: trackData.spotify_external_url,
-          use_spotify_preview: trackData.use_spotify_preview
+          explicit_lyrics: trackData.explicit_lyrics || false
         };
         
         setTrack(mappedTrack);

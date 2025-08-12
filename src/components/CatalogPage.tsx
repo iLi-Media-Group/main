@@ -143,6 +143,28 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
   const hasSyncOnlyTerm = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
   const hasVocalsTerm = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
   
+  // Track which search terms are matched
+  const matchedTerms = new Set<string>();
+  const genreTerms = new Set<string>();
+  const mediaTerms = new Set<string>();
+  
+  // First pass: identify what type of terms we're dealing with
+  for (const term of searchTerms) {
+    const termLower = term.toLowerCase();
+    
+    // Check if this is a genre term by looking for common genre keywords
+    const genreKeywords = ['pop', 'rock', 'jazz', 'hip', 'hop', 'rap', 'country', 'blues', 'folk', 'electronic', 'edm', 'classical', 'r&b', 'rnb', 'soul', 'reggae', 'latin', 'world', 'ambient', 'chill', 'dance', 'house', 'techno', 'trance', 'dubstep', 'trap', 'drill', 'grime'];
+    if (genreKeywords.some(keyword => termLower.includes(keyword))) {
+      genreTerms.add(termLower);
+    }
+    
+    // Check if this is a media type term
+    const mediaKeywords = ['television', 'tv', 'commercial', 'film', 'movie', 'advertisement', 'radio', 'podcast', 'video', 'youtube', 'streaming', 'gaming', 'game', 'sports', 'fitness', 'corporate', 'business', 'retail', 'restaurant', 'hospitality', 'education', 'training', 'presentation', 'event', 'wedding', 'party', 'celebration'];
+    if (mediaKeywords.some(keyword => termLower.includes(keyword))) {
+      mediaTerms.add(termLower);
+    }
+  }
+  
   // Check Sync Only (+8 for exact match when searching for sync only)
   if (hasSyncOnlyTerm && track.is_sync_only === true) {
     score += 8;
@@ -153,32 +175,42 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
     score += 8;
   }
   
-  // Check genres (+5 for exact match, +3 for partial match)
+  // Check genres (+8 for exact match, +5 for partial match) - increased priority
   const trackGenres = parseArrayField(track.genres);
   trackGenres.forEach((genre: string) => {
     const genreLower = genre.toLowerCase();
     // Check for exact matches first
-    if (expandedTerms.some(term => genreLower === term)) {
-      score += 5;
-    } else if (expandedTerms.some(term => genreLower.includes(term) || term.includes(genreLower))) {
-      score += 3;
-    }
+    expandedTerms.forEach(term => {
+      if (genreLower === term) {
+        score += 8; // Increased from 5
+        matchedTerms.add(term);
+      } else if (genreLower.includes(term) || term.includes(genreLower)) {
+        score += 5; // Increased from 3
+        matchedTerms.add(term);
+      }
+    });
   });
   
   // Check sub-genres (+2 for each match)
   const trackSubGenres = parseArrayField(track.sub_genres);
   trackSubGenres.forEach((subGenre: string) => {
-    if (expandedTerms.some(term => subGenre.toLowerCase().includes(term))) {
-      score += 2;
-    }
+    expandedTerms.forEach(term => {
+      if (subGenre.toLowerCase().includes(term)) {
+        score += 2;
+        matchedTerms.add(term);
+      }
+    });
   });
   
   // Check moods (+2 for each match)
   const trackMoods = parseArrayField(track.moods);
   trackMoods.forEach((mood: string) => {
-    if (expandedTerms.some(term => mood.toLowerCase().includes(term))) {
-      score += 2;
-    }
+    expandedTerms.forEach(term => {
+      if (mood.toLowerCase().includes(term)) {
+        score += 2;
+        matchedTerms.add(term);
+      }
+    });
   });
   
   // Check media usage - equal weight to genres
@@ -207,15 +239,36 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
           mediaTypeLower.includes('nba') || mediaTypeLower.includes('mlb') ||
           mediaTypeLower.includes('nhl') || mediaTypeLower.includes('ncaa')) {
         score += 5; // Higher score for sports-related media when searching for sports
+        // Add matched terms for sports-related media
+        expandedTerms.forEach(term => {
+          if (mediaTypeLower.includes(term) || term.includes(mediaTypeLower)) {
+            matchedTerms.add(term);
+          }
+        });
       } else if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
         score += 3; // Equal to genres partial match
+        expandedTerms.forEach(term => {
+          if (mediaTypeLower.includes(term)) {
+            matchedTerms.add(term);
+          }
+        });
       }
     } else {
       // Regular media usage scoring - equal weight to genres
       if (expandedTerms.some(term => mediaTypeLower === term)) {
         score += 5; // Equal to genres exact match
+        expandedTerms.forEach(term => {
+          if (mediaTypeLower === term) {
+            matchedTerms.add(term);
+          }
+        });
       } else if (expandedTerms.some(term => mediaTypeLower.includes(term) || term.includes(mediaTypeLower))) {
         score += 3; // Equal to genres partial match
+        expandedTerms.forEach(term => {
+          if (mediaTypeLower.includes(term) || term.includes(mediaTypeLower)) {
+            matchedTerms.add(term);
+          }
+        });
       }
     }
   });
@@ -225,8 +278,36 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
   trackInstruments.forEach((instrument: string) => {
     if (expandedTerms.some(term => instrument.toLowerCase().includes(term))) {
       score += 1;
+      expandedTerms.forEach(term => {
+        if (instrument.toLowerCase().includes(term)) {
+          matchedTerms.add(term);
+        }
+      });
     }
   });
+  
+  // Heavy penalty for tracks that don't match genre terms when genre terms are present
+  if (genreTerms.size > 0) {
+    const matchedGenreTerms = Array.from(genreTerms).filter(term => matchedTerms.has(term));
+    const genreMatchRatio = matchedGenreTerms.length / genreTerms.size;
+    
+    if (genreMatchRatio === 0) {
+      // No genre terms matched - heavy penalty
+      score -= 50;
+    } else if (genreMatchRatio < 1) {
+      // Some genre terms matched - moderate penalty
+      score -= (1 - genreMatchRatio) * 20;
+    } else {
+      // All genre terms matched - bonus
+      score += 10;
+    }
+  }
+  
+  // Bonus for tracks that match multiple search terms
+  const matchRatio = matchedTerms.size / searchTerms.length;
+  if (matchRatio > 0.5) {
+    score += matchRatio * 5;
+  }
   
   return score;
 };
@@ -678,39 +759,64 @@ export function CatalogPage() {
     const partialMatches: Track[] = [];
     const otherTracks: Track[] = [];
     
+    // Extract all search terms from filters
+    const allSearchTerms: string[] = [];
+    if (filters?.query) {
+      const queryTerms = filters.query.split(/\s+/).filter(Boolean);
+      const filteredTerms = filterStopWords(queryTerms);
+      allSearchTerms.push(...filteredTerms);
+    }
+    if (filters?.genres?.length) allSearchTerms.push(...filters.genres);
+    if (filters?.subGenres?.length) allSearchTerms.push(...filters.subGenres);
+    if (filters?.moods?.length) allSearchTerms.push(...filters.moods);
+    if (filters?.instruments?.length) allSearchTerms.push(...filters.instruments);
+    if (filters?.mediaTypes?.length) allSearchTerms.push(...filters.mediaTypes);
+    
+    // Remove duplicates and convert to lowercase
+    const uniqueSearchTerms = [...new Set(allSearchTerms.map(term => term.toLowerCase()))];
+    
     tracks.forEach(track => {
       const score = track.searchScore || 0;
       
-      // Enhanced thresholds for better categorization
-      // For sports searches, require higher scores for exact matches
-      const searchQuery = filters?.query?.toLowerCase() || '';
-      const hasSportsTerm = searchQuery.includes('sports') || searchQuery.includes('sport') || 
-                           searchQuery.includes('football') || searchQuery.includes('basketball') ||
-                           searchQuery.includes('baseball') || searchQuery.includes('soccer') ||
-                           searchQuery.includes('hockey') || searchQuery.includes('tennis') ||
-                           searchQuery.includes('golf') || searchQuery.includes('racing') ||
-                           searchQuery.includes('olympics') || searchQuery.includes('nfl') ||
-                           searchQuery.includes('nba') || searchQuery.includes('mlb') ||
-                           searchQuery.includes('nhl') || searchQuery.includes('ncaa');
+      // Check if track matches ALL search terms (exact match)
+      const trackGenres = parseArrayField(track.genres).map(g => g.toLowerCase());
+      const trackSubGenres = parseArrayField(track.sub_genres).map(sg => sg.toLowerCase());
+      const trackMoods = parseArrayField(track.moods).map(m => m.toLowerCase());
+      const trackInstruments = parseArrayField(track.instruments).map(i => i.toLowerCase());
+      const trackMediaUsage = parseArrayField(track.media_usage).map(mu => mu.toLowerCase());
       
-      if (hasSportsTerm) {
-        // Higher thresholds for sports searches to ensure quality matches
-        if (score >= 15) {
-          exactMatches.push(track);
-        } else if (score >= 8) {
-          partialMatches.push(track);
-        } else {
-          otherTracks.push(track);
-        }
-      } else {
-        // Regular thresholds for non-sports searches
-        if (score >= 10) {
-          exactMatches.push(track);
-        } else if (score >= 5) {
-          partialMatches.push(track);
-        } else {
-          otherTracks.push(track);
-        }
+      // Create a set of all track attributes for easy matching
+      const trackAttributes = new Set([
+        ...trackGenres,
+        ...trackSubGenres,
+        ...trackMoods,
+        ...trackInstruments,
+        ...trackMediaUsage,
+        track.title?.toLowerCase() || '',
+        track.artist?.toLowerCase() || ''
+      ]);
+      
+      // Check how many search terms the track matches
+      const matchedTerms = uniqueSearchTerms.filter(searchTerm => {
+        // Check if any track attribute contains or matches the search term
+        return Array.from(trackAttributes).some(attr => 
+          attr.includes(searchTerm) || searchTerm.includes(attr)
+        );
+      });
+      
+      const matchRatio = matchedTerms.length / uniqueSearchTerms.length;
+      
+      // Exact match: track matches ALL search terms (100% match)
+      if (matchRatio === 1 && uniqueSearchTerms.length > 0) {
+        exactMatches.push(track);
+      }
+      // Partial match: track matches SOME search terms but not all (between 25% and 99%)
+      else if (matchRatio >= 0.25 && matchRatio < 1) {
+        partialMatches.push(track);
+      }
+      // Other tracks: low match ratio or no search terms
+      else {
+        otherTracks.push(track);
       }
     });
     
