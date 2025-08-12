@@ -94,10 +94,10 @@ export function PlaylistAnalytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading analytics...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading analytics...</p>
         </div>
       </div>
     );
@@ -105,35 +105,35 @@ export function PlaylistAnalytics() {
 
   if (error || !analytics) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
         <div className="text-center">
           <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Analytics Unavailable</h1>
-          <p className="text-gray-600">{error || 'No analytics data found for this playlist.'}</p>
+          <h1 className="text-2xl font-bold text-white mb-2">Analytics Unavailable</h1>
+          <p className="text-gray-300">{error || 'No analytics data found for this playlist.'}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-blue-900/90">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Playlist Analytics</h1>
-              <p className="text-gray-600 mt-2">Track your playlist performance and audience engagement</p>
+              <h1 className="text-3xl font-bold text-white">Playlist Analytics</h1>
+              <p className="text-gray-300 mt-2">Track your playlist performance and audience engagement</p>
             </div>
             <div className="flex items-center space-x-2">
               <select
                 value={timeRange}
                 onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
-                className="px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 border border-gray-600 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-blue-400 focus:border-transparent backdrop-blur-sm"
               >
-                <option value="7d">Last 7 days</option>
-                <option value="30d">Last 30 days</option>
-                <option value="90d">Last 90 days</option>
+                <option value="7d" className="bg-blue-900 text-white">Last 7 days</option>
+                <option value="30d" className="bg-blue-900 text-white">Last 30 days</option>
+                <option value="90d" className="bg-blue-900 text-white">Last 90 days</option>
               </select>
             </div>
           </div>

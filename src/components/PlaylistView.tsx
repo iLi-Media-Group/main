@@ -72,16 +72,33 @@ export function PlaylistView() {
       setAudioUrl(null);
     } else {
       setCurrentPlayingTrack(track.id);
+      
+      console.log('Track data for audio:', {
+        id: track.id,
+        title: track.title,
+        mp3_url: track.mp3_url,
+        audio_url: track.audio_url,
+        fullTrack: track
+      });
+      
       // Use mp3_url if available, otherwise fall back to audio_url
       let trackUrl = track.mp3_url || track.audio_url;
       
       // If the URL is not a full URL, construct the Supabase storage URL
       if (trackUrl && !trackUrl.startsWith('http')) {
         const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-        trackUrl = `${supabaseUrl}/storage/v1/object/public/tracks/${trackUrl}`;
+        // Try different possible bucket names for audio files
+        const possibleBuckets = ['tracks', 'audio', 'music', 'files'];
+        
+        for (const bucket of possibleBuckets) {
+          const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${trackUrl}`;
+          console.log('Trying audio URL:', url);
+          trackUrl = url;
+          break; // Use the first bucket for now
+        }
       }
       
-      console.log('Setting audio URL:', trackUrl);
+      console.log('Final audio URL:', trackUrl);
       setAudioUrl(trackUrl);
     }
   };
@@ -143,9 +160,16 @@ export function PlaylistView() {
         return playlist.producer.avatar_path;
       }
       // If it's a path, construct the Supabase storage URL
-      // Use the actual Supabase URL from the environment or hardcode it
       const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      return `${supabaseUrl}/storage/v1/object/public/avatars/${playlist.producer.avatar_path}`;
+      // Try different possible bucket names
+      const possibleBuckets = ['avatars', 'profiles', 'images'];
+      
+      for (const bucket of possibleBuckets) {
+        const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.producer.avatar_path}`;
+        console.log('Trying producer image URL:', url);
+        // You could add image validation here if needed
+        return url;
+      }
     }
     
     // Then try to use the playlist's photo_url (which might be the producer's photo)
@@ -156,7 +180,13 @@ export function PlaylistView() {
       }
       // If it's a path, construct the Supabase storage URL
       const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      return `${supabaseUrl}/storage/v1/object/public/avatars/${playlist.photo_url}`;
+      const possibleBuckets = ['avatars', 'profiles', 'images'];
+      
+      for (const bucket of possibleBuckets) {
+        const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.photo_url}`;
+        console.log('Trying playlist photo URL:', url);
+        return url;
+      }
     }
     
     return null;
@@ -259,12 +289,16 @@ export function PlaylistView() {
                   src={getProducerImage()!}
                   alt={getProducerName()}
                   className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
+                  onError={(e) => {
+                    console.log('Image failed to load:', getProducerImage());
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
                 />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white/20">
-                  <User className="w-12 h-12 text-white" />
-                </div>
-              )}
+              ) : null}
+              <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white/20 ${getProducerImage() ? 'hidden' : ''}`}>
+                <User className="w-12 h-12 text-white" />
+              </div>
               {playlist.logo_url && (
                 <img
                   src={playlist.logo_url}
