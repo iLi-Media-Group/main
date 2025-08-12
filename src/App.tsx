@@ -78,6 +78,7 @@ import { ProducerFileReleaseManager } from './components/ProducerFileReleaseMana
 import { BusinessVerificationForm } from './components/BusinessVerificationForm';
 import { PlaylistManager } from './components/PlaylistManager';
 import { PlaylistView } from './components/PlaylistView';
+import { PlaylistAnalytics } from './components/PlaylistAnalytics';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -496,6 +497,13 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <PlaylistManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/producer/playlists/:playlistId/analytics" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistAnalytics />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

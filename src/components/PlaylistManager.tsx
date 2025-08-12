@@ -273,6 +273,13 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                     <ExternalLink className="w-4 h-4" />
                   </a>
                   <button
+                    onClick={() => navigate(`/producer/playlists/${playlist.id}/analytics`)}
+                    className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg"
+                    title="View analytics"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleAddTracks(playlist)}
                     className="p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg"
                     title="Add tracks"

@@ -91,15 +91,14 @@ export interface PlaylistWithTracks extends Playlist {
 }
 
 export interface PlaylistAnalytics {
-  total_views: number;
-  unique_views: number;
-  views_by_date: Array<{
-    date: string;
-    count: number;
-  }>;
-  top_tracks: Array<{
-    track_id: string;
-    track_title: string;
-    play_count: number;
-  }>;
+  totalViews: number;
+  uniqueVisitors: number;
+  totalTrackPlays: number;
+  averageTimeOnPage: number;
+  viewsByDay: Array<{ date: string; views: number }>;
+  trackPlays: Array<{ trackTitle: string; plays: number }>;
+  viewsByHour: Array<{ hour: string; views: number }>;
+  topReferrers: Array<{ source: string; views: number }>;
+  deviceTypes: Array<{ device: string; views: number }>;
+  countries: Array<{ country: string; views: number }>;
 }
