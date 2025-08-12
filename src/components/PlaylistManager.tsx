@@ -208,56 +208,63 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-6 lg:px-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Playlists</h2>
-          <p className="text-gray-400">Create and manage playlists to share with music supervisors</p>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
+        <div className="flex-1">
+          <h2 className="text-3xl font-bold text-white mb-2">Playlists</h2>
+          <p className="text-gray-400 text-lg">Create and manage playlists to share with music supervisors</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="btn-primary flex items-center space-x-2"
+          className="btn-primary flex items-center space-x-3 px-6 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
           <span>Create Playlist</span>
         </button>
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <p className="text-red-400">{error}</p>
+        <div className="bg-gradient-to-r from-red-500/10 to-red-600/10 border border-red-500/30 rounded-xl p-6 backdrop-blur-sm">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center">
+              <X className="w-4 h-4 text-red-400" />
+            </div>
+            <p className="text-red-300 font-medium">{error}</p>
+          </div>
         </div>
       )}
 
       {/* Playlists List */}
       {playlists.length === 0 ? (
-        <div className="text-center py-12 bg-blue-800/20 rounded-xl border border-blue-500/20">
-          <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">No playlists yet</h3>
-          <p className="text-gray-400 mb-4">
+        <div className="text-center py-16 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-white/10 backdrop-blur-sm">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Music className="w-10 h-10 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-3">No playlists yet</h3>
+          <p className="text-gray-400 text-lg mb-8 max-w-md mx-auto">
             Create your first playlist to start sharing your music with music supervisors
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="btn-primary"
+            className="btn-primary px-8 py-3 text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
           >
             Create Your First Playlist
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {playlists.map((playlist) => (
-            <div key={playlist.id} className="bg-blue-800/20 rounded-xl border border-blue-500/20 p-6 hover:bg-blue-800/30 transition-colors">
+            <div key={playlist.id} className="group bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm rounded-2xl border border-white/20 p-6 hover:bg-gradient-to-br hover:from-white/10 hover:to-white/15 hover:border-white/30 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10">
               <div className="flex flex-col h-full">
                 {/* Playlist Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-6">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-lg font-semibold text-white truncate">{playlist.name}</h3>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <h3 className="text-xl font-bold text-white truncate group-hover:text-blue-300 transition-colors">{playlist.name}</h3>
                       {(playlist as any).favorite_count > 0 && (
                         <div 
-                          className="flex items-center space-x-1 bg-red-500/20 text-red-400 px-2 py-1 rounded-full text-xs cursor-help"
+                          className="flex items-center space-x-1 bg-gradient-to-r from-red-500/20 to-pink-500/20 text-red-300 px-3 py-1 rounded-full text-xs font-medium border border-red-500/30"
                           title={`${(playlist as any).favorite_count} client${(playlist as any).favorite_count === 1 ? '' : 's'} favorited this playlist`}
                         >
                           <Heart className="w-3 h-3" />
@@ -265,24 +272,26 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                         </div>
                       )}
                     </div>
-                    <p className="text-sm text-gray-400">
-                      {playlist.tracks_count || 0} tracks
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Created {new Date(playlist.created_at).toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center space-x-4 text-sm text-gray-400">
+                      <span className="flex items-center space-x-1">
+                        <Music className="w-4 h-4" />
+                        <span>{playlist.tracks_count || 0} tracks</span>
+                      </span>
+                      <span>•</span>
+                      <span>{new Date(playlist.created_at).toLocaleDateString()}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1 ml-2">
+                  <div className="flex items-center space-x-2 ml-4">
                     <button
                       onClick={() => navigate(`/producer/playlists/${playlist.id}/analytics`)}
-                      className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded"
+                      className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg transition-all duration-200"
                       title="View analytics"
                     >
                       <BarChart3 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => copyPlaylistUrl(playlist.slug)}
-                      className="p-1.5 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded"
+                      className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
                       title="Copy playlist URL"
                     >
                       <Copy className="w-4 h-4" />
@@ -292,43 +301,43 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
 
                 {/* Playlist Description */}
                 {playlist.description && (
-                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">{playlist.description}</p>
+                  <p className="text-sm text-gray-300 mb-6 line-clamp-2 leading-relaxed">{playlist.description}</p>
                 )}
 
                 {/* Playlist URL */}
-                <div className="bg-blue-900/20 rounded-lg p-3 mb-4">
-                  <h4 className="text-xs font-medium text-white mb-1">Playlist URL</h4>
-                  <div className="flex items-center space-x-2">
-                    <code className="text-xs text-blue-300 bg-blue-900/50 px-2 py-1 rounded flex-1 truncate">
+                <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 rounded-xl p-4 mb-6 border border-white/10">
+                  <h4 className="text-xs font-semibold text-white mb-2 uppercase tracking-wide">Playlist URL</h4>
+                  <div className="flex items-center space-x-3">
+                    <code className="text-xs text-blue-200 bg-black/30 px-3 py-2 rounded-lg flex-1 truncate border border-white/10 font-mono">
                       {window.location.origin}/playlist/{playlist.slug}
                     </code>
                     <button
                       onClick={() => copyPlaylistUrl(playlist.slug)}
-                      className="text-blue-400 hover:text-blue-300 flex-shrink-0"
+                      className="text-blue-400 hover:text-blue-300 flex-shrink-0 p-1 hover:bg-blue-500/20 rounded transition-colors"
                     >
-                      <Copy className="w-3 h-3" />
+                      <Copy className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
                 {/* Playlist Info */}
-                <div className="flex items-center space-x-4 text-xs text-gray-400 mb-4">
-                  <span className="flex items-center space-x-1">
+                <div className="flex items-center space-x-4 text-xs text-gray-400 mb-6">
+                  <span className="flex items-center space-x-1 bg-white/10 px-2 py-1 rounded-full">
                     <Eye className="w-3 h-3" />
-                    <span>{playlist.is_public ? 'Public' : 'Private'}</span>
+                    <span className="font-medium">{playlist.is_public ? 'Public' : 'Private'}</span>
                   </span>
                   {playlist.company_name && (
-                    <span className="truncate">• {playlist.company_name}</span>
+                    <span className="truncate bg-white/5 px-2 py-1 rounded-full">{playlist.company_name}</span>
                   )}
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex items-center space-x-2 mt-auto">
+                <div className="flex items-center space-x-3 mt-auto">
                   <a
                     href={`/playlist/${playlist.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 p-2 text-center text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg text-sm"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
                     title="View playlist"
                   >
                     <ExternalLink className="w-4 h-4 mx-auto mb-1" />
@@ -336,7 +345,7 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                   </a>
                   <button
                     onClick={() => handleAddTracks(playlist)}
-                    className="flex-1 p-2 text-center text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg text-sm"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-green-500/25"
                     title="Add tracks"
                   >
                     <Plus className="w-4 h-4 mx-auto mb-1" />
@@ -344,14 +353,14 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                   </button>
                   <button
                     onClick={() => handleEditPlaylist(playlist)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg"
+                    className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-xl transition-all duration-200"
                     title="Edit playlist"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDeletePlaylist(playlist.id)}
-                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg"
+                    className="p-3 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-xl transition-all duration-200"
                     title="Delete playlist"
                   >
                     <Trash2 className="w-4 h-4" />
