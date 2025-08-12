@@ -551,48 +551,94 @@ export class PlaylistService {
   // Generate unique slug
   private static async generateSlug(name: string, producerId: string): Promise<string> {
     try {
-      // Try to use the database function first
-      const { data, error } = await supabase.rpc('generate_playlist_slug', {
-        playlist_name: name,
-        producer_id: producerId
-      });
-
-      if (!error && data) {
-        return data;
-      }
-    } catch (error) {
-      console.warn('Database slug function not available, using client-side generation');
-    }
-
-    // Fallback to client-side slug generation
-    const baseSlug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .trim();
-
-    const finalSlug = baseSlug || 'playlist';
-    
-    // Check if slug already exists and append number if needed
-    let counter = 0;
-    let uniqueSlug = finalSlug;
-    
-    while (true) {
-      const { data: existingPlaylist } = await supabase
-        .from('playlists')
-        .select('id')
-        .eq('slug', uniqueSlug)
-        .eq('producer_id', producerId)
+      // Get producer name first
+      const { data: producer, error: producerError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', producerId)
         .single();
+
+      if (producerError) {
+        console.error('Error fetching producer data:', producerError);
+        throw new Error('Failed to fetch producer data');
+      }
+
+      // Generate producer slug from name
+      const producerName = producer.first_name && producer.last_name 
+        ? `${producer.first_name} ${producer.last_name}`
+        : producer.first_name 
+        ? producer.first_name 
+        : producer.email.split('@')[0];
+
+      const producerSlug = producerName
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .trim();
+
+      // Generate playlist slug
+      const playlistSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .trim();
+
+      const baseSlug = `${producerSlug}/${playlistSlug}`;
+      const finalSlug = baseSlug || `${producerSlug}/playlist`;
       
-      if (!existingPlaylist) {
-        break;
+      // Check if slug already exists and append number if needed
+      let counter = 0;
+      let uniqueSlug = finalSlug;
+      
+      while (true) {
+        const { data: existingPlaylist } = await supabase
+          .from('playlists')
+          .select('id')
+          .eq('slug', uniqueSlug)
+          .eq('producer_id', producerId)
+          .single();
+        
+        if (!existingPlaylist) {
+          break;
+        }
+        
+        counter++;
+        uniqueSlug = `${finalSlug}-${counter}`;
       }
       
-      counter++;
-      uniqueSlug = `${finalSlug}-${counter}`;
+      return uniqueSlug;
+    } catch (error) {
+      console.error('Error generating slug:', error);
+      // Fallback to simple slug generation
+      const baseSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .trim();
+
+      const finalSlug = baseSlug || 'playlist';
+      
+      // Check if slug already exists and append number if needed
+      let counter = 0;
+      let uniqueSlug = finalSlug;
+      
+      while (true) {
+        const { data: existingPlaylist } = await supabase
+          .from('playlists')
+          .select('id')
+          .eq('slug', uniqueSlug)
+          .eq('producer_id', producerId)
+          .single();
+        
+        if (!existingPlaylist) {
+          break;
+        }
+        
+        counter++;
+        uniqueSlug = `${finalSlug}-${counter}`;
+      }
+      
+      return uniqueSlug;
     }
-    
-    return uniqueSlug;
   }
 }

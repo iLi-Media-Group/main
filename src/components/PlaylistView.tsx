@@ -18,7 +18,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { parseArrayField } from '../lib/utils';
 
 export function PlaylistView() {
-  const { slug } = useParams<{ slug: string }>();
+  const { producerSlug, playlistSlug } = useParams<{ producerSlug: string; playlistSlug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
@@ -28,17 +28,19 @@ export function PlaylistView() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (slug) {
+    if (producerSlug && playlistSlug) {
       loadPlaylist();
     }
-  }, [slug]);
+  }, [producerSlug, playlistSlug]);
 
   const loadPlaylist = async () => {
     try {
       setLoading(true);
-      if (!slug) return;
+      if (!producerSlug || !playlistSlug) return;
 
-      const playlistData = await PlaylistService.getPlaylist(slug);
+      // Construct the full slug from producer and playlist slugs
+      const fullSlug = `${producerSlug}/${playlistSlug}`;
+      const playlistData = await PlaylistService.getPlaylist(fullSlug);
       if (!playlistData) {
         setError('Playlist not found');
         return;
@@ -62,7 +64,9 @@ export function PlaylistView() {
       setAudioUrl(null);
     } else {
       setCurrentPlayingTrack(track.id);
-      setAudioUrl(track.audio_url);
+      // Use mp3_url if available, otherwise fall back to audio_url
+      const trackUrl = track.mp3_url || track.audio_url;
+      setAudioUrl(trackUrl);
     }
   };
 
@@ -87,6 +91,22 @@ export function PlaylistView() {
     } else {
       return email.split('@')[0];
     }
+  };
+
+  const getProducerImage = () => {
+    if (!playlist?.producer) return null;
+    
+    // First try to use the producer's avatar_path
+    if (playlist.producer.avatar_path) {
+      return playlist.producer.avatar_path;
+    }
+    
+    // Then try to use the playlist's photo_url (which might be the producer's photo)
+    if (playlist.photo_url) {
+      return playlist.photo_url;
+    }
+    
+    return null;
   };
 
   const getTotalDuration = () => {
@@ -142,9 +162,9 @@ export function PlaylistView() {
           {/* Producer Info */}
           <div className="flex items-center space-x-6 mb-8">
             <div className="relative">
-              {playlist.photo_url ? (
+              {getProducerImage() ? (
                 <img
-                  src={playlist.photo_url}
+                  src={getProducerImage()!}
                   alt={getProducerName()}
                   className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
                 />
@@ -296,9 +316,13 @@ export function PlaylistView() {
                       </div>
 
                       {/* Audio Player */}
-                      {currentPlayingTrack === track.id && audioUrl && (
+                      {currentPlayingTrack === track.id && audioUrl && audioUrl.trim() !== '' && (
                         <div className="mt-4">
-                          <AudioPlayer src={audioUrl} title={track.title} />
+                          <AudioPlayer 
+                            src={audioUrl as string} 
+                            title={track.title}
+                            audioId={`playlist-track-${track.id}`}
+                          />
                         </div>
                       )}
                     </div>

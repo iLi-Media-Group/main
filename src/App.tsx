@@ -507,7 +507,7 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-        <Route path="/playlist/:slug" element={<PlaylistView />} />
+        <Route path="/playlist/:producerSlug/:playlistSlug" element={<PlaylistView />} />
 
         <Route path="/business-verification" element={
           <ProtectedRoute>

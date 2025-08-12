@@ -10,9 +10,7 @@ import {
   Eye, 
   BarChart3,
   Search,
-  X,
-  ChevronDown,
-  ChevronRight
+  X
 } from 'lucide-react';
 import { PlaylistService } from '../lib/playlistService';
 import { Playlist, CreatePlaylistData, UpdatePlaylistData } from '../types/playlist';
@@ -36,7 +34,6 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [producerTracks, setProducerTracks] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedPlaylists, setExpandedPlaylists] = useState<Set<string>>(new Set());
 
   // Form states
   const [formData, setFormData] = useState<CreatePlaylistData>({
@@ -188,16 +185,6 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
     // You could add a toast notification here
   };
 
-  const togglePlaylistExpansion = (playlistId: string) => {
-    const newExpanded = new Set(expandedPlaylists);
-    if (newExpanded.has(playlistId)) {
-      newExpanded.delete(playlistId);
-    } else {
-      newExpanded.add(playlistId);
-    }
-    setExpandedPlaylists(newExpanded);
-  };
-
   const filteredTracks = producerTracks.filter(track =>
     track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     track.artist.toLowerCase().includes(searchTerm.toLowerCase())
@@ -250,58 +237,90 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {playlists.map((playlist) => (
-            <div key={playlist.id} className="bg-blue-800/20 rounded-xl border border-blue-500/20 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => togglePlaylistExpansion(playlist.id)}
-                    className="text-gray-400 hover:text-white"
-                  >
-                    {expandedPlaylists.has(playlist.id) ? (
-                      <ChevronDown className="w-5 h-5" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5" />
-                    )}
-                  </button>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{playlist.name}</h3>
+            <div key={playlist.id} className="bg-blue-800/20 rounded-xl border border-blue-500/20 p-6 hover:bg-blue-800/30 transition-colors">
+              <div className="flex flex-col h-full">
+                {/* Playlist Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-white truncate mb-1">{playlist.name}</h3>
                     <p className="text-sm text-gray-400">
-                      {playlist.tracks_count || 0} tracks • Created {new Date(playlist.created_at).toLocaleDateString()}
+                      {playlist.tracks_count || 0} tracks
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Created {new Date(playlist.created_at).toLocaleDateString()}
                     </p>
                   </div>
+                  <div className="flex items-center space-x-1 ml-2">
+                    <button
+                      onClick={() => navigate(`/producer/playlists/${playlist.id}/analytics`)}
+                      className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded"
+                      title="View analytics"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => copyPlaylistUrl(playlist.slug)}
+                      className="p-1.5 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded"
+                      title="Copy playlist URL"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => copyPlaylistUrl(playlist.slug)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg"
-                    title="Copy playlist URL"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
+
+                {/* Playlist Description */}
+                {playlist.description && (
+                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">{playlist.description}</p>
+                )}
+
+                {/* Playlist URL */}
+                <div className="bg-blue-900/20 rounded-lg p-3 mb-4">
+                  <h4 className="text-xs font-medium text-white mb-1">Playlist URL</h4>
+                  <div className="flex items-center space-x-2">
+                    <code className="text-xs text-blue-300 bg-blue-900/50 px-2 py-1 rounded flex-1 truncate">
+                      {window.location.origin}/playlist/{playlist.slug}
+                    </code>
+                    <button
+                      onClick={() => copyPlaylistUrl(playlist.slug)}
+                      className="text-blue-400 hover:text-blue-300 flex-shrink-0"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Playlist Info */}
+                <div className="flex items-center space-x-4 text-xs text-gray-400 mb-4">
+                  <span className="flex items-center space-x-1">
+                    <Eye className="w-3 h-3" />
+                    <span>{playlist.is_public ? 'Public' : 'Private'}</span>
+                  </span>
+                  {playlist.company_name && (
+                    <span className="truncate">• {playlist.company_name}</span>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2 mt-auto">
                   <a
                     href={`/playlist/${playlist.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg"
+                    className="flex-1 p-2 text-center text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg text-sm"
                     title="View playlist"
                   >
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-4 h-4 mx-auto mb-1" />
+                    View
                   </a>
                   <button
-                    onClick={() => navigate(`/producer/playlists/${playlist.id}/analytics`)}
-                    className="p-2 text-gray-400 hover:text-green-400 hover:bg-green-500/20 rounded-lg"
-                    title="View analytics"
-                  >
-                    <BarChart3 className="w-4 h-4" />
-                  </button>
-                  <button
                     onClick={() => handleAddTracks(playlist)}
-                    className="p-2 text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg"
+                    className="flex-1 p-2 text-center text-gray-400 hover:text-white hover:bg-blue-500/20 rounded-lg text-sm"
                     title="Add tracks"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 mx-auto mb-1" />
+                    Add
                   </button>
                   <button
                     onClick={() => handleEditPlaylist(playlist)}
@@ -319,40 +338,6 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
                   </button>
                 </div>
               </div>
-
-              {/* Expanded content */}
-              {expandedPlaylists.has(playlist.id) && (
-                <div className="mt-4 space-y-4">
-                  {playlist.description && (
-                    <p className="text-gray-300">{playlist.description}</p>
-                  )}
-                  
-                  <div className="bg-blue-900/20 rounded-lg p-4">
-                    <h4 className="text-sm font-medium text-white mb-2">Playlist URL</h4>
-                    <div className="flex items-center space-x-2">
-                      <code className="text-sm text-blue-300 bg-blue-900/50 px-2 py-1 rounded">
-                        {window.location.origin}/playlist/{playlist.slug}
-                      </code>
-                      <button
-                        onClick={() => copyPlaylistUrl(playlist.slug)}
-                        className="text-blue-400 hover:text-blue-300"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4 text-sm text-gray-400">
-                    <span className="flex items-center space-x-1">
-                      <Eye className="w-4 h-4" />
-                      <span>Public</span>
-                    </span>
-                    {playlist.company_name && (
-                      <span>• {playlist.company_name}</span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
           ))}
         </div>
