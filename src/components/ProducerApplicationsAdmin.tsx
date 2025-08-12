@@ -59,6 +59,17 @@ type Application = {
   ranking_breakdown?: any;
   is_auto_rejected?: boolean;
   rejection_reason?: string;
+  // Screening questions
+  signed_to_label?: string;
+  label_relationship_explanation?: string;
+  signed_to_publisher?: string;
+  publisher_relationship_explanation?: string;
+  signed_to_manager?: string;
+  manager_relationship_explanation?: string;
+  entity_collects_payment?: string;
+  payment_collection_explanation?: string;
+  production_master_percentage?: number;
+  requires_review?: boolean;
 };
 
 type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined';
@@ -105,11 +116,14 @@ export default function ProducerApplicationsAdmin() {
     const newCounts = {
       new: allApplications.filter(app => 
         (app.status === 'new' || !app.status) && 
-        !app.is_auto_rejected
+        !app.is_auto_rejected &&
+        !app.requires_review
       ).length,
       invited: 0,
       onboarded: 0,
-      save_for_later: allApplications.filter(app => app.status === 'save_for_later').length,
+      save_for_later: allApplications.filter(app => 
+        app.status === 'save_for_later' || app.requires_review
+      ).length,
       declined: allApplications.filter(app => 
         app.status === 'declined' || app.is_auto_rejected
       ).length
@@ -195,7 +209,8 @@ export default function ProducerApplicationsAdmin() {
         case 'new':
           // Show applications that are new or don't have a status set
           // Also include applications with status 'new' regardless of review_tier to prevent data loss
-          query = query.or('status.eq.new,status.is.null').eq('is_auto_rejected', false);
+          // Exclude applications that require review (they go to save_for_later)
+          query = query.or('status.eq.new,status.is.null').eq('is_auto_rejected', false).eq('requires_review', false);
           break;
         case 'invited':
           // Show applications with status 'invited' that haven't completed their invitation yet
@@ -207,7 +222,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.eq('status', 'invited');
           break;
         case 'save_for_later':
-          query = query.eq('status', 'save_for_later');
+          // Show applications that require review OR have status 'save_for_later'
+          query = query.or('status.eq.save_for_later,requires_review.eq.true');
           break;
         case 'declined':
           // Include both manually declined and auto-rejected applications
@@ -902,6 +918,22 @@ export default function ProducerApplicationsAdmin() {
                       <p><strong>Experience:</strong> {app.years_experience} years • <strong>Team:</strong> {app.team_type} • <strong>Output:</strong> {app.tracks_per_week} tracks/week</p>
                       <p><strong>DAWs:</strong> {app.daws_used} • <strong>PRO:</strong> {app.pro_affiliation}</p>
                     </div>
+                    
+                    {/* Screening Questions Summary */}
+                    {(app.signed_to_label === 'Yes' || app.signed_to_publisher === 'Yes' || app.signed_to_manager === 'Yes' || app.entity_collects_payment === 'Yes' || (app.production_master_percentage && app.production_master_percentage < 100)) && (
+                      <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <p className="text-sm font-medium text-yellow-400 mb-2">⚠️ Requires Review - Screening Questions:</p>
+                        <div className="text-xs text-yellow-300 space-y-1">
+                          {app.signed_to_label === 'Yes' && <p>• Signed to label: {app.label_relationship_explanation}</p>}
+                          {app.signed_to_publisher === 'Yes' && <p>• Signed to publisher: {app.publisher_relationship_explanation}</p>}
+                          {app.signed_to_manager === 'Yes' && <p>• Signed to manager/agent: {app.manager_relationship_explanation}</p>}
+                          {app.entity_collects_payment === 'Yes' && <p>• Entity collects payment: {app.payment_collection_explanation}</p>}
+                          {app.production_master_percentage && app.production_master_percentage < 100 && (
+                            <p>• Production master ownership: {app.production_master_percentage}%</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex space-x-2">
                     <Button

@@ -85,6 +85,9 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
     splitSheet: false
   });
 
+  // Check for existing uploaded files
+  const hasExistingFiles = request.mp3_url || request.trackouts_url || request.stems_url || request.split_sheet_url;
+
   const handleUpload = useCallback(async (e?: React.MouseEvent) => {
     console.log('[DEBUG] Upload button clicked');
     if (e) {
@@ -188,6 +191,42 @@ export function InlineCustomSyncUploadForm({ request, onUploaded }: InlineCustom
       onInvalid={preventDefault}
     >
       <h3 className="text-lg font-semibold text-white mb-4">Upload Files</h3>
+
+      {/* Existing Files Section */}
+      {hasExistingFiles && (
+        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <h3 className="text-sm font-medium text-blue-400 mb-3">📁 Existing Uploaded Files:</h3>
+          <div className="space-y-2 text-xs text-blue-300">
+            {request.mp3_url && (
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                <span>MP3 File - Already uploaded</span>
+              </div>
+            )}
+            {request.trackouts_url && (
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                <span>Trackouts (ZIP) - Already uploaded</span>
+              </div>
+            )}
+            {request.stems_url && (
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                <span>Stems (ZIP) - Already uploaded</span>
+              </div>
+            )}
+            {request.split_sheet_url && (
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
+                <span>Split Sheet (PDF) - Already uploaded</span>
+              </div>
+            )}
+          </div>
+          <p className="text-xs text-blue-400 mt-3">
+            💡 You can upload additional files or replace existing ones by selecting new files below.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* MP3 */}

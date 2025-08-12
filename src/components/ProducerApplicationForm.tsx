@@ -83,7 +83,7 @@ const quizQuestions = [
   }
 ];
 
-const steps = ['Contact Info', 'Experience', 'Music & Links', 'Business Details', 'Sync Licensing Course', 'Quiz', 'Additional Info'];
+const steps = ['Contact Info', 'Experience', 'Music & Links', 'Business Details', 'Screening Questions', 'Sync Licensing Course', 'Quiz', 'Additional Info'];
 
 const initialFormData = {
   name: '',
@@ -125,6 +125,16 @@ const initialFormData = {
   quiz_score: 0,
   quiz_total_questions: 5,
   quiz_completed: false,
+  // Screening questions
+  signed_to_label: '',
+  label_relationship_explanation: '',
+  signed_to_publisher: '',
+  publisher_relationship_explanation: '',
+  signed_to_manager: '',
+  manager_relationship_explanation: '',
+  entity_collects_payment: '',
+  payment_collection_explanation: '',
+  production_master_percentage: '',
 };
 
 // Local storage key for form data persistence
@@ -232,11 +242,22 @@ const ProducerApplicationForm: React.FC = () => {
         if (!formData.pro_affiliation) errors.push('PRO affiliation is required');
         break;
       
-      case 4: // Sync Licensing
+      case 4: // Screening Questions
+        if (!formData.signed_to_label) errors.push('Please answer whether you are signed to a label');
+        if (!formData.signed_to_publisher) errors.push('Please answer whether you are signed to a publisher');
+        if (!formData.signed_to_manager) errors.push('Please answer whether you are signed to a manager or agent');
+        if (!formData.entity_collects_payment) errors.push('Please answer whether an entity collects payment for your music');
+        if (!formData.production_master_percentage) errors.push('Please enter your production master ownership percentage');
+        if (formData.production_master_percentage && (parseInt(formData.production_master_percentage) < 0 || parseInt(formData.production_master_percentage) > 100)) {
+          errors.push('Production master percentage must be between 0 and 100');
+        }
+        break;
+      
+      case 5: // Sync Licensing Course
         if (!formData.sync_licensing_course) errors.push('Please select whether you have completed a sync licensing course');
         break;
       
-      case 5: // Quiz
+      case 6: // Quiz
         if (!formData.quiz_question_1) errors.push('Please answer quiz question 1');
         if (!formData.quiz_question_2) errors.push('Please answer quiz question 2');
         if (!formData.quiz_question_3) errors.push('Please answer quiz question 3');
@@ -534,6 +555,109 @@ const ProducerApplicationForm: React.FC = () => {
         </div>
       )}
       {step === 4 && (
+        <div className="space-y-6 animate-fade-in">
+          <h2 className="text-xl font-bold mb-4 flex items-center"><Info className="w-5 h-5 mr-2" />Screening Questions</h2>
+          <p className="text-white text-sm mb-6">Please answer these questions to help us understand your current music business relationships.</p>
+          
+          {/* Label Question */}
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 text-white">Are you signed to a label?</h3>
+            <select name="signed_to_label" value={formData.signed_to_label} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
+              <option value="">Select an option *</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            {formData.signed_to_label === 'Yes' && (
+              <textarea 
+                name="label_relationship_explanation" 
+                placeholder="Please explain your relationship with the label..." 
+                value={formData.label_relationship_explanation} 
+                onChange={handleChange} 
+                className="w-full border p-3 rounded text-black" 
+                rows={3} 
+              />
+            )}
+          </div>
+
+          {/* Publisher Question */}
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 text-white">Are you signed to a publisher?</h3>
+            <select name="signed_to_publisher" value={formData.signed_to_publisher} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
+              <option value="">Select an option *</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            {formData.signed_to_publisher === 'Yes' && (
+              <textarea 
+                name="publisher_relationship_explanation" 
+                placeholder="Please explain your relationship with the publisher..." 
+                value={formData.publisher_relationship_explanation} 
+                onChange={handleChange} 
+                className="w-full border p-3 rounded text-black" 
+                rows={3} 
+              />
+            )}
+          </div>
+
+          {/* Manager/Agent Question */}
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 text-white">Are you signed to a manager or agent?</h3>
+            <select name="signed_to_manager" value={formData.signed_to_manager} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
+              <option value="">Select an option *</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            {formData.signed_to_manager === 'Yes' && (
+              <textarea 
+                name="manager_relationship_explanation" 
+                placeholder="Please explain your relationship with your manager/agent..." 
+                value={formData.manager_relationship_explanation} 
+                onChange={handleChange} 
+                className="w-full border p-3 rounded text-black" 
+                rows={3} 
+              />
+            )}
+          </div>
+
+          {/* Payment Collection Question */}
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 text-white">Does anyone or any entity collect payment for your music on your behalf?</h3>
+            <select name="entity_collects_payment" value={formData.entity_collects_payment} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
+              <option value="">Select an option *</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+            {formData.entity_collects_payment === 'Yes' && (
+              <textarea 
+                name="payment_collection_explanation" 
+                placeholder="Please explain who collects payments and how..." 
+                value={formData.payment_collection_explanation} 
+                onChange={handleChange} 
+                className="w-full border p-3 rounded text-black" 
+                rows={3} 
+              />
+            )}
+          </div>
+
+          {/* Production Master Percentage Question */}
+          <div className="bg-white/5 p-4 rounded-lg">
+            <h3 className="font-semibold mb-3 text-white">What percentage of the production master do you typically own?</h3>
+            <input 
+              name="production_master_percentage" 
+              type="number" 
+              min="0" 
+              max="100" 
+              placeholder="Enter percentage (0-100) *" 
+              value={formData.production_master_percentage} 
+              onChange={handleChange} 
+              required 
+              className="w-full border p-3 rounded text-black" 
+            />
+            <p className="text-sm text-gray-400 mt-2">Enter the percentage you typically own of your production masters (e.g., 100 for 100%)</p>
+          </div>
+        </div>
+      )}
+      {step === 5 && (
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Course</h2>
           <p className="text-white text-sm mb-4">Have you completed a Sync Licensing course online or in person?</p>
@@ -545,7 +669,7 @@ const ProducerApplicationForm: React.FC = () => {
           </select>
         </div>
       )}
-      {step === 5 && (
+      {step === 6 && (
         <div className="space-y-6 animate-fade-in">
           <h2 className="text-xl font-bold mb-4 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Quiz</h2>
           <p className="text-white text-sm mb-6">Please answer these questions about sync licensing. This helps us understand your knowledge level.</p>
@@ -606,7 +730,7 @@ const ProducerApplicationForm: React.FC = () => {
           ))}
         </div>
       )}
-      {step === 6 && (
+      {step === 7 && (
         <div className="space-y-4 animate-fade-in">
           <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Additional Info</h2>
           <textarea name="additional_info" placeholder="Tell us anything else we should know..." value={formData.additional_info} onChange={handleChange} className="w-full border p-3 rounded text-black" rows={4} />
