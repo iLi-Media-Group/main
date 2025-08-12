@@ -1300,7 +1300,7 @@ export function TrackUploadForm() {
                   <button
                     type="button"
                     onClick={() => toggleMoodCategory(mainMood)}
-                    className="flex items-center justify-between w-full text-left"
+                    className="flex items-center justify-between w-full text-left mb-2"
                   >
                     <h3 className="text-white font-medium">{mainMood}</h3>
                     {expandedMoodCategories.has(mainMood) ? (
@@ -1316,7 +1316,7 @@ export function TrackUploadForm() {
                         {subMoods.map((subMood: string) => (
                           <label
                             key={subMood}
-                            className="flex items-center space-x-2 text-gray-300"
+                            className="flex items-center space-x-2 text-gray-300 cursor-pointer"
                           >
                             <input
                               type="checkbox"
@@ -1332,7 +1332,7 @@ export function TrackUploadForm() {
                                   });
                                 }
                               }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                               disabled={isSubmitting}
                             />
                             <span className="text-sm">{subMood}</span>
@@ -1370,7 +1370,7 @@ export function TrackUploadForm() {
                     <button
                       type="button"
                       onClick={() => toggleInstrumentCategory(categoryName)}
-                      className="flex items-center justify-between w-full text-left"
+                      className="flex items-center justify-between w-full text-left mb-2"
                     >
                       <h3 className="text-white font-medium">{categoryName}</h3>
                       {expandedInstrumentCategories.has(categoryName) ? (
@@ -1386,7 +1386,7 @@ export function TrackUploadForm() {
                           {categoryInstruments.map((instrument) => (
                             <label
                               key={instrument.id}
-                              className="flex items-center space-x-2 text-gray-300"
+                              className="flex items-center space-x-2 text-gray-300 cursor-pointer"
                             >
                               <input
                                 type="checkbox"
@@ -1402,7 +1402,7 @@ export function TrackUploadForm() {
                                     });
                                   }
                                 }}
-                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                 disabled={isSubmitting}
                               />
                               <span className="text-sm">{instrument.display_name}</span>
@@ -1452,7 +1452,7 @@ export function TrackUploadForm() {
                           <button
                             type="button"
                             onClick={() => toggleMediaCategory(parentType.name)}
-                            className="flex items-center justify-between w-full text-left"
+                            className="flex items-center justify-between w-full text-left mb-2"
                           >
                             <h3 className="text-white font-medium">{parentType.name}</h3>
                             {expandedMediaCategories.has(parentType.name) ? (
@@ -1468,7 +1468,7 @@ export function TrackUploadForm() {
                                 {childTypesForParent.map((childType) => (
                                   <label
                                     key={childType.id}
-                                    className="flex items-center space-x-2 text-gray-300"
+                                    className="flex items-center space-x-2 text-gray-300 cursor-pointer"
                                   >
                                     <input
                                       type="checkbox"
@@ -1484,7 +1484,7 @@ export function TrackUploadForm() {
                                           });
                                         }
                                       }}
-                                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer"
                                       disabled={isSubmitting}
                                     />
                                     <span className="text-sm">{childType.name}</span>

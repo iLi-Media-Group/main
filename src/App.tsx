@@ -76,6 +76,8 @@ import SearchTest from './components/SearchTest';
 import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
 import { BusinessVerificationForm } from './components/BusinessVerificationForm';
+import { PlaylistManager } from './components/PlaylistManager';
+import { PlaylistView } from './components/PlaylistView';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -490,6 +492,14 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
+        <Route path="/producer/playlists" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/playlist/:slug" element={<PlaylistView />} />
 
         <Route path="/business-verification" element={
           <ProtectedRoute>

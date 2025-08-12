@@ -981,6 +981,13 @@ export function ProducerDashboard() {
               <FileText className="w-5 h-5 mr-2" />
               Resources
             </Link>
+            <Link
+              to="/producer/playlists"
+              className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+            >
+              <Music className="w-5 h-5 mr-2" />
+              Playlists
+            </Link>
           </div>
         </div>
 
