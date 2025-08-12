@@ -130,12 +130,25 @@ export function PlaylistView() {
     
     // First try to use the producer's avatar_path
     if (playlist.producer.avatar_path) {
-      return playlist.producer.avatar_path;
+      // If it's a full URL, use it directly
+      if (playlist.producer.avatar_path.startsWith('http')) {
+        return playlist.producer.avatar_path;
+      }
+      // If it's a path, construct the Supabase storage URL
+      // Use the actual Supabase URL from the environment or hardcode it
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
+      return `${supabaseUrl}/storage/v1/object/public/avatars/${playlist.producer.avatar_path}`;
     }
     
     // Then try to use the playlist's photo_url (which might be the producer's photo)
     if (playlist.photo_url) {
-      return playlist.photo_url;
+      // If it's a full URL, use it directly
+      if (playlist.photo_url.startsWith('http')) {
+        return playlist.photo_url;
+      }
+      // If it's a path, construct the Supabase storage URL
+      const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
+      return `${supabaseUrl}/storage/v1/object/public/avatars/${playlist.photo_url}`;
     }
     
     return null;
@@ -144,17 +157,56 @@ export function PlaylistView() {
   const getTotalDuration = () => {
     if (!playlist?.tracks) return '0:00';
     
+    console.log('Calculating total duration for tracks:', playlist.tracks.map(pt => ({
+      title: pt.track?.title,
+      duration: pt.track?.duration,
+      durationType: typeof pt.track?.duration
+    })));
+    
     const totalSeconds = playlist.tracks.reduce((total, playlistTrack) => {
       const track = playlistTrack.track;
-      if (!track?.duration) return total;
+      if (!track?.duration) {
+        console.log(`No duration for track: ${track?.title}`);
+        return total;
+      }
       
-      const [minutes, seconds] = track.duration.split(':').map(Number);
-      return total + (minutes * 60) + seconds;
+      // Handle different duration formats
+      let duration = track.duration;
+      
+      // If duration is in seconds (number), convert to MM:SS format
+      if (typeof duration === 'number') {
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+        duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // Parse MM:SS format
+      if (typeof duration === 'string') {
+        const parts = duration.split(':');
+        if (parts.length === 2) {
+          const minutes = parseInt(parts[0]) || 0;
+          const seconds = parseInt(parts[1]) || 0;
+          const trackSeconds = (minutes * 60) + seconds;
+          console.log(`Track ${track.title}: ${duration} = ${trackSeconds} seconds`);
+          return total + trackSeconds;
+        } else if (parts.length === 1) {
+          // If it's just seconds
+          const seconds = parseInt(parts[0]) || 0;
+          console.log(`Track ${track.title}: ${duration} = ${seconds} seconds`);
+          return total + seconds;
+        }
+      }
+      
+      console.log(`Could not parse duration for track ${track.title}: ${duration}`);
+      return total;
     }, 0);
     
+    console.log('Total seconds:', totalSeconds);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const result = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    console.log('Final duration:', result);
+    return result;
   };
 
   if (loading) {
