@@ -45,7 +45,7 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
       src={signedUrl}
       title={track.title}
       audioId={audioId}
-      size="sm"
+      size="md"
     />
   );
 }
@@ -436,7 +436,7 @@ export function PlaylistView() {
                       </div>
 
                                              {/* Audio Player */}
-                       <div className="mt-4">
+                       <div className="mt-4 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border border-white/20 backdrop-blur-sm">
                          <PlaylistTrackAudioPlayer 
                            track={track}
                            audioId={`playlist-track-${track.id}`}
