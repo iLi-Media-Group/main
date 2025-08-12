@@ -104,6 +104,10 @@ function calculateRelevanceScore(track: any, searchTerms: string[], serviceParam
     if (artistLower.includes(termLower)) score += 4;
     if (genresLower.includes(termLower)) score += 3;
     
+    // Media types - equal weight to genres
+    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) score += 6; // Same as genres exact match
+    if (mediaTypeNames.includes(termLower) || mediaTypeFullNames.includes(termLower)) score += 3; // Same as genres partial match
+    
     // Service-specific scoring
     if (serviceParams?.subgenres?.length && subGenresLower.includes(termLower)) score += 4;
     if (serviceParams?.instruments?.length && instrumentsLower.includes(termLower)) score += 3;

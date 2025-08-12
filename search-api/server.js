@@ -101,7 +101,7 @@ function buildSearchQuery(expandedTerms, limit = 20) {
         CASE WHEN t.sub_genres_arr && ARRAY[${terms}] THEN 2 ELSE 0 END +
         CASE WHEN t.moods_arr && ARRAY[${terms}] THEN 2 ELSE 0 END +
         CASE WHEN t.instruments_arr && ARRAY[${terms}] THEN 1 ELSE 0 END +
-        CASE WHEN t.media_usage_arr && ARRAY[${terms}] THEN 1 ELSE 0 END +
+        CASE WHEN t.media_usage_arr && ARRAY[${terms}] THEN 3 ELSE 0 END +
         CASE WHEN t.title ILIKE ANY(ARRAY[${expandedTerms.map(t => `'%${t}%'`).join(',')}]) THEN 2 ELSE 0 END +
         CASE WHEN t.artist ILIKE ANY(ARRAY[${expandedTerms.map(t => `'%${t}%'`).join(',')}]) THEN 1 ELSE 0 END
       ) as relevance_score

@@ -165,7 +165,7 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
     }
   });
   
-  // Check media usage with enhanced sports detection
+  // Check media usage - equal weight to genres
   const trackMediaUsage = parseArrayField(track.media_usage);
   const searchQueryLower = searchQuery.toLowerCase();
   const hasSportsTerm = searchQueryLower.includes('sports') || searchQueryLower.includes('sport') || 
@@ -192,12 +192,14 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
           mediaTypeLower.includes('nhl') || mediaTypeLower.includes('ncaa')) {
         score += 5; // Higher score for sports-related media when searching for sports
       } else if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
-        score += 1; // Lower score for general matches
+        score += 3; // Equal to genres partial match
       }
     } else {
-      // Regular media usage scoring
-      if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
-        score += 1;
+      // Regular media usage scoring - equal weight to genres
+      if (expandedTerms.some(term => mediaTypeLower === term)) {
+        score += 5; // Equal to genres exact match
+      } else if (expandedTerms.some(term => mediaTypeLower.includes(term) || term.includes(mediaTypeLower))) {
+        score += 3; // Equal to genres partial match
       }
     }
   });

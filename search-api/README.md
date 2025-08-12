@@ -122,7 +122,7 @@ Health check endpoint.
    - Sub-genres: +2 points
    - Moods: +2 points
    - Instruments: +1 point
-   - Media usage: +1 point
+   - Media usage: +3 points (equal weight to genres)
    - Title match: +2 points
    - Artist match: +1 point
 5. **Result Ranking**: Orders by relevance score, then by creation date
