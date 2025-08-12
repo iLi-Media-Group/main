@@ -45,6 +45,7 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
       src={signedUrl}
       title={track.title}
       audioId={audioId}
+      size="sm"
     />
   );
 }
@@ -56,8 +57,7 @@ export function PlaylistView() {
   const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [currentPlayingTrack, setCurrentPlayingTrack] = useState<string | null>(null);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -97,15 +97,7 @@ export function PlaylistView() {
     }
   };
 
-  const handleTrackPlay = (track: any) => {
-    if (currentPlayingTrack === track.id) {
-      setCurrentPlayingTrack(null);
-      setAudioUrl(null);
-    } else {
-      setCurrentPlayingTrack(track.id);
-      setAudioUrl(track.mp3_url || track.audio_url);
-    }
-  };
+
 
   const handleTrackClick = (trackId: string) => {
     if (user) {
@@ -379,24 +371,14 @@ export function PlaylistView() {
                           {index + 1}
                         </div>
 
-                        {/* Track Image */}
-                        <div className="relative">
-                          <img
-                            src={track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                            alt={track.title}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <button
-                            onClick={() => handleTrackPlay(track)}
-                            className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
-                          >
-                            {currentPlayingTrack === track.id ? (
-                              <Pause className="w-6 h-6 text-white" />
-                            ) : (
-                              <Play className="w-6 h-6 text-white ml-1" />
-                            )}
-                          </button>
-                        </div>
+                                                 {/* Track Image */}
+                         <div className="relative">
+                           <img
+                             src={track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
+                             alt={track.title}
+                             className="w-16 h-16 object-cover rounded-lg"
+                           />
+                         </div>
 
                         {/* Track Info */}
                         <div className="flex-1 min-w-0">
@@ -454,14 +436,12 @@ export function PlaylistView() {
                       </div>
 
                                              {/* Audio Player */}
-                       {currentPlayingTrack === track.id && (
-                         <div className="mt-4">
-                           <PlaylistTrackAudioPlayer 
-                             track={track}
-                             audioId={`playlist-track-${track.id}`}
-                           />
-                         </div>
-                       )}
+                       <div className="mt-4">
+                         <PlaylistTrackAudioPlayer 
+                           track={track}
+                           audioId={`playlist-track-${track.id}`}
+                         />
+                       </div>
                     </div>
                   );
                 })
