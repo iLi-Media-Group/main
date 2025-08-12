@@ -24,11 +24,17 @@ export function FavoritedPlaylists() {
   const loadFavoritedPlaylists = async () => {
     try {
       setLoading(true);
+      setError('');
       const favoritedPlaylists = await PlaylistService.getFavoritedPlaylists(5);
-      setPlaylists(favoritedPlaylists);
+      setPlaylists(favoritedPlaylists || []);
     } catch (err) {
       console.error('Failed to load favorited playlists:', err);
-      setError('Failed to load favorited playlists');
+      // Don't set error for empty results, just show empty state
+      if (err instanceof Error && err.message.includes('404')) {
+        setPlaylists([]);
+      } else {
+        setError('Failed to load favorited playlists');
+      }
     } finally {
       setLoading(false);
     }

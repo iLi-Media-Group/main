@@ -647,12 +647,25 @@ export class PlaylistService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase.rpc('get_user_favorited_playlists', {
-      p_limit: limit
-    });
+    try {
+      const { data, error } = await supabase.rpc('get_user_favorited_playlists', {
+        p_limit: limit
+      });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        // If the RPC function doesn't exist yet, return empty array
+        if (error.message.includes('404') || error.message.includes('function') || error.message.includes('not found')) {
+          console.warn('Playlist favorites RPC function not found, returning empty array');
+          return [];
+        }
+        throw error;
+      }
+      return data || [];
+    } catch (err) {
+      // Handle any other errors gracefully
+      console.warn('Error fetching favorited playlists:', err);
+      return [];
+    }
   }
 
   // Toggle playlist favorite status
@@ -660,12 +673,61 @@ export class PlaylistService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase.rpc('toggle_playlist_favorite', {
-      p_playlist_id: playlistId
-    });
+    try {
+      const { data, error } = await supabase.rpc('toggle_playlist_favorite', {
+        p_playlist_id: playlistId
+      });
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        // If the RPC function doesn't exist yet, use direct table operations
+        if (error.message.includes('404') || error.message.includes('function') || error.message.includes('not found')) {
+          console.warn('Playlist favorites RPC function not found, using direct table operations');
+          return await this.toggleFavoriteDirect(playlistId);
+        }
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.warn('Error toggling playlist favorite:', err);
+      return await this.toggleFavoriteDirect(playlistId);
+    }
+  }
+
+  // Fallback method for toggling favorites using direct table operations
+  private static async toggleFavoriteDirect(playlistId: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Check if already favorited
+    const { data: existing } = await supabase
+      .from('playlist_favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('playlist_id', playlistId)
+      .single();
+
+    if (existing) {
+      // Remove from favorites
+      const { error } = await supabase
+        .from('playlist_favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('playlist_id', playlistId);
+      
+      if (error) throw error;
+      return false;
+    } else {
+      // Add to favorites
+      const { error } = await supabase
+        .from('playlist_favorites')
+        .insert({
+          user_id: user.id,
+          playlist_id: playlistId
+        });
+      
+      if (error) throw error;
+      return true;
+    }
   }
 
   // Check if a playlist is favorited by the current user
