@@ -84,11 +84,13 @@ export function PlaylistView() {
       // Use mp3_url if available, otherwise fall back to audio_url
       let trackUrl = track.mp3_url || track.audio_url;
       
+      console.log('Initial track URL:', trackUrl);
+      
       // If the URL is not a full URL, construct the Supabase storage URL
       if (trackUrl && !trackUrl.startsWith('http')) {
         const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
         // Try different possible bucket names for audio files
-        const possibleBuckets = ['tracks', 'audio', 'music', 'files'];
+        const possibleBuckets = ['tracks', 'audio', 'music', 'files', 'public'];
         
         for (const bucket of possibleBuckets) {
           const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${trackUrl}`;
@@ -153,34 +155,43 @@ export function PlaylistView() {
   const getProducerImage = () => {
     if (!playlist?.producer) return null;
     
+    console.log('Producer data:', playlist.producer);
+    console.log('Playlist photo_url:', playlist.photo_url);
+    
     // First try to use the producer's avatar_path
     if (playlist.producer.avatar_path) {
+      console.log('Producer avatar_path:', playlist.producer.avatar_path);
+      
       // If it's a full URL, use it directly
       if (playlist.producer.avatar_path.startsWith('http')) {
+        console.log('Using full URL for avatar:', playlist.producer.avatar_path);
         return playlist.producer.avatar_path;
       }
+      
       // If it's a path, construct the Supabase storage URL
       const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      // Try different possible bucket names
-      const possibleBuckets = ['avatars', 'profiles', 'images'];
+      const possibleBuckets = ['avatars', 'profiles', 'images', 'public'];
       
       for (const bucket of possibleBuckets) {
         const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.producer.avatar_path}`;
         console.log('Trying producer image URL:', url);
-        // You could add image validation here if needed
         return url;
       }
     }
     
     // Then try to use the playlist's photo_url (which might be the producer's photo)
     if (playlist.photo_url) {
+      console.log('Playlist photo_url:', playlist.photo_url);
+      
       // If it's a full URL, use it directly
       if (playlist.photo_url.startsWith('http')) {
+        console.log('Using full URL for playlist photo:', playlist.photo_url);
         return playlist.photo_url;
       }
+      
       // If it's a path, construct the Supabase storage URL
       const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || 'https://yciqkebqlajqbpwlujma.supabase.co';
-      const possibleBuckets = ['avatars', 'profiles', 'images'];
+      const possibleBuckets = ['avatars', 'profiles', 'images', 'public'];
       
       for (const bucket of possibleBuckets) {
         const url = `${supabaseUrl}/storage/v1/object/public/${bucket}/${playlist.photo_url}`;
@@ -189,6 +200,7 @@ export function PlaylistView() {
       }
     }
     
+    console.log('No image found, returning null');
     return null;
   };
 
@@ -210,12 +222,14 @@ export function PlaylistView() {
       
       // Handle different duration formats
       let duration = track.duration;
+      console.log(`Processing duration for ${track.title}:`, duration, 'type:', typeof duration);
       
       // If duration is in seconds (number), convert to MM:SS format
       if (typeof duration === 'number') {
         const minutes = Math.floor(duration / 60);
         const seconds = duration % 60;
         duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        console.log(`Converted number duration to string: ${duration}`);
       }
       
       // Parse MM:SS format
@@ -284,21 +298,24 @@ export function PlaylistView() {
           {/* Producer Info */}
           <div className="flex items-center space-x-6 mb-8">
             <div className="relative">
-              {getProducerImage() ? (
-                <img
-                  src={getProducerImage()!}
-                  alt={getProducerName()}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
-                  onError={(e) => {
-                    console.log('Image failed to load:', getProducerImage());
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white/20 ${getProducerImage() ? 'hidden' : ''}`}>
-                <User className="w-12 h-12 text-white" />
-              </div>
+                             {getProducerImage() ? (
+                 <img
+                   src={getProducerImage()!}
+                   alt={getProducerName()}
+                   className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
+                   onError={(e) => {
+                     console.log('Image failed to load:', getProducerImage());
+                     e.currentTarget.style.display = 'none';
+                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                   }}
+                   onLoad={(e) => {
+                     console.log('Image loaded successfully:', getProducerImage());
+                   }}
+                 />
+               ) : null}
+               <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white/20 ${getProducerImage() ? 'hidden' : ''}`}>
+                 <User className="w-12 h-12 text-white" />
+               </div>
               {playlist.logo_url && (
                 <img
                   src={playlist.logo_url}
