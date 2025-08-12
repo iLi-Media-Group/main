@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Music, ChevronDown, ChevronRight } from 'lucide-react';
-import { GENRES, MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
+import { MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { uploadFile } from '../lib/storage';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface EditTrackModalProps {
   isOpen: boolean;
@@ -31,8 +32,6 @@ interface EditTrackModalProps {
 }
 
 export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackModalProps) {
-  const normalizeGenre = (genre: string) => genre.toLowerCase().replace(/\s+/g, '');
-
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
   const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
@@ -42,14 +41,15 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadingFiles, setUploadingFiles] = useState(false);
-  const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
+
   const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
-  const [expandedInstruments, setExpandedInstruments] = useState<string[]>([]);
-  const [expandedMoods, setExpandedMoods] = useState<Set<string>>(new Set());
-  const [expandedInstrumentsSection, setExpandedInstrumentsSection] = useState(false);
+
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
+  const { mediaTypes } = useDynamicSearchData();
+  const [genres, setGenres] = useState<any[]>([]);
+  const [genresLoading, setGenresLoading] = useState(true);
 
   // Add stemsUrl and splitSheetFile to form state
   const [stemsUrl, setStemsUrl] = useState(track.stems_url || '');
@@ -62,22 +62,39 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   
-  // Fetch instruments from database
+  // Fetch genres and instruments from database
   useEffect(() => {
-    const fetchInstruments = async () => {
+    const fetchData = async () => {
       try {
+        setGenresLoading(true);
         setInstrumentsLoading(true);
+        
+        // Fetch genres
+        const { data: genresData, error: genresError } = await supabase
+          .from('genres')
+          .select(`
+            *,
+            sub_genres (*)
+          `)
+          .order('display_name');
+
+        if (genresError) throw genresError;
+        setGenres(genresData || []);
+        
+        // Fetch instruments
         const instrumentsData = await fetchInstrumentsData();
         setInstruments(instrumentsData.instruments);
       } catch (err) {
-        console.error('Error fetching instruments:', err);
+        console.error('Error fetching data:', err);
+        setGenres([]);
         setInstruments([]);
       } finally {
+        setGenresLoading(false);
         setInstrumentsLoading(false);
       }
     };
 
-    fetchInstruments();
+    fetchData();
   }, []);
 
   // Update state when track prop changes
@@ -98,13 +115,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         audio_url: track.audio_url
       });
 
-      const initialGenres = (Array.isArray(track.genres) ? track.genres : []).filter(genre =>
-        GENRES.some(g => normalizeGenre(g) === normalizeGenre(genre))
-      ).map(genre => {
-        return GENRES.find(g => normalizeGenre(g) === normalizeGenre(genre)) || genre;
-      });
-
-      setSelectedGenres(initialGenres);
+      setSelectedGenres(Array.isArray(track.genres) ? track.genres : []);
       setSelectedMoods(Array.isArray(track.moods) ? track.moods : []);
       setSelectedInstruments(Array.isArray(track.instruments) ? track.instruments : []);
       setSelectedMediaUsage(Array.isArray(track.mediaUsage) ? track.mediaUsage : []);
@@ -124,45 +135,11 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
     }
   }, [track]);
 
-  // Expand categories that have selected items
-  useEffect(() => {
-    const categoriesToExpand = new Set<string>();
-    selectedMediaUsage.forEach(usage => {
-      const [category] = usage.split(' > ');
-      categoriesToExpand.add(category);
-    });
-    setExpandedMediaCategories(categoriesToExpand);
-  }, [selectedMediaUsage]);
 
-  const toggleMediaCategory = (category: string) => {
-    const newExpanded = new Set(expandedMediaCategories);
-    if (newExpanded.has(category)) {
-      newExpanded.delete(category);
-    } else {
-      newExpanded.add(category);
-    }
-    setExpandedMediaCategories(newExpanded);
-  };
 
-  const toggleMoodsSection = () => {
-    if (expandedMoods.size > 0) {
-      setExpandedMoods(new Set());
-    } else {
-      setExpandedMoods(new Set(['expanded']));
-    }
-  };
 
-  const toggleInstrumentsSection = () => {
-    setExpandedInstrumentsSection(!expandedInstrumentsSection);
-  };
 
-  const handleMediaUsageChange = (usageType: string, checked: boolean) => {
-    if (checked) {
-      setSelectedMediaUsage([...selectedMediaUsage, usageType]);
-    } else {
-      setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== usageType));
-    }
-  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -350,6 +327,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                 <p className="text-gray-400">Genres: <span className="text-white">{selectedGenres.length > 0 ? selectedGenres.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Moods: <span className="text-white">{selectedMoods.length > 0 ? selectedMoods.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Instruments: <span className="text-white">{selectedInstruments.length > 0 ? selectedInstruments.join(', ') : 'None set'}</span></p>
+                <p className="text-gray-400">Media Usage: <span className="text-white">{selectedMediaUsage.length > 0 ? selectedMediaUsage.join(', ') : 'None set'}</span></p>
                 <p className="text-gray-400">Vocals: <span className="text-white">{hasVocals ? 'Full Track with Vocals' : 'Instrumental'}</span></p>
                 <p className="text-gray-400">Sync Only: <span className="text-white">{isSyncOnly ? 'Yes' : 'No'}</span></p>
               </div>
@@ -363,101 +341,144 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           </div>
 
           {/* Genres */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-4">
-              Genres
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {GENRES.map((genre) => (
-                <label key={genre} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedGenres.some(g => normalizeGenre(g) === normalizeGenre(genre))}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedGenres([...selectedGenres, genre]);
-                      } else {
-                        setSelectedGenres(selectedGenres.filter(g => normalizeGenre(g) !== normalizeGenre(genre)));
-                      }
-                    }}
-                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                    disabled={loading}
-                  />
-                  <span className="text-gray-300">{genre}</span>
-                </label>
-              ))}
-            </div>
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
+            
+            {genresLoading ? (
+              <div className="text-center py-4">
+                <p className="text-gray-400">Loading genres...</p>
+              </div>
+            ) : genres.length === 0 ? (
+              <div className="text-center py-8">
+                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No genres available</p>
+                <p className="text-sm text-gray-500">Please contact an administrator to add genres</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Genres (Select at least one)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {genres.map((genre) => (
+                      <label
+                        key={genre.id}
+                        className="flex items-center space-x-2 text-gray-300"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedGenres.includes(genre.display_name)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedGenres([...selectedGenres, genre.display_name]);
+                            } else {
+                              setSelectedGenres(selectedGenres.filter((g) => g !== genre.display_name));
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={loading}
+                        />
+                        <span className="text-sm">{genre.display_name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Moods */}
-          <div>
-            <button
-              type="button"
-              onClick={toggleMoodsSection}
-              className="flex items-center justify-between w-full text-left mb-4"
-            >
-              <label className="block text-sm font-medium text-gray-300">
-                Moods {selectedMoods.length > 0 && <span className="text-blue-400">({selectedMoods.length} selected)</span>}
-              </label>
-              {expandedMoods.size > 0 ? (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            {expandedMoods.size > 0 && (
-              <div className="space-y-6">
-                {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
-                  <div key={category} className="bg-white/5 rounded-lg p-4">
-                    <h3 className="text-white font-medium mb-3">{category}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {moods.map((mood) => (
-                        <label key={mood} className="flex items-center space-x-2">
+          {/* Moods Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Select the moods that best describe this track. This helps clients find music with the right emotional feel.
+            </p>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Primary Moods (Select at least one)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => (
+                    <label
+                      key={mainMood}
+                      className="flex items-center space-x-2 text-gray-300"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedMoods.includes(mainMood)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            // Add only the main mood category
+                            if (!selectedMoods.includes(mainMood)) {
+                              setSelectedMoods([...selectedMoods, mainMood]);
+                            }
+                          } else {
+                            // Remove only the main mood category
+                            setSelectedMoods(selectedMoods.filter((m) => m !== mainMood));
+                          }
+                        }}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={loading}
+                      />
+                      <span className="text-sm">{mainMood}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => {
+                const isMainMoodSelected = selectedMoods.includes(mainMood);
+                
+                return isMainMoodSelected ? (
+                  <div key={mainMood}>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {mainMood} Sub-Moods
+                    </label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {subMoods.map((subMood: string) => (
+                        <label
+                          key={subMood}
+                          className="flex items-center space-x-2 text-gray-300"
+                        >
                           <input
                             type="checkbox"
-                            checked={selectedMoods.includes(mood)}
+                            checked={selectedMoods.includes(subMood)}
                             onChange={(e) => {
                               if (e.target.checked) {
-                                setSelectedMoods([...selectedMoods, mood]);
+                                setSelectedMoods([...selectedMoods, subMood]);
                               } else {
-                                setSelectedMoods(selectedMoods.filter(m => m !== mood));
+                                setSelectedMoods(selectedMoods.filter((m) => m !== subMood));
                               }
                             }}
                             className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                             disabled={loading}
                           />
-                          <span className="text-gray-300">{mood}</span>
+                          <span className="text-sm">{subMood}</span>
                         </label>
                       ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : null;
+              })}
+            </div>
           </div>
 
-          {/* Instruments */}
-          <div>
-            <button
-              type="button"
-              onClick={toggleInstrumentsSection}
-              className="flex items-center justify-between w-full text-left mb-4"
-            >
-              <label className="block text-sm font-medium text-gray-300">
-                Instruments {selectedInstruments.length > 0 && <span className="text-blue-400">({selectedInstruments.length} selected)</span>}
-              </label>
-              {expandedInstrumentsSection ? (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
-              ) : (
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              )}
-            </button>
-            {expandedInstrumentsSection && (
-              <>
-                <p className="text-sm text-gray-400 mb-4">
-                  Select the instruments used in this track. This helps clients find music with specific instrumentation.
-                </p>
-                <div className="space-y-6">
+          {/* Instruments Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Select the instruments used in this track. This helps clients find music with specific instrumentation.
+            </p>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Primary Instrument Categories (Select at least one)
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {(() => {
                     // Group instruments by category
                     const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
@@ -470,90 +491,189 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                     });
 
                     return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
-                      <div key={categoryName} className="bg-white/5 rounded-lg p-4">
-                        <h3 className="text-white font-medium mb-3">{categoryName}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {categoryInstruments.map((instrument) => (
-                            <label key={instrument.id} className="flex items-center space-x-2">
+                      <label
+                        key={categoryName}
+                        className="flex items-center space-x-2 text-gray-300"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={(selectedInstruments || []).includes(categoryName)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add only the main instrument category
+                              if (!(selectedInstruments || []).includes(categoryName)) {
+                                setSelectedInstruments([...(selectedInstruments || []), categoryName]);
+                              }
+                            } else {
+                              // Remove only the main instrument category
+                              setSelectedInstruments((selectedInstruments || []).filter((i) => i !== categoryName));
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={loading}
+                        />
+                        <span className="text-sm">{categoryName}</span>
+                      </label>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              {(() => {
+                // Group instruments by category
+                const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
+                instruments.forEach(instrument => {
+                  const categoryName = instrument.category_info?.display_name || instrument.category;
+                  if (!groupedInstruments[categoryName]) {
+                    groupedInstruments[categoryName] = [];
+                  }
+                  groupedInstruments[categoryName].push(instrument);
+                });
+
+                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => {
+                  const isMainCategorySelected = (selectedInstruments || []).includes(categoryName);
+                  
+                  return isMainCategorySelected ? (
+                    <div key={categoryName}>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        {categoryName} Instruments
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {categoryInstruments.map((instrument) => (
+                          <label
+                            key={instrument.id}
+                            className="flex items-center space-x-2 text-gray-300"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(selectedInstruments || []).includes(instrument.display_name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedInstruments([...(selectedInstruments || []), instrument.display_name]);
+                                } else {
+                                  setSelectedInstruments((selectedInstruments || []).filter((i) => i !== instrument.display_name));
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              disabled={loading}
+                            />
+                            <span className="text-sm">{instrument.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null;
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* Media Usage Section */}
+          {deepMediaSearchEnabled ? (
+            <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                Media Usage Types (Deep Media Search)
+              </h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
+              </p>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Primary Media Categories (Select at least one)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {(() => {
+                      // Separate parent and child media types
+                      const parentTypes = mediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
+                      const childTypes = mediaTypes.filter(mt => mt.parent_id !== null);
+                      
+                      // Group parent types by category
+                      const parentTypesByCategory = parentTypes.reduce((acc, mediaType) => {
+                        if (!acc[mediaType.category]) {
+                          acc[mediaType.category] = [];
+                        }
+                        acc[mediaType.category].push(mediaType);
+                        return acc;
+                      }, {} as Record<string, typeof parentTypes>);
+
+                      return Object.entries(parentTypesByCategory).map(([category, types]) => 
+                        types.map((parentType) => {
+                          const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
+                          
+                          return (
+                            <label
+                              key={parentType.id}
+                              className="flex items-center space-x-2 text-gray-300"
+                            >
                               <input
                                 type="checkbox"
-                                checked={(selectedInstruments || []).includes(instrument.display_name)}
+                                checked={selectedMediaUsage.includes(parentType.name)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    setSelectedInstruments([...(selectedInstruments || []), instrument.display_name]);
+                                    // Add only the main media type category
+                                    if (!selectedMediaUsage.includes(parentType.name)) {
+                                      setSelectedMediaUsage([...selectedMediaUsage, parentType.name]);
+                                    }
                                   } else {
-                                    setSelectedInstruments((selectedInstruments || []).filter(i => i !== instrument.display_name));
+                                    // Remove only the main media type category
+                                    setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== parentType.name));
                                   }
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={loading}
                               />
-                              <span className="text-gray-300">{instrument.display_name}</span>
+                              <span className="text-sm">{parentType.name}</span>
+                            </label>
+                          );
+                        })
+                      ).flat();
+                    })()}
+                  </div>
+                </div>
+
+                {(() => {
+                  // Separate parent and child media types
+                  const parentTypes = mediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
+                  const childTypes = mediaTypes.filter(mt => mt.parent_id !== null);
+                  
+                  return parentTypes.map((parentType) => {
+                    const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
+                    const isMainTypeSelected = selectedMediaUsage.includes(parentType.name);
+                    
+                    return isMainTypeSelected ? (
+                      <div key={parentType.id}>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          {parentType.name} Media Types
+                        </label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {childTypesForParent.map((childType) => (
+                            <label
+                              key={childType.id}
+                              className="flex items-center space-x-2 text-gray-300"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedMediaUsage.includes(childType.full_name)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedMediaUsage([...selectedMediaUsage, childType.full_name]);
+                                  } else {
+                                    setSelectedMediaUsage(selectedMediaUsage.filter(u => u !== childType.full_name));
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={loading}
+                              />
+                              <span className="text-sm">{childType.name}</span>
                             </label>
                           ))}
                         </div>
                       </div>
-                    ));
-                  })()}
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Media Usage - Show feature or premium notice */}
-          {deepMediaSearchEnabled ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-4">
-                Media Usage Types (Deep Media Search)
-              </label>
-              <div className="space-y-4">
-                {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, subcategories]) => (
-                  <div key={category} className="bg-white/5 rounded-lg p-4">
-                    <button
-                      type="button"
-                      onClick={() => toggleMediaCategory(category)}
-                      className="flex items-center justify-between w-full text-left"
-                    >
-                      <h3 className="text-white font-medium">{category}</h3>
-                      {expandedMediaCategories.has(category) ? (
-                        <ChevronDown className="w-5 h-5 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-5 h-5 text-gray-400" />
-                      )}
-                    </button>
-                    
-                    {expandedMediaCategories.has(category) && (
-                      <div className="mt-4 space-y-4">
-                        {Object.entries(subcategories).map(([subcategory, types]) => (
-                          <div key={subcategory} className="ml-4">
-                            <h4 className="text-blue-300 font-medium mb-2">{subcategory}</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {types.map((type: string) => {
-                                const fullType = `${category} > ${subcategory} > ${type}`;
-                                const selected = selectedMediaUsage.includes(fullType);
-                                return (
-                                  <button
-                                    key={fullType}
-                                    type="button"
-                                    onClick={() => handleMediaUsageChange(fullType, !selected)}
-                                    className={`px-3 py-2 rounded-lg border font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-green-400
-                                      ${selected
-                                        ? 'bg-green-600 text-white border-green-700 shadow-md'
-                                        : 'bg-transparent text-green-500 border-green-500 hover:bg-green-50 hover:text-green-700'}
-                                    `}
-                                    disabled={loading}
-                                  >
-                                    {type}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                    ) : null;
+                  });
+                })()}
               </div>
             </div>
           ) : (

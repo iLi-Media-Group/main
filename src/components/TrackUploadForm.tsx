@@ -1277,25 +1277,24 @@ export function TrackUploadForm() {
                       key={mainMood}
                       className="flex items-center space-x-2 text-gray-300"
                     >
-                      <input
-                        type="checkbox"
-                        checked={subMoods.some(subMood => formData.selectedMoods.includes(subMood))}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            // Add all sub-moods for this category
-                            const newMoods = [...formData.selectedMoods];
-                            subMoods.forEach(subMood => {
-                              if (!newMoods.includes(subMood)) {
-                                newMoods.push(subMood);
+                                              <input
+                          type="checkbox"
+                          checked={formData.selectedMoods.includes(mainMood)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              // Add only the main mood category
+                              if (!formData.selectedMoods.includes(mainMood)) {
+                                updateFormData({ 
+                                  selectedMoods: [...formData.selectedMoods, mainMood] 
+                                });
                               }
-                            });
-                            updateFormData({ selectedMoods: newMoods });
-                          } else {
-                            // Remove all sub-moods for this category
-                            const newMoods = formData.selectedMoods.filter(mood => !subMoods.includes(mood));
-                            updateFormData({ selectedMoods: newMoods });
-                          }
-                        }}
+                            } else {
+                              // Remove only the main mood category
+                              updateFormData({
+                                selectedMoods: formData.selectedMoods.filter((m) => m !== mainMood)
+                              });
+                            }
+                          }}
                         className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                         disabled={isSubmitting}
                       />
@@ -1306,9 +1305,9 @@ export function TrackUploadForm() {
               </div>
 
               {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => {
-                const hasSelectedSubMoods = subMoods.some(subMood => formData.selectedMoods.includes(subMood));
+                const isMainMoodSelected = formData.selectedMoods.includes(mainMood);
                 
-                return hasSelectedSubMoods ? (
+                return isMainMoodSelected ? (
                   <div key={mainMood}>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       {mainMood} Sub-Moods
@@ -1377,23 +1376,20 @@ export function TrackUploadForm() {
                       >
                         <input
                           type="checkbox"
-                          checked={categoryInstruments.some(instrument => (formData.selectedInstruments || []).includes(instrument.display_name))}
+                          checked={(formData.selectedInstruments || []).includes(categoryName)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              // Add all instruments for this category
-                              const newInstruments = [...(formData.selectedInstruments || [])];
-                              categoryInstruments.forEach(instrument => {
-                                if (!newInstruments.includes(instrument.display_name)) {
-                                  newInstruments.push(instrument.display_name);
-                                }
-                              });
-                              updateFormData({ selectedInstruments: newInstruments });
+                              // Add only the main instrument category
+                              if (!(formData.selectedInstruments || []).includes(categoryName)) {
+                                updateFormData({ 
+                                  selectedInstruments: [...(formData.selectedInstruments || []), categoryName] 
+                                });
+                              }
                             } else {
-                              // Remove all instruments for this category
-                              const newInstruments = (formData.selectedInstruments || []).filter(instrumentName => 
-                                !categoryInstruments.some(instrument => instrument.display_name === instrumentName)
-                              );
-                              updateFormData({ selectedInstruments: newInstruments });
+                              // Remove only the main instrument category
+                              updateFormData({
+                                selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== categoryName)
+                              });
                             }
                           }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -1418,11 +1414,9 @@ export function TrackUploadForm() {
                 });
 
                 return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => {
-                  const hasSelectedInstruments = categoryInstruments.some(instrument => 
-                    (formData.selectedInstruments || []).includes(instrument.display_name)
-                  );
+                  const isMainCategorySelected = (formData.selectedInstruments || []).includes(categoryName);
                   
-                  return hasSelectedInstruments ? (
+                  return isMainCategorySelected ? (
                     <div key={categoryName}>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         {categoryName} Instruments
@@ -1502,23 +1496,20 @@ export function TrackUploadForm() {
                             >
                               <input
                                 type="checkbox"
-                                checked={childTypesForParent.some(childType => formData.selectedMediaUsage.includes(childType.full_name))}
+                                checked={formData.selectedMediaUsage.includes(parentType.name)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    // Add all child types for this parent
-                                    const newMediaUsage = [...formData.selectedMediaUsage];
-                                    childTypesForParent.forEach(childType => {
-                                      if (!newMediaUsage.includes(childType.full_name)) {
-                                        newMediaUsage.push(childType.full_name);
-                                      }
-                                    });
-                                    updateFormData({ selectedMediaUsage: newMediaUsage });
+                                    // Add only the main media type category
+                                    if (!formData.selectedMediaUsage.includes(parentType.name)) {
+                                      updateFormData({ 
+                                        selectedMediaUsage: [...formData.selectedMediaUsage, parentType.name] 
+                                      });
+                                    }
                                   } else {
-                                    // Remove all child types for this parent
-                                    const newMediaUsage = formData.selectedMediaUsage.filter(usage => 
-                                      !childTypesForParent.some(childType => childType.full_name === usage)
-                                    );
-                                    updateFormData({ selectedMediaUsage: newMediaUsage });
+                                    // Remove only the main media type category
+                                    updateFormData({
+                                      selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== parentType.name)
+                                    });
                                   }
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
@@ -1540,11 +1531,9 @@ export function TrackUploadForm() {
                   
                   return parentTypes.map((parentType) => {
                     const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
-                    const hasSelectedChildren = childTypesForParent.some(childType => 
-                      formData.selectedMediaUsage.includes(childType.full_name)
-                    );
+                    const isMainTypeSelected = formData.selectedMediaUsage.includes(parentType.name);
                     
-                    return hasSelectedChildren ? (
+                    return isMainTypeSelected ? (
                       <div key={parentType.id}>
                         <label className="block text-sm font-medium text-gray-300 mb-2">
                           {parentType.name} Media Types
