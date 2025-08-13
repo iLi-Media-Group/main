@@ -226,6 +226,37 @@ function comprehensiveSearch(
   return results;
 }
 
+// Simple search function for testing
+function simpleSearch(tracks: any[], searchQuery: string): any[] {
+  if (!searchQuery || !searchQuery.trim()) {
+    return tracks;
+  }
+
+  const query = searchQuery.toLowerCase().trim();
+  console.log('🔍 Simple Search - Query:', query);
+  console.log('🔍 Total tracks to search:', tracks.length);
+
+  const results = tracks.filter(track => {
+    // Create searchable text from all track fields
+    const searchableText = [
+      track.title,
+      track.artist,
+      track.genres,
+      track.sub_genres,
+      Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+      Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+      Array.isArray(track.media_usage) ? track.media_usage.join(" ") : track.media_usage
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    return searchableText.includes(query);
+  });
+
+  console.log('🔍 Simple Search Results - Found:', results.length);
+  console.log('🔍 Sample results:', results.slice(0, 3).map(t => ({ title: t.title, genres: t.genres, sub_genres: t.sub_genres })));
+
+  return results;
+}
+
 // Categorize tracks into Exact / Partial / Other based on search results
 function categorizeTracks(searchResults: SearchResult[]): {
   exact: any[];
@@ -471,20 +502,14 @@ export function CatalogPage() {
           })));
         }
 
-        // Apply comprehensive search
-        const searchResults = comprehensiveSearch(
-          allTracks,
-          searchQuery,
-          genres,
-          subGenres,
-          moods,
-          subMoods,
-          instruments,
-          subInstruments,
-          mediaTypes,
-          subMediaTypes,
-          synonymsMap || {}
-        );
+        // Apply simple search for testing
+        const searchResults = simpleSearch(allTracks, searchQuery).map(track => ({
+          track,
+          score: 10, // Give all results a high score for now
+          exactMatches: ['simple match'],
+          partialMatches: [],
+          fuzzyMatches: []
+        }));
 
         // Create a map of track IDs to search results for easy lookup
         const searchResultMap = new Map();
