@@ -427,6 +427,85 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
           </div>
         )}
       </form>
+
+      {/* Active Search Filters Display */}
+      {(filters.query || filters.genres.length > 0 || filters.subGenres.length > 0 || 
+        filters.moods.length > 0 || filters.instruments.length > 0 || filters.mediaTypes.length > 0 ||
+        filters.syncOnly !== undefined || filters.hasVocals !== undefined || 
+        filters.excludeUnclearedSamples !== undefined || filters.minBpm > 0 || filters.maxBpm < 200) && (
+        <div className="mt-4 pt-4 border-t border-white/20">
+          <h4 className="text-white font-medium mb-3">Active Filters:</h4>
+          <div className="flex flex-wrap gap-2">
+            {/* Search Query */}
+            {filters.query && (
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm border border-blue-500/30">
+                Search: "{filters.query}"
+              </span>
+            )}
+            
+            {/* Genres */}
+            {filters.genres.map(genre => (
+              <span key={genre} className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                Genre: {genre}
+              </span>
+            ))}
+            
+            {/* Sub Genres */}
+            {filters.subGenres.map(subGenre => (
+              <span key={subGenre} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm border border-purple-500/30">
+                Sub-Genre: {subGenre}
+              </span>
+            ))}
+            
+            {/* Moods */}
+            {filters.moods.map(mood => (
+              <span key={mood} className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm border border-orange-500/30">
+                Mood: {mood}
+              </span>
+            ))}
+            
+            {/* Instruments */}
+            {filters.instruments.map(instrument => (
+              <span key={instrument} className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm border border-yellow-500/30">
+                Instrument: {instrument}
+              </span>
+            ))}
+            
+            {/* Media Types */}
+            {filters.mediaTypes.map(mediaType => (
+              <span key={mediaType} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30">
+                Media: {mediaType}
+              </span>
+            ))}
+            
+            {/* Track Options */}
+            {filters.syncOnly && (
+              <span className="px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm border border-red-500/30">
+                Sync Only
+              </span>
+            )}
+            
+            {filters.hasVocals && (
+              <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-sm border border-pink-500/30">
+                With Vocals
+              </span>
+            )}
+            
+            {filters.excludeUnclearedSamples && (
+              <span className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm border border-amber-500/30">
+                Exclude Uncleared Samples/Loops
+              </span>
+            )}
+            
+            {/* BPM Range */}
+            {(filters.minBpm > 0 || filters.maxBpm < 200) && (
+              <span className="px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-sm border border-teal-500/30">
+                BPM: {filters.minBpm}-{filters.maxBpm}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
