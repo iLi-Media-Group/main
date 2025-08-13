@@ -20,6 +20,13 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
   if (!searchQuery || searchQuery.trim() === "") return tracks;
 
   const query = searchQuery.toLowerCase().trim();
+  
+  // Debug logging
+  console.log('🔍 Enhanced Search Debug:');
+  console.log('Search Query:', searchQuery);
+  console.log('Processed Query:', query);
+  console.log('Synonyms Map:', synonymsMap);
+  console.log('Total Tracks:', tracks.length);
 
   // Expand search query with synonyms
   let expandedTerms = new Set([query]);
@@ -38,6 +45,8 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
 
   // Convert to array for iteration
   const expandedTermsArray = Array.from(expandedTerms);
+  
+  console.log('Expanded Terms:', expandedTermsArray);
 
   // Fuzzy match helper (Levenshtein distance)
   function levenshtein(a: string, b: string) {
@@ -88,6 +97,11 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
+      
+      // Debug first few tracks
+      if (tracks.indexOf(track) < 3) {
+        console.log('Track:', track.title, 'Searchable Fields:', searchableFields);
+      }
 
       for (let term of expandedTermsArray) {
         if (searchableFields.includes(term)) {
@@ -105,6 +119,7 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
     .sort((a, b) => b.score - a.score) // higher score first
     .map(item => item.track);
 
+  console.log('Final Results Count:', results.length);
   return results;
 }
 
