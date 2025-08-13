@@ -203,6 +203,7 @@ export function CatalogPage() {
   }, [searchParams, synonymsLoading]);
 
   const fetchTracks = async (filters?: any, currentPage: number = 1) => {
+    console.log('🎵 fetchTracks called with filters:', filters);
     try {
       if (currentPage === 1) {
         setLoading(true);
@@ -290,6 +291,15 @@ export function CatalogPage() {
           ...allInstruments,
           ...(filters?.mediaTypes || [])
         ].filter(Boolean).join(' ');
+
+        console.log('🎵 About to call enhancedSearch with:', {
+          allTracksCount: allTracks.length,
+          combinedSearchTerms,
+          allGenres,
+          allMoods,
+          allInstruments,
+          synonymsMapKeys: Object.keys(synonymsMap || {})
+        });
 
         // Apply enhanced search
         let processedTracks = enhancedSearch(
