@@ -98,7 +98,7 @@ const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: 
     // Add synonyms
     if (synonymsMap[termLower]) {
       synonymsMap[termLower].forEach(synonym => {
-        expandedTerms.add(synonym.toLowerCase());
+          expandedTerms.add(synonym.toLowerCase());
         // Also add variations of synonyms
         const synonymVariations = generateWordVariations(synonym);
         synonymVariations.forEach(v => expandedTerms.add(v));
@@ -352,9 +352,9 @@ export function CatalogPage() {
   const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
   const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
 
-  useEffect(() => {
-    // Get search params
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
+     useEffect(() => {
+     // Get search params
+     const query = searchParams.get('q')?.toLowerCase().trim() || '';
     const genresParam = searchParams.get('genres')?.split(',').filter(Boolean) || [];
     const subGenresParam = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
     const moodsParam = searchParams.get('moods')?.split(',').filter(Boolean) || [];
@@ -371,7 +371,7 @@ export function CatalogPage() {
 
     // Combine URL params with persistent filters
     const combinedFilters = {
-      query,
+       query,
       genres: genresParam,
       subGenres: subGenresParam,
       moods: moodsParam,
@@ -396,10 +396,10 @@ export function CatalogPage() {
         setLoadingMore(true);
       }
 
-      // Parse search query for special filters
-      const searchQuery = filters?.query?.toLowerCase() || '';
-      const hasSyncOnlyTerm = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
-      const hasVocalsTerm = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
+        // Parse search query for special filters
+        const searchQuery = filters?.query?.toLowerCase() || '';
+        const hasSyncOnlyTerm = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
+        const hasVocalsTerm = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
 
       // Tokenize and expand search terms
       const searchWords = tokenizeText(filters?.query || '');
@@ -407,58 +407,58 @@ export function CatalogPage() {
       const expandedTerms = expandSearchTerms(filteredWords, synonymsMap || {});
 
       if (expandedTerms.length > 0) {
-        // For all search types, get ALL tracks and then filter/score them client-side
-        // This ensures we get complete results for proper categorization
+           // For all search types, get ALL tracks and then filter/score them client-side
+           // This ensures we get complete results for proper categorization
         console.log('Searching with terms:', expandedTerms);
-        
-        // Build query with special filters
-        let query = supabase
-          .from('tracks')
-          .select(`
-            id,
-            title,
-            artist,
-            genres,
-            sub_genres,
-            moods,
-            instruments,
-            media_usage,
-            bpm,
-            audio_url,
-            image_url,
-            has_sting_ending,
-            is_one_stop,
-            duration,
-            mp3_url,
-            trackouts_url,
-            stems_url,
-            has_vocals,
-            vocals_usage_type,
-            is_sync_only,
-            track_producer_id,
-            created_at,
+           
+           // Build query with special filters
+           let query = supabase
+             .from('tracks')
+             .select(`
+               id,
+               title,
+               artist,
+               genres,
+               sub_genres,
+               moods,
+               instruments,
+               media_usage,
+               bpm,
+               audio_url,
+               image_url,
+               has_sting_ending,
+               is_one_stop,
+               duration,
+               mp3_url,
+               trackouts_url,
+               stems_url,
+               has_vocals,
+               vocals_usage_type,
+               is_sync_only,
+               track_producer_id,
+               created_at,
             contains_loops,
             contains_samples,
             contains_splice_loops,
             samples_cleared,
-            producer:profiles!track_producer_id (
-              id,
-              first_name,
-              last_name,
-              email,
-              avatar_path
-            )
-          `)
-          .is('deleted_at', null);
+               producer:profiles!track_producer_id (
+                 id,
+                 first_name,
+                 last_name,
+                 email,
+                 avatar_path
+               )
+             `)
+             .is('deleted_at', null);
 
-        // Apply special filters based on search terms
-        if (hasSyncOnlyTerm) {
-          query = query.eq('is_sync_only', true);
-        }
-        
-        if (hasVocalsTerm) {
-          query = query.eq('has_vocals', true);
-        }
+                       // Apply special filters based on search terms
+            if (hasSyncOnlyTerm) {
+              query = query.eq('is_sync_only', true);
+            }
+            
+            if (hasVocalsTerm) {
+              query = query.eq('has_vocals', true);
+            }
 
         // Apply persistent filters
         if (filters?.syncOnly === true) {
@@ -482,14 +482,14 @@ export function CatalogPage() {
           query = query.lte('bpm', filters.maxBpm);
         }
 
-        const { data: allTracks, error } = await query;
+           const { data: allTracks, error } = await query;
 
-        if (error) throw error;
+           if (error) throw error;
 
-        if (allTracks) {
+           if (allTracks) {
           // Score and filter tracks based on search terms
-          const scoredTracks = allTracks.map(track => ({
-            ...track,
+             const scoredTracks = allTracks.map(track => ({
+               ...track,
             _searchScore: calculateMatchScore(track, expandedTerms, synonymsMap || {})
           })).filter(track => track._searchScore > 0);
 
@@ -501,37 +501,37 @@ export function CatalogPage() {
           const endIndex = startIndex + TRACKS_PER_PAGE;
           const paginatedTracks = scoredTracks.slice(startIndex, endIndex);
 
-          // Format tracks for display
+             // Format tracks for display
           const formattedTracks = paginatedTracks.map(track => {
             const producer = Array.isArray(track.producer) ? track.producer[0] : track.producer;
             return {
-              id: track.id,
-              title: track.title || 'Untitled',
+               id: track.id,
+               title: track.title || 'Untitled',
               artist: producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
-              genres: parseArrayField(track.genres),
-              subGenres: parseArrayField(track.sub_genres),
-              moods: parseArrayField(track.moods),
-              instruments: parseArrayField(track.instruments),
-              mediaUsage: parseArrayField(track.media_usage),
-              duration: track.duration || '3:30',
-              bpm: track.bpm,
-              audioUrl: track.audio_url,
+               genres: parseArrayField(track.genres),
+               subGenres: parseArrayField(track.sub_genres),
+               moods: parseArrayField(track.moods),
+               instruments: parseArrayField(track.instruments),
+               mediaUsage: parseArrayField(track.media_usage),
+               duration: track.duration || '3:30',
+               bpm: track.bpm,
+               audioUrl: track.audio_url,
               image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-              hasStingEnding: track.has_sting_ending,
-              isOneStop: track.is_one_stop,
-              mp3Url: track.mp3_url,
-              trackoutsUrl: track.trackouts_url,
-              stemsUrl: track.stems_url,
-              hasVocals: track.has_vocals || false,
-              isSyncOnly: track.is_sync_only || false,
-              producerId: track.track_producer_id || '',
+               hasStingEnding: track.has_sting_ending,
+               isOneStop: track.is_one_stop,
+               mp3Url: track.mp3_url,
+               trackoutsUrl: track.trackouts_url,
+               stemsUrl: track.stems_url,
+               hasVocals: track.has_vocals || false,
+               isSyncOnly: track.is_sync_only || false,
+               producerId: track.track_producer_id || '',
               producer: producer ? {
                 id: producer.id,
                 firstName: producer.first_name || '',
                 lastName: producer.last_name || '',
                 email: producer.email || '',
-              } : undefined,
-              fileFormats: {
+               } : undefined,
+               fileFormats: {
                 stereoMp3: {
                   format: ['mp3'],
                   url: track.mp3_url || ''
@@ -544,19 +544,19 @@ export function CatalogPage() {
                   format: ['wav', 'aiff'],
                   url: track.stems_url || ''
                 }
-              },
-              pricing: {
-                stereoMp3: 0,
-                stems: 0,
-                stemsWithVocals: 0
-              },
-              leaseAgreementUrl: '',
-              searchScore: track._searchScore || 0
+               },
+               pricing: {
+                 stereoMp3: 0,
+                 stems: 0,
+                 stemsWithVocals: 0
+               },
+               leaseAgreementUrl: '',
+               searchScore: track._searchScore || 0
             };
           });
 
           if (currentPage === 1) {
-            setTracks(formattedTracks);
+             setTracks(formattedTracks);
           } else {
             setTracks(prev => [...prev, ...formattedTracks]);
           }
@@ -603,7 +603,8 @@ export function CatalogPage() {
             )
           `)
           .is('deleted_at', null)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range((currentPage - 1) * TRACKS_PER_PAGE, currentPage * TRACKS_PER_PAGE - 1);
 
         // Apply persistent filters
         if (filters?.syncOnly === true) {
@@ -641,8 +642,8 @@ export function CatalogPage() {
               genres: parseArrayField(track.genres),
               subGenres: parseArrayField(track.sub_genres),
               moods: parseArrayField(track.moods),
-              instruments: parseArrayField(track.instruments),
-              mediaUsage: parseArrayField(track.media_usage),
+            instruments: parseArrayField(track.instruments),
+            mediaUsage: parseArrayField(track.media_usage),
               duration: track.duration || '3:30',
               bpm: track.bpm,
               audioUrl: track.audio_url,
@@ -680,18 +681,18 @@ export function CatalogPage() {
                 stems: 0,
                 stemsWithVocals: 0
               },
-              leaseAgreementUrl: '',
+            leaseAgreementUrl: '',
               searchScore: 0
             };
           });
 
-          if (currentPage === 1) {
-            setTracks(formattedTracks);
-          } else {
-            setTracks(prev => [...prev, ...formattedTracks]);
-          }
+        if (currentPage === 1) {
+          setTracks(formattedTracks);
+        } else {
+          setTracks(prev => [...prev, ...formattedTracks]);
+        }
 
-          setHasMore(formattedTracks.length === TRACKS_PER_PAGE);
+        setHasMore(formattedTracks.length === TRACKS_PER_PAGE);
         }
       }
     } catch (error) {
@@ -702,20 +703,20 @@ export function CatalogPage() {
     }
   };
 
-  const handleSearch = async (searchFilters: any) => {
-    // Convert search terms to lowercase and remove extra spaces
-    const normalizedFilters = {
-      ...searchFilters,
-      query: searchFilters.query?.toLowerCase().trim(),
+     const handleSearch = async (searchFilters: any) => {
+     // Convert search terms to lowercase and remove extra spaces
+           const normalizedFilters = {
+        ...searchFilters,
+        query: searchFilters.query?.toLowerCase().trim(),
       genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()),
       subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()),
-      moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
-      instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
-      mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
-      syncOnly: searchFilters.syncOnly,
-      hasVocals: searchFilters.hasVocals,
-      excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
-    };
+        moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+        instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+        mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
+        syncOnly: searchFilters.syncOnly,
+        hasVocals: searchFilters.hasVocals,
+        excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
+      };
 
     // Save persistent filters
     savePersistentFilters({
@@ -727,26 +728,26 @@ export function CatalogPage() {
     // Set filters for categorization
     setFilters(normalizedFilters);
 
-    // Update URL with search params
-    const params = new URLSearchParams();
-    if (normalizedFilters.query) params.set('q', normalizedFilters.query);
-    if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
-    if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
-    if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
-    if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
-    if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
-    if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
-    if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
-    if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
-    if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
-    if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+         // Update URL with search params
+     const params = new URLSearchParams();
+     if (normalizedFilters.query) params.set('q', normalizedFilters.query);
+     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
+     if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
+     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
+     if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
+     if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
+           if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
+      if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
+      if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
+      if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
+      if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 
-    // Update URL without reloading the page
-    navigate(`/catalog?${params.toString()}`, { replace: true });
-    
-    // Log the search query to the database
-    await logSearchFromFilters(normalizedFilters);
-  };
+         // Update URL without reloading the page
+     navigate(`/catalog?${params.toString()}`, { replace: true });
+     
+     // Log the search query to the database
+     await logSearchFromFilters(normalizedFilters);
+   };
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
@@ -781,11 +782,11 @@ export function CatalogPage() {
     tracks.forEach(track => {
       const score = track.searchScore || 0;
       
-             // Check if track matches ALL search terms (exact match)
-       const trackGenres = parseArrayField(track.genres).map(g => g.toLowerCase());
+      // Check if track matches ALL search terms (exact match)
+      const trackGenres = parseArrayField(track.genres).map(g => g.toLowerCase());
        const trackSubGenres = parseArrayField(track.subGenres).map(sg => sg.toLowerCase());
-       const trackMoods = parseArrayField(track.moods).map(m => m.toLowerCase());
-       const trackInstruments = parseArrayField(track.instruments).map(i => i.toLowerCase());
+      const trackMoods = parseArrayField(track.moods).map(m => m.toLowerCase());
+      const trackInstruments = parseArrayField(track.instruments).map(i => i.toLowerCase());
        const trackMediaUsage = parseArrayField(track.mediaUsage).map(mu => mu.toLowerCase());
       
       // Create a set of all track attributes for easy matching
@@ -914,76 +915,76 @@ export function CatalogPage() {
           <p className="text-gray-400">Try adjusting your search terms or filters.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {/* Exact Matches */}
+             <div className="space-y-8">
+                     {/* Exact Matches */}
           {(() => {
             const { exactMatches } = categorizeTracks(tracks);
             return exactMatches.length > 0 ? (
-              <div>
+                       <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                    {exactMatches.map(track => (
-                     <TrackCard
+                                 <TrackCard
                        key={track.id}
-                       track={track}
-                       onSelect={() => handleTrackSelect(track)}
-                     />
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
                    ))}
-                 </div>
-              </div>
+                               </div>
+                         </div>
             ) : null;
           })()}
 
-          {/* Partial Matches */}
+                     {/* Partial Matches */}
           {(() => {
             const { partialMatches } = categorizeTracks(tracks);
             return partialMatches.length > 0 ? (
-              <div>
+                       <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                    {partialMatches.map(track => (
-                     <TrackCard
+                                 <TrackCard
                        key={track.id}
-                       track={track}
-                       onSelect={() => handleTrackSelect(track)}
-                     />
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
                    ))}
-                 </div>
-              </div>
+                               </div>
+                         </div>
             ) : null;
           })()}
 
-          {/* Other Tracks */}
+                     {/* Other Tracks */}
           {(() => {
             const { otherTracks } = categorizeTracks(tracks);
             return otherTracks.length > 0 ? (
-              <div>
+                       <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                    {otherTracks.map(track => (
-                     <TrackCard
+                                 <TrackCard
                        key={track.id}
-                       track={track}
-                       onSelect={() => handleTrackSelect(track)}
-                     />
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                                 />
                    ))}
-                 </div>
-              </div>
+                               </div>
+                         </div>
             ) : null;
-          })()}
-        </div>
-      )}
+               })()}
+               </div>
+           )}
 
-      {hasMore && (
+          {hasMore && (
         <div className="text-center mt-8">
-          <button
-            onClick={loadMore}
-            disabled={loadingMore}
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
             className="btn-primary"
           >
             {loadingMore ? 'Loading...' : 'Load More'}
-          </button>
-        </div>
+              </button>
+            </div>
       )}
     </div>
   );
