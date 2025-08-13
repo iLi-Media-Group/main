@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+import { TrackClearanceBadges } from './TrackClearanceBadges';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -430,6 +431,15 @@ export function TrackPage() {
                       <span>Key: {track.key}</span>
                     </div>
                   )}
+                  
+                  {/* Track Clearance Badges */}
+                  <TrackClearanceBadges 
+                    containsLoops={track.containsLoops || false}
+                    containsSamples={track.containsSamples || false}
+                    containsSpliceLoops={track.containsSpliceLoops || false}
+                    samplesCleared={track.samplesCleared || false}
+                    className="mt-4"
+                  />
                 </div>
 
                 <div className="space-y-3">

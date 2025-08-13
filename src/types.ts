@@ -58,6 +58,7 @@ export interface Track {
   // Sample clearance fields
   containsLoops?: boolean;
   containsSamples?: boolean;
+  containsSpliceLoops?: boolean;
   samplesCleared?: boolean;
   sampleClearanceNotes?: string;
 }

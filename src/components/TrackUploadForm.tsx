@@ -61,6 +61,7 @@ interface FormData {
   // Sample clearance fields
   containsLoops: boolean;
   containsSamples: boolean;
+  containsSpliceLoops: boolean;
   samplesCleared: boolean;
   sampleClearanceNotes: string;
 }
@@ -98,6 +99,7 @@ export function TrackUploadForm() {
     cleanVersionOf: '',
     // Sample clearance fields
     containsLoops: false,
+    containsSpliceLoops: false,
     containsSamples: false,
     samplesCleared: false,
     sampleClearanceNotes: ''
@@ -464,6 +466,7 @@ export function TrackUploadForm() {
         // Sample clearance fields
         contains_loops: formData.containsLoops,
         contains_samples: formData.containsSamples,
+        contains_splice_loops: formData.containsSpliceLoops,
         samples_cleared: formData.samplesCleared,
         sample_clearance_notes: formData.sampleClearanceNotes || null,
         created_at: new Date().toISOString(),
@@ -1175,16 +1178,29 @@ export function TrackUploadForm() {
                 </p>
                 
                 <div className="space-y-3">
-                  <label className="flex items-center space-x-2 text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.containsLoops}
-                      onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
-                      className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
-                      disabled={isSubmitting}
-                    />
-                    <span>This track contains loops that may need clearance</span>
-                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={formData.containsLoops}
+                        onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
+                        className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>This track contains loops that may need clearance</span>
+                    </label>
+                    <div className="ml-6 text-sm text-yellow-200/80">
+                      <span>Loops created by other producers require a splitsheet with the appropriate signatures and PRO information for each producer. </span>
+                      <a 
+                        href="/producer/resources" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-300 hover:text-blue-200 underline"
+                      >
+                        View splitsheet template in Resources
+                      </a>
+                    </div>
+                  </div>
                   
                   <label className="flex items-center space-x-2 text-gray-300">
                     <input
@@ -1195,6 +1211,17 @@ export function TrackUploadForm() {
                       disabled={isSubmitting}
                     />
                     <span>This track contains samples that may need clearance</span>
+                  </label>
+                  
+                  <label className="flex items-center space-x-2 text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={formData.containsSpliceLoops}
+                      onChange={(e) => updateFormData({ containsSpliceLoops: e.target.checked })}
+                      className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                      disabled={isSubmitting}
+                    />
+                    <span>This track contains Splice loops that may need clearance</span>
                   </label>
                   
                   {formData.containsSamples && (

@@ -25,6 +25,7 @@ import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { SynonymManager } from './SynonymManager';
 import { BackgroundManager } from './BackgroundManager';
 import { MediaTypeManagement } from './MediaTypeManagement';
+import { ProducerBadgeManager } from './ProducerBadgeManager';
 
 
 interface UserStats {
@@ -186,7 +187,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -212,6 +213,7 @@ function AdminDashboard() {
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [servicesError, setServicesError] = useState<string | null>(null);
+  const [showProducerBadgeManager, setShowProducerBadgeManager] = useState(false);
 
   // Feature flag checks for white label clients
   const { isEnabled: producerOnboardingEnabled } = useFeatureFlag('producer_onboarding');
@@ -1493,6 +1495,7 @@ if (subscription.price_id) {
             { id: 'instruments', label: 'Instruments', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
+            { id: 'producer_badges', label: 'Producer Badges', icon: <Shield className="w-4 h-4 mr-2" /> },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
             { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
             { id: 'backgrounds', label: 'Background Manager', icon: <Video className="w-4 h-4 mr-2" /> },
@@ -2097,6 +2100,32 @@ if (subscription.price_id) {
           </div>
         )}
 
+        {/* Producer Badge Manager */}
+        {activeTab === 'producer_badges' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Producer Badge Manager</h2>
+              <button
+                onClick={() => setShowProducerBadgeManager(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Manage Producer Badges
+              </button>
+            </div>
+            <div className="text-center py-12">
+              <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-4">Producer Usage Badges</h3>
+              <p className="text-gray-400 mb-6">
+                Manage badges that indicate which production tools producers use (Loops, Samples, Splice).
+              </p>
+              <p className="text-sm text-gray-500">
+                Click "Manage Producer Badges" to view and edit producer usage badges.
+              </p>
+            </div>
+          </div>
+        )}
+
       {/* Producer Analytics Modal */}
       {selectedProducer && (
         <ProducerAnalyticsModal
@@ -2424,6 +2453,12 @@ if (subscription.price_id) {
           </div>
         </div>
       )}
+
+      {/* Producer Badge Manager Modal */}
+      <ProducerBadgeManager 
+        isOpen={showProducerBadgeManager} 
+        onClose={() => setShowProducerBadgeManager(false)} 
+      />
     </div>
   </div>
   );
