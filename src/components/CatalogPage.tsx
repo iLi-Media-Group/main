@@ -444,6 +444,19 @@ export function CatalogPage() {
           synonymsMapKeys: Object.keys(synonymsMap || {})
         });
 
+        // Debug: Show some sample tracks
+        if (allTracks.length > 0) {
+          console.log('🎵 Sample tracks:', allTracks.slice(0, 3).map(t => ({
+            id: t.id,
+            title: t.title,
+            genres: t.genres,
+            sub_genres: t.sub_genres,
+            moods: t.moods,
+            instruments: t.instruments,
+            media_usage: t.media_usage
+          })));
+        }
+
         // Apply comprehensive search
         const searchResults = comprehensiveSearch(
           allTracks,
@@ -613,30 +626,7 @@ export function CatalogPage() {
     }
   };
 
-  // Simplified categorization - just for display
-  const categorizeTracks = (tracks: Track[]) => {
-    const exactMatches: Track[] = [];
-    const partialMatches: Track[] = [];
-    const otherTracks: Track[] = [];
-    
-    // Simple categorization based on search activity
-    const hasSearch = filters?.query || filters?.genres?.length || filters?.moods?.length || filters?.instruments?.length;
-    
-    if (hasSearch) {
-      // When searching, first 50% are exact matches, next 30% are partial, rest are other
-      const exactCount = Math.ceil(tracks.length * 0.5);
-      const partialCount = Math.ceil(tracks.length * 0.3);
-      
-      exactMatches.push(...tracks.slice(0, exactCount));
-      partialMatches.push(...tracks.slice(exactCount, exactCount + partialCount));
-      otherTracks.push(...tracks.slice(exactCount + partialCount));
-    } else {
-      // When not searching, all tracks go to "other" (latest tracks)
-      otherTracks.push(...tracks);
-    }
-    
-    return { exactMatches, partialMatches, otherTracks };
-  };
+
 
   const handleTrackSelect = (track: Track) => {
     navigate(`/track/${track.id}`);
