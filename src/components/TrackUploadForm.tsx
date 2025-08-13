@@ -1201,7 +1201,7 @@ export function TrackUploadForm() {
                       className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
                       disabled={isSubmitting}
                     />
-                    <span>This track contains loops that may need clearance</span>
+                                            <span>This track contains loops</span>
                   </label>
                   <div className="ml-6 text-sm text-yellow-200/80">
                     <span>Loops created by other producers require a splitsheet with the appropriate signatures and PRO information for each producer. </span>
@@ -1235,7 +1235,7 @@ export function TrackUploadForm() {
                     className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
                     disabled={isSubmitting}
                   />
-                  <span>This track contains Splice loops that may need clearance</span>
+                                          <span>This track contains Splice loops</span>
                 </label>
                 
                 {formData.containsSamples && (

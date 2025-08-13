@@ -15,6 +15,12 @@ interface SyncProposalLicenseDetails {
   paymentDate: string;
   expirationDate: string;
   paymentTerms: string;
+  // Sample clearance fields
+  containsLoops?: boolean;
+  containsSamples?: boolean;
+  containsSpliceLoops?: boolean;
+  samplesCleared?: boolean;
+  sampleClearanceNotes?: string;
 }
 
 interface SyncProposalLicensePDFProps {
@@ -225,6 +231,29 @@ export const SyncProposalLicensePDF: React.FC<SyncProposalLicensePDFProps> = ({ 
               <Text style={styles.bold}>8. Indemnification:</Text> Licensee agrees to indemnify Licensor against any claims arising from Licensee's use of the composition.
             </Text>
           </View>
+
+          {/* Sample Clearance Disclaimer */}
+          {(license.containsLoops || license.containsSamples || license.containsSpliceLoops) && (
+            <View style={[styles.section, { backgroundColor: '#fef3c7', padding: 10, borderRadius: 5 }]}>
+              <Text style={[styles.sectionTitle, { color: '#92400e' }]}>⚠️ SAMPLE AND LOOP CLEARANCE NOTICE</Text>
+              <Text style={[styles.text, { color: '#92400e', fontWeight: 'bold' }]}>
+                IMPORTANT: This track contains {[
+                  license.containsLoops && 'loops',
+                  license.containsSamples && 'samples',
+                  license.containsSpliceLoops && 'Splice loops'
+                ].filter(Boolean).join(', ')} that may require additional rights clearance.
+              </Text>
+              <Text style={[styles.text, { color: '#92400e', fontWeight: 'bold' }]}>
+                Usage of a track with uncleared samples or loops can result in copyright claims, strikes and even litigation. Please be sure to clear any uncleared samples and/or loops before use of this track. This license does not constitute clearance.
+              </Text>
+              {license.sampleClearanceNotes && (
+                <View style={{ marginTop: 10, padding: 8, backgroundColor: '#fde68a', borderRadius: 3 }}>
+                  <Text style={[styles.text, { color: '#92400e', fontWeight: 'bold', fontSize: 10 }]}>Sample Clearance Notes:</Text>
+                  <Text style={[styles.text, { color: '#92400e', fontSize: 10 }]}>{license.sampleClearanceNotes}</Text>
+                </View>
+              )}
+            </View>
+          )}
 
           {showCredits && (
             <View style={styles.section}>

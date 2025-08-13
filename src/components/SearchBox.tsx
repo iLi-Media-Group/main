@@ -16,6 +16,7 @@ export interface SearchFilters {
   mediaTypes: string[];
   syncOnly?: boolean;
   hasVocals?: boolean;
+  excludeUnclearedSamples?: boolean;
   minBpm: number;
   maxBpm: number;
 }
@@ -33,6 +34,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     mediaTypes: [],
     syncOnly: undefined,
     hasVocals: undefined,
+    excludeUnclearedSamples: undefined,
     minBpm: 0,
     maxBpm: 200
   });
@@ -106,6 +108,7 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
       mediaTypes: [],
       syncOnly: undefined,
       hasVocals: undefined,
+      excludeUnclearedSamples: undefined,
       minBpm: 0,
       maxBpm: 200
     });
@@ -404,6 +407,17 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                       className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
                     />
                     <span className="text-white text-sm">Tracks with Vocals</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.excludeUnclearedSamples === true}
+                      onChange={(e) => handleFilterChange('excludeUnclearedSamples', e.target.checked ? true : undefined)}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">Exclude Tracks with Uncleared Samples/Loops</span>
                   </label>
                 </div>
               </div>

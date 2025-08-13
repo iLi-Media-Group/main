@@ -338,6 +338,7 @@ export function CatalogPage() {
      const mediaTypes = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
      const syncOnly = searchParams.get('syncOnly') === 'true';
      const hasVocals = searchParams.get('hasVocals') === 'true';
+     const excludeUnclearedSamples = searchParams.get('excludeUnclearedSamples') === 'true';
      const minBpm = searchParams.get('minBpm');
      const maxBpm = searchParams.get('maxBpm');
      const trackId = searchParams.get('track');
@@ -352,6 +353,7 @@ export function CatalogPage() {
        mediaTypes,
        syncOnly,
        hasVocals,
+       excludeUnclearedSamples,
        minBpm: minBpm ? parseInt(minBpm) : undefined,
        maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
        trackId
@@ -401,6 +403,10 @@ export function CatalogPage() {
            has_vocals,
            vocals_usage_type,
            is_sync_only,
+           contains_loops,
+           contains_samples,
+           contains_splice_loops,
+           samples_cleared,
            track_producer_id,
            producer:profiles!track_producer_id (
              id,
@@ -437,6 +443,13 @@ export function CatalogPage() {
            query = query.eq('has_vocals', true);
          } else if (filters?.hasVocals === false) {
            query = query.eq('has_vocals', false);
+         }
+
+         // Apply Exclude Uncleared Samples filter
+         if (filters?.excludeUnclearedSamples === true) {
+           // Exclude tracks with uncleared samples or loops
+           // Only show tracks that either don't contain samples/loops, or have cleared samples
+           query = query.or('contains_samples.eq.false,contains_loops.eq.false,contains_splice_loops.eq.false,samples_cleared.eq.true');
          }
 
         // Build flexible search with synonym expansion
@@ -710,17 +723,18 @@ export function CatalogPage() {
 
      const handleSearch = async (searchFilters: any) => {
      // Convert search terms to lowercase and remove extra spaces
-     const normalizedFilters = {
-       ...searchFilters,
-       query: searchFilters.query?.toLowerCase().trim(),
-       genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
-       subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
-       moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
-       instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
-       mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
-       syncOnly: searchFilters.syncOnly,
-       hasVocals: searchFilters.hasVocals
-     };
+           const normalizedFilters = {
+        ...searchFilters,
+        query: searchFilters.query?.toLowerCase().trim(),
+        genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+        subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
+        moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+        instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+        mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
+        syncOnly: searchFilters.syncOnly,
+        hasVocals: searchFilters.hasVocals,
+        excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
+      };
 
     // Set filters for categorization
     setFilters(normalizedFilters);
@@ -733,10 +747,11 @@ export function CatalogPage() {
      if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
      if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
      if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
-     if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
-     if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
-     if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
-     if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+           if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
+      if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
+      if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
+      if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
+      if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 
          // Update URL without reloading the page
      navigate(`/catalog?${params.toString()}`, { replace: true });
@@ -925,11 +940,16 @@ export function CatalogPage() {
                        Sync Only: {filters.syncOnly ? 'Yes' : 'No'}
                      </span>
                    )}
-                   {filters?.hasVocals !== undefined && (
-                     <span className="bg-teal-500/20 text-teal-300 px-3 py-1 rounded-full text-sm">
-                       Vocals: {filters.hasVocals ? 'Yes' : 'No'}
-                     </span>
-                   )}
+                                       {filters?.hasVocals !== undefined && (
+                      <span className="bg-teal-500/20 text-teal-300 px-3 py-1 rounded-full text-sm">
+                        Vocals: {filters.hasVocals ? 'Yes' : 'No'}
+                      </span>
+                    )}
+                    {filters?.excludeUnclearedSamples !== undefined && (
+                      <span className="bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm">
+                        Exclude Uncleared Samples: {filters.excludeUnclearedSamples ? 'Yes' : 'No'}
+                      </span>
+                    )}
                  </div>
                </div>
 
