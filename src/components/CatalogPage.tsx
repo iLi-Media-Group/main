@@ -15,6 +15,254 @@ import { useSynonyms } from '../hooks/useSynonyms';
 
 const TRACKS_PER_PAGE = 20;
 
+// World-class comprehensive search system
+interface SearchResult {
+  track: any;
+  score: number;
+  exactMatches: string[];
+  partialMatches: string[];
+  fuzzyMatches: string[];
+}
+
+function comprehensiveSearch(
+  tracks: any[], 
+  searchQuery: string, 
+  genres: string[], 
+  subGenres: string[],
+  moods: string[], 
+  subMoods: string[],
+  instruments: string[], 
+  subInstruments: string[],
+  mediaTypes: string[],
+  subMediaTypes: string[],
+  synonymsMap: any
+): SearchResult[] {
+  console.log('🔍 Comprehensive Search - Query:', searchQuery);
+  console.log('🔍 Filters - Genres:', genres, 'SubGenres:', subGenres, 'Moods:', moods, 'SubMoods:', subMoods);
+  console.log('🔍 Filters - Instruments:', instruments, 'SubInstruments:', subInstruments);
+  console.log('🔍 Filters - MediaTypes:', mediaTypes, 'SubMediaTypes:', subMediaTypes);
+  console.log('🔍 Total tracks to search:', tracks.length);
+
+  // If no search criteria, return all tracks with score 0
+  const hasSearchCriteria = searchQuery?.trim() || 
+    genres?.length || subGenres?.length || 
+    moods?.length || subMoods?.length || 
+    instruments?.length || subInstruments?.length || 
+    mediaTypes?.length || subMediaTypes?.length;
+
+  if (!hasSearchCriteria) {
+    console.log('🔍 No search criteria, returning all tracks with score 0');
+    return tracks.map(track => ({
+      track,
+      score: 0,
+      exactMatches: [],
+      partialMatches: [],
+      fuzzyMatches: []
+    }));
+  }
+
+  const query = searchQuery?.toLowerCase().trim() || '';
+
+  // Expand search terms with synonyms
+  let expandedTerms = new Set<string>();
+  
+  // Add the main query if it exists
+  if (query) {
+    expandedTerms.add(query);
+  }
+  
+  // Add all filter terms
+  [...genres, ...subGenres, ...moods, ...subMoods, ...instruments, ...subInstruments, ...mediaTypes, ...subMediaTypes]
+    .forEach(term => {
+      if (term) expandedTerms.add(term.toLowerCase());
+    });
+
+  // Add synonyms from our dictionary
+  for (let [term, syns] of Object.entries(synonymsMap || {})) {
+    const synonyms = syns as string[];
+    if (query && query.includes(term.toLowerCase())) {
+      synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
+    }
+    if (query && synonyms.some((s: string) => query.includes(s.toLowerCase()))) {
+      expandedTerms.add(term.toLowerCase());
+      synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
+    }
+  }
+
+  const expandedTermsArray = Array.from(expandedTerms);
+  console.log('🔍 Expanded Terms:', expandedTermsArray);
+
+  // Fuzzy match helper (Levenshtein distance)
+  function levenshtein(a: string, b: string): number {
+    const matrix = [];
+    let i;
+    for (i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+    let j;
+    for (j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (i = 1; i <= b.length; i++) {
+      for (j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            Math.min(
+              matrix[i][j - 1] + 1,   // insertion
+              matrix[i - 1][j] + 1    // deletion
+            )
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function isFuzzyMatch(str: string, term: string): boolean {
+    return levenshtein(str.toLowerCase(), term.toLowerCase()) <= 2; // allow 2 edits
+  }
+
+  // Score and categorize tracks
+  const results: SearchResult[] = tracks.map(track => {
+    let score = 0;
+    const exactMatches: string[] = [];
+    const partialMatches: string[] = [];
+    const fuzzyMatches: string[] = [];
+
+    // Create searchable text from all track fields
+    const searchableText = [
+      track.title,
+      track.artist,
+      track.genres?.join(" "),
+      track.sub_genres?.join(" "),
+      track.moods?.join(" "),
+      track.instruments?.join(" "),
+      track.media_usage?.join(" ")
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    // Check each expanded term against the track
+    for (let term of expandedTermsArray) {
+      // Check sub-genres (highest priority - 20 points)
+      if (track.sub_genres?.some((sg: string) => sg.toLowerCase().includes(term))) {
+        score += 20;
+        exactMatches.push(`sub-genre: ${term}`);
+      }
+      // Check sub-moods (highest priority - 20 points)
+      else if (track.sub_moods?.some((sm: string) => sm.toLowerCase().includes(term))) {
+        score += 20;
+        exactMatches.push(`sub-mood: ${term}`);
+      }
+      // Check sub-instruments (highest priority - 20 points)
+      else if (track.sub_instruments?.some((si: string) => si.toLowerCase().includes(term))) {
+        score += 20;
+        exactMatches.push(`sub-instrument: ${term}`);
+      }
+      // Check sub-media types (highest priority - 20 points)
+      else if (track.sub_media_types?.some((smt: string) => smt.toLowerCase().includes(term))) {
+        score += 20;
+        exactMatches.push(`sub-media-type: ${term}`);
+      }
+      // Check media usage (high priority - 12 points)
+      else if (track.media_usage?.some((mu: string) => mu.toLowerCase().includes(term))) {
+        score += 12;
+        exactMatches.push(`media-usage: ${term}`);
+      }
+      // Check genres (medium priority - 6 points)
+      else if (track.genres?.some((g: string) => g.toLowerCase().includes(term))) {
+        score += 6;
+        exactMatches.push(`genre: ${term}`);
+      }
+      // Check moods (medium priority - 6 points)
+      else if (track.moods?.some((m: string) => m.toLowerCase().includes(term))) {
+        score += 6;
+        exactMatches.push(`mood: ${term}`);
+      }
+      // Check instruments (medium priority - 6 points)
+      else if (track.instruments?.some((i: string) => i.toLowerCase().includes(term))) {
+        score += 6;
+        exactMatches.push(`instrument: ${term}`);
+      }
+      // Check other fields (lower priority - 3 points)
+      else if (searchableText.includes(term)) {
+        score += 3;
+        exactMatches.push(`other: ${term}`);
+      }
+      // Check partial matches (lower priority - 2 points)
+      else if (searchableText.split(" ").some(word => word.startsWith(term))) {
+        score += 2;
+        partialMatches.push(term);
+      }
+      // Check fuzzy matches (lowest priority - 1 point)
+      else if (searchableText.split(" ").some(word => isFuzzyMatch(word, term))) {
+        score += 1;
+        fuzzyMatches.push(term);
+      }
+    }
+
+    return {
+      track,
+      score,
+      exactMatches,
+      partialMatches,
+      fuzzyMatches
+    };
+  });
+
+  // Sort by score (highest first)
+  results.sort((a, b) => b.score - a.score);
+
+  console.log('🔍 Search Results - Total:', results.length);
+  console.log('🔍 Top 3 results:', results.slice(0, 3).map(r => ({
+    title: r.track.title,
+    score: r.score,
+    exactMatches: r.exactMatches.length,
+    partialMatches: r.partialMatches.length,
+    fuzzyMatches: r.fuzzyMatches.length
+  })));
+
+  return results;
+}
+
+// Categorize tracks into Exact / Partial / Other based on search results
+function categorizeTracks(searchResults: SearchResult[]): {
+  exact: any[];
+  partial: any[];
+  other: any[];
+} {
+  const exact: any[] = [];
+  const partial: any[] = [];
+  const other: any[] = [];
+
+  searchResults.forEach(result => {
+    const track = result.track;
+    
+    // Exact matches: High score with exact matches
+    if (result.score >= 10 && result.exactMatches.length > 0) {
+      exact.push(track);
+    }
+    // Partial matches: Medium score with partial or fuzzy matches
+    else if (result.score >= 3 && (result.partialMatches.length > 0 || result.fuzzyMatches.length > 0)) {
+      partial.push(track);
+    }
+    // Other: Low score or no specific matches
+    else {
+      other.push(track);
+    }
+  });
+
+  console.log('📊 Categorization Results:', {
+    exact: exact.length,
+    partial: partial.length,
+    other: other.length,
+    total: searchResults.length
+  });
+
+  return { exact, partial, other };
+}
+
 
 
 // Helper function to get persistent filter preferences
@@ -58,7 +306,7 @@ export function CatalogPage() {
   const [currentFilters, setCurrentFilters] = useState<any>(null);
   const { genres, subGenres, moods } = useDynamicSearchData();
   const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
-  const { loading: synonymsLoading } = useSynonyms();
+  const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
 
   useEffect(() => {
     // Get search params
@@ -171,28 +419,55 @@ export function CatalogPage() {
       if (error) throw error;
 
       if (allTracks) {
-        // UNIFIED SEARCH: Always process through enhanced search
+        // COMPREHENSIVE SEARCH: Process through world-class search system
         const searchQuery = filters?.query || '';
-        const allGenres = [...(filters?.genres || []), ...(filters?.subGenres || [])];
-        const allMoods = filters?.moods || [];
-        const allInstruments = filters?.instruments || [];
+        const genres = filters?.genres || [];
+        const subGenres = filters?.subGenres || [];
+        const moods = filters?.moods || [];
+        const subMoods: string[] = []; // TODO: Add sub-moods support
+        const instruments = filters?.instruments || [];
+        const subInstruments: string[] = []; // TODO: Add sub-instruments support
+        const mediaTypes = filters?.mediaTypes || [];
+        const subMediaTypes: string[] = []; // TODO: Add sub-media-types support
 
-        // Combine all search terms
-        const combinedSearchTerms = [
+        console.log('🎵 About to call comprehensiveSearch with:', {
+          allTracksCount: allTracks.length,
           searchQuery,
-          ...allGenres,
-          ...allMoods,
-          ...allInstruments,
-          ...(filters?.mediaTypes || [])
-        ].filter(Boolean).join(' ');
+          genres,
+          subGenres,
+          moods,
+          subMoods,
+          instruments,
+          subInstruments,
+          mediaTypes,
+          subMediaTypes,
+          synonymsMapKeys: Object.keys(synonymsMap || {})
+        });
 
-        console.log('🎵 No search process - just displaying all tracks');
-        
-        // No search process - just use all tracks
-        let processedTracks = allTracks;
+        // Apply comprehensive search
+        const searchResults = comprehensiveSearch(
+          allTracks,
+          searchQuery,
+          genres,
+          subGenres,
+          moods,
+          subMoods,
+          instruments,
+          subInstruments,
+          mediaTypes,
+          subMediaTypes,
+          synonymsMap || {}
+        );
 
-        // Sort by date (newest first)
-        processedTracks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        // Extract tracks and sort by score (already sorted by comprehensiveSearch)
+        let processedTracks = searchResults.map(result => result.track);
+
+        // If no search criteria, sort by date (newest first)
+        if (!searchQuery?.trim() && !genres?.length && !subGenres?.length && 
+            !moods?.length && !subMoods?.length && !instruments?.length && 
+            !subInstruments?.length && !mediaTypes?.length && !subMediaTypes?.length) {
+          processedTracks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        }
 
         // Apply pagination AFTER processing
         const startIndex = (currentPage - 1) * TRACKS_PER_PAGE;
@@ -249,7 +524,7 @@ export function CatalogPage() {
               stemsWithVocals: 0
             },
             leaseAgreementUrl: '',
-            searchScore: 0
+            searchScore: searchResults.find(r => r.track.id === track.id)?.score || 0
           };
         });
 
