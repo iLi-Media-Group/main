@@ -320,8 +320,8 @@ export function CatalogPage() {
   const [filters, setFilters] = useState<any>(null);
   const [membershipActive, setMembershipActive] = useState(true);
   const [currentFilters, setCurrentFilters] = useState<any>(null);
-  const { genres, subGenres, moods } = useDynamicSearchData();
-  const { level, hasAISearch, hasDeepMedia } = useServiceLevel();
+
+
   const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
 
   useEffect(() => {
@@ -722,12 +722,68 @@ export function CatalogPage() {
       ) : (
         <div className="space-y-8">
           {(() => {
-            // Simple categorization based on search score
-            const exact = tracks.filter(track => (track.searchScore || 0) >= 10);
-            const partial = tracks.filter(track => (track.searchScore || 0) >= 3 && (track.searchScore || 0) < 10);
-            const other = tracks.filter(track => (track.searchScore || 0) < 3);
+            // Categorize tracks based on search criteria
+            const hasSearchCriteria = currentFilters?.query || currentFilters?.genres?.length > 0 || currentFilters?.subGenres?.length > 0 || 
+              currentFilters?.moods?.length > 0 || currentFilters?.instruments?.length > 0 || currentFilters?.mediaTypes?.length > 0;
             
-                         return (
+            if (hasSearchCriteria) {
+              // When searching, categorize based on how many search terms match
+              const searchTerms = [
+                ...(currentFilters?.query ? currentFilters.query.toLowerCase().split(/\s+/) : []),
+                ...(currentFilters?.genres || []),
+                ...(currentFilters?.subGenres || []),
+                ...(currentFilters?.moods || []),
+                ...(currentFilters?.instruments || []),
+                ...(currentFilters?.mediaTypes || [])
+              ].filter(term => term.trim().length > 0);
+              
+              const exact = tracks.filter(track => {
+                // For exact match, ALL search terms must be found in the track
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                return searchTerms.every(term => trackText.includes(term.toLowerCase()));
+              });
+              
+              const partial = tracks.filter(track => {
+                // For partial match, at least one search term must match but not all
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                const matchingTerms = searchTerms.filter(term => trackText.includes(term.toLowerCase()));
+                return matchingTerms.length > 0 && matchingTerms.length < searchTerms.length;
+              });
+              
+              const other = tracks.filter(track => {
+                // Other tracks have no search term matches
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                return !searchTerms.some(term => trackText.includes(term.toLowerCase()));
+              });
+              
+              return (
                <>
                  {/* Exact Matches */}
                  {exact.length > 0 && (
@@ -790,6 +846,24 @@ export function CatalogPage() {
                  )}
                </>
              );
+            } else {
+              // When not searching, all tracks go to "other" (latest tracks)
+              return (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">Latest Tracks</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {tracks.map((track: any) => (
+                      <TrackCard
+                        key={track.id}
+                        track={track}
+                        onSelect={() => handleTrackSelect(track)}
+                        searchCategory="other"
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            }
           })()}
         </div>
       )}
