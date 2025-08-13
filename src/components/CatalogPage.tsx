@@ -228,13 +228,24 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
     subGenreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
-  // Check for exact sub-genre matches (highest priority)
+  // Check for exact sub-genre matches (highest priority) - applies to ALL genres
   const trackSubGenres = parseArrayField(track.sub_genres).map(sg => sg.toLowerCase());
   for (const searchTerm of searchTerms) {
     const searchTermLower = searchTerm.toLowerCase();
     if (trackSubGenres.includes(searchTermLower)) {
-      // Exact sub-genre match gets highest score
-      score += 15; // +15 for exact sub-genre match
+      // Exact sub-genre match gets highest score for ANY genre
+      score += 20; // +20 for exact sub-genre match (increased priority)
+      matchedTerms.add(searchTerm);
+    }
+  }
+  
+  // Check for exact media usage matches (high priority)
+  const trackMediaUsage = parseArrayField(track.media_usage).map(mu => mu.toLowerCase());
+  for (const searchTerm of searchTerms) {
+    const searchTermLower = searchTerm.toLowerCase();
+    if (trackMediaUsage.includes(searchTermLower)) {
+      // Exact media usage match gets high score
+      score += 12; // +12 for exact media usage match
       matchedTerms.add(searchTerm);
     }
   }
