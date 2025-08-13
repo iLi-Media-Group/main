@@ -1170,91 +1170,6 @@ export function TrackUploadForm() {
               </label>
               )}
 
-              {/* Sample Clearance Section */}
-              <div className="space-y-4 mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                <h3 className="text-lg font-medium text-yellow-300">Sample Clearance</h3>
-                <p className="text-sm text-yellow-200/80">
-                  Please indicate if this track contains any loops or samples that may need clearance
-                </p>
-                
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2 text-gray-300">
-                      <input
-                        type="checkbox"
-                        checked={formData.containsLoops}
-                        onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
-                        className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
-                        disabled={isSubmitting}
-                      />
-                      <span>This track contains loops that may need clearance</span>
-                    </label>
-                    <div className="ml-6 text-sm text-yellow-200/80">
-                      <span>Loops created by other producers require a splitsheet with the appropriate signatures and PRO information for each producer. </span>
-                      <a 
-                        href="/producer/resources" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-300 hover:text-blue-200 underline"
-                      >
-                        View splitsheet template in Resources
-                      </a>
-                    </div>
-                  </div>
-                  
-                  <label className="flex items-center space-x-2 text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.containsSamples}
-                      onChange={(e) => updateFormData({ containsSamples: e.target.checked })}
-                      className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
-                      disabled={isSubmitting}
-                    />
-                    <span>This track contains samples that may need clearance</span>
-                  </label>
-                  
-                  <label className="flex items-center space-x-2 text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.containsSpliceLoops}
-                      onChange={(e) => updateFormData({ containsSpliceLoops: e.target.checked })}
-                      className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
-                      disabled={isSubmitting}
-                    />
-                    <span>This track contains Splice loops that may need clearance</span>
-                  </label>
-                  
-                  {formData.containsSamples && (
-                    <div className="space-y-3 ml-6">
-                      <label className="flex items-center space-x-2 text-gray-300">
-                        <input
-                          type="checkbox"
-                          checked={formData.samplesCleared}
-                          onChange={(e) => updateFormData({ samplesCleared: e.target.checked })}
-                          className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                          disabled={isSubmitting}
-                        />
-                        <span className="text-green-300">All samples in this track have been cleared for use</span>
-                      </label>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          Sample Clearance Notes
-                        </label>
-                        <textarea
-                          value={formData.sampleClearanceNotes}
-                          onChange={(e) => updateFormData({ sampleClearanceNotes: e.target.value })}
-                          className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
-                          placeholder="Provide details about sample sources, clearance status, or any relevant information..."
-                          rows={3}
-                          disabled={isSubmitting}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
               <label className="flex items-center space-x-2 text-gray-300">
                 <input
                   type="checkbox"
@@ -1265,6 +1180,93 @@ export function TrackUploadForm() {
                 />
                 <span>Sync Only - Track is only available for submitted Sync Proposals</span>
               </label>
+            </div>
+          </div>
+
+          {/* Samples and Loops Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Samples and Loops</h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Please indicate if this track contains any loops or samples that may need clearance
+            </p>
+            
+            <div className="space-y-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={formData.containsLoops}
+                      onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
+                      className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
+                      disabled={isSubmitting}
+                    />
+                    <span>This track contains loops that may need clearance</span>
+                  </label>
+                  <div className="ml-6 text-sm text-yellow-200/80">
+                    <span>Loops created by other producers require a splitsheet with the appropriate signatures and PRO information for each producer. </span>
+                    <a 
+                      href="/producer/resources" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-300 hover:text-blue-200 underline"
+                    >
+                      View splitsheet template in Resources
+                    </a>
+                  </div>
+                </div>
+                
+                <label className="flex items-center space-x-2 text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={formData.containsSamples}
+                    onChange={(e) => updateFormData({ containsSamples: e.target.checked })}
+                    className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
+                    disabled={isSubmitting}
+                  />
+                  <span>This track contains samples that may need clearance</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={formData.containsSpliceLoops}
+                    onChange={(e) => updateFormData({ containsSpliceLoops: e.target.checked })}
+                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
+                    disabled={isSubmitting}
+                  />
+                  <span>This track contains Splice loops that may need clearance</span>
+                </label>
+                
+                {formData.containsSamples && (
+                  <div className="space-y-3 ml-6">
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={formData.samplesCleared}
+                        onChange={(e) => updateFormData({ samplesCleared: e.target.checked })}
+                        className="rounded border-gray-600 text-green-600 focus:ring-green-500"
+                        disabled={isSubmitting}
+                      />
+                      <span className="text-green-300">All samples in this track have been cleared for use</span>
+                    </label>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Sample Clearance Notes
+                      </label>
+                      <textarea
+                        value={formData.sampleClearanceNotes}
+                        onChange={(e) => updateFormData({ sampleClearanceNotes: e.target.value })}
+                        className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
+                        placeholder="Provide details about sample sources, clearance status, or any relevant information..."
+                        rows={3}
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

@@ -208,7 +208,13 @@ export function TrackPage() {
             stemsWithVocals: 0 
           },
           leaseAgreementUrl: '',
-          explicit_lyrics: trackData.explicit_lyrics || false
+          explicit_lyrics: trackData.explicit_lyrics || false,
+          // Sample clearance fields
+          containsLoops: trackData.contains_loops || false,
+          containsSamples: trackData.contains_samples || false,
+          containsSpliceLoops: trackData.contains_splice_loops || false,
+          samplesCleared: trackData.samples_cleared || false,
+          sampleClearanceNotes: trackData.sample_clearance_notes || null
         };
         
         setTrack(mappedTrack);
@@ -440,6 +446,25 @@ export function TrackPage() {
                     samplesCleared={track.samplesCleared || false}
                     className="mt-4"
                   />
+                  
+                  {/* Sample Clearance Notes */}
+                  {track.sampleClearanceNotes && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-yellow-300 mb-1">
+                            Sample Clearance Notes
+                          </h4>
+                          <p className="text-sm text-yellow-200/90 whitespace-pre-wrap">
+                            {track.sampleClearanceNotes}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
