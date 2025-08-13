@@ -7,6 +7,7 @@ import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { ProducerUsageBadges } from './ProducerUsageBadges';
 
 interface TrackCardProps {
   track: Track;
@@ -62,6 +63,11 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
+  const [producerUsage, setProducerUsage] = useState<{
+    uses_loops?: boolean;
+    uses_samples?: boolean;
+    uses_splice?: boolean;
+  } | null>(null);
   const isSyncOnly = track.isSyncOnly;
 
   // Get signed URL for audio
@@ -72,6 +78,27 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
       checkFavoriteStatus();
     }
   }, [user, track?.id]);
+
+  useEffect(() => {
+    if (track?.producer?.id) {
+      fetchProducerUsage();
+    }
+  }, [track?.producer?.id]);
+
+  const fetchProducerUsage = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('uses_loops, uses_samples, uses_splice')
+        .eq('id', track.producer?.id)
+        .single();
+
+      if (error) throw error;
+      setProducerUsage(data);
+    } catch (error) {
+      console.error('Error fetching producer usage:', error);
+    }
+  };
 
   const checkFavoriteStatus = async () => {
     try {
@@ -304,9 +331,19 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
                 {track.producer.firstName} {track.producer.lastName}
               </button>
             )}
-            
-
           </div>
+
+          {/* Producer Usage Badges */}
+          {producerUsage && (producerUsage.uses_loops || producerUsage.uses_samples || producerUsage.uses_splice) && (
+            <div className="pt-1">
+              <ProducerUsageBadges 
+                usesLoops={producerUsage.uses_loops || false}
+                usesSamples={producerUsage.uses_samples || false}
+                usesSplice={producerUsage.uses_splice || false}
+                className="text-xs"
+              />
+            </div>
+          )}
         </div>
       </div>
 

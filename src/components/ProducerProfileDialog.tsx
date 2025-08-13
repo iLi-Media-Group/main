@@ -3,6 +3,7 @@ import { X, MapPin, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
+import { ProducerUsageBadges } from './ProducerUsageBadges';
 
 interface ProducerProfileDialogProps {
   isOpen: boolean;
@@ -23,6 +24,9 @@ interface ProducerProfile {
   producer_number: string | null;
   ipi_number: string | null;
   performing_rights_org: string | null;
+  uses_loops?: boolean;
+  uses_samples?: boolean;
+  uses_splice?: boolean;
   stats?: {
     totalTracks: number;
   };
@@ -61,7 +65,10 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
           company_name,
           producer_number,
           ipi_number,
-          performing_rights_org
+          performing_rights_org,
+          uses_loops,
+          uses_samples,
+          uses_splice
         `)
         .eq('id', producerId)
         .single();
@@ -151,6 +158,18 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
             {profile.bio && (
               <div className="bg-white/5 rounded-lg p-4">
                 <p className="text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
+              </div>
+            )}
+
+            {/* Production Tools Badges */}
+            {(profile.uses_loops || profile.uses_samples || profile.uses_splice) && (
+              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-4 border border-blue-500/20">
+                <h4 className="text-lg font-semibold text-white mb-3">Production Tools</h4>
+                <ProducerUsageBadges 
+                  usesLoops={profile.uses_loops || false}
+                  usesSamples={profile.uses_samples || false}
+                  usesSplice={profile.uses_splice || false}
+                />
               </div>
             )}
 
