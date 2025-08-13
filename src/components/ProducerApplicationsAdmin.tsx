@@ -71,7 +71,7 @@ type Application = {
   requires_review?: boolean;
 };
 
-type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined';
+type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined' | 'all';
 
 export default function ProducerApplicationsAdmin() {
   const navigate = useNavigate();
@@ -92,7 +92,8 @@ export default function ProducerApplicationsAdmin() {
     invited: 0,
     onboarded: 0,
     save_for_later: 0,
-    declined: 0
+    declined: 0,
+    all: 0
   });
 
   useEffect(() => {
@@ -125,7 +126,8 @@ export default function ProducerApplicationsAdmin() {
       ).length,
       declined: allApplications.filter(app => 
         app.status === 'declined' || app.is_auto_rejected
-      ).length
+      ).length,
+      all: allApplications.length
     };
 
     // Get invited applications
@@ -234,6 +236,30 @@ export default function ProducerApplicationsAdmin() {
         .select('*')
         .order('created_at', { ascending: true });
 
+      // Debug: First, let's see ALL applications to understand what we're working with
+      const { data: allApps, error: allAppsError } = await supabase
+        .from('producer_applications')
+        .select('*')
+        .order('created_at', { ascending: true });
+      
+      console.log('=== ALL APPLICATIONS DEBUG ===');
+      console.log('Total applications in database:', allApps?.length || 0);
+      if (allApps && allApps.length > 0) {
+        allApps.forEach((app, index) => {
+          console.log(`App ${index + 1}:`, {
+            id: app.id,
+            name: app.name,
+            email: app.email,
+            status: app.status,
+            is_auto_rejected: app.is_auto_rejected,
+            requires_review: app.requires_review,
+            review_tier: app.review_tier,
+            created_at: app.created_at
+          });
+        });
+      }
+      console.log('=== END ALL APPLICATIONS DEBUG ===');
+
       // Filter by status based on active tab
       switch (activeTab) {
         case 'new':
@@ -258,6 +284,9 @@ export default function ProducerApplicationsAdmin() {
         case 'declined':
           // Include both manually declined and auto-rejected applications
           query = query.or('status.eq.declined,is_auto_rejected.eq.true');
+          break;
+        case 'all':
+          // Show all applications without filtering
           break;
       }
 
@@ -807,6 +836,22 @@ export default function ProducerApplicationsAdmin() {
             <span>Declined</span>
             <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
               {getTabCount('declined')}
+            </span>
+          </div>
+        </button>
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'all'
+              ? 'bg-gray-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-gray-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <Eye className="w-4 h-4" />
+            <span>All Applications</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('all')}
             </span>
           </div>
         </button>
