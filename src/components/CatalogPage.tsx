@@ -416,7 +416,21 @@ export function CatalogPage() {
       // Get ALL tracks that match basic filters
       const { data: allTracks, error } = await query;
 
-      if (error) throw error;
+      console.log('🎵 Supabase query result:', {
+        dataCount: allTracks?.length || 0,
+        error: error?.message,
+        hasData: !!allTracks,
+        firstTrack: allTracks?.[0] ? {
+          id: allTracks[0].id,
+          title: allTracks[0].title,
+          genres: allTracks[0].genres
+        } : null
+      });
+
+      if (error) {
+        console.error('🎵 Supabase query error:', error);
+        throw error;
+      }
 
       if (allTracks) {
         // COMPREHENSIVE SEARCH: Process through world-class search system
