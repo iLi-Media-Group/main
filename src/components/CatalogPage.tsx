@@ -20,7 +20,10 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
   // Check if we have any search criteria at all
   const hasSearchCriteria = searchQuery?.trim() || genres?.length || moods?.length || instruments?.length;
   
-  if (!hasSearchCriteria) return tracks;
+  if (!hasSearchCriteria) {
+    console.log('🔍 No search criteria, returning all tracks:', tracks.length);
+    return tracks;
+  }
 
   const query = searchQuery?.toLowerCase().trim() || '';
   
@@ -128,7 +131,6 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
 
       return { track, score };
     })
-    .filter(item => item.score > 0) // must have at least one match
     .sort((a, b) => b.score - a.score) // higher score first
     .map(item => item.track);
 
