@@ -824,16 +824,16 @@ export function CatalogPage() {
       
       const matchRatio = matchedTerms.length / uniqueSearchTerms.length;
       
-      // Exact match: track matches ALL search terms (100% match)
-      if (matchRatio === 1 && uniqueSearchTerms.length > 0) {
+      // Exact match: track matches ALL search terms (100% match) OR has high score
+      if ((matchRatio === 1 && uniqueSearchTerms.length > 0) || score >= 5) {
         exactMatches.push(track);
       }
-      // Partial match: track matches SOME search terms but not all (between 25% and 99%)
-      else if (matchRatio >= 0.25 && matchRatio < 1) {
+      // Partial match: track matches SOME search terms (between 10% and 99%) OR has medium score
+      else if ((matchRatio >= 0.1 && matchRatio < 1) || (score >= 2 && score < 5)) {
         partialMatches.push(track);
       }
-      // Other tracks: low match ratio or no search terms
-      else {
+      // Other tracks: low match ratio or no search terms but still relevant
+      else if (score > 0) {
         otherTracks.push(track);
       }
     });
