@@ -61,6 +61,7 @@ export interface Track {
   containsSpliceLoops?: boolean;
   samplesCleared?: boolean;
   sampleClearanceNotes?: string;
+  searchScore?: number;
 }
 
 export interface SyncProposal {

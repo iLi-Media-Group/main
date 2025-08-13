@@ -459,6 +459,12 @@ export function CatalogPage() {
           synonymsMap || {}
         );
 
+        // Create a map of track IDs to search results for easy lookup
+        const searchResultMap = new Map();
+        searchResults.forEach(result => {
+          searchResultMap.set(result.track.id, result);
+        });
+
         // Extract tracks and sort by score (already sorted by comprehensiveSearch)
         let processedTracks = searchResults.map(result => result.track);
 
@@ -524,7 +530,7 @@ export function CatalogPage() {
               stemsWithVocals: 0
             },
             leaseAgreementUrl: '',
-            searchScore: searchResults.find(r => r.track.id === track.id)?.score || 0
+            searchScore: searchResultMap.get(track.id)?.score || 0
           };
         });
 
@@ -695,61 +701,66 @@ export function CatalogPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Exact Matches */}
           {(() => {
-            const { exactMatches } = categorizeTracks(tracks);
-            return exactMatches.length > 0 ? (
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {exactMatches.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onSelect={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null;
-          })()}
+            // Simple categorization based on search score
+            const exact = tracks.filter(track => (track.searchScore || 0) >= 10);
+            const partial = tracks.filter(track => (track.searchScore || 0) >= 3 && (track.searchScore || 0) < 10);
+            const other = tracks.filter(track => (track.searchScore || 0) < 3);
+            
+            return (
+              <>
+                {/* Exact Matches */}
+                {exact.length > 0 && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {exact.map((track: any) => (
+                        <TrackCard
+                          key={track.id}
+                          track={track}
+                          onSelect={() => handleTrackSelect(track)}
+                          searchCategory="exact"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          {/* Partial Matches */}
-          {(() => {
-            const { partialMatches } = categorizeTracks(tracks);
-            return partialMatches.length > 0 ? (
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {partialMatches.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onSelect={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null;
-          })()}
+                {/* Partial Matches */}
+                {partial.length > 0 && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {partial.map((track: any) => (
+                        <TrackCard
+                          key={track.id}
+                          track={track}
+                          onSelect={() => handleTrackSelect(track)}
+                          searchCategory="partial"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          {/* Other Tracks */}
-          {(() => {
-            const { otherTracks } = categorizeTracks(tracks);
-            return otherTracks.length > 0 ? (
-              <div>
-                <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {otherTracks.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onSelect={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : null;
+                {/* Other Tracks */}
+                {other.length > 0 && (
+                  <div>
+                    <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {other.map((track: any) => (
+                        <TrackCard
+                          key={track.id}
+                          track={track}
+                          onSelect={() => handleTrackSelect(track)}
+                          searchCategory="other"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            );
           })()}
         </div>
       )}
