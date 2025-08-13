@@ -636,6 +636,78 @@ export default function ProducerApplicationsAdmin() {
     }
   };
 
+  const handleProperInvite = async (application: Application, tier: 'Tier 1' | 'Tier 2') => {
+    try {
+      // Extract first and last name from the full name
+      const nameParts = application.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Generate producer number
+      const { data: nextNumber } = await supabase
+        .from('profiles')
+        .select('producer_number')
+        .not('producer_number', 'is', null)
+        .order('producer_number', { ascending: false })
+        .limit(1);
+
+      let producerNumber = 'mbfpr-001';
+      if (nextNumber && nextNumber.length > 0) {
+        const lastNumber = nextNumber[0].producer_number;
+        const match = lastNumber.match(/mbfpr-(\d+)/);
+        if (match) {
+          const nextNum = parseInt(match[1]) + 1;
+          producerNumber = `mbfpr-${nextNum.toString().padStart(3, '0')}`;
+        }
+      }
+
+      // Generate invitation code
+      const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      // Create invitation
+      const { error: insertError } = await supabase
+        .from('producer_invitations')
+        .insert({
+          email: application.email,
+          first_name: firstName,
+          last_name: lastName,
+          invitation_code: invitationCode,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          producer_number: producerNumber
+        });
+
+      if (insertError) throw insertError;
+
+      // Send email
+      const emailResult = await sendProducerInvitationEmail(application.email, firstName, lastName, producerNumber, invitationCode);
+
+      // Update application status
+      await supabase
+        .from('producer_applications')
+        .update({ 
+          status: 'invited',
+          review_tier: tier,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Refresh the applications list
+      fetchAllApplications();
+      fetchApplications();
+
+      // Show success message
+      if (emailResult.success) {
+        alert(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
+      } else {
+        alert(`Producer ${firstName} ${lastName} has been invited, but email failed. Producer Number: ${producerNumber}. You can resend the email later.`);
+      }
+
+    } catch (error) {
+      console.error('Proper invite error:', error);
+      alert('Failed to invite producer. Please try again.');
+    }
+  };
+
   const sendProducerInvitationEmail = async (email: string, firstName: string, lastName: string, producerNumber: string, invitationCode: string) => {
     try {
       const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
@@ -1107,6 +1179,14 @@ export default function ProducerApplicationsAdmin() {
                         Move to New
                       </Button>
                       <Button
+                        onClick={() => updateApplicationStatus(app.id, 'manual_review')}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        size="sm"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Manual Review
+                      </Button>
+                      <Button
                         onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
                         className="bg-yellow-600 hover:bg-yellow-700 text-white"
                         size="sm"
@@ -1133,6 +1213,14 @@ export default function ProducerApplicationsAdmin() {
                         size="sm"
                       >
                         Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'manual_review')}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        size="sm"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Manual Review
                       </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
@@ -1163,7 +1251,15 @@ export default function ProducerApplicationsAdmin() {
                         Move to New
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        onClick={() => updateApplicationStatus(app.id, 'manual_review')}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        size="sm"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Manual Review
+                      </Button>
+                      <Button
+                        onClick={() => handleProperInvite(app, 'Tier 1')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1171,7 +1267,7 @@ export default function ProducerApplicationsAdmin() {
                         Invite (Tier 1)
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        onClick={() => handleProperInvite(app, 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1198,7 +1294,7 @@ export default function ProducerApplicationsAdmin() {
                         Move to New
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        onClick={() => handleProperInvite(app, 'Tier 1')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1206,7 +1302,7 @@ export default function ProducerApplicationsAdmin() {
                         Invite (Tier 1)
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        onClick={() => handleProperInvite(app, 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1242,7 +1338,7 @@ export default function ProducerApplicationsAdmin() {
                         Move to New
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        onClick={() => handleProperInvite(app, 'Tier 1')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1250,7 +1346,7 @@ export default function ProducerApplicationsAdmin() {
                         Invite (Tier 1)
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        onClick={() => handleProperInvite(app, 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1294,7 +1390,7 @@ export default function ProducerApplicationsAdmin() {
                         Save for Later
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        onClick={() => handleProperInvite(app, 'Tier 1')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1302,7 +1398,7 @@ export default function ProducerApplicationsAdmin() {
                         Invite (Tier 1)
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        onClick={() => handleProperInvite(app, 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
