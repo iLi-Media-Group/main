@@ -127,7 +127,7 @@ function comprehensiveSearch(
 
   // Score and categorize tracks
   const results: SearchResult[] = tracks.map(track => {
-    let score = 0;
+  let score = 0;
     const exactMatches: string[] = [];
     const partialMatches: string[] = [];
     const fuzzyMatches: string[] = [];
@@ -324,9 +324,9 @@ export function CatalogPage() {
 
   const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
 
-  useEffect(() => {
-    // Get search params
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
+     useEffect(() => {
+     // Get search params
+     const query = searchParams.get('q')?.toLowerCase().trim() || '';
     const genresParam = searchParams.get('genres')?.split(',').filter(Boolean) || [];
     const subGenresParam = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
     const moodsParam = searchParams.get('moods')?.split(',').filter(Boolean) || [];
@@ -343,7 +343,7 @@ export function CatalogPage() {
 
     // Combine URL params with persistent filters
     const combinedFilters = {
-      query,
+       query,
       genres: genresParam,
       subGenres: subGenresParam,
       moods: moodsParam,
@@ -370,52 +370,52 @@ export function CatalogPage() {
       }
 
       // UNIFIED PIPELINE: Always fetch tracks with basic constraints
-      let query = supabase
-        .from('tracks')
-        .select(`
-          id,
-          title,
-          artist,
-          genres,
-          sub_genres,
-          moods,
-          instruments,
-          media_usage,
-          bpm,
-          audio_url,
-          image_url,
-          has_sting_ending,
-          is_one_stop,
-          duration,
-          mp3_url,
-          trackouts_url,
-          stems_url,
-          has_vocals,
-          vocals_usage_type,
-          is_sync_only,
-          track_producer_id,
+             let query = supabase
+         .from('tracks')
+         .select(`
+           id,
+           title,
+           artist,
+           genres,
+           sub_genres,
+           moods,
+           instruments,
+           media_usage,
+           bpm,
+           audio_url,
+           image_url,
+           has_sting_ending,
+           is_one_stop,
+           duration,
+           mp3_url,
+           trackouts_url,
+           stems_url,
+           has_vocals,
+           vocals_usage_type,
+           is_sync_only,
+           track_producer_id,
           created_at,
           contains_loops,
           contains_samples,
           contains_splice_loops,
           samples_cleared,
-          producer:profiles!track_producer_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            avatar_path
-          )
-        `)
-        .is('deleted_at', null);
+           producer:profiles!track_producer_id (
+             id,
+             first_name,
+             last_name,
+             email,
+             avatar_path
+           )
+         `)
+         .is('deleted_at', null);
 
       // Apply basic filters (always applied)
-      if (filters?.syncOnly === true) {
-        query = query.eq('is_sync_only', true);
-      }
-      
-      if (filters?.hasVocals === true) {
-        query = query.eq('has_vocals', true);
+         if (filters?.syncOnly === true) {
+           query = query.eq('is_sync_only', true);
+         }
+         
+         if (filters?.hasVocals === true) {
+           query = query.eq('has_vocals', true);
       }
 
       if (filters?.excludeUnclearedSamples === true) {
@@ -430,7 +430,7 @@ export function CatalogPage() {
       }
 
       // Get ALL tracks that match basic filters
-      const { data: allTracks, error } = await query;
+           const { data: allTracks, error } = await query;
 
       console.log('🎵 Supabase query result:', {
         dataCount: allTracks?.length || 0,
@@ -448,7 +448,7 @@ export function CatalogPage() {
         throw error;
       }
 
-      if (allTracks) {
+           if (allTracks) {
         // COMPREHENSIVE SEARCH: Process through world-class search system
         const searchQuery = filters?.query || '';
         const genres = filters?.genres || [];
@@ -526,34 +526,34 @@ export function CatalogPage() {
         // Format tracks for display
         const formattedTracks = paginatedTracks.map(track => {
           const producer = Array.isArray(track.producer) ? track.producer[0] : track.producer;
-          return {
-            id: track.id,
-            title: track.title || 'Untitled',
+            return {
+              id: track.id,
+              title: track.title || 'Untitled',
             artist: producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
-            genres: parseArrayField(track.genres),
-            subGenres: parseArrayField(track.sub_genres),
-            moods: parseArrayField(track.moods),
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
             instruments: parseArrayField(track.instruments),
             mediaUsage: parseArrayField(track.media_usage),
-            duration: track.duration || '3:30',
-            bpm: track.bpm,
-            audioUrl: track.audio_url,
+              duration: track.duration || '3:30',
+              bpm: track.bpm,
+              audioUrl: track.audio_url,
             image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasStingEnding: track.has_sting_ending,
-            isOneStop: track.is_one_stop,
-            mp3Url: track.mp3_url,
-            trackoutsUrl: track.trackouts_url,
-            stemsUrl: track.stems_url,
-            hasVocals: track.has_vocals || false,
-            isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id || '',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
             producer: producer ? {
               id: producer.id,
               firstName: producer.first_name || '',
               lastName: producer.last_name || '',
               email: producer.email || '',
-            } : undefined,
-            fileFormats: {
+              } : undefined,
+              fileFormats: {
               stereoMp3: {
                 format: ['mp3'],
                 url: track.mp3_url || ''
@@ -566,16 +566,16 @@ export function CatalogPage() {
                 format: ['wav', 'aiff'],
                 url: track.stems_url || ''
               }
-            },
-            pricing: {
-              stereoMp3: 0,
-              stems: 0,
-              stemsWithVocals: 0
-            },
+              },
+              pricing: {
+                stereoMp3: 0,
+                stems: 0,
+                stemsWithVocals: 0
+              },
             leaseAgreementUrl: '',
             searchScore: searchResultMap.get(track.id)?.score || 0
-          };
-        });
+            };
+          });
 
         if (currentPage === 1) {
           setTracks(formattedTracks);
@@ -593,22 +593,22 @@ export function CatalogPage() {
     }
   };
 
-  const handleSearch = async (searchFilters: any) => {
+     const handleSearch = async (searchFilters: any) => {
     console.log('🚀 handleSearch called with:', searchFilters);
     
-    // Convert search terms to lowercase and remove extra spaces
-    const normalizedFilters = {
-      ...searchFilters,
-      query: searchFilters.query?.toLowerCase().trim(),
+     // Convert search terms to lowercase and remove extra spaces
+           const normalizedFilters = {
+        ...searchFilters,
+        query: searchFilters.query?.toLowerCase().trim(),
       genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()),
       subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()),
-      moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
-      instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
-      mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
-      syncOnly: searchFilters.syncOnly,
-      hasVocals: searchFilters.hasVocals,
-      excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
-    };
+        moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+        instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+        mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
+        syncOnly: searchFilters.syncOnly,
+        hasVocals: searchFilters.hasVocals,
+        excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
+      };
 
     console.log('🚀 Normalized filters:', normalizedFilters);
 
@@ -623,30 +623,30 @@ export function CatalogPage() {
     setFilters(normalizedFilters);
     setCurrentFilters(normalizedFilters);
 
-    // Update URL with search params
-    const params = new URLSearchParams();
-    if (normalizedFilters.query) params.set('q', normalizedFilters.query);
-    if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
-    if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
-    if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
-    if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
-    if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
-    if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
-    if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
-    if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
-    if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
-    if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+         // Update URL with search params
+     const params = new URLSearchParams();
+     if (normalizedFilters.query) params.set('q', normalizedFilters.query);
+     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
+     if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
+     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
+     if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
+     if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
+           if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
+      if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
+      if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
+      if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
+      if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
 
-    // Update URL without reloading the page
-    navigate(`/catalog?${params.toString()}`, { replace: true });
+         // Update URL without reloading the page
+     navigate(`/catalog?${params.toString()}`, { replace: true });
     
     // IMMEDIATELY fetch tracks with the new filters
     console.log('🚀 Calling fetchTracks immediately with:', normalizedFilters);
     await fetchTracks(normalizedFilters, 1);
-    
-    // Log the search query to the database
-    await logSearchFromFilters(normalizedFilters);
-  };
+     
+     // Log the search query to the database
+     await logSearchFromFilters(normalizedFilters);
+   };
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
@@ -720,8 +720,8 @@ export function CatalogPage() {
           <p className="text-gray-400">Try adjusting your search terms or filters.</p>
         </div>
       ) : (
-        <div className="space-y-8">
-          {(() => {
+             <div className="space-y-8">
+               {(() => {
             // Categorize tracks based on search criteria
             const hasSearchCriteria = currentFilters?.query || currentFilters?.genres?.length > 0 || currentFilters?.subGenres?.length > 0 || 
               currentFilters?.moods?.length > 0 || currentFilters?.instruments?.length > 0 || currentFilters?.mediaTypes?.length > 0;
@@ -782,23 +782,23 @@ export function CatalogPage() {
                 
                 return !searchTerms.some(term => trackText.includes(term.toLowerCase()));
               });
-              
-              return (
-               <>
-                 {/* Exact Matches */}
+                 
+                 return (
+                   <>
+                     {/* Exact Matches */}
                  {exact.length > 0 && (
-                   <div>
+                       <div>
                      <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                        {exact.map((track: any) => (
-                         <TrackCard
+                                 <TrackCard
                            key={track.id}
-                           track={track}
-                           onSelect={() => handleTrackSelect(track)}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
                            searchCategory="exact"
-                         />
+                                 />
                        ))}
-                     </div>
+                               </div>
                    </div>
                  )}
 
@@ -808,44 +808,44 @@ export function CatalogPage() {
                      <p className="text-yellow-400 text-lg font-medium">
                        No exact matches found for your search criteria, but here are some related tracks:
                      </p>
-                   </div>
-                 )}
+                       </div>
+                     )}
 
-                 {/* Partial Matches */}
+                     {/* Partial Matches */}
                  {partial.length > 0 && (
-                   <div>
+                       <div>
                      <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                        {partial.map((track: any) => (
-                         <TrackCard
+                                 <TrackCard
                            key={track.id}
-                           track={track}
-                           onSelect={() => handleTrackSelect(track)}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
                            searchCategory="partial"
-                         />
+                                 />
                        ))}
-                     </div>
-                   </div>
-                 )}
+                         </div>
+                       </div>
+                     )}
 
-                 {/* Other Tracks */}
+                     {/* Other Tracks */}
                  {other.length > 0 && (
-                   <div>
+                       <div>
                      <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                        {other.map((track: any) => (
-                         <TrackCard
+                                 <TrackCard
                            key={track.id}
-                           track={track}
-                           onSelect={() => handleTrackSelect(track)}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
                            searchCategory="other"
-                         />
+                                 />
                        ))}
-                     </div>
-                   </div>
-                 )}
-               </>
-             );
+                         </div>
+                       </div>
+                     )}
+                   </>
+                 );
             } else {
               // When not searching, all tracks go to "other" (latest tracks)
               return (
@@ -853,31 +853,31 @@ export function CatalogPage() {
                   <h2 className="text-2xl font-bold text-white mb-4">Latest Tracks</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {tracks.map((track: any) => (
-                      <TrackCard
+                       <TrackCard
                         key={track.id}
-                        track={track}
-                        onSelect={() => handleTrackSelect(track)}
+                         track={track}
+                         onSelect={() => handleTrackSelect(track)}
                         searchCategory="other"
-                      />
+                       />
                     ))}
-                  </div>
+                     </div>
                 </div>
               );
             }
           })()}
-        </div>
-      )}
+               </div>
+           )}
 
-      {hasMore && (
+          {hasMore && (
         <div className="text-center mt-8">
-          <button
-            onClick={loadMore}
-            disabled={loadingMore}
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
             className="btn-primary"
           >
             {loadingMore ? 'Loading...' : 'Load More'}
-          </button>
-        </div>
+              </button>
+            </div>
       )}
     </div>
   );
