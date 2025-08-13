@@ -1267,6 +1267,58 @@ export default function ProducerApplicationsAdmin() {
                       </Button>
                     </>
                   )}
+
+                  {activeTab === 'all' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'manual_review')}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        size="sm"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Manual Review
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 1)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 2)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             ))
