@@ -17,9 +17,12 @@ const TRACKS_PER_PAGE = 20;
 
 // Enhanced search function from ChatGPT
 function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], moods: string[], instruments: string[], synonymsMap: any) {
-  if (!searchQuery || searchQuery.trim() === "") return tracks;
+  // Check if we have any search criteria at all
+  const hasSearchCriteria = searchQuery?.trim() || genres?.length || moods?.length || instruments?.length;
+  
+  if (!hasSearchCriteria) return tracks;
 
-  const query = searchQuery.toLowerCase().trim();
+  const query = searchQuery?.toLowerCase().trim() || '';
   
   // Debug logging
   console.log('🔍 Enhanced Search Debug:');
@@ -29,15 +32,25 @@ function enhancedSearch(tracks: any[], searchQuery: string, genres: string[], mo
   console.log('Total Tracks:', tracks.length);
 
   // Expand search query with synonyms
-  let expandedTerms = new Set([query]);
+  let expandedTerms = new Set<string>();
+  
+  // Add the main query if it exists
+  if (query) {
+    expandedTerms.add(query);
+  }
+  
+  // Add all genres, moods, and instruments as search terms
+  [...genres, ...moods, ...instruments].forEach(term => {
+    if (term) expandedTerms.add(term.toLowerCase());
+  });
 
   // Add synonyms from our dictionary
   for (let [term, syns] of Object.entries(synonymsMap)) {
     const synonyms = syns as string[];
-    if (query.includes(term.toLowerCase())) {
+    if (query && query.includes(term.toLowerCase())) {
       synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
     }
-    if (synonyms.some((s: string) => query.includes(s.toLowerCase()))) {
+    if (query && synonyms.some((s: string) => query.includes(s.toLowerCase()))) {
       expandedTerms.add(term.toLowerCase());
       synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
     }
