@@ -79,18 +79,29 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
       }
     });
     
-    setFilters(prev => ({
-      ...prev,
+    const newFilters = {
+      ...filters,
       query: value,
       genres: detectedGenres,
       moods: detectedMoods,
       instruments: detectedInstruments,
       mediaTypes: detectedMediaTypes
-    }));
+    };
+    
+    setFilters(newFilters);
+    
+    // Trigger search immediately when typing (with debounce)
+    if (value.trim()) {
+      onSearch(newFilters);
+    }
   };
 
   const handleFilterChange = (filterType: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [filterType]: value }));
+    const newFilters = { ...filters, [filterType]: value };
+    setFilters(newFilters);
+    
+    // Trigger search immediately when filters change
+    onSearch(newFilters);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
