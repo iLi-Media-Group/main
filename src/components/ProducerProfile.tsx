@@ -126,10 +126,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           business_structure: businessStructure || null,
           bio: bio.trim() || null,
           
-          // Usage badge fields
-          uses_loops: usesLoops,
-          uses_samples: usesSamples,
-          uses_splice: usesSplice,
+          // Note: Production tool badges are managed by admin, not editable by producers
           
           updated_at: new Date().toISOString()
         })
@@ -484,62 +481,22 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               <div className="text-xs text-gray-400 text-right mt-1">{bio.length}/800</div>
             </div>
 
-            {/* Usage Badges */}
+            {/* Production Tools Badges (Admin Controlled) */}
             <div>
               <h3 className="text-lg font-medium text-white mb-4">Production Tools</h3>
               <p className="text-sm text-gray-400 mb-4">
-                Let clients know what tools you use in your music production
+                Your verified production tools (managed by admin)
               </p>
               
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="usesLoops"
-                    checked={usesLoops}
-                    onChange={(e) => setUsesLoops(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 bg-blue-950/60 border-blue-700 rounded focus:ring-purple-500 focus:ring-2"
-                  />
-                  <label htmlFor="usesLoops" className="ml-3 text-sm text-gray-300">
-                    I use loops in my music production
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="usesSamples"
-                    checked={usesSamples}
-                    onChange={(e) => setUsesSamples(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 bg-blue-950/60 border-blue-700 rounded focus:ring-purple-500 focus:ring-2"
-                  />
-                  <label htmlFor="usesSamples" className="ml-3 text-sm text-gray-300">
-                    I use samples in my music production
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="usesSplice"
-                    checked={usesSplice}
-                    onChange={(e) => setUsesSplice(e.target.checked)}
-                    className="w-4 h-4 text-purple-600 bg-blue-950/60 border-blue-700 rounded focus:ring-purple-500 focus:ring-2"
-                  />
-                  <label htmlFor="usesSplice" className="ml-3 text-sm text-gray-300">
-                    I use Splice for music production
-                  </label>
-                </div>
-              </div>
-              
-              {/* Preview of badges */}
-              <div className="mt-4 p-4 bg-blue-950/20 rounded-lg border border-blue-700/30">
-                <p className="text-sm text-gray-400 mb-2">Preview of your badges:</p>
+              <div className="p-4 bg-blue-950/20 rounded-lg border border-blue-700/30">
                 <ProducerUsageBadges 
                   usesLoops={usesLoops}
                   usesSamples={usesSamples}
                   usesSplice={usesSplice}
                 />
+                {!usesLoops && !usesSamples && !usesSplice && (
+                  <p className="text-sm text-gray-500 mt-2">No production tools verified yet</p>
+                )}
               </div>
             </div>
 

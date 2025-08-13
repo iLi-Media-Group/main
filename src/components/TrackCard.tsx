@@ -8,6 +8,7 @@ import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
+import { SampleClearanceBadge } from './SampleClearanceBadge';
 
 interface TrackCardProps {
   track: Track;
@@ -296,6 +297,13 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
               </div>
             )}
           </div>
+
+          {/* Sample Clearance Badge */}
+          <SampleClearanceBadge 
+            containsSamples={track.containsSamples || false}
+            samplesCleared={track.samplesCleared || false}
+            className="text-xs"
+          />
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2">

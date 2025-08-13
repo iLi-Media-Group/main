@@ -55,6 +55,11 @@ export interface Track {
   payment_terms?: string;
   is_exclusive?: boolean;
   explicit_lyrics?: boolean;
+  // Sample clearance fields
+  containsLoops?: boolean;
+  containsSamples?: boolean;
+  samplesCleared?: boolean;
+  sampleClearanceNotes?: string;
 }
 
 export interface SyncProposal {
