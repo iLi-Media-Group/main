@@ -136,52 +136,37 @@ function comprehensiveSearch(
     const searchableText = [
       track.title,
       track.artist,
-      track.genres?.join(" "),
-      track.sub_genres?.join(" "),
-      track.moods?.join(" "),
-      track.instruments?.join(" "),
-      track.media_usage?.join(" ")
+      track.genres,
+      track.sub_genres,
+      Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+      Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+      Array.isArray(track.media_usage) ? track.media_usage.join(" ") : track.media_usage
     ].filter(Boolean).join(" ").toLowerCase();
 
     // Check each expanded term against the track
     for (let term of expandedTermsArray) {
       // Check sub-genres (highest priority - 20 points)
-      if (track.sub_genres?.some((sg: string) => sg.toLowerCase().includes(term))) {
+      if (track.sub_genres && track.sub_genres.toLowerCase().includes(term)) {
         score += 20;
         exactMatches.push(`sub-genre: ${term}`);
       }
-      // Check sub-moods (highest priority - 20 points)
-      else if (track.sub_moods?.some((sm: string) => sm.toLowerCase().includes(term))) {
-        score += 20;
-        exactMatches.push(`sub-mood: ${term}`);
-      }
-      // Check sub-instruments (highest priority - 20 points)
-      else if (track.sub_instruments?.some((si: string) => si.toLowerCase().includes(term))) {
-        score += 20;
-        exactMatches.push(`sub-instrument: ${term}`);
-      }
-      // Check sub-media types (highest priority - 20 points)
-      else if (track.sub_media_types?.some((smt: string) => smt.toLowerCase().includes(term))) {
-        score += 20;
-        exactMatches.push(`sub-media-type: ${term}`);
-      }
       // Check media usage (high priority - 12 points)
-      else if (track.media_usage?.some((mu: string) => mu.toLowerCase().includes(term))) {
+      else if (Array.isArray(track.media_usage) && track.media_usage.some((mu: string) => mu.toLowerCase().includes(term))) {
         score += 12;
         exactMatches.push(`media-usage: ${term}`);
       }
       // Check genres (medium priority - 6 points)
-      else if (track.genres?.some((g: string) => g.toLowerCase().includes(term))) {
+      else if (track.genres && track.genres.toLowerCase().includes(term)) {
         score += 6;
         exactMatches.push(`genre: ${term}`);
       }
       // Check moods (medium priority - 6 points)
-      else if (track.moods?.some((m: string) => m.toLowerCase().includes(term))) {
+      else if (Array.isArray(track.moods) && track.moods.some((m: string) => m.toLowerCase().includes(term))) {
         score += 6;
         exactMatches.push(`mood: ${term}`);
       }
       // Check instruments (medium priority - 6 points)
-      else if (track.instruments?.some((i: string) => i.toLowerCase().includes(term))) {
+      else if (Array.isArray(track.instruments) && track.instruments.some((i: string) => i.toLowerCase().includes(term))) {
         score += 6;
         exactMatches.push(`instrument: ${term}`);
       }
@@ -502,14 +487,20 @@ export function CatalogPage() {
           })));
         }
 
-        // Apply simple search for testing
-        const searchResults = simpleSearch(allTracks, searchQuery).map(track => ({
-          track,
-          score: 10, // Give all results a high score for now
-          exactMatches: ['simple match'],
-          partialMatches: [],
-          fuzzyMatches: []
-        }));
+        // Apply comprehensive search
+        const searchResults = comprehensiveSearch(
+          allTracks,
+          searchQuery,
+          genres,
+          subGenres,
+          moods,
+          subMoods,
+          instruments,
+          subInstruments,
+          mediaTypes,
+          subMediaTypes,
+          synonymsMap || {}
+        );
 
         // Create a map of track IDs to search results for easy lookup
         const searchResultMap = new Map();
