@@ -737,7 +737,10 @@ export function ProducerDashboard() {
         return;
       }
 
-      // Permanently delete the track
+      // Delete all storage files associated with the track using Edge Function
+      await deleteTrackStorageFiles(selectedTrack);
+
+      // Permanently delete the track from database
       const { error } = await supabase
         .from('tracks')
         .delete()
@@ -752,6 +755,42 @@ export function ProducerDashboard() {
     } catch (err) {
       console.error('Error permanently deleting track:', err);
       setError('Failed to permanently delete track');
+    }
+  };
+
+  // Function to delete all storage files associated with a track using Edge Function
+  const deleteTrackStorageFiles = async (track: any) => {
+    try {
+      console.log('🗑️ Deleting storage files for track:', track.id, track.title);
+      
+      // Call the Edge Function to handle storage deletion server-side
+      const { data, error } = await supabase.functions.invoke('delete-track-storage', {
+        body: {
+          trackId: track.id,
+          trackData: track
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error calling delete-track-storage function:', error);
+        throw error;
+      }
+
+      if (data.success) {
+        console.log(`✅ Storage cleanup completed for track ${track.id}:`, {
+          deletedFiles: data.deletedFiles,
+          failedFiles: data.failedFiles,
+          totalFiles: data.totalFiles,
+          deletedCount: data.deletedCount,
+          failedCount: data.failedCount
+        });
+      } else {
+        console.error('❌ Storage cleanup failed for track:', track.id, data.error);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error during storage cleanup:', error);
+      // Don't throw here - we want to continue with database deletion even if storage cleanup fails
     }
   };
 
