@@ -34,6 +34,61 @@ const filterStopWords = (terms: string[]): string[] => {
   });
 };
 
+// Helper function to normalize text for searching (remove special chars, lowercase)
+const normalizeText = (text: string): string => {
+  return text.toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+    .trim();
+};
+
+// Helper function to tokenize text into searchable terms
+const tokenizeText = (text: string): string[] => {
+  return normalizeText(text)
+    .split(/\s+/)
+    .filter(term => term.length > 0);
+};
+
+// Helper function to generate word variations (partial matches, different formats)
+const generateWordVariations = (word: string): string[] => {
+  const variations = new Set<string>();
+  const normalized = normalizeText(word);
+  
+  // Add the original normalized word
+  variations.add(normalized);
+  
+  // Add partial matches (for "hip" matching "hip hop")
+  if (normalized.length >= 3) {
+    variations.add(normalized);
+    // Add shorter versions for partial matching
+    for (let i = 3; i <= normalized.length; i++) {
+      variations.add(normalized.substring(0, i));
+    }
+  }
+  
+  // Add space/hyphen/underscore variations
+  const spaceVariations = [
+    normalized,
+    normalized.replace(/\s+/g, ''),
+    normalized.replace(/\s+/g, '-'),
+    normalized.replace(/\s+/g, '_'),
+    normalized.replace(/-/g, ' '),
+    normalized.replace(/-/g, ''),
+    normalized.replace(/-/g, '_'),
+    normalized.replace(/_/g, ' '),
+    normalized.replace(/_/g, '-'),
+    normalized.replace(/_/g, '')
+  ];
+  
+  spaceVariations.forEach(variation => {
+    if (variation && variation.length > 0) {
+      variations.add(variation);
+    }
+  });
+  
+  return Array.from(variations);
+};
+
 // Helper function to expand search terms with synonyms and comprehensive variations
 const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: string[] }): string[] => {
   const expandedTerms = new Set<string>();
@@ -43,94 +98,104 @@ const expandSearchTerms = (searchTerms: string[], synonymsMap: { [key: string]: 
   
   filteredTerms.forEach(term => {
     const lowerTerm = term.toLowerCase();
-    expandedTerms.add(lowerTerm);
+    
+    // Add the original term and its variations
+    const termVariations = generateWordVariations(lowerTerm);
+    termVariations.forEach(variation => expandedTerms.add(variation));
     
     // Add synonyms for this term
     if (synonymsMap[lowerTerm]) {
       synonymsMap[lowerTerm].forEach(synonym => {
-        expandedTerms.add(synonym.toLowerCase());
+        const synonymVariations = generateWordVariations(synonym);
+        synonymVariations.forEach(variation => expandedTerms.add(variation));
       });
     }
     
     // Check if this term is a synonym of any main term
     Object.entries(synonymsMap).forEach(([mainTerm, synonyms]) => {
       if (synonyms.includes(lowerTerm)) {
-        expandedTerms.add(mainTerm);
+        const mainTermVariations = generateWordVariations(mainTerm);
+        mainTermVariations.forEach(variation => expandedTerms.add(variation));
+        
         synonyms.forEach(synonym => {
-          expandedTerms.add(synonym.toLowerCase());
+          const synonymVariations = generateWordVariations(synonym);
+          synonymVariations.forEach(variation => expandedTerms.add(variation));
         });
       }
     });
     
     // Add comprehensive variations for hip-hop
-    if (lowerTerm === 'hiphop' || lowerTerm === 'hip hop' || lowerTerm === 'hip-hop') {
-      expandedTerms.add('hiphop');
-      expandedTerms.add('hip hop');
-      expandedTerms.add('hip-hop');
-      expandedTerms.add('hip_hop_rap');
-      expandedTerms.add('rap');
-      expandedTerms.add('trap');
-      expandedTerms.add('drill');
-      expandedTerms.add('grime');
-      expandedTerms.add('hip hop music');
-      expandedTerms.add('hip-hop music');
-      expandedTerms.add('hiphop music');
-      expandedTerms.add('hip hop rap');
-      expandedTerms.add('hip-hop rap');
-      expandedTerms.add('hiphop rap');
-      expandedTerms.add('rap music');
-      expandedTerms.add('trap music');
-      expandedTerms.add('drill music');
+    if (lowerTerm === 'hiphop' || lowerTerm === 'hip hop' || lowerTerm === 'hip-hop' || lowerTerm === 'hip') {
+      const hipHopVariations = [
+        'hiphop', 'hip hop', 'hip-hop', 'hip_hop_rap', 'rap', 'trap', 'drill', 'grime',
+        'hip hop music', 'hip-hop music', 'hiphop music', 'hip hop rap',
+        'hip-hop rap', 'hiphop rap', 'rap music', 'trap music', 'drill music',
+        'urban', 'street', 'gangsta', 'conscious', 'underground', 'mainstream'
+      ];
+      
+      hipHopVariations.forEach(variation => {
+        const allVariations = generateWordVariations(variation);
+        allVariations.forEach(v => expandedTerms.add(v));
+      });
     }
     
     // Add comprehensive variations for R&B
-    if (lowerTerm === 'rnb' || lowerTerm === 'r&b' || lowerTerm === 'rhythm and blues') {
-      expandedTerms.add('rnb');
-      expandedTerms.add('r&b');
-      expandedTerms.add('rhythm and blues');
-      expandedTerms.add('rnb_soul');
-      expandedTerms.add('soul');
-      expandedTerms.add('neo soul');
-      expandedTerms.add('contemporary r&b');
-      expandedTerms.add('urban');
+    if (lowerTerm === 'rnb' || lowerTerm === 'r&b' || lowerTerm === 'rhythm and blues' || lowerTerm === 'rnb') {
+      const rnbVariations = [
+        'rnb', 'r&b', 'rhythm and blues', 'rnb_soul', 'soul', 'neo soul',
+        'contemporary r&b', 'urban', 'rhythm and blues music'
+      ];
+      
+      rnbVariations.forEach(variation => {
+        const allVariations = generateWordVariations(variation);
+        allVariations.forEach(v => expandedTerms.add(v));
+      });
     }
     
     // Add comprehensive variations for electronic
-    if (lowerTerm === 'edm' || lowerTerm === 'electronic' || lowerTerm === 'electronic dance') {
-      expandedTerms.add('edm');
-      expandedTerms.add('electronic');
-      expandedTerms.add('electronic dance');
-      expandedTerms.add('electronic_dance');
-      expandedTerms.add('techno');
-      expandedTerms.add('house');
-      expandedTerms.add('trance');
-      expandedTerms.add('dubstep');
-      expandedTerms.add('electronic music');
-      expandedTerms.add('edm music');
+    if (lowerTerm === 'edm' || lowerTerm === 'electronic' || lowerTerm === 'electronic dance' || lowerTerm === 'edm') {
+      const electronicVariations = [
+        'edm', 'electronic', 'electronic dance', 'electronic_dance', 'techno',
+        'house', 'trance', 'dubstep', 'electronic music', 'edm music'
+      ];
+      
+      electronicVariations.forEach(variation => {
+        const allVariations = generateWordVariations(variation);
+        allVariations.forEach(v => expandedTerms.add(v));
+      });
     }
-    
-    // Add space/hyphen/underscore variations for any term
-    const variations = [
-      lowerTerm,
-      lowerTerm.replace(/\s+/g, ''),
-      lowerTerm.replace(/\s+/g, '-'),
-      lowerTerm.replace(/\s+/g, '_'),
-      lowerTerm.replace(/-/g, ' '),
-      lowerTerm.replace(/-/g, ''),
-      lowerTerm.replace(/-/g, '_'),
-      lowerTerm.replace(/_/g, ' '),
-      lowerTerm.replace(/_/g, '-'),
-      lowerTerm.replace(/_/g, '')
-    ];
-    
-    variations.forEach(variation => {
-      if (variation && variation.length > 0) {
-        expandedTerms.add(variation);
-      }
-    });
   });
   
   return Array.from(expandedTerms);
+};
+
+// Helper function to check if a track field contains any of the search terms
+const fieldContainsTerms = (fieldValue: any, searchTerms: string[]): { matched: boolean; matchedTerms: string[] } => {
+  if (!fieldValue) return { matched: false, matchedTerms: [] };
+  
+  const matchedTerms: string[] = [];
+  const fieldText = Array.isArray(fieldValue) ? fieldValue.join(' ').toLowerCase() : String(fieldValue).toLowerCase();
+  const normalizedFieldText = normalizeText(fieldText);
+  
+  searchTerms.forEach(term => {
+    const normalizedTerm = normalizeText(term);
+    
+    // Check for exact match
+    if (normalizedFieldText.includes(normalizedTerm)) {
+      matchedTerms.push(term);
+    } else {
+      // Check for partial matches
+      const termVariations = generateWordVariations(term);
+      for (const variation of termVariations) {
+        if (normalizedFieldText.includes(variation)) {
+          matchedTerms.push(term);
+          break;
+        }
+      }
+    }
+  });
+  
+  return { matched: matchedTerms.length > 0, matchedTerms };
 };
 
 // Helper function to calculate match score for a track
@@ -149,7 +214,7 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
   const mediaTerms = new Set<string>();
   
   // First pass: identify what type of terms we're dealing with
-  for (const term of searchTerms) {
+  for (const term of expandedTerms) { // Use expandedTerms instead of searchTerms
     const termLower = term.toLowerCase();
     
     // Check if this is a genre term by looking for common genre keywords
@@ -175,116 +240,54 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
     score += 8;
   }
   
-  // Check genres (+8 for exact match, +5 for partial match) - increased priority
-  const trackGenres = parseArrayField(track.genres);
-  trackGenres.forEach((genre: string) => {
-    const genreLower = genre.toLowerCase();
-    // Check for exact matches first
-    expandedTerms.forEach(term => {
-      if (genreLower === term) {
-        score += 8; // Increased from 5
-        matchedTerms.add(term);
-      } else if (genreLower.includes(term) || term.includes(genreLower)) {
-        score += 5; // Increased from 3
-        matchedTerms.add(term);
-      }
-    });
-  });
+  // Check title matches (highest priority)
+  const titleMatch = fieldContainsTerms(track.title, searchTerms);
+  if (titleMatch.matched) {
+    score += 10 * titleMatch.matchedTerms.length; // +10 per matched term
+    titleMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
-  // Check sub-genres (+2 for each match)
-  const trackSubGenres = parseArrayField(track.sub_genres);
-  trackSubGenres.forEach((subGenre: string) => {
-    expandedTerms.forEach(term => {
-      if (subGenre.toLowerCase().includes(term)) {
-        score += 2;
-        matchedTerms.add(term);
-      }
-    });
-  });
+  // Check artist matches (high priority)
+  const artistMatch = fieldContainsTerms(track.artist, searchTerms);
+  if (artistMatch.matched) {
+    score += 8 * artistMatch.matchedTerms.length; // +8 per matched term
+    artistMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
-  // Check moods (+2 for each match)
-  const trackMoods = parseArrayField(track.moods);
-  trackMoods.forEach((mood: string) => {
-    expandedTerms.forEach(term => {
-      if (mood.toLowerCase().includes(term)) {
-        score += 2;
-        matchedTerms.add(term);
-      }
-    });
-  });
+  // Check genre matches
+  const genreMatch = fieldContainsTerms(track.genres, searchTerms);
+  if (genreMatch.matched) {
+    score += 6 * genreMatch.matchedTerms.length; // +6 per matched term
+    genreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
-  // Check media usage - equal weight to genres
-  const trackMediaUsage = parseArrayField(track.media_usage);
-  const searchQueryLower = searchQuery.toLowerCase();
-  const hasSportsTerm = searchQueryLower.includes('sports') || searchQueryLower.includes('sport') || 
-                       searchQueryLower.includes('football') || searchQueryLower.includes('basketball') ||
-                       searchQueryLower.includes('baseball') || searchQueryLower.includes('soccer') ||
-                       searchQueryLower.includes('hockey') || searchQueryLower.includes('tennis') ||
-                       searchQueryLower.includes('golf') || searchQueryLower.includes('racing') ||
-                       searchQueryLower.includes('olympics') || searchQueryLower.includes('nfl') ||
-                       searchQueryLower.includes('nba') || searchQueryLower.includes('mlb') ||
-                       searchQueryLower.includes('nhl') || searchQueryLower.includes('ncaa');
+  // Check sub-genre matches
+  const subGenreMatch = fieldContainsTerms(track.sub_genres, searchTerms);
+  if (subGenreMatch.matched) {
+    score += 5 * subGenreMatch.matchedTerms.length; // +5 per matched term
+    subGenreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
-  trackMediaUsage.forEach((mediaType: string) => {
-    const mediaTypeLower = mediaType.toLowerCase();
-    
-    // If searching for sports, give higher score to sports-related media
-    if (hasSportsTerm) {
-      if (mediaTypeLower.includes('sports') || mediaTypeLower.includes('sport') ||
-          mediaTypeLower.includes('football') || mediaTypeLower.includes('basketball') ||
-          mediaTypeLower.includes('baseball') || mediaTypeLower.includes('soccer') ||
-          mediaTypeLower.includes('hockey') || mediaTypeLower.includes('tennis') ||
-          mediaTypeLower.includes('golf') || mediaTypeLower.includes('racing') ||
-          mediaTypeLower.includes('olympics') || mediaTypeLower.includes('nfl') ||
-          mediaTypeLower.includes('nba') || mediaTypeLower.includes('mlb') ||
-          mediaTypeLower.includes('nhl') || mediaTypeLower.includes('ncaa')) {
-        score += 5; // Higher score for sports-related media when searching for sports
-        // Add matched terms for sports-related media
-        expandedTerms.forEach(term => {
-          if (mediaTypeLower.includes(term) || term.includes(mediaTypeLower)) {
-            matchedTerms.add(term);
-          }
-        });
-      } else if (expandedTerms.some(term => mediaTypeLower.includes(term))) {
-        score += 3; // Equal to genres partial match
-        expandedTerms.forEach(term => {
-          if (mediaTypeLower.includes(term)) {
-            matchedTerms.add(term);
-          }
-        });
-      }
-    } else {
-      // Regular media usage scoring - equal weight to genres
-      if (expandedTerms.some(term => mediaTypeLower === term)) {
-        score += 5; // Equal to genres exact match
-        expandedTerms.forEach(term => {
-          if (mediaTypeLower === term) {
-            matchedTerms.add(term);
-          }
-        });
-      } else if (expandedTerms.some(term => mediaTypeLower.includes(term) || term.includes(mediaTypeLower))) {
-        score += 3; // Equal to genres partial match
-        expandedTerms.forEach(term => {
-          if (mediaTypeLower.includes(term) || term.includes(mediaTypeLower)) {
-            matchedTerms.add(term);
-          }
-        });
-      }
-    }
-  });
+  // Check mood matches
+  const moodMatch = fieldContainsTerms(track.moods, searchTerms);
+  if (moodMatch.matched) {
+    score += 4 * moodMatch.matchedTerms.length; // +4 per matched term
+    moodMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
-  // Check instruments (+1 for each match)
-  const trackInstruments = parseArrayField(track.instruments);
-  trackInstruments.forEach((instrument: string) => {
-    if (expandedTerms.some(term => instrument.toLowerCase().includes(term))) {
-      score += 1;
-      expandedTerms.forEach(term => {
-        if (instrument.toLowerCase().includes(term)) {
-          matchedTerms.add(term);
-        }
-      });
-    }
-  });
+  // Check instrument matches
+  const instrumentMatch = fieldContainsTerms(track.instruments, searchTerms);
+  if (instrumentMatch.matched) {
+    score += 3 * instrumentMatch.matchedTerms.length; // +3 per matched term
+    instrumentMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
+  
+  // Check media usage matches
+  const mediaMatch = fieldContainsTerms(track.media_usage, searchTerms);
+  if (mediaMatch.matched) {
+    score += 2 * mediaMatch.matchedTerms.length; // +2 per matched term
+    mediaMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
   
   // Heavy penalty for tracks that don't match genre terms when genre terms are present
   if (genreTerms.size > 0) {
@@ -304,10 +307,19 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
   }
   
   // Bonus for tracks that match multiple search terms
-  const matchRatio = matchedTerms.size / searchTerms.length;
+  const matchRatio = matchedTerms.size / expandedTerms.length;
   if (matchRatio > 0.5) {
     score += matchRatio * 5;
   }
+  
+  // Bonus for exact matches vs partial matches
+  const exactMatches = Array.from(matchedTerms).filter(term => {
+    const normalizedTerm = normalizeText(term);
+    const trackText = normalizeText(track.title + ' ' + track.artist + ' ' + (track.genres || []).join(' '));
+    return trackText.includes(normalizedTerm);
+  });
+  
+  score += exactMatches.length * 2; // +2 bonus for each exact match
   
   return score;
 };
@@ -403,10 +415,6 @@ export function CatalogPage() {
            has_vocals,
            vocals_usage_type,
            is_sync_only,
-           contains_loops,
-           contains_samples,
-           contains_splice_loops,
-           samples_cleared,
            track_producer_id,
            producer:profiles!track_producer_id (
              id,
@@ -445,12 +453,7 @@ export function CatalogPage() {
            query = query.eq('has_vocals', false);
          }
 
-         // Apply Exclude Uncleared Samples filter
-         if (filters?.excludeUnclearedSamples === true) {
-           // Exclude tracks with uncleared samples or loops
-           // Only show tracks that either don't contain samples/loops, or have cleared samples
-           query = query.or('contains_samples.eq.false,contains_loops.eq.false,contains_splice_loops.eq.false,samples_cleared.eq.true');
-         }
+
 
         // Build flexible search with synonym expansion
         const searchTerms: string[] = [];
