@@ -71,7 +71,7 @@ type Application = {
   requires_review?: boolean;
 };
 
-type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined' | 'all';
+type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined' | 'manual_review' | 'all';
 
 export default function ProducerApplicationsAdmin() {
   const navigate = useNavigate();
@@ -93,6 +93,7 @@ export default function ProducerApplicationsAdmin() {
     onboarded: 0,
     save_for_later: 0,
     declined: 0,
+    manual_review: 0,
     all: 0
   });
 
@@ -126,6 +127,9 @@ export default function ProducerApplicationsAdmin() {
       ).length,
       declined: allApplications.filter(app => 
         app.status === 'declined' || app.is_auto_rejected
+      ).length,
+      manual_review: allApplications.filter(app => 
+        app.status === 'manual_review'
       ).length,
       all: allApplications.length
     };
@@ -284,6 +288,10 @@ export default function ProducerApplicationsAdmin() {
         case 'declined':
           // Include both manually declined and auto-rejected applications
           query = query.or('status.eq.declined,is_auto_rejected.eq.true');
+          break;
+        case 'manual_review':
+          // Show applications that need manual review
+          query = query.eq('status', 'manual_review');
           break;
         case 'all':
           // Show all applications without filtering
@@ -840,6 +848,22 @@ export default function ProducerApplicationsAdmin() {
           </div>
         </button>
         <button
+          onClick={() => setActiveTab('manual_review')}
+          className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+            activeTab === 'manual_review'
+              ? 'bg-orange-600 text-white'
+              : 'text-gray-300 hover:text-white hover:bg-orange-500/10'
+          }`}
+        >
+          <div className="flex items-center justify-center space-x-2">
+            <Clock className="w-4 h-4" />
+            <span>Manual Review</span>
+            <span className="bg-white/20 px-2 py-1 rounded-full text-xs">
+              {getTabCount('manual_review')}
+            </span>
+          </div>
+        </button>
+        <button
           onClick={() => setActiveTab('all')}
           className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
             activeTab === 'all'
@@ -1048,7 +1072,7 @@ export default function ProducerApplicationsAdmin() {
                         Manual Invite
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'save_for_later', 'Tier 2')}
+                        onClick={() => updateApplicationStatus(app.id, 'manual_review', 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
@@ -1164,6 +1188,50 @@ export default function ProducerApplicationsAdmin() {
                       </Button>
                     </>
                   )}
+                  {activeTab === 'manual_review' && (
+                    <>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'new')}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 1')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 1)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Invite (Tier 2)
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later')}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => updateApplicationStatus(app.id, 'declined')}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+
                   {activeTab === 'declined' && (
                     <>
                       <Button
