@@ -241,49 +241,49 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
   }
   
   // Check title matches (highest priority)
-  const titleMatch = fieldContainsTerms(track.title, searchTerms);
+  const titleMatch = fieldContainsTerms(track.title, expandedTerms);
   if (titleMatch.matched) {
     score += 10 * titleMatch.matchedTerms.length; // +10 per matched term
     titleMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check artist matches (high priority)
-  const artistMatch = fieldContainsTerms(track.artist, searchTerms);
+  const artistMatch = fieldContainsTerms(track.artist, expandedTerms);
   if (artistMatch.matched) {
     score += 8 * artistMatch.matchedTerms.length; // +8 per matched term
     artistMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check genre matches
-  const genreMatch = fieldContainsTerms(track.genres, searchTerms);
+  const genreMatch = fieldContainsTerms(track.genres, expandedTerms);
   if (genreMatch.matched) {
     score += 6 * genreMatch.matchedTerms.length; // +6 per matched term
     genreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check sub-genre matches
-  const subGenreMatch = fieldContainsTerms(track.sub_genres, searchTerms);
+  const subGenreMatch = fieldContainsTerms(track.sub_genres, expandedTerms);
   if (subGenreMatch.matched) {
     score += 5 * subGenreMatch.matchedTerms.length; // +5 per matched term
     subGenreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check mood matches
-  const moodMatch = fieldContainsTerms(track.moods, searchTerms);
+  const moodMatch = fieldContainsTerms(track.moods, expandedTerms);
   if (moodMatch.matched) {
     score += 4 * moodMatch.matchedTerms.length; // +4 per matched term
     moodMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check instrument matches
-  const instrumentMatch = fieldContainsTerms(track.instruments, searchTerms);
+  const instrumentMatch = fieldContainsTerms(track.instruments, expandedTerms);
   if (instrumentMatch.matched) {
     score += 3 * instrumentMatch.matchedTerms.length; // +3 per matched term
     instrumentMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
   // Check media usage matches
-  const mediaMatch = fieldContainsTerms(track.media_usage, searchTerms);
+  const mediaMatch = fieldContainsTerms(track.media_usage, expandedTerms);
   if (mediaMatch.matched) {
     score += 2 * mediaMatch.matchedTerms.length; // +2 per matched term
     mediaMatch.matchedTerms.forEach(term => matchedTerms.add(term));
@@ -824,16 +824,16 @@ export function CatalogPage() {
       
       const matchRatio = matchedTerms.length / uniqueSearchTerms.length;
       
-      // Exact match: track matches ALL search terms (100% match)
-      if (matchRatio === 1 && uniqueSearchTerms.length > 0) {
+      // Exact match: track matches ALL search terms (100% match) OR has high score
+      if ((matchRatio === 1 && uniqueSearchTerms.length > 0) || score >= 8) {
         exactMatches.push(track);
       }
-      // Partial match: track matches SOME search terms but not all (between 25% and 99%)
-      else if (matchRatio >= 0.25 && matchRatio < 1) {
+      // Partial match: track matches SOME search terms (between 10% and 99%) OR has medium score
+      else if ((matchRatio >= 0.1 && matchRatio < 1) || (score >= 3 && score < 8)) {
         partialMatches.push(track);
       }
-      // Other tracks: low match ratio or no search terms
-      else {
+      // Other tracks: low match ratio or no search terms but still relevant
+      else if (score > 0) {
         otherTracks.push(track);
       }
     });
