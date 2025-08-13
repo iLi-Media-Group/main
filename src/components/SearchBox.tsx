@@ -79,29 +79,18 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
       }
     });
     
-    const newFilters = {
-      ...filters,
+    setFilters(prev => ({
+      ...prev,
       query: value,
       genres: detectedGenres,
       moods: detectedMoods,
       instruments: detectedInstruments,
       mediaTypes: detectedMediaTypes
-    };
-    
-    setFilters(newFilters);
-    
-    // Trigger search immediately when typing (with debounce)
-    if (value.trim()) {
-      onSearch(newFilters);
-    }
+    }));
   };
 
   const handleFilterChange = (filterType: keyof SearchFilters, value: any) => {
-    const newFilters = { ...filters, [filterType]: value };
-    setFilters(newFilters);
-    
-    // Trigger search immediately when filters change
-    onSearch(newFilters);
+    setFilters(prev => ({ ...prev, [filterType]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
