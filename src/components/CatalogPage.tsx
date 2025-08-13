@@ -213,18 +213,30 @@ const calculateMatchScore = (track: any, searchTerms: string[], synonymsMap: { [
     artistMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
-  // Check genre matches
+  // Check genre matches with hierarchy awareness
   const genreMatch = fieldContainsTerms(track.genres, expandedTerms);
   if (genreMatch.matched) {
     score += 6 * genreMatch.matchedTerms.length; // +6 per matched term
     genreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
   }
   
-  // Check sub-genre matches
+  // Check sub-genre matches with higher priority for specific sub-genres
   const subGenreMatch = fieldContainsTerms(track.sub_genres, expandedTerms);
   if (subGenreMatch.matched) {
-    score += 5 * subGenreMatch.matchedTerms.length; // +5 per matched term
+    // Higher score for sub-genre matches to prioritize specific genres over general ones
+    score += 8 * subGenreMatch.matchedTerms.length; // +8 per matched term (higher than genre)
     subGenreMatch.matchedTerms.forEach(term => matchedTerms.add(term));
+  }
+  
+  // Check for exact sub-genre matches (highest priority)
+  const trackSubGenres = parseArrayField(track.sub_genres).map(sg => sg.toLowerCase());
+  for (const searchTerm of searchTerms) {
+    const searchTermLower = searchTerm.toLowerCase();
+    if (trackSubGenres.includes(searchTermLower)) {
+      // Exact sub-genre match gets highest score
+      score += 15; // +15 for exact sub-genre match
+      matchedTerms.add(searchTerm);
+    }
   }
   
   // Check mood matches
@@ -763,7 +775,7 @@ export function CatalogPage() {
         track.artist?.toLowerCase() || ''
       ]);
       
-      // Check how many search terms the track matches
+      // Check how many search terms the track matches with specific requirements
       const matchedTerms = uniqueSearchTerms.filter(searchTerm => {
         // Check if any track attribute contains or matches the search term
         return Array.from(trackAttributes).some(attr => 
@@ -773,16 +785,42 @@ export function CatalogPage() {
       
       const matchRatio = matchedTerms.length / uniqueSearchTerms.length;
       
-      // Exact match: track matches ALL search terms (100% match) OR has high score
-      if ((matchRatio === 1 && uniqueSearchTerms.length > 0) || score >= 8) {
+      // Check for specific requirements (vocals, sync-only, etc.)
+      const searchQuery = uniqueSearchTerms.join(' ').toLowerCase();
+      const requiresVocals = searchQuery.includes('vocals') || searchQuery.includes('vocal') || searchQuery.includes('singing');
+      const requiresSyncOnly = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
+      const requiresTV = searchQuery.includes('tv') || searchQuery.includes('television') || searchQuery.includes('tv-friendly');
+      
+      // Check if track meets specific requirements
+      const hasVocals = track.has_vocals === true;
+      const isSyncOnly = track.is_sync_only === true;
+      const hasTV = parseArrayField(track.media_usage).some(usage => 
+        usage.toLowerCase().includes('television') || usage.toLowerCase().includes('tv')
+      );
+      
+      // Calculate requirement score
+      let requirementScore = 0;
+      if (requiresVocals && hasVocals) requirementScore += 1;
+      if (requiresSyncOnly && isSyncOnly) requirementScore += 1;
+      if (requiresTV && hasTV) requirementScore += 1;
+      
+      const totalRequirements = [requiresVocals, requiresSyncOnly, requiresTV].filter(Boolean).length;
+      const requirementRatio = totalRequirements > 0 ? requirementScore / totalRequirements : 1;
+      
+      // Exact match: track matches ALL search terms AND meets ALL specific requirements
+      if (matchRatio === 1 && requirementRatio === 1 && uniqueSearchTerms.length > 0) {
         exactMatches.push(track);
       }
-      // Partial match: track matches SOME search terms (between 10% and 99%) OR has medium score
-      else if ((matchRatio >= 0.1 && matchRatio < 1) || (score >= 3 && score < 8)) {
+      // High score match: track has very high search score even if not all terms match
+      else if (score >= 15) {
+        exactMatches.push(track);
+      }
+      // Partial match: track matches SOME search terms OR meets SOME requirements
+      else if ((matchRatio >= 0.5 && matchRatio < 1) || (requirementRatio >= 0.5 && requirementRatio < 1) || (score >= 8 && score < 15)) {
         partialMatches.push(track);
       }
-      // Other tracks: low match ratio or no search terms but still relevant
-      else if (score > 0) {
+      // Other tracks: low match ratio but still relevant
+      else if (score >= 3) {
         otherTracks.push(track);
       }
     });
