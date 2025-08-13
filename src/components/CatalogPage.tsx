@@ -727,60 +727,69 @@ export function CatalogPage() {
             const partial = tracks.filter(track => (track.searchScore || 0) >= 3 && (track.searchScore || 0) < 10);
             const other = tracks.filter(track => (track.searchScore || 0) < 3);
             
-            return (
-              <>
-                {/* Exact Matches */}
-                {exact.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {exact.map((track: any) => (
-                        <TrackCard
-                          key={track.id}
-                          track={track}
-                          onSelect={() => handleTrackSelect(track)}
-                          searchCategory="exact"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                         return (
+               <>
+                 {/* Exact Matches */}
+                 {exact.length > 0 && (
+                   <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {exact.map((track: any) => (
+                         <TrackCard
+                           key={track.id}
+                           track={track}
+                           onSelect={() => handleTrackSelect(track)}
+                           searchCategory="exact"
+                         />
+                       ))}
+                     </div>
+                   </div>
+                 )}
 
-                {/* Partial Matches */}
-                {partial.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {partial.map((track: any) => (
-                        <TrackCard
-                          key={track.id}
-                          track={track}
-                          onSelect={() => handleTrackSelect(track)}
-                          searchCategory="partial"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
+                 {/* No Exact Matches Message */}
+                 {exact.length === 0 && (partial.length > 0 || other.length > 0) && (
+                   <div className="mb-6 p-4 glass-card rounded-lg">
+                     <p className="text-yellow-400 text-lg font-medium">
+                       No exact matches found for your search criteria, but here are some related tracks:
+                     </p>
+                   </div>
+                 )}
 
-                {/* Other Tracks */}
-                {other.length > 0 && (
-                  <div>
-                    <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                      {other.map((track: any) => (
-                        <TrackCard
-                          key={track.id}
-                          track={track}
-                          onSelect={() => handleTrackSelect(track)}
-                          searchCategory="other"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            );
+                 {/* Partial Matches */}
+                 {partial.length > 0 && (
+                   <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {partial.map((track: any) => (
+                         <TrackCard
+                           key={track.id}
+                           track={track}
+                           onSelect={() => handleTrackSelect(track)}
+                           searchCategory="partial"
+                         />
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Other Tracks */}
+                 {other.length > 0 && (
+                   <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {other.map((track: any) => (
+                         <TrackCard
+                           key={track.id}
+                           track={track}
+                           onSelect={() => handleTrackSelect(track)}
+                           searchCategory="other"
+                         />
+                       ))}
+                     </div>
+                   </div>
+                 )}
+               </>
+             );
           })()}
         </div>
       )}

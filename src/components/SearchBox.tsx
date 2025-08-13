@@ -189,16 +189,29 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
           />
         </div>
 
-        {/* Filters Toggle */}
+        {/* Filters Toggle and Sample Clearance Toggle */}
         <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            className="flex items-center space-x-2 text-white hover:text-blue-300 transition-colors"
-          >
-            <Sliders className="w-5 h-5" />
-            <span>Advanced Filters</span>
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              className="flex items-center space-x-2 text-white hover:text-blue-300 transition-colors"
+            >
+              <Sliders className="w-5 h-5" />
+              <span>Advanced Filters</span>
+            </button>
+            
+            {/* Exclude Uncleared Samples/Loops Toggle */}
+            <label className="flex items-center space-x-2 text-white hover:text-blue-300 transition-colors cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.excludeUnclearedSamples === true}
+                onChange={(e) => handleFilterChange('excludeUnclearedSamples', e.target.checked ? true : undefined)}
+                className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm">Exclude Uncleared Samples/Loops</span>
+            </label>
+          </div>
           
           <div className="flex space-x-2">
             <button
@@ -407,17 +420,6 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
                       className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
                     />
                     <span className="text-white text-sm">Tracks with Vocals</span>
-                  </label>
-                </div>
-                <div>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={filters.excludeUnclearedSamples === true}
-                      onChange={(e) => handleFilterChange('excludeUnclearedSamples', e.target.checked ? true : undefined)}
-                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
-                    />
-                    <span className="text-white text-sm">Exclude Tracks with Uncleared Samples/Loops</span>
                   </label>
                 </div>
               </div>
