@@ -103,15 +103,14 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
 
       if (searchError) throw searchError;
 
-      // Get license history
+      // Get license history - use sales table instead of licenses
       const { data: licenseData, error: licenseError } = await supabase
-        .from('licenses')
+        .from('sales')
         .select(`
           track_id,
-          tracks!inner (
+          track:tracks (
             id,
             title,
-            artist,
             genres,
             sub_genres,
             moods,
@@ -119,7 +118,7 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
             media_usage
           )
         `)
-        .eq('user_id', user.id)
+        .eq('buyer_id', user.id)
         .order('created_at', { ascending: false })
         .limit(50);
 
