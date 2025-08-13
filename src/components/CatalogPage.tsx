@@ -15,66 +15,7 @@ import { useSynonyms } from '../hooks/useSynonyms';
 
 const TRACKS_PER_PAGE = 20;
 
-// Basic search function - starting fresh
-function basicSearch(tracks: any[], searchQuery: string, genres: string[], moods: string[], instruments: string[]) {
-  console.log('🔍 Basic Search - Query:', searchQuery, 'Genres:', genres, 'Moods:', moods, 'Instruments:', instruments);
-  console.log('🔍 Total tracks to search:', tracks.length);
-  
-  // If no search criteria, return all tracks
-  if (!searchQuery?.trim() && !genres?.length && !moods?.length && !instruments?.length) {
-    console.log('🔍 No search criteria, returning all tracks');
-    return tracks;
-  }
-  
-  const query = searchQuery?.toLowerCase().trim() || '';
-  
-  return tracks.filter(track => {
-    let matches = false;
-    
-    // Check text query against title, artist, genres, moods, instruments
-    if (query) {
-      const searchableText = [
-        track.title,
-        track.artist,
-        track.genres?.join(' '),
-        track.sub_genres?.join(' '),
-        track.moods?.join(' '),
-        track.instruments?.join(' '),
-        track.media_usage?.join(' ')
-      ].filter(Boolean).join(' ').toLowerCase();
-      
-      if (searchableText.includes(query)) {
-        matches = true;
-      }
-    }
-    
-    // Check genre filters
-    if (genres?.length) {
-      const trackGenres = track.genres || [];
-      if (genres.some(genre => trackGenres.includes(genre))) {
-        matches = true;
-      }
-    }
-    
-    // Check mood filters
-    if (moods?.length) {
-      const trackMoods = track.moods || [];
-      if (moods.some(mood => trackMoods.includes(mood))) {
-        matches = true;
-      }
-    }
-    
-    // Check instrument filters
-    if (instruments?.length) {
-      const trackInstruments = track.instruments || [];
-      if (instruments.some(instrument => trackInstruments.includes(instrument))) {
-        matches = true;
-      }
-    }
-    
-    return matches;
-  });
-}
+
 
 // Helper function to get persistent filter preferences
 const getPersistentFilters = (): any => {
@@ -245,22 +186,10 @@ export function CatalogPage() {
           ...(filters?.mediaTypes || [])
         ].filter(Boolean).join(' ');
 
-        console.log('🎵 About to call basicSearch with:', {
-          allTracksCount: allTracks.length,
-          combinedSearchTerms,
-          allGenres,
-          allMoods,
-          allInstruments
-        });
-
-        // Apply basic search
-        let processedTracks = basicSearch(
-          allTracks,
-          combinedSearchTerms,
-          allGenres,
-          allMoods,
-          allInstruments
-        );
+        console.log('🎵 No search process - just displaying all tracks');
+        
+        // No search process - just use all tracks
+        let processedTracks = allTracks;
 
         // Sort by date (newest first)
         processedTracks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
