@@ -506,37 +506,44 @@ export function CatalogPage() {
             const producer = Array.isArray(track.producer) ? track.producer[0] : track.producer;
             return {
               id: track.id,
-              title: track.title,
-              artist: track.artist,
-              genres: track.genres,
-              sub_genres: track.sub_genres,
-              moods: track.moods,
-              instruments: track.instruments,
-              media_usage: track.media_usage,
+              title: track.title || 'Untitled',
+              artist: producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
+              instruments: parseArrayField(track.instruments),
+              mediaUsage: parseArrayField(track.media_usage),
+              duration: track.duration || '3:30',
               bpm: track.bpm,
-              audio_url: track.audio_url,
-              image_url: track.image_url,
-              has_sting_ending: track.has_sting_ending,
-              is_one_stop: track.is_one_stop,
-              duration: track.duration,
-              mp3_url: track.mp3_url,
-              trackouts_url: track.trackouts_url,
-              stems_url: track.stems_url,
-              has_vocals: track.has_vocals,
-              vocals_usage_type: track.vocals_usage_type,
-              is_sync_only: track.is_sync_only,
-              track_producer_id: track.track_producer_id,
-              created_at: track.created_at,
-              contains_loops: track.contains_loops,
-              contains_samples: track.contains_samples,
-              contains_splice_loops: track.contains_splice_loops,
-              samples_cleared: track.samples_cleared,
-              producer: {
-                id: producer?.id,
-                first_name: producer?.first_name,
-                last_name: producer?.last_name,
-                email: producer?.email,
-                avatar_path: producer?.avatar_path
+              audioUrl: track.audio_url,
+              image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
+              producer: producer ? {
+                id: producer.id,
+                firstName: producer.first_name || '',
+                lastName: producer.last_name || '',
+                email: producer.email || '',
+              } : undefined,
+              fileFormats: {
+                stereoMp3: {
+                  format: ['mp3'],
+                  url: track.mp3_url || ''
+                },
+                stems: {
+                  format: ['wav', 'aiff'],
+                  url: track.trackouts_url || ''
+                },
+                stemsWithVocals: {
+                  format: ['wav', 'aiff'],
+                  url: track.stems_url || ''
+                }
               },
               pricing: {
                 stereoMp3: 0,
@@ -596,8 +603,7 @@ export function CatalogPage() {
             )
           `)
           .is('deleted_at', null)
-          .order('created_at', { ascending: false })
-          .range((currentPage - 1) * TRACKS_PER_PAGE, currentPage * TRACKS_PER_PAGE - 1);
+          .order('created_at', { ascending: false });
 
         // Apply persistent filters
         if (filters?.syncOnly === true) {
@@ -630,37 +636,44 @@ export function CatalogPage() {
             const producer = Array.isArray(track.producer) ? track.producer[0] : track.producer;
             return {
               id: track.id,
-              title: track.title,
-              artist: track.artist,
-              genres: track.genres,
-              sub_genres: track.sub_genres,
-              moods: track.moods,
-              instruments: track.instruments,
-              media_usage: track.media_usage,
+              title: track.title || 'Untitled',
+              artist: producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
+              instruments: parseArrayField(track.instruments),
+              mediaUsage: parseArrayField(track.media_usage),
+              duration: track.duration || '3:30',
               bpm: track.bpm,
-              audio_url: track.audio_url,
-              image_url: track.image_url,
-              has_sting_ending: track.has_sting_ending,
-              is_one_stop: track.is_one_stop,
-              duration: track.duration,
-              mp3_url: track.mp3_url,
-              trackouts_url: track.trackouts_url,
-              stems_url: track.stems_url,
-              has_vocals: track.has_vocals,
-              vocals_usage_type: track.vocals_usage_type,
-              is_sync_only: track.is_sync_only,
-              track_producer_id: track.track_producer_id,
-              created_at: track.created_at,
-              contains_loops: track.contains_loops,
-              contains_samples: track.contains_samples,
-              contains_splice_loops: track.contains_splice_loops,
-              samples_cleared: track.samples_cleared,
-              producer: {
-                id: producer?.id,
-                first_name: producer?.first_name,
-                last_name: producer?.last_name,
-                email: producer?.email,
-                avatar_path: producer?.avatar_path
+              audioUrl: track.audio_url,
+              image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
+              producer: producer ? {
+                id: producer.id,
+                firstName: producer.first_name || '',
+                lastName: producer.last_name || '',
+                email: producer.email || '',
+              } : undefined,
+              fileFormats: {
+                stereoMp3: {
+                  format: ['mp3'],
+                  url: track.mp3_url || ''
+                },
+                stems: {
+                  format: ['wav', 'aiff'],
+                  url: track.trackouts_url || ''
+                },
+                stemsWithVocals: {
+                  format: ['wav', 'aiff'],
+                  url: track.stems_url || ''
+                }
               },
               pricing: {
                 stereoMp3: 0,
@@ -768,12 +781,12 @@ export function CatalogPage() {
     tracks.forEach(track => {
       const score = track.searchScore || 0;
       
-      // Check if track matches ALL search terms (exact match)
-      const trackGenres = parseArrayField(track.genres).map(g => g.toLowerCase());
-      const trackSubGenres = parseArrayField(track.sub_genres).map(sg => sg.toLowerCase());
-      const trackMoods = parseArrayField(track.moods).map(m => m.toLowerCase());
-      const trackInstruments = parseArrayField(track.instruments).map(i => i.toLowerCase());
-      const trackMediaUsage = parseArrayField(track.media_usage).map(mu => mu.toLowerCase());
+             // Check if track matches ALL search terms (exact match)
+       const trackGenres = parseArrayField(track.genres).map(g => g.toLowerCase());
+       const trackSubGenres = parseArrayField(track.subGenres).map(sg => sg.toLowerCase());
+       const trackMoods = parseArrayField(track.moods).map(m => m.toLowerCase());
+       const trackInstruments = parseArrayField(track.instruments).map(i => i.toLowerCase());
+       const trackMediaUsage = parseArrayField(track.mediaUsage).map(mu => mu.toLowerCase());
       
       // Create a set of all track attributes for easy matching
       const trackAttributes = new Set([
@@ -802,12 +815,12 @@ export function CatalogPage() {
       const requiresSyncOnly = searchQuery.includes('sync only') || searchQuery.includes('sync-only') || searchQuery.includes('synconly');
       const requiresTV = searchQuery.includes('tv') || searchQuery.includes('television') || searchQuery.includes('tv-friendly');
       
-      // Check if track meets specific requirements
-      const hasVocals = track.has_vocals === true;
-      const isSyncOnly = track.is_sync_only === true;
-      const hasTV = parseArrayField(track.media_usage).some(usage => 
-        usage.toLowerCase().includes('television') || usage.toLowerCase().includes('tv')
-      );
+             // Check if track meets specific requirements
+       const hasVocals = track.hasVocals === true;
+       const isSyncOnly = track.isSyncOnly === true;
+       const hasTV = parseArrayField(track.mediaUsage).some(usage => 
+         usage.toLowerCase().includes('television') || usage.toLowerCase().includes('tv')
+       );
       
       // Calculate requirement score
       let requirementScore = 0;
@@ -908,15 +921,15 @@ export function CatalogPage() {
             return exactMatches.length > 0 ? (
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {exactMatches.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onClick={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                   {exactMatches.map(track => (
+                     <TrackCard
+                       key={track.id}
+                       track={track}
+                       onSelect={() => handleTrackSelect(track)}
+                     />
+                   ))}
+                 </div>
               </div>
             ) : null;
           })()}
@@ -927,15 +940,15 @@ export function CatalogPage() {
             return partialMatches.length > 0 ? (
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {partialMatches.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onClick={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                   {partialMatches.map(track => (
+                     <TrackCard
+                       key={track.id}
+                       track={track}
+                       onSelect={() => handleTrackSelect(track)}
+                     />
+                   ))}
+                 </div>
               </div>
             ) : null;
           })()}
@@ -946,15 +959,15 @@ export function CatalogPage() {
             return otherTracks.length > 0 ? (
               <div>
                 <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {otherTracks.map(track => (
-                    <TrackCard
-                      key={track.id}
-                      track={track}
-                      onClick={() => handleTrackSelect(track)}
-                    />
-                  ))}
-                </div>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                   {otherTracks.map(track => (
+                     <TrackCard
+                       key={track.id}
+                       track={track}
+                       onSelect={() => handleTrackSelect(track)}
+                     />
+                   ))}
+                 </div>
               </div>
             ) : null;
           })()}
