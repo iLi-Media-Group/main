@@ -394,6 +394,8 @@ export function CatalogPage() {
   };
 
   const handleSearch = async (searchFilters: any) => {
+    console.log('🚀 handleSearch called with:', searchFilters);
+    
     // Convert search terms to lowercase and remove extra spaces
     const normalizedFilters = {
       ...searchFilters,
@@ -408,6 +410,8 @@ export function CatalogPage() {
       excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
     };
 
+    console.log('🚀 Normalized filters:', normalizedFilters);
+
     // Save persistent filters
     savePersistentFilters({
       excludeUnclearedSamples: normalizedFilters.excludeUnclearedSamples,
@@ -417,6 +421,7 @@ export function CatalogPage() {
 
     // Set filters for categorization
     setFilters(normalizedFilters);
+    setCurrentFilters(normalizedFilters);
 
     // Update URL with search params
     const params = new URLSearchParams();
@@ -434,6 +439,10 @@ export function CatalogPage() {
 
     // Update URL without reloading the page
     navigate(`/catalog?${params.toString()}`, { replace: true });
+    
+    // IMMEDIATELY fetch tracks with the new filters
+    console.log('🚀 Calling fetchTracks immediately with:', normalizedFilters);
+    await fetchTracks(normalizedFilters, 1);
     
     // Log the search query to the database
     await logSearchFromFilters(normalizedFilters);
