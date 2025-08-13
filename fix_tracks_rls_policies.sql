@@ -1,59 +1,52 @@
--- Fix RLS policies for tracks table to use correct column name
--- The tracks table uses 'track_producer_id' but policies still reference 'producer_id'
+-- Fix conflicting RLS policies on tracks table
+-- First, disable RLS to clear all policies
+ALTER TABLE tracks DISABLE ROW LEVEL SECURITY;
 
--- Drop existing policies
-DROP POLICY IF EXISTS "Producers can insert own tracks" ON tracks;
-DROP POLICY IF EXISTS "Producers can update own tracks" ON tracks;
-DROP POLICY IF EXISTS "Producers can delete own tracks" ON tracks;
-DROP POLICY IF EXISTS "Tracks are viewable by everyone" ON tracks;
+-- Drop all existing policies to start fresh
+DROP POLICY IF EXISTS tracks_delete_policy ON tracks;
+DROP POLICY IF EXISTS tracks_insert_policy ON tracks;
+DROP POLICY IF EXISTS tracks_select_policy ON tracks;
+DROP POLICY IF EXISTS tracks_update_policy ON tracks;
 
--- Create new policies with correct column name
-CREATE POLICY "Producers can insert own tracks" ON tracks
-  FOR INSERT
-  WITH CHECK (
-    auth.uid() = track_producer_id 
-    AND EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() 
-      AND account_type = ANY (ARRAY['producer', 'admin', 'admin,producer'])
-    )
-  );
+-- Re-enable RLS
+ALTER TABLE tracks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Producers can update own tracks" ON tracks
-  FOR UPDATE
-  USING (
-    auth.uid() = track_producer_id
-    OR EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() 
-      AND account_type = 'admin'
-    )
-  );
+-- Create clean, simple policies
+-- SELECT: Everyone can view tracks (no restrictions)
+CREATE POLICY "tracks_select_policy" ON tracks
+FOR SELECT USING (true);
 
-CREATE POLICY "Producers can delete own tracks" ON tracks
-  FOR DELETE
-  USING (
-    auth.uid() = track_producer_id
-    OR EXISTS (
-      SELECT 1 FROM profiles 
-      WHERE id = auth.uid() 
-      AND account_type = 'admin'
-    )
-  );
+-- INSERT: Producers can insert their own tracks
+CREATE POLICY "tracks_insert_policy" ON tracks
+FOR INSERT WITH CHECK (
+  auth.uid() = track_producer_id
+);
 
-CREATE POLICY "Tracks are viewable by everyone" ON tracks
-  FOR SELECT
-  USING (true);
+-- UPDATE: Producers can update their own tracks
+CREATE POLICY "tracks_update_policy" ON tracks
+FOR UPDATE USING (
+  auth.uid() = track_producer_id
+);
 
--- Verify the policies were created correctly
+-- DELETE: Producers can delete their own tracks
+CREATE POLICY "tracks_delete_policy" ON tracks
+FOR DELETE USING (
+  auth.uid() = track_producer_id
+);
+
+-- Verify the policies are set correctly
+SELECT 'Current RLS policies on tracks:' as info;
 SELECT 
-  schemaname,
-  tablename,
   policyname,
   permissive,
   roles,
   cmd,
-  qual
+  qual,
+  with_check
 FROM pg_policies 
 WHERE tablename = 'tracks'
-ORDER BY policyname; 
+ORDER BY policyname;
+
+-- Test that tracks can be queried
+SELECT 'Testing tracks query after RLS fix:' as info;
+SELECT COUNT(*) as track_count FROM tracks; 

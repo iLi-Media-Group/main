@@ -13,6 +13,7 @@ import { TrackClearanceBadges } from './TrackClearanceBadges';
 interface TrackCardProps {
   track: Track;
   onSelect: (track: Track) => void;
+  searchCategory?: 'exact' | 'partial' | 'other';
 }
 
 // Component to handle signed URL generation for track images
@@ -58,7 +59,7 @@ function TrackImage({ track }: { track: Track }) {
   );
 }
 
-export function TrackCard({ track, onSelect }: TrackCardProps) {
+export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
@@ -168,10 +169,24 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     navigate(`/track/${track.id}`);
   };
 
+  // Get border color based on search category
+  const getBorderColor = () => {
+    switch (searchCategory) {
+      case 'exact':
+        return 'border-green-500/40 hover:border-green-500/60';
+      case 'partial':
+        return 'border-yellow-500/40 hover:border-yellow-500/60';
+      case 'other':
+        return 'border-red-500/40 hover:border-red-500/60';
+      default:
+        return 'border-blue-500/20 hover:border-blue-500/40';
+    }
+  };
+
   return (
     <>
       <div 
-        className="group relative bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden transition-all duration-300 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
+        className={`group relative bg-white/5 backdrop-blur-sm rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer ${getBorderColor()}`}
         onClick={handleCardClick}
       >
         {/* Image Section */}
