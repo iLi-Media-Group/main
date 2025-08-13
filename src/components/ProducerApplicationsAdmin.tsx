@@ -168,11 +168,42 @@ export default function ProducerApplicationsAdmin() {
         rejection_reason: ranking.rejectionReason
       };
 
-      // Note: Auto-rejection status updates are handled separately to avoid infinite loops
-      // The ranking calculation is for display purposes only
+      // Update the database if auto-rejection status has changed
+      if (ranking.isAutoRejected !== app.is_auto_rejected) {
+        updateAutoRejectionStatus(app.id, ranking.isAutoRejected, ranking.rejectionReason);
+      }
 
       return updatedApp;
     });
+  };
+
+  const updateAutoRejectionStatus = async (applicationId: string, isAutoRejected: boolean, rejectionReason?: string) => {
+    try {
+      const updateData: any = {
+        is_auto_rejected: isAutoRejected,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (rejectionReason) {
+        updateData.rejection_reason = rejectionReason;
+      }
+      
+      // If auto-rejected, also set status to 'declined'
+      if (isAutoRejected) {
+        updateData.status = 'declined';
+      }
+
+      const { error } = await supabase
+        .from('producer_applications')
+        .update(updateData)
+        .eq('id', applicationId);
+
+      if (error) {
+        console.error('Error updating auto-rejection status:', error);
+      }
+    } catch (err) {
+      console.error('Error updating auto-rejection status:', err);
+    }
   };
 
   // Add this function to fetch all applications for tab counts
@@ -972,7 +1003,7 @@ export default function ProducerApplicationsAdmin() {
                         Manual Invite
                       </Button>
                       <Button
-                        onClick={() => updateApplicationStatus(app.id, 'invited', 'Tier 2')}
+                        onClick={() => updateApplicationStatus(app.id, 'save_for_later', 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
                       >
