@@ -80,6 +80,7 @@ import { PlaylistManager } from './components/PlaylistManager';
 import { PlaylistView } from './components/PlaylistView';
 import { PlaylistAnalytics } from './components/PlaylistAnalytics';
 import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
+import { FollowingPage } from './components/FollowingPage';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
@@ -509,13 +510,21 @@ const App = () => {
           </ProtectedRoute>
         } />
                  <Route path="/playlist/:slug" element={<PlaylistView />} />
-         <Route path="/favorited-playlists" element={
-           <ProtectedRoute>
-             <LayoutWrapper>
-               <FavoritedPlaylistsPage />
-             </LayoutWrapper>
-           </ProtectedRoute>
-         } />
+                 <Route path="/favorited-playlists" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FavoritedPlaylistsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/following" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FollowingPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/business-verification" element={
           <ProtectedRoute>

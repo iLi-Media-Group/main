@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
+import { ProducerFollowButton } from './ProducerFollowButton';
 
 interface ProducerProfileDialogProps {
   isOpen: boolean;
@@ -134,7 +135,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
                 />
               </div>
               
-              <div>
+              <div className="flex-1">
                 <h3 className="text-2xl font-bold text-white">
                   {profile.first_name} {profile.last_name}
                 </h3>
@@ -152,6 +153,13 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
                     Producer ID: {profile.producer_number}
                   </p>
                 )}
+              </div>
+              
+              <div className="flex-shrink-0">
+                <ProducerFollowButton
+                  producerId={producerId}
+                  producerName={`${profile.first_name} ${profile.last_name}`.trim() || 'Producer'}
+                />
               </div>
             </div>
 

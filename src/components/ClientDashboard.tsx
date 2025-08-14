@@ -24,6 +24,7 @@ import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
 import DiscountCodesSection from './DiscountCodesSection';
 import { AudioPlayer } from './AudioPlayer';
 import { FavoritedPlaylists } from './FavoritedPlaylists';
+import { Following } from './Following';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -2883,6 +2884,8 @@ const getPlanLevel = (plan: string): number => {
             </div>
 
             <FavoritedPlaylists />
+
+            <Following />
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <h3 className="text-xl font-bold text-white mb-4">New Tracks</h3>
