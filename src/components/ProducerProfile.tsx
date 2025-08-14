@@ -16,6 +16,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const { user } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [producerNumber, setProducerNumber] = useState('');
@@ -63,6 +64,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
+        setDisplayName(data.display_name || '');
         setEmail(data.email || '');
         setCompanyName(data.company_name || '');
         setProducerNumber(data.producer_number || '');
@@ -114,6 +116,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          display_name: displayName.trim() || null,
           company_name: companyName.trim() || null,
           phone_number: phoneNumber.trim() || null,
           street_address: streetAddress.trim() || null,
@@ -287,6 +290,25 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Name (Artist Name)
+              </label>
+              <div className="relative">
+                <Music className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Your artist name or stage name"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                This will be used in welcome messages and can be your artist/stage name
+              </p>
             </div>
 
             <div>

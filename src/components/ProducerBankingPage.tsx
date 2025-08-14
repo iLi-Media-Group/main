@@ -49,7 +49,7 @@ export function ProducerBankingPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'sales' | 'withdrawals' | 'adjustments'>('all');
   const [dateRange, setDateRange] = useState<'all' | '30days' | '90days' | 'year'>('30days');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
   const [bucketPercentage, setBucketPercentage] = useState<{
     totalLicenses: number;
     producerLicenses: number;
@@ -103,7 +103,7 @@ export function ProducerBankingPage() {
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, email')
+        .select('first_name, display_name, email')
         .eq('id', user?.id)
         .single();
 
@@ -290,7 +290,7 @@ export function ProducerBankingPage() {
             <h1 className="text-3xl font-bold text-white">Producer Banking</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>

@@ -214,7 +214,7 @@ export function ProducerDashboard() {
   const [sortField, setSortField] = useState<'created_at' | 'title' | 'bpm'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
   const [stats, setStats] = useState({
     totalTracks: 0,
     totalSales: 0,
@@ -364,7 +364,7 @@ export function ProducerDashboard() {
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email')
+        .select('first_name, last_name, display_name, email')
         .eq('id', user.id)
         .single();
 
@@ -987,7 +987,7 @@ export function ProducerDashboard() {
             <h1 className="text-3xl font-bold text-white">Producer Dashboard</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>

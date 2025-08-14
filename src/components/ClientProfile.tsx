@@ -14,6 +14,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
@@ -55,6 +56,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
+        setDisplayName(data.display_name || '');
         setEmail(data.email || '');
         setCompanyName(data.company_name || '');
         setStreetAddress(data.street_address || '');
@@ -103,6 +105,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          display_name: displayName.trim() || null,
           company_name: companyName.trim() || null,
           street_address: streetAddress.trim() || null,
           city: city.trim() || null,
@@ -238,6 +241,25 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Name (Optional)
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full pl-10"
+                  placeholder="Your preferred display name"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                This will be used in welcome messages (defaults to first name if not set)
+              </p>
             </div>
 
             <div>
