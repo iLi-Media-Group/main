@@ -265,12 +265,20 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
-                      <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                        {getDashboardIcon()}
-                        {getDashboardLabel()}
-                      </Link>
-                      {/* Always show Producer Dashboard for admin/producer users */}
-                      {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
+                      {/* Show main dashboard for non-producers, or producer dashboard for producers */}
+                      {(accountType === 'producer' || accountType === 'admin,producer') ? (
+                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <Music className="w-4 h-4 mr-2" />
+                          Producer Dashboard
+                        </Link>
+                      ) : (
+                        <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          {getDashboardIcon()}
+                          {getDashboardLabel()}
+                        </Link>
+                      )}
+                      {/* Show Producer Dashboard for admin users who also have producer access */}
+                      {isAdmin && accountType !== 'producer' && accountType !== 'admin,producer' && (
                         <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <Music className="w-4 h-4 mr-2" />
                           Producer Dashboard
