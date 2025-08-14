@@ -34,7 +34,7 @@ serve(async (req) => {
       type: 'recovery',
       email: email,
       options: {
-        redirectTo: `${Deno.env.get('PUBLIC_SITE_URL') || 'https://mybeatfi.io'}/reset-password`
+        redirectTo: 'https://mybeatfi.io/reset-password'
       }
     });
 
