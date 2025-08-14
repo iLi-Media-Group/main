@@ -243,7 +243,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               </label>
               <button
                 type="button"
-                onClick={() => setShowChangePassword(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowChangePassword(true);
+                }}
                 className="w-full flex items-center justify-center px-4 py-2 bg-blue-950/60 border border-blue-700 hover:bg-blue-900 text-white rounded-lg transition-colors"
               >
                 <Lock className="w-4 h-4 mr-2" />

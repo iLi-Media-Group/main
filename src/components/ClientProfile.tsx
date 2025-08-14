@@ -196,7 +196,11 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
               </label>
               <button
                 type="button"
-                onClick={() => setShowChangePassword(true)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowChangePassword(true);
+                }}
                 className="w-full flex items-center justify-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
               >
                 <Lock className="w-4 h-4 mr-2" />
