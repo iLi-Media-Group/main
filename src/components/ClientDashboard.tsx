@@ -417,7 +417,7 @@ const getPlanLevel = (plan: string): number => {
   const [sortField, setSortField] = useState<'renewal' | 'title' | 'genre' | 'bpm'>('renewal');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
   const [userStats, setUserStats] = useState<UserStats>({
     totalLicenses: 0,
     remainingLicenses: 0,
@@ -636,7 +636,7 @@ const getPlanLevel = (plan: string): number => {
       // Fetch profile with downgrade info
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('first_name, email, membership_plan, subscription_cancel_at_period_end, subscription_current_period_end')
+        .select('first_name, display_name, email, membership_plan, subscription_cancel_at_period_end, subscription_current_period_end')
         .eq('id', user.id)
         .single();
 
@@ -1558,7 +1558,7 @@ const getPlanLevel = (plan: string): number => {
             <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>
