@@ -121,14 +121,14 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           handleClose();
         }
       }}
     >
-      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md">
+      <div className="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">Change Password</h2>
           <button
@@ -163,14 +163,16 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showCurrentPassword ? 'text' : 'password'}
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
-                required
-                disabled={loading}
-              />
+                             <input
+                 type={showCurrentPassword ? 'text' : 'password'}
+                 value={currentPassword}
+                 onChange={(e) => setCurrentPassword(e.target.value)}
+                 onFocus={(e) => e.target.select()}
+                 className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
+                 required
+                 disabled={loading}
+                 autoComplete="current-password"
+               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
@@ -189,14 +191,16 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showNewPassword ? 'text' : 'password'}
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
-                required
-                disabled={loading}
-              />
+                             <input
+                 type={showNewPassword ? 'text' : 'password'}
+                 value={newPassword}
+                 onChange={(e) => setNewPassword(e.target.value)}
+                 onFocus={(e) => e.target.select()}
+                 className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
+                 required
+                 disabled={loading}
+                 autoComplete="new-password"
+               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
@@ -218,14 +222,16 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
-                required
-                disabled={loading}
-              />
+                             <input
+                 type={showConfirmPassword ? 'text' : 'password'}
+                 value={confirmPassword}
+                 onChange={(e) => setConfirmPassword(e.target.value)}
+                 onFocus={(e) => e.target.select()}
+                 className="w-full pl-10 pr-10 py-2 bg-white/10 border border-gray-600 rounded-lg text-white focus:border-purple-500 focus:ring focus:ring-purple-500/20"
+                 required
+                 disabled={loading}
+                 autoComplete="new-password"
+               />
               <button
                 type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
