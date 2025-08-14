@@ -49,21 +49,18 @@ serve(async (req) => {
       );
     }
 
-    // Get Resend API key
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) {
-      console.error('Missing Resend API key');
-      return new Response(
-        JSON.stringify({ error: 'Email service not configured' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
     // Create the password reset email
-    const resetUrl = resetData.properties.action_link;
+    // Use the action_link but replace any localhost references with production URL
+    let resetUrl = resetData.properties.action_link;
+    
+    // Replace localhost with production URL if present
+    if (resetUrl.includes('localhost:3000')) {
+      resetUrl = resetUrl.replace('http://localhost:3000', 'https://mybeatfi.io');
+    }
+    
+    // Also replace any localhost references in the URL parameters
+    resetUrl = resetUrl.replace(/redirect_to=http%3A%2F%2Flocalhost%3A3000/g, 'redirect_to=https%3A%2F%2Fmybeatfi.io');
+
     const emailSubject = 'Reset Your MyBeatFi Password';
     
     const emailHtml = `
@@ -162,6 +159,19 @@ serve(async (req) => {
     </div>
 </body>
 </html>`;
+
+    // Get Resend API key
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('Missing Resend API key');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured' }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
 
     // Send email via Resend
     const resendResponse = await fetch("https://api.resend.com/emails", {
