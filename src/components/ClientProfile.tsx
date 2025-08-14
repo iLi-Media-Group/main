@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, X, MapPin, Upload, Loader2, Building2 } from 'lucide-react';
+import { User, Mail, X, MapPin, Upload, Loader2, Building2, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface ClientProfileProps {
   onClose: () => void;
@@ -27,6 +28,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [success, setSuccess] = useState(false);
   const [ein, setEin] = useState('');
   const [businessStructure, setBusinessStructure] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -186,6 +188,20 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
               <p className="mt-1 text-xs text-gray-400">
                 Email cannot be changed
               </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(true)}
+                className="w-full flex items-center justify-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </button>
             </div>
 
             <div>
@@ -355,6 +371,11 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
           </form>
         )}
       </div>
+      
+      <ChangePasswordModal 
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }

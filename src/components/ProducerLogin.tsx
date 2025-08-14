@@ -81,8 +81,10 @@ export function ProducerLogin() {
 
     try {
       setLoading(true);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      
+      // Use our custom password reset function with Resend
+      const { error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email }
       });
       
       if (error) throw error;

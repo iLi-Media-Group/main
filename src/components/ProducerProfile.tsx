@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } from 'lucide-react';
+import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -35,6 +36,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [bio, setBio] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
   
   // Usage badges state
   const [usesLoops, setUsesLoops] = useState(false);
@@ -233,6 +235,20 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowChangePassword(true)}
+                className="w-full flex items-center justify-center px-4 py-2 bg-blue-950/60 border border-blue-700 hover:bg-blue-900 text-white rounded-lg transition-colors"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -510,6 +526,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           </form>
         )}
       </div>
+      
+      <ChangePasswordModal 
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }
