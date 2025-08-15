@@ -136,28 +136,9 @@ export default function ProducerApplicationsAdmin() {
       all: allApplications.length
     };
 
-    // Get invited applications
-    const invitedApps = allApplications.filter(app => app.status === 'invited');
-    
-    if (invitedApps.length > 0) {
-      // Get unused invitations
-      const { data: unusedInvitations } = await supabase
-        .from('producer_invitations')
-        .select('email')
-        .eq('used', false);
-      
-      const unusedEmails = new Set(unusedInvitations?.map(inv => inv.email) || []);
-      newCounts.invited = invitedApps.filter(app => unusedEmails.has(app.email)).length;
-
-      // Get used invitations
-      const { data: usedInvitations } = await supabase
-        .from('producer_invitations')
-        .select('email')
-        .eq('used', true);
-      
-      const usedEmails = new Set(usedInvitations?.map(inv => inv.email) || []);
-      newCounts.onboarded = invitedApps.filter(app => usedEmails.has(app.email)).length;
-    }
+    // Count invited and onboarded applications by status
+    newCounts.invited = allApplications.filter(app => app.status === 'invited').length;
+    newCounts.onboarded = allApplications.filter(app => app.status === 'onboarded').length;
 
     setTabCounts(newCounts);
   };
@@ -277,9 +258,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.eq('status', 'invited');
           break;
         case 'onboarded':
-          // Show applications with status 'invited' that have completed their invitation
-          // We'll filter this after fetching to check producer_invitations table
-          query = query.eq('status', 'invited');
+          // Show applications with status 'onboarded'
+          query = query.eq('status', 'onboarded');
           break;
         case 'save_for_later':
           // Show applications that require review OR have status 'save_for_later'
@@ -329,16 +309,7 @@ export default function ProducerApplicationsAdmin() {
       } else {
         let filteredData = data || [];
         
-        // For onboarded tab, filter to only show applications where the invitation has been used
-        if (activeTab === 'onboarded') {
-          const { data: invitations } = await supabase
-            .from('producer_invitations')
-            .select('email, used')
-            .eq('used', true);
-          
-          const usedEmails = new Set(invitations?.map(inv => inv.email) || []);
-          filteredData = filteredData.filter(app => usedEmails.has(app.email));
-        }
+
         
         // For invited tab, filter to only show applications where the invitation has NOT been used
         if (activeTab === 'invited') {
@@ -480,7 +451,7 @@ export default function ProducerApplicationsAdmin() {
       } else {
         // For regular applications, move directly to onboarded
         updateData = {
-          status: 'invited', // This will show up in the onboarded tab since it checks producer_invitations.used = true
+          status: 'onboarded', // Set status to onboarded
           is_auto_rejected: false, // Clear auto-rejection status
           auto_disqualified: false, // Clear auto-disqualification
           rejection_reason: null, // Clear rejection reason
@@ -501,26 +472,7 @@ export default function ProducerApplicationsAdmin() {
       if (error) {
         console.error('Error moving to onboarded:', error);
         alert('Failed to move to onboarded. Please try again.');
-      } else {
-        // If this is a regular application (not auto-rejected), create the invitation record
-        if (!(application.is_auto_rejected && !application.manual_review_approved)) {
-          // Create or update producer_invitation record to mark as used
-          const { error: invitationError } = await supabase
-            .from('producer_invitations')
-            .upsert({
-              email: application.email,
-              used: true,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'email'
-            });
 
-          if (invitationError) {
-            console.error('Error creating invitation record:', invitationError);
-            alert('Application status updated but there was an issue with the invitation record.');
-          }
-        }
 
         console.log('Successfully updated application');
         if (application.is_auto_rejected && !application.manual_review_approved) {
