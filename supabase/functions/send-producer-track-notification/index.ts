@@ -33,9 +33,8 @@ serve(async (req) => {
       .select(`
         id,
         title,
-        description,
-        genre,
-        sub_genre,
+        genres,
+        sub_genres,
         bpm,
         key,
         duration,
@@ -224,19 +223,18 @@ serve(async (req) => {
         <div class="subtitle">A producer you follow just uploaded a new track</div>
       </div>
       
-      <div class="track-card">
-        <div class="track-title">"${trackData.title}"</div>
-        ${trackData.description ? `<p style="color: #d1d5db; margin: 10px 0; line-height: 1.5;">${trackData.description}</p>` : ''}
+             <div class="track-card">
+         <div class="track-title">"${trackData.title}"</div>
         
-        <div class="track-details">
-          <div class="detail-item">
-            <span class="detail-label">Genre:</span>
-            <span class="detail-value">${trackData.genre || 'N/A'}</span>
-          </div>
-          <div class="detail-item">
-            <span class="detail-label">Sub-Genre:</span>
-            <span class="detail-value">${trackData.sub_genre || 'N/A'}</span>
-          </div>
+                 <div class="track-details">
+           <div class="detail-item">
+             <span class="detail-label">Genre:</span>
+             <span class="detail-value">${Array.isArray(trackData.genres) ? trackData.genres.join(', ') : 'N/A'}</span>
+           </div>
+           <div class="detail-item">
+             <span class="detail-label">Sub-Genre:</span>
+             <span class="detail-value">${Array.isArray(trackData.sub_genres) ? trackData.sub_genres.join(', ') : 'N/A'}</span>
+           </div>
           <div class="detail-item">
             <span class="detail-label">BPM:</span>
             <span class="detail-value">${trackData.bpm || 'N/A'}</span>
@@ -273,64 +271,66 @@ serve(async (req) => {
   </body>
 </html>`;
 
-    // Send emails to all followers with notifications enabled
-    const emailPromises = followersWithEmailNotifications.map(async (follower) => {
-      try {
-        const response = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "MyBeatFi <notifications@mybeatfi.com>",
-            to: follower.follower_email,
-            subject: subjectLine,
-            html,
-            tags: [
-              { name: "notification_type", value: "producer_track" },
-              { name: "producer_id", value: producer_id },
-              { name: "track_id", value: track_id }
-            ]
-          }),
-        });
+    // Send emails to all followers with notifications enabled using BCC for privacy
+    // We'll send one email to a dummy address and BCC all followers
+    const followerEmails = followersWithEmailNotifications.map(f => f.follower_email);
+    
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+          "Content-Type": "application/json",
+        },
+                 body: JSON.stringify({
+           from: "MyBeatFi <notifications@mybeatfi.io>",
+           to: "noreply@mybeatfi.io", // Dummy recipient
+           bcc: followerEmails, // BCC all followers for privacy
+          subject: subjectLine,
+          html,
+          tags: [
+            { name: "notification_type", value: "producer_track" },
+            { name: "producer_id", value: producer_id },
+            { name: "track_id", value: track_id }
+          ]
+        }),
+      });
 
         if (!response.ok) {
-          console.error(`Failed to send email to ${follower.follower_email}:`, await response.text());
-          return { success: false, email: follower.follower_email, error: 'Email send failed' };
+          console.error(`Failed to send email to followers:`, await response.text());
+          return new Response(
+            JSON.stringify({ error: 'Failed to send emails to followers' }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
         }
 
         // Log the email
         await supabase
           .from('email_logs')
           .insert({
-            to_email: follower.follower_email,
+            to_email: 'multiple_recipients_bcc',
             subject: subjectLine,
-            status: 'sent'
+            status: 'sent',
+            recipient_count: followerEmails.length
           });
 
-        return { success: true, email: follower.follower_email };
+        console.log(`Sent email to ${followerEmails.length} followers using BCC`);
+
+        return new Response(
+          JSON.stringify({
+            message: `Sent email to ${followerEmails.length} followers successfully using BCC`,
+            recipient_count: followerEmails.length,
+            privacy: 'BCC used to protect email addresses'
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       } catch (error) {
-        console.error(`Error sending email to ${follower.follower_email}:`, error);
-        return { success: false, email: follower.follower_email, error: error.message };
+        console.error(`Error sending email to followers:`, error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to send emails to followers' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-    });
-
-    const results = await Promise.all(emailPromises);
-    const successful = results.filter(r => r.success);
-    const failed = results.filter(r => !r.success);
-
-    console.log(`Sent ${successful.length} emails successfully, ${failed.length} failed`);
-
-    return new Response(
-      JSON.stringify({
-        message: `Sent ${successful.length} emails successfully`,
-        successful: successful.length,
-        failed: failed.length,
-        failed_emails: failed.map(f => f.email)
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
 
   } catch (err) {
     console.error("Edge function error:", err);
