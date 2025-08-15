@@ -425,6 +425,33 @@ export default function ProducerApplicationsAdmin() {
     }
   };
 
+  const handleMoveToOnboarded = async (application: Application) => {
+    try {
+      const updateData = {
+        status: 'invited', // This will show up in the onboarded tab since it checks producer_invitations.used = true
+        updated_at: new Date().toISOString()
+      };
+      
+      const { error } = await supabase
+        .from('producer_applications')
+        .update(updateData)
+        .eq('id', application.id);
+
+      if (error) {
+        console.error('Error moving to onboarded:', error);
+        alert('Failed to move to onboarded. Please try again.');
+      } else {
+        alert('Application moved to onboarded successfully!');
+        // Refresh both the filtered applications and all applications
+        fetchAllApplications();
+        fetchApplications();
+      }
+    } catch (err) {
+      console.error('Error moving to onboarded:', err);
+      alert('Failed to move to onboarded. Please try again.');
+    }
+  };
+
   const getTabApplications = () => {
     let filtered = applications;
 
@@ -1167,6 +1194,14 @@ export default function ProducerApplicationsAdmin() {
                   {activeTab === 'new' && (
                     <>
                       <Button
+                        onClick={() => handleMoveToOnboarded(app)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
+                      <Button
                         onClick={() => handleInviteProducer(app)}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
@@ -1202,6 +1237,14 @@ export default function ProducerApplicationsAdmin() {
                   )}
                   {activeTab === 'invited' && (
                     <>
+                      <Button
+                        onClick={() => handleMoveToOnboarded(app)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -1275,6 +1318,14 @@ export default function ProducerApplicationsAdmin() {
                   {activeTab === 'save_for_later' && (
                     <>
                       <Button
+                        onClick={() => handleMoveToOnboarded(app)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
+                      <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
                         size="sm"
@@ -1317,6 +1368,14 @@ export default function ProducerApplicationsAdmin() {
                   )}
                   {activeTab === 'manual_review' && (
                     <>
+                      <Button
+                        onClick={() => handleMoveToOnboarded(app)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -1417,6 +1476,14 @@ export default function ProducerApplicationsAdmin() {
                           Override & Onboard
                         </Button>
                       )}
+                      <Button
+                        onClick={() => handleMoveToOnboarded(app)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
