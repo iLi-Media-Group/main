@@ -311,16 +311,7 @@ export default function ProducerApplicationsAdmin() {
         
 
         
-        // For invited tab, filter to only show applications where the invitation has NOT been used
-        if (activeTab === 'invited') {
-          const { data: invitations } = await supabase
-            .from('producer_invitations')
-            .select('email, used')
-            .eq('used', false);
-          
-          const unusedEmails = new Set(invitations?.map(inv => inv.email) || []);
-          filteredData = filteredData.filter(app => unusedEmails.has(app.email));
-        }
+
         
         const appsWithRankings = calculateRankings(filteredData);
         setApplications(appsWithRankings);
@@ -473,8 +464,7 @@ export default function ProducerApplicationsAdmin() {
       if (error) {
         console.error('Error moving to onboarded:', error);
         alert('Failed to move to onboarded. Please try again.');
-
-
+      } else {
         console.log('Successfully updated application');
         if (application.is_auto_rejected && !application.manual_review_approved) {
           alert('Manual review approved! Application moved to New tab where you can now invite or move to onboarded.');
