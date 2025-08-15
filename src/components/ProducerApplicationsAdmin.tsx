@@ -58,6 +58,7 @@ type Application = {
   ranking_breakdown?: any;
   is_auto_rejected?: boolean;
   rejection_reason?: string;
+  manual_review_approved?: boolean;
   // Screening questions
   signed_to_label?: string;
   label_relationship_explanation?: string;
@@ -270,7 +271,8 @@ export default function ProducerApplicationsAdmin() {
           // Show applications that are new or don't have a status set
           // Also include applications with status 'new' regardless of review_tier to prevent data loss
           // Exclude applications that require review (they go to save_for_later)
-          query = query.or('status.eq.new,status.is.null').eq('is_auto_rejected', false).eq('requires_review', false);
+          // Include auto-rejected applications that have been manually approved
+          query = query.or('status.eq.new,status.is.null').eq('requires_review', false).and('is_auto_rejected.eq.false,manual_review_approved.eq.true');
           break;
         case 'invited':
           // Show applications with status 'invited' that haven't completed their invitation yet
@@ -286,12 +288,12 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.save_for_later,requires_review.eq.true');
           break;
         case 'declined':
-          // Include both manually declined and auto-rejected applications
-          query = query.or('status.eq.declined,is_auto_rejected.eq.true');
+          // Include manually declined applications and auto-rejected applications that haven't been manually approved
+          query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review_approved.eq.false)');
           break;
         case 'manual_review':
-          // Show applications that need manual review
-          query = query.eq('status', 'manual_review');
+          // Show applications that need manual review or auto-rejected applications that haven't been reviewed
+          query = query.or('status.eq.manual_review,and(is_auto_rejected.eq.true,manual_review_approved.is.null)');
           break;
         case 'all':
           // Show all applications without filtering
@@ -427,15 +429,30 @@ export default function ProducerApplicationsAdmin() {
 
   const handleMoveToOnboarded = async (application: Application) => {
     try {
-      const updateData = {
-        status: 'invited', // This will show up in the onboarded tab since it checks producer_invitations.used = true
-        is_auto_rejected: false, // Clear auto-rejection status
-        auto_disqualified: false, // Clear auto-disqualification
-        rejection_reason: null, // Clear rejection reason
-        updated_at: new Date().toISOString()
-      };
+      let updateData: any = {};
       
-      console.log('Moving application to onboarded:', application.id);
+      // If this is an auto-rejected application that needs manual review
+      if (application.is_auto_rejected && !application.manual_review_approved) {
+        // Set manual review as approved and move to new status
+        updateData = {
+          status: 'new',
+          manual_review_approved: true,
+          updated_at: new Date().toISOString()
+        };
+        console.log('Approving manual review for auto-rejected application:', application.id);
+      } else {
+        // For regular applications, move directly to onboarded
+        updateData = {
+          status: 'invited', // This will show up in the onboarded tab since it checks producer_invitations.used = true
+          is_auto_rejected: false, // Clear auto-rejection status
+          auto_disqualified: false, // Clear auto-disqualification
+          rejection_reason: null, // Clear rejection reason
+          manual_review_approved: true, // Mark as approved
+          updated_at: new Date().toISOString()
+        };
+        console.log('Moving application directly to onboarded:', application.id);
+      }
+      
       console.log('Update data:', updateData);
       
       const { error } = await supabase
@@ -447,17 +464,18 @@ export default function ProducerApplicationsAdmin() {
         console.error('Error moving to onboarded:', error);
         alert('Failed to move to onboarded. Please try again.');
       } else {
-        console.log('Successfully updated application to onboarded');
-        alert('Application moved to onboarded successfully!');
-        
-        // Force a complete refresh by switching tabs and back
-        await fetchAllApplications();
-        await fetchApplications();
-        
-        // If we're on the declined tab, switch to onboarded tab to show the result
-        if (activeTab === 'declined') {
+        console.log('Successfully updated application');
+        if (application.is_auto_rejected && !application.manual_review_approved) {
+          alert('Manual review approved! Application moved to New tab where you can now invite or move to onboarded.');
+          setActiveTab('new');
+        } else {
+          alert('Application moved to onboarded successfully!');
           setActiveTab('onboarded');
         }
+        
+        // Force a complete refresh
+        await fetchAllApplications();
+        await fetchApplications();
       }
     } catch (err) {
       console.error('Error moving to onboarded:', err);
