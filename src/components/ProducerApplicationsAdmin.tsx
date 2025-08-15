@@ -1150,6 +1150,11 @@ export default function ProducerApplicationsAdmin() {
                         Auto-Rejected
                       </span>
                     )}
+                    {app.manual_review_approved && (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                        Manually Reviewed
+                      </span>
+                    )}
                   </div>
                 )}
                 
