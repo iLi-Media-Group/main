@@ -448,7 +448,7 @@ export function TrackUploadForm() {
         genres: formattedGenres.join(','),
         sub_genres: formData.selectedSubGenres.join(','),
         moods: formData.selectedMoods.join(','),
-        instruments: formData.selectedInstruments,
+        instruments: formData.selectedInstruments || [],
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
@@ -495,9 +495,19 @@ export function TrackUploadForm() {
       });
       
       console.log('🎵 Inserting track with data:', JSON.stringify(insertData, null, 2));
-      const { data: insertResult, error: trackError } = await supabase
-        .from('tracks')
-        .insert(insertData);
+      
+      // Add try-catch around the insert to catch any errors
+      let insertResult, trackError;
+      try {
+        const result = await supabase
+          .from('tracks')
+          .insert(insertData);
+        insertResult = result.data;
+        trackError = result.error;
+      } catch (err) {
+        console.error('[DEBUG] Exception during insert:', err);
+        trackError = err;
+      }
       
       console.log('✅ Track insertion result:', { insertResult, trackError });
       
