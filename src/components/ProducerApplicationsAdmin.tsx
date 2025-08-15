@@ -1145,16 +1145,7 @@ export default function ProducerApplicationsAdmin() {
                         {app.ranking_score} points
                       </span>
                     </div>
-                    {app.is_auto_rejected && (
-                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                        Auto-Rejected
-                      </span>
-                    )}
-                    {app.manual_review_approved && (
-                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                        Manually Reviewed
-                      </span>
-                    )}
+
                   </div>
                 )}
                 
@@ -1165,6 +1156,11 @@ export default function ProducerApplicationsAdmin() {
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(app.status)}`}>
                         {app.is_auto_rejected ? 'Auto-Rejected' : app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                       </span>
+                      {app.manual_review_approved && (
+                        <span className="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                          Manually Reviewed
+                        </span>
+                      )}
                       {app.auto_disqualified && (
                         <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
                           Auto-Disqualified
