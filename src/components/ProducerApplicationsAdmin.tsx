@@ -394,6 +394,37 @@ export default function ProducerApplicationsAdmin() {
     }
   };
 
+  const handleOverride = async (application: Application) => {
+    try {
+      const updateData = {
+        status: 'new',
+        is_auto_rejected: false,
+        auto_disqualified: false,
+        rejection_reason: null,
+        review_tier: null,
+        updated_at: new Date().toISOString()
+      };
+      
+      const { error } = await supabase
+        .from('producer_applications')
+        .update(updateData)
+        .eq('id', application.id);
+
+      if (error) {
+        console.error('Error overriding application:', error);
+        alert('Failed to override application. Please try again.');
+      } else {
+        alert('Application overridden successfully! The producer can now be invited.');
+        // Refresh both the filtered applications and all applications
+        fetchAllApplications();
+        fetchApplications();
+      }
+    } catch (err) {
+      console.error('Error overriding application:', err);
+      alert('Failed to override application. Please try again.');
+    }
+  };
+
   const getTabApplications = () => {
     let filtered = applications;
 
@@ -1330,6 +1361,16 @@ export default function ProducerApplicationsAdmin() {
 
                   {activeTab === 'declined' && (
                     <>
+                      {app.is_auto_rejected && (
+                        <Button
+                          onClick={() => handleOverride(app)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                          size="sm"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Override & Onboard
+                        </Button>
+                      )}
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -1366,6 +1407,16 @@ export default function ProducerApplicationsAdmin() {
 
                   {activeTab === 'all' && (
                     <>
+                      {app.is_auto_rejected && (
+                        <Button
+                          onClick={() => handleOverride(app)}
+                          className="bg-purple-600 hover:bg-purple-700 text-white"
+                          size="sm"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Override & Onboard
+                        </Button>
+                      )}
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
                         className="bg-blue-600 hover:bg-blue-700 text-white"
