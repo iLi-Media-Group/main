@@ -127,10 +127,10 @@ export default function ProducerApplicationsAdmin() {
         app.status === 'save_for_later' || app.requires_review
       ).length,
       declined: allApplications.filter(app => 
-        app.status === 'declined' || app.is_auto_rejected
+        app.status === 'declined' || (app.is_auto_rejected && app.manual_review_approved === false)
       ).length,
       manual_review: allApplications.filter(app => 
-        app.status === 'manual_review'
+        app.status === 'manual_review' || (app.is_auto_rejected && app.manual_review_approved === true)
       ).length,
       all: allApplications.length
     };
