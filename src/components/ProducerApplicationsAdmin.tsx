@@ -268,8 +268,7 @@ export default function ProducerApplicationsAdmin() {
       // Filter by status based on active tab
       switch (activeTab) {
         case 'new':
-          // Show only genuinely new applications (not auto-rejected)
-          // Applications with status 'new' or null status, excluding auto-rejected ones
+          // Show only genuinely new applications (not auto-rejected and not requiring review)
           query = query.or('status.eq.new,status.is.null').eq('requires_review', false).eq('is_auto_rejected', false);
           break;
         case 'invited':
@@ -286,8 +285,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.save_for_later,requires_review.eq.true');
           break;
         case 'declined':
-          // Only show applications where manual_review_approved = false
-          query = query.eq('manual_review_approved', false);
+          // Show manually declined applications OR auto-rejected applications that haven't been manually approved
+          query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review_approved.eq.false)');
           break;
         case 'manual_review':
           // Show applications that need manual review or auto-rejected applications that have been approved for manual review
@@ -373,8 +372,9 @@ export default function ProducerApplicationsAdmin() {
         // When moving to 'new', clear the review_tier
         updateData.review_tier = null;
       } else if (newStatus === 'declined') {
-        // When declining, set manual_review_approved to false
+        // When declining, set manual_review_approved to false and mark as auto-rejected if not already
         updateData.manual_review_approved = false;
+        updateData.is_auto_rejected = true;
       } else if (reviewTier) {
         // When setting a specific review tier
         updateData.review_tier = reviewTier;
