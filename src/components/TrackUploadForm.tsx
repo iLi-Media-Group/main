@@ -311,9 +311,6 @@ export function TrackUploadForm() {
       return;
     }
 
-    // Test if updated code is running
-    alert('UPDATED CODE IS RUNNING - TrackUploadForm handleSubmit called');
-
     // Debug authentication status
     console.log('[DEBUG] User authentication check:', {
       userId: user.id,
