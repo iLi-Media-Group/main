@@ -131,7 +131,7 @@ export default function ProducerApplicationsAdmin() {
         app.status === 'declined' || (app.is_auto_rejected && app.manual_review === false)
       ).length,
       manual_review: allApplications.filter(app => 
-        app.manual_review === true
+        app.status === 'in_review'
       ).length,
       all: allApplications.length
     };
@@ -270,8 +270,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review.eq.false)');
           break;
         case 'manual_review':
-          // Show applications that are in manual review status
-          query = query.eq('manual_review', true);
+          // Show applications with status 'in_review'
+          query = query.eq('status', 'in_review');
           break;
         case 'all':
           // Show all applications without filtering
@@ -344,7 +344,7 @@ export default function ProducerApplicationsAdmin() {
         // When moving to 'new', clear the review_tier
         updateData.review_tier = null;
       } else if (newStatus === 'declined') {
-        // When declining, set manual_review_approved to false and mark as auto-rejected if not already
+        // When declining, set status to declined and clear manual review flags
         updateData.manual_review_approved = false;
         updateData.manual_review = false;
         updateData.is_auto_rejected = true;
@@ -404,6 +404,7 @@ export default function ProducerApplicationsAdmin() {
   const handleMoveToManualReview = async (application: Application) => {
     try {
       const updateData = {
+        status: 'in_review',
         manual_review: true,
         manual_review_approved: true,
         updated_at: new Date().toISOString()
