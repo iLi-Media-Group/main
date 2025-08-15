@@ -447,7 +447,7 @@ export function TrackUploadForm() {
         artist: user.email?.split('@')[0] || 'Unknown Artist',
         genres: formattedGenres.join(','),
         sub_genres: formData.selectedSubGenres.join(','),
-        moods: formData.selectedMoods,
+        moods: formData.selectedMoods.join(','),
         instruments: formData.selectedInstruments,
         bpm: bpmNumber,
         key: formData.key,
