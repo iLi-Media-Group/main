@@ -435,6 +435,9 @@ export default function ProducerApplicationsAdmin() {
         updated_at: new Date().toISOString()
       };
       
+      console.log('Moving application to onboarded:', application.id);
+      console.log('Update data:', updateData);
+      
       const { error } = await supabase
         .from('producer_applications')
         .update(updateData)
@@ -444,10 +447,17 @@ export default function ProducerApplicationsAdmin() {
         console.error('Error moving to onboarded:', error);
         alert('Failed to move to onboarded. Please try again.');
       } else {
+        console.log('Successfully updated application to onboarded');
         alert('Application moved to onboarded successfully!');
-        // Refresh both the filtered applications and all applications
-        fetchAllApplications();
-        fetchApplications();
+        
+        // Force a complete refresh by switching tabs and back
+        await fetchAllApplications();
+        await fetchApplications();
+        
+        // If we're on the declined tab, switch to onboarded tab to show the result
+        if (activeTab === 'declined') {
+          setActiveTab('onboarded');
+        }
       }
     } catch (err) {
       console.error('Error moving to onboarded:', err);
