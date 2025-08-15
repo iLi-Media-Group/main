@@ -429,6 +429,9 @@ export default function ProducerApplicationsAdmin() {
     try {
       const updateData = {
         status: 'invited', // This will show up in the onboarded tab since it checks producer_invitations.used = true
+        is_auto_rejected: false, // Clear auto-rejection status
+        auto_disqualified: false, // Clear auto-disqualification
+        rejection_reason: null, // Clear rejection reason
         updated_at: new Date().toISOString()
       };
       
