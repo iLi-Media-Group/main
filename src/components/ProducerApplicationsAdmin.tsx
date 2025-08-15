@@ -59,6 +59,7 @@ type Application = {
   is_auto_rejected?: boolean;
   rejection_reason?: string;
   manual_review_approved?: boolean;
+  manual_review?: boolean;
   // Screening questions
   signed_to_label?: string;
   label_relationship_explanation?: string;
@@ -130,7 +131,7 @@ export default function ProducerApplicationsAdmin() {
         app.status === 'declined' || (app.is_auto_rejected && app.manual_review_approved === false)
       ).length,
       manual_review: allApplications.filter(app => 
-        app.status === 'manual_review' || (app.is_auto_rejected && app.manual_review_approved === true)
+        app.manual_review === true
       ).length,
       all: allApplications.length
     };
@@ -289,8 +290,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review_approved.eq.false)');
           break;
         case 'manual_review':
-          // Show applications that need manual review or auto-rejected applications that have been approved for manual review
-          query = query.or('status.eq.manual_review,and(is_auto_rejected.eq.true,manual_review_approved.eq.true)');
+          // Show applications that are in manual review status
+          query = query.eq('manual_review', true);
           break;
         case 'all':
           // Show all applications without filtering
@@ -374,6 +375,7 @@ export default function ProducerApplicationsAdmin() {
       } else if (newStatus === 'declined') {
         // When declining, set manual_review_approved to false and mark as auto-rejected if not already
         updateData.manual_review_approved = false;
+        updateData.manual_review = false;
         updateData.is_auto_rejected = true;
       } else if (reviewTier) {
         // When setting a specific review tier
@@ -431,6 +433,7 @@ export default function ProducerApplicationsAdmin() {
   const handleMoveToManualReview = async (application: Application) => {
     try {
       const updateData = {
+        manual_review: true,
         manual_review_approved: true,
         updated_at: new Date().toISOString()
       };
@@ -482,6 +485,7 @@ export default function ProducerApplicationsAdmin() {
           auto_disqualified: false, // Clear auto-disqualification
           rejection_reason: null, // Clear rejection reason
           manual_review_approved: true, // Mark as approved
+          manual_review: false, // Clear manual review status
           updated_at: new Date().toISOString()
         };
         console.log('Moving application directly to onboarded:', application.id);
