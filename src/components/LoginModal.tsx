@@ -114,6 +114,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
               placeholder="Email address"
               required
               className="w-full pl-10 pr-4 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
+              autoComplete="email"
             />
           </div>
 
@@ -127,6 +128,7 @@ export function LoginModal({ isOpen, onClose, onLoginSuccess }: LoginModalProps)
               placeholder="Password"
               required
               className="w-full pl-10 pr-12 py-3 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors"
+              autoComplete="current-password"
             />
             <button
               type="button"

@@ -139,6 +139,7 @@ export function ProducerLogin() {
                 required
                 disabled={loading}
                 placeholder="Enter your email address"
+                autoComplete="email"
               />
             </div>
             <div>
@@ -153,6 +154,7 @@ export function ProducerLogin() {
                 required
                 disabled={loading}
                 placeholder="Enter your password"
+                autoComplete="current-password"
               />
             </div>
             <button

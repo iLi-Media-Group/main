@@ -119,6 +119,7 @@ export function WhiteLabelClientLogin() {
                 disabled={loading}
                 className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your email address"
+                autoComplete="email"
               />
             </div>
             <div>
@@ -134,6 +135,7 @@ export function WhiteLabelClientLogin() {
                 disabled={loading}
                 className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your password"
+                autoComplete="current-password"
               />
             </div>
             <button
