@@ -158,7 +158,8 @@ export default function ProducerApplicationsAdmin() {
       };
 
       // Update the database if auto-rejection status has changed
-      if (ranking.isAutoRejected !== app.is_auto_rejected) {
+      // BUT only if the application hasn't been manually reviewed and approved
+      if (ranking.isAutoRejected !== app.is_auto_rejected && !app.manual_review_approved) {
         updateAutoRejectionStatus(app.id, ranking.isAutoRejected, ranking.rejectionReason);
       }
 
@@ -178,8 +179,19 @@ export default function ProducerApplicationsAdmin() {
       }
       
       // If auto-rejected, also set status to 'declined'
+      // BUT only if the application hasn't been manually reviewed and approved
       if (isAutoRejected) {
-        updateData.status = 'declined';
+        // We need to check if this application has been manually reviewed and approved
+        // If so, we shouldn't change the status
+        const { data: currentApp } = await supabase
+          .from('producer_applications')
+          .select('manual_review_approved, status')
+          .eq('id', applicationId)
+          .single();
+        
+        if (!currentApp?.manual_review_approved) {
+          updateData.status = 'declined';
+        }
       }
 
       const { error } = await supabase
