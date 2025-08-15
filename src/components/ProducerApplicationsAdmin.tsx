@@ -268,11 +268,9 @@ export default function ProducerApplicationsAdmin() {
       // Filter by status based on active tab
       switch (activeTab) {
         case 'new':
-          // Show applications that are new or don't have a status set
-          // Also include applications with status 'new' regardless of review_tier to prevent data loss
-          // Exclude applications that require review (they go to save_for_later)
-          // Include auto-rejected applications that have been manually approved
-          query = query.or('status.eq.new,status.is.null').eq('requires_review', false).and('is_auto_rejected.eq.false,manual_review_approved.eq.true');
+          // Show only genuinely new applications (not auto-rejected)
+          // Applications with status 'new' or null status, excluding auto-rejected ones
+          query = query.or('status.eq.new,status.is.null').eq('requires_review', false).eq('is_auto_rejected', false);
           break;
         case 'invited':
           // Show applications with status 'invited' that haven't completed their invitation yet
@@ -288,12 +286,12 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.save_for_later,requires_review.eq.true');
           break;
         case 'declined':
-          // Include manually declined applications and auto-rejected applications that haven't been manually approved
-          query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review_approved.eq.false)');
+          // Only show applications where manual_review_approved = false
+          query = query.eq('manual_review_approved', false);
           break;
         case 'manual_review':
-          // Show applications that need manual review or auto-rejected applications that haven't been reviewed
-          query = query.or('status.eq.manual_review,and(is_auto_rejected.eq.true,manual_review_approved.is.null)');
+          // Show applications that need manual review or auto-rejected applications that have been approved for manual review
+          query = query.or('status.eq.manual_review,and(is_auto_rejected.eq.true,manual_review_approved.eq.true)');
           break;
         case 'all':
           // Show all applications without filtering
@@ -374,6 +372,9 @@ export default function ProducerApplicationsAdmin() {
       if (newStatus === 'new') {
         // When moving to 'new', clear the review_tier
         updateData.review_tier = null;
+      } else if (newStatus === 'declined') {
+        // When declining, set manual_review_approved to false
+        updateData.manual_review_approved = false;
       } else if (reviewTier) {
         // When setting a specific review tier
         updateData.review_tier = reviewTier;
@@ -424,6 +425,39 @@ export default function ProducerApplicationsAdmin() {
     } catch (err) {
       console.error('Error overriding application:', err);
       alert('Failed to override application. Please try again.');
+    }
+  };
+
+  const handleMoveToManualReview = async (application: Application) => {
+    try {
+      const updateData = {
+        manual_review_approved: true,
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('Moving application to manual review:', application.id);
+      console.log('Update data:', updateData);
+      
+      const { error } = await supabase
+        .from('producer_applications')
+        .update(updateData)
+        .eq('id', application.id);
+
+      if (error) {
+        console.error('Error moving to manual review:', error);
+        alert('Failed to move to manual review. Please try again.');
+      } else {
+        console.log('Successfully moved to manual review');
+        alert('Application moved to Manual Review tab successfully!');
+        setActiveTab('manual_review');
+        
+        // Force a complete refresh
+        await fetchAllApplications();
+        await fetchApplications();
+      }
+    } catch (err) {
+      console.error('Error moving to manual review:', err);
+      alert('Failed to move to manual review. Please try again.');
     }
   };
 
@@ -1241,6 +1275,14 @@ export default function ProducerApplicationsAdmin() {
                         Manual Invite
                       </Button>
                       <Button
+                        onClick={() => handleMoveToManualReview(app)}
+                        className="bg-orange-600 hover:bg-orange-700 text-white"
+                        size="sm"
+                      >
+                        <Clock className="w-4 h-4 mr-1" />
+                        Move to Manual Review
+                      </Button>
+                      <Button
                         onClick={() => updateApplicationStatus(app.id, 'manual_review', 'Tier 2')}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
@@ -1452,14 +1494,24 @@ export default function ProducerApplicationsAdmin() {
                   {activeTab === 'declined' && (
                     <>
                       {app.is_auto_rejected && (
-                        <Button
-                          onClick={() => handleOverride(app)}
-                          className="bg-purple-600 hover:bg-purple-700 text-white"
-                          size="sm"
-                        >
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Override & Onboard
-                        </Button>
+                        <>
+                          <Button
+                            onClick={() => handleMoveToManualReview(app)}
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                            size="sm"
+                          >
+                            <Clock className="w-4 h-4 mr-1" />
+                            Move to Manual Review
+                          </Button>
+                          <Button
+                            onClick={() => handleOverride(app)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            size="sm"
+                          >
+                            <UserPlus className="w-4 h-4 mr-1" />
+                            Override & Onboard
+                          </Button>
+                        </>
                       )}
                       <Button
                         onClick={() => updateApplicationStatus(app.id, 'new')}
