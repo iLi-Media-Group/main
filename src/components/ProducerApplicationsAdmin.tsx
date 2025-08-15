@@ -128,7 +128,7 @@ export default function ProducerApplicationsAdmin() {
         app.status === 'save_for_later' || app.requires_review
       ).length,
       declined: allApplications.filter(app => 
-        app.status === 'declined' || (app.is_auto_rejected && app.manual_review_approved === false)
+        app.status === 'declined' || (app.is_auto_rejected && app.manual_review === false)
       ).length,
       manual_review: allApplications.filter(app => 
         app.manual_review === true
@@ -286,8 +286,8 @@ export default function ProducerApplicationsAdmin() {
           query = query.or('status.eq.save_for_later,requires_review.eq.true');
           break;
         case 'declined':
-          // Show manually declined applications OR auto-rejected applications that haven't been manually approved
-          query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review_approved.eq.false)');
+          // Show manually declined applications OR auto-rejected applications that are not in manual review
+          query = query.or('status.eq.declined,and(is_auto_rejected.eq.true,manual_review.eq.false)');
           break;
         case 'manual_review':
           // Show applications that are in manual review status
