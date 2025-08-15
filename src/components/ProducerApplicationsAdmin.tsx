@@ -498,6 +498,26 @@ export default function ProducerApplicationsAdmin() {
         console.error('Error moving to onboarded:', error);
         alert('Failed to move to onboarded. Please try again.');
       } else {
+        // If this is a regular application (not auto-rejected), create the invitation record
+        if (!(application.is_auto_rejected && !application.manual_review_approved)) {
+          // Create or update producer_invitation record to mark as used
+          const { error: invitationError } = await supabase
+            .from('producer_invitations')
+            .upsert({
+              email: application.email,
+              used: true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'email'
+            });
+
+          if (invitationError) {
+            console.error('Error creating invitation record:', invitationError);
+            alert('Application status updated but there was an issue with the invitation record.');
+          }
+        }
+
         console.log('Successfully updated application');
         if (application.is_auto_rejected && !application.manual_review_approved) {
           alert('Manual review approved! Application moved to New tab where you can now invite or move to onboarded.');
