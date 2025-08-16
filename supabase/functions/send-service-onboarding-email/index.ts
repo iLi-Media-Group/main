@@ -56,7 +56,7 @@ serve(async (req) => {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
           .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+          .button { display: inline-block; background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; border: none; }
           .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
         </style>
       </head>
@@ -81,7 +81,7 @@ serve(async (req) => {
             <p>Click the button below to get started:</p>
             
             <div style="text-align: center;">
-              <a href="${link}" class="button">Add Your Service</a>
+              <a href="${link}" class="button" style="display: inline-block; background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; border: none;">Add Your Service</a>
             </div>
             
             <p><strong>Important:</strong> This link will expire in 3 days for security reasons. If you need a new link, please contact us.</p>
