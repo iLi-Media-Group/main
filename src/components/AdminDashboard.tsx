@@ -2019,7 +2019,16 @@ if (subscription.price_id) {
 
         {activeTab === 'services' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">All Services</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">All Services</h2>
+              <Link
+                to="/admin/services"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Send Onboarding Link
+              </Link>
+            </div>
             {loadingServices ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
