@@ -312,35 +312,30 @@ export default function AdminServicesPage() {
       setOnboardingLink(link);
   
       // Call your Supabase Edge Function to send the email
-      const functionUrl = `${import.meta.env.VITE_SUPABASE_FUNCTION_URL}/send-service-onboarding-email`;
-      console.log('Calling Edge Function:', functionUrl);
+      console.log('Calling Edge Function: send-service-onboarding-email');
       console.log('Request body:', { 
         to: onboardingEmail, 
         email: onboardingEmail,
         type: onboardingType
       });
       
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const { data, error } = await supabase.functions.invoke('send-service-onboarding-email', {
+        body: { 
           to: onboardingEmail, 
           email: onboardingEmail,
           type: onboardingType
-        })
+        }
       });
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', response.headers);
+      console.log('Response data:', data);
+      console.log('Response error:', error);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(errorText || 'Failed to send onboarding email');
+      if (error) {
+        console.error('Error response:', error);
+        throw new Error(error.message || 'Failed to send onboarding email');
       }
       
-      const result = await response.json();
-      console.log('Success response:', result);
+      console.log('Success response:', data);
     } catch (err: any) {
       setOnboardingError(err.message || 'Failed to send onboarding link');
     } finally {
