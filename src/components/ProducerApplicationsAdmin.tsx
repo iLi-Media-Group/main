@@ -337,29 +337,55 @@ export default function ProducerApplicationsAdmin() {
 
   const updateApplicationStatus = async (applicationId: string, newStatus: string, reviewTier?: string) => {
     try {
-      const updateData: any = { 
-        status: newStatus,
-        updated_at: new Date().toISOString()
-      };
+      let error;
       
-      // Handle review_tier based on the new status
-      if (newStatus === 'new') {
-        // When moving to 'new', clear the review_tier
-        updateData.review_tier = null;
-      } else if (newStatus === 'declined') {
-        // When declining, set status to declined and clear manual review flags
-        updateData.manual_review_approved = false;
-        updateData.manual_review = false;
-        updateData.is_auto_rejected = true;
-      } else if (reviewTier) {
-        // When setting a specific review tier
-        updateData.review_tier = reviewTier;
+      // Use the new database functions for proper tab transitions
+      switch (newStatus) {
+        case 'new':
+          const { error: newError } = await supabase.rpc('move_to_new_applicants', { app_id: applicationId });
+          error = newError;
+          break;
+          
+        case 'manual_review':
+          const { error: reviewError } = await supabase.rpc('move_to_manual_review', { app_id: applicationId });
+          error = reviewError;
+          break;
+          
+        case 'invited':
+          const { error: inviteError } = await supabase.rpc('move_to_invited', { 
+            app_id: applicationId, 
+            tier: reviewTier || 'Tier 1' 
+          });
+          error = inviteError;
+          break;
+          
+        case 'save_for_later':
+          const { error: saveError } = await supabase.rpc('move_to_save_for_later', { app_id: applicationId });
+          error = saveError;
+          break;
+          
+        case 'declined':
+          const { error: declineError } = await supabase.rpc('move_to_declined', { app_id: applicationId });
+          error = declineError;
+          break;
+          
+        default:
+          // Fallback to direct update for other statuses
+          const updateData: any = { 
+            status: newStatus,
+            updated_at: new Date().toISOString()
+          };
+          
+          if (reviewTier) {
+            updateData.review_tier = reviewTier;
+          }
+          
+          const { error: defaultError } = await supabase
+            .from('producer_applications')
+            .update(updateData)
+            .eq('id', applicationId);
+          error = defaultError;
       }
-      
-      const { error } = await supabase
-        .from('producer_applications')
-        .update(updateData)
-        .eq('id', applicationId);
 
       if (error) {
         console.error('Error updating application:', error);
@@ -375,19 +401,7 @@ export default function ProducerApplicationsAdmin() {
 
   const handleOverride = async (application: Application) => {
     try {
-      const updateData = {
-        status: 'new',
-        is_auto_rejected: false,
-        auto_disqualified: false,
-        rejection_reason: null,
-        review_tier: null,
-        updated_at: new Date().toISOString()
-      };
-      
-      const { error } = await supabase
-        .from('producer_applications')
-        .update(updateData)
-        .eq('id', application.id);
+      const { error } = await supabase.rpc('move_to_new_applicants', { app_id: application.id });
 
       if (error) {
         console.error('Error overriding application:', error);
@@ -406,20 +420,9 @@ export default function ProducerApplicationsAdmin() {
 
   const handleMoveToManualReview = async (application: Application) => {
     try {
-      const updateData = {
-        status: 'in_review',
-        manual_review: true,
-        manual_review_approved: true,
-        updated_at: new Date().toISOString()
-      };
-      
       console.log('Moving application to manual review:', application.id);
-      console.log('Update data:', updateData);
       
-      const { error } = await supabase
-        .from('producer_applications')
-        .update(updateData)
-        .eq('id', application.id);
+      const { error } = await supabase.rpc('move_to_manual_review', { app_id: application.id });
 
       if (error) {
         console.error('Error moving to manual review:', error);
@@ -783,15 +786,13 @@ export default function ProducerApplicationsAdmin() {
       // Send email
       const emailResult = await sendProducerInvitationEmail(application.email, firstName, lastName, producerNumber, invitationCode);
 
-      // Update application status
-      await supabase
-        .from('producer_applications')
-        .update({ 
-          status: 'invited',
-          review_tier: tier,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', application.id);
+      // Update application status using the new database function
+      const { error: updateError } = await supabase.rpc('move_to_invited', { 
+        app_id: application.id, 
+        tier: tier 
+      });
+      
+      if (updateError) throw updateError;
 
       // Refresh the applications list
       fetchAllApplications();

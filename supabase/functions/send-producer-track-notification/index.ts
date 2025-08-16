@@ -83,6 +83,16 @@ serve(async (req) => {
     const producerName = `${trackData.producer.first_name || ''} ${trackData.producer.last_name || ''}`.trim() || 'Producer';
     const companyName = trackData.producer.company_name || '';
     const displayName = companyName || producerName;
+    
+    // Debug logging
+    console.log('Producer data:', {
+      first_name: trackData.producer.first_name,
+      last_name: trackData.producer.last_name,
+      company_name: trackData.producer.company_name,
+      producerName,
+      companyName,
+      displayName
+    });
 
     // Generate catchy subject line
     const subjectLines = [
@@ -217,24 +227,24 @@ serve(async (req) => {
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <img class="logo" src="https://mybeatfi.io/logo.png" alt="MyBeatFi Logo" />
-        <div class="title">New Track Alert! 🎵</div>
-        <div class="subtitle">A producer you follow just uploaded a new track</div>
-      </div>
+             <div class="header">
+         <img class="logo" src="https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/public/logo.png" alt="MyBeatFi Logo" />
+         <div class="title">New Track Alert! 🎵</div>
+         <div class="subtitle">A producer you follow just uploaded a new track</div>
+       </div>
       
              <div class="track-card">
          <div class="track-title">"${trackData.title}"</div>
         
                  <div class="track-details">
-           <div class="detail-item">
-             <span class="detail-label">Genre:</span>
-             <span class="detail-value">${Array.isArray(trackData.genres) ? trackData.genres.join(', ') : 'N/A'}</span>
-           </div>
-           <div class="detail-item">
-             <span class="detail-label">Sub-Genre:</span>
-             <span class="detail-value">${Array.isArray(trackData.sub_genres) ? trackData.sub_genres.join(', ') : 'N/A'}</span>
-           </div>
+                       <div class="detail-item">
+              <span class="detail-label">Genre:</span>
+              <span class="detail-value">${trackData.genres && trackData.genres !== '{}' ? trackData.genres : 'N/A'}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Sub-Genre:</span>
+              <span class="detail-value">${trackData.sub_genres && trackData.sub_genres !== '{}' ? trackData.sub_genres : 'N/A'}</span>
+            </div>
           <div class="detail-item">
             <span class="detail-label">BPM:</span>
             <span class="detail-value">${trackData.bpm || 'N/A'}</span>
@@ -243,17 +253,17 @@ serve(async (req) => {
             <span class="detail-label">Key:</span>
             <span class="detail-value">${trackData.key || 'N/A'}</span>
           </div>
-          <div class="detail-item">
-            <span class="detail-label">Duration:</span>
-            <span class="detail-value">${trackData.duration ? `${Math.floor(trackData.duration / 60)}:${(trackData.duration % 60).toString().padStart(2, '0')}` : 'N/A'}</span>
-          </div>
+                     <div class="detail-item">
+             <span class="detail-label">Duration:</span>
+             <span class="detail-value">${trackData.duration ? trackData.duration : 'N/A'}</span>
+           </div>
         </div>
       </div>
       
-      <div class="producer-info">
-        <div class="producer-name">${displayName}</div>
-        <div style="color: #9ca3af; font-size: 14px;">Producer</div>
-      </div>
+             <div class="producer-info">
+         <div class="producer-name">${displayName}</div>
+         <div style="color: #9ca3af; font-size: 14px;">${displayName}</div>
+       </div>
       
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/track/${trackData.id}" class="button">Listen & License Now</a>

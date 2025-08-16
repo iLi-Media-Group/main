@@ -1,45 +1,24 @@
--- Test if the Edge Function is being called and debug the issue
--- This will help us understand why emails aren't being sent
+-- Fix the trigger and ensure it's properly configured
+-- This will ensure the email notification trigger works correctly
 
--- First, let's check if there are any followers with email notifications enabled
+-- First, let's check if the trigger exists
 SELECT 
-    pf.producer_id,
-    pf.follower_id,
-    pf.follower_email,
-    pf.email_notifications_enabled,
-    p.first_name as producer_first_name,
-    p.last_name as producer_last_name
-FROM producer_followers pf
-JOIN profiles p ON pf.producer_id = p.id
-WHERE pf.email_notifications_enabled = true;
+    trigger_name,
+    event_manipulation,
+    action_statement,
+    action_timing
+FROM information_schema.triggers 
+WHERE event_object_table = 'tracks'
+AND trigger_name LIKE '%notification%';
 
--- Check if the trigger function is working by looking at recent track uploads
+-- Check if the handle_track_upload_notification function exists
 SELECT 
-    t.id as track_id,
-    t.title,
-    t.track_producer_id,
-    t.created_at,
-    p.first_name as producer_first_name,
-    p.last_name as producer_last_name
-FROM tracks t
-JOIN profiles p ON t.track_producer_id = p.id
-ORDER BY t.created_at DESC
-LIMIT 5;
+    routine_name,
+    routine_definition
+FROM information_schema.routines 
+WHERE routine_name = 'handle_track_upload_notification';
 
--- Let's also add some debugging to the function to see if it's being called
--- We'll create a simple log table to track function calls
-
--- Create a debug log table if it doesn't exist
-CREATE TABLE IF NOT EXISTS trigger_debug_log (
-    id SERIAL PRIMARY KEY,
-    function_name TEXT,
-    track_id UUID,
-    producer_id UUID,
-    has_followers BOOLEAN,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Update the function to add debugging
+-- Update the function to use the correct table name and add debugging
 CREATE OR REPLACE FUNCTION handle_track_upload_notification()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -53,7 +32,7 @@ BEGIN
         -- Check if the producer has any followers with email notifications enabled
         SELECT EXISTS(
             SELECT 1 
-            FROM producer_followers 
+            FROM producer_follows 
             WHERE producer_id = v_producer_id 
             AND email_notifications_enabled = true
         ) INTO v_has_followers;
@@ -82,5 +61,32 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Check the debug log to see if the function is being called
-SELECT * FROM trigger_debug_log ORDER BY created_at DESC LIMIT 10; 
+-- Drop the existing trigger if it exists
+DROP TRIGGER IF EXISTS trigger_track_upload_notification ON tracks;
+
+-- Create the trigger
+CREATE TRIGGER trigger_track_upload_notification
+    AFTER INSERT ON tracks
+    FOR EACH ROW
+    EXECUTE FUNCTION handle_track_upload_notification();
+
+-- Verify the trigger was created
+SELECT 
+    trigger_name,
+    event_manipulation,
+    action_statement,
+    action_timing
+FROM information_schema.triggers 
+WHERE event_object_table = 'tracks'
+AND trigger_name = 'trigger_track_upload_notification';
+
+-- Test the function manually with a recent track
+SELECT 
+    'Testing trigger with recent track' as test_info,
+    id as track_id,
+    title,
+    track_producer_id as producer_id
+FROM tracks 
+WHERE track_producer_id = '83e21f94-aced-452a-bafb-6eb9629e3b18'
+ORDER BY created_at DESC 
+LIMIT 1;

@@ -1,35 +1,7 @@
--- Test if the Edge Function is being called and debug the issue
--- This will help us understand why emails aren't being sent
+-- Fix email privacy (BCC) and create debug log table
+-- This ensures email addresses are not exposed to other recipients
 
--- First, let's check if there are any followers with email notifications enabled
-SELECT 
-    pf.producer_id,
-    pf.follower_id,
-    pf.follower_email,
-    pf.email_notifications_enabled,
-    p.first_name as producer_first_name,
-    p.last_name as producer_last_name
-FROM producer_followers pf
-JOIN profiles p ON pf.producer_id = p.id
-WHERE pf.email_notifications_enabled = true;
-
--- Check if the trigger function is working by looking at recent track uploads
-SELECT 
-    t.id as track_id,
-    t.title,
-    t.track_producer_id,
-    t.created_at,
-    p.first_name as producer_first_name,
-    p.last_name as producer_last_name
-FROM tracks t
-JOIN profiles p ON t.track_producer_id = p.id
-ORDER BY t.created_at DESC
-LIMIT 5;
-
--- Let's also add some debugging to the function to see if it's being called
--- We'll create a simple log table to track function calls
-
--- Create a debug log table if it doesn't exist
+-- First, create the debug log table
 CREATE TABLE IF NOT EXISTS trigger_debug_log (
     id SERIAL PRIMARY KEY,
     function_name TEXT,
@@ -39,7 +11,7 @@ CREATE TABLE IF NOT EXISTS trigger_debug_log (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Update the function to add debugging
+-- Update the function to use the correct table name and add debugging
 CREATE OR REPLACE FUNCTION handle_track_upload_notification()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -53,7 +25,7 @@ BEGIN
         -- Check if the producer has any followers with email notifications enabled
         SELECT EXISTS(
             SELECT 1 
-            FROM producer_followers 
+            FROM producer_follows 
             WHERE producer_id = v_producer_id 
             AND email_notifications_enabled = true
         ) INTO v_has_followers;
@@ -82,5 +54,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Now let's check if there are any followers with email notifications enabled
+SELECT 
+    pf.producer_id,
+    pf.follower_id,
+    pf.email_notifications_enabled,
+    p.first_name as producer_first_name,
+    p.last_name as producer_last_name
+FROM producer_follows pf
+JOIN profiles p ON pf.producer_id = p.id
+WHERE pf.email_notifications_enabled = true;
+
 -- Check the debug log to see if the function is being called
-SELECT * FROM trigger_debug_log ORDER BY created_at DESC LIMIT 10; 
+SELECT * FROM trigger_debug_log ORDER BY created_at DESC LIMIT 10;

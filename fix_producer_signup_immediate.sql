@@ -46,11 +46,21 @@ GRANT ALL ON producer_invitations TO authenticated;
 GRANT EXECUTE ON FUNCTION validate_producer_invitation(text, text) TO anon;
 GRANT EXECUTE ON FUNCTION validate_producer_invitation(text, text) TO authenticated;
 
--- 5. Verify the fix works
-SELECT 'Verification: Check if we can query producer_invitations' as step;
-SELECT COUNT(*) as invitation_count FROM producer_invitations;
+-- 5. Test the fix
+SELECT 'Testing the fix:' as step;
+SELECT 
+  'Validation result' as test,
+  validate_producer_invitation('5oe1nuc4eabkferzhlkfnk', 'mrsolowkeybeats@gmail.com') as is_valid;
 
--- 6. Show current invitations
+-- 6. Test the exact query that was failing in SignupForm.tsx
+SELECT 'Testing the exact query that was failing:' as step;
+SELECT 
+  producer_number
+FROM producer_invitations 
+WHERE invitation_code = '5oe1nuc4eabkferzhlkfnk'
+LIMIT 1;
+
+-- 7. Show current invitations
 SELECT 'Current invitations:' as info;
 SELECT 
   id,
@@ -62,9 +72,4 @@ SELECT
   used,
   created_at
 FROM producer_invitations 
-ORDER BY created_at DESC
-LIMIT 5;
-
--- 7. Test the validation function
-SELECT 'Testing validation function:' as test;
-SELECT validate_producer_invitation('test-code', 'test@example.com') as test_result;
+ORDER BY created_at DESC;
