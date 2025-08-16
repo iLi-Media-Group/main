@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+import { TrackClearanceBadges } from './TrackClearanceBadges';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -19,7 +20,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  if (error) {
+  if (error || !signedUrl) {
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
@@ -27,7 +28,14 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={track.title}
+      size="md"
+      audioId={`track-${track.id}`}
+    />
+  );
 }
 
 // Component to handle signed URL generation for track images
@@ -85,7 +93,7 @@ interface UserStats {
 
 export function TrackPage() {
   const { trackId } = useParams();
-  const { user, membershipPlan, refreshMembership } = useAuth();
+  const { user, membershipPlan, refreshMembership, accountType } = useAuth();
   const navigate = useNavigate();
   const [track, setTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +106,23 @@ export function TrackPage() {
   });
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [cleanVersion, setCleanVersion] = useState<Track | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Fetch clean version if this is an explicit track
+  useEffect(() => {
+    if (track && track.explicit_lyrics && track.id) {
+      supabase
+        .from('tracks')
+        .select('*')
+        .eq('clean_version_of', track.id)
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) setCleanVersion(data[0]);
+        });
+    }
+  }, [track]);
 
   useEffect(() => {
     if (!trackId) {
@@ -160,7 +183,6 @@ export function TrackPage() {
           duration: trackData.duration || '',
           moods: moods,
           hasVocals: trackData.has_vocals || false,
-          vocalsUsageType: trackData.vocals_usage_type || 'normal',
           isSyncOnly: trackData.is_sync_only || false,
           isOneStop: trackData.is_one_stop || false,
           hasStingEnding: trackData.has_sting_ending || false,
@@ -185,7 +207,14 @@ export function TrackPage() {
             stems: 0, 
             stemsWithVocals: 0 
           },
-          leaseAgreementUrl: ''
+          leaseAgreementUrl: '',
+          explicit_lyrics: trackData.explicit_lyrics || false,
+          // Sample clearance fields
+          containsLoops: trackData.contains_loops || false,
+          containsSamples: trackData.contains_samples || false,
+          containsSpliceLoops: trackData.contains_splice_loops || false,
+          samplesCleared: trackData.samples_cleared || false,
+          sampleClearanceNotes: trackData.sample_clearance_notes || null
         };
         
         setTrack(mappedTrack);
@@ -272,6 +301,12 @@ export function TrackPage() {
       return;
     }
 
+    // Check if user is a producer and prevent licensing
+    if (accountType && (accountType === 'producer' || accountType === 'admin,producer')) {
+      alert('Producers cannot license tracks. Please use a client account to license tracks.');
+      return;
+    }
+
     if (!track) return;
 
     // For sync-only tracks (with or without vocals), show the proposal dialog
@@ -316,8 +351,8 @@ export function TrackPage() {
   }
 
   // Determine button type based on track properties
-  const isSyncOnlyTrack = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
-  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly && track.vocalsUsageType !== 'sync_only';
+  const isSyncOnlyTrack = track.isSyncOnly;
+  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -348,6 +383,19 @@ export function TrackPage() {
             {/* Middle Column - Track Details */}
             <div className="md:col-span-2">
               <h1 className="text-3xl font-bold text-white mb-2">{track.title}</h1>
+              {/* Clean version link */}
+              {track.explicit_lyrics && cleanVersion && (
+                <div className="mb-4">
+                  <span className="text-red-400 font-semibold mr-2">Explicit</span>
+                  <span className="text-gray-300">A clean version is available: </span>
+                  <a
+                    href={`/track/${cleanVersion.id}`}
+                    className="text-green-400 underline hover:text-green-300"
+                  >
+                    {cleanVersion.title}
+                  </a>
+                </div>
+              )}
               
               {track.producer && (
                 <button
@@ -389,6 +437,34 @@ export function TrackPage() {
                       <span>Key: {track.key}</span>
                     </div>
                   )}
+                  
+                  {/* Track Clearance Badges */}
+                  <TrackClearanceBadges 
+                    containsLoops={track.containsLoops || false}
+                    containsSamples={track.containsSamples || false}
+                    containsSpliceLoops={track.containsSpliceLoops || false}
+                    samplesCleared={track.samplesCleared || false}
+                    className="mt-4"
+                  />
+                  
+                  {/* Sample Clearance Notes */}
+                  {track.sampleClearanceNotes && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-yellow-300 mb-1">
+                            Sample Clearance Notes
+                          </h4>
+                          <p className="text-sm text-yellow-200/90 whitespace-pre-wrap">
+                            {track.sampleClearanceNotes}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">
@@ -408,6 +484,38 @@ export function TrackPage() {
                     </div>
                   )}
                   
+                  {/* MP3 Only Indicator */}
+                  {track.audioUrl && !track.trackoutsUrl && !track.stemsUrl && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-yellow-400" />
+                      <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                        MP3 Only
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* MP3 + Trackouts Indicator */}
+                  {track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-green-400" />
+                      <span>MP3 + Trackouts Available</span>
+                    </div>
+                  )}
+                  
+                  {/* Trackouts Only Indicator */}
+                  {!track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
+                    <div className="flex items-center text-gray-300">
+                      <Layers className="w-5 h-5 mr-2 text-blue-400" />
+                      <span>Trackouts Available</span>
+                    </div>
+                  )}
+                  
+                  {track.explicit_lyrics && (
+                    <div className="flex items-center text-red-400">
+                      <span className="font-bold mr-1">E</span>
+                      <span>Explicit Lyrics</span>
+                    </div>
+                  )}
                   {track.hasStingEnding && (
                     <div className="flex items-center text-gray-300">
                       <Music className="w-5 h-5 mr-2 text-blue-400" />

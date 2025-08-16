@@ -45,7 +45,7 @@ export default function CustomSyncRequest() {
           sync_fee: parseFloat(syncFee),
           end_date: endDate,
           genre: selectedGenre,
-          sub_genres: selectedSubGenres,
+          sub_genres: selectedSubGenres.length > 0 ? selectedSubGenres : [],
           reference_artist: referenceArtist || null,
           reference_song: referenceSong || null,
           reference_url: referenceUrl || null,
@@ -212,7 +212,7 @@ export default function CustomSyncRequest() {
                   Sub-Genres (Optional)
                 </label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {(SUB_GENRES[selectedGenre as keyof typeof SUB_GENRES] || []).map((subGenre) => (
+                  {(SUB_GENRES[selectedGenre.toLowerCase() as keyof typeof SUB_GENRES] || []).map((subGenre) => (
                     <label key={subGenre} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -334,8 +334,6 @@ export default function CustomSyncRequest() {
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-white">How to Submit</h3>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Special Instructions
@@ -346,22 +344,6 @@ export default function CustomSyncRequest() {
                   value={submissionInstructions}
                   onChange={(e) => setSubmissionInstructions(e.target.value)}
                   rows={4}
-                  className="w-full pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Submission Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={submissionEmail}
-                  onChange={(e) => setSubmissionEmail(e.target.value)}
                   className="w-full pl-10"
                   required
                 />

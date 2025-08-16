@@ -23,8 +23,9 @@ export function useFeatureFlag(featureName: string) {
           .eq('id', user.id)
           .single();
 
-        if (profileData?.account_type === 'admin') {
-          console.log(`Feature ${featureName}: Admin access granted`);
+        // Check if user has admin role (supports dual roles like 'admin,producer')
+        if (profileData?.account_type && profileData.account_type.includes('admin')) {
+          console.log(`Feature ${featureName}: Admin access granted (account_type: ${profileData.account_type})`);
           setIsEnabled(true);
           setLoading(false);
           return;
@@ -63,7 +64,7 @@ export function useFeatureFlag(featureName: string) {
         } else {
           // For main site users (non-white-label), enable features based on user type
           // Producers and regular users on the main site should have access to features
-          if (profileData?.account_type === 'producer' || profileData?.account_type === 'client') {
+          if (profileData?.account_type && (profileData.account_type.includes('producer') || profileData.account_type === 'client')) {
             console.log(`Feature ${featureName}: Main site user access granted (${profileData.account_type})`);
             setIsEnabled(true);
           } else {
@@ -81,6 +82,11 @@ export function useFeatureFlag(featureName: string) {
 
     checkFeatureFlag();
   }, [user, featureName]);
+
+  // Add debugging for producer_onboarding feature
+  if (featureName === 'producer_onboarding') {
+    console.log(`useFeatureFlag('${featureName}'): isEnabled=${isEnabled}, loading=${loading}, user=${user?.email}`);
+  }
 
   return { isEnabled, loading };
 }

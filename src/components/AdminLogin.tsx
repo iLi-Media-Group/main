@@ -60,6 +60,7 @@ export function AdminLogin() {
                 className="mt-1 block w-full rounded-md bg-white/10 border border-gray-600 text-white px-4 py-2 focus:border-purple-500 focus:ring focus:ring-purple-500/20"
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div>
@@ -74,6 +75,7 @@ export function AdminLogin() {
                 className="mt-1 block w-full rounded-md bg-white/10 border border-gray-600 text-white px-4 py-2 focus:border-purple-500 focus:ring focus:ring-purple-500/20"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <button

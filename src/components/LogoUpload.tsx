@@ -49,8 +49,9 @@ export function LogoUpload() {
 
       if (updateError) throw updateError;
 
-      // Reload the page to show the new logo
-      window.location.reload();
+      // Trigger a state update instead of reloading
+      // The parent component should handle logo updates
+      setUploading(false);
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload logo. Please try again.');

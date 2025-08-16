@@ -136,7 +136,7 @@ export default function ClientBrandingSettings() {
           <label className="block text-sm font-medium mb-1">Logo</label>
           <input type="file" accept="image/*" onChange={handleLogoChange} />
           {logoPreview && (
-            <img src={logoPreview} alt="Logo Preview" className="h-20 mt-2 rounded border border-blue-500/20" />
+            <img src={logoPreview} alt="Logo Preview" className="h-20 mt-2 rounded border border-blue-500/20 object-contain" style={{ background: 'transparent' }} />
           )}
         </div>
         <div>
@@ -161,7 +161,7 @@ export default function ClientBrandingSettings() {
         </div>
       </form>
       <div style={previewStyle} className="shadow-xl">
-        {logoPreview && <img src={logoPreview} alt="Logo Preview" className="h-16 mx-auto mb-4" />}
+        {logoPreview && <img src={logoPreview} alt="Logo Preview" className="h-16 mx-auto mb-4 object-contain" style={{ background: 'transparent' }} />}
         <h2 className="text-xl font-bold mb-2">{form.display_name || 'Live Preview'}</h2>
         <p>This is how your branding will look!</p>
         <div className="mt-4 text-sm text-gray-400">{form.footer_text}</div>

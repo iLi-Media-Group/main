@@ -76,16 +76,16 @@ Deno.serve(async (req) => {
     // Map price_id to plan name
     let planName = 'Unknown';
     switch (priceId) {
-      case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
+      case 'price_1RvLLRA4Yw5viczUCAGuLpKh':
         planName = 'Ultimate Access';
         break;
-      case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
+      case 'price_1RvLKcA4Yw5viczUItn56P2m':
         planName = 'Platinum Access';
         break;
-      case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
+      case 'price_1RvLJyA4Yw5viczUwdHhIYAQ':
         planName = 'Gold Access';
         break;
-      case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
+      case 'price_1RvLJCA4Yw5viczUrWeCZjom':
         planName = 'Single Track';
         break;
       default:

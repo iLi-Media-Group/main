@@ -12,10 +12,10 @@ export interface StripeProduct {
 
 export const PRODUCTS: StripeProduct[] = [
   {
-    id: 'prod_SYHE7EhWwzmgdg',
+    id: 'prod_Sr3SamNQMmkZtJ',
     name: 'Ultimate Access',
     description: 'Unlimited annual subscription',
-    priceId: 'price_1RdAfqR8RYA8TFzwKP7zrKsm',
+    priceId: 'price_1RvLLRA4Yw5viczUCAGuLpKh',
     mode: 'subscription',
     price: 499.99,
     interval: 'year',
@@ -32,10 +32,10 @@ export const PRODUCTS: StripeProduct[] = [
     cryptoEnabled: true
   },
   {
-    id: 'prod_SYHDBYWlrQJsjI',
+    id: 'prod_Sr3R3SYbxCHMFY',
     name: 'Platinum Access',
     description: 'Unlimited track use',
-    priceId: 'price_1RdAfXR8RYA8TFzwFZyaSREP',
+    priceId: 'price_1RvLKcA4Yw5viczUItn56P2m',
     mode: 'subscription',
     price: 59.99,
     interval: 'month',
@@ -52,10 +52,10 @@ export const PRODUCTS: StripeProduct[] = [
     cryptoEnabled: true
   },
   {
-    id: 'prod_SYHD3D1jEwjgnb',
+    id: 'prod_Sr3QvEVJcx1tQM',
     name: 'Gold Access',
     description: '10 tracks per month',
-    priceId: 'price_1RdAfER8RYA8TFzw7RrrNmtt',
+    priceId: 'price_1RvLJyA4Yw5viczUwdHhIYAQ',
     mode: 'subscription',
     price: 34.99,
     interval: 'month',
@@ -72,10 +72,10 @@ export const PRODUCTS: StripeProduct[] = [
     cryptoEnabled: true
   },
   {
-    id: 'prod_SYHCZgM5UBmn3C',
+    id: 'prod_Sr3Q4LEWMEvGAd',
     name: 'Single Track',
     description: 'Pay per track',
-    priceId: 'price_1RdAeZR8RYA8TFzwVH3MHECa',
+    priceId: 'price_1RvLJCA4Yw5viczUrWeCZjom',
     mode: 'payment',
     price: 9.99,
     interval: 'track',

@@ -19,6 +19,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { PricingCarousel } from './components/PricingCarousel';
 import { ClientsCarousel } from './components/ClientsCarousel';
+import { HeroSection } from './components/HeroSection';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
 import { LicenseAgreement } from './components/LicenseAgreement';
@@ -64,13 +65,79 @@ import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 import ProducerSyncSubmission from './components/ProducerSyncSubmission';
 import CustomSyncRequestSubs from './components/customsyncrequestsubs';
 import PaymentSuccessPage from './components/PaymentSuccessPage';
-
+import { EmailVerificationPage } from './components/EmailVerificationPage';
+import { AuthCallback } from './components/AuthCallback';
+import { useSecurity } from './hooks/useSecurity';
+import SecurityBlock from './components/SecurityBlock';
+import ProducerResourcesPage from './components/ProducerResourcesPage';
+import AdminResourceManager from './components/AdminResourceManager';
+import { ProducerTracksPage } from './components/ProducerTracksPage';
+import SearchTest from './components/SearchTest';
+import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
+import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
+import { BusinessVerificationForm } from './components/BusinessVerificationForm';
+import { PlaylistManager } from './components/PlaylistManager';
+import { PlaylistView } from './components/PlaylistView';
+import { PlaylistAnalytics } from './components/PlaylistAnalytics';
+import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
+import { FollowingPage } from './components/FollowingPage';
+import { initializeRefreshPrevention } from './utils/preventRefresh';
+import { setupDevelopmentProtection } from './utils/developmentMode';
 
 const App = () => {
+  console.log('🚀 App component loaded');
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
   const { user, accountType } = useAuth();
   const navigate = useNavigate();
+  
+  // Initialize refresh prevention system
+  useEffect(() => {
+    initializeRefreshPrevention({
+      enabled: true,
+      excludePaths: [
+        '/success',
+        '/checkout',
+        '/payment',
+        '/login',
+        '/signup',
+        '/admin',
+        '/admin/dashboard',
+        '/admin/producer-applications',
+        '/admin/white-label-clients',
+        '/admin/services',
+        '/admin/resources',
+        '/admin/banking',
+        '/admin/analytics',
+        '/admin/invite-producer',
+        '/advanced-analytics',
+        '/admin/white-label',
+        '/producer/dashboard',
+        '/dashboard',
+        '/producer/banking',
+        '/producer/payouts',
+        '/producer/withdrawals',
+        '/producer/resources',
+        '/producer/upload',
+        '/white-label-dashboard'
+      ]
+    });
+    
+    // Setup development mode protection
+    setupDevelopmentProtection();
+  }, []);
+  
+  // Security hook for the entire application
+  const {
+    securityViolations,
+    isBlocked,
+    clearViolations,
+    logSecurityViolation,
+  } = useSecurity({
+    enableRateLimiting: true,
+    enableInputValidation: true,
+    enableXSSProtection: true,
+  });
   
   // Check if we have email and redirect params that should trigger opening the signup dialog
   useEffect(() => {
@@ -82,8 +149,46 @@ const App = () => {
     }
   }, [searchParams, user]);
 
+  // Security monitoring - log suspicious activities
+  useEffect(() => {
+    // Monitor for rapid navigation changes (potential bot activity)
+    let navigationCount = 0;
+    const handleNavigation = () => {
+      navigationCount++;
+      if (navigationCount > 10) {
+        logSecurityViolation('Suspicious navigation pattern detected');
+      }
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
+  }, [logSecurityViolation]);
+
+  // Security: Block access if user is blocked
+  if (isBlocked) {
+    return (
+      <SecurityBlock
+        violations={securityViolations}
+        onClearViolations={clearViolations}
+        isBlocked={isBlocked}
+      />
+    );
+  }
+
   const LayoutWrapper = ({ children }: { children: React.ReactNode }) => (
     <Layout onSignupClick={() => setIsSignupOpen(true)}>
+      {children}
+    </Layout>
+  );
+
+  const HomeLayoutWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+      {children}
+    </Layout>
+  );
+
+  const ProducerLandingWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
       {children}
     </Layout>
   );
@@ -155,15 +260,8 @@ const App = () => {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={
-          <LayoutWrapper>
-            <section className="py-20 text-center">
-              <div className="container mx-auto px-4">
-                <h1 className="text-5xl font-bold mb-6">License Music for Your Media Productions</h1>
-                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                  One-Stop Licensing. Simple, Clear Rights. No Hidden Fees.
-                </p>
-              </div>
-            </section>
+          <HomeLayoutWrapper>
+            <HeroSection onSearch={handleSearch} />
 
             <section className="py-12 bg-black/20">
               <div className="container mx-auto px-4">
@@ -222,7 +320,7 @@ const App = () => {
                 <ClientsCarousel />
               </div>
             </section>
-          </LayoutWrapper>
+          </HomeLayoutWrapper>
         } />
 
         <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
@@ -231,6 +329,7 @@ const App = () => {
         <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
+        <Route path="/search-test" element={<LayoutWrapper><SearchTest /></LayoutWrapper>} />
         <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
         <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
@@ -242,11 +341,18 @@ const App = () => {
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+        <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
-        <Route path="/producers" element={<ProducerLandingPage />} />
+                 <Route path="/producers" element={<ProducerLandingWrapper><ProducerLandingPage /></ProducerLandingWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
-        <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
+        <Route path="/producer-applications-admin" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ProducerApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
         <Route path="/admin/white-label-clients" element={
           <ProtectedRoute requiresAdmin>
             <AdminWhiteLabelClientsPage />
@@ -270,7 +376,13 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/custom-sync-request-subs" element={<LayoutWrapper><CustomSyncRequestSubs /></LayoutWrapper>} />
+        <Route path="/custom-sync-request-subs" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <CustomSyncRequestSubs />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/open-sync-briefs" element={
           <ProtectedRoute>
@@ -338,6 +450,12 @@ const App = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/producer/custom-sync-upload" element={
+          <ProtectedRoute requiresProducer>
+            <CustomSyncUploadPage />
+          </ProtectedRoute>
+        } />
+
         <Route path="/producer/banking" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
@@ -358,6 +476,68 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerWithdrawalsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/resources" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerResourcesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/file-releases" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerFileReleaseManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/producer/playlists" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/producer/playlists/:playlistId/analytics" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistAnalytics />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+                 <Route path="/playlist/:slug" element={<PlaylistView />} />
+                 <Route path="/favorited-playlists" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FavoritedPlaylistsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/following" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FollowingPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/business-verification" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <BusinessVerificationForm />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/resources" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdminResourceManager />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
@@ -407,27 +587,36 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
+        <Route path="/advanced-analytics" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdvancedAnalyticsDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/admin/white-label" element={
-          accountType === 'admin' ? (
+          <ProtectedRoute requiresAdmin>
             <WhiteLabelAdminPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          </ProtectedRoute>
         } />
 
         <Route path="/admin/services" element={
-          accountType === 'admin' ? (
+          <ProtectedRoute requiresAdmin>
             <AdminServicesPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          </ProtectedRoute>
         } />
 
-        <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
+        <Route path="/services" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ServicesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
+        <Route path="/service-onboarding-public" element={<ServiceOnboardingPage publicMode={true} />} />
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
@@ -454,6 +643,10 @@ const App = () => {
         <Route path="/producer-sync-submission" element={<LayoutWrapper><ProducerSyncSubmission /></LayoutWrapper>} />
 
         <Route path="/payment-success" element={<PaymentSuccessPage />} />
+
+        {/* Email verification routes */}
+        <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route path="*" element={
           <LayoutWrapper>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useAdminRealTime } from '../hooks/useRealTimeUpdates';
 import { Link, useNavigate } from 'react-router-dom';
 import { ClientList } from './ClientList';
 import { AdminAnnouncementManager } from './AdminAnnouncementManager';
@@ -15,9 +16,17 @@ import { ProducerAnalyticsModal } from './ProducerAnalyticsModal';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
 import { LogoUpload } from './LogoUpload';
 import { GenreManagement } from './GenreManagement';
+import { InstrumentManagement } from './InstrumentManagement';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
+import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { SynonymManager } from './SynonymManager';
+import { BackgroundManager } from './BackgroundManager';
+import { MediaTypeManagement } from './MediaTypeManagement';
+import { ProducerBadgeManager } from './ProducerBadgeManager';
+
 
 interface UserStats {
   total_clients: number;
@@ -41,6 +50,8 @@ interface UserStats {
   new_memberships_count: number;
   white_label_pending_subscriptions_count: number;
   white_label_pending_monthly_amount: number;
+  membership_subscriptions_count: number;
+  membership_monthly_amount: number;
 }
 
 interface UserDetails {
@@ -114,7 +125,7 @@ const getBase64ImageFromURL = (url: string) =>
   });
 
 function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, accountType } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -141,6 +152,8 @@ function AdminDashboard() {
     new_memberships_count: number;
     white_label_pending_subscriptions_count: number;
     white_label_pending_monthly_amount: number;
+    membership_subscriptions_count: number;
+    membership_monthly_amount: number;
   }>({
     total_clients: 0,
     total_producers: 0,
@@ -163,15 +176,18 @@ function AdminDashboard() {
     new_memberships_count: 0,
     white_label_pending_subscriptions_count: 0,
     white_label_pending_monthly_amount: 0,
+    membership_subscriptions_count: 0,
+    membership_monthly_amount: 0,
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('total_revenue');
-  const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('first_name');
+  const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
+  const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'contact_messages'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -193,6 +209,22 @@ function AdminDashboard() {
   const [loadingContactMessages, setLoadingContactMessages] = useState(false);
   const [contactError, setContactError] = useState<string | null>(null);
   const [contactMessagesTab, setContactMessagesTab] = useState<'unread' | 'read'>('unread');
+  // Add state for services
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [servicesError, setServicesError] = useState<string | null>(null);
+  const [showProducerBadgeManager, setShowProducerBadgeManager] = useState(false);
+
+  // Feature flag checks for white label clients
+  const { isEnabled: producerOnboardingEnabled } = useFeatureFlag('producer_onboarding');
+  const { isEnabled: aiSearchEnabled } = useFeatureFlag('ai_search_assistance');
+  const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
+
+  // Debug logging for producer applications tab
+  useEffect(() => {
+    console.log('AdminDashboard: producerOnboardingEnabled =', producerOnboardingEnabled);
+    console.log('AdminDashboard: user email =', user?.email);
+  }, [producerOnboardingEnabled, user]);
 
   useEffect(() => {
     if (user) {
@@ -200,6 +232,15 @@ function AdminDashboard() {
       fetchWhiteLabelClients();
     }
   }, [user]);
+
+  // Set up real-time subscription for admin data
+  const handleAdminUpdate = useCallback((payload: any) => {
+    console.log('Admin real-time update:', payload);
+    fetchData();
+    fetchWhiteLabelClients();
+  }, []);
+
+  useAdminRealTime(handleAdminUpdate);
 
   useEffect(() => {
     if (!user) return;
@@ -231,8 +272,14 @@ function AdminDashboard() {
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === 'contact_messages') {
+    if (activeTab === 'contact_messages' && contactMessages.length === 0) {
       fetchContactMessages();
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'services') {
+      fetchServices();
     }
   }, [activeTab]);
 
@@ -487,13 +534,55 @@ if (subscription.price_id) {
           }
         });
 
+        // Fetch membership subscriptions (Gold, Platinum, Ultimate Access)
+        const { data: membershipSubscriptionsData, error: membershipSubscriptionsError } = await supabase
+          .from('stripe_subscriptions')
+          .select('id, subscription_id, status, price_id, created_at')
+          .eq('status', 'active')
+          .in('price_id', [
+            'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+            'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+            'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
+          ]);
+
+        if (membershipSubscriptionsError) {
+          console.error('Error fetching membership subscriptions:', membershipSubscriptionsError);
+        }
+        const membershipSubscriptions = membershipSubscriptionsData || [];
+        const membership_subscriptions_count = membershipSubscriptions.length;
+        
+        // Calculate membership monthly revenue based on price IDs
+        let membership_monthly_amount = 0;
+        membershipSubscriptions.forEach(subscription => {
+          if (subscription.price_id) {
+            // Map price IDs to monthly amounts based on stripe.ts
+            switch (subscription.price_id) {
+              case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
+                membership_monthly_amount += 299; // Ultimate Access monthly
+                break;
+              case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
+                membership_monthly_amount += 199; // Platinum Access monthly
+                break;
+              case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
+                membership_monthly_amount += 99; // Gold Access monthly
+                break;
+              default:
+                membership_monthly_amount += 99; // Default to Gold Access amount
+            }
+          }
+        });
+
+        console.log('Membership Subscriptions found:', membershipSubscriptions.length);
+        console.log('Membership Subscriptions data:', membershipSubscriptions);
+        console.log('Membership monthly revenue:', membership_monthly_amount);
+
         // Update stats with comprehensive data
         setStats((prev: typeof stats) => ({
           ...prev,
           total_clients: clients.length,
           total_producers: producerUsers.length,
           total_sales: track_sales_count + sync_proposals_paid_count + custom_syncs_paid_count + white_label_setup_count,
-          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount + white_label_setup_amount + white_label_monthly_amount,
+          total_revenue: track_sales_amount + sync_proposals_paid_amount + custom_syncs_paid_amount + white_label_setup_amount + white_label_monthly_amount + membership_monthly_amount,
           track_sales_count,
           track_sales_amount,
           sync_proposals_paid_count,
@@ -511,6 +600,8 @@ if (subscription.price_id) {
           new_memberships_count,
           white_label_pending_subscriptions_count,
           white_label_pending_monthly_amount,
+          membership_subscriptions_count,
+          membership_monthly_amount,
         }));
 
         // Fetch producer analytics using the existing function
@@ -600,15 +691,15 @@ if (subscription.price_id) {
             }
           }
 
-          // Fetch custom sync requests for these producers (where they are the preferred producer)
+          // Fetch custom sync requests for these producers (where they are the selected producer)
           let customSyncRequestsData: any[] = [];
           const producerIds = producersNotInAnalytics.map(p => p.id);
           if (producerIds.length > 0) {
             const { data: customSyncRequests, error: customSyncRequestsError } = await supabase
               .from('custom_sync_requests')
-              .select('id, preferred_producer_id, sync_fee, status')
-              .in('preferred_producer_id', producerIds)
-              .eq('status', 'completed');
+              .select('id, selected_producer_id, sync_fee, status, payment_status')
+              .in('selected_producer_id', producerIds)
+              .eq('payment_status', 'paid');
 
             if (customSyncRequestsError) {
               console.error('Error fetching custom sync requests for producers:', customSyncRequestsError);
@@ -623,7 +714,7 @@ if (subscription.price_id) {
             const producerTrackIds = producerTracks.map(t => t.id);
             const producerSales = salesData.filter(s => producerTrackIds.includes(s.track_id));
             const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
-            const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.preferred_producer_id === producer.id);
+            const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.selected_producer_id === producer.id);
 
             producerAnalyticsMap[producer.id] = {
               total_tracks: producerTracks.length,
@@ -857,6 +948,26 @@ if (subscription.price_id) {
     } else {
       setProducerSortField(field);
       setProducerSortOrder('asc');
+    }
+  };
+
+  const handleDeleteProducer = async () => {
+    if (!producerToDelete) return;
+
+    try {
+      // Delete the profile - this will trigger the database trigger to delete the auth user
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', producerToDelete.id);
+
+      if (error) throw error;
+
+      // Refresh producer list
+      await fetchData();
+    } catch (err) {
+      console.error('Error deleting producer:', err);
+      throw new Error('Failed to delete producer. Please try again.');
     }
   };
 
@@ -1096,9 +1207,15 @@ if (subscription.price_id) {
         .from('contact_messages')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Error fetching contact messages:', error);
+        throw error;
+      }
+      
       setContactMessages(data || []);
     } catch (err) {
+      console.error('Failed to fetch contact messages:', err);
       setContactError('Failed to fetch contact messages.');
     } finally {
       setLoadingContactMessages(false);
@@ -1107,21 +1224,58 @@ if (subscription.price_id) {
 
   const markAsRead = async (id: string) => {
     try {
-      await supabase
+      // Update the message status
+      const { error } = await supabase
         .from('contact_messages')
-        .update({ status: 'read' })
+        .update({ 
+          status: 'read'
+        })
         .eq('id', id);
-      setContactMessages((prev) => prev.map((msg) => msg.id === id ? { ...msg, status: 'read' } : msg));
-      // Optionally, if currently on the 'unread' tab, remove the message from the list immediately
-      if (contactMessagesTab === 'unread') {
-        setContactMessages((prev) => prev.filter((msg) => !(msg.id === id && msg.status === 'read')));
+      
+      if (error) {
+        console.error('Error marking message as read:', error);
+        throw error;
       }
+      
+      // Update the local state to reflect the change
+      setContactMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === id ? { ...msg, status: 'read' } : msg
+        )
+      );
     } catch (err) {
+      console.error('Error marking message as read:', err);
       alert('Failed to mark as read.');
     }
   };
 
+  const fetchServices = async () => {
+    setLoadingServices(true);
+    setServicesError(null);
+    try {
+      const { data, error } = await supabase.from('services').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      setServices(data || []);
+    } catch (err) {
+      setServicesError('Failed to fetch services.');
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this service?')) return;
+    try {
+      const { error } = await supabase.from('services').delete().eq('id', id);
+      if (error) throw error;
+      setServices(services.filter(s => s.id !== id));
+    } catch (err) {
+      alert('Failed to delete service.');
+    }
+  };
+
   if (loading) {
+    console.log('AdminDashboard: Loading state, user:', user?.email);
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
@@ -1129,6 +1283,7 @@ if (subscription.price_id) {
     );
   }
 
+  console.log('AdminDashboard: Rendering main component, user:', user?.email, 'loading:', loading, 'error:', error);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
       <div className="container mx-auto px-4 py-8">
@@ -1147,13 +1302,29 @@ if (subscription.price_id) {
               </p>
             )}
           </div>
-          <button
-            onClick={() => setShowLogoUpload(!showLogoUpload)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
-          >
-            <Upload className="w-4 h-4 mr-2" />
-            Change Logo
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowLogoUpload(!showLogoUpload)}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Change Logo
+            </button>
+            <Link
+              to="/admin/services"
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manage/Add Services
+            </Link>
+            <Link
+              to="/admin/resources"
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Manage Resources
+            </Link>
+          </div>
         </div>
 
         {showLogoUpload && <LogoUpload />}
@@ -1282,13 +1453,20 @@ if (subscription.price_id) {
                   <td className="py-3 px-4 text-right text-gray-400">-</td>
                   <td className="py-3 px-4 text-right text-gray-400">-</td>
                 </tr>
+                <tr className="border-b border-blue-500/10">
+                  <td className="py-3 px-4 text-white">Membership Subscriptions</td>
+                  <td className="py-3 px-4 text-right text-white">{stats.membership_subscriptions_count}</td>
+                  <td className="py-3 px-4 text-right text-green-400">${stats.membership_monthly_amount.toFixed(2)}</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                  <td className="py-3 px-4 text-right text-gray-400">-</td>
+                </tr>
                 <tr className="border-t-2 border-blue-500/30 bg-blue-500/5">
                   <td className="py-3 px-4 text-white font-semibold">Totals</td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
-                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count}
+                    {stats.track_sales_count + stats.sync_proposals_paid_count + stats.custom_syncs_paid_count + stats.white_label_setup_count + stats.white_label_subscriptions_count + stats.membership_subscriptions_count}
                   </td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
-                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount).toFixed(2)}
+                    ${(stats.track_sales_amount + stats.sync_proposals_paid_amount + stats.custom_syncs_paid_amount + stats.white_label_setup_amount + stats.white_label_monthly_amount + stats.membership_monthly_amount).toFixed(2)}
                   </td>
                   <td className="py-3 px-4 text-right text-white font-semibold">
                     {stats.sync_proposals_pending_count + stats.custom_syncs_pending_count}
@@ -1306,7 +1484,7 @@ if (subscription.price_id) {
         <div className="flex flex-wrap border-b border-blue-500/20 mb-8">
           {[
             { id: 'analytics', label: 'Analytics', icon: null },
-            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" /> },
+            { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" />, featureFlag: 'advanced_analytics' },
             { id: 'producers', label: 'Producers', icon: null },
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
@@ -1314,8 +1492,28 @@ if (subscription.price_id) {
             { id: 'discounts', label: 'Discounts', icon: <Percent className="w-4 h-4 mr-2" /> },
             { id: 'white_label', label: 'White Label Clients', icon: null },
             { id: 'genres', label: 'Genres', icon: <Music className="w-4 h-4 mr-2" /> },
+            { id: 'instruments', label: 'Instruments', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
-          ].map(tab => (
+            { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
+            { id: 'producer_badges', label: 'Producer Badges', icon: <Shield className="w-4 h-4 mr-2" /> },
+            { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
+            { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
+            { id: 'backgrounds', label: 'Background Manager', icon: <Video className="w-4 h-4 mr-2" /> },
+            { id: 'media_types', label: 'Media Types', icon: <Video className="w-4 h-4 mr-2" /> },
+          ].filter(tab => {
+            // Always show tabs without feature flags
+            if (!tab.featureFlag) return true;
+            
+            // Check feature flags for specific tabs
+            switch (tab.featureFlag) {
+              case 'producer_onboarding':
+                return producerOnboardingEnabled;
+              case 'advanced_analytics':
+                return aiSearchEnabled; // Using aiSearchEnabled as proxy for advanced analytics
+              default:
+                return true;
+            }
+          }).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
@@ -1349,10 +1547,21 @@ if (subscription.price_id) {
         )}
 
         {/* Advanced Analytics Section */}
-        {activeTab === 'advanced_analytics' && (
+        {activeTab === 'advanced_analytics' && aiSearchEnabled && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <h2 className="text-2xl font-bold text-white mb-6">Advanced Analytics Dashboard</h2>
             <AdvancedAnalyticsDashboard />
+          </div>
+        )}
+
+        {activeTab === 'advanced_analytics' && !aiSearchEnabled && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="text-center py-12">
+              <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-4">Advanced Analytics</h2>
+              <p className="text-gray-400 mb-6">This feature requires the AI Search Assistance add-on to be enabled.</p>
+              <p className="text-sm text-gray-500">Contact your administrator to enable this feature.</p>
+            </div>
           </div>
         )}
 
@@ -1457,7 +1666,7 @@ if (subscription.price_id) {
                         )}
                       </button>
                     </th>
-
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-purple-500/10">
@@ -1487,6 +1696,20 @@ if (subscription.price_id) {
                       </td>
                       <td className="px-6 py-4 text-gray-300">
                         {new Date(producer.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProducerToDelete(producer);
+                            }}
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                            title="Delete producer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1573,7 +1796,8 @@ if (subscription.price_id) {
                               <img 
                                 src={client.logo_url} 
                                 alt={client.display_name}
-                                className="w-8 h-8 rounded-full mr-3 object-cover"
+                                className="w-8 h-8 rounded-full mr-3 object-contain"
+                                style={{ background: 'transparent' }}
                               />
                             )}
                             <div>
@@ -1693,9 +1917,26 @@ if (subscription.price_id) {
           <GenreManagement />
         )}
 
+        {/* Instrument Management */}
+        {activeTab === 'instruments' && (
+          <InstrumentManagement />
+        )}
+
         {activeTab === 'contact_messages' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <h2 className="text-2xl font-bold text-white mb-6">Contact Messages</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Contact Messages</h2>
+              <div className="flex gap-4">
+                <button
+                  onClick={fetchContactMessages}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                  title="Refresh messages"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Refresh
+                </button>
+              </div>
+            </div>
             <div className="mb-6 flex gap-4">
               <button
                 className={`px-4 py-2 rounded-lg font-semibold transition-colors ${contactMessagesTab === 'unread' ? 'bg-blue-600 text-white' : 'bg-white/10 text-gray-300 hover:bg-blue-500/10'}`}
@@ -1732,7 +1973,7 @@ if (subscription.price_id) {
                       <th className="py-3 px-4 text-left text-gray-300 font-semibold">Actions</th>
                     </tr>
                   </thead>
-                  <tbody>
+                                    <tbody>
                     {contactMessages.filter(msg => contactMessagesTab === 'unread' ? msg.status === 'unread' : msg.status === 'read').length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-6 text-center text-gray-400">No messages found.</td>
@@ -1749,7 +1990,7 @@ if (subscription.price_id) {
                         <td className="py-3 px-4 text-gray-400">{new Date(msg.created_at).toLocaleString()}</td>
                         <td className="py-3 px-4">
                           {msg.status === 'unread' && (
-                            <button onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
+                            <button type="button" onClick={() => markAsRead(msg.id)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs">Mark as Read</button>
                           )}
                         </td>
                       </tr>
@@ -1758,6 +1999,130 @@ if (subscription.price_id) {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'producer_applications' && producerOnboardingEnabled && (
+          <ProducerApplicationsAdmin />
+        )}
+
+        {activeTab === 'producer_applications' && !producerOnboardingEnabled && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="text-center py-12">
+              <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-4">Producer Applications</h2>
+              <p className="text-gray-400 mb-6">This feature requires the Producer Onboarding add-on to be enabled.</p>
+              <p className="text-sm text-gray-500">Contact your administrator to enable this feature.</p>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'services' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <h2 className="text-2xl font-bold text-white mb-6">All Services</h2>
+            {loadingServices ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+              </div>
+            ) : servicesError ? (
+              <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-center font-medium">{servicesError}</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-blue-500/20">
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Name</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Type</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Contact</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Created</th>
+                      <th className="py-3 px-4 text-left text-gray-300 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {services.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-6 text-center text-gray-400">No services found.</td>
+                      </tr>
+                    ) : services.map((service) => (
+                      <tr key={service.id} className="border-b border-blue-500/10 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4 text-white">{service.name}</td>
+                        <td className="py-3 px-4 text-white">{service.type}</td>
+                        <td className="py-3 px-4 text-blue-400 underline"><a href={`mailto:${service.contact}`}>{service.contact}</a></td>
+                        <td className="py-3 px-4 text-gray-400">{service.created_at ? new Date(service.created_at).toLocaleString() : ''}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => window.open(`/services`, '_blank')}
+                              className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                              title="View services page"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            {accountType === 'admin' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteService(service.id)}
+                                className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                                title="Delete service"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'synonyms' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <SynonymManager />
+          </div>
+        )}
+
+        {/* Background Manager */}
+        {activeTab === 'backgrounds' && (
+          <BackgroundManager />
+        )}
+
+        {/* Media Types Management */}
+        {activeTab === 'media_types' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <MediaTypeManagement />
+          </div>
+        )}
+
+        {/* Producer Badge Manager */}
+        {activeTab === 'producer_badges' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Producer Badge Manager</h2>
+              <button
+                onClick={() => setShowProducerBadgeManager(true)}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Manage Producer Badges
+              </button>
+            </div>
+            <div className="text-center py-12">
+              <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-4">Producer Usage Badges</h3>
+              <p className="text-gray-400 mb-6">
+                Manage badges that indicate which production tools producers use (Loops, Samples, Splice).
+              </p>
+              <p className="text-sm text-gray-500">
+                Click "Manage Producer Badges" to view and edit producer usage badges.
+              </p>
+            </div>
           </div>
         )}
 
@@ -2029,6 +2394,71 @@ if (subscription.price_id) {
       )}
       {/* AdminReportGenerator Modal */}
       <AdminReportGenerator isOpen={isReportModalOpen} onClose={closeReportModal} />
+
+      {/* Producer Delete Confirmation Dialog */}
+      {producerToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[200] p-4">
+          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center">
+                <AlertTriangle className="w-6 h-6 text-red-400 mr-3" />
+                <h3 className="text-xl font-bold text-white">Delete Producer</h3>
+              </div>
+              <button type="button" onClick={() => setProducerToDelete(null)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+                <p className="text-red-400 text-sm font-medium mb-2">⚠️ Warning</p>
+                <p className="text-gray-300 text-sm">
+                  This action will permanently delete the producer account and all associated data including tracks, sales, and proposals. 
+                  The producer will no longer be able to log in to the system.
+                </p>
+              </div>
+
+              <div>
+                <p className="text-white">
+                  Are you sure you want to delete <strong>{producerToDelete.first_name} {producerToDelete.last_name}</strong> ({producerToDelete.email})?
+                </p>
+                <p className="text-gray-400 text-sm mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex justify-end space-x-4 mt-6">
+                <button
+                  onClick={() => setProducerToDelete(null)}
+                  className="px-4 py-2 text-gray-300 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await handleDeleteProducer();
+                      setProducerToDelete(null);
+                    } catch (err) {
+                      console.error('Error deleting producer:', err);
+                    }
+                  }}
+                  className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Producer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Producer Badge Manager Modal */}
+      <ProducerBadgeManager 
+        isOpen={showProducerBadgeManager} 
+        onClose={() => setShowProducerBadgeManager(false)} 
+      />
     </div>
   </div>
   );

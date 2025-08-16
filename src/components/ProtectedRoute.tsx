@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -29,7 +30,7 @@ export function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  const isAdmin = user.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email.toLowerCase());
+  const isAdmin = user.email && isAdminEmail(user.email);
 
   // Admins can access all routes
   if (isAdmin) {
@@ -37,16 +38,27 @@ export function ProtectedRoute({
   }
 
   // Route-specific checks for non-admin users
-  if (requiresAdmin) {
+  // Only redirect if we're certain the user is not an admin and accountType is loaded
+  if (requiresAdmin && accountType && accountType !== 'admin' && accountType !== 'admin,producer') {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresProducer && accountType !== 'producer') {
+  // Check for producer access (including dual roles)
+  if (requiresProducer && accountType && !accountType.includes('producer')) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requiresClient && accountType !== 'client' && accountType !== 'white_label') {
+  if (requiresClient && accountType && accountType !== 'client' && accountType !== 'white_label') {
     return <Navigate to="/producer/dashboard" replace />;
+  }
+
+  // If accountType is still loading or null, show loading instead of redirecting
+  if (requiresAdmin && !accountType) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
   }
 
   return <>{children}</>;

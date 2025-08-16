@@ -1,0 +1,8 @@
+[33mcommit 6cabea9090fb91e583d007b054ee633066dcad37[m
+Author: MyBeatFi Admin <theilimediagroup@gmail.com>
+Date:   Fri Aug 8 18:27:56 2025 -0300
+
+    Replace Gmail SMTP with Resend API for reliable email delivery
+
+.env.production
+supabase/.env

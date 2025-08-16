@@ -33,7 +33,7 @@ export function CheckoutSuccessPage() {
           setLoading(false);
           // Redirect to dashboard if not already there
           if (window.location.pathname !== '/dashboard') {
-            window.location.href = '/dashboard';
+            navigate('/dashboard');
           }
           return;
         }
