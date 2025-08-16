@@ -74,10 +74,11 @@ export const AdminResourceManager: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
+    // Only fetch resources when user is authenticated and has appropriate permissions
     if (user && (accountType === 'admin' || accountType === 'producer' || accountType === 'admin,producer')) {
       fetchResources();
     }
-  }, [user, accountType]);
+  }, [user?.id, accountType]); // Only depend on user ID and account type, not the entire user object
 
   const fetchResources = async () => {
     try {
