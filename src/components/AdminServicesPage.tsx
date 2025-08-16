@@ -357,12 +357,20 @@ export default function AdminServicesPage() {
         {activeTab === 'services' && (
           <>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
-              <button
-                className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded mb-2 md:mb-0"
-                onClick={handleAdd}
-              >
-                Add Service
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
+                  onClick={handleAdd}
+                >
+                  Add Service
+                </button>
+                <button
+                  className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded"
+                  onClick={() => setShowOnboardingModal(true)}
+                >
+                  Send Onboarding Email
+                </button>
+              </div>
               <input
                 type="text"
                 value={search}
@@ -655,6 +663,92 @@ export default function AdminServicesPage() {
                           </>
                         ) : (
                           editingService ? 'Update' : 'Add'
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Onboarding Modal */}
+            {showOnboardingModal && (
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="bg-blue-900/90 p-6 rounded-xl border border-blue-500/20 w-full max-w-md">
+                  <h2 className="text-xl font-bold mb-4">Send Service Onboarding Email</h2>
+                  <form onSubmit={handleSendOnboardingLink} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Service Provider Email</label>
+                      <input
+                        type="email"
+                        value={onboardingEmail}
+                        onChange={(e) => setOnboardingEmail(e.target.value)}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        placeholder="provider@example.com"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Service Type</label>
+                      <select
+                        value={onboardingType}
+                        onChange={(e) => setOnboardingType(e.target.value)}
+                        className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                        required
+                      >
+                        {SERVICE_TYPES.map((t) => (
+                          <option key={t.key} value={t.key}>{t.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {onboardingError && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
+                        {onboardingError}
+                      </div>
+                    )}
+                    {onboardingLink && (
+                      <div className="p-3 bg-green-500/10 border border-green-500/20 rounded text-green-300 text-sm">
+                        <p className="font-semibold mb-2">✅ Email sent successfully!</p>
+                        <p className="text-xs mb-2">Link generated:</p>
+                        <input
+                          type="text"
+                          value={onboardingLink}
+                          readOnly
+                          className="w-full px-2 py-1 text-xs bg-white/10 border border-green-500/20 rounded text-green-300"
+                        />
+                      </div>
+                    )}
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-gray-700 rounded"
+                        onClick={() => {
+                          setShowOnboardingModal(false);
+                          setOnboardingEmail('');
+                          setOnboardingType('studios');
+                          setOnboardingError('');
+                          setOnboardingLink('');
+                        }}
+                        disabled={sendingOnboarding}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className={`px-4 py-2 rounded text-white flex items-center ${
+                          sendingOnboarding
+                            ? 'bg-blue-500 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                        disabled={sendingOnboarding}
+                      >
+                        {sendingOnboarding ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                            Sending...
+                          </>
+                        ) : (
+                          'Send Email'
                         )}
                       </button>
                     </div>
