@@ -433,10 +433,10 @@ export default function AdminServicesPage() {
             </div>
             {/* Add/Edit Modal */}
             {showForm && (
-              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                <div className="bg-blue-900/90 p-6 rounded-xl border border-blue-500/20 w-full max-w-2xl max-h-screen overflow-y-auto">
-                  <h2 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add Service'}</h2>
-                  <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+                <div className="bg-blue-900/90 p-4 sm:p-6 rounded-xl border border-blue-500/20 w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-y-auto">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3">{editingService ? 'Edit Service' : 'Add Service'}</h2>
+                  <form onSubmit={handleFormSubmit} className="space-y-3">
                     <div>
                       <label className="block text-sm font-medium mb-1">Type</label>
                       <select
@@ -496,9 +496,9 @@ export default function AdminServicesPage() {
                     <div>
                       <label className="block text-sm font-medium mb-1">Main Image</label>
                       {editingService && existingImages.image && (
-                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                        <div className="mb-1 p-2 bg-blue-500/10 rounded border border-blue-500/20">
                           <p className="text-xs text-blue-300 mb-1">Current Image:</p>
-                          <img src={existingImages.image} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                          <img src={existingImages.image} alt="Current" className="h-14 rounded border border-blue-500/20" />
                         </div>
                       )}
                       <input
@@ -509,9 +509,9 @@ export default function AdminServicesPage() {
                         placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview && (
-                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                        <div className="mt-1 p-2 bg-green-500/10 rounded border border-green-500/20">
                           <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
-                          <img src={imagePreview} alt="Preview" className="h-24 rounded border border-green-500/20" />
+                          <img src={imagePreview} alt="Preview" className="h-20 rounded border border-green-500/20" />
                         </div>
                       )}
                       {editingService && !imageFile && existingImages.image && (
@@ -521,9 +521,9 @@ export default function AdminServicesPage() {
                     <div>
                       <label className="block text-sm font-medium mb-1">Additional Image 1 (optional)</label>
                       {editingService && existingImages.image2 && (
-                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                        <div className="mb-1 p-2 bg-blue-500/10 rounded border border-blue-500/20">
                           <p className="text-xs text-blue-300 mb-1">Current Image:</p>
-                          <img src={existingImages.image2} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                          <img src={existingImages.image2} alt="Current" className="h-14 rounded border border-blue-500/20" />
                         </div>
                       )}
                       <input
@@ -534,9 +534,9 @@ export default function AdminServicesPage() {
                         placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview2 && (
-                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                        <div className="mt-1 p-2 bg-green-500/10 rounded border border-green-500/20">
                           <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
-                          <img src={imagePreview2} alt="Preview 2" className="h-24 rounded border border-green-500/20" />
+                          <img src={imagePreview2} alt="Preview 2" className="h-20 rounded border border-green-500/20" />
                         </div>
                       )}
                       {editingService && !imageFile2 && existingImages.image2 && (
@@ -546,9 +546,9 @@ export default function AdminServicesPage() {
                     <div>
                       <label className="block text-sm font-medium mb-1">Additional Image 2 (optional)</label>
                       {editingService && existingImages.image3 && (
-                        <div className="mb-2 p-2 bg-blue-500/10 rounded border border-blue-500/20">
+                        <div className="mb-1 p-2 bg-blue-500/10 rounded border border-blue-500/20">
                           <p className="text-xs text-blue-300 mb-1">Current Image:</p>
-                          <img src={existingImages.image3} alt="Current" className="h-16 rounded border border-blue-500/20" />
+                          <img src={existingImages.image3} alt="Current" className="h-14 rounded border border-blue-500/20" />
                         </div>
                       )}
                       <input
@@ -559,9 +559,9 @@ export default function AdminServicesPage() {
                         placeholder="Select an image file (max 2MB)"
                       />
                       {imagePreview3 && (
-                        <div className="mt-2 p-2 bg-green-500/10 rounded border border-green-500/20">
+                        <div className="mt-1 p-2 bg-green-500/10 rounded border border-green-500/20">
                           <p className="text-xs text-green-300 mb-1">New Image Preview:</p>
-                          <img src={imagePreview3} alt="Preview 3" className="h-24 rounded border border-green-500/20" />
+                          <img src={imagePreview3} alt="Preview 3" className="h-20 rounded border border-green-500/20" />
                         </div>
                       )}
                       {editingService && !imageFile3 && existingImages.image3 && (
@@ -570,7 +570,7 @@ export default function AdminServicesPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-1">Subgenres</label>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1">
                         {SUBGENRE_OPTIONS[form.type]?.map((sub: string) => (
                           <label key={sub} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
                             <input
@@ -604,7 +604,7 @@ export default function AdminServicesPage() {
                     {form.type === 'artists' && (
                       <div>
                         <label className="block text-sm font-medium mb-1">Style Tags</label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1">
                           {STYLE_TAGS.map((tag: string) => (
                             <label key={tag} className="flex items-center space-x-1 text-xs bg-white/10 px-2 py-1 rounded">
                               <input
