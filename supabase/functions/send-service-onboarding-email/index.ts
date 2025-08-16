@@ -44,58 +44,78 @@ serve(async (req) => {
     console.log('Sending service onboarding email via Resend API...');
 
     const subject = "Welcome to MyBeatFi - Add Your Service";
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome to MyBeatFi</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-          .button { display: inline-block; background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; border: none; }
-          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>Welcome to MyBeatFi!</h1>
-            <p>We're excited to have you join our community of service providers</p>
-          </div>
-          <div class="content">
-            <h2>Add Your Service to MyBeatFi</h2>
-            <p>Thank you for your interest in providing services to our music community! We've created a secure link for you to add your service details to our platform.</p>
-            
-            <p><strong>What you can add:</strong></p>
-            <ul>
-              <li>Recording Studios</li>
-              <li>Recording Engineers</li>
-              <li>Graphic Artists</li>
-              <li>And more!</li>
-            </ul>
-            
-            <p>Click the button below to get started:</p>
-            
-            <div style="text-align: center;">
-              <a href="${link}" class="button" style="display: inline-block; background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; border: none;">Add Your Service</a>
-            </div>
-            
-            <p><strong>Important:</strong> This link will expire in 3 days for security reasons. If you need a new link, please contact us.</p>
-            
-            <p>If you have any questions or need assistance, please don't hesitate to reach out to our support team.</p>
-          </div>
-          <div class="footer">
-            <p>© 2024 MyBeatFi. All rights reserved.</p>
-            <p>This email was sent to ${to}</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+         const html = `
+       <!DOCTYPE html>
+       <html>
+       <head>
+         <meta charset="utf-8">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+         <title>Welcome to MyBeatFi</title>
+       </head>
+       <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4;">
+         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4;">
+           <tr>
+             <td align="center" style="padding: 20px;">
+               <table width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                 <!-- Header -->
+                 <tr>
+                   <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center;">
+                     <h1 style="margin: 0 0 10px 0; font-size: 28px; font-weight: bold;">Welcome to MyBeatFi!</h1>
+                     <p style="margin: 0; font-size: 16px;">We're excited to have you join our community of service providers</p>
+                   </td>
+                 </tr>
+                 
+                 <!-- Content -->
+                 <tr>
+                   <td style="padding: 30px; background-color: #ffffff;">
+                     <h2 style="margin: 0 0 20px 0; color: #333; font-size: 24px;">Add Your Service to MyBeatFi</h2>
+                     <p style="margin: 0 0 20px 0; color: #333; font-size: 16px;">Thank you for your interest in providing services to our music community! We've created a secure link for you to add your service details to our platform.</p>
+                     
+                     <p style="margin: 0 0 10px 0; color: #333; font-size: 16px; font-weight: bold;">What you can add:</p>
+                     <ul style="margin: 0 0 20px 0; padding-left: 20px; color: #333; font-size: 16px;">
+                       <li style="margin-bottom: 5px;">Recording Studios</li>
+                       <li style="margin-bottom: 5px;">Recording Engineers</li>
+                       <li style="margin-bottom: 5px;">Graphic Artists</li>
+                       <li style="margin-bottom: 5px;">And more!</li>
+                     </ul>
+                     
+                     <p style="margin: 0 0 20px 0; color: #333; font-size: 16px;">Click the button below to get started:</p>
+                     
+                     <table width="100%" cellpadding="0" cellspacing="0">
+                       <tr>
+                         <td align="center" style="padding: 20px 0;">
+                           <table cellpadding="0" cellspacing="0">
+                             <tr>
+                               <td style="background-color: #2563eb; border-radius: 5px; text-align: center;">
+                                 <a href="${link}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; border: none;">Add Your Service</a>
+                               </td>
+                             </tr>
+                           </table>
+                         </td>
+                       </tr>
+                     </table>
+                     
+                     <p style="margin: 20px 0 10px 0; color: #333; font-size: 16px; font-weight: bold;">Important:</p>
+                     <p style="margin: 0 0 20px 0; color: #333; font-size: 16px;">This link will expire in 3 days for security reasons. If you need a new link, please contact us.</p>
+                     
+                     <p style="margin: 0; color: #333; font-size: 16px;">If you have any questions or need assistance, please don't hesitate to reach out to our support team.</p>
+                   </td>
+                 </tr>
+                 
+                 <!-- Footer -->
+                 <tr>
+                   <td style="padding: 20px; text-align: center; background-color: #f8f9fa; border-top: 1px solid #e9ecef;">
+                     <p style="margin: 0 0 5px 0; color: #666; font-size: 14px;">© 2024 MyBeatFi. All rights reserved.</p>
+                     <p style="margin: 0; color: #666; font-size: 14px;">This email was sent to ${to}</p>
+                   </td>
+                 </tr>
+               </table>
+             </td>
+           </tr>
+         </table>
+       </body>
+       </html>
+     `;
 
     const text = `
 Welcome to MyBeatFi!
