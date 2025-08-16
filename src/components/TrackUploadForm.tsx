@@ -1,6 +1,7 @@
 // NOTE: Triggering redeploy for deployment troubleshooting.
 // NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
@@ -199,9 +200,9 @@ export function TrackUploadForm() {
     }
   }, [showSuccessModal, successCountdown, navigate]);
 
-  // Fetch genres from database
-  useEffect(() => {
-    const fetchGenres = async () => {
+  // Fetch genres from database - use stable effect to prevent refreshes
+  useStableDataFetch(
+    async () => {
       try {
         setGenresLoading(true);
         const { data, error } = await supabase
@@ -221,14 +222,14 @@ export function TrackUploadForm() {
       } finally {
         setGenresLoading(false);
       }
-    };
+    },
+    [],
+    () => true
+  );
 
-    fetchGenres();
-  }, []);
-
-  // Fetch instruments from database
-  useEffect(() => {
-    const fetchInstruments = async () => {
+  // Fetch instruments from database - use stable effect to prevent refreshes
+  useStableDataFetch(
+    async () => {
       try {
         setInstrumentsLoading(true);
         const instrumentsData = await fetchInstrumentsData();
@@ -240,10 +241,10 @@ export function TrackUploadForm() {
       } finally {
         setInstrumentsLoading(false);
       }
-    };
-
-    fetchInstruments();
-  }, []);
+    },
+    [],
+    () => true
+  );
 
   const resetForm = () => {
     resetFormData();

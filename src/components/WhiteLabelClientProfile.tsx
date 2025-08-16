@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Palette, Settings, Save, X, Globe, Image, ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,11 +39,12 @@ export function WhiteLabelClientProfile() {
     deep_media_search_enabled: false
   });
 
-  useEffect(() => {
-    if (user) {
-      fetchClientData();
-    }
-  }, [user]);
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchClientData,
+    [user],
+    () => !!user
+  );
 
   const fetchClientData = async () => {
     if (!user) return;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { User, Mail, X, MapPin, Upload, Loader2, Building2, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,11 +32,12 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [businessStructure, setBusinessStructure] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
 
   const fetchProfile = async () => {
     try {

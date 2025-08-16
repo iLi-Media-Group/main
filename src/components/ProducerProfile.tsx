@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -44,11 +45,12 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [usesSamples, setUsesSamples] = useState(false);
   const [usesSplice, setUsesSplice] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
 
   const fetchProfile = async () => {
     try {

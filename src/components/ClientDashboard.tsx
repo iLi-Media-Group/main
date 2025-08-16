@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -472,15 +473,17 @@ const getPlanLevel = (plan: string): number => {
   const [cancelDowngradeError, setCancelDowngradeError] = useState<string | null>(null);
   const [cancelDowngradeSuccess, setCancelDowngradeSuccess] = useState(false);
 
-  useEffect(() => {
-    if (user) {
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    async () => {
       // Refresh membership info first to ensure we have the latest data
-      refreshMembership().then(() => {
-        fetchDashboardData();
-        fetchSyncProposals();
-      });
-    }
-  }, [user]);
+      await refreshMembership();
+      fetchDashboardData();
+      fetchSyncProposals();
+    },
+    [user],
+    () => !!user
+  );
 
   // Set up real-time subscriptions
   const handleSalesUpdate = useCallback((payload: any) => {

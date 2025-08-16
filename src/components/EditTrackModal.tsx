@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { X, Music, ChevronDown, ChevronRight } from 'lucide-react';
 import { MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
@@ -62,9 +63,9 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   
-  // Fetch genres and instruments from database
-  useEffect(() => {
-    const fetchData = async () => {
+  // Fetch genres and instruments from database - use stable effect to prevent refreshes
+  useStableDataFetch(
+    async () => {
       try {
         setGenresLoading(true);
         setInstrumentsLoading(true);
@@ -92,10 +93,10 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         setGenresLoading(false);
         setInstrumentsLoading(false);
       }
-    };
-
-    fetchData();
-  }, []);
+    },
+    [],
+    () => true
+  );
 
   // Update state when track prop changes
   useEffect(() => {
