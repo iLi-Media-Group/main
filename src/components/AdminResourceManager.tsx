@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, FileText, Globe, BookOpen, File, Trash2, Edit, Plus, X } from 'lucide-react';
@@ -72,13 +72,21 @@ export const AdminResourceManager: React.FC = () => {
     external_url: ''
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    // Only fetch resources when user is authenticated and has appropriate permissions
-    if (user && (accountType === 'admin' || accountType === 'producer' || accountType === 'admin,producer')) {
+    // Reset initialization flag when user or account type changes
+    if (!user || !accountType) {
+      hasInitialized.current = false;
+      return;
+    }
+    
+    // Only fetch resources once when user is authenticated and we haven't initialized yet
+    if (user && (accountType === 'admin' || accountType === 'producer' || accountType === 'admin,producer') && !hasInitialized.current) {
+      hasInitialized.current = true;
       fetchResources();
     }
-  }, [user?.id, accountType]); // Only depend on user ID and account type, not the entire user object
+  }, [user, accountType]); // Keep dependencies but use ref to prevent multiple fetches
 
   const fetchResources = async () => {
     try {
