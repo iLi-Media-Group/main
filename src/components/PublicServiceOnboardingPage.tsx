@@ -240,7 +240,7 @@ export default function PublicServiceOnboardingPage() {
 
   if (step === 'validate') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Welcome to MyBeatFi</h1>
@@ -272,7 +272,7 @@ export default function PublicServiceOnboardingPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 disabled:opacity-50"
             >
               {loading ? 'Verifying...' : 'Continue'}
             </button>
@@ -284,7 +284,7 @@ export default function PublicServiceOnboardingPage() {
 
   if (step === 'invalid') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-red-500/20 p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Invalid Invitation</h1>
           <p className="text-gray-300 mb-6">{error}</p>
@@ -304,7 +304,7 @@ export default function PublicServiceOnboardingPage() {
 
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-green-500/20 p-8 max-w-md w-full text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Service Added Successfully!</h1>
           <p className="text-gray-300 mb-6">
@@ -322,7 +322,7 @@ export default function PublicServiceOnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 p-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-blue-500/20 p-8">
           <div className="text-center mb-8">
@@ -548,7 +548,7 @@ export default function PublicServiceOnboardingPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50"
+                className="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-200 disabled:opacity-50"
               >
                 {loading ? 'Submitting...' : 'Submit Service'}
               </button>
