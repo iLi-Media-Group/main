@@ -319,7 +319,7 @@ export default function AdminServicesPage() {
         type: onboardingType
       });
       
-      const { data, error } = await supabase.functions.invoke('send-service-onboarding-email', {
+      const { data: responseData, error: functionError } = await supabase.functions.invoke('send-service-onboarding-email', {
         body: { 
           to: onboardingEmail, 
           email: onboardingEmail,
@@ -327,15 +327,15 @@ export default function AdminServicesPage() {
         }
       });
       
-      console.log('Response data:', data);
-      console.log('Response error:', error);
+      console.log('Response data:', responseData);
+      console.log('Response error:', functionError);
       
-      if (error) {
-        console.error('Error response:', error);
-        throw new Error(error.message || 'Failed to send onboarding email');
+      if (functionError) {
+        console.error('Error response:', functionError);
+        throw new Error(functionError.message || 'Failed to send onboarding email');
       }
       
-      console.log('Success response:', data);
+      console.log('Success response:', responseData);
     } catch (err: any) {
       setOnboardingError(err.message || 'Failed to send onboarding link');
     } finally {
@@ -771,5 +771,4 @@ export default function AdminServicesPage() {
       </div>
     </Layout>
   );
-} / /   F o r c e   r e d e p l o y  
- 
+}
