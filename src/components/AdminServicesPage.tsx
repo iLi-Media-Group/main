@@ -293,7 +293,8 @@ export default function AdminServicesPage() {
     }
   };
 
-  const handleSendOnboardingLink = async () => {
+  const handleSendOnboardingLink = async (e: React.FormEvent) => {
+    e.preventDefault();
     setSendingOnboarding(true);
     setOnboardingError('');
     setOnboardingLink('');
@@ -317,7 +318,6 @@ export default function AdminServicesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           to: onboardingEmail, 
-          link,
           email: onboardingEmail,
           type: onboardingType
         })
