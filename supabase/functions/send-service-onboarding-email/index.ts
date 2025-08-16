@@ -17,15 +17,19 @@ serve(async (req) => {
   }
 
   try {
-    const { to, link } = await req.json();
-    console.log('Received data:', { to, hasLink: !!link });
+    const { to, email, type } = await req.json();
+    console.log('Received data:', { to, email, type });
 
-    if (!to || !link) {
-      return new Response(JSON.stringify({ error: "Missing required fields: to and link" }), {
+    if (!to || !email || !type) {
+      return new Response(JSON.stringify({ error: "Missing required fields: to, email, and type" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Construct the public onboarding link
+    const baseUrl = Deno.env.get("SITE_URL") || "https://mybeatfi.io";
+    const link = `${baseUrl}/service-onboarding-public?email=${encodeURIComponent(email)}&type=${encodeURIComponent(type)}`;
 
     // Get Resend API key
     const resendApiKey = Deno.env.get("RESEND_API_KEY");

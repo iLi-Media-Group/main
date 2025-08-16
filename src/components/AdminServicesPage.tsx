@@ -307,7 +307,7 @@ export default function AdminServicesPage() {
         expires_at: expiresAt
       });
       if (error) throw error;
-      const link = `${window.location.origin}/service-onboarding/${token}`;
+      const link = `${window.location.origin}/service-onboarding-public?email=${encodeURIComponent(onboardingEmail)}&type=${encodeURIComponent(onboardingType)}`;
       setOnboardingLink(link);
   
       // Call your Supabase Edge Function to send the email
@@ -315,7 +315,12 @@ export default function AdminServicesPage() {
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: onboardingEmail, link })
+        body: JSON.stringify({ 
+          to: onboardingEmail, 
+          link,
+          email: onboardingEmail,
+          type: onboardingType
+        })
       });
       if (!response.ok) {
         const { error } = await response.json();

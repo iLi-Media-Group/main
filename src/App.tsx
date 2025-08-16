@@ -56,6 +56,7 @@ import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
 import AdminServicesPage from './components/AdminServicesPage';
 import ServicesPage from './components/ServicesPage';
 import ServiceOnboardingPage from './components/ServiceOnboardingPage';
+import PublicServiceOnboardingPage from './components/PublicServiceOnboardingPage';
 import ClientBrandingSettings from './components/ClientBrandingSettings';
 import { WhiteLabelClientProfile } from './components/WhiteLabelClientProfile';
 import { supabase } from './lib/supabase';
@@ -616,7 +617,7 @@ const App = () => {
         } />
 
         <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
-        <Route path="/service-onboarding-public" element={<ServiceOnboardingPage publicMode={true} />} />
+        <Route path="/service-onboarding-public" element={<PublicServiceOnboardingPage />} />
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
