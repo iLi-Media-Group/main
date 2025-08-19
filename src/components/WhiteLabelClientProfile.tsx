@@ -39,13 +39,6 @@ export function WhiteLabelClientProfile() {
     deep_media_search_enabled: false
   });
 
-  // Use stable effect to prevent unwanted refreshes
-  useStableDataFetch(
-    fetchClientData,
-    [user],
-    () => !!user
-  );
-
   const fetchClientData = async () => {
     if (!user) return;
     
@@ -86,6 +79,13 @@ export function WhiteLabelClientProfile() {
       setLoading(false);
     }
   };
+
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchClientData,
+    [user],
+    () => !!user
+  );
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

@@ -45,13 +45,6 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [usesSamples, setUsesSamples] = useState(false);
   const [usesSplice, setUsesSplice] = useState(false);
 
-  // Use stable effect to prevent unwanted refreshes
-  useStableDataFetch(
-    fetchProfile,
-    [user],
-    () => !!user
-  );
-
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -96,6 +89,13 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(false);
     }
   };
+
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
 
   const handlePhotoUpdate = (newAvatarPath: string) => {
     setAvatarPath(newAvatarPath);

@@ -43,18 +43,28 @@ export function useStableDataFetch(
   userCheck?: () => boolean
 ) {
   const hasFetched = useRef(false);
+  const lastDeps = useRef<any[]>([]);
 
   useEffect(() => {
-    // Reset fetch flag when dependencies change
-    hasFetched.current = false;
-    
+    // Check if dependencies have actually changed
+    const depsChanged = dependencies.some((dep, index) => {
+      return lastDeps.current[index] !== dep;
+    });
+
     // Check if user is authenticated (if userCheck provided)
     const userAuthenticated = userCheck ? userCheck() : true;
     
-    // Only fetch if user is authenticated and we haven't fetched yet
-    if (userAuthenticated && !hasFetched.current) {
+    // Only fetch if:
+    // 1. User is authenticated, AND
+    // 2. We haven't fetched yet OR dependencies have changed
+    if (userAuthenticated && (!hasFetched.current || depsChanged)) {
       hasFetched.current = true;
-      fetchFunction();
+      lastDeps.current = [...dependencies];
+      
+      // Ensure fetchFunction is properly initialized before calling
+      if (typeof fetchFunction === 'function') {
+        fetchFunction();
+      }
     }
   }, dependencies);
 }

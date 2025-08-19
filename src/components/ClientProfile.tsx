@@ -32,13 +32,6 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [businessStructure, setBusinessStructure] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  // Use stable effect to prevent unwanted refreshes
-  useStableDataFetch(
-    fetchProfile,
-    [user],
-    () => !!user
-  );
-
   const fetchProfile = async () => {
     try {
       setLoading(true);
@@ -85,6 +78,13 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       setLoading(false);
     }
   };
+
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
 
   // Add handler for photo update
   const handlePhotoUpdate = (newAvatarPath: string) => {
