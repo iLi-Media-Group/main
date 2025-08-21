@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
-  Mail, 
+  Mail as MailIcon, 
   UserPlus, 
   CheckCircle, 
   Clock, 
@@ -336,7 +336,7 @@ export function RightsHolderESignatures() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <Mail className="w-8 h-8 text-blue-400 mr-2" />
+            <MailIcon className="w-8 h-8 text-blue-400 mr-2" />
             <h1 className="text-3xl font-bold text-white">E-Signature Management</h1>
           </div>
           <p className="text-gray-300">
@@ -476,7 +476,7 @@ export function RightsHolderESignatures() {
         {/* Empty State */}
         {filteredSplitSheets.length === 0 && !loading && (
           <div className="text-center py-12">
-            <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <MailIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-white mb-2">No Split Sheets Found</h3>
             <p className="text-gray-400 mb-4">
               {searchTerm || statusFilter !== 'all' 
