@@ -19,6 +19,20 @@ interface BackgroundAsset {
   file_size: number;
 }
 
+// Cache for background assets to avoid repeated database calls
+const backgroundAssetCache = new Map<string, { data: BackgroundAsset | null; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Function to clear cache (can be called when background assets are updated)
+export const clearBackgroundAssetCache = (page?: string) => {
+  if (page) {
+    backgroundAssetCache.delete(page);
+  } else {
+    backgroundAssetCache.clear();
+  }
+  console.log('Background asset cache cleared', page ? `for page: ${page}` : 'for all pages');
+};
+
 export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Background video" }: VideoBackgroundProps) {
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoError, setIsVideoError] = useState(false);
@@ -29,6 +43,17 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   useEffect(() => {
     const fetchBackgroundAsset = async () => {
       if (!page) {
+        setLoading(false);
+        return;
+      }
+
+      // Check cache first
+      const cached = backgroundAssetCache.get(page);
+      const now = Date.now();
+      
+      if (cached && (now - cached.timestamp) < CACHE_DURATION) {
+        console.log('Using cached background asset for page:', page);
+        setBackgroundAsset(cached.data);
         setLoading(false);
         return;
       }
@@ -55,9 +80,16 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
           console.error('Error fetching background asset:', error);
         } else if (data) {
           setBackgroundAsset(data);
+          // Cache the result
+          backgroundAssetCache.set(page, { data, timestamp: now });
+        } else {
+          // Cache null result to avoid repeated failed queries
+          backgroundAssetCache.set(page, { data: null, timestamp: now });
         }
       } catch (err) {
         console.error('Error fetching background asset:', err);
+        // Cache null result on error
+        backgroundAssetCache.set(page, { data: null, timestamp: now });
       } finally {
         setLoading(false);
       }

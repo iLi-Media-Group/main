@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, Trash2, Eye, Play, Pause, Settings, Video, Image, FileVideo, X, Check, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { uploadFile } from '../lib/storage';
+import { clearBackgroundAssetCache } from './VideoBackground';
 
 interface BackgroundAsset {
   id: string;
@@ -114,6 +115,8 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
       if (dbError) throw dbError;
 
       setSuccess('Background asset uploaded successfully!');
+      // Clear cache for this page
+      clearBackgroundAssetCache(assetData.page);
       await fetchAssets();
       
       // Clear file input
@@ -157,6 +160,8 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
       if (dbError) throw dbError;
 
       setSuccess('Background asset deleted successfully!');
+      // Clear cache for this page
+      clearBackgroundAssetCache(asset.page);
       await fetchAssets();
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -185,6 +190,8 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
       if (activateError) throw activateError;
 
       setSuccess('Background asset activated successfully!');
+      // Clear cache for this page
+      clearBackgroundAssetCache(asset.page);
       await fetchAssets();
     } catch (err: any) {
       console.error('Toggle active error:', err);
