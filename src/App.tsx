@@ -95,7 +95,7 @@ import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
 import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
 import { RightsHolderAnalytics } from './components/RightsHolderAnalytics';
 import { RightsHolderRecordings } from './components/RightsHolderRecordings';
-import { RightsHolderESignatures } from './components/RightsHolderESignatures';
+// import { RightsHolderESignatures } from './components/RightsHolderESignatures';
 import { RightsHolderLicensing } from './components/RightsHolderLicensing';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
@@ -704,11 +704,13 @@ const App = () => {
             <RightsHolderRecordings />
           </RightsHolderProtectedRoute>
         } />
+        {/* Temporarily disabled to fix Mail import error
         <Route path="/rights-holder/e-signatures" element={
           <RightsHolderProtectedRoute>
             <RightsHolderESignatures />
           </RightsHolderProtectedRoute>
         } />
+        */}
         <Route path="/rights-holder/licensing" element={
           <RightsHolderProtectedRoute>
             <RightsHolderLicensing />
