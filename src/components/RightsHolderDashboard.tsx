@@ -283,6 +283,15 @@ export function RightsHolderDashboard() {
                 </Link>
 
                 <Link
+                  to="/rights-holder/e-signatures"
+                  className="flex items-center p-3 bg-indigo-600/20 hover:bg-indigo-600/30 rounded-lg transition-colors group"
+                >
+                  <Mail className="w-5 h-5 text-indigo-400 mr-3" />
+                  <span className="text-white">E-Signatures</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                <Link
                   to="/rights-holder/profile"
                   className="flex items-center p-3 bg-gray-600/20 hover:bg-gray-600/30 rounded-lg transition-colors group"
                 >
