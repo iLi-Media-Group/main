@@ -71,6 +71,21 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
 
       if (error) {
         console.error('Error fetching rights holder:', error);
+        
+        // If it's a table not found error, log it but don't throw
+        if (error.code === '42P01') {
+          console.error('Rights holders table not found. Please run the database migration.');
+          setRightsHolder(null);
+          return;
+        }
+        
+        // If it's a permission error, log it but don't throw
+        if (error.code === '42501') {
+          console.error('Permission denied accessing rights holders table.');
+          setRightsHolder(null);
+          return;
+        }
+        
         setRightsHolder(null);
         return;
       }
@@ -136,6 +151,7 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
       });
 
       if (error) {
+        console.error('Auth signup error:', error);
         return { error };
       }
 
@@ -153,9 +169,25 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
 
         if (rightsHolderError) {
           console.error('Error creating rights holder:', rightsHolderError);
+          
+          // If it's a table not found error, provide a helpful message
+          if (rightsHolderError.code === '42P01') {
+            return { 
+              error: new Error('Database tables not found. Please contact support to set up the rights holders system.') 
+            };
+          }
+          
+          // If it's a permission error, provide a helpful message
+          if (rightsHolderError.code === '42501') {
+            return { 
+              error: new Error('Permission denied. Please contact support to configure database permissions.') 
+            };
+          }
+          
           return { error: rightsHolderError };
         }
 
+        // Only fetch rights holder if creation was successful
         await fetchRightsHolder(data.user.id);
       }
 

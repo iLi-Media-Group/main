@@ -56,57 +56,95 @@ export function RightsHolderDashboard() {
     try {
       setLoading(true);
 
-      // Fetch master recordings count
-      const { count: recordingsCount } = await supabase
-        .from('master_recordings')
-        .select('*', { count: 'exact', head: true })
-        .eq('rights_holder_id', rightsHolder.id);
+      // Initialize stats with default values
+      let recordingsCount = 0;
+      let pendingCount = 0;
+      let licensesCount = 0;
 
-      // Fetch pending verifications
-      const { count: pendingCount } = await supabase
-        .from('master_recordings')
-        .select('*', { count: 'exact', head: true })
-        .eq('rights_holder_id', rightsHolder.id)
-        .eq('rights_verification_status', 'pending');
+      // Try to fetch master recordings count (handle missing table gracefully)
+      try {
+        const { count } = await supabase
+          .from('master_recordings')
+          .select('*', { count: 'exact', head: true })
+          .eq('rights_holder_id', rightsHolder.id);
+        recordingsCount = count || 0;
+      } catch (error) {
+        console.log('master_recordings table not found, using default value');
+        recordingsCount = 0;
+      }
 
-      // Fetch active licenses
-      const { count: licensesCount } = await supabase
-        .from('rights_licenses')
-        .select('*', { count: 'exact', head: true })
-        .eq('license_status', 'active');
+      // Try to fetch pending verifications (handle missing table gracefully)
+      try {
+        const { count } = await supabase
+          .from('master_recordings')
+          .select('*', { count: 'exact', head: true })
+          .eq('rights_holder_id', rightsHolder.id)
+          .eq('rights_verification_status', 'pending');
+        pendingCount = count || 0;
+      } catch (error) {
+        console.log('Could not fetch pending verifications, using default value');
+        pendingCount = 0;
+      }
+
+      // Try to fetch active licenses (handle missing table gracefully)
+      try {
+        const { count } = await supabase
+          .from('rights_licenses')
+          .select('*', { count: 'exact', head: true })
+          .eq('license_status', 'active');
+        licensesCount = count || 0;
+      } catch (error) {
+        console.log('rights_licenses table not found, using default value');
+        licensesCount = 0;
+      }
 
       // Fetch total revenue (placeholder for now)
       const totalRevenue = 0; // This would be calculated from actual license data
 
       setStats({
-        totalRecordings: recordingsCount || 0,
-        pendingVerifications: pendingCount || 0,
-        activeLicenses: licensesCount || 0,
+        totalRecordings: recordingsCount,
+        pendingVerifications: pendingCount,
+        activeLicenses: licensesCount,
         totalRevenue,
       });
 
-      // Fetch recent activity
-      const { data: activityData } = await supabase
-        .from('master_recordings')
-        .select('id, title, rights_verification_status, admin_review_status, created_at')
-        .eq('rights_holder_id', rightsHolder.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
+      // Try to fetch recent activity (handle missing table gracefully)
+      try {
+        const { data: activityData } = await supabase
+          .from('master_recordings')
+          .select('id, title, rights_verification_status, admin_review_status, created_at')
+          .eq('rights_holder_id', rightsHolder.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
 
-      if (activityData) {
-        const activity: RecentActivity[] = activityData.map(recording => ({
-          id: recording.id,
-          type: 'upload',
-          title: recording.title,
-          description: `Recording uploaded`,
-          status: recording.rights_verification_status === 'verified' ? 'approved' : 'pending',
-          created_at: recording.created_at,
-        }));
-        setRecentActivity(activity);
+        if (activityData) {
+          const activity: RecentActivity[] = activityData.map(recording => ({
+            id: recording.id,
+            type: 'upload',
+            title: recording.title,
+            description: `Recording uploaded`,
+            status: recording.rights_verification_status === 'verified' ? 'approved' : 'pending',
+            created_at: recording.created_at,
+          }));
+          setRecentActivity(activity);
+        } else {
+          setRecentActivity([]);
+        }
+      } catch (error) {
+        console.log('Could not fetch recent activity, using empty array');
+        setRecentActivity([]);
       }
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      // Set default values on error
+      setStats({
+        totalRecordings: 0,
+        pendingVerifications: 0,
+        activeLicenses: 0,
+        totalRevenue: 0,
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }
