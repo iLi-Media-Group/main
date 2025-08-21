@@ -62,6 +62,13 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
   const [loading, setLoading] = useState(true);
 
   const fetchRightsHolder = async (userId: string) => {
+    // Don't fetch if userId is null or empty
+    if (!userId) {
+      setRightsHolder(null);
+      setRightsHolderProfile(null);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('rights_holders')
@@ -321,8 +328,11 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
           setUser(null);
           setRightsHolder(null);
           setRightsHolderProfile(null);
+          setLoading(false);
         }
-        setLoading(false);
+        if (session?.user) {
+          setLoading(false);
+        }
       }
     );
 
