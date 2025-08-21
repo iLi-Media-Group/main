@@ -52,12 +52,12 @@ export function RightsHolderLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Building2 className="w-8 h-8 text-blue-400 mr-2" />
-            <h1 className="text-3xl font-bold text-white">Rights Holder Login</h1>
+            <h1 className="text-3xl font-bold text-white">Record Label or Publisher Login</h1>
           </div>
           <p className="text-gray-300">
             Sign in to your MyBeatFi rights holder account

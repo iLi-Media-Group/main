@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS rights_holder_licenses (
     master_recording_id UUID REFERENCES master_recordings(id) ON DELETE CASCADE,
     rights_holder_id UUID REFERENCES rights_holders(id) ON DELETE CASCADE,
     buyer_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
-    license_type TEXT NOT NULL CHECK (license_type IN ('single_track', 'sync_license', 'exclusive_license', 'subscription_license')),
+    license_type TEXT NOT NULL CHECK (license_type IN ('single_track', 'membership_license', 'sync_proposal', 'custom_sync_request', 'exclusive_license')),
     license_status TEXT NOT NULL DEFAULT 'active' CHECK (license_status IN ('active', 'expired', 'cancelled', 'pending')),
     amount DECIMAL(10,2) NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'stripe',
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS rights_holder_revenue (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     rights_holder_id UUID REFERENCES rights_holders(id) ON DELETE CASCADE,
     license_id UUID REFERENCES rights_holder_licenses(id) ON DELETE CASCADE,
-    revenue_type TEXT NOT NULL CHECK (revenue_type IN ('license_fee', 'sync_fee', 'subscription_revenue', 'royalty_payment')),
+    revenue_type TEXT NOT NULL CHECK (revenue_type IN ('license_fee', 'sync_fee', 'membership_revenue', 'royalty_payment')),
     amount DECIMAL(10,2) NOT NULL,
     mybeatfi_commission DECIMAL(10,2) DEFAULT 0.00,
     rights_holder_amount DECIMAL(10,2) NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS rights_holder_transactions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     rights_holder_id UUID REFERENCES rights_holders(id) ON DELETE CASCADE,
     amount DECIMAL(10,2) NOT NULL,
-    type TEXT NOT NULL CHECK (type IN ('license_sale', 'sync_fee', 'subscription_revenue', 'payout', 'refund')),
+    type TEXT NOT NULL CHECK (type IN ('license_sale', 'sync_fee', 'membership_revenue', 'payout', 'refund')),
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'failed', 'cancelled')),
     description TEXT,
     recording_title TEXT,
@@ -101,34 +101,25 @@ CREATE TABLE IF NOT EXISTS royalty_distributions (
 CREATE TABLE IF NOT EXISTS rights_holder_license_templates (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     template_name TEXT NOT NULL,
-    template_type TEXT NOT NULL CHECK (template_type IN ('single_track', 'sync_license', 'exclusive_license', 'subscription_license')),
+    template_type TEXT NOT NULL CHECK (template_type IN ('single_track', 'sync_license', 'exclusive_license', 'membership_license')),
     template_content TEXT NOT NULL,
     is_active BOOLEAN DEFAULT true,
-    version TEXT NOT NULL,
-    created_by UUID REFERENCES auth.users(id),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Generated license agreements
+-- License agreements generated for specific licenses
 CREATE TABLE IF NOT EXISTS rights_holder_license_agreements (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     license_id UUID REFERENCES rights_holder_licenses(id) ON DELETE CASCADE,
-    template_id UUID REFERENCES rights_holder_license_templates(id) ON DELETE SET NULL,
+    template_id UUID REFERENCES rights_holder_license_templates(id) ON DELETE CASCADE,
     agreement_content TEXT NOT NULL,
-    pdf_url TEXT,
+    agreement_pdf_url TEXT,
     is_signed BOOLEAN DEFAULT false,
     signed_at TIMESTAMP WITH TIME ZONE,
-    signature_method TEXT CHECK (signature_method IN ('e_sign', 'click_accept', 'manual')),
-    ip_address TEXT,
-    user_agent TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
--- ============================================
--- 4. E-SIGNATURE INTEGRATION
--- ============================================
 
 -- E-signature sessions for license agreements
 CREATE TABLE IF NOT EXISTS rights_holder_signature_sessions (
@@ -136,50 +127,41 @@ CREATE TABLE IF NOT EXISTS rights_holder_signature_sessions (
     license_agreement_id UUID REFERENCES rights_holder_license_agreements(id) ON DELETE CASCADE,
     signer_email TEXT NOT NULL,
     signer_name TEXT NOT NULL,
-    session_token TEXT UNIQUE NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'completed', 'expired', 'cancelled')),
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    signature_token TEXT UNIQUE,
+    is_signed BOOLEAN DEFAULT false,
     signed_at TIMESTAMP WITH TIME ZONE,
-    ip_address TEXT,
-    user_agent TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- ============================================
--- 5. INDEXES FOR PERFORMANCE
+-- 4. INDEXES FOR PERFORMANCE
 -- ============================================
 
+-- Indexes for rights_holder_licenses
 CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_rights_holder_id ON rights_holder_licenses(rights_holder_id);
 CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_master_recording_id ON rights_holder_licenses(master_recording_id);
 CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_buyer_id ON rights_holder_licenses(buyer_id);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_license_status ON rights_holder_licenses(license_status);
+CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_license_type ON rights_holder_licenses(license_type);
+CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_status ON rights_holder_licenses(license_status);
 CREATE INDEX IF NOT EXISTS idx_rights_holder_licenses_created_at ON rights_holder_licenses(created_at);
 
+-- Indexes for rights_holder_revenue
 CREATE INDEX IF NOT EXISTS idx_rights_holder_revenue_rights_holder_id ON rights_holder_revenue(rights_holder_id);
 CREATE INDEX IF NOT EXISTS idx_rights_holder_revenue_license_id ON rights_holder_revenue(license_id);
 CREATE INDEX IF NOT EXISTS idx_rights_holder_revenue_payment_status ON rights_holder_revenue(payment_status);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_revenue_created_at ON rights_holder_revenue(created_at);
 
-CREATE INDEX IF NOT EXISTS idx_rights_holder_transactions_rights_holder_id ON rights_holder_transactions(rights_holder_id);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_transactions_type ON rights_holder_transactions(type);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_transactions_status ON rights_holder_transactions(status);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_transactions_created_at ON rights_holder_transactions(created_at);
-
+-- Indexes for royalty_distributions
 CREATE INDEX IF NOT EXISTS idx_royalty_distributions_license_id ON royalty_distributions(license_id);
-CREATE INDEX IF NOT EXISTS idx_royalty_distributions_master_recording_id ON royalty_distributions(master_recording_id);
 CREATE INDEX IF NOT EXISTS idx_royalty_distributions_rights_holder_id ON royalty_distributions(rights_holder_id);
 CREATE INDEX IF NOT EXISTS idx_royalty_distributions_payment_status ON royalty_distributions(payment_status);
 
-CREATE INDEX IF NOT EXISTS idx_rights_holder_signature_sessions_session_token ON rights_holder_signature_sessions(session_token);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_signature_sessions_status ON rights_holder_signature_sessions(status);
-CREATE INDEX IF NOT EXISTS idx_rights_holder_signature_sessions_expires_at ON rights_holder_signature_sessions(expires_at);
-
 -- ============================================
--- 6. ROW LEVEL SECURITY (RLS)
+-- 5. ROW LEVEL SECURITY (RLS)
 -- ============================================
 
--- Enable RLS on all new tables
+-- Enable RLS on all tables
 ALTER TABLE rights_holder_licenses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rights_holder_revenue ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rights_holder_balances ENABLE ROW LEVEL SECURITY;
@@ -189,198 +171,193 @@ ALTER TABLE rights_holder_license_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rights_holder_license_agreements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rights_holder_signature_sessions ENABLE ROW LEVEL SECURITY;
 
--- Rights holder licenses policies
+-- RLS Policies for rights_holder_licenses
+DROP POLICY IF EXISTS "Rights holders can view their own licenses" ON rights_holder_licenses;
 CREATE POLICY "Rights holders can view their own licenses" ON rights_holder_licenses
     FOR SELECT USING (rights_holder_id = auth.uid());
 
-CREATE POLICY "Buyers can view their own licenses" ON rights_holder_licenses
-    FOR SELECT USING (buyer_id = auth.uid());
-
+DROP POLICY IF EXISTS "Admins can view all licenses" ON rights_holder_licenses;
 CREATE POLICY "Admins can view all licenses" ON rights_holder_licenses
-    FOR ALL USING (
+    FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
--- Rights holder revenue policies
+-- RLS Policies for rights_holder_revenue
+DROP POLICY IF EXISTS "Rights holders can view their own revenue" ON rights_holder_revenue;
 CREATE POLICY "Rights holders can view their own revenue" ON rights_holder_revenue
     FOR SELECT USING (rights_holder_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all revenue" ON rights_holder_revenue;
 CREATE POLICY "Admins can view all revenue" ON rights_holder_revenue
-    FOR ALL USING (
+    FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
--- Rights holder balances policies
+-- RLS Policies for rights_holder_balances
+DROP POLICY IF EXISTS "Rights holders can view their own balances" ON rights_holder_balances;
 CREATE POLICY "Rights holders can view their own balances" ON rights_holder_balances
     FOR SELECT USING (rights_holder_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all balances" ON rights_holder_balances;
 CREATE POLICY "Admins can view all balances" ON rights_holder_balances
-    FOR ALL USING (
+    FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
--- Rights holder transactions policies
+-- RLS Policies for rights_holder_transactions
+DROP POLICY IF EXISTS "Rights holders can view their own transactions" ON rights_holder_transactions;
 CREATE POLICY "Rights holders can view their own transactions" ON rights_holder_transactions
     FOR SELECT USING (rights_holder_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all transactions" ON rights_holder_transactions;
 CREATE POLICY "Admins can view all transactions" ON rights_holder_transactions
-    FOR ALL USING (
+    FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
--- Royalty distributions policies
+-- RLS Policies for royalty_distributions
+DROP POLICY IF EXISTS "Rights holders can view their own royalty distributions" ON royalty_distributions;
 CREATE POLICY "Rights holders can view their own royalty distributions" ON royalty_distributions
     FOR SELECT USING (rights_holder_id = auth.uid());
 
+DROP POLICY IF EXISTS "Admins can view all royalty distributions" ON royalty_distributions;
 CREATE POLICY "Admins can view all royalty distributions" ON royalty_distributions
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND account_type = 'admin'
-        )
-    );
-
--- License templates policies (read-only for rights holders, full access for admins)
-CREATE POLICY "Everyone can view active license templates" ON rights_holder_license_templates
-    FOR SELECT USING (is_active = true);
-
-CREATE POLICY "Admins can manage license templates" ON rights_holder_license_templates
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND account_type = 'admin'
-        )
-    );
-
--- License agreements policies
-CREATE POLICY "Rights holders can view their own license agreements" ON rights_holder_license_agreements
     FOR SELECT USING (
         EXISTS (
-            SELECT 1 FROM rights_holder_licenses 
-            WHERE id = license_id 
-            AND rights_holder_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Buyers can view their own license agreements" ON rights_holder_license_agreements
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM rights_holder_licenses 
-            WHERE id = license_id 
-            AND buyer_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Admins can view all license agreements" ON rights_holder_license_agreements
-    FOR ALL USING (
-        EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
--- Signature sessions policies
-CREATE POLICY "Signers can view their own signature sessions" ON rights_holder_signature_sessions
-    FOR SELECT USING (signer_email = (
-        SELECT email FROM profiles WHERE id = auth.uid()
+-- RLS Policies for license templates (read-only for all authenticated users)
+DROP POLICY IF EXISTS "Authenticated users can view license templates" ON rights_holder_license_templates;
+CREATE POLICY "Authenticated users can view license templates" ON rights_holder_license_templates
+    FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- RLS Policies for license agreements
+DROP POLICY IF EXISTS "Rights holders can view their own agreements" ON rights_holder_license_agreements;
+CREATE POLICY "Rights holders can view their own agreements" ON rights_holder_license_agreements
+    FOR SELECT USING (license_id IN (
+        SELECT id FROM rights_holder_licenses WHERE rights_holder_id = auth.uid()
     ));
 
-CREATE POLICY "Admins can view all signature sessions" ON rights_holder_signature_sessions
-    FOR ALL USING (
+DROP POLICY IF EXISTS "Admins can view all agreements" ON rights_holder_license_agreements;
+CREATE POLICY "Admins can view all agreements" ON rights_holder_license_agreements
+    FOR SELECT USING (
         EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() 
-            AND account_type = 'admin'
+            AND account_type IN ('admin', 'admin,producer')
+        )
+    );
+
+-- RLS Policies for signature sessions
+DROP POLICY IF EXISTS "Rights holders can view their own signature sessions" ON rights_holder_signature_sessions;
+CREATE POLICY "Rights holders can view their own signature sessions" ON rights_holder_signature_sessions
+    FOR SELECT USING (license_agreement_id IN (
+        SELECT id FROM rights_holder_license_agreements WHERE license_id IN (
+            SELECT id FROM rights_holder_licenses WHERE rights_holder_id = auth.uid()
+        )
+    ));
+
+DROP POLICY IF EXISTS "Admins can view all signature sessions" ON rights_holder_signature_sessions;
+CREATE POLICY "Admins can view all signature sessions" ON rights_holder_signature_sessions
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM profiles 
+            WHERE id = auth.uid() 
+            AND account_type IN ('admin', 'admin,producer')
         )
     );
 
 -- ============================================
--- 7. FUNCTIONS FOR AUTOMATION
+-- 6. INTEGRATION FUNCTIONS
 -- ============================================
 
--- Function to create rights holder license from Stripe payment
+-- Function to create rights holder license from existing stripe_orders
 CREATE OR REPLACE FUNCTION create_rights_holder_license_from_checkout()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_user_id uuid;
     v_master_recording_id uuid;
     v_rights_holder_id uuid;
-    v_profile_data json;
+    v_license_type text;
+    v_amount numeric;
 BEGIN
-    -- Only process completed payments
-    IF NEW.payment_status != 'paid' OR NEW.status != 'completed' THEN
+    -- Only process completed payments for rights holder content
+    IF NEW.status != 'completed' OR NEW.metadata IS NULL THEN
         RETURN NEW;
     END IF;
 
-    -- Get the user_id for this customer
-    SELECT user_id INTO v_user_id
-    FROM stripe_customers
-    WHERE customer_id = NEW.customer_id;
+    -- Check if this is rights holder content (has master_recording_id in metadata)
+    IF NEW.metadata->>'master_recording_id' IS NULL THEN
+        RETURN NEW;
+    END IF;
 
-    -- Check if we have master_recording_id in metadata
-    IF NEW.metadata IS NOT NULL AND NEW.metadata->>'master_recording_id' IS NOT NULL THEN
-        -- Get master_recording_id and rights_holder_id
-        v_master_recording_id := (NEW.metadata->>'master_recording_id')::uuid;
-        
-        -- Get rights_holder_id for this recording
-        SELECT rights_holder_id INTO v_rights_holder_id
-        FROM master_recordings
-        WHERE id = v_master_recording_id;
-        
-        -- Get user profile data for licensee info
-        SELECT 
-            json_build_object(
-                'name', COALESCE(first_name, '') || ' ' || COALESCE(last_name, ''),
-                'email', email
-            ) INTO v_profile_data
-        FROM profiles
-        WHERE id = v_user_id;
-        
-        -- Create license record if it doesn't already exist
+    -- Get master recording and rights holder info
+    SELECT 
+        mr.id,
+        mr.rights_holder_id,
+        CASE 
+            WHEN NEW.metadata->>'license_type' = 'single_track' THEN 'single_track'
+            WHEN NEW.metadata->>'license_type' = 'membership' THEN 'membership_license'
+            WHEN NEW.metadata->>'license_type' = 'sync_proposal' THEN 'sync_proposal'
+            WHEN NEW.metadata->>'license_type' = 'custom_sync' THEN 'custom_sync_request'
+            ELSE 'single_track'
+        END,
+        NEW.amount
+    INTO 
+        v_master_recording_id,
+        v_rights_holder_id,
+        v_license_type,
+        v_amount
+    FROM master_recordings mr
+    WHERE mr.id = (NEW.metadata->>'master_recording_id')::uuid;
+
+    -- Create rights holder license record (only if it doesn't already exist)
+    IF NOT EXISTS (
+        SELECT 1 FROM rights_holder_licenses 
+        WHERE stripe_payment_intent_id = NEW.stripe_session_id
+    ) THEN
         INSERT INTO rights_holder_licenses (
             master_recording_id,
             rights_holder_id,
             buyer_id,
             license_type,
             amount,
-            payment_method,
-            transaction_id,
             stripe_payment_intent_id,
-            licensee_info
+            licensee_info,
+            license_start_date
         )
-        SELECT
+        VALUES (
             v_master_recording_id,
             v_rights_holder_id,
-            v_user_id,
-            'single_track',
-            NEW.amount_total / 100, -- Convert from cents to dollars
-            'stripe',
-            NEW.payment_intent_id,
-            NEW.payment_intent_id,
-            v_profile_data
-        WHERE NOT EXISTS (
-            -- Check if this transaction already has a license record
-            SELECT 1 FROM rights_holder_licenses 
-            WHERE transaction_id = NEW.payment_intent_id
+            NEW.user_id,
+            v_license_type,
+            v_amount,
+            NEW.stripe_session_id,
+            jsonb_build_object(
+                'user_id', NEW.user_id,
+                'session_id', NEW.stripe_session_id,
+                'metadata', NEW.metadata
+            ),
+            NOW()
         );
     END IF;
 
@@ -388,19 +365,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to calculate rights holder earnings
+-- Function to calculate rights holder earnings using existing commission structure
 CREATE OR REPLACE FUNCTION calculate_rights_holder_earnings()
 RETURNS TRIGGER AS $$
 DECLARE
-    v_mybeatfi_commission_rate numeric := 0.30; -- 30% commission
+    v_compensation_settings record;
+    v_commission_rate numeric;
     v_rights_holder_amount numeric;
     v_rights_holder_id uuid;
 BEGIN
     -- Get rights holder ID
     v_rights_holder_id := NEW.rights_holder_id;
     
-    -- Calculate rights holder's share (70% of license amount)
-    v_rights_holder_amount := NEW.amount * (1 - v_mybeatfi_commission_rate);
+    -- Get compensation settings from existing system
+    SELECT * INTO v_compensation_settings FROM compensation_settings LIMIT 1;
+    
+    -- Default settings if none exist
+    IF v_compensation_settings IS NULL THEN
+        v_compensation_settings := ROW(1, 75, 80, 90, 30, 50, 2, now(), now(), 2, 5, 3, 90)::compensation_settings;
+    END IF;
+    
+    -- Determine commission rate based on license type
+    CASE NEW.license_type
+        WHEN 'single_track' THEN
+            v_commission_rate := 1 - (v_compensation_settings.standard_rate / 100.0);
+        WHEN 'membership_license' THEN
+            v_commission_rate := 1 - (v_compensation_settings.standard_rate / 100.0);
+        WHEN 'sync_proposal' THEN
+            v_commission_rate := 1 - (v_compensation_settings.sync_fee_rate / 100.0);
+        WHEN 'custom_sync_request' THEN
+            v_commission_rate := 1 - (v_compensation_settings.custom_sync_rate / 100.0);
+        WHEN 'exclusive_license' THEN
+            v_commission_rate := 1 - (v_compensation_settings.exclusive_rate / 100.0);
+        ELSE
+            v_commission_rate := 1 - (v_compensation_settings.standard_rate / 100.0);
+    END CASE;
+    
+    -- Calculate rights holder's share
+    v_rights_holder_amount := NEW.amount * (1 - v_commission_rate);
     
     -- Create revenue record
     INSERT INTO rights_holder_revenue (
@@ -415,9 +417,13 @@ BEGIN
     VALUES (
         v_rights_holder_id,
         NEW.id,
-        'license_fee',
+        CASE 
+            WHEN NEW.license_type = 'sync_proposal' THEN 'sync_fee'
+            WHEN NEW.license_type = 'membership_license' THEN 'membership_revenue'
+            ELSE 'license_fee'
+        END,
         NEW.amount,
-        NEW.amount * v_mybeatfi_commission_rate,
+        NEW.amount * v_commission_rate,
         v_rights_holder_amount,
         'pending'
     );
@@ -454,9 +460,13 @@ BEGIN
     SELECT
         v_rights_holder_id,
         v_rights_holder_amount,
-        'license_sale',
+        CASE 
+            WHEN NEW.license_type = 'sync_proposal' THEN 'sync_fee'
+            WHEN NEW.license_type = 'membership_license' THEN 'membership_revenue'
+            ELSE 'license_sale'
+        END,
         'pending',
-        'License Sale: ' || mr.title,
+        'License Sale: ' || mr.title || ' (' || NEW.license_type || ')',
         mr.title,
         NEW.id::text
     FROM master_recordings mr
@@ -517,13 +527,13 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- ============================================
--- 8. TRIGGERS
+-- 7. TRIGGERS
 -- ============================================
 
--- Trigger to create rights holder licenses from Stripe payments
+-- Trigger to create rights holder licenses from stripe_orders
 DROP TRIGGER IF EXISTS create_rights_holder_license_from_checkout_trigger ON stripe_orders;
 CREATE TRIGGER create_rights_holder_license_from_checkout_trigger
-    AFTER INSERT OR UPDATE ON stripe_orders
+    AFTER INSERT ON stripe_orders
     FOR EACH ROW
     EXECUTE FUNCTION create_rights_holder_license_from_checkout();
 
@@ -542,90 +552,59 @@ CREATE TRIGGER calculate_royalty_distributions_trigger
     EXECUTE FUNCTION calculate_royalty_distributions();
 
 -- ============================================
--- 9. DEFAULT LICENSE TEMPLATES
+-- 8. DEFAULT LICENSE TEMPLATES
 -- ============================================
 
 -- Insert default license templates
-INSERT INTO rights_holder_license_templates (template_name, template_type, template_content, version, created_by) VALUES
+INSERT INTO rights_holder_license_templates (template_name, template_type, template_content, version) VALUES
 (
     'Standard Single Track License',
     'single_track',
-    'This Music Synchronization License Agreement ("Agreement") is entered into between the Rights Holder and the Licensee for the use of the master recording "{recording_title}" in synchronization with visual media.
-
-TERMS:
-1. License Type: Single Track Synchronization License
-2. Territory: Worldwide
-3. Duration: Perpetual
-4. Usage: Synchronization with visual media only
-5. Rights Granted: Non-exclusive right to synchronize the recording with visual media
-6. Restrictions: No public performance rights, no mechanical rights
-7. Payment: {amount} USD paid in full
-8. Credits: Licensee agrees to provide appropriate credits where possible
-
-The Rights Holder represents and warrants that they have the authority to grant this license and that the recording does not infringe upon any third-party rights.',
-    '1.0',
-    NULL
+    'This agreement grants the licensee the right to use the master recording for a single project. The rights holder retains all other rights and may license the same recording to other parties.',
+    '1.0'
 ),
 (
     'Sync License Agreement',
     'sync_license',
-    'This Sync License Agreement ("Agreement") is entered into between the Rights Holder and the Licensee for the use of the master recording "{recording_title}" in synchronization with visual media.
-
-TERMS:
-1. License Type: Sync License
-2. Territory: {territory}
-3. Duration: {duration}
-4. Usage: Synchronization with visual media as specified
-5. Rights Granted: Non-exclusive sync rights
-6. Payment: {amount} USD
-7. Credits: Required where possible
-8. Restrictions: No public performance or mechanical rights
-
-The Rights Holder represents and warrants their authority to grant this license.',
-    '1.0',
-    NULL
+    'This agreement grants the licensee synchronization rights for use in visual media. The rights holder warrants they have the authority to grant these rights and will indemnify the licensee against any claims.',
+    '1.0'
 ),
 (
     'Exclusive License Agreement',
     'exclusive_license',
-    'This Exclusive License Agreement ("Agreement") is entered into between the Rights Holder and the Licensee for the exclusive use of the master recording "{recording_title}".
-
-TERMS:
-1. License Type: Exclusive License
-2. Territory: {territory}
-3. Duration: {duration}
-4. Usage: Exclusive rights as specified
-5. Rights Granted: Exclusive rights for specified use
-6. Payment: {amount} USD
-7. Credits: Required
-8. Exclusivity: Rights Holder agrees not to license to others during term
-
-The Rights Holder represents and warrants their authority to grant exclusive rights.',
-    '1.0',
-    NULL
-);
+    'This agreement grants the licensee exclusive rights to the master recording for the specified territory and duration. The rights holder may not license the same recording to other parties during this period.',
+    '1.0'
+),
+(
+    'Membership License Agreement',
+    'subscription_license',
+    'This agreement grants the licensee access to the rights holder''s catalog through their membership plan. Usage is subject to the terms of their membership level.',
+    '1.0'
+)
+ON CONFLICT DO NOTHING;
 
 -- ============================================
--- 10. UPDATE EXISTING TABLES
+-- 9. UPDATE EXISTING TABLES
 -- ============================================
 
--- Add license tracking to master_recordings table
+-- Add licensing-related columns to master_recordings
 ALTER TABLE master_recordings 
 ADD COLUMN IF NOT EXISTS total_licenses INTEGER DEFAULT 0,
 ADD COLUMN IF NOT EXISTS total_revenue DECIMAL(10,2) DEFAULT 0.00;
 
--- Add payment tracking to rights_holders table
+-- Add payout-related columns to rights_holders
 ALTER TABLE rights_holders 
 ADD COLUMN IF NOT EXISTS stripe_account_id TEXT,
 ADD COLUMN IF NOT EXISTS payout_schedule TEXT DEFAULT 'monthly' CHECK (payout_schedule IN ('weekly', 'monthly', 'quarterly')),
 ADD COLUMN IF NOT EXISTS minimum_payout_amount DECIMAL(10,2) DEFAULT 50.00;
 
 -- ============================================
--- 11. VIEWS FOR REPORTING
+-- 10. VIEWS FOR REPORTING
 -- ============================================
 
 -- View for rights holder licensing summary
-CREATE OR REPLACE VIEW rights_holder_licensing_summary AS
+DROP VIEW IF EXISTS rights_holder_licensing_summary;
+CREATE VIEW rights_holder_licensing_summary AS
 SELECT 
     rh.id as rights_holder_id,
     rh.company_name,
@@ -643,21 +622,19 @@ LEFT JOIN rights_holder_balances rhb ON rh.id = rhb.rights_holder_id
 GROUP BY rh.id, rh.company_name, rh.rights_holder_type, rhb.pending_balance, rhb.available_balance, rhb.lifetime_earnings;
 
 -- View for royalty distribution summary
-CREATE OR REPLACE VIEW royalty_distribution_summary AS
+DROP VIEW IF EXISTS royalty_distribution_summary;
+CREATE VIEW royalty_distribution_summary AS
 SELECT 
+    rd.license_id,
     rd.master_recording_id,
-    mr.title as recording_title,
     rd.rights_holder_id,
     rh.company_name,
-    rd.participant_name,
-    rd.participant_role,
-    rd.percentage,
-    SUM(rd.amount_owed) as total_owed,
-    SUM(rd.amount_paid) as total_paid,
+    mr.title as recording_title,
+    COUNT(rd.id) as total_participants,
+    SUM(rd.amount_owed) as total_amount_owed,
+    SUM(rd.amount_paid) as total_amount_paid,
     SUM(rd.amount_owed - rd.amount_paid) as outstanding_amount
 FROM royalty_distributions rd
-JOIN master_recordings mr ON rd.master_recording_id = mr.id
 JOIN rights_holders rh ON rd.rights_holder_id = rh.id
-GROUP BY rd.master_recording_id, mr.title, rd.rights_holder_id, rh.company_name, rd.participant_name, rd.participant_role, rd.percentage;
-
-COMMIT;
+JOIN master_recordings mr ON rd.master_recording_id = mr.id
+GROUP BY rd.license_id, rd.master_recording_id, rd.rights_holder_id, rh.company_name, mr.title;
