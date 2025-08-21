@@ -256,6 +256,15 @@ export function RightsHolderDashboard() {
                 </Link>
 
                 <Link
+                  to="/rights-holder/recordings"
+                  className="flex items-center p-3 bg-orange-600/20 hover:bg-orange-600/30 rounded-lg transition-colors group"
+                >
+                  <Music className="w-5 h-5 text-orange-400 mr-3" />
+                  <span className="text-white">Manage Recordings</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                <Link
                   to="/rights-holder/split-sheets"
                   className="flex items-center p-3 bg-green-600/20 hover:bg-green-600/30 rounded-lg transition-colors group"
                 >
