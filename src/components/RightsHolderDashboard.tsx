@@ -16,7 +16,8 @@ import {
   BarChart3,
   DollarSign,
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Mail
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -47,12 +48,21 @@ export function RightsHolderDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (rightsHolder) {
+      fetchDashboardData();
+    } else {
+      // If no rightsHolder, still set loading to false to show empty state
+      setLoading(false);
+    }
+  }, [rightsHolder]);
 
   const fetchDashboardData = async () => {
-    if (!rightsHolder) return;
+    if (!rightsHolder) {
+      console.log('No rightsHolder available, skipping dashboard data fetch');
+      return;
+    }
 
+    console.log('Fetching dashboard data for rightsHolder:', rightsHolder.id);
     try {
       setLoading(true);
 
