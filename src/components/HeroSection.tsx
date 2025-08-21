@@ -204,7 +204,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
             className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center mx-auto"
           >
             <Building2 className="w-4 h-4 mr-2" />
-            Join as Rights Holder
+            Join as Record Label/Publisher
             <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
           </button>
         </div>

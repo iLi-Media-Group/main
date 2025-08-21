@@ -1,0 +1,889 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { uploadFile } from '../lib/storage';
+import { supabase } from '../lib/supabase';
+import { 
+  Upload, 
+  Music, 
+  FileText, 
+  Users, 
+  Percent, 
+  Mail, 
+  CheckCircle, 
+  AlertCircle,
+  ArrowRight,
+  Building2,
+  Mic,
+  FileAudio,
+  UserPlus,
+  Send,
+  Save
+} from 'lucide-react';
+
+interface UploadFormData {
+  // Basic Track Information
+  title: string;
+  artist: string;
+  genre: string;
+  mood: string;
+  bpm: number;
+  key: string;
+  duration: number;
+  description: string;
+  
+  // Rights Information
+  masterRightsOwner: string;
+  publishingRightsOwner: string;
+  
+  // File Uploads
+  audioFile: File | null;
+  artworkFile: File | null;
+  
+  // Split Sheet Data
+  participants: SplitSheetParticipant[];
+  
+  // Co-signer Information
+  coSigners: CoSigner[];
+}
+
+interface SplitSheetParticipant {
+  id: string;
+  name: string;
+  role: 'writer' | 'producer' | 'publisher' | 'performer';
+  percentage: number;
+  email: string;
+  pro: string; // ASCAP, BMI, SESAC, etc.
+  publisher: string;
+}
+
+interface CoSigner {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  invited: boolean;
+  signed: boolean;
+}
+
+export function RightsHolderUploadForm() {
+  const navigate = useNavigate();
+  const { rightsHolder } = useRightsHolderAuth();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  
+  const audioFileRef = useRef<HTMLInputElement>(null);
+  const artworkFileRef = useRef<HTMLInputElement>(null);
+
+  const [formData, setFormData] = useState<UploadFormData>({
+    title: '',
+    artist: '',
+    genre: '',
+    mood: '',
+    bpm: 0,
+    key: '',
+    duration: 0,
+    description: '',
+    masterRightsOwner: rightsHolder?.company_name || '',
+    publishingRightsOwner: rightsHolder?.company_name || '',
+    audioFile: null,
+    artworkFile: null,
+    participants: [
+      {
+        id: '1',
+        name: '',
+        role: 'writer',
+        percentage: 100,
+        email: '',
+        pro: '',
+        publisher: ''
+      }
+    ],
+    coSigners: []
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'audio' | 'artwork') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (fileType === 'audio') {
+        setFormData(prev => ({ ...prev, audioFile: file }));
+      } else {
+        setFormData(prev => ({ ...prev, artworkFile: file }));
+      }
+    }
+  };
+
+  const addParticipant = () => {
+    const newParticipant: SplitSheetParticipant = {
+      id: Date.now().toString(),
+      name: '',
+      role: 'writer',
+      percentage: 0,
+      email: '',
+      pro: '',
+      publisher: ''
+    };
+    setFormData(prev => ({
+      ...prev,
+      participants: [...prev.participants, newParticipant]
+    }));
+  };
+
+  const updateParticipant = (id: string, field: keyof SplitSheetParticipant, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      participants: prev.participants.map(p => 
+        p.id === id ? { ...p, [field]: value } : p
+      )
+    }));
+  };
+
+  const removeParticipant = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      participants: prev.participants.filter(p => p.id !== id)
+    }));
+  };
+
+  const addCoSigner = () => {
+    const newCoSigner: CoSigner = {
+      id: Date.now().toString(),
+      name: '',
+      email: '',
+      role: '',
+      invited: false,
+      signed: false
+    };
+    setFormData(prev => ({
+      ...prev,
+      coSigners: [...prev.coSigners, newCoSigner]
+    }));
+  };
+
+  const updateCoSigner = (id: string, field: keyof CoSigner, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      coSigners: prev.coSigners.map(c => 
+        c.id === id ? { ...c, [field]: value } : c
+      )
+    }));
+  };
+
+  const removeCoSigner = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      coSigners: prev.coSigners.filter(c => c.id !== id)
+    }));
+  };
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.title && formData.artist && formData.genre && formData.audioFile);
+      case 2:
+        return !!(formData.masterRightsOwner && formData.publishingRightsOwner);
+      case 3:
+        return formData.participants.length > 0 && 
+               formData.participants.every(p => p.name && p.percentage > 0);
+      case 4:
+        return true; // Co-signers are optional
+      default:
+        return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, 4));
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = async () => {
+    if (!rightsHolder || !formData.audioFile) return;
+
+    setUploading(true);
+    setError(null);
+    setUploadProgress(0);
+
+    try {
+      // Upload audio file
+      const audioPath = await uploadFile(
+        formData.audioFile,
+        'track-audio',
+        (progress) => setUploadProgress(progress * 0.7), // Audio is 70% of upload
+        `rights-holders/${rightsHolder.id}`
+      );
+
+      // Upload artwork if provided
+      let artworkPath = null;
+      if (formData.artworkFile) {
+        artworkPath = await uploadFile(
+          formData.artworkFile,
+          'track-images',
+          (progress) => setUploadProgress(70 + progress * 0.3), // Artwork is 30% of upload
+          `rights-holders/${rightsHolder.id}`
+        );
+      }
+
+      // Create master recording record
+      const { data: masterRecording, error: masterError } = await supabase
+        .from('master_recordings')
+        .insert({
+          rights_holder_id: rightsHolder.id,
+          title: formData.title,
+          artist: formData.artist,
+          genre: formData.genre,
+          mood: formData.mood,
+          bpm: formData.bpm,
+          key: formData.key,
+          duration: formData.duration,
+          description: formData.description,
+          audio_url: audioPath,
+          artwork_url: artworkPath,
+          master_rights_owner: formData.masterRightsOwner,
+          publishing_rights_owner: formData.publishingRightsOwner,
+          status: 'pending_verification'
+        })
+        .select()
+        .single();
+
+      if (masterError) throw masterError;
+
+      // Create publishing rights record
+      const { error: publishingError } = await supabase
+        .from('publishing_rights')
+        .insert({
+          master_recording_id: masterRecording.id,
+          rights_holder_id: rightsHolder.id,
+          status: 'pending_verification'
+        });
+
+      if (publishingError) throw publishingError;
+
+      // Create split sheet
+      const { data: splitSheet, error: splitError } = await supabase
+        .from('split_sheets')
+        .insert({
+          master_recording_id: masterRecording.id,
+          rights_holder_id: rightsHolder.id,
+          status: 'pending_signatures'
+        })
+        .select()
+        .single();
+
+      if (splitError) throw splitError;
+
+      // Create split sheet participants
+      const participantsData = formData.participants.map(p => ({
+        split_sheet_id: splitSheet.id,
+        name: p.name,
+        role: p.role,
+        percentage: p.percentage,
+        email: p.email,
+        pro: p.pro,
+        publisher: p.publisher
+      }));
+
+      const { error: participantsError } = await supabase
+        .from('split_sheet_participants')
+        .insert(participantsData);
+
+      if (participantsError) throw participantsError;
+
+      // Create co-signers if any
+      if (formData.coSigners.length > 0) {
+        const coSignersData = formData.coSigners.map(c => ({
+          split_sheet_id: splitSheet.id,
+          name: c.name,
+          email: c.email,
+          role: c.role,
+          invited: false
+        }));
+
+        const { error: coSignersError } = await supabase
+          .from('co_signers')
+          .insert(coSignersData);
+
+        if (coSignersError) throw coSignersError;
+      }
+
+      setSuccess(true);
+      setUploadProgress(100);
+
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        navigate('/rights-holder/dashboard');
+      }, 3000);
+
+    } catch (err) {
+      console.error('Upload error:', err);
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const steps = [
+    { number: 1, title: 'Track Information', icon: Music },
+    { number: 2, title: 'Rights Declaration', icon: FileText },
+    { number: 3, title: 'Split Sheet', icon: Users },
+    { number: 4, title: 'Co-signers', icon: Mail }
+  ];
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
+          <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Upload Successful!</h2>
+          <p className="text-gray-300 mb-6">
+            Your track has been uploaded and is pending verification. You'll be redirected to your dashboard shortly.
+          </p>
+          <div className="w-full bg-gray-700 rounded-full h-2">
+            <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-white mb-2">Upload Master Recording</h1>
+          <p className="text-gray-300">Complete the rights verification process for your track</p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-4">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.number;
+              const isCompleted = currentStep > step.number;
+              
+              return (
+                <div key={step.number} className="flex items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
+                    isCompleted ? 'bg-green-500 border-green-500' :
+                    isActive ? 'bg-blue-500 border-blue-500' :
+                    'bg-gray-700 border-gray-600'
+                  }`}>
+                    {isCompleted ? (
+                      <CheckCircle className="w-6 h-6 text-white" />
+                    ) : (
+                      <Icon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm font-medium ${
+                    isActive ? 'text-blue-400' : 'text-gray-400'
+                  }`}>
+                    {step.title}
+                  </span>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-4 ${
+                      isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+              <span className="text-red-400">{error}</span>
+            </div>
+          )}
+
+          {/* Step 1: Track Information */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Track Information</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 mb-2">Track Title *</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="Enter track title"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Artist *</label>
+                  <input
+                    type="text"
+                    name="artist"
+                    value={formData.artist}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="Enter artist name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Genre *</label>
+                  <select
+                    name="genre"
+                    value={formData.genre}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select genre</option>
+                    <option value="pop">Pop</option>
+                    <option value="rock">Rock</option>
+                    <option value="hip-hop">Hip-Hop</option>
+                    <option value="electronic">Electronic</option>
+                    <option value="jazz">Jazz</option>
+                    <option value="classical">Classical</option>
+                    <option value="country">Country</option>
+                    <option value="r&b">R&B</option>
+                    <option value="folk">Folk</option>
+                    <option value="world">World</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Mood</label>
+                  <input
+                    type="text"
+                    name="mood"
+                    value={formData.mood}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g., energetic, calm, dramatic"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">BPM</label>
+                  <input
+                    type="number"
+                    name="bpm"
+                    value={formData.bpm}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="120"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Key</label>
+                  <input
+                    type="text"
+                    name="key"
+                    value={formData.key}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g., C major, A minor"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-gray-300 mb-2">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  placeholder="Describe the track, its intended use, etc."
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 mb-2">Audio File *</label>
+                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                    <input
+                      ref={audioFileRef}
+                      type="file"
+                      accept="audio/*"
+                      onChange={(e) => handleFileChange(e, 'audio')}
+                      className="hidden"
+                    />
+                    <FileAudio className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300 mb-2">
+                      {formData.audioFile ? formData.audioFile.name : 'Click to upload audio file'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => audioFileRef.current?.click()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Choose File
+                    </button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Artwork (Optional)</label>
+                  <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                    <input
+                      ref={artworkFileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileChange(e, 'artwork')}
+                      className="hidden"
+                    />
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300 mb-2">
+                      {formData.artworkFile ? formData.artworkFile.name : 'Click to upload artwork'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => artworkFileRef.current?.click()}
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Choose File
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Rights Declaration */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Rights Declaration</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-gray-300 mb-2">Master Rights Owner *</label>
+                  <input
+                    type="text"
+                    name="masterRightsOwner"
+                    value={formData.masterRightsOwner}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="Who owns the master recording?"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Publishing Rights Owner *</label>
+                  <input
+                    type="text"
+                    name="publishingRightsOwner"
+                    value={formData.publishingRightsOwner}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    placeholder="Who owns the publishing rights?"
+                  />
+                </div>
+              </div>
+              
+              <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+                <h3 className="text-blue-400 font-semibold mb-2">Rights Declaration</h3>
+                <p className="text-gray-300 text-sm">
+                  By uploading this track, you declare that you have the legal authority to license this content 
+                  and that all rights holders have been properly credited and compensated according to the split sheet.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Split Sheet */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">Split Sheet</h2>
+                <button
+                  type="button"
+                  onClick={addParticipant}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Participant
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {formData.participants.map((participant, index) => (
+                  <div key={participant.id} className="bg-gray-800/30 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-white font-semibold">Participant {index + 1}</h3>
+                      {formData.participants.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeParticipant(participant.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-gray-300 mb-2">Name *</label>
+                        <input
+                          type="text"
+                          value={participant.name}
+                          onChange={(e) => updateParticipant(participant.id, 'name', e.target.value)}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                          placeholder="Full name"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Role *</label>
+                        <select
+                          value={participant.role}
+                          onChange={(e) => updateParticipant(participant.id, 'role', e.target.value)}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                        >
+                          <option value="writer">Writer</option>
+                          <option value="producer">Producer</option>
+                          <option value="publisher">Publisher</option>
+                          <option value="performer">Performer</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Percentage *</label>
+                        <input
+                          type="number"
+                          value={participant.percentage}
+                          onChange={(e) => updateParticipant(participant.id, 'percentage', parseFloat(e.target.value))}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                          placeholder="0-100"
+                          min="0"
+                          max="100"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Email</label>
+                        <input
+                          type="email"
+                          value={participant.email}
+                          onChange={(e) => updateParticipant(participant.id, 'email', e.target.value)}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">PRO</label>
+                        <select
+                          value={participant.pro}
+                          onChange={(e) => updateParticipant(participant.id, 'pro', e.target.value)}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                        >
+                          <option value="">Select PRO</option>
+                          <option value="ascap">ASCAP</option>
+                          <option value="bmi">BMI</option>
+                          <option value="sesac">SESAC</option>
+                          <option value="none">None</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Publisher</label>
+                        <input
+                          type="text"
+                          value={participant.publisher}
+                          onChange={(e) => updateParticipant(participant.id, 'publisher', e.target.value)}
+                          className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                          placeholder="Publisher name"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
+                <h3 className="text-yellow-400 font-semibold mb-2">Total Percentage</h3>
+                <p className="text-gray-300">
+                  Current total: {formData.participants.reduce((sum, p) => sum + p.percentage, 0)}%
+                  {formData.participants.reduce((sum, p) => sum + p.percentage, 0) !== 100 && (
+                    <span className="text-yellow-400 ml-2">(Should equal 100%)</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Co-signers */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-white">Co-signers (Optional)</h2>
+                <button
+                  type="button"
+                  onClick={addCoSigner}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Add Co-signer
+                </button>
+              </div>
+              
+              {formData.coSigners.length === 0 ? (
+                <div className="text-center py-8">
+                  <Mail className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300 mb-4">No co-signers added yet</p>
+                  <p className="text-gray-400 text-sm">
+                    Co-signers will receive email invitations to sign the split sheet electronically.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {formData.coSigners.map((coSigner, index) => (
+                    <div key={coSigner.id} className="bg-gray-800/30 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-white font-semibold">Co-signer {index + 1}</h3>
+                        <button
+                          type="button"
+                          onClick={() => removeCoSigner(coSigner.id)}
+                          className="text-red-400 hover:text-red-300"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-gray-300 mb-2">Name *</label>
+                          <input
+                            type="text"
+                            value={coSigner.name}
+                            onChange={(e) => updateCoSigner(coSigner.id, 'name', e.target.value)}
+                            className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                            placeholder="Full name"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-300 mb-2">Email *</label>
+                          <input
+                            type="email"
+                            value={coSigner.email}
+                            onChange={(e) => updateCoSigner(coSigner.id, 'email', e.target.value)}
+                            className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                            placeholder="email@example.com"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <label className="block text-gray-300 mb-2">Role</label>
+                          <input
+                            type="text"
+                            value={coSigner.role}
+                            onChange={(e) => updateCoSigner(coSigner.id, 'role', e.target.value)}
+                            className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                            placeholder="e.g., Co-writer, Producer, Publisher"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+                <h3 className="text-blue-400 font-semibold mb-2">E-Signature Process</h3>
+                <p className="text-gray-300 text-sm">
+                  Co-signers will receive secure email invitations to electronically sign the split sheet. 
+                  The track will be available for licensing once all signatures are collected.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-lg transition-colors"
+            >
+              Previous
+            </button>
+            
+            <div className="flex space-x-4">
+              {currentStep < 4 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  disabled={!validateStep(currentStep)}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center"
+                >
+                  Next
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={uploading || !validateStep(currentStep)}
+                  className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-800 disabled:text-gray-500 text-white rounded-lg transition-colors flex items-center"
+                >
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Upload Track
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Upload Progress */}
+          {uploading && (
+            <div className="mt-6">
+              <div className="flex justify-between text-sm text-gray-300 mb-2">
+                <span>Uploading...</span>
+                <span>{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

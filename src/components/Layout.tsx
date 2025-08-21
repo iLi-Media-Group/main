@@ -166,7 +166,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         <LogIn className="w-4 h-4 mr-2" />White Label Client Login
                       </Link>
                       <Link to="/rights-holder/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
-                        <Building2 className="w-4 h-4 mr-2" />Rights Holder Login
+                        <Building2 className="w-4 h-4 mr-2" />Record Label/Publisher
                       </Link>
                     </div>
                   </div>
@@ -456,7 +456,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         <LogIn className="w-4 h-4 mr-2" />White Label Client Login
                       </Link>
                       <Link to="/rights-holder/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-                        <Building2 className="w-4 h-4 mr-2" />Rights Holder Login
+                        <Building2 className="w-4 h-4 mr-2" />Record Label/Publisher
                       </Link>
                     </>
                   )}
