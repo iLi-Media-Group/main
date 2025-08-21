@@ -84,6 +84,7 @@ import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
 import { FollowingPage } from './components/FollowingPage';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
+import { preventAuthLoss, restoreAuthState } from './lib/sessionUtils';
 
 // Rights Holders System Imports
 import { RightsHolderAuthProvider } from './contexts/RightsHolderAuthContext';
@@ -152,6 +153,10 @@ const App = () => {
     
     // Setup development mode protection
     setupDevelopmentProtection();
+    
+    // Prevent authentication state loss during development
+    preventAuthLoss();
+    restoreAuthState();
   }, []);
   
   // Security hook for the entire application

@@ -17,11 +17,16 @@ export default defineConfig({
   },
   server: {
     historyApiFallback: true,
-    headers: getSecurityHeaders(),
-    // Disable hot reload for admin and dashboard pages to prevent unwanted refreshes
+    headers: {
+      ...getSecurityHeaders(),
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    },
+    // Prevent authentication state loss during development
     hmr: {
       overlay: false, // Disable error overlay
-    },
+    }
   },
   preview: {
     headers: getSecurityHeaders(),
