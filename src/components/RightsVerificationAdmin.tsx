@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { sendVerificationEmail, sendRecordingVerificationEmail } from '../lib/emailService';
 import { 
   Shield, 
   CheckCircle, 
@@ -151,6 +152,8 @@ export function RightsVerificationAdmin() {
     setError(null);
 
     try {
+      console.log('Fetching rights verification data...');
+      
       // Fetch rights holders with profiles
       const { data: rightsHoldersData, error: rightsHoldersError } = await supabase
         .from('rights_holders')
@@ -160,7 +163,12 @@ export function RightsVerificationAdmin() {
         `)
         .order('created_at', { ascending: false });
 
-      if (rightsHoldersError) throw rightsHoldersError;
+      console.log('Rights holders query result:', { data: rightsHoldersData, error: rightsHoldersError });
+
+      if (rightsHoldersError) {
+        console.error('Rights holders error:', rightsHoldersError);
+        throw rightsHoldersError;
+      }
 
       // Fetch master recordings with rights holder info
       const { data: recordingsData, error: recordingsError } = await supabase
@@ -171,7 +179,12 @@ export function RightsVerificationAdmin() {
         `)
         .order('created_at', { ascending: false });
 
-      if (recordingsError) throw recordingsError;
+      console.log('Master recordings query result:', { data: recordingsData, error: recordingsError });
+
+      if (recordingsError) {
+        console.error('Master recordings error:', recordingsError);
+        throw recordingsError;
+      }
 
       setRightsHolders(rightsHoldersData || []);
       setMasterRecordings(recordingsData || []);
@@ -188,10 +201,11 @@ export function RightsVerificationAdmin() {
         rejectedRecordings: recordingsData?.filter(mr => mr.rights_verification_status === 'rejected').length || 0,
       };
 
+      console.log('Calculated stats:', stats);
       setStats(stats);
     } catch (err) {
       console.error('Error fetching verification data:', err);
-      setError('Failed to load verification data');
+      setError(`Failed to load verification data: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -206,22 +220,35 @@ export function RightsVerificationAdmin() {
     try {
       if (activeTab === 'rights-holders') {
         const rightsHolder = selectedItem as RightsHolder;
+        const newStatus = reviewAction === 'approve' ? 'verified' : 'rejected';
+        
         const { error: updateError } = await supabase
           .from('rights_holders')
           .update({
-            verification_status: reviewAction === 'approve' ? 'verified' : 'rejected',
+            verification_status: newStatus,
             verification_notes: reviewNotes,
             updated_at: new Date().toISOString()
           })
           .eq('id', rightsHolder.id);
 
         if (updateError) throw updateError;
+
+        // Send email notification
+        await sendVerificationEmail(
+          rightsHolder.email,
+          rightsHolder.company_name,
+          rightsHolder.rights_holder_type,
+          newStatus as 'verified' | 'rejected',
+          reviewNotes
+        );
       } else {
         const recording = selectedItem as MasterRecording;
+        const newStatus = reviewAction === 'approve' ? 'verified' : 'rejected';
+        
         const { error: updateError } = await supabase
           .from('master_recordings')
           .update({
-            rights_verification_status: reviewAction === 'approve' ? 'verified' : 'rejected',
+            rights_verification_status: newStatus,
             admin_review_status: reviewAction === 'approve' ? 'approved' : 'rejected',
             admin_review_notes: reviewNotes,
             admin_reviewed_at: new Date().toISOString(),
@@ -231,6 +258,22 @@ export function RightsVerificationAdmin() {
           .eq('id', recording.id);
 
         if (updateError) throw updateError;
+
+        // Send email notification for recording verification
+        const rightsHolderEmail = recording.rights_holder?.email || '';
+        if (rightsHolderEmail) {
+          await sendRecordingVerificationEmail(
+            rightsHolderEmail,
+            recording.title,
+            recording.artist,
+            recording.genre,
+            recording.mood,
+            recording.bpm,
+            recording.key,
+            newStatus as 'verified' | 'rejected',
+            reviewNotes
+          );
+        }
       }
 
       // Refresh data
@@ -244,6 +287,8 @@ export function RightsVerificationAdmin() {
       alert('Failed to update review status');
     }
   };
+
+
 
   const getStatusColor = (status: string) => {
     switch (status) {

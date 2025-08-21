@@ -26,6 +26,7 @@ import { SynonymManager } from './SynonymManager';
 import { BackgroundManager } from './BackgroundManager';
 import { MediaTypeManagement } from './MediaTypeManagement';
 import { ProducerBadgeManager } from './ProducerBadgeManager';
+import { RightsVerificationAdmin } from './RightsVerificationAdmin';
 
 
 interface UserStats {
@@ -187,7 +188,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges' | 'rights_verification'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1500,6 +1501,7 @@ if (subscription.price_id) {
             { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
             { id: 'backgrounds', label: 'Background Manager', icon: <Video className="w-4 h-4 mr-2" /> },
             { id: 'media_types', label: 'Media Types', icon: <Video className="w-4 h-4 mr-2" /> },
+            { id: 'rights_verification', label: 'Rights Verification', icon: <Shield className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -2132,6 +2134,13 @@ if (subscription.price_id) {
                 Click "Manage Producer Badges" to view and edit producer usage badges.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Rights Verification Admin */}
+        {activeTab === 'rights_verification' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <RightsVerificationAdmin />
           </div>
         )}
 
