@@ -92,6 +92,7 @@ import { RightsHolderLogin } from './components/RightsHolderLogin';
 import { RightsHolderDashboard } from './components/RightsHolderDashboard';
 import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRoute';
 import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
+import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
 import { RightsHolderTest } from './components/RightsHolderTest';
 
 const App = () => {
@@ -134,6 +135,7 @@ const App = () => {
         '/rights-holder/login',
         '/rights-holder/dashboard',
         '/rights-holder/upload',
+        '/rights-holder/split-sheets',
         '/rights-holder/test'
       ]
     });
@@ -675,6 +677,11 @@ const App = () => {
         <Route path="/rights-holder/upload" element={
           <RightsHolderProtectedRoute>
             <RightsHolderUploadForm />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/split-sheets" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderSplitSheets />
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/test" element={<RightsHolderTest />} />
