@@ -1,7 +1,7 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Building2, AlertCircle, Clock, FileText } from 'lucide-react';
 
 interface RightsHolderProtectedRouteProps {
   children: React.ReactNode;
@@ -12,101 +12,107 @@ export function RightsHolderProtectedRoute({
   children, 
   requireVerification = false 
 }: RightsHolderProtectedRouteProps) {
-  const { user, rightsHolder, loading } = useRightsHolderAuth();
+  const { user, rightsHolder, loading, signOut } = useRightsHolderAuth();
 
   // Show loading spinner while checking authentication
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!user || !rightsHolder) {
-    return <Navigate to="/rights-holder/login" replace />;
-  }
-
-  // Check if account is active
-  if (!rightsHolder.is_active) {
+  if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Account Suspended</h2>
-          <p className="text-gray-300 mb-4">
-            Your account has been suspended. Please contact support for assistance.
-          </p>
-          <a
-            href="mailto:support@mybeatfi.com"
-            className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-          >
-            Contact Support
-          </a>
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please sign in to access the rights holder dashboard.
+            </p>
+            <Link
+              to="/rights-holder/login"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Check verification status if required
-  if (requireVerification && rightsHolder.verification_status !== 'verified') {
+  if (!rightsHolder) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-          <h2 className="text-2xl font-bold text-white mb-4">Account Verification Required</h2>
-          <p className="text-gray-300 mb-4">
-            Your account is currently under review. You'll be notified once verification is complete.
-          </p>
-          <p className="text-sm text-gray-400">
-            Status: {rightsHolder.verification_status}
-          </p>
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Account Not Found</h2>
+            <p className="text-gray-300 mb-6">
+              Your rights holder account could not be found. Please contact support.
+            </p>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-     // Check if terms have been accepted
-   if (!rightsHolder.terms_accepted) {
-     return (
-       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-           <h2 className="text-2xl font-bold text-white mb-4">Terms Acceptance Required</h2>
-           <p className="text-gray-300 mb-4">
-             You must accept the updated terms of service to continue.
-           </p>
-           <a
-             href="/rights-holder/terms"
-             className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-           >
-             Review Terms
-           </a>
-         </div>
-       </div>
-     );
-   }
+  if (rightsHolder.verification_status === 'pending') {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Account Pending Verification</h2>
+            <p className="text-gray-300 mb-6">
+              Your rights holder account is pending verification. You'll be notified once it's approved.
+            </p>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-   // Check if rights authority declaration has been accepted
-   if (!rightsHolder.rights_authority_declaration_accepted) {
-     return (
-       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
-           <h2 className="text-2xl font-bold text-white mb-4">Rights Authority Declaration Required</h2>
-           <p className="text-gray-300 mb-4">
-             You must accept the Rights Authority Declaration to continue. This declaration confirms your legal authority to administer and license music content.
-           </p>
-           <a
-             href="/rights-holder/declaration"
-             className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-           >
-             Review Declaration
-           </a>
-         </div>
-       </div>
-     );
-   }
+  if (!rightsHolder.terms_accepted || !rightsHolder.rights_authority_declaration_accepted) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Terms Acceptance Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please accept the terms and conditions to continue.
+            </p>
+            <Link
+              to="/rights-holder/terms"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Review Terms
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // All checks passed, render the protected content
   return <>{children}</>;

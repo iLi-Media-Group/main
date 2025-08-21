@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
 import { uploadFile } from '../lib/storage';
 import { supabase } from '../lib/supabase';
+import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { 
   Upload, 
   Music, 
@@ -18,15 +20,37 @@ import {
   FileAudio,
   UserPlus,
   Send,
-  Save
+  Save,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
+
+interface Genre {
+  id: string;
+  name: string;
+  display_name: string;
+}
+
+interface SubGenre {
+  id: string;
+  genre_id: string;
+  name: string;
+  display_name: string;
+}
+
+interface GenreWithSubGenres extends Genre {
+  sub_genres: SubGenre[];
+}
 
 interface UploadFormData {
   // Basic Track Information
   title: string;
   artist: string;
   genre: string;
+  subGenre: string;
   mood: string;
+  subMood: string;
   bpm: number;
   key: string;
   duration: number;
@@ -45,6 +69,9 @@ interface UploadFormData {
   
   // Co-signer Information
   coSigners: CoSigner[];
+  
+  // Instruments
+  selectedInstruments: string[];
 }
 
 interface SplitSheetParticipant {
@@ -75,14 +102,70 @@ export function RightsHolderUploadForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
+  // Database-driven dropdown data
+  const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
+  const [genresLoading, setGenresLoading] = useState(true);
+  const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
+  const [instrumentsLoading, setInstrumentsLoading] = useState(true);
+  
+  // State for tracking expanded categories
+  const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
+  const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
+  
   const audioFileRef = useRef<HTMLInputElement>(null);
   const artworkFileRef = useRef<HTMLInputElement>(null);
+
+  // Fetch genres from database
+  useStableDataFetch(
+    async () => {
+      try {
+        setGenresLoading(true);
+        const { data, error } = await supabase
+          .from('genres')
+          .select(`
+            *,
+            sub_genres (*)
+          `)
+          .order('display_name');
+
+        if (error) throw error;
+        setGenres(data || []);
+      } catch (err) {
+        console.error('Error fetching genres:', err);
+        setGenres([]);
+      } finally {
+        setGenresLoading(false);
+      }
+    },
+    [],
+    () => true
+  );
+
+  // Fetch instruments from database
+  useStableDataFetch(
+    async () => {
+      try {
+        setInstrumentsLoading(true);
+        const instrumentsData = await fetchInstrumentsData();
+        setInstruments(instrumentsData.instruments);
+      } catch (err) {
+        console.error('Error fetching instruments:', err);
+        setInstruments([]);
+      } finally {
+        setInstrumentsLoading(false);
+      }
+    },
+    [],
+    () => true
+  );
 
   const [formData, setFormData] = useState<UploadFormData>({
     title: '',
     artist: '',
     genre: '',
+    subGenre: '',
     mood: '',
+    subMood: '',
     bpm: 0,
     key: '',
     duration: 0,
@@ -102,7 +185,8 @@ export function RightsHolderUploadForm() {
         publisher: ''
       }
     ],
-    coSigners: []
+    coSigners: [],
+    selectedInstruments: []
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -111,6 +195,46 @@ export function RightsHolderUploadForm() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleMultiSelectChange = (field: keyof UploadFormData, value: string, checked: boolean) => {
+    setFormData(prev => {
+      const currentValues = prev[field] as string[];
+      if (checked) {
+        return { ...prev, [field]: [...currentValues, value] };
+      } else {
+        return { ...prev, [field]: currentValues.filter(v => v !== value) };
+      }
+    });
+  };
+
+  const toggleMoodCategory = (category: string) => {
+    setExpandedMoodCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleInstrumentCategory = (category: string) => {
+    setExpandedInstrumentCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const getSelectedGenreSubGenres = () => {
+    const selectedGenre = genres.find(g => g.id === formData.genre);
+    return selectedGenre?.sub_genres || [];
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, fileType: 'audio' | 'artwork') => {
@@ -248,6 +372,7 @@ export function RightsHolderUploadForm() {
           title: formData.title,
           artist: formData.artist,
           genre: formData.genre,
+          sub_genre: formData.subGenre,
           mood: formData.mood,
           bpm: formData.bpm,
           key: formData.key,
@@ -257,7 +382,8 @@ export function RightsHolderUploadForm() {
           artwork_url: artworkPath,
           master_rights_owner: formData.masterRightsOwner,
           publishing_rights_owner: formData.publishingRightsOwner,
-          status: 'pending_verification'
+          status: 'pending_verification',
+          instruments: formData.selectedInstruments
         })
         .select()
         .single();
@@ -347,7 +473,7 @@ export function RightsHolderUploadForm() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-white mb-4">Upload Successful!</h2>
@@ -362,8 +488,19 @@ export function RightsHolderUploadForm() {
     );
   }
 
+  if (uploading) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading upload form...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-4">
+    <div className="min-h-screen bg-blue-900/90 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -455,31 +592,33 @@ export function RightsHolderUploadForm() {
                     value={formData.genre}
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    disabled={genresLoading}
                   >
                     <option value="">Select genre</option>
-                    <option value="pop">Pop</option>
-                    <option value="rock">Rock</option>
-                    <option value="hip-hop">Hip-Hop</option>
-                    <option value="electronic">Electronic</option>
-                    <option value="jazz">Jazz</option>
-                    <option value="classical">Classical</option>
-                    <option value="country">Country</option>
-                    <option value="r&b">R&B</option>
-                    <option value="folk">Folk</option>
-                    <option value="world">World</option>
+                    {genres.map((genre) => (
+                      <option key={genre.id} value={genre.id}>
+                        {genre.display_name}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                
+
                 <div>
-                  <label className="block text-gray-300 mb-2">Mood</label>
-                  <input
-                    type="text"
-                    name="mood"
-                    value={formData.mood}
+                  <label className="block text-gray-300 mb-2">Sub-Genre</label>
+                  <select
+                    name="subGenre"
+                    value={formData.subGenre}
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., energetic, calm, dramatic"
-                  />
+                    disabled={!formData.genre}
+                  >
+                    <option value="">Select sub-genre</option>
+                    {getSelectedGenreSubGenres().map((subGenre) => (
+                      <option key={subGenre.id} value={subGenre.id}>
+                        {subGenre.display_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 
                 <div>
@@ -496,14 +635,109 @@ export function RightsHolderUploadForm() {
                 
                 <div>
                   <label className="block text-gray-300 mb-2">Key</label>
-                  <input
-                    type="text"
+                  <select
                     name="key"
                     value={formData.key}
                     onChange={handleInputChange}
                     className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                    placeholder="e.g., C major, A minor"
-                  />
+                  >
+                    <option value="">Select key</option>
+                    {MUSICAL_KEYS.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Mood Selection */}
+              <div>
+                <label className="block text-gray-300 mb-2">Mood</label>
+                <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
+                    <div key={category} className="mb-4">
+                      <button
+                        type="button"
+                        onClick={() => toggleMoodCategory(category)}
+                        className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
+                      >
+                        <span className="font-medium">{category}</span>
+                        {expandedMoodCategories.has(category) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                      </button>
+                      {expandedMoodCategories.has(category) && (
+                        <div className="ml-4 mt-2 space-y-1">
+                          {moods.map((mood) => (
+                            <label key={mood} className="flex items-center space-x-2 text-gray-300">
+                              <input
+                                type="checkbox"
+                                checked={formData.mood === mood}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setFormData(prev => ({ ...prev, mood: mood }));
+                                  } else {
+                                    setFormData(prev => ({ ...prev, mood: '' }));
+                                  }
+                                }}
+                                className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                              />
+                              <span className="capitalize">{mood}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Instruments Selection */}
+              <div>
+                <label className="block text-gray-300 mb-2">Instruments</label>
+                <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                  {instrumentsLoading ? (
+                    <div className="text-gray-400 text-center py-4">Loading instruments...</div>
+                  ) : (
+                    <div>
+                      {Array.from(new Set(instruments.map(i => i.category))).map((category) => (
+                        <div key={category} className="mb-4">
+                          <button
+                            type="button"
+                            onClick={() => toggleInstrumentCategory(category)}
+                            className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
+                          >
+                            <span className="font-medium">{category}</span>
+                            {expandedInstrumentCategories.has(category) ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
+                          {expandedInstrumentCategories.has(category) && (
+                            <div className="ml-4 mt-2 space-y-1">
+                              {instruments
+                                .filter(i => i.category === category)
+                                .map((instrument) => (
+                                  <label key={instrument.id} className="flex items-center space-x-2 text-gray-300">
+                                    <input
+                                      type="checkbox"
+                                      checked={formData.selectedInstruments.includes(instrument.id)}
+                                      onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument.id, e.target.checked)}
+                                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                                    />
+                                    <span>{instrument.display_name}</span>
+                                  </label>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               
