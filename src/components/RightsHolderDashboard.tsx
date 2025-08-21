@@ -283,6 +283,15 @@ export function RightsHolderDashboard() {
                 </Link>
 
                 <Link
+                  to="/rights-holder/licensing"
+                  className="flex items-center p-3 bg-teal-600/20 hover:bg-teal-600/30 rounded-lg transition-colors group"
+                >
+                  <FileText className="w-5 h-5 text-teal-400 mr-3" />
+                  <span className="text-white">Licensing & Revenue</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                <Link
                   to="/rights-holder/e-signatures"
                   className="flex items-center p-3 bg-indigo-600/20 hover:bg-indigo-600/30 rounded-lg transition-colors group"
                 >
