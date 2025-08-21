@@ -94,19 +94,31 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
         setRightsHolder(data as RightsHolder);
         
         // Fetch profile if it exists
-        const { data: profileData, error: profileError } = await supabase
-          .from('rights_holder_profiles')
-          .select('*')
-          .eq('rights_holder_id', userId)
-          .single();
+        try {
+          const { data: profileData, error: profileError } = await supabase
+            .from('rights_holder_profiles')
+            .select('*')
+            .eq('rights_holder_id', userId)
+            .maybeSingle(); // Use maybeSingle() instead of single() to handle no results gracefully
 
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error fetching rights holder profile:', profileError);
-        }
-
-        if (profileData) {
-          setRightsHolderProfile(profileData as RightsHolderProfile);
-        } else {
+          if (profileError) {
+            console.error('Error fetching rights holder profile:', profileError);
+            // If it's a table not found error, log it but don't throw
+            if (profileError.code === '42P01') {
+              console.error('Rights holder profiles table not found. Please run the database migration.');
+            }
+            // If it's a permission error, log it but don't throw
+            if (profileError.code === '42501') {
+              console.error('Permission denied accessing rights holder profiles table.');
+            }
+            setRightsHolderProfile(null);
+          } else if (profileData) {
+            setRightsHolderProfile(profileData as RightsHolderProfile);
+          } else {
+            setRightsHolderProfile(null);
+          }
+        } catch (error) {
+          console.error('Error in profile fetch:', error);
           setRightsHolderProfile(null);
         }
       } else {
