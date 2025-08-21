@@ -85,6 +85,14 @@ import { FollowingPage } from './components/FollowingPage';
 import { initializeRefreshPrevention } from './utils/preventRefresh';
 import { setupDevelopmentProtection } from './utils/developmentMode';
 
+// Rights Holders System Imports
+import { RightsHolderAuthProvider } from './contexts/RightsHolderAuthContext';
+import { RightsHolderSignup } from './components/RightsHolderSignup';
+import { RightsHolderLogin } from './components/RightsHolderLogin';
+import { RightsHolderDashboard } from './components/RightsHolderDashboard';
+import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRoute';
+import { RightsHolderTest } from './components/RightsHolderTest';
+
 const App = () => {
   console.log('🚀 App component loaded');
   const [searchParams] = useSearchParams();
@@ -120,7 +128,11 @@ const App = () => {
         '/producer/withdrawals',
         '/producer/resources',
         '/producer/upload',
-        '/white-label-dashboard'
+        '/white-label-dashboard',
+        '/rights-holder/signup',
+        '/rights-holder/login',
+        '/rights-holder/dashboard',
+        '/rights-holder/test'
       ]
     });
     
@@ -258,8 +270,9 @@ const App = () => {
 
   return (
     <SiteBrandingProvider>
-      <ScrollToTop />
-      <Routes>
+      <RightsHolderAuthProvider>
+        <ScrollToTop />
+        <Routes>
         <Route path="/" element={
           <HomeLayoutWrapper>
             <HeroSection onSearch={handleSearch} />
@@ -649,6 +662,16 @@ const App = () => {
         <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
 
+        {/* Rights Holders System Routes */}
+        <Route path="/rights-holder/signup" element={<RightsHolderSignup />} />
+        <Route path="/rights-holder/login" element={<RightsHolderLogin />} />
+        <Route path="/rights-holder/dashboard" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderDashboard />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/test" element={<RightsHolderTest />} />
+
         <Route path="*" element={
           <LayoutWrapper>
             <div className="min-h-screen flex items-center justify-center">
@@ -665,6 +688,7 @@ const App = () => {
         isOpen={isSignupOpen}
         onClose={() => setIsSignupOpen(false)}
       />
+      </RightsHolderAuthProvider>
     </SiteBrandingProvider>
   );
 };
