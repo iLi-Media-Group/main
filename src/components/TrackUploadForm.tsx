@@ -70,6 +70,13 @@ interface FormData {
   publishingRightsOwner: string;
   participants: SplitSheetParticipant[];
   coSigners: CoSigner[];
+  // New rights holder fields
+  rightsHolderName: string;
+  rightsHolderType: 'producer' | 'record_label' | 'publisher' | 'other';
+  rightsHolderEmail: string;
+  rightsHolderPhone: string;
+  rightsHolderAddress: string;
+  rightsDeclarationAccepted: boolean;
 }
 
 interface SplitSheetParticipant {
@@ -132,7 +139,14 @@ export function TrackUploadForm() {
     masterRightsOwner: '',
     publishingRightsOwner: '',
     participants: [] as SplitSheetParticipant[],
-    coSigners: [] as CoSigner[]
+    coSigners: [] as CoSigner[],
+    // New rights holder fields
+    rightsHolderName: '',
+    rightsHolderType: 'producer' as const,
+    rightsHolderEmail: '',
+    rightsHolderPhone: '',
+    rightsHolderAddress: '',
+    rightsDeclarationAccepted: false
   }, {
     storageKey: FORM_STORAGE_KEY,
     excludeFields: ['audioFile', 'imageFile', 'trackoutsFile', 'stemsFile', 'splitSheetFile', 'imagePreview']
@@ -706,6 +720,38 @@ export function TrackUploadForm() {
         .single();
 
       if (trackFetchError) throw trackFetchError;
+
+      // Insert music rights information into music_rights table
+      if (trackData?.id) {
+        const musicRightsData = {
+          track_id: trackData.id,
+          producer_id: user.id,
+          master_rights_owner: formData.masterRightsOwner,
+          publishing_rights_owner: formData.publishingRightsOwner,
+          rights_holder_name: formData.rightsHolderName || null,
+          rights_holder_type: formData.rightsHolderType,
+          rights_holder_email: formData.rightsHolderEmail || null,
+          rights_holder_phone: formData.rightsHolderPhone || null,
+          rights_holder_address: formData.rightsHolderAddress || null,
+          split_sheet_url: splitSheetUploadedUrl || null,
+          participants: formData.participants,
+          co_signers: formData.coSigners,
+          rights_declaration_accepted: formData.rightsDeclarationAccepted,
+          rights_declaration_accepted_at: formData.rightsDeclarationAccepted ? new Date().toISOString() : null
+        };
+
+        const { error: musicRightsError } = await supabase
+          .from('music_rights')
+          .insert(musicRightsData);
+
+        if (musicRightsError) {
+          console.error('[DEBUG] Music rights insertion error:', musicRightsError);
+          // Don't throw error here as the track was already created successfully
+          // But log it for debugging
+        } else {
+          console.log('[DEBUG] Music rights inserted successfully for track:', trackData.id);
+        }
+      }
 
       // Insert media types into track_media_types table if any are selected
       if (formData.selectedMediaUsage.length > 0 && trackData?.id) {
