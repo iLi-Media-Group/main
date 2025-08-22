@@ -25,6 +25,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface Genre {
   id: string;
@@ -107,10 +108,49 @@ export function RightsHolderUploadForm() {
   const [genresLoading, setGenresLoading] = useState(true);
   const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
+  const { mediaTypes, moods: dynamicMoods, instruments: dynamicInstruments, loading: dynamicDataLoading } = useDynamicSearchData();
   
   // State for tracking expanded categories
   const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
   const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
+
+  // Transform dynamic moods data into categorized structure
+  const getMoodsCategories = () => {
+    if (dynamicDataLoading || !dynamicMoods.length) {
+      return MOODS_CATEGORIES; // Fallback to static data
+    }
+    
+    // Group moods by category
+    const categorizedMoods: Record<string, string[]> = {};
+    dynamicMoods.forEach(mood => {
+      if (!categorizedMoods[mood.category]) {
+        categorizedMoods[mood.category] = [];
+      }
+      categorizedMoods[mood.category].push(mood.display_name);
+    });
+    
+    return categorizedMoods;
+  };
+
+  // Transform dynamic instruments data into categorized structure
+  const getInstrumentsCategories = () => {
+    if (dynamicDataLoading || !dynamicInstruments.length) {
+      return {}; // Fallback to empty object, will use existing instruments data
+    }
+    
+    // Group instruments by category
+    const categorizedInstruments: Record<string, string[]> = {};
+    dynamicInstruments.forEach(instrument => {
+      if (!categorizedInstruments[instrument.category]) {
+        categorizedInstruments[instrument.category] = [];
+      }
+      categorizedInstruments[instrument.category].push(instrument.display_name);
+    });
+    
+    return categorizedInstruments;
+  };
+
+
   
   const audioFileRef = useRef<HTMLInputElement>(null);
   const artworkFileRef = useRef<HTMLInputElement>(null);
@@ -680,7 +720,7 @@ export function RightsHolderUploadForm() {
               <div>
                 <label className="block text-gray-300 mb-2">Mood</label>
                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
+                  {Object.entries(getMoodsCategories()).map(([category, moods]) => (
                     <div key={category} className="mb-4">
                       <button
                         type="button"
@@ -696,7 +736,7 @@ export function RightsHolderUploadForm() {
                       </button>
                       {expandedMoodCategories.has(category) && (
                         <div className="ml-4 mt-2 space-y-1">
-                          {moods.map((mood) => (
+                          {moods.map((mood: string) => (
                             <label key={mood} className="flex items-center space-x-2 text-gray-300">
                               <input
                                 type="checkbox"
@@ -724,11 +764,11 @@ export function RightsHolderUploadForm() {
               <div>
                 <label className="block text-gray-300 mb-2">Instruments</label>
                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {instrumentsLoading ? (
+                  {dynamicDataLoading ? (
                     <div className="text-gray-400 text-center py-4">Loading instruments...</div>
                   ) : (
                     <div>
-                      {Array.from(new Set(instruments.map(i => i.category))).map((category) => (
+                      {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => (
                         <div key={category} className="mb-4">
                           <button
                             type="button"
@@ -744,19 +784,17 @@ export function RightsHolderUploadForm() {
                           </button>
                           {expandedInstrumentCategories.has(category) && (
                             <div className="ml-4 mt-2 space-y-1">
-                              {instruments
-                                .filter(i => i.category === category)
-                                .map((instrument) => (
-                                  <label key={instrument.id} className="flex items-center space-x-2 text-gray-300">
-                                    <input
-                                      type="checkbox"
-                                      checked={formData.selectedInstruments.includes(instrument.id)}
-                                      onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument.id, e.target.checked)}
-                                      className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                                    />
-                                    <span>{instrument.display_name}</span>
-                                  </label>
-                                ))}
+                              {instruments.map((instrument: string) => (
+                                <label key={instrument} className="flex items-center space-x-2 text-gray-300">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedInstruments.includes(instrument)}
+                                    onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument, e.target.checked)}
+                                    className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                                  />
+                                  <span>{instrument}</span>
+                                </label>
+                              ))}
                             </div>
                           )}
                         </div>
