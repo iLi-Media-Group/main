@@ -2,7 +2,7 @@
 // NOTE: Last updated to always show clean version question and adjust explicit lyrics logic.
 import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
-import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight } from 'lucide-react';
+import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight, CheckCircle, AlertCircle, FileAudio, FileText, Users, Building2 } from 'lucide-react';
 import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
@@ -144,6 +144,44 @@ export function TrackUploadForm() {
   const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
   const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
   const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
+
+  // Step management for improved layout
+  const [currentStep, setCurrentStep] = useState(1);
+  
+  const steps = [
+    { number: 1, title: 'Basic Info', icon: FileText },
+    { number: 2, title: 'Audio & Files', icon: FileAudio },
+    { number: 3, title: 'Genres & Moods', icon: Music },
+    { number: 4, title: 'Instruments & Usage', icon: Users },
+    { number: 5, title: 'Review & Submit', icon: Building2 }
+  ];
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.title && formData.bpm && formData.key);
+      case 2:
+        return !!audioFile;
+      case 3:
+        return formData.selectedGenres.length > 0 && formData.selectedMoods.length > 0;
+      case 4:
+        return formData.selectedInstruments.length > 0 && formData.selectedMediaUsage.length > 0;
+      case 5:
+        return true; // Review step
+      default:
+        return false;
+    }
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, 5));
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   // Load saved files on mount
   useEffect(() => {
@@ -667,7 +705,7 @@ export function TrackUploadForm() {
   }
 
   return (
-    <div className="min-h-screen bg-blue-900 py-8">
+    <div className="min-h-screen bg-blue-900/90 p-4">
       {/* Upload Progress Overlay */}
       {isUploading && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -756,9 +794,60 @@ export function TrackUploadForm() {
           </div>
         </div>
       )}
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="mb-8">
-          <p className="text-gray-400">Share your music with the world</p>
+
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <Music className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-white mb-2">Upload Track</h1>
+          <p className="text-gray-300">Share your music with the world</p>
+        </div>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-4">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.number;
+              const isCompleted = currentStep > step.number;
+              
+              return (
+                <div key={step.number} className="flex items-center">
+                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
+                    isCompleted ? 'bg-green-500 border-green-500' :
+                    isActive ? 'bg-blue-500 border-blue-500' :
+                    'bg-gray-700 border-gray-600'
+                  }`}>
+                    {isCompleted ? (
+                      <CheckCircle className="w-6 h-6 text-white" />
+                    ) : (
+                      <Icon className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <span className={`ml-2 text-sm font-medium ${
+                    isActive ? 'text-blue-400' : 'text-gray-400'
+                  }`}>
+                    {step.title}
+                  </span>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-4 ${
+                      isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Form Content */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-6 flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+              <span className="text-red-400">{error}</span>
+            </div>
+          )}
           
           {/* Persistence notification */}
           <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
@@ -1693,12 +1782,39 @@ export function TrackUploadForm() {
             />
           )}
 
-          <div className="pt-8 relative z-10">
+          {/* Step Navigation */}
+          <div className="flex justify-between items-center pt-8">
             <button
-              type="submit"
-              className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
-              disabled={isSubmitting || !audioFile}
+              type="button"
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center"
             >
+              ← Previous
+            </button>
+            
+            <div className="text-center">
+              <span className="text-gray-300 text-sm">Step {currentStep} of {steps.length}</span>
+            </div>
+            
+            <button
+              type="button"
+              onClick={nextStep}
+              disabled={!validateStep(currentStep)}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center"
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Submit Button - Only show on last step */}
+          {currentStep === 5 && (
+            <div className="pt-8 relative z-10">
+              <button
+                type="submit"
+                className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
+                disabled={isSubmitting || !audioFile}
+              >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -1714,6 +1830,7 @@ export function TrackUploadForm() {
               )}
             </button>
           </div>
+          )}
         </form>
       </div>
     </div>
