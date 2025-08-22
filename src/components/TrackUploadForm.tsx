@@ -220,6 +220,29 @@ export function TrackUploadForm() {
     return categorizedMoods;
   };
 
+  // Get main mood categories for checkboxes
+  const getMainMoodCategories = () => {
+    if (dynamicDataLoading || !dynamicMoods || dynamicMoods.length === 0) {
+      return Object.keys(MOODS_CATEGORIES);
+    }
+    
+    // Return only main mood categories (where category === display_name)
+    return dynamicMoods
+      .filter(mood => mood.category === mood.display_name)
+      .map(mood => mood.display_name);
+  };
+
+  // Get sub-moods for a specific main mood category
+  const getSubMoodsForCategory = (categoryName: string) => {
+    if (dynamicDataLoading || !dynamicMoods || dynamicMoods.length === 0) {
+      return MOODS_CATEGORIES[categoryName] || [];
+    }
+    
+    return dynamicMoods
+      .filter(mood => mood.category === categoryName && mood.id !== mood.category)
+      .map(mood => mood.name);
+  };
+
   // Transform dynamic instruments data into categorized structure
   const getInstrumentsCategories = () => {
     if (dynamicDataLoading || !dynamicInstruments.length) {
@@ -684,7 +707,6 @@ export function TrackUploadForm() {
         genres: formData.genre,
         sub_genres: formData.subGenre,
         moods: formData.mood,
-        instruments: formData.selectedInstruments || [],
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
@@ -840,6 +862,30 @@ export function TrackUploadForm() {
           // But log it for debugging
         } else {
           console.log('[DEBUG] Music rights inserted successfully for track:', trackData.id);
+        }
+      }
+
+      // Insert instruments into track_instruments table if any are selected
+      if (formData.selectedInstruments.length > 0 && trackData?.id) {
+        // Get instrument IDs for the selected instruments
+        const selectedInstrumentIds = instruments
+          .filter(instrument => formData.selectedInstruments.includes(instrument.display_name))
+          .map(instrument => instrument.id);
+
+        if (selectedInstrumentIds.length > 0) {
+          const trackInstrumentsData = selectedInstrumentIds.map(instrumentId => ({
+            track_id: trackData.id,
+            instrument_id: instrumentId
+          }));
+
+          const { error: instrumentsError } = await supabase
+            .from('track_instruments')
+            .insert(trackInstrumentsData);
+
+          if (instrumentsError) {
+            console.error('[DEBUG] Instruments insertion error:', instrumentsError);
+            // Don't throw error here as the track was already created successfully
+          }
         }
       }
 
@@ -1482,7 +1528,7 @@ export function TrackUploadForm() {
                 <div className="space-y-3">
                   {/* Main Mood Categories with Checkboxes */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {Object.keys(getMoodsCategories()).map((category) => (
+                    {getMainMoodCategories().map((category) => (
                       <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
                         <input
                           type="checkbox"
@@ -1507,8 +1553,8 @@ export function TrackUploadForm() {
                   </div>
                   
                   {/* Sub-moods for selected main moods */}
-                  {formData.selectedMoods.filter(mood => Object.keys(getMoodsCategories()).includes(mood)).map((selectedCategory) => {
-                    const subMoods = getMoodsCategories()[selectedCategory] || [];
+                  {formData.selectedMoods.filter(mood => getMainMoodCategories().includes(mood)).map((selectedCategory) => {
+                    const subMoods = getSubMoodsForCategory(selectedCategory);
                     return (
                       <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
                         <h3 className="text-lg font-medium text-white mb-3 flex items-center">

@@ -99,7 +99,7 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (subGenresError) throw subGenresError;
 
-      // Fetch instruments (using existing columns until migration is applied)
+      // Fetch instruments with their categories
       let instrumentsData = null;
       let instrumentsError = null;
       
@@ -108,9 +108,10 @@ export function useDynamicSearchData(): DynamicSearchData {
           .from('instruments')
           .select(`
             id,
-            name
+            name,
+            category
           `)
-          .order('name');
+          .order('category, name');
         instrumentsData = result.data;
         instrumentsError = result.error;
       } catch (err) {
@@ -121,7 +122,7 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (instrumentsError) throw instrumentsError;
 
-      // Fetch media types (using existing columns until migration is applied)
+      // Fetch media types
       const { data: mediaTypesData, error: mediaTypesError } = await supabase
         .from('media_types')
         .select(`
@@ -135,11 +136,11 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (mediaTypesError) throw mediaTypesError;
 
-      // Build full_name manually for hierarchical display and add fallback category/display_name
+      // Build full_name manually for hierarchical display
       const mediaTypesWithFullName = mediaTypesData?.map(mt => ({
         ...mt,
-        display_name: mt.name, // Use name as display_name until migration is applied
-        category: 'Other', // Use fallback category until migration is applied
+        display_name: mt.name, // Use name as display_name
+        category: 'Media Types', // Use consistent category
         full_name: mt.parent_id 
           ? `${mediaTypesData.find(p => p.id === mt.parent_id)?.name || ''} > ${mt.name}`
           : mt.name
@@ -210,14 +211,14 @@ export function useDynamicSearchData(): DynamicSearchData {
       })) || [];
       
       setMoods(moodsWithFallbacks);
-      // Add fallback category and display_name to instruments until migration is applied
-      const instrumentsWithFallbacks = instrumentsData?.map(instrument => ({
+      // Use the actual category from the database
+      const instrumentsWithCategories = instrumentsData?.map(instrument => ({
         ...instrument,
-        display_name: instrument.name, // Use name as display_name until migration is applied
-        category: 'Other' // Use fallback category until migration is applied
+        display_name: instrument.name, // Use name as display_name
+        category: instrument.category || 'Other' // Use actual category from database
       })) || [];
       
-      setInstruments(instrumentsWithFallbacks);
+      setInstruments(instrumentsWithCategories);
       setMediaTypes(mediaTypesWithFullName);
 
     } catch (err) {

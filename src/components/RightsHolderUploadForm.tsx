@@ -139,6 +139,31 @@ export function RightsHolderUploadForm() {
     return categorizedMoods;
   };
 
+  // Get main mood categories for checkboxes
+  const getMainMoodCategories = () => {
+    if (dynamicDataLoading || !dynamicMoods || dynamicMoods.length === 0) {
+      return Object.keys(MOODS_CATEGORIES);
+    }
+    
+    // Return only main mood categories (where category === display_name)
+    return dynamicMoods
+      .filter(mood => mood.category === mood.display_name)
+      .map(mood => mood.display_name);
+  };
+
+  // Get sub-moods for a specific main mood category
+  const getSubMoodsForCategory = (categoryName: string) => {
+    if (dynamicDataLoading || !dynamicMoods || dynamicMoods.length === 0) {
+      return Object.values(MOODS_CATEGORIES).find((_, index) => 
+        Object.keys(MOODS_CATEGORIES)[index] === categoryName
+      ) || [];
+    }
+    
+    return dynamicMoods
+      .filter(mood => mood.category === categoryName && mood.id !== mood.category)
+      .map(mood => mood.name);
+  };
+
   // Transform dynamic instruments data into categorized structure
   const getInstrumentsCategories = () => {
     if (dynamicDataLoading || !dynamicInstruments.length) {
@@ -727,7 +752,7 @@ export function RightsHolderUploadForm() {
               <div>
                 <label className="block text-gray-300 mb-2">Mood</label>
                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {Object.entries(getMoodsCategories()).map(([category, moods]) => (
+                  {getMainMoodCategories().map((category) => (
                     <div key={category} className="mb-4">
                       <button
                         type="button"
@@ -743,7 +768,7 @@ export function RightsHolderUploadForm() {
                       </button>
                       {expandedMoodCategories.has(category) && (
                         <div className="ml-4 mt-2 space-y-1">
-                          {moods.map((mood: string) => (
+                          {getSubMoodsForCategory(category).map((mood: string) => (
                             <label key={mood} className="flex items-center space-x-2 text-gray-300">
                               <input
                                 type="checkbox"
