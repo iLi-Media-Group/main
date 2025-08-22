@@ -1413,7 +1413,8 @@ export function TrackUploadForm() {
                   ))}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
           {/* Step 4: Instruments & Usage */}
           {currentStep === 4 && (
