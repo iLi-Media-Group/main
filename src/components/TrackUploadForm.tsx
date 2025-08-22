@@ -181,7 +181,7 @@ export function TrackUploadForm() {
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
-  const { mediaTypes } = useDynamicSearchData();
+  const { mediaTypes, moods: dynamicMoods, loading: dynamicDataLoading } = useDynamicSearchData();
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -194,6 +194,24 @@ export function TrackUploadForm() {
 
   // Step management for improved layout
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Transform dynamic moods data into categorized structure
+  const getMoodsCategories = () => {
+    if (dynamicDataLoading || !dynamicMoods.length) {
+      return MOODS_CATEGORIES; // Fallback to static data
+    }
+    
+    // Group moods by category
+    const categorizedMoods: Record<string, string[]> = {};
+    dynamicMoods.forEach(mood => {
+      if (!categorizedMoods[mood.category]) {
+        categorizedMoods[mood.category] = [];
+      }
+      categorizedMoods[mood.category].push(mood.display_name);
+    });
+    
+    return categorizedMoods;
+  };
 
   // Toggle functions for collapsible categories
   const toggleMoodCategory = (category: string) => {
@@ -249,7 +267,7 @@ export function TrackUploadForm() {
       case 2:
         return !!audioFile;
       case 3:
-        return !!formData.genre && !!formData.mood;
+        return !!formData.genre && formData.selectedMoods.length > 0;
       case 4:
         return formData.selectedInstruments.length > 0 && formData.selectedMediaUsage.length > 0;
       case 5:
@@ -1419,25 +1437,21 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="space-y-3">
-                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => {
+                  {Object.entries(getMoodsCategories()).map(([category, moods]) => {
                     const categoryMoodsSelected = moods.filter(mood => formData.selectedMoods.includes(mood));
                     const isExpanded = expandedMoodCategories.has(category);
                     
                     return (
                       <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
                         {/* Category Header */}
-                        <button
-                          type="button"
-                          onClick={() => toggleMoodCategory(category)}
-                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
-                          disabled={isSubmitting}
-                        >
+                        <div className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
                                 checked={categoryMoodsSelected.length === moods.length}
                                 onChange={(e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
                                   if (e.target.checked) {
                                     // Select all moods in this category
                                     const newMoods = [...formData.selectedMoods];
@@ -1465,14 +1479,19 @@ export function TrackUploadForm() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleMoodCategory(category)}
+                            className="flex items-center space-x-2 p-1 hover:bg-blue-600/50 rounded transition-colors"
+                            disabled={isSubmitting}
+                          >
                             {isExpanded ? (
                               <ChevronDown className="w-4 h-4 text-gray-300" />
                             ) : (
                               <ChevronRight className="w-4 h-4 text-gray-300" />
                             )}
-                          </div>
-                        </button>
+                          </button>
+                        </div>
                         
                         {/* Collapsible Mood List */}
                         {isExpanded && (
@@ -1527,18 +1546,14 @@ export function TrackUploadForm() {
                     return (
                       <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
                         {/* Category Header */}
-                        <button
-                          type="button"
-                          onClick={() => toggleInstrumentCategory(category)}
-                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
-                          disabled={isSubmitting}
-                        >
+                        <div className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             <div className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
                                 checked={categoryInstrumentsSelected.length === instruments.length}
                                 onChange={(e) => {
+                                  e.stopPropagation(); // Prevent event bubbling
                                   if (e.target.checked) {
                                     // Select all instruments in this category
                                     const newInstruments = [...formData.selectedInstruments];
@@ -1566,14 +1581,19 @@ export function TrackUploadForm() {
                               </span>
                             )}
                           </div>
-                          <div className="flex items-center space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => toggleInstrumentCategory(category)}
+                            className="flex items-center space-x-2 p-1 hover:bg-blue-600/50 rounded transition-colors"
+                            disabled={isSubmitting}
+                          >
                             {isExpanded ? (
                               <ChevronDown className="w-4 h-4 text-gray-300" />
                             ) : (
                               <ChevronRight className="w-4 h-4 text-gray-300" />
                             )}
-                          </div>
-                        </button>
+                          </button>
+                        </div>
                         
                         {/* Collapsible Instrument List */}
                         {isExpanded && (
