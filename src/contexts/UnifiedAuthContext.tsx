@@ -3,26 +3,33 @@ import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { dataCache, CACHE_KEYS } from '../lib/cache';
 
-interface RightsHolder {
+interface Profile {
   id: string;
   email: string;
-  rights_holder_type: 'record_label' | 'publisher';
-  company_name: string;
+  account_type: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder';
+  membership_plan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
+  needs_password_setup: boolean;
+  
+  // Rights holder specific fields (nullable for non-rights holders)
+  rights_holder_type?: 'record_label' | 'publisher';
+  company_name?: string;
   legal_entity_name?: string;
   business_structure?: 'sole_proprietorship' | 'llc' | 'corporation' | 'partnership' | 'other';
-  verification_status: 'pending' | 'verified' | 'rejected' | 'suspended';
-  is_active: boolean;
-  terms_accepted: boolean;
+  tax_id?: string;
+  phone?: string;
+  address_line_1?: string;
+  address_line_2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  verification_status?: 'pending' | 'verified' | 'rejected' | 'suspended';
+  verification_notes?: string;
+  is_active?: boolean;
+  terms_accepted?: boolean;
   terms_accepted_at?: string;
-  rights_authority_declaration_accepted: boolean;
+  rights_authority_declaration_accepted?: boolean;
   rights_authority_declaration_accepted_at?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface RightsHolderProfile {
-  id: string;
-  rights_holder_id: string;
   contact_person_name?: string;
   contact_person_title?: string;
   contact_person_email?: string;
@@ -37,16 +44,50 @@ interface RightsHolderProfile {
   emergency_contact_name?: string;
   emergency_contact_email?: string;
   emergency_contact_phone?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Profile {
-  id: string;
-  email: string;
-  account_type: 'client' | 'producer' | 'admin' | 'white_label';
-  membership_plan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
-  needs_password_setup: boolean;
+  
+  // Regular user fields
+  first_name?: string;
+  last_name?: string;
+  business_name?: string;
+  website?: string;
+  bio?: string;
+  profile_image_url?: string;
+  stripe_customer_id?: string;
+  stripe_subscription_id?: string;
+  subscription_status?: string;
+  subscription_plan?: string;
+  subscription_end_date?: string;
+  producer_status?: string;
+  producer_balance?: number;
+  producer_payout_threshold?: number;
+  producer_payout_email?: string;
+  producer_payout_method?: string;
+  producer_payout_schedule?: string;
+  producer_payout_day?: number;
+  producer_payout_month?: number;
+  producer_payout_year?: number;
+  producer_payout_frequency?: string;
+  producer_payout_last_date?: string;
+  producer_payout_next_date?: string;
+  producer_payout_total?: number;
+  producer_payout_pending?: number;
+  producer_payout_processed?: number;
+  producer_payout_failed?: number;
+  producer_payout_cancelled?: number;
+  producer_payout_refunded?: number;
+  producer_payout_disputed?: number;
+  producer_payout_chargeback?: number;
+  producer_payout_other?: number;
+  producer_payout_total_count?: number;
+  producer_payout_pending_count?: number;
+  producer_payout_processed_count?: number;
+  producer_payout_failed_count?: number;
+  producer_payout_cancelled_count?: number;
+  producer_payout_refunded_count?: number;
+  producer_payout_disputed_count?: number;
+  producer_payout_chargeback_count?: number;
+  producer_payout_other_count?: number;
+  
   created_at: string;
   updated_at: string;
 }
@@ -56,15 +97,11 @@ interface UnifiedAuthContextType {
   user: User | null;
   loading: boolean;
   
-  // Regular user state
+  // Profile state (unified for all user types)
   profile: Profile | null;
-  accountType: 'client' | 'producer' | 'admin' | 'white_label' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
-  
-  // Rights holder state
-  rightsHolder: RightsHolder | null;
-  rightsHolderProfile: RightsHolderProfile | null;
   
   // Authentication methods
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -72,9 +109,8 @@ interface UnifiedAuthContextType {
   signOut: () => Promise<void>;
   
   // Rights holder methods
-  signUpRightsHolder: (email: string, password: string, rightsHolderData: Partial<RightsHolder>) => Promise<{ error: any }>;
-  updateRightsHolder: (data: Partial<RightsHolder>) => Promise<{ error: any }>;
-  updateRightsHolderProfile: (data: Partial<RightsHolderProfile>) => Promise<{ error: any }>;
+  signUpRightsHolder: (email: string, password: string, rightsHolderData: Partial<Profile>) => Promise<{ error: any }>;
+  updateRightsHolder: (data: Partial<Profile>) => Promise<{ error: any }>;
   
   // Regular user methods
   refreshMembership: () => Promise<void>;
@@ -87,22 +123,18 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   
-  // Regular user state
+  // Profile state (unified for all user types)
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
-  
-  // Rights holder state
-  const [rightsHolder, setRightsHolder] = useState<RightsHolder | null>(null);
-  const [rightsHolderProfile, setRightsHolderProfile] = useState<RightsHolderProfile | null>(null);
 
   // Cache state to prevent unnecessary refetches
   const [lastFetchTime, setLastFetchTime] = useState<number>(0);
   const [isFetching, setIsFetching] = useState(false);
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 
-  // Fetch regular user profile
+  // Fetch user profile (unified for all user types)
   const fetchProfile = async (userId: string, email: string) => {
     // Check cache first
     const cacheKey = CACHE_KEYS.PROFILE(userId);
@@ -126,6 +158,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       setIsFetching(true);
       console.log('🔄 Fetching profile for user:', userId);
       
+      // Fetch profile from unified profiles table
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -150,10 +183,6 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         
         // Cache the profile data
         dataCache.set(cacheKey, data, 5 * 60 * 1000); // 5 minutes
-        
-        // Try to fetch rights holder data for this user
-        // If they exist in rights_holders table, they are a rights holder
-        await fetchRightsHolder(userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -166,65 +195,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     }
   };
 
-  // Fetch rights holder data
-  const fetchRightsHolder = async (userId: string) => {
-    if (!userId) {
-      setRightsHolder(null);
-      setRightsHolderProfile(null);
-      return;
-    }
 
-    // Validate session before fetching
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user || session.user.id !== userId) {
-        console.log('Session validation failed for rights holder fetch');
-        setRightsHolder(null);
-        setRightsHolderProfile(null);
-        return;
-      }
-    } catch (error) {
-      console.error('Error validating session for rights holder:', error);
-      setRightsHolder(null);
-      setRightsHolderProfile(null);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('rights_holders')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching rights holder:', error);
-        setRightsHolder(null);
-        return;
-      }
-
-      if (data) {
-        setRightsHolder(data);
-        
-        // Fetch rights holder profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('rights_holder_profiles')
-          .select('*')
-          .eq('rights_holder_id', userId)
-          .single();
-
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('Error fetching rights holder profile:', profileError);
-        } else if (profileData) {
-          setRightsHolderProfile(profileData);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching rights holder:', error);
-      setRightsHolder(null);
-      setRightsHolderProfile(null);
-    }
-  };
 
   // Unified session initialization
   const initializeSession = async () => {
@@ -242,27 +213,23 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         
         // Only fetch rights holder data if the user is a rights holder
         // We'll check this after the profile is fetched and account type is determined
-      } else {
-        console.log('❌ No existing session found');
-        setUser(null);
-        setProfile(null);
-        setAccountType(null);
-        setMembershipPlan(null);
-        setNeedsPasswordSetup(false);
-        setRightsHolder(null);
-        setRightsHolderProfile(null);
-      }
-    } catch (error) {
-      console.error('❌ Error initializing session:', error);
-      // Clear all state on error
-      setUser(null);
-      setProfile(null);
-      setAccountType(null);
-      setMembershipPlan(null);
-      setNeedsPasswordSetup(false);
-      setRightsHolder(null);
-      setRightsHolderProfile(null);
-    } finally {
+             } else {
+         console.log('❌ No existing session found');
+         setUser(null);
+         setProfile(null);
+         setAccountType(null);
+         setMembershipPlan(null);
+         setNeedsPasswordSetup(false);
+       }
+         } catch (error) {
+       console.error('❌ Error initializing session:', error);
+       // Clear all state on error
+       setUser(null);
+       setProfile(null);
+       setAccountType(null);
+       setMembershipPlan(null);
+       setNeedsPasswordSetup(false);
+     } finally {
       setLoading(false);
       setIsInitialized(true);
       console.log('✅ Session initialization complete');
@@ -316,7 +283,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   };
 
   // Rights holder authentication methods
-  const signUpRightsHolder = async (email: string, password: string, rightsHolderData: Partial<RightsHolder>) => {
+  const signUpRightsHolder = async (email: string, password: string, rightsHolderData: Partial<Profile>) => {
     const { data, error } = await supabase.auth.signUp({ 
       email, 
       password,
@@ -333,10 +300,11 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     if (data.user) {
       try {
         const { error: insertError } = await supabase
-          .from('rights_holders')
+          .from('profiles')
           .insert({
             id: data.user.id,
             email: data.user.email,
+            account_type: 'rights_holder',
             ...rightsHolderData,
           });
 
@@ -353,14 +321,14 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     return { error: null };
   };
 
-  const updateRightsHolder = async (data: Partial<RightsHolder>) => {
+  const updateRightsHolder = async (data: Partial<Profile>) => {
     if (!user) {
       return { error: new Error('No user logged in') };
     }
 
     try {
       const { error } = await supabase
-        .from('rights_holders')
+        .from('profiles')
         .update(data)
         .eq('id', user.id);
 
@@ -368,46 +336,11 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         return { error };
       }
 
-      await fetchRightsHolder(user.id);
+      // Refresh profile data
+      await fetchProfile(user.id, user.email || '');
       return { error: null };
     } catch (error) {
       console.error('Update rights holder error:', error);
-      return { error };
-    }
-  };
-
-  const updateRightsHolderProfile = async (data: Partial<RightsHolderProfile>) => {
-    if (!user) {
-      return { error: new Error('No user logged in') };
-    }
-
-    try {
-      if (rightsHolderProfile) {
-        const { error } = await supabase
-          .from('rights_holder_profiles')
-          .update(data)
-          .eq('id', rightsHolderProfile.id);
-
-        if (error) {
-          return { error };
-        }
-      } else {
-        const { error } = await supabase
-          .from('rights_holder_profiles')
-          .insert({
-            rights_holder_id: user.id,
-            ...data,
-          });
-
-        if (error) {
-          return { error };
-        }
-      }
-
-      await fetchRightsHolder(user.id);
-      return { error: null };
-    } catch (error) {
-      console.error('Update rights holder profile error:', error);
       return { error };
     }
   };
@@ -434,8 +367,6 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       setAccountType(null);
       setMembershipPlan(null);
       setNeedsPasswordSetup(false);
-      setRightsHolder(null);
-      setRightsHolderProfile(null);
       console.log('✅ Sign out complete');
     }
   };
@@ -474,27 +405,23 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
             } else {
               console.log('📦 Same user, skipping profile refetch');
             }
-          } else {
-            console.log('❌ No session in auth state change');
-            setUser(null);
-            setProfile(null);
-            setAccountType(null);
-            setMembershipPlan(null);
-            setNeedsPasswordSetup(false);
-            setRightsHolder(null);
-            setRightsHolderProfile(null);
-          }
-        } catch (error) {
-          console.error('❌ Error in auth state change:', error);
-          // Clear all state on error
-          setUser(null);
-          setProfile(null);
-          setAccountType(null);
-          setMembershipPlan(null);
-          setNeedsPasswordSetup(false);
-          setRightsHolder(null);
-          setRightsHolderProfile(null);
-        }
+                     } else {
+             console.log('❌ No session in auth state change');
+             setUser(null);
+             setProfile(null);
+             setAccountType(null);
+             setMembershipPlan(null);
+             setNeedsPasswordSetup(false);
+           }
+                 } catch (error) {
+           console.error('❌ Error in auth state change:', error);
+           // Clear all state on error
+           setUser(null);
+           setProfile(null);
+           setAccountType(null);
+           setMembershipPlan(null);
+           setNeedsPasswordSetup(false);
+         }
         // Don't set loading to false here as it should only be set during initial load
       }
     );
@@ -509,14 +436,11 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     accountType,
     membershipPlan,
     needsPasswordSetup,
-    rightsHolder,
-    rightsHolderProfile,
     signIn,
     signUp,
     signOut,
     signUpRightsHolder,
     updateRightsHolder,
-    updateRightsHolderProfile,
     refreshMembership,
   };
 
