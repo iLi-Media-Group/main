@@ -150,6 +150,23 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         
         // Cache the profile data
         dataCache.set(cacheKey, data, 5 * 60 * 1000); // 5 minutes
+        
+        // Check if this user is also a rights holder and fetch rights holder data if needed
+        // Only fetch rights holder data if the user has a rights holder account
+        const { data: rightsHolderData, error: rightsHolderError } = await supabase
+          .from('rights_holders')
+          .select('id')
+          .eq('id', userId)
+          .single();
+        
+        if (rightsHolderData && !rightsHolderError) {
+          // User is a rights holder, fetch full rights holder data
+          await fetchRightsHolder(userId);
+        } else {
+          // User is not a rights holder, clear rights holder data
+          setRightsHolder(null);
+          setRightsHolderProfile(null);
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -233,11 +250,11 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         console.log('✅ Found existing session for user:', session.user.id);
         setUser(session.user);
         
-        // Fetch both profile types in parallel
-        await Promise.all([
-          fetchProfile(session.user.id, session.user.email || ''),
-          fetchRightsHolder(session.user.id)
-        ]);
+        // Fetch profile first, then conditionally fetch rights holder data
+        await fetchProfile(session.user.id, session.user.email || '');
+        
+        // Only fetch rights holder data if the user is a rights holder
+        // We'll check this after the profile is fetched and account type is determined
       } else {
         console.log('❌ No existing session found');
         setUser(null);
