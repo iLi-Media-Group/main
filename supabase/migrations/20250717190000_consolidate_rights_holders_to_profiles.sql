@@ -6,6 +6,7 @@ ALTER TABLE profiles
 ADD COLUMN IF NOT EXISTS rights_holder_type TEXT CHECK (rights_holder_type IN ('record_label', 'publisher')),
 ADD COLUMN IF NOT EXISTS legal_entity_name TEXT,
 ADD COLUMN IF NOT EXISTS tax_id TEXT,
+ADD COLUMN IF NOT EXISTS website TEXT,
 ADD COLUMN IF NOT EXISTS phone TEXT,
 ADD COLUMN IF NOT EXISTS address_line_1 TEXT,
 ADD COLUMN IF NOT EXISTS address_line_2 TEXT,
@@ -43,7 +44,7 @@ CHECK (account_type IN ('client', 'producer', 'admin', 'admin,producer', 'rights
 -- 3. Move existing rights holder data to profiles table
 INSERT INTO profiles (
     id, email, account_type, rights_holder_type, company_name, legal_entity_name, 
-    business_structure, tax_id, website, phone, address_line_1, address_line_2, 
+    business_structure, tax_id, phone, address_line_1, address_line_2, 
     city, state, postal_code, country, verification_status, verification_notes, 
     is_active, terms_accepted, terms_accepted_at, rights_authority_declaration_accepted, 
     rights_authority_declaration_accepted_at, contact_person_name, contact_person_title, 
@@ -54,7 +55,7 @@ INSERT INTO profiles (
 )
 SELECT 
     rh.id, rh.email, 'rights_holder' as account_type, rh.rights_holder_type, rh.company_name, rh.legal_entity_name,
-    rh.business_structure, rh.tax_id, rh.website, rh.phone, rh.address_line_1, rh.address_line_2,
+    rh.business_structure, rh.tax_id, rh.phone, rh.address_line_1, rh.address_line_2,
     rh.city, rh.state, rh.postal_code, rh.country, rh.verification_status, rh.verification_notes,
     rh.is_active, rh.terms_accepted, rh.terms_accepted_at, rh.rights_authority_declaration_accepted,
     rh.rights_authority_declaration_accepted_at, rhp.contact_person_name, rhp.contact_person_title,
@@ -101,23 +102,27 @@ ON CONFLICT (id) DO UPDATE SET
     emergency_contact_phone = EXCLUDED.emergency_contact_phone,
     updated_at = NOW();
 
--- 4. Update master_recordings table to reference profiles instead of rights_holders
-ALTER TABLE master_recordings 
-DROP CONSTRAINT IF EXISTS master_recordings_rights_holder_id_fkey,
-ADD CONSTRAINT master_recordings_rights_holder_id_fkey 
-FOREIGN KEY (rights_holder_id) REFERENCES profiles(id) ON DELETE CASCADE;
+-- 4. Update master_recordings table to reference profiles instead of rights_holders (if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'master_recordings') THEN
+        ALTER TABLE master_recordings 
+        DROP CONSTRAINT IF EXISTS master_recordings_rights_holder_id_fkey,
+        ADD CONSTRAINT master_recordings_rights_holder_id_fkey 
+        FOREIGN KEY (rights_holder_id) REFERENCES profiles(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
--- 5. Update publishing_rights table to reference profiles instead of rights_holders
-ALTER TABLE publishing_rights 
-DROP CONSTRAINT IF EXISTS publishing_rights_rights_holder_id_fkey,
-ADD CONSTRAINT publishing_rights_rights_holder_id_fkey 
-FOREIGN KEY (rights_holder_id) REFERENCES profiles(id) ON DELETE CASCADE;
-
--- 6. Update music_rights table to reference profiles instead of rights_holders
-ALTER TABLE music_rights 
-DROP CONSTRAINT IF EXISTS music_rights_rights_holder_id_fkey,
-ADD CONSTRAINT music_rights_rights_holder_id_fkey 
-FOREIGN KEY (rights_holder_id) REFERENCES profiles(id) ON DELETE CASCADE;
+-- 5. Update publishing_rights table to reference profiles instead of rights_holders (if table exists)
+DO $$
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'publishing_rights') THEN
+        ALTER TABLE publishing_rights 
+        DROP CONSTRAINT IF EXISTS publishing_rights_rights_holder_id_fkey,
+        ADD CONSTRAINT publishing_rights_rights_holder_id_fkey 
+        FOREIGN KEY (rights_holder_id) REFERENCES profiles(id) ON DELETE CASCADE;
+    END IF;
+END $$;
 
 -- 7. Drop the separate rights holder tables (after ensuring data is migrated)
 DROP TABLE IF EXISTS rights_holder_profiles CASCADE;
