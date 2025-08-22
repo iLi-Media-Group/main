@@ -151,11 +151,9 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         // Cache the profile data
         dataCache.set(cacheKey, data, 5 * 60 * 1000); // 5 minutes
         
-        // Only fetch rights holder data if the user is actually a rights holder
-        // For now, we'll skip this check to avoid the 406 error
-        // TODO: Clarify the data model for producer rights vs external rights holders
-        setRightsHolder(null);
-        setRightsHolderProfile(null);
+        // Try to fetch rights holder data for this user
+        // If they exist in rights_holders table, they are a rights holder
+        await fetchRightsHolder(userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
