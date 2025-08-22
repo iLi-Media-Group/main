@@ -118,8 +118,8 @@ export function RightsHolderRecordings() {
     setEditFormData({
       title: recording.title,
       artist: recording.artist,
-      genre: recording.genres.join(', '),
-      mood: recording.moods.join(', '),
+              genre: Array.isArray(recording.genres) ? recording.genres.join(', ') : '',
+              mood: Array.isArray(recording.moods) ? recording.moods.join(', ') : '',
       bpm: recording.bpm,
       key: recording.key,
       description: recording.description
@@ -321,8 +321,8 @@ export function RightsHolderRecordings() {
                   </div>
 
                   <div className="text-sm text-gray-400">
-                    <p><strong>Genres:</strong> {recording.genres.join(', ')}</p>
-                    <p><strong>Moods:</strong> {recording.moods.join(', ')}</p>
+                    <p><strong>Genres:</strong> {Array.isArray(recording.genres) ? recording.genres.join(', ') : 'None'}</p>
+                                          <p><strong>Moods:</strong> {Array.isArray(recording.moods) ? recording.moods.join(', ') : 'None'}</p>
                   </div>
 
                   {recording.has_vocals && (
