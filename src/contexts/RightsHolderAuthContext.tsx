@@ -60,10 +60,27 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
   const [rightsHolder, setRightsHolder] = useState<RightsHolder | null>(null);
   const [rightsHolderProfile, setRightsHolderProfile] = useState<RightsHolderProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const fetchRightsHolder = async (userId: string) => {
     // Don't fetch if userId is null or empty
     if (!userId) {
+      setRightsHolder(null);
+      setRightsHolderProfile(null);
+      return;
+    }
+
+    // Validate that the user session is still valid before fetching
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || session.user.id !== userId) {
+        console.log('Session validation failed - user mismatch or no session');
+        setRightsHolder(null);
+        setRightsHolderProfile(null);
+        return;
+      }
+    } catch (error) {
+      console.error('Error validating session:', error);
       setRightsHolder(null);
       setRightsHolderProfile(null);
       return;
@@ -328,6 +345,7 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
         setRightsHolderProfile(null);
       } finally {
         setLoading(false);
+        setIsInitialized(true);
       }
     };
 
@@ -336,16 +354,22 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change event:', event, session?.user?.id);
+        
+        // Only process auth state changes after initialization
+        if (!isInitialized) {
+          console.log('Skipping auth state change - not yet initialized');
+          return;
+        }
+
         try {
           if (session?.user) {
             setUser(session.user);
             await fetchRightsHolder(session.user.id);
-            setLoading(false);
           } else {
             setUser(null);
             setRightsHolder(null);
             setRightsHolderProfile(null);
-            setLoading(false);
           }
         } catch (error) {
           console.error('Error in auth state change:', error);
@@ -354,6 +378,7 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
           setUser(null);
           setRightsHolder(null);
           setRightsHolderProfile(null);
+        } finally {
           setLoading(false);
         }
       }

@@ -25,7 +25,7 @@ import { ResetPassword } from './components/ResetPassword';
 import { LicenseAgreement } from './components/LicenseAgreement';
 import { SyncProposalLicenseAgreement } from './components/SyncProposalLicenseAgreement';
 import { TestUpload } from './components/TestUpload';
-import { useAuth } from './contexts/AuthContext';
+import { useUnifiedAuth } from './contexts/UnifiedAuthContext';
 import { GoldAccessPage } from './components/GoldAccessPage';
 import CustomSyncRequest from './components/CustomSyncRequest';
 import { OpenSyncBriefs } from './components/OpenSyncBriefs';
@@ -87,7 +87,6 @@ import { setupDevelopmentProtection } from './utils/developmentMode';
 import { preventAuthLoss, restoreAuthState } from './lib/sessionUtils';
 
 // Rights Holders System Imports
-import { RightsHolderAuthProvider } from './contexts/RightsHolderAuthContext';
 import { RightsHolderSignup } from './components/RightsHolderSignup';
 import { RightsHolderLogin } from './components/RightsHolderLogin';
 import { RightsHolderDashboard } from './components/RightsHolderDashboard';
@@ -105,7 +104,7 @@ const App = () => {
   console.log('🚀 App component loaded');
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   
   // Initialize refresh prevention system
@@ -237,7 +236,7 @@ const App = () => {
   };
 
   function BrandingRouteWrapper() {
-    const { user } = useAuth();
+    const { user } = useUnifiedAuth();
     const [allowed, setAllowed] = useState<'loading' | 'yes' | 'no'>('loading');
 
     useEffect(() => {
@@ -261,7 +260,7 @@ const App = () => {
   }
 
   function WhiteLabelProfileWrapper() {
-    const { accountType, needsPasswordSetup } = useAuth();
+    const { accountType, needsPasswordSetup } = useUnifiedAuth();
 
     if (accountType === 'white_label' && needsPasswordSetup) {
       return <Navigate to="/white-label-password-setup" />;
@@ -271,7 +270,7 @@ const App = () => {
   }
 
   function DashboardWrapper() {
-    const { accountType, needsPasswordSetup } = useAuth();
+    const { accountType, needsPasswordSetup } = useUnifiedAuth();
 
     // If user is a white label client and needs password setup, redirect them
     if (accountType === 'white_label' && needsPasswordSetup) {
@@ -289,8 +288,7 @@ const App = () => {
 
   return (
     <SiteBrandingProvider>
-      <RightsHolderAuthProvider>
-        <ScrollToTop />
+      <ScrollToTop />
         <Routes>
         <Route path="/" element={
           <HomeLayoutWrapper>
@@ -742,7 +740,6 @@ const App = () => {
         isOpen={isSignupOpen}
         onClose={() => setIsSignupOpen(false)}
       />
-      </RightsHolderAuthProvider>
     </SiteBrandingProvider>
   );
 };

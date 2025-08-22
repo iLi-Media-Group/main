@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, AlertCircle, Clock, FileText } from 'lucide-react';
 
 interface RightsHolderProtectedRouteProps {
@@ -12,7 +12,7 @@ export function RightsHolderProtectedRoute({
   children, 
   requireVerification = false 
 }: RightsHolderProtectedRouteProps) {
-  const { user, rightsHolder, loading, signOut } = useRightsHolderAuth();
+  const { user, rightsHolder, loading, signOut } = useUnifiedAuth();
 
   // Show loading spinner while checking authentication
   if (loading) {
