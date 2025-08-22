@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight, CheckCircle, AlertCircle, FileAudio, FileText, Users, Building2 } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_TYPES, ALL_INSTRUMENTS } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
@@ -92,7 +92,7 @@ interface CoSigner {
 }
 
 export function TrackUploadForm() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
 
   // Initialize form persistence
@@ -1337,7 +1337,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {moods.map((mood) => (
+                  {MOODS_CATEGORIES.map((mood) => (
                     <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                             <input
                               type="checkbox"
@@ -1373,7 +1373,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {instruments.map((instrument) => (
+                  {ALL_INSTRUMENTS.map((instrument) => (
                     <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                                               <input
                           type="checkbox"
@@ -1402,7 +1402,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {mediaUsage.map((usage) => (
+                  {MEDIA_USAGE_TYPES.map((usage) => (
                     <label key={usage} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                           <input
                             type="checkbox"
