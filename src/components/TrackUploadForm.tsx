@@ -861,6 +861,12 @@ export function TrackUploadForm() {
           code: trackError.code
         });
         
+        // Log the full error object
+        console.error('[DEBUG] Full error object:', trackError);
+        
+        // Show error in alert for debugging
+        alert(`Track upload failed: ${trackError.message}\n\nDetails: ${trackError.details || 'No details'}\n\nCode: ${trackError.code || 'No code'}`);
+        
         // Check if it's an RLS policy issue
         if (trackError.message?.includes('policy') || trackError.message?.includes('row level security')) {
           console.error('[DEBUG] RLS policy error detected');
