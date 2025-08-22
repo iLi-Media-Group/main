@@ -772,36 +772,36 @@ export function TrackUploadForm() {
       // --- End new logic ---
 
       // Insert or update track in DB
-                    const insertData = {
-                track_producer_id: user.id,
-                title: formData.title,
-                artist: user.email?.split('@')[0] || 'Unknown Artist',
-                genres: formData.selectedGenres || [],
-                sub_genres: formData.selectedSubGenres || [],
-                moods: formData.selectedMoods || [],
-                instruments: formData.selectedInstruments || [],
-                media_usage: formData.selectedMediaUsage || [],
-                bpm: bpmNumber,
-                key: formData.key || null, // Use the selected key from MUSICAL_KEYS array
-                has_sting_ending: formData.hasStingEnding,
-                is_one_stop: formData.isOneStop,
-                audio_url: `${user.id}/${formData.title}/audio.mp3`,
-                image_url: imageUrl,
-                mp3_url: formData.mp3Url || null,
-                trackouts_url: trackoutsStoragePath || null,
-                stems_url: stemsStoragePath || null,
-                split_sheet_url: splitSheetUploadedUrl || null,
-                has_vocals: formData.hasVocals,
-                is_sync_only: formData.isSyncOnly,
-                explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
-                clean_version_of: null, // Set to null for now since we need to handle UUID properly
-                // Sample clearance fields
-                contains_loops: formData.containsLoops,
-                contains_samples: formData.containsSamples,
-                contains_splice_loops: formData.containsSpliceLoops,
-                samples_cleared: formData.samplesCleared,
-                sample_clearance_notes: formData.sampleClearanceNotes || null
-              };
+      const insertData = {
+        track_producer_id: user.id,
+        title: formData.title,
+        artist: user.email?.split('@')[0] || 'Unknown Artist',
+        genres: formData.selectedGenres || [],
+        sub_genres: formData.selectedSubGenres || [],
+        moods: formData.selectedMoods || [],
+        instruments: formData.selectedInstruments || [],
+        media_usage: formData.selectedMediaUsage || [],
+        bpm: bpmNumber,
+        key: formData.key,
+        has_sting_ending: formData.hasStingEnding,
+        is_one_stop: formData.isOneStop,
+        audio_url: `${user.id}/${formData.title}/audio.mp3`,
+        image_url: imageUrl,
+        mp3_url: formData.mp3Url || null,
+        trackouts_url: trackoutsStoragePath || null,
+        stems_url: stemsStoragePath || null,
+        split_sheet_url: splitSheetUploadedUrl || null,
+        has_vocals: formData.hasVocals,
+        is_sync_only: formData.isSyncOnly,
+        explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
+        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
+        // Sample clearance fields
+        contains_loops: formData.containsLoops,
+        contains_samples: formData.containsSamples,
+        contains_splice_loops: formData.containsSpliceLoops,
+        samples_cleared: formData.samplesCleared,
+        sample_clearance_notes: formData.sampleClearanceNotes || null
+      };
       
       console.log('[DEBUG] Full insert data:', insertData);
       
@@ -865,7 +865,9 @@ export function TrackUploadForm() {
         console.error('[DEBUG] Full error object:', trackError);
         
         // Show error in alert for debugging
-        alert(`Track upload failed: ${trackError.message}\n\nDetails: ${trackError.details || 'No details'}\n\nCode: ${trackError.code || 'No code'}`);
+        const errorMessage = `Track upload failed!\n\nMessage: ${trackError.message}\n\nDetails: ${trackError.details || 'No details'}\n\nCode: ${trackError.code || 'No code'}\n\nFull Error: ${JSON.stringify(trackError, null, 2)}`;
+        alert(errorMessage);
+        console.error('[DEBUG] Full error for alert:', errorMessage);
         
         // Check if it's an RLS policy issue
         if (trackError.message?.includes('policy') || trackError.message?.includes('row level security')) {
