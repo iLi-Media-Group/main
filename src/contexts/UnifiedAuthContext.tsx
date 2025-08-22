@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { dataCache, CACHE_KEYS } from '../lib/cache';
 
 interface RightsHolder {
   id: string;
@@ -96,9 +97,35 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   const [rightsHolder, setRightsHolder] = useState<RightsHolder | null>(null);
   const [rightsHolderProfile, setRightsHolderProfile] = useState<RightsHolderProfile | null>(null);
 
+  // Cache state to prevent unnecessary refetches
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0);
+  const [isFetching, setIsFetching] = useState(false);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
+
   // Fetch regular user profile
   const fetchProfile = async (userId: string, email: string) => {
+    // Check cache first
+    const cacheKey = CACHE_KEYS.PROFILE(userId);
+    const cachedProfile = dataCache.get<Profile>(cacheKey);
+    
+    if (cachedProfile && !isFetching) {
+      console.log('📦 Using cached profile data');
+      setProfile(cachedProfile);
+      setAccountType(cachedProfile.account_type);
+      setMembershipPlan(cachedProfile.membership_plan);
+      setNeedsPasswordSetup(cachedProfile.needs_password_setup);
+      return;
+    }
+
+    if (isFetching) {
+      console.log('⏳ Already fetching profile data, skipping...');
+      return;
+    }
+
     try {
+      setIsFetching(true);
+      console.log('🔄 Fetching profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -107,17 +134,31 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
       if (error) {
         console.error('Error fetching profile:', error);
+        setProfile(null);
+        setAccountType(null);
+        setMembershipPlan(null);
+        setNeedsPasswordSetup(false);
         return;
       }
 
       if (data) {
+        console.log('✅ Profile data fetched successfully');
         setProfile(data);
         setAccountType(data.account_type);
         setMembershipPlan(data.membership_plan);
         setNeedsPasswordSetup(data.needs_password_setup);
+        
+        // Cache the profile data
+        dataCache.set(cacheKey, data, 5 * 60 * 1000); // 5 minutes
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(null);
+      setAccountType(null);
+      setMembershipPlan(null);
+      setNeedsPasswordSetup(false);
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -264,10 +305,10 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     if (error) throw error;
     
     if (data.user && !data.user.email_confirmed_at) {
-      return { requiresEmailConfirmation: true };
+      return { error: null, requiresEmailConfirmation: true };
     }
     
-    return { requiresEmailConfirmation: false };
+    return { error: null, requiresEmailConfirmation: false };
   };
 
   // Rights holder authentication methods
@@ -419,13 +460,19 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         
         try {
           if (session?.user) {
-            setUser(session.user);
-            
-            // Fetch both profile types in parallel
-            await Promise.all([
-              fetchProfile(session.user.id, session.user.email || ''),
-              fetchRightsHolder(session.user.id)
-            ]);
+            // Only update user if it's actually different
+            if (user?.id !== session.user.id) {
+              console.log('🔄 User changed, updating session');
+              setUser(session.user);
+              
+              // Fetch both profile types in parallel
+              await Promise.all([
+                fetchProfile(session.user.id, session.user.email || ''),
+                fetchRightsHolder(session.user.id)
+              ]);
+            } else {
+              console.log('📦 Same user, skipping profile refetch');
+            }
           } else {
             console.log('❌ No session in auth state change');
             setUser(null);
@@ -452,7 +499,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     );
 
     return () => subscription.unsubscribe();
-  }, [isInitialized, loading]);
+  }, [isInitialized, loading, user?.id]);
 
   const value: UnifiedAuthContextType = {
     user,

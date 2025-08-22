@@ -12,11 +12,12 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
+    storageKey: 'mybeatfi-auth-token', // Custom storage key for better persistence
   },
+  // Remove cache-busting headers that cause unnecessary refetches
   global: {
     headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache'
+      'X-Client-Info': 'mybeatfi-web'
     }
   }
 });
