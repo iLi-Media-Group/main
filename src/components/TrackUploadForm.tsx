@@ -181,7 +181,7 @@ export function TrackUploadForm() {
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const { isEnabled: deepMediaSearchEnabled } = useFeatureFlag('deep_media_search');
   const { currentPlan } = useCurrentPlan();
-  const { mediaTypes, moods: dynamicMoods, loading: dynamicDataLoading } = useDynamicSearchData();
+  const { mediaTypes, moods: dynamicMoods, instruments: dynamicInstruments, loading: dynamicDataLoading } = useDynamicSearchData();
   const [explicitTracks, setExplicitTracks] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -211,6 +211,42 @@ export function TrackUploadForm() {
     });
     
     return categorizedMoods;
+  };
+
+  // Transform dynamic instruments data into categorized structure
+  const getInstrumentsCategories = () => {
+    if (dynamicDataLoading || !dynamicInstruments.length) {
+      return INSTRUMENTS; // Fallback to static data
+    }
+    
+    // Group instruments by category
+    const categorizedInstruments: Record<string, string[]> = {};
+    dynamicInstruments.forEach(instrument => {
+      if (!categorizedInstruments[instrument.category]) {
+        categorizedInstruments[instrument.category] = [];
+      }
+      categorizedInstruments[instrument.category].push(instrument.display_name);
+    });
+    
+    return categorizedInstruments;
+  };
+
+  // Transform dynamic media types data into categorized structure
+  const getMediaUsageCategories = () => {
+    if (dynamicDataLoading || !mediaTypes.length) {
+      return MEDIA_USAGE_CATEGORIES; // Fallback to static data
+    }
+    
+    // Group media types by category
+    const categorizedMediaTypes: Record<string, string[]> = {};
+    mediaTypes.forEach(mediaType => {
+      if (!categorizedMediaTypes[mediaType.category]) {
+        categorizedMediaTypes[mediaType.category] = [];
+      }
+      categorizedMediaTypes[mediaType.category].push(mediaType.display_name || mediaType.name);
+    });
+    
+    return categorizedMediaTypes;
   };
 
   // Toggle functions for collapsible categories
@@ -1510,7 +1546,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
                 <div className="space-y-3">
-                  {Object.entries(INSTRUMENTS).map(([category, instruments]) => {
+                  {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => {
                     const categoryInstrumentsSelected = instruments.filter(instrument => formData.selectedInstruments.includes(instrument));
                     const isExpanded = expandedInstrumentCategories.has(category);
                     
@@ -1605,16 +1641,8 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
                 <div className="space-y-3">
-                  {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, subcategories]) => {
-                    // Flatten all usage types for this category
-                    const categoryUsageTypes = Object.entries(subcategories).reduce((acc, [subcategory, types]) => {
-                      types.forEach((type: string) => {
-                        acc.push(`${category} > ${subcategory} > ${type}`);
-                      });
-                      return acc;
-                    }, [] as string[]);
-                    
-                    const categoryUsageSelected = categoryUsageTypes.filter(usage => formData.selectedMediaUsage.includes(usage));
+                  {Object.entries(getMediaUsageCategories()).map(([category, mediaTypes]) => {
+                    const categoryUsageSelected = mediaTypes.filter(mediaType => formData.selectedMediaUsage.includes(mediaType));
                     const isExpanded = expandedMediaCategories.has(category);
                     
                     return (
@@ -1630,21 +1658,21 @@ export function TrackUploadForm() {
                             <div className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
-                                checked={categoryUsageSelected.length === categoryUsageTypes.length}
+                                checked={categoryUsageSelected.length === mediaTypes.length}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    // Select all usage types in this category
-                                    const newUsageTypes = [...formData.selectedMediaUsage];
-                                    categoryUsageTypes.forEach(usage => {
-                                      if (!newUsageTypes.includes(usage)) {
-                                        newUsageTypes.push(usage);
+                                    // Select all media types in this category
+                                    const newMediaTypes = [...formData.selectedMediaUsage];
+                                    mediaTypes.forEach(mediaType => {
+                                      if (!newMediaTypes.includes(mediaType)) {
+                                        newMediaTypes.push(mediaType);
                                       }
                                     });
-                                    updateFormData({ selectedMediaUsage: newUsageTypes });
+                                    updateFormData({ selectedMediaUsage: newMediaTypes });
                                   } else {
-                                    // Deselect all usage types in this category
+                                    // Deselect all media types in this category
                                     updateFormData({
-                                      selectedMediaUsage: formData.selectedMediaUsage.filter(usage => !categoryUsageTypes.includes(usage))
+                                      selectedMediaUsage: formData.selectedMediaUsage.filter(mediaType => !mediaTypes.includes(mediaType))
                                     });
                                   }
                                 }}
@@ -1655,7 +1683,7 @@ export function TrackUploadForm() {
                             </div>
                             {categoryUsageSelected.length > 0 && (
                               <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                {categoryUsageSelected.length}/{categoryUsageTypes.length}
+                                {categoryUsageSelected.length}/{mediaTypes.length}
                               </span>
                             )}
                           </div>
@@ -1671,38 +1699,28 @@ export function TrackUploadForm() {
                         {/* Collapsible Media Usage List */}
                         {isExpanded && (
                           <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
-                            <div className="space-y-3">
-                              {Object.entries(subcategories).map(([subcategory, types]) => (
-                                <div key={subcategory} className="border-l-2 border-blue-500/30 pl-3">
-                                  <h4 className="text-sm font-medium text-blue-300 mb-2">{subcategory}</h4>
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    {types.map((type: string) => {
-                                      const fullUsageType = `${category} > ${subcategory} > ${type}`;
-                                      return (
-                                        <label key={fullUsageType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
-                                          <input
-                                            type="checkbox"
-                                            checked={formData.selectedMediaUsage.includes(fullUsageType)}
-                                            onChange={(e) => {
-                                              if (e.target.checked) {
-                                                updateFormData({ 
-                                                  selectedMediaUsage: [...formData.selectedMediaUsage, fullUsageType]
-                                                });
-                                              } else {
-                                                updateFormData({
-                                                  selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== fullUsageType)
-                                                });
-                                              }
-                                            }}
-                                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                            disabled={isSubmitting}
-                                          />
-                                          <span className="text-sm">{type}</span>
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {mediaTypes.map((mediaType) => (
+                                <label key={mediaType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedMediaUsage.includes(mediaType)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        updateFormData({ 
+                                          selectedMediaUsage: [...formData.selectedMediaUsage, mediaType]
+                                        });
+                                      } else {
+                                        updateFormData({
+                                          selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType)
+                                        });
+                                      }
+                                    }}
+                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                    disabled={isSubmitting}
+                                  />
+                                  <span className="text-sm">{mediaType}</span>
+                                </label>
                               ))}
                             </div>
                           </div>
