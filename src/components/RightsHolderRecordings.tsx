@@ -28,7 +28,10 @@ import {
   BarChart3,
   ChevronDown,
   ChevronRight,
-  RotateCcw
+  RotateCcw,
+  Volume2,
+  FileAudio,
+  FileArchive
 } from 'lucide-react';
 import { MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
@@ -509,6 +512,30 @@ export function RightsHolderRecordings() {
           </div>
         )}
 
+        {/* Tabs */}
+        <div className="flex border-b border-gray-700 mb-6">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'active'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Active Recordings ({recordings.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('deleted')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'deleted'
+                ? 'text-blue-400 border-b-2 border-blue-400'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Deleted Recordings ({deletedRecordings.length})
+          </button>
+        </div>
+
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
@@ -537,192 +564,534 @@ export function RightsHolderRecordings() {
           </div>
         </div>
 
-        {/* Recordings Grid */}
-        {filteredRecordings.length === 0 ? (
-          <div className="text-center py-12">
-            <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No recordings found</h3>
-            <p className="text-gray-500">Upload your first track to get started</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRecordings.map((recording) => (
-              <div key={recording.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-                {/* Track Image */}
-                <div className="relative mb-4">
-                  <img
-                    src={recording.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                    alt={recording.title}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
-                  <div className="absolute top-2 right-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      recording.status === 'active' ? 'bg-green-600' :
-                      recording.status === 'pending' ? 'bg-yellow-600' :
-                      'bg-red-600'
-                    }`}>
-                      {recording.status}
+                {/* Recordings Grid */}
+        {(() => {
+          const currentRecordings = activeTab === 'active' ? recordings : deletedRecordings;
+          const filteredCurrentRecordings = currentRecordings.filter(recording => {
+            const matchesSearch = recording.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                 recording.artist.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesStatus = statusFilter === 'all' || recording.status === statusFilter;
+            return matchesSearch && matchesStatus;
+          });
+
+          if (filteredCurrentRecordings.length === 0) {
+            return (
+              <div className="text-center py-12">
+                <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-400 mb-2">
+                  {activeTab === 'active' ? 'No active recordings found' : 'No deleted recordings found'}
+                </h3>
+                <p className="text-gray-500">
+                  {activeTab === 'active' ? 'Upload your first track to get started' : 'Deleted recordings will appear here'}
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCurrentRecordings.map((recording) => (
+                <div key={recording.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                  {/* Track Image */}
+                  <div className="relative mb-4">
+                    <img
+                      src={recording.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
+                      alt={recording.title}
+                      className="w-full h-48 object-cover rounded-lg"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        recording.status === 'active' ? 'bg-green-600' :
+                        recording.status === 'pending' ? 'bg-yellow-600' :
+                        'bg-red-600'
+                      }`}>
+                        {recording.status}
+                      </span>
+                    </div>
+                    {activeTab === 'deleted' && (
+                      <div className="absolute top-2 left-2">
+                        <span className="px-2 py-1 text-xs rounded-full bg-red-600">
+                          Deleted
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Track Info */}
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold">{recording.title}</h3>
+                    <p className="text-gray-400">{recording.artist}</p>
+                     
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>{recording.bpm} BPM</span>
+                      <span>{recording.key}</span>
+                      {recording.duration && <span>{formatDuration(recording.duration)}</span>}
+                    </div>
+
+                    <div className="text-sm text-gray-400">
+                      <p><strong>Genres:</strong> {Array.isArray(recording.genres) ? recording.genres.join(', ') : 'None'}</p>
+                      <p><strong>Moods:</strong> {Array.isArray(recording.moods) ? recording.moods.join(', ') : 'None'}</p>
+                    </div>
+
+                    {recording.has_vocals && (
+                      <div className="flex items-center text-sm text-blue-400">
+                        <User className="w-4 h-4 mr-1" />
+                        Has Vocals
+                      </div>
+                    )}
+
+                    {recording.is_sync_only && (
+                      <div className="flex items-center text-sm text-purple-400">
+                        <Music className="w-4 h-4 mr-1" />
+                        Sync Only
+                      </div>
+                    )}
+
+                    {activeTab === 'deleted' && recording.deleted_at && (
+                      <div className="text-xs text-gray-500">
+                        Deleted: {new Date(recording.deleted_at).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+                    <div className="flex space-x-2">
+                      {activeTab === 'active' ? (
+                        <>
+                          <button
+                            onClick={() => handleEdit(recording)}
+                            className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(recording.id)}
+                            className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleRestore(recording.id)}
+                            className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
+                            title="Restore"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handlePermanentDelete(recording.id)}
+                            className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                            title="Delete Permanently"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {new Date(recording.created_at).toLocaleDateString()}
                     </span>
                   </div>
                 </div>
+              ))}
+            </div>
+          );
+        })()}
 
-                {/* Track Info */}
-                <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">{recording.title}</h3>
-                  <p className="text-gray-400">{recording.artist}</p>
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{recording.bpm} BPM</span>
-                    <span>{recording.key}</span>
-                    {recording.duration && <span>{formatDuration(recording.duration)}</span>}
-                  </div>
-
-                  <div className="text-sm text-gray-400">
-                    <p><strong>Genres:</strong> {Array.isArray(recording.genres) ? recording.genres.join(', ') : 'None'}</p>
-                                          <p><strong>Moods:</strong> {Array.isArray(recording.moods) ? recording.moods.join(', ') : 'None'}</p>
-                  </div>
-
-                  {recording.has_vocals && (
-                    <div className="flex items-center text-sm text-blue-400">
-                      <User className="w-4 h-4 mr-1" />
-                      Has Vocals
-                    </div>
-                  )}
-
-                  {recording.is_sync_only && (
-                    <div className="flex items-center text-sm text-purple-400">
-                      <Music className="w-4 h-4 mr-1" />
-                      Sync Only
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(recording)}
-                      className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(recording.id)}
-                      className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <span className="text-xs text-gray-500">
-                    {new Date(recording.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Edit Modal */}
+                {/* Comprehensive Edit Modal */}
         {editingRecording && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-xl font-semibold mb-4">Edit Recording</h3>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Title</label>
-                  <input
-                    type="text"
-                    value={editFormData.title}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Artist</label>
-                  <input
-                    type="text"
-                    value={editFormData.artist}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, artist: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Genre</label>
-                  <input
-                    type="text"
-                    value={editFormData.genre}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, genre: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Mood</label>
-                  <input
-                    type="text"
-                    value={editFormData.mood}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, mood: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">BPM</label>
-                  <input
-                    type="number"
-                    value={editFormData.bpm}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, bpm: parseInt(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Key</label>
-                  <input
-                    type="text"
-                    value={editFormData.key}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, key: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
-                  <textarea
-                    value={editFormData.description}
-                    onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex justify-end space-x-3 mt-6">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-semibold">Edit Recording: {editingRecording.title}</h3>
                 <button
                   onClick={() => setEditingRecording(null)}
-                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="p-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Basic Info */}
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Title *</label>
+                    <input
+                      type="text"
+                      value={editFormData.title}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                      placeholder="Track title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Artist *</label>
+                    <input
+                      type="text"
+                      value={editFormData.artist}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, artist: e.target.value }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                      placeholder="Artist name"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">BPM *</label>
+                      <input
+                        type="number"
+                        value={editFormData.bpm}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, bpm: parseInt(e.target.value) || 0 }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="120"
+                        min="1"
+                        max="999"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Key</label>
+                      <input
+                        type="text"
+                        value={editFormData.key}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, key: e.target.value }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        placeholder="C Major"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Description</label>
+                    <textarea
+                      value={editFormData.description}
+                      onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                      rows={4}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                      placeholder="Describe your track..."
+                    />
+                  </div>
+
+                  {/* Track Type Checkboxes */}
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium">Track Type</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={hasVocals}
+                          onChange={(e) => setHasVocals(e.target.checked)}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Full Track with Vocals</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={isSyncOnly}
+                          onChange={(e) => setIsSyncOnly(e.target.checked)}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Sync Only</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Genres, Moods, Instruments, Media Usage */}
+                <div className="space-y-6">
+                  {/* Genres */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Genres *</label>
+                    {genresLoading ? (
+                      <div className="text-gray-400">Loading genres...</div>
+                    ) : (
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {genres.map((genre) => (
+                          <label key={genre.id} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedGenres.includes(genre.display_name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedGenres(prev => [...prev, genre.display_name]);
+                                } else {
+                                  setSelectedGenres(prev => prev.filter(g => g !== genre.display_name));
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">{genre.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Moods */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Moods</label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
+                        <div key={category} className="border border-gray-600 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">{category}</span>
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            {moods.map((mood) => (
+                              <label key={mood} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedMoods.includes(mood)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedMoods(prev => [...prev, mood]);
+                                    } else {
+                                      setSelectedMoods(prev => prev.filter(m => m !== mood));
+                                    }
+                                  }}
+                                  className="mr-1"
+                                />
+                                <span className="text-xs">{mood}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Instruments */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Instruments</label>
+                    {instrumentsLoading ? (
+                      <div className="text-gray-400">Loading instruments...</div>
+                    ) : (
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {instruments.map((instrument) => (
+                          <label key={instrument.id} className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedInstruments.includes(instrument.display_name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedInstruments(prev => [...prev, instrument.display_name]);
+                                } else {
+                                  setSelectedInstruments(prev => prev.filter(i => i !== instrument.display_name));
+                                }
+                              }}
+                              className="mr-2"
+                            />
+                            <span className="text-sm">{instrument.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Media Usage */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Media Usage</label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, types]) => (
+                        <div key={category} className="border border-gray-600 rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium">{category}</span>
+                            <ChevronDown className="w-4 h-4" />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1">
+                            {types.map((type) => (
+                              <label key={type} className="flex items-center">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedMediaUsage.includes(type)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedMediaUsage(prev => [...prev, type]);
+                                    } else {
+                                      setSelectedMediaUsage(prev => prev.filter(m => m !== type));
+                                    }
+                                  }}
+                                  className="mr-1"
+                                />
+                                <span className="text-xs">{type}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* File Uploads */}
+              <div className="mt-8 border-t border-gray-700 pt-6">
+                <h4 className="text-lg font-semibold mb-4">Additional Files</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* MP3 File */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">MP3 File</label>
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                      {mp3File ? (
+                        <div className="space-y-2">
+                          <FileAudio className="w-8 h-8 mx-auto text-blue-400" />
+                          <p className="text-sm">{mp3File.name}</p>
+                          <button
+                            onClick={() => setMp3File(null)}
+                            className="text-red-400 text-sm hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                          <input
+                            type="file"
+                            accept=".mp3"
+                            onChange={(e) => setMp3File(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="mp3-upload"
+                          />
+                          <label htmlFor="mp3-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
+                            Upload MP3
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Trackouts File */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Trackouts (ZIP)</label>
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                      {trackoutsFile ? (
+                        <div className="space-y-2">
+                          <FileArchive className="w-8 h-8 mx-auto text-blue-400" />
+                          <p className="text-sm">{trackoutsFile.name}</p>
+                          <button
+                            onClick={() => setTrackoutsFile(null)}
+                            className="text-red-400 text-sm hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                          <input
+                            type="file"
+                            accept=".zip"
+                            onChange={(e) => setTrackoutsFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="trackouts-upload"
+                          />
+                          <label htmlFor="trackouts-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
+                            Upload Trackouts
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stems File */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Stems (ZIP)</label>
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                      {stemsFile ? (
+                        <div className="space-y-2">
+                          <FileArchive className="w-8 h-8 mx-auto text-blue-400" />
+                          <p className="text-sm">{stemsFile.name}</p>
+                          <button
+                            onClick={() => setStemsFile(null)}
+                            className="text-red-400 text-sm hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                          <input
+                            type="file"
+                            accept=".zip"
+                            onChange={(e) => setStemsFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="stems-upload"
+                          />
+                          <label htmlFor="stems-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
+                            Upload Stems
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Split Sheet File */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Split Sheet (PDF)</label>
+                    <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                      {splitSheetFile ? (
+                        <div className="space-y-2">
+                          <FileText className="w-8 h-8 mx-auto text-blue-400" />
+                          <p className="text-sm">{splitSheetFile.name}</p>
+                          <button
+                            onClick={() => setSplitSheetFile(null)}
+                            className="text-red-400 text-sm hover:text-red-300"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                          <input
+                            type="file"
+                            accept=".pdf"
+                            onChange={(e) => setSplitSheetFile(e.target.files?.[0] || null)}
+                            className="hidden"
+                            id="split-sheet-upload"
+                          />
+                          <label htmlFor="split-sheet-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
+                            Upload Split Sheet
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-700">
+                <button
+                  onClick={() => setEditingRecording(null)}
+                  className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  disabled={saving}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg transition-colors flex items-center"
+                  disabled={saving || uploadingFiles}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 rounded-lg transition-colors flex items-center"
                 >
-                  {saving ? (
+                  {saving || uploadingFiles ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin mr-2" />
-                      Saving...
+                      {uploadingFiles ? 'Uploading...' : 'Saving...'}
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Save
+                      Save Changes
                     </>
                   )}
                 </button>
