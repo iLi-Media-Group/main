@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight, CheckCircle, AlertCircle, FileAudio, FileText, Users, Building2 } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_TYPES, ALL_INSTRUMENTS } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_TYPES, ALL_INSTRUMENTS, INSTRUMENTS } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
@@ -1451,7 +1451,8 @@ export function TrackUploadForm() {
                                 type="checkbox"
                                 checked={categoryMoodsSelected.length === moods.length}
                                 onChange={(e) => {
-                                  e.stopPropagation(); // Prevent event bubbling
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   if (e.target.checked) {
                                     // Select all moods in this category
                                     const newMoods = [...formData.selectedMoods];
@@ -1467,6 +1468,10 @@ export function TrackUploadForm() {
                                       selectedMoods: formData.selectedMoods.filter(mood => !moods.includes(mood))
                                     });
                                   }
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={isSubmitting}
