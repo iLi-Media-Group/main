@@ -99,7 +99,7 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (subGenresError) throw subGenresError;
 
-      // Fetch instruments
+      // Fetch instruments with categories
       const { data: instrumentsData, error: instrumentsError } = await supabase
         .from('instruments')
         .select(`
@@ -108,15 +108,23 @@ export function useDynamicSearchData(): DynamicSearchData {
           display_name,
           category
         `)
-        .order('display_name');
+        .order('category, display_name');
 
       if (instrumentsError) throw instrumentsError;
 
-      // Fetch media types using direct query (temporarily)
+      // Fetch media types with categories
       const { data: mediaTypesData, error: mediaTypesError } = await supabase
         .from('media_types')
-        .select('*')
-        .order('display_order, name');
+        .select(`
+          id,
+          name,
+          display_name,
+          category,
+          description,
+          parent_id,
+          display_order
+        `)
+        .order('category, display_order, name');
 
       if (mediaTypesError) throw mediaTypesError;
 
