@@ -64,6 +64,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     if (accountType === 'white_label') {
       return '/white-label-dashboard';
     }
+    if (accountType === 'rights_holder') {
+      return '/rights-holder/dashboard';
+    }
     // For producers, return the main dashboard (not producer dashboard since it's shown separately)
     if (accountType && accountType.includes('producer')) {
       return '/dashboard';
@@ -78,6 +81,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     if (accountType === 'white_label') {
       return <UserCog className="w-4 h-4 mr-2" />;
     }
+    if (accountType === 'rights_holder') {
+      return <Building2 className="w-4 h-4 mr-2" />;
+    }
     // For producers, return the main dashboard icon (not producer dashboard since it's shown separately)
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
@@ -88,6 +94,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     }
     if (accountType === 'white_label') {
       return 'White Label Dashboard';
+    }
+    if (accountType === 'rights_holder') {
+      return 'Rights Holder Dashboard';
     }
     // For producers, return the main dashboard label (not producer dashboard since it's shown separately)
     if (accountType && accountType.includes('producer')) {
