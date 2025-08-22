@@ -674,42 +674,62 @@ export function RightsHolderUploadForm() {
           <p className="text-gray-300">Complete the rights verification process for your track</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex justify-center mb-8">
-          <div className="flex space-x-4">
-            {steps.map((step, index) => {
-              const Icon = step.icon;
-              const isActive = currentStep === step.number;
-              const isCompleted = currentStep > step.number;
-              
-              return (
-                <div key={step.number} className="flex items-center">
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
-                    isCompleted ? 'bg-green-500 border-green-500' :
-                    isActive ? 'bg-blue-500 border-blue-500' :
-                    'bg-gray-700 border-gray-600'
-                  }`}>
-                    {isCompleted ? (
-                      <CheckCircle className="w-6 h-6 text-white" />
-                    ) : (
-                      <Icon className="w-6 h-6 text-white" />
-                    )}
-                  </div>
-                  <span className={`ml-2 text-sm font-medium ${
-                    isActive ? 'text-blue-400' : 'text-gray-400'
-                  }`}>
-                    {step.title}
-                  </span>
-                  {index < steps.length - 1 && (
-                    <div className={`w-8 h-0.5 mx-4 ${
-                      isCompleted ? 'bg-green-500' : 'bg-gray-600'
-                    }`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                 {/* Progress Steps */}
+         <div className="flex justify-center mb-8">
+           <div className="flex space-x-4">
+             {steps.map((step, index) => {
+               const Icon = step.icon;
+               const isActive = currentStep === step.number;
+               const isCompleted = currentStep > step.number;
+               const canNavigateTo = isCompleted || validateStep(step.number - 1);
+               
+               return (
+                 <div key={step.number} className="flex items-center">
+                   <button
+                     onClick={() => {
+                       if (canNavigateTo) {
+                         setCurrentStep(step.number);
+                       }
+                     }}
+                     disabled={!canNavigateTo}
+                     className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
+                       isCompleted ? 'bg-green-500 border-green-500 hover:bg-green-600' :
+                       isActive ? 'bg-blue-500 border-blue-500' :
+                       canNavigateTo ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 cursor-pointer' :
+                       'bg-gray-800 border-gray-700 cursor-not-allowed'
+                     }`}
+                   >
+                     {isCompleted ? (
+                       <CheckCircle className="w-6 h-6 text-white" />
+                     ) : (
+                       <Icon className="w-6 h-6 text-white" />
+                     )}
+                   </button>
+                   <button
+                     onClick={() => {
+                       if (canNavigateTo) {
+                         setCurrentStep(step.number);
+                       }
+                     }}
+                     disabled={!canNavigateTo}
+                     className={`ml-2 text-sm font-medium transition-colors ${
+                       isActive ? 'text-blue-400' :
+                       canNavigateTo ? 'text-gray-400 hover:text-gray-300 cursor-pointer' :
+                       'text-gray-500 cursor-not-allowed'
+                     }`}
+                   >
+                     {step.title}
+                   </button>
+                   {index < steps.length - 1 && (
+                     <div className={`w-8 h-0.5 mx-4 ${
+                       isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                     }`} />
+                   )}
+                 </div>
+               );
+             })}
+           </div>
+         </div>
 
         {/* Form Content */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
