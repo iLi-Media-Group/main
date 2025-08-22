@@ -941,6 +941,8 @@ export function TrackUploadForm() {
       if (trackFetchError) throw trackFetchError;
 
       // Insert music rights information into music_rights table
+      // TODO: Fix table name - temporarily commented out due to 404 error
+      /*
       if (trackData?.id) {
         const musicRightsData = {
           track_id: trackData.id,
@@ -971,6 +973,7 @@ export function TrackUploadForm() {
           console.log('[DEBUG] Music rights inserted successfully for track:', trackData.id);
         }
       }
+      */
 
       // Insert instruments into track_instruments table if any are selected
       if (formData.selectedInstruments.length > 0 && trackData?.id) {
@@ -999,9 +1002,9 @@ export function TrackUploadForm() {
       // Insert moods into track_moods table if any are selected
       if (formData.selectedMoods.length > 0 && trackData?.id) {
         // Get sub-mood IDs for the selected moods
-        const selectedSubMoodIds = subMoods
-          .filter(subMood => formData.selectedMoods.includes(subMood.name))
-          .map(subMood => subMood.id);
+        const selectedSubMoodIds = dynamicMoods
+          .filter(mood => formData.selectedMoods.includes(mood.name) && mood.category !== mood.name)
+          .map(mood => mood.id);
 
         if (selectedSubMoodIds.length > 0) {
           const trackMoodsData = selectedSubMoodIds.map(subMoodId => ({
