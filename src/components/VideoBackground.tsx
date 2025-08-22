@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface VideoBackgroundProps {
   videoUrl: string;
@@ -34,6 +35,7 @@ export const clearBackgroundAssetCache = (page?: string) => {
 };
 
 export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Background video" }: VideoBackgroundProps) {
+  const { user } = useUnifiedAuth();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoError, setIsVideoError] = useState(false);
   const [backgroundAsset, setBackgroundAsset] = useState<BackgroundAsset | null>(null);
@@ -58,13 +60,12 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
         return;
       }
 
-      // Temporarily skip auth check to fix 406 errors
-      // const { data: { session } } = await supabase.auth.getSession();
-      // if (!session?.user) {
-      //   console.log('No authenticated session, skipping background asset fetch');
-      //   setLoading(false);
-      //   return;
-      // }
+      // Check if user is authenticated using unified auth
+      if (!user) {
+        console.log('No authenticated user, skipping background asset fetch');
+        setLoading(false);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
