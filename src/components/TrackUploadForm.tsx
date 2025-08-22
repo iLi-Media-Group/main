@@ -753,16 +753,17 @@ export function TrackUploadForm() {
         track_producer_id: user.id,
         title: formData.title,
         artist: user.email?.split('@')[0] || 'Unknown Artist',
-        genres: formData.genre,
-        sub_genres: formData.subGenre,
-        moods: formData.selectedMoods || [], // Use selectedMoods array instead of single mood
+        genres: formData.selectedGenres || [],
+        sub_genres: formData.selectedSubGenres || [],
+        moods: formData.selectedMoods || [],
         instruments: formData.selectedInstruments || [],
+        media_usage: formData.selectedMediaUsage || [],
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
         is_one_stop: formData.isOneStop,
-        audio_url: `${user.id}/${formData.title}/audio.mp3`, // Always set to deterministic path
-        image_url: imageUrl, // This is now a file path
+        audio_url: `${user.id}/${formData.title}/audio.mp3`,
+        image_url: imageUrl,
         mp3_url: formData.mp3Url || null,
         trackouts_url: trackoutsStoragePath || null,
         stems_url: stemsStoragePath || null,
@@ -776,14 +777,7 @@ export function TrackUploadForm() {
         contains_samples: formData.containsSamples,
         contains_splice_loops: formData.containsSpliceLoops,
         samples_cleared: formData.samplesCleared,
-        sample_clearance_notes: formData.sampleClearanceNotes || null,
-        // Rights management fields
-        master_rights_owner: formData.masterRightsOwner,
-        publishing_rights_owner: formData.publishingRightsOwner,
-        participants: JSON.stringify(formData.participants),
-        co_signers: JSON.stringify(formData.coSigners),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        sample_clearance_notes: formData.sampleClearanceNotes || null
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
