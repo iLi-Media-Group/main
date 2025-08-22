@@ -325,6 +325,8 @@ export function RightsHolderDashboard() {
     try {
       setCustomSyncRequestsLoading(true);
       
+      // Fetch custom sync requests where this rights holder is the selected producer
+      // OR where it's an open request that they can potentially submit to
       const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
@@ -336,7 +338,7 @@ export function RightsHolderDashboard() {
             email
           )
         `)
-        .eq('selected_producer_id', user.id)
+        .or(`selected_producer_id.eq.${user.id},and(is_open_request.eq.true,status.eq.open,end_date.gte.${new Date().toISOString()})`)
         .order('created_at', { ascending: false });
       
       if (requestsError) throw requestsError;
