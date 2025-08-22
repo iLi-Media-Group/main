@@ -755,7 +755,7 @@ export function TrackUploadForm() {
         artist: user.email?.split('@')[0] || 'Unknown Artist',
         genres: formData.genre,
         sub_genres: formData.subGenre,
-        moods: formData.mood,
+        moods: formData.selectedMoods || [], // Use selectedMoods array instead of single mood
         instruments: formData.selectedInstruments || [],
         bpm: bpmNumber,
         key: formData.key,
@@ -843,6 +843,21 @@ export function TrackUploadForm() {
           console.error('[DEBUG] Instruments-related error detected');
           console.error('[DEBUG] Instruments data that caused error:', formData.selectedInstruments);
         }
+        
+        // Check if it's a moods-related error
+        if (trackError.message?.includes('moods') || trackError.details?.includes('moods')) {
+          console.error('[DEBUG] Moods-related error detected');
+          console.error('[DEBUG] Moods data that caused error:', formData.selectedMoods);
+        }
+        
+        // Check if it's a genres-related error
+        if (trackError.message?.includes('genres') || trackError.details?.includes('genres')) {
+          console.error('[DEBUG] Genres-related error detected');
+          console.error('[DEBUG] Genres data that caused error:', formData.genre);
+        }
+        
+        // Log the full error response for debugging
+        console.error('[DEBUG] Full error response:', trackError);
       }
       
       console.log('[DEBUG] Inserted track DB values:', {
