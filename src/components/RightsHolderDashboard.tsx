@@ -338,7 +338,7 @@ export function RightsHolderDashboard() {
             email
           )
         `)
-        .or(`selected_producer_id.eq.${user.id},and(is_open_request.eq.true,status.eq.open,end_date.gte.${new Date().toISOString()})`)
+        .or(`selected_producer_id.eq.${user.id},and(status.eq.open,end_date.gte.${new Date().toISOString()})`)
         .order('created_at', { ascending: false });
       
       if (requestsError) throw requestsError;
