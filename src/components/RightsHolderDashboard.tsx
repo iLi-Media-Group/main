@@ -47,18 +47,23 @@ interface SyncProposal {
   client_id: string;
   project_type: string;
   sync_fee: number;
+  final_amount?: number;
+  negotiated_amount?: number;
   payment_terms: string;
-  is_exclusive: boolean;
+  final_payment_terms?: string;
+  negotiated_payment_terms?: string;
   expiration_date: string;
   is_urgent: boolean;
   status: string;
-  client_status: string;
-  producer_status: string;
-  negotiation_status: string;
-  last_message_sender_id?: string;
-  last_message_at?: string;
   created_at: string;
   updated_at: string;
+  producer_status: string;
+  client_status: string;
+  negotiation_status: string;
+  client_accepted_at?: string;
+  last_message_sender_id?: string;
+  last_message_at?: string;
+  payment_status?: string;
   client: {
     first_name: string;
     last_name: string;
@@ -67,7 +72,6 @@ interface SyncProposal {
   track: {
     id: string;
     title: string;
-    artist: string;
   };
 }
 
@@ -287,21 +291,40 @@ export function RightsHolderDashboard() {
       
       const trackIds = tracksData.map(track => track.id);
       
-      // Fetch sync proposals for these tracks
+      // Fetch sync proposals for these tracks (matching producer dashboard pattern)
       const { data: proposalsData, error: proposalsError } = await supabase
         .from('sync_proposals')
         .select(`
-          *,
-          client:profiles!sync_proposals_client_id_fkey(
-            id,
+          id,
+          track_id,
+          client_id,
+          project_type,
+          sync_fee,
+          final_amount,
+          negotiated_amount,
+          payment_terms,
+          final_payment_terms,
+          negotiated_payment_terms,
+          expiration_date,
+          is_urgent,
+          status,
+          created_at,
+          updated_at,
+          producer_status,
+          client_status,
+          negotiation_status,
+          client_accepted_at,
+          last_message_sender_id,
+          last_message_at,
+          payment_status,
+          client:profiles!client_id (
             first_name,
             last_name,
             email
           ),
-          track:tracks(
+          track:tracks!track_id (
             id,
-            title,
-            artist
+            title
           )
         `)
         .in('track_id', trackIds)
