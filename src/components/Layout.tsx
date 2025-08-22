@@ -353,17 +353,31 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
               </div>
             </Link>
             
-            {/* Music Menu Button */}
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-white hover:text-blue-300 transition-all duration-300 p-2 bg-black/20 backdrop-blur-sm rounded-lg"
-            >
-              {isMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Guitar className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
+            {/* Right side buttons */}
+            <div className="flex items-center space-x-2">
+              {/* Profile/Settings Gear Icon */}
+              {user && (
+                <Link
+                  to="/profile"
+                  className="text-white hover:text-blue-300 transition-all duration-300 p-2 bg-black/20 backdrop-blur-sm rounded-lg"
+                  title="Profile Settings"
+                >
+                  <Settings className="w-6 h-6" />
+                </Link>
               )}
-            </button>
+              
+              {/* Music Menu Button */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="text-white hover:text-blue-300 transition-all duration-300 p-2 bg-black/20 backdrop-blur-sm rounded-lg"
+              >
+                {isMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Guitar className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
+                )}
+              </button>
+            </div>
 
             {/* Menu Dropdown */}
             {isMenuOpen && (

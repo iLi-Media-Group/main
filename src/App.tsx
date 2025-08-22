@@ -98,6 +98,7 @@ import { RightsHolderESignatures } from './components/RightsHolderESignatures';
 import { RightsHolderLicensing } from './components/RightsHolderLicensing';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
+import { ProfilePage } from './components/ProfilePage';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -673,6 +674,15 @@ const App = () => {
           </ProtectedRoute>
         } />
         <Route path="/rights-holder/test" element={<RightsHolderTest />} />
+
+        {/* Profile Route */}
+        <Route path="/profile" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <ProfilePage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="*" element={
           <LayoutWrapper>
