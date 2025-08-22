@@ -19,7 +19,7 @@ CREATE POLICY "Enable read access for authenticated users" ON background_assets
             )
             OR
             -- Allow public read access for active assets
-            isActive = true
+            "isActive" = true
         )
     );
 
