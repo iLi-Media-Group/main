@@ -782,7 +782,7 @@ export function TrackUploadForm() {
                 instruments: formData.selectedInstruments || [],
                 media_usage: formData.selectedMediaUsage || [],
                 bpm: bpmNumber,
-                key: null, // Set to null since the database constraint rejects simple values like 'C'
+                key: formData.key || null, // Use the selected key from MUSICAL_KEYS array
                 has_sting_ending: formData.hasStingEnding,
                 is_one_stop: formData.isOneStop,
                 audio_url: `${user.id}/${formData.title}/audio.mp3`,
@@ -1335,18 +1335,9 @@ export function TrackUploadForm() {
                       required
                 >
                   <option value="">Select key</option>
-                      <option value="C">C</option>
-                      <option value="C#">C#</option>
-                      <option value="D">D</option>
-                      <option value="D#">D#</option>
-                      <option value="E">E</option>
-                      <option value="F">F</option>
-                      <option value="F#">F#</option>
-                      <option value="G">G</option>
-                      <option value="G#">G#</option>
-                      <option value="A">A</option>
-                      <option value="A#">A#</option>
-                      <option value="B">B</option>
+                  {MUSICAL_KEYS.map((key) => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
                 </select>
               </div>
 
