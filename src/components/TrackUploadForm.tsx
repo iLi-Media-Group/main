@@ -2263,7 +2263,7 @@ export function TrackUploadForm() {
             )}
             
             {currentStep === 7 && (
-              <div className="w-24"></div> {/* Spacer to maintain layout */}
+              <div className="w-24"></div>
             )}
           </div>
 
