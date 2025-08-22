@@ -65,6 +65,30 @@ interface FormData {
   containsSpliceLoops: boolean;
   samplesCleared: boolean;
   sampleClearanceNotes: string;
+  // Rights management fields
+  masterRightsOwner: string;
+  publishingRightsOwner: string;
+  participants: SplitSheetParticipant[];
+  coSigners: CoSigner[];
+}
+
+interface SplitSheetParticipant {
+  id: string;
+  name: string;
+  role: 'writer' | 'producer' | 'publisher' | 'performer';
+  percentage: number;
+  email: string;
+  pro: string; // ASCAP, BMI, SESAC, etc.
+  publisher: string;
+}
+
+interface CoSigner {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  invited: boolean;
+  signed: boolean;
 }
 
 export function TrackUploadForm() {
@@ -103,7 +127,12 @@ export function TrackUploadForm() {
     containsSpliceLoops: false,
     containsSamples: false,
     samplesCleared: false,
-    sampleClearanceNotes: ''
+    sampleClearanceNotes: '',
+    // Rights management fields
+    masterRightsOwner: '',
+    publishingRightsOwner: '',
+    participants: [] as SplitSheetParticipant[],
+    coSigners: [] as CoSigner[]
   }, {
     storageKey: FORM_STORAGE_KEY,
     excludeFields: ['audioFile', 'imageFile', 'trackoutsFile', 'stemsFile', 'splitSheetFile', 'imagePreview']
@@ -153,7 +182,9 @@ export function TrackUploadForm() {
     { number: 2, title: 'Audio & Files', icon: FileAudio },
     { number: 3, title: 'Genres & Moods', icon: Music },
     { number: 4, title: 'Instruments & Usage', icon: Users },
-    { number: 5, title: 'Review & Submit', icon: Building2 }
+    { number: 5, title: 'Rights & Split Sheet', icon: FileText },
+    { number: 6, title: 'Co-signers', icon: Users },
+    { number: 7, title: 'Review & Submit', icon: Building2 }
   ];
 
   const validateStep = (step: number): boolean => {
@@ -167,6 +198,10 @@ export function TrackUploadForm() {
       case 4:
         return formData.selectedInstruments.length > 0 && formData.selectedMediaUsage.length > 0;
       case 5:
+        return !!(formData.masterRightsOwner && formData.publishingRightsOwner);
+      case 6:
+        return true; // Co-signers are optional
+      case 7:
         return true; // Review step
       default:
         return false;
@@ -181,6 +216,64 @@ export function TrackUploadForm() {
 
   const prevStep = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  // Rights management functions
+  const addParticipant = () => {
+    const newParticipant: SplitSheetParticipant = {
+      id: Date.now().toString(),
+      name: '',
+      role: 'writer',
+      percentage: 0,
+      email: '',
+      pro: '',
+      publisher: ''
+    };
+    updateFormData({
+      participants: [...formData.participants, newParticipant]
+    });
+  };
+
+  const updateParticipant = (id: string, field: keyof SplitSheetParticipant, value: any) => {
+    updateFormData({
+      participants: formData.participants.map(p => 
+        p.id === id ? { ...p, [field]: value } : p
+      )
+    });
+  };
+
+  const removeParticipant = (id: string) => {
+    updateFormData({
+      participants: formData.participants.filter(p => p.id !== id)
+    });
+  };
+
+  const addCoSigner = () => {
+    const newCoSigner: CoSigner = {
+      id: Date.now().toString(),
+      name: '',
+      email: '',
+      role: '',
+      invited: false,
+      signed: false
+    };
+    updateFormData({
+      coSigners: [...formData.coSigners, newCoSigner]
+    });
+  };
+
+  const updateCoSigner = (id: string, field: keyof CoSigner, value: any) => {
+    updateFormData({
+      coSigners: formData.coSigners.map(c => 
+        c.id === id ? { ...c, [field]: value } : c
+      )
+    });
+  };
+
+  const removeCoSigner = (id: string) => {
+    updateFormData({
+      coSigners: formData.coSigners.filter(c => c.id !== id)
+    });
   };
 
   // Load saved files on mount
@@ -508,6 +601,11 @@ export function TrackUploadForm() {
         contains_splice_loops: formData.containsSpliceLoops,
         samples_cleared: formData.samplesCleared,
         sample_clearance_notes: formData.sampleClearanceNotes || null,
+        // Rights management fields
+        master_rights_owner: formData.masterRightsOwner,
+        publishing_rights_owner: formData.publishingRightsOwner,
+        participants: JSON.stringify(formData.participants),
+        co_signers: JSON.stringify(formData.coSigners),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -1782,6 +1880,258 @@ export function TrackUploadForm() {
             />
           )}
 
+          {/* Rights Declaration Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <h2 className="text-xl font-semibold text-white mb-4">Rights Declaration</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Master Rights Owner *</label>
+                <input
+                  type="text"
+                  value={formData.masterRightsOwner}
+                  onChange={(e) => updateFormData({ masterRightsOwner: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  placeholder="Who owns the master recording?"
+                  disabled={isSubmitting}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Publishing Rights Owner *</label>
+                <input
+                  type="text"
+                  value={formData.publishingRightsOwner}
+                  onChange={(e) => updateFormData({ publishingRightsOwner: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  placeholder="Who owns the publishing rights?"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+            
+            <div className="mt-4 bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
+              <h3 className="text-blue-400 font-semibold mb-2">Rights Declaration</h3>
+              <p className="text-gray-300 text-sm">
+                By uploading this track, you declare that you have the legal authority to license this content 
+                and that all rights holders have been properly credited and compensated according to the split sheet.
+              </p>
+            </div>
+          </div>
+
+          {/* Split Sheet Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Split Sheet</h2>
+              <button
+                type="button"
+                onClick={addParticipant}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                disabled={isSubmitting}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Add Participant
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {formData.participants.map((participant, index) => (
+                <div key={participant.id} className="bg-gray-800/30 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-white font-semibold">Participant {index + 1}</h3>
+                    {formData.participants.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeParticipant(participant.id)}
+                        className="text-red-400 hover:text-red-300"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-gray-300 mb-2">Name *</label>
+                      <input
+                        type="text"
+                        value={participant.name}
+                        onChange={(e) => updateParticipant(participant.id, 'name', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        placeholder="Full name"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-300 mb-2">Role *</label>
+                      <select
+                        value={participant.role}
+                        onChange={(e) => updateParticipant(participant.id, 'role', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        disabled={isSubmitting}
+                      >
+                        <option value="writer">Writer</option>
+                        <option value="producer">Producer</option>
+                        <option value="publisher">Publisher</option>
+                        <option value="performer">Performer</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-300 mb-2">Percentage *</label>
+                      <input
+                        type="number"
+                        value={participant.percentage}
+                        onChange={(e) => updateParticipant(participant.id, 'percentage', parseFloat(e.target.value))}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        placeholder="0-100"
+                        min="0"
+                        max="100"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-300 mb-2">Email</label>
+                      <input
+                        type="email"
+                        value={participant.email}
+                        onChange={(e) => updateParticipant(participant.id, 'email', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        placeholder="email@example.com"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-300 mb-2">PRO</label>
+                      <select
+                        value={participant.pro}
+                        onChange={(e) => updateParticipant(participant.id, 'pro', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        disabled={isSubmitting}
+                      >
+                        <option value="">Select PRO</option>
+                        <option value="ascap">ASCAP</option>
+                        <option value="bmi">BMI</option>
+                        <option value="sesac">SESAC</option>
+                        <option value="none">None</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-gray-300 mb-2">Publisher</label>
+                      <input
+                        type="text"
+                        value={participant.publisher}
+                        onChange={(e) => updateParticipant(participant.id, 'publisher', e.target.value)}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                        placeholder="Publisher name"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {formData.participants.length > 0 && (
+              <div className="mt-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
+                <h3 className="text-yellow-400 font-semibold mb-2">Total Percentage</h3>
+                <p className="text-gray-300">
+                  Current total: {formData.participants.reduce((sum, p) => sum + p.percentage, 0)}%
+                  {formData.participants.reduce((sum, p) => sum + p.percentage, 0) !== 100 && (
+                    <span className="text-yellow-400 ml-2">(Should equal 100%)</span>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Co-signers Section */}
+          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-white">Co-signers (Optional)</h2>
+              <button
+                type="button"
+                onClick={addCoSigner}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                disabled={isSubmitting}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Add Co-signer
+              </button>
+            </div>
+            
+            {formData.coSigners.length === 0 ? (
+              <div className="text-center py-8">
+                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-300 mb-4">No co-signers added yet</p>
+                <p className="text-gray-400 text-sm">
+                  Co-signers will receive email invitations to sign the split sheet electronically.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {formData.coSigners.map((coSigner, index) => (
+                  <div key={coSigner.id} className="bg-gray-800/30 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-white font-semibold">Co-signer {index + 1}</h3>
+                      <button
+                        type="button"
+                        onClick={() => removeCoSigner(coSigner.id)}
+                        className="text-red-400 hover:text-red-300"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-300 mb-2">Name</label>
+                        <input
+                          type="text"
+                          value={coSigner.name}
+                          onChange={(e) => updateCoSigner(coSigner.id, 'name', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="Full name"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Email</label>
+                        <input
+                          type="email"
+                          value={coSigner.email}
+                          onChange={(e) => updateCoSigner(coSigner.id, 'email', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="email@example.com"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Role</label>
+                        <input
+                          type="text"
+                          value={coSigner.role}
+                          onChange={(e) => updateCoSigner(coSigner.id, 'role', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="e.g., Manager, Lawyer, etc."
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Step Navigation */}
           <div className="flex justify-between items-center pt-8">
             <button
@@ -1808,7 +2158,7 @@ export function TrackUploadForm() {
           </div>
 
           {/* Submit Button - Only show on last step */}
-          {currentStep === 5 && (
+          {currentStep === 7 && (
             <div className="pt-8 relative z-10">
               <button
                 type="submit"
