@@ -99,60 +99,70 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       if (subGenresError) throw subGenresError;
 
-      // Fetch instruments with categories
+      // Fetch instruments (using existing columns until migration is applied)
       const { data: instrumentsData, error: instrumentsError } = await supabase
         .from('instruments')
         .select(`
           id,
-          name,
-          display_name,
-          category
+          name
         `)
-        .order('category, display_name');
+        .order('name');
 
       if (instrumentsError) throw instrumentsError;
 
-      // Fetch media types with categories
+      // Fetch media types (using existing columns until migration is applied)
       const { data: mediaTypesData, error: mediaTypesError } = await supabase
         .from('media_types')
         .select(`
           id,
           name,
-          display_name,
-          category,
           description,
           parent_id,
           display_order
         `)
-        .order('category, display_order, name');
+        .order('display_order, name');
 
       if (mediaTypesError) throw mediaTypesError;
 
-      // Build full_name manually for hierarchical display
+      // Build full_name manually for hierarchical display and add fallback category/display_name
       const mediaTypesWithFullName = mediaTypesData?.map(mt => ({
         ...mt,
+        display_name: mt.name, // Use name as display_name until migration is applied
+        category: 'Other', // Use fallback category until migration is applied
         full_name: mt.parent_id 
           ? `${mediaTypesData.find(p => p.id === mt.parent_id)?.name || ''} > ${mt.name}`
           : mt.name
       })) || [];
 
-      // Fetch moods from the database
+      // Fetch moods from the database (using existing columns until migration is applied)
       const { data: moodsData, error: moodsError } = await supabase
         .from('moods')
         .select(`
           id,
-          name,
-          display_name,
-          category
+          name
         `)
-        .order('category, display_name');
+        .order('name');
 
       if (moodsError) throw moodsError;
 
       setGenres(genresData || []);
       setSubGenres(subGenresData || []);
-      setMoods(moodsData);
-      setInstruments(instrumentsData || []);
+      // Add fallback category and display_name to moods until migration is applied
+      const moodsWithFallbacks = moodsData?.map(mood => ({
+        ...mood,
+        display_name: mood.name, // Use name as display_name until migration is applied
+        category: 'Other' // Use fallback category until migration is applied
+      })) || [];
+      
+      setMoods(moodsWithFallbacks);
+      // Add fallback category and display_name to instruments until migration is applied
+      const instrumentsWithFallbacks = instrumentsData?.map(instrument => ({
+        ...instrument,
+        display_name: instrument.name, // Use name as display_name until migration is applied
+        category: 'Other' // Use fallback category until migration is applied
+      })) || [];
+      
+      setInstruments(instrumentsWithFallbacks);
       setMediaTypes(mediaTypesWithFullName);
 
     } catch (err) {
