@@ -264,7 +264,11 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const { error: updateError } = await supabase
         .from('tracks')
         .update({
-          genres: formattedGenres,
+          genres: formattedGenres.map(genreId => {
+            // If it's already a display name, keep it; otherwise convert from ID to display name
+            const genre = genres.find(g => g.id === genreId || g.display_name === genreId);
+            return genre?.display_name || genreId;
+          }),
           moods: validMoods,
           instruments: selectedInstruments,
           media_usage: selectedMediaUsage,
