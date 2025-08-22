@@ -792,6 +792,7 @@ export function TrackUploadForm() {
                 stems_url: stemsStoragePath || null,
                 split_sheet_url: splitSheetUploadedUrl || null,
                 has_vocals: formData.hasVocals,
+                vocals_usage_type: formData.isSyncOnly ? 'sync_only' : 'normal',
                 is_sync_only: formData.isSyncOnly,
                 explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
                 clean_version_of: null, // Set to null for now since we need to handle UUID properly
@@ -1852,7 +1853,8 @@ export function TrackUploadForm() {
                 <h2 className="text-xl font-semibold text-white mb-4">Vocals</h2>
                 
                 <div className="space-y-4">
-                  <label className="flex items-center space-x-2 text-gray-300">
+                  <div className="flex flex-col space-y-3">
+                    <label className="flex items-center space-x-2 text-gray-300">
                         <input
                           type="checkbox"
                       checked={formData.hasVocals}
@@ -1862,6 +1864,18 @@ export function TrackUploadForm() {
                         />
                     <span>Track contains vocals</span>
                       </label>
+                    
+                    <label className="flex items-center space-x-2 text-gray-300">
+                        <input
+                          type="checkbox"
+                      checked={formData.isSyncOnly}
+                      onChange={(e) => updateFormData({ isSyncOnly: e.target.checked })}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                    <span>Sync only (not available for regular licensing)</span>
+                      </label>
+                  </div>
                   
                   {formData.hasVocals && (
                     <div className="mt-2">
