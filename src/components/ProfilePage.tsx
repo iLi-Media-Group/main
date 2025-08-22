@@ -6,11 +6,26 @@ import { WhiteLabelClientProfile } from './WhiteLabelClientProfile';
 import { RightsHolderProfile } from './RightsHolderProfile';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 export function ProfilePage() {
-  const { accountType } = useUnifiedAuth();
+  const { user, accountType, loading } = useUnifiedAuth();
   const navigate = useNavigate();
   const [isProfileOpen, setIsProfileOpen] = useState(true);
+
+  // Handle loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
+      </div>
+    );
+  }
+
+  // Handle unauthenticated users
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const handleClose = () => {
     setIsProfileOpen(false);

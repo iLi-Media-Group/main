@@ -677,11 +677,9 @@ const App = () => {
 
         {/* Profile Route */}
         <Route path="/profile" element={
-          <ProtectedRoute>
-            <LayoutWrapper>
-              <ProfilePage />
-            </LayoutWrapper>
-          </ProtectedRoute>
+          <LayoutWrapper>
+            <ProfilePage />
+          </LayoutWrapper>
         } />
 
         <Route path="*" element={
