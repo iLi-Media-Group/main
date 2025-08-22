@@ -128,17 +128,18 @@ export function useDynamicSearchData(): DynamicSearchData {
           : mt.name
       })) || [];
 
-      // Use the existing working moods structure
-      const moodsData: DynamicMood[] = [
-        { id: '1', name: 'energetic', display_name: 'Energetic', category: 'Happy & Upbeat' },
-        { id: '2', name: 'peaceful', display_name: 'Peaceful', category: 'Calm & Relaxing' },
-        { id: '3', name: 'uplifting', display_name: 'Uplifting', category: 'Happy & Upbeat' },
-        { id: '4', name: 'dramatic', display_name: 'Dramatic', category: 'Epic & Heroic' },
-        { id: '5', name: 'romantic', display_name: 'Romantic', category: 'Romantic & Intimate' },
-        { id: '6', name: 'mysterious', display_name: 'Mysterious', category: 'Dark & Mysterious' },
-        { id: '7', name: 'funky', display_name: 'Funky', category: 'Groovy & Funky' },
-        { id: '8', name: 'melancholic', display_name: 'Melancholic', category: 'Sad & Melancholic' }
-      ];
+      // Fetch moods from the database
+      const { data: moodsData, error: moodsError } = await supabase
+        .from('moods')
+        .select(`
+          id,
+          name,
+          display_name,
+          category
+        `)
+        .order('category, display_name');
+
+      if (moodsError) throw moodsError;
 
       setGenres(genresData || []);
       setSubGenres(subGenresData || []);
