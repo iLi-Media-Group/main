@@ -792,7 +792,6 @@ export function TrackUploadForm() {
                 stems_url: stemsStoragePath || null,
                 split_sheet_url: splitSheetUploadedUrl || null,
                 has_vocals: formData.hasVocals,
-                vocals_usage_type: formData.isSyncOnly ? 'sync_only' : 'normal',
                 is_sync_only: formData.isSyncOnly,
                 explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
                 clean_version_of: null, // Set to null for now since we need to handle UUID properly
