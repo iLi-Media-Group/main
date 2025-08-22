@@ -277,10 +277,18 @@ export function RightsHolderUploadForm() {
     // Group instruments by category
     const categorizedInstruments: Record<string, string[]> = {};
     dynamicInstruments.forEach(instrument => {
-      if (!categorizedInstruments[instrument.category]) {
-        categorizedInstruments[instrument.category] = [];
+      // Normalize category name - capitalize first letter
+      const normalizedCategory = instrument.category.charAt(0).toUpperCase() + instrument.category.slice(1).toLowerCase();
+      
+      if (!categorizedInstruments[normalizedCategory]) {
+        categorizedInstruments[normalizedCategory] = [];
       }
-      categorizedInstruments[instrument.category].push(instrument.display_name);
+      // Normalize instrument name - capitalize first letter of each word
+      const normalizedName = instrument.display_name
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      categorizedInstruments[normalizedCategory].push(normalizedName);
     });
     
     return categorizedInstruments;
