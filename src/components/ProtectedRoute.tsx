@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { isAdminEmail } from '../lib/adminConfig';
 
 interface ProtectedRouteProps {
@@ -16,7 +16,7 @@ export function ProtectedRoute({
   requiresClient = false,
   requiresAdmin = false
 }: ProtectedRouteProps) {
-  const { user, loading, accountType } = useAuth();
+  const { user, loading, accountType } = useUnifiedAuth();
 
   if (loading) {
     return (

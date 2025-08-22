@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, KeyRound, Video, Camera, Film } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { VideoBackground } from './VideoBackground';
@@ -10,7 +10,7 @@ export function ProducerLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn } = useUnifiedAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

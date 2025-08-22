@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, KeyRound, Music, Headphones, Mic } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
@@ -13,7 +13,7 @@ export function ClientLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn } = useUnifiedAuth();
   const navigate = useNavigate();
   
   // Get redirect and product info from URL params
