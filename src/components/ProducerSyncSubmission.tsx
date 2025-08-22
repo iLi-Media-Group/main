@@ -1,13 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Dialog } from './ui/dialog';
 import { AudioPlayer } from './AudioPlayer'; // Added import for AudioPlayer
 
 export default function ProducerSyncSubmission() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const location = useLocation();
   const [mp3File, setMp3File] = useState<File | null>(null);
   const [hasStems, setHasStems] = useState(false);

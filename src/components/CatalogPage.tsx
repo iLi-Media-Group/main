@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Sliders, Plus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
@@ -309,7 +309,7 @@ const savePersistentFilters = (filters: any): void => {
 };
 
 export function CatalogPage() {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState<Track[]>([]);

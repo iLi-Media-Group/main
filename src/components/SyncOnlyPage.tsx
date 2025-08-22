@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Sliders, Plus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
@@ -12,7 +12,7 @@ import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 const TRACKS_PER_PAGE = 20;
 
 export function SyncOnlyPage() {
-  const { user, membershipPlan, accountType } = useAuth();
+  const { user, membershipPlan, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);

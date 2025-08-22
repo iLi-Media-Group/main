@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download, CheckCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
@@ -36,7 +36,7 @@ interface SyncSubmission {
 }
 
 export default function CustomSyncRequestSubs() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [requests, setRequests] = useState<CustomSyncRequest[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, SyncSubmission[]>>({});
   const [loading, setLoading] = useState(true);

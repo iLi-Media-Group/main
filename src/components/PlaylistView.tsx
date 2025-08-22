@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { PlaylistService } from '../lib/playlistService';
 import { PlaylistWithTracks } from '../types/playlist';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { AudioPlayer } from './AudioPlayer';
 import { parseArrayField } from '../lib/utils';
 import { LoginModal } from './LoginModal';
@@ -53,7 +53,7 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
 export function PlaylistView() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

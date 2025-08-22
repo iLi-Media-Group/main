@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, Music, FileText, Archive, FileAudio } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
@@ -11,7 +11,7 @@ interface CustomSyncUploadPageProps {
 }
 
 export function CustomSyncUploadPage({ requestId }: CustomSyncUploadPageProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   

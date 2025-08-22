@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { uploadFile } from '../lib/storage';
 
 const COLOR_FIELDS = [
@@ -11,7 +11,7 @@ const COLOR_FIELDS = [
 ];
 
 export default function ClientBrandingSettings() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [client, setClient] = useState<any>(null);
   const [form, setForm] = useState<any>({});
   const [logoFile, setLogoFile] = useState<File | null>(null);

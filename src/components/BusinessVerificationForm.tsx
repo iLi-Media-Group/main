@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
@@ -17,7 +17,7 @@ interface BusinessInfo {
 }
 
 export function BusinessVerificationForm() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [businessInfo, setBusinessInfo] = useState<BusinessInfo>({
     business_name: '',
     business_structure: '',

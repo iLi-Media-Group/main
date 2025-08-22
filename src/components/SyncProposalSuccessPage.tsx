@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Music, Calendar, DollarSign, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface SyncProposalData {
   id: string;
@@ -29,7 +29,7 @@ interface SyncProposalData {
 export function SyncProposalSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [loading, setLoading] = useState(true);
   const [proposalData, setProposalData] = useState<SyncProposalData | null>(null);
   const [error, setError] = useState<string | null>(null);

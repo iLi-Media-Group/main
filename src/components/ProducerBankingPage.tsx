@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Target } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useProducerBalancesRealTime } from '../hooks/useRealTimeUpdates';
 import { BankAccountForm } from './BankAccountForm';
 import { WithdrawalRequestForm } from './WithdrawalRequestForm';
@@ -35,7 +35,7 @@ interface BankAccount {
 }
 
 export function ProducerBankingPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [balance, setBalance] = useState(0);
   const [pendingBalance, setPendingBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);

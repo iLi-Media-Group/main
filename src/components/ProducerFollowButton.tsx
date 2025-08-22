@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, HeartOff, Bell, BellOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface ProducerFollowButtonProps {
   producerId: string;
@@ -15,7 +15,7 @@ interface FollowStatus {
 }
 
 export function ProducerFollowButton({ producerId, producerName, className = '' }: ProducerFollowButtonProps) {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const [followStatus, setFollowStatus] = useState<FollowStatus>({ isFollowing: false, emailNotificationsEnabled: false });
   const [loading, setLoading] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { WalletSettings } from '../components/WalletSettings';
 import { format } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 export function ProducerPayouts() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Info, Check, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { createCheckoutSession } from '../lib/stripe';
 import { PRODUCTS } from '../stripe-config';
-import { useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 // Custom hook to fetch sync proposal details by trackId
@@ -32,7 +31,7 @@ interface LicenseTermsSummaryProps {
 }
 
 export function LicenseTermsSummary({ licenseType, onAccept, trackId }: LicenseTermsSummaryProps) {
-  const { membershipPlan } = useAuth();
+  const { membershipPlan } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

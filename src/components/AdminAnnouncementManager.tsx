@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Calendar, Youtube, Sparkles, Bell, ExternalLink, Image, Loader2, AlertTriangle, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { sanitizeHtml } from '../utils/sanitize';
 
 interface Announcement {
@@ -27,7 +27,7 @@ interface AnnouncementFormProps {
 const FORM_STORAGE_KEY = 'announcement_form_data';
 
 function AnnouncementForm({ isOpen, onClose, announcement, onSave }: AnnouncementFormProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [type, setType] = useState<'feature' | 'event' | 'youtube' | 'general'>('general');
@@ -519,6 +519,7 @@ function AnnouncementForm({ isOpen, onClose, announcement, onSave }: Announcemen
 }
 
 export function AdminAnnouncementManager() {
+  const { user } = useUnifiedAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

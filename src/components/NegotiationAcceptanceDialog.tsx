@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Check, XCircle, DollarSign, Calendar, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface Proposal {
   id: string;
@@ -51,7 +52,7 @@ export function NegotiationAcceptanceDialog({
   const [acceptanceStatus, setAcceptanceStatus] = useState<AcceptanceStatus>('pending');
   const [waitingMessage, setWaitingMessage] = useState('');
   
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
 
   if (!isOpen) return null;
 

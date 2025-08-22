@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, AlertCircle, FileText, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { LicenseTermsSummary } from './LicenseTermsSummary';
@@ -49,7 +49,7 @@ export function LicenseDialog({
   remainingLicenses,
   onLicenseCreated
 }: LicenseDialogProps) {
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership } = useUnifiedAuth();
   const [step, setStep] = useState<'terms' | 'profile' | 'confirm'>('terms');
   const [profile, setProfile] = useState<ProfileInfo | null>(null);
   const [loading, setLoading] = useState(false);

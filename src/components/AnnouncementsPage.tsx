@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Link } from 'react-router-dom';
 import { sanitizeHtml } from '../utils/sanitize';
 import { isAdminEmail } from '../lib/adminConfig';
@@ -95,7 +95,7 @@ const YouTubeThumbnail = ({ url, title, className = "" }: { url: string; title: 
 };
 
 function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -209,7 +209,7 @@ export function AnnouncementsPage() {
   const [filter, setFilter] = useState<'all' | 'feature' | 'event' | 'youtube'>('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
 
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {

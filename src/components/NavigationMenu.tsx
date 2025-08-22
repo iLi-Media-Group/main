@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, ShoppingCart, User, Plus, Settings, Bell } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useEffect, useRef } from 'react';
 import { fetchNotifications } from '../api/renewal';
 import { supabase } from '../lib/supabase';
 
 export function NavigationMenu() {
-  const { accountType, user } = useAuth();
+  const { accountType, user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);

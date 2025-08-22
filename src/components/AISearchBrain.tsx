@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, Clock, Lightbulb, X, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useServiceLevel } from '../hooks/useServiceLevel';
 import { logSearchQuery } from '../lib/searchLogger';
 
@@ -23,7 +23,7 @@ export default function AISearchBrain({ onSearchApply, className = '' }: AISearc
   const [recentSearches, setRecentSearches] = useState<SearchInsight[]>([]);
   const [suggestedSearches, setSuggestedSearches] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const { hasAISearch, level } = useServiceLevel();
 
   // Check if user has access to AI Search Brain

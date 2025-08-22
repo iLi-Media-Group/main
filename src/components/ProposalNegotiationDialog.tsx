@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Clock, DollarSign, Check, X as XIcon, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface ProposalNegotiationDialogProps {
   isOpen: boolean;
@@ -32,7 +32,7 @@ const PAYMENT_TERMS_OPTIONS = [
 ];
 
 export function ProposalNegotiationDialog({ isOpen, onClose, proposal: initialProposal, onNegotiationSent }: ProposalNegotiationDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [proposal, setProposal] = useState(initialProposal);
   const [messages, setMessages] = useState<NegotiationMessage[]>([]);
   const [message, setMessage] = useState('');

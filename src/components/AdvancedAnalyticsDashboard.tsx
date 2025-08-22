@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { CalendarDays, FileText, Download, TrendingUp, AlertTriangle, Sparkles, BarChart3, Users, DollarSign, Music, Eye, Target, X, Maximize2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { CalendarDays, FileText, Download, TrendingUp, AlertTriangle, Sparkles, BarChart3, Users, DollarSign, Music, Eye, Target, X, Maximize2, Calendar, Filter, PieChart, LineChart, Activity, Award, Clock, ArrowUpRight, ArrowDownRight, Loader2, CheckCircle } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { supabase } from '../lib/supabase';
 import { jsPDF } from 'jspdf';
@@ -92,7 +93,7 @@ interface AdvancedAnalyticsDashboardProps {
 }
 
 export function AdvancedAnalyticsDashboard({ logoUrl, companyName, domain, email }: AdvancedAnalyticsDashboardProps) {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const { isEnabled: hasAnalyticsAccess, loading: featureLoading } = useFeatureFlag('advanced_analytics');
   const [selectedGenre, setSelectedGenre] = useState('all');
   const [selectedRange, setSelectedRange] = useState('last_30_days');

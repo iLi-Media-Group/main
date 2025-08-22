@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, User, Music } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Link } from 'react-router-dom';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 
@@ -16,7 +16,7 @@ interface FollowedProducer {
 }
 
 export function Following() {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const [followedProducers, setFollowedProducers] = useState<FollowedProducer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

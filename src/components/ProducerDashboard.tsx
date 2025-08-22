@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { parseArrayField } from '../lib/utils';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useTracksRealTime, useProducerProposalsRealTime, useProducerCustomSyncRealTime } from '../hooks/useRealTimeUpdates';
@@ -203,7 +203,7 @@ const getPaymentTermsDisplay = (paymentTerms: string): string => {
 
 export function ProducerDashboard() {
   console.log('🎵 ProducerDashboard component loaded');
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState<Track[]>([]);

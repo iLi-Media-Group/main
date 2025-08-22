@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Download, FileText, Globe, BookOpen, File, ExternalLink } from 'lucide-react';
 import { sanitizeHtml } from '../utils/sanitize';
 
@@ -55,7 +55,7 @@ const categories: CategoryInfo[] = [
 ];
 
 export const ProducerResourcesPage: React.FC = () => {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

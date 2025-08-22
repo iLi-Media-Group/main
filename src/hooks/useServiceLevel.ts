@@ -1,6 +1,6 @@
-import { useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { WhiteLabelFeatureFlagsContext } from '../contexts/WhiteLabelFeatureFlagsContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 export type ServiceLevel = 'normal' | 'ai_search' | 'deep_media' | 'both';
 
@@ -16,7 +16,7 @@ export interface ServiceLevelInfo {
 
 export function useServiceLevel(): ServiceLevelInfo {
   const flags = useContext(WhiteLabelFeatureFlagsContext);
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   
   // MyBeatFi.io users (admin, clients) always have full access
   const isMyBeatFiUser = !flags || accountType === 'admin' || accountType === 'client';

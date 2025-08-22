@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Upload, FileText, Globe, BookOpen, File, Trash2, Edit, Plus, X } from 'lucide-react';
 import { sanitizeHtml } from '../utils/sanitize';
 import { useSecurity } from '../hooks/useSecurity';
@@ -56,7 +56,7 @@ const categories: CategoryInfo[] = [
 ];
 
 export const AdminResourceManager: React.FC = () => {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const { validateFile, secureFileUpload, logSecurityViolation } = useSecurity();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);

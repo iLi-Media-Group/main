@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Clock, DollarSign, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Track } from '../types';
 
 
@@ -14,7 +14,7 @@ interface SyncProposalDialogProps {
 }
 
 export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncProposalDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [projectType, setProjectType] = useState('');
   const [duration, setDuration] = useState('');

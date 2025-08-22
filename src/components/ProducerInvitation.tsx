@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Send, Loader2, Hash, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 
 export function ProducerInvitation() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   

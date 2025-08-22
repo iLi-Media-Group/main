@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download, FileText, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useSiteBranding } from '../contexts/SiteBrandingContext';
 import { supabase } from '../lib/supabase';
 import { pdf } from '@react-pdf/renderer';
@@ -28,7 +28,7 @@ interface LicenseDetails {
 
 export function LicenseAgreement() {
   const { licenseId } = useParams();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [license, setLicense] = useState<LicenseDetails | null>(null);
   const [loading, setLoading] = useState(true);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface RealTimeConfig {
   tables: string[];
@@ -11,7 +11,7 @@ interface RealTimeConfig {
 }
 
 export function useRealTimeUpdates(config: RealTimeConfig) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const channelRef = useRef<any>(null);
 
   const setupSubscription = useCallback(() => {
@@ -81,7 +81,7 @@ export function useRealTimeUpdates(config: RealTimeConfig) {
 
 // Specific hooks for common use cases
 export function useTracksRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['tracks'],
@@ -95,7 +95,7 @@ export function useTracksRealTime(onUpdate: (payload: any) => void) {
 }
 
 export function useSalesRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['sales'],
@@ -109,7 +109,7 @@ export function useSalesRealTime(onUpdate: (payload: any) => void) {
 }
 
 export function useSyncProposalsRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['sync_proposals'],
@@ -123,7 +123,7 @@ export function useSyncProposalsRealTime(onUpdate: (payload: any) => void) {
 }
 
 export function useCustomSyncRequestsRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['custom_sync_requests'],
@@ -137,7 +137,7 @@ export function useCustomSyncRequestsRealTime(onUpdate: (payload: any) => void) 
 }
 
 export function useProducerProposalsRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['sync_proposals'],
@@ -151,7 +151,7 @@ export function useProducerProposalsRealTime(onUpdate: (payload: any) => void) {
 }
 
 export function useProducerCustomSyncRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['custom_sync_requests'],
@@ -165,7 +165,7 @@ export function useProducerCustomSyncRealTime(onUpdate: (payload: any) => void) 
 }
 
 export function useProfileRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['profiles'],
@@ -179,7 +179,7 @@ export function useProfileRealTime(onUpdate: (payload: any) => void) {
 }
 
 export function useProducerBalancesRealTime(onUpdate: (payload: any) => void) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   
   return useRealTimeUpdates({
     tables: ['producer_balances'],

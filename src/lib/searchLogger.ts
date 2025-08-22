@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import { useAuth } from '../contexts/AuthContext';
 
 export interface SearchQuery {
   query: string;

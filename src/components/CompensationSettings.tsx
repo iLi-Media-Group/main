@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Percent, DollarSign, Save, Loader2, AlertTriangle, Clock, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { MembershipCompensationPlan } from './MembershipCompensationPlan';
 
 export function CompensationSettings() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [standardRate, setStandardRate] = useState(75); // Updated to 75%
   const [exclusiveRate, setExclusiveRate] = useState(80);
   const [syncFeeRate, setSyncFeeRate] = useState(90); // Updated to 90%

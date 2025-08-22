@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
 import { User, Mail, X, MapPin, Upload, Loader2, Building2, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ChangePasswordModal } from './ChangePasswordModal';
 
@@ -12,7 +12,7 @@ interface ClientProfileProps {
 }
 
 export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [displayName, setDisplayName] = useState('');

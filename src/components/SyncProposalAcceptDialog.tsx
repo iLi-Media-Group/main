@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, AlertTriangle, DollarSign, Calendar, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { createCheckoutSession } from '../lib/stripe';
 
 interface SyncProposalAcceptDialogProps {
@@ -17,7 +17,7 @@ export function SyncProposalAcceptDialog({
   proposal,
   onAccept
 }: SyncProposalAcceptDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [waitingMessage, setWaitingMessage] = useState<string | null>(null);

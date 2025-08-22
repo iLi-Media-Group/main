@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PlaylistService } from '../lib/playlistService';
 import { Playlist, CreatePlaylistData, UpdatePlaylistData } from '../types/playlist';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 
 interface PlaylistManagerProps {
@@ -23,7 +23,7 @@ interface PlaylistManagerProps {
 }
 
 export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loading, setLoading] = useState(true);

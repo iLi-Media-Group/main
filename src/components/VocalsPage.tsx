@@ -5,12 +5,12 @@ import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { TrackCard } from './TrackCard';
 import { SearchBox } from './SearchBox';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 export function VocalsPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);

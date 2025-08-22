@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Calendar, Download, CheckCircle, Clock, Filter, ArrowUpDown, Loader2, Search, Wallet } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface ProducerPayout {
   id: string;
@@ -160,7 +160,7 @@ function PayoutDetailDialog({ isOpen, onClose, payout, onMarkAsPaid }: PayoutDet
 }
 
 export function ProducerPayoutsPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [payouts, setPayouts] = useState<ProducerPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

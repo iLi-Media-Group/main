@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useContext } from 'react';
+import { WhiteLabelFeatureFlagsContext } from '../contexts/WhiteLabelFeatureFlagsContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
-export function useFeatureFlag(featureName: string) {
-  const { user } = useAuth();
+export function useFeatureFlag(flagName: string): boolean {
+  const flags = useContext(WhiteLabelFeatureFlagsContext);
+  const { user } = useUnifiedAuth();
   const [isEnabled, setIsEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
 

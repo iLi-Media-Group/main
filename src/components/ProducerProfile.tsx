@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
 import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -14,7 +14,7 @@ interface ProducerProfileProps {
 }
 
 export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerProfileProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [displayName, setDisplayName] = useState('');
