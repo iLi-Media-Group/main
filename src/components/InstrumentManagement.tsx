@@ -5,46 +5,44 @@ import { supabase } from '../lib/supabase';
 interface Instrument {
   id: string;
   name: string;
-  display_name: string;
+  category: string;
   created_at: string;
   updated_at: string;
 }
 
-interface SubInstrument {
+interface InstrumentCategory {
   id: string;
-  instrument_id: string;
   name: string;
-  display_name: string;
   created_at: string;
   updated_at: string;
 }
 
-interface InstrumentWithSubInstruments extends Instrument {
-  sub_instruments: SubInstrument[];
+interface InstrumentWithCategory extends Instrument {
+  category_name: string;
 }
 
 export function InstrumentManagement() {
-  const [instruments, setInstruments] = useState<InstrumentWithSubInstruments[]>([]);
+  const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
+  const [categories, setCategories] = useState<InstrumentCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAddInstrumentModal, setShowAddInstrumentModal] = useState(false);
-  const [showAddSubInstrumentModal, setShowAddSubInstrumentModal] = useState(false);
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
   const [editingInstrument, setEditingInstrument] = useState<Instrument | null>(null);
-  const [editingSubInstrument, setEditingSubInstrument] = useState<SubInstrument | null>(null);
-  const [selectedInstrumentForSubInstrument, setSelectedInstrumentForSubInstrument] = useState<Instrument | null>(null);
+  const [editingCategory, setEditingCategory] = useState<InstrumentCategory | null>(null);
   
   const [newInstrument, setNewInstrument] = useState({
     name: '',
-    display_name: ''
+    category: ''
   });
   
-  const [newSubInstrument, setNewSubInstrument] = useState({
-    name: '',
-    display_name: ''
+  const [newCategory, setNewCategory] = useState({
+    name: ''
   });
 
   useEffect(() => {
     fetchInstruments();
+    fetchCategories();
   }, []);
 
   const fetchInstruments = async () => {
@@ -55,15 +53,18 @@ export function InstrumentManagement() {
       // Fetch instruments with their category info
       const { data: instrumentsData, error: instrumentsError } = await supabase
         .from('instruments')
-        .select('*')
-        .order('display_name');
+        .select(`
+          *,
+          instrument_categories!inner(name)
+        `)
+        .order('category, name');
 
       if (instrumentsError) throw instrumentsError;
       
-      // Transform the data to match the expected interface
+      // Transform the data to include category name
       const instrumentsWithCategory = (instrumentsData || []).map(instrument => ({
         ...instrument,
-        sub_instruments: [] // Empty array since we don't have sub_instruments table
+        category_name: instrument.instrument_categories?.name || instrument.category
       }));
       
       setInstruments(instrumentsWithCategory);
@@ -75,10 +76,32 @@ export function InstrumentManagement() {
     }
   };
 
+  const fetchCategories = async () => {
+    try {
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('instrument_categories')
+        .select('*')
+        .order('name');
+
+      if (categoriesError) throw categoriesError;
+      setCategories(categoriesData || []);
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+    }
+  };
+
   const createInstrument = async () => {
     try {
-      if (!newInstrument.name.trim() || !newInstrument.display_name.trim()) {
+      if (!newInstrument.name.trim() || !newInstrument.category.trim()) {
         setError('Please fill in all fields');
+        return;
+      }
+
+      // Find the category ID
+      const category = categories.find(cat => cat.name === newInstrument.category);
+      if (!category) {
+        setError('Selected category not found');
         return;
       }
 
@@ -86,12 +109,12 @@ export function InstrumentManagement() {
         .from('instruments')
         .insert({
           name: newInstrument.name.toLowerCase().replace(/\s+/g, '_'),
-          display_name: newInstrument.display_name
+          category: category.id
         });
 
       if (error) throw error;
 
-      setNewInstrument({ name: '', display_name: '' });
+      setNewInstrument({ name: '', category: '' });
       setShowAddInstrumentModal(false);
       fetchInstruments();
     } catch (err) {
@@ -102,8 +125,15 @@ export function InstrumentManagement() {
 
   const updateInstrument = async (instrument: Instrument) => {
     try {
-      if (!instrument.name.trim() || !instrument.display_name.trim()) {
+      if (!instrument.name.trim() || !instrument.category.trim()) {
         setError('Please fill in all fields');
+        return;
+      }
+
+      // Find the category ID
+      const category = categories.find(cat => cat.name === instrument.category);
+      if (!category) {
+        setError('Selected category not found');
         return;
       }
 
@@ -111,7 +141,7 @@ export function InstrumentManagement() {
         .from('instruments')
         .update({
           name: instrument.name.toLowerCase().replace(/\s+/g, '_'),
-          display_name: instrument.display_name,
+          category: category.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', instrument.id);

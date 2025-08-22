@@ -203,14 +203,7 @@ export function useDynamicSearchData(): DynamicSearchData {
 
       setGenres(genresData || []);
       setSubGenres(subGenresData || []);
-      // Add fallback category and display_name to moods until migration is applied
-      const moodsWithFallbacks = moodsData?.map(mood => ({
-        ...mood,
-        display_name: mood.name, // Use name as display_name until migration is applied
-        category: 'Other' // Use fallback category until migration is applied
-      })) || [];
-      
-      setMoods(moodsWithFallbacks);
+      setMoods(moodsData || []);
       // Use the actual category from the database
       const instrumentsWithCategories = instrumentsData?.map(instrument => ({
         ...instrument,

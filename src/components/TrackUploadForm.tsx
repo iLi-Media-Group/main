@@ -226,10 +226,9 @@ export function TrackUploadForm() {
       return Object.keys(MOODS_CATEGORIES);
     }
     
-    // Return only main mood categories (where category === display_name)
-    return dynamicMoods
-      .filter(mood => mood.category === mood.display_name)
-      .map(mood => mood.display_name);
+    // Get unique categories from the moods data
+    const categories = [...new Set(dynamicMoods.map(mood => mood.category))];
+    return categories;
   };
 
   // Get sub-moods for a specific main mood category
@@ -238,8 +237,9 @@ export function TrackUploadForm() {
       return MOODS_CATEGORIES[categoryName] || [];
     }
     
+    // Get all moods that belong to this category but are not the main category itself
     return dynamicMoods
-      .filter(mood => mood.category === categoryName && mood.id !== mood.category)
+      .filter(mood => mood.category === categoryName && mood.name !== mood.category)
       .map(mood => mood.name);
   };
 
