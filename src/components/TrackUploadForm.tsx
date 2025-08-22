@@ -1437,96 +1437,62 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="space-y-3">
-                  {Object.entries(getMoodsCategories()).map(([category, moods]) => {
-                    const categoryMoodsSelected = moods.filter(mood => formData.selectedMoods.includes(mood));
-                    const isExpanded = expandedMoodCategories.has(category);
-                    
+                  {/* Main Moods */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.keys(getMoodsCategories()).map((category) => (
+                      <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedMoods.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData({ 
+                                selectedMoods: [...formData.selectedMoods, category]
+                              });
+                            } else {
+                              updateFormData({
+                                selectedMoods: formData.selectedMoods.filter(m => m !== category)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm font-medium">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Sub-moods for selected main moods */}
+                  {formData.selectedMoods.filter(mood => Object.keys(getMoodsCategories()).includes(mood)).map((selectedCategory) => {
+                    const subMoods = getMoodsCategories()[selectedCategory] || [];
                     return (
-                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
-                        {/* Category Header */}
-                        <div className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2">
+                      <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                        <h3 className="text-lg font-medium text-white mb-3">{selectedCategory} - Sub-moods</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {subMoods.map((subMood) => (
+                            <label key={subMood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
                               <input
                                 type="checkbox"
-                                checked={categoryMoodsSelected.length === moods.length}
+                                checked={formData.selectedMoods.includes(subMood)}
                                 onChange={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
                                   if (e.target.checked) {
-                                    // Select all moods in this category
-                                    const newMoods = [...formData.selectedMoods];
-                                    moods.forEach(mood => {
-                                      if (!newMoods.includes(mood)) {
-                                        newMoods.push(mood);
-                                      }
+                                    updateFormData({ 
+                                      selectedMoods: [...formData.selectedMoods, subMood]
                                     });
-                                    updateFormData({ selectedMoods: newMoods });
                                   } else {
-                                    // Deselect all moods in this category
                                     updateFormData({
-                                      selectedMoods: formData.selectedMoods.filter(mood => !moods.includes(mood))
+                                      selectedMoods: formData.selectedMoods.filter(m => m !== subMood)
                                     });
                                   }
-                                }}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={isSubmitting}
                               />
-                              <button
-                                type="button"
-                                onClick={() => toggleMoodCategory(category)}
-                                className="flex items-center space-x-2 hover:text-blue-300 transition-colors"
-                                disabled={isSubmitting}
-                              >
-                                <span className="font-medium text-white">{category}</span>
-                                {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4 text-gray-300" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4 text-gray-300" />
-                                )}
-                              </button>
-                            </div>
-                            {categoryMoodsSelected.length > 0 && (
-                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                {categoryMoodsSelected.length}/{moods.length}
-                              </span>
-                            )}
-                          </div>
+                              <span className="text-sm capitalize">{subMood}</span>
+                            </label>
+                          ))}
                         </div>
-                        
-                        {/* Collapsible Mood List */}
-                        {isExpanded && (
-                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                              {moods.map((mood) => (
-                                <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.selectedMoods.includes(mood)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        updateFormData({ 
-                                          selectedMoods: [...formData.selectedMoods, mood]
-                                        });
-                                      } else {
-                                        updateFormData({
-                                          selectedMoods: formData.selectedMoods.filter(m => m !== mood)
-                                        });
-                                      }
-                                    }}
-                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                    disabled={isSubmitting}
-                                  />
-                                  <span className="text-sm capitalize">{mood}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
