@@ -941,23 +941,21 @@ export function TrackUploadForm() {
       if (trackFetchError) throw trackFetchError;
 
       // Insert music rights information into music_rights table
-      // TODO: Fix table name - temporarily commented out due to 404 error
-      /*
       if (trackData?.id) {
         const musicRightsData = {
           track_id: trackData.id,
           producer_id: user.id,
-          master_rights_owner: formData.masterRightsOwner,
-          publishing_rights_owner: formData.publishingRightsOwner,
+          master_rights_owner: formData.masterRightsOwner || null,
+          publishing_rights_owner: formData.publishingRightsOwner || null,
           rights_holder_name: formData.rightsHolderName || null,
-          rights_holder_type: formData.rightsHolderType,
+          rights_holder_type: formData.rightsHolderType || null,
           rights_holder_email: formData.rightsHolderEmail || null,
           rights_holder_phone: formData.rightsHolderPhone || null,
           rights_holder_address: formData.rightsHolderAddress || null,
           split_sheet_url: splitSheetUploadedUrl || null,
-          participants: formData.participants,
-          co_signers: formData.coSigners,
-          rights_declaration_accepted: formData.rightsDeclarationAccepted,
+          participants: formData.participants || [],
+          co_signers: formData.coSigners || [],
+          rights_declaration_accepted: formData.rightsDeclarationAccepted || false,
           rights_declaration_accepted_at: formData.rightsDeclarationAccepted ? new Date().toISOString() : null
         };
 
@@ -973,7 +971,6 @@ export function TrackUploadForm() {
           console.log('[DEBUG] Music rights inserted successfully for track:', trackData.id);
         }
       }
-      */
 
       // Insert instruments into track_instruments table if any are selected
       if (formData.selectedInstruments.length > 0 && trackData?.id) {
