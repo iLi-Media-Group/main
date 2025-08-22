@@ -44,9 +44,10 @@ interface FormData {
   key: string;
   hasStingEnding: boolean;
   isOneStop: boolean;
-  selectedGenres: string[];
-  selectedSubGenres: string[];
-  selectedMoods: string[];
+  genre: string;
+  subGenre: string;
+  mood: string;
+  subMood: string;
   selectedInstruments: string[];
   selectedMediaUsage: string[];
   mp3Url: string;
@@ -114,9 +115,10 @@ export function TrackUploadForm() {
     key: '',
     hasStingEnding: false,
     isOneStop: false,
-    selectedGenres: [] as string[],
-    selectedSubGenres: [] as string[],
-    selectedMoods: [] as string[],
+    genre: '',
+    subGenre: '',
+    mood: '',
+    subMood: '',
     selectedInstruments: [] as string[],
     selectedMediaUsage: [] as string[],
     mp3Url: '',
@@ -208,7 +210,7 @@ export function TrackUploadForm() {
       case 2:
         return !!audioFile;
       case 3:
-        return formData.selectedGenres.length > 0 && formData.selectedMoods.length > 0;
+        return !!formData.genre && !!formData.mood;
       case 4:
         return formData.selectedInstruments.length > 0 && formData.selectedMediaUsage.length > 0;
       case 5:
@@ -501,20 +503,8 @@ export function TrackUploadForm() {
         throw new Error('Please provide a valid BPM value between 1 and 999');
       }
 
-      if (!formData.selectedGenres.length) {
-        throw new Error('Please select at least one genre');
-      }
-
-      // Validate and format genres - use display names for database storage
-      const formattedGenres = formData.selectedGenres
-        .map(genreName => {
-          const genre = genres.find(g => g.display_name === genreName);
-          return genre ? genre.display_name : genreName;
-        })
-        .filter(Boolean);
-
-      if (formattedGenres.length === 0) {
-        throw new Error('At least one valid genre is required');
+      if (!formData.genre) {
+        throw new Error('Please select a genre');
       }
 
       const audioPath = await uploadFile(
@@ -591,9 +581,9 @@ export function TrackUploadForm() {
         track_producer_id: user.id,
         title: formData.title,
         artist: user.email?.split('@')[0] || 'Unknown Artist',
-        genres: formData.selectedGenres,
-        sub_genres: formData.selectedSubGenres,
-        moods: formData.selectedMoods,
+        genres: formData.genre,
+        sub_genres: formData.subGenre,
+        moods: formData.mood,
         instruments: formData.selectedInstruments || [],
         bpm: bpmNumber,
         key: formData.key,
@@ -1349,62 +1339,40 @@ export function TrackUploadForm() {
           {/* Genres Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
-            <div className="space-y-4">
-              {(genres || []).map((genre) => (
-                <div key={genre.id} className="space-y-2">
-                  <label className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.selectedGenres.includes(genre.name)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          updateFormData({ 
-                            selectedGenres: [...formData.selectedGenres, genre.name]
-                          });
-                        } else {
-                          updateFormData({
-                            selectedGenres: formData.selectedGenres.filter(g => g !== genre.name)
-                          });
-                        }
-                      }}
-                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                      disabled={isSubmitting}
-                    />
-                    <span className="text-sm font-medium">{genre.display_name}</span>
-                  </label>
-                  
-                  {/* Show sub-genres when genre is selected */}
-                  {formData.selectedGenres.includes(genre.name) && genre.sub_genres && genre.sub_genres.length > 0 && (
-                    <div className="ml-6 space-y-2">
-                      <h4 className="text-sm text-gray-400 font-medium">Sub-genres:</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        {genre.sub_genres.map((subGenre) => (
-                          <label key={subGenre.id} className="flex items-center space-x-2 text-gray-400 hover:text-gray-300 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedSubGenres.includes(subGenre.name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  updateFormData({ 
-                                    selectedSubGenres: [...formData.selectedSubGenres, subGenre.name]
-                                  });
-                                } else {
-                                  updateFormData({
-                                    selectedSubGenres: formData.selectedSubGenres.filter(sg => sg !== subGenre.name)
-                                  });
-                                }
-                              }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                              disabled={isSubmitting}
-                            />
-                            <span className="text-xs">{subGenre.display_name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Genre</label>
+                <select
+                  value={formData.genre}
+                  onChange={(e) => updateFormData({ genre: e.target.value, subGenre: '' })}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  disabled={isSubmitting || genresLoading}
+                >
+                  <option value="">Select genre</option>
+                  {(genres || []).map((genre) => (
+                    <option key={genre.id} value={genre.id}>
+                      {genre.display_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Sub-Genre</label>
+                <select
+                  value={formData.subGenre}
+                  onChange={(e) => updateFormData({ subGenre: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                  disabled={isSubmitting || !formData.genre}
+                >
+                  <option value="">Select sub-genre</option>
+                  {formData.genre && (genres || []).find(g => g.id === formData.genre)?.sub_genres?.map((subGenre) => (
+                    <option key={subGenre.id} value={subGenre.id}>
+                      {subGenre.display_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
