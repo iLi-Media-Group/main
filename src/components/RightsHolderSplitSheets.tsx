@@ -84,27 +84,48 @@ export function RightsHolderSplitSheets() {
     setError(null);
 
     try {
-      // Fetch split sheets with related data from tracks table
-      const { data: splitSheetsData, error: splitSheetsError } = await supabase
-        .from('split_sheets')
+      // Fetch tracks that have split sheet information
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
         .select(`
-          *,
-          track:tracks (
-            title,
-            artist,
-            genres
-          ),
-          split_sheet_participants (*),
-          co_signers (*)
+          id,
+          title,
+          artist,
+          genres,
+          split_sheet_url,
+          created_at,
+          updated_at
         `)
-        .eq('rights_holder_id', user.id)
+        .eq('track_producer_id', user.id)
+        .not('split_sheet_url', 'is', null)
         .order('created_at', { ascending: false });
 
-      if (splitSheetsError) throw splitSheetsError;
+      if (tracksError) {
+        console.error('Error fetching tracks with split sheets:', tracksError);
+        setError('Failed to load split sheets');
+        return;
+      }
 
-      setSplitSheets(splitSheetsData || []);
-    } catch (err) {
-      console.error('Error fetching split sheets:', err);
+      // Transform tracks data to match SplitSheet interface
+      const transformedSplitSheets: SplitSheet[] = (tracksData || []).map(track => ({
+        id: track.id,
+        track_id: track.id,
+        rights_holder_id: user.id,
+        status: 'completed' as const, // Default status since we don't have this in tracks table
+        created_at: track.created_at,
+        updated_at: track.updated_at,
+        track: {
+          title: track.title,
+          artist: track.artist,
+          genres: Array.isArray(track.genres) ? track.genres : []
+        },
+        participants: [], // We don't have participants data in tracks table
+        co_signers: [] // We don't have co-signers data in tracks table
+      }));
+
+      setSplitSheets(transformedSplitSheets);
+    } catch (error) {
+      console.error('Error in fetchSplitSheets:', error);
       setError('Failed to load split sheets');
     } finally {
       setLoading(false);
