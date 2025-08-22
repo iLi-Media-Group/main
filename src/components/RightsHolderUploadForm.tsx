@@ -352,7 +352,7 @@ export function RightsHolderUploadForm() {
     
     return categorizedMediaTypes;
   };
-
+  
   const audioFileRef = useRef<HTMLInputElement>(null);
   const artworkFileRef = useRef<HTMLInputElement>(null);
 
@@ -418,14 +418,14 @@ export function RightsHolderUploadForm() {
 
   const handleMultiSelectChange = (field: keyof FormData, value: string, checked: boolean) => {
     const currentValues = formData[field] as string[];
-    if (checked) {
+      if (checked) {
       updateFormData({
         [field]: [...currentValues, value]
       });
-    } else {
+      } else {
       updateFormData({
         [field]: currentValues.filter(v => v !== value)
-      });
+    });
     }
   };
 
@@ -597,29 +597,29 @@ export function RightsHolderUploadForm() {
                                                        // Create track record (same as producer upload)
         const { data: track, error: trackError } = await supabase
           .from('tracks')
-          .insert({
+        .insert({
             track_producer_id: user.id, // Use same field as producer upload
-            title: formData.title.trim(),
-            artist: formData.artist.trim(),
+          title: formData.title.trim(),
+          artist: formData.artist.trim(),
             genres: formData.genre ? [genres.find(g => g.id === formData.genre)?.display_name || formData.genre] : [],
             sub_genres: formData.subGenre ? [genres.find(g => g.id === formData.genre)?.sub_genres?.find(sg => sg.id === formData.subGenre)?.display_name || formData.subGenre] : [],
             moods: formData.selectedMoods || [],
-            bpm: bpm,
-            key: formData.key || null,
-            duration: duration,
-            description: formData.description || null,
-            audio_url: audioPath,
+          bpm: bpm,
+          key: formData.key || null,
+          duration: duration,
+          description: formData.description || null,
+          audio_url: audioPath,
             image_url: artworkPath || null, // Use image_url not artwork_url
             instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null,
             media_usage: formData.selectedMediaUsage.length > 0 ? formData.selectedMediaUsage : null,
             has_vocals: formData.hasVocals,
             is_sync_only: formData.isSyncOnly,
-            master_rights_owner: formData.masterRightsOwner || null,
-            publishing_rights_owner: formData.publishingRightsOwner || null,
+          master_rights_owner: formData.masterRightsOwner || null,
+          publishing_rights_owner: formData.publishingRightsOwner || null,
             status: 'active'
-          })
-          .select()
-          .single();
+        })
+        .select()
+        .single();
 
       if (trackError) throw trackError;
 
@@ -652,9 +652,9 @@ export function RightsHolderUploadForm() {
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
                      <h2 className="text-2xl font-bold text-white mb-4">Track Upload Successful!</h2>
-           <p className="text-gray-300 mb-6">
+          <p className="text-gray-300 mb-6">
              Your track has been uploaded to the catalog and is now available for licensing. You'll be redirected to your dashboard shortly.
-           </p>
+          </p>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
           </div>
@@ -678,23 +678,23 @@ export function RightsHolderUploadForm() {
     <div className="min-h-screen bg-blue-900/90 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-                 <div className="text-center mb-8">
-           <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+        <div className="text-center mb-8">
+          <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
            <h1 className="text-3xl font-bold text-white mb-2">Upload Track</h1>
            <p className="text-gray-300">Add your track to the MyBeatFi catalog for licensing</p>
-         </div>
+        </div>
 
-                 {/* Progress Steps */}
-         <div className="flex justify-center mb-8">
-           <div className="flex space-x-4">
-             {steps.map((step, index) => {
-               const Icon = step.icon;
-               const isActive = currentStep === step.number;
-               const isCompleted = currentStep > step.number;
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-8">
+          <div className="flex space-x-4">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = currentStep === step.number;
+              const isCompleted = currentStep > step.number;
                const canNavigateTo = isCompleted || validateStep(step.number - 1);
-               
-               return (
-                 <div key={step.number} className="flex items-center">
+              
+              return (
+                <div key={step.number} className="flex items-center">
                    <button
                      onClick={() => {
                        if (canNavigateTo) {
@@ -704,16 +704,16 @@ export function RightsHolderUploadForm() {
                      disabled={!canNavigateTo}
                      className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
                        isCompleted ? 'bg-green-500 border-green-500 hover:bg-green-600' :
-                       isActive ? 'bg-blue-500 border-blue-500' :
+                    isActive ? 'bg-blue-500 border-blue-500' :
                        canNavigateTo ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 cursor-pointer' :
                        'bg-gray-800 border-gray-700 cursor-not-allowed'
                      }`}
                    >
-                     {isCompleted ? (
-                       <CheckCircle className="w-6 h-6 text-white" />
-                     ) : (
-                       <Icon className="w-6 h-6 text-white" />
-                     )}
+                    {isCompleted ? (
+                      <CheckCircle className="w-6 h-6 text-white" />
+                    ) : (
+                      <Icon className="w-6 h-6 text-white" />
+                    )}
                    </button>
                    <button
                      onClick={() => {
@@ -728,18 +728,18 @@ export function RightsHolderUploadForm() {
                        'text-gray-500 cursor-not-allowed'
                      }`}
                    >
-                     {step.title}
+                    {step.title}
                    </button>
-                   {index < steps.length - 1 && (
-                     <div className={`w-8 h-0.5 mx-4 ${
-                       isCompleted ? 'bg-green-500' : 'bg-gray-600'
-                     }`} />
-                   )}
-                 </div>
-               );
-             })}
-           </div>
-         </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-8 h-0.5 mx-4 ${
+                      isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                    }`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         {/* Form Content */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8">
@@ -828,23 +828,23 @@ export function RightsHolderUploadForm() {
                   />
                 </div>
                 
-                               <div>
-                 <label className="block text-gray-300 mb-2">Key</label>
-                 <select
-                   name="key"
-                   value={formData.key}
-                   onChange={handleInputChange}
-                   className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                 >
-                   <option value="">Select key</option>
-                   {MUSICAL_KEYS.map((key) => (
-                     <option key={key} value={key}>
-                       {key}
-                     </option>
-                   ))}
-                 </select>
-               </div>
-             </div>
+                <div>
+                  <label className="block text-gray-300 mb-2">Key</label>
+                  <select
+                    name="key"
+                    value={formData.key}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="">Select key</option>
+                    {MUSICAL_KEYS.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
              {/* Track Type Options */}
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -883,28 +883,28 @@ export function RightsHolderUploadForm() {
                 <div className="space-y-3">
                   {/* Main Mood Categories with Checkboxes */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {getMainMoodCategories().map((category) => (
+                  {getMainMoodCategories().map((category) => (
                       <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
-                        <input
-                          type="checkbox"
+                              <input
+                                type="checkbox"
                           checked={formData.selectedMoods.includes(category)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
+                                onChange={(e) => {
+                                  if (e.target.checked) {
                               updateFormData({ 
                                 selectedMoods: [...formData.selectedMoods, category]
                               });
-                            } else {
+                                  } else {
                               updateFormData({
                                 selectedMoods: formData.selectedMoods.filter(m => m !== category)
                               });
-                            }
-                          }}
+                                  }
+                                }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        />
+                              />
                         <span className="text-sm font-medium">{category}</span>
-                      </label>
-                    ))}
-                  </div>
+                            </label>
+                          ))}
+                        </div>
                   
                   {/* Sub-moods for selected main moods */}
                   {formData.selectedMoods.filter(mood => getMainMoodCategories().includes(mood)).map((selectedCategory) => {
@@ -985,9 +985,9 @@ export function RightsHolderUploadForm() {
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {instruments.map((instrument) => (
                             <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
-                              <input
-                                type="checkbox"
-                                checked={formData.selectedInstruments.includes(instrument)}
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedInstruments.includes(instrument)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
                                     updateFormData({ 
@@ -1002,10 +1002,10 @@ export function RightsHolderUploadForm() {
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                               />
                               <span className="text-sm capitalize">{instrument}</span>
-                            </label>
-                          ))}
+                                </label>
+                              ))}
+                            </div>
                         </div>
-                      </div>
                     );
                   })}
                 </div>
@@ -1038,8 +1038,8 @@ export function RightsHolderUploadForm() {
                             />
                             <span className="text-sm font-medium">{category}</span>
                           </label>
-                        ))}
-                      </div>
+                      ))}
+                    </div>
                       
                       {/* Media Types for selected categories */}
                       {formData.selectedMediaUsage.filter(mediaType => Object.keys(getMediaUsageCategories()).includes(mediaType)).map((selectedCategory) => {
@@ -1072,8 +1072,8 @@ export function RightsHolderUploadForm() {
                                   <span className="text-sm capitalize">{mediaType}</span>
                                 </label>
                               ))}
-                            </div>
-                          </div>
+                </div>
+              </div>
                         );
                       })}
                     </div>

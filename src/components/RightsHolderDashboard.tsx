@@ -17,7 +17,12 @@ import {
   DollarSign,
   Calendar,
   ArrowRight,
-  Mail
+  Mail,
+  MessageSquare,
+  Plus,
+  Search,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -29,11 +34,61 @@ interface DashboardStats {
 
 interface RecentActivity {
   id: string;
-  type: 'upload' | 'verification' | 'license' | 'split_sheet';
+  type: 'upload' | 'verification' | 'license' | 'split_sheet' | 'sync_proposal' | 'custom_sync';
   title: string;
   description: string;
   status: 'pending' | 'approved' | 'rejected' | 'completed';
   created_at: string;
+}
+
+interface SyncProposal {
+  id: string;
+  track_id: string;
+  client_id: string;
+  project_type: string;
+  sync_fee: number;
+  payment_terms: string;
+  is_exclusive: boolean;
+  expiration_date: string;
+  is_urgent: boolean;
+  status: string;
+  client_status: string;
+  producer_status: string;
+  negotiation_status: string;
+  last_message_sender_id?: string;
+  last_message_at?: string;
+  created_at: string;
+  updated_at: string;
+  client: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  track: {
+    id: string;
+    title: string;
+    artist: string;
+  };
+}
+
+interface CustomSyncRequest {
+  id: string;
+  client_id: string;
+  project_title: string;
+  project_description: string;
+  sync_fee: number;
+  end_date: string;
+  genre: string;
+  sub_genres: string[];
+  status: string;
+  selected_producer_id?: string;
+  created_at: string;
+  updated_at: string;
+  client: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
 }
 
 export function RightsHolderDashboard() {
@@ -46,6 +101,14 @@ export function RightsHolderDashboard() {
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Sync Proposals state
+  const [syncProposals, setSyncProposals] = useState<SyncProposal[]>([]);
+  const [syncProposalsLoading, setSyncProposalsLoading] = useState(false);
+  
+  // Custom Sync Requests state
+  const [customSyncRequests, setCustomSyncRequests] = useState<CustomSyncRequest[]>([]);
+  const [customSyncRequestsLoading, setCustomSyncRequestsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -118,23 +181,23 @@ export function RightsHolderDashboard() {
         totalRevenue,
       });
 
-      // Try to fetch recent activity (handle missing table gracefully)
+      // Try to fetch recent activity from tracks table (handle missing table gracefully)
       try {
         const { data: activityData } = await supabase
-          .from('master_recordings')
-          .select('id, title, rights_verification_status, admin_review_status, created_at')
-          .eq('rights_holder_id', user.id)
+          .from('tracks')
+          .select('id, title, status, created_at')
+          .eq('track_producer_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5);
 
         if (activityData) {
-          const activity: RecentActivity[] = activityData.map(recording => ({
-            id: recording.id,
+          const activity: RecentActivity[] = activityData.map(track => ({
+            id: track.id,
             type: 'upload',
-            title: recording.title,
-            description: `Recording uploaded`,
-            status: recording.rights_verification_status === 'verified' ? 'approved' : 'pending',
-            created_at: recording.created_at,
+            title: track.title,
+            description: `Track uploaded`,
+            status: track.status === 'active' ? 'approved' : 'pending',
+            created_at: track.created_at,
           }));
           setRecentActivity(activity);
         } else {
@@ -144,6 +207,12 @@ export function RightsHolderDashboard() {
         console.log('Could not fetch recent activity, using empty array');
         setRecentActivity([]);
       }
+
+      // Fetch sync proposals for rights holder tracks
+      await fetchSyncProposals();
+      
+      // Fetch custom sync requests
+      await fetchCustomSyncRequests();
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -194,6 +263,117 @@ export function RightsHolderDashboard() {
       day: 'numeric',
       year: 'numeric',
     });
+  };
+
+  // Fetch sync proposals for rights holder tracks
+  const fetchSyncProposals = async () => {
+    if (!user) return;
+    
+    try {
+      setSyncProposalsLoading(true);
+      
+      // First get all tracks owned by this rights holder
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
+        .select('id')
+        .eq('track_producer_id', user.id);
+      
+      if (tracksError) throw tracksError;
+      
+      if (!tracksData || tracksData.length === 0) {
+        setSyncProposals([]);
+        return;
+      }
+      
+      const trackIds = tracksData.map(track => track.id);
+      
+      // Fetch sync proposals for these tracks
+      const { data: proposalsData, error: proposalsError } = await supabase
+        .from('sync_proposals')
+        .select(`
+          *,
+          client:profiles!sync_proposals_client_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          track:tracks(
+            id,
+            title,
+            artist
+          )
+        `)
+        .in('track_id', trackIds)
+        .order('created_at', { ascending: false });
+      
+      if (proposalsError) throw proposalsError;
+      
+      setSyncProposals(proposalsData || []);
+    } catch (error) {
+      console.error('Error fetching sync proposals:', error);
+      setSyncProposals([]);
+    } finally {
+      setSyncProposalsLoading(false);
+    }
+  };
+
+  // Fetch custom sync requests
+  const fetchCustomSyncRequests = async () => {
+    if (!user) return;
+    
+    try {
+      setCustomSyncRequestsLoading(true);
+      
+      const { data: requestsData, error: requestsError } = await supabase
+        .from('custom_sync_requests')
+        .select(`
+          *,
+          client:profiles!custom_sync_requests_client_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('selected_producer_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (requestsError) throw requestsError;
+      
+      setCustomSyncRequests(requestsData || []);
+    } catch (error) {
+      console.error('Error fetching custom sync requests:', error);
+      setCustomSyncRequests([]);
+    } finally {
+      setCustomSyncRequestsLoading(false);
+    }
+  };
+
+  const getProposalStatusColor = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return 'text-green-400 bg-green-400/20';
+      case 'pending':
+        return 'text-yellow-400 bg-yellow-400/20';
+      case 'rejected':
+        return 'text-red-400 bg-red-400/20';
+      default:
+        return 'text-gray-400 bg-gray-400/20';
+    }
+  };
+
+  const getProposalStatusIcon = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return <CheckCircle className="w-4 h-4" />;
+      case 'pending':
+        return <Clock className="w-4 h-4" />;
+      case 'rejected':
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return <MessageSquare className="w-4 h-4" />;
+    }
   };
 
   if (loading) {
@@ -472,6 +652,167 @@ export function RightsHolderDashboard() {
                 <Calendar className="w-5 h-5 text-gray-400" />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Sync Proposals Section */}
+        <div className="mt-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Sync Proposals</h3>
+                <p className="text-gray-400 text-sm">Manage sync licensing proposals for your tracks</p>
+              </div>
+              <button
+                onClick={fetchSyncProposals}
+                disabled={syncProposalsLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${syncProposalsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {syncProposalsLoading ? (
+              <div className="text-center py-8">
+                <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
+                <p className="text-gray-400">Loading sync proposals...</p>
+              </div>
+            ) : syncProposals.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No sync proposals yet</p>
+                <p className="text-sm text-gray-500 mt-1">Proposals will appear here when clients request your tracks</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {syncProposals.slice(0, 5).map((proposal) => (
+                  <div
+                    key={proposal.id}
+                    className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-semibold text-white">{proposal.track.title}</h4>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(proposal.status)}`}>
+                          {getProposalStatusIcon(proposal.status)}
+                          <span className="ml-1">{proposal.status}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-400">
+                        {proposal.client.first_name} {proposal.client.last_name} • ${proposal.sync_fee} • {proposal.project_type}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatDate(proposal.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/sync-proposal/${proposal.id}`}
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+                {syncProposals.length > 5 && (
+                  <div className="text-center pt-4">
+                    <Link
+                      to="/sync-proposals"
+                      className="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                      View all {syncProposals.length} proposals
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Custom Sync Requests Section */}
+        <div className="mt-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Custom Sync Requests</h3>
+                <p className="text-gray-400 text-sm">Manage custom sync licensing requests</p>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  to="/custom-sync-request"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Request
+                </Link>
+                <button
+                  onClick={fetchCustomSyncRequests}
+                  disabled={customSyncRequestsLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
+            </div>
+
+            {customSyncRequestsLoading ? (
+              <div className="text-center py-8">
+                <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
+                <p className="text-gray-400">Loading custom sync requests...</p>
+              </div>
+            ) : customSyncRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-400">No custom sync requests yet</p>
+                <p className="text-sm text-gray-500 mt-1">Create a request to get started</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {customSyncRequests.slice(0, 5).map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h4 className="font-semibold text-white">{request.project_title}</h4>
+                        <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(request.status)}`}>
+                          {getProposalStatusIcon(request.status)}
+                          <span className="ml-1">{request.status}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-400">
+                        {request.client.first_name} {request.client.last_name} • ${request.sync_fee} • {request.genre}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {formatDate(request.created_at)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/custom-sync-request/${request.id}`}
+                        className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+                {customSyncRequests.length > 5 && (
+                  <div className="text-center pt-4">
+                    <Link
+                      to="/custom-sync-requests"
+                      className="text-blue-400 hover:text-blue-300 text-sm"
+                    >
+                      View all {customSyncRequests.length} requests
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

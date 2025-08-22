@@ -420,7 +420,7 @@ export function RightsHolderRecordings() {
       // Move to deleted recordings
       const deletedRecording = recordings.find(rec => rec.id === recordingId);
       if (deletedRecording) {
-        setRecordings(prev => prev.filter(rec => rec.id !== recordingId));
+      setRecordings(prev => prev.filter(rec => rec.id !== recordingId));
         setDeletedRecordings(prev => [deletedRecording, ...prev]);
       }
     } catch (err) {
@@ -547,32 +547,32 @@ export function RightsHolderRecordings() {
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search recordings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search recordings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
+                />
+              </div>
           </div>
           <div className="flex gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="rejected">Rejected</option>
-            </select>
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending</option>
+                <option value="rejected">Rejected</option>
+              </select>
           </div>
         </div>
 
-                {/* Recordings Grid */}
+        {/* Recordings Grid */}
         {(() => {
           const currentRecordings = activeTab === 'active' ? recordings : deletedRecordings;
           const filteredCurrentRecordings = currentRecordings.filter(recording => {
@@ -588,11 +588,11 @@ export function RightsHolderRecordings() {
                 <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-gray-400 mb-2">
                   {activeTab === 'active' ? 'No active recordings found' : 'No deleted recordings found'}
-                </h3>
+                  </h3>
                 <p className="text-gray-500">
                   {activeTab === 'active' ? 'Upload your first track to get started' : 'Deleted recordings will appear here'}
-                </p>
-              </div>
+                  </p>
+                </div>
             );
           }
 
@@ -615,7 +615,7 @@ export function RightsHolderRecordings() {
                       }`}>
                         {recording.status}
                       </span>
-                    </div>
+                </div>
                     {activeTab === 'deleted' && (
                       <div className="absolute top-2 left-2">
                         <span className="px-2 py-1 text-xs rounded-full bg-red-600">
@@ -623,7 +623,7 @@ export function RightsHolderRecordings() {
                         </span>
                       </div>
                     )}
-                  </div>
+                </div>
 
                   {/* Track Info */}
                   <div className="space-y-2">
@@ -634,80 +634,80 @@ export function RightsHolderRecordings() {
                       <span>{recording.bpm} BPM</span>
                       <span>{recording.key}</span>
                       {recording.duration && <span>{formatDuration(recording.duration)}</span>}
-                    </div>
+              </div>
 
                     <div className="text-sm text-gray-400">
                       <p><strong>Genres:</strong> {Array.isArray(recording.genres) ? recording.genres.join(', ') : 'None'}</p>
                       <p><strong>Moods:</strong> {Array.isArray(recording.moods) ? recording.moods.join(', ') : 'None'}</p>
-                    </div>
+                </div>
 
                     {recording.has_vocals && (
                       <div className="flex items-center text-sm text-blue-400">
                         <User className="w-4 h-4 mr-1" />
                         Has Vocals
-                      </div>
+                </div>
                     )}
 
                     {recording.is_sync_only && (
                       <div className="flex items-center text-sm text-purple-400">
                         <Music className="w-4 h-4 mr-1" />
                         Sync Only
-                      </div>
+                </div>
                     )}
 
                     {activeTab === 'deleted' && recording.deleted_at && (
                       <div className="text-xs text-gray-500">
                         Deleted: {new Date(recording.deleted_at).toLocaleDateString()}
-                      </div>
-                    )}
+                </div>
+              )}
                   </div>
 
-                  {/* Actions */}
+              {/* Actions */}
                   <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                     <div className="flex space-x-2">
                       {activeTab === 'active' ? (
-                        <>
-                          <button
+                  <>
+                    <button
                             onClick={() => handleEdit(recording)}
                             className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                             title="Edit"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button
+                    </button>
+                    <button
                             onClick={() => handleDelete(recording.id)}
                             className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                             title="Delete"
-                          >
+                    >
                             <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
                             onClick={() => handleRestore(recording.id)}
                             className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
                             title="Restore"
-                          >
+                    >
                             <RotateCcw className="w-4 h-4" />
-                          </button>
-                          <button
+                    </button>
+                    <button
                             onClick={() => handlePermanentDelete(recording.id)}
                             className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                             title="Delete Permanently"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
                     <span className="text-xs text-gray-500">
                       {new Date(recording.created_at).toLocaleDateString()}
                     </span>
-                  </div>
-                </div>
-              ))}
+              </div>
             </div>
+          ))}
+        </div>
           );
         })()}
 
@@ -717,7 +717,7 @@ export function RightsHolderRecordings() {
             <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-semibold">Edit Recording: {editingRecording.title}</h3>
-                <button
+              <button
                   onClick={() => setEditingRecording(null)}
                   className="p-2 text-gray-400 hover:text-white transition-colors"
                 >
@@ -728,7 +728,7 @@ export function RightsHolderRecordings() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column - Basic Info */}
                 <div className="space-y-6">
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium mb-2">Title *</label>
                     <input
                       type="text"
@@ -737,9 +737,9 @@ export function RightsHolderRecordings() {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                       placeholder="Track title"
                     />
-                  </div>
+                    </div>
 
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium mb-2">Artist *</label>
                     <input
                       type="text"
@@ -748,7 +748,7 @@ export function RightsHolderRecordings() {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                       placeholder="Artist name"
                     />
-                  </div>
+                    </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -773,9 +773,9 @@ export function RightsHolderRecordings() {
                         placeholder="C Major"
                       />
                     </div>
-                  </div>
+                    </div>
 
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium mb-2">Description</label>
                     <textarea
                       value={editFormData.description}
@@ -784,7 +784,7 @@ export function RightsHolderRecordings() {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                       placeholder="Describe your track..."
                     />
-                  </div>
+                    </div>
 
                   {/* Track Type Checkboxes */}
                   <div className="space-y-3">
@@ -815,7 +815,7 @@ export function RightsHolderRecordings() {
                 {/* Right Column - Genres, Moods, Instruments, Media Usage */}
                 <div className="space-y-6">
                   {/* Genres */}
-                  <div>
+                      <div>
                     <label className="block text-sm font-medium mb-2">Genres *</label>
                     {genresLoading ? (
                       <div className="text-gray-400">Loading genres...</div>
@@ -840,10 +840,10 @@ export function RightsHolderRecordings() {
                         ))}
                       </div>
                     )}
-                  </div>
+                      </div>
 
                   {/* Moods */}
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium mb-2">Moods</label>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => {
@@ -854,7 +854,7 @@ export function RightsHolderRecordings() {
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-medium">{category}</span>
                               <ChevronDown className="w-4 h-4" />
-                            </div>
+                      </div>
                             <div className="grid grid-cols-2 gap-1">
                               {moodArray.map((mood) => (
                                 <label key={mood} className="flex items-center">
@@ -873,7 +873,7 @@ export function RightsHolderRecordings() {
                                   <span className="text-xs">{mood}</span>
                                 </label>
                               ))}
-                            </div>
+                    </div>
                           </div>
                         );
                       })}
@@ -881,7 +881,7 @@ export function RightsHolderRecordings() {
                   </div>
 
                   {/* Instruments */}
-                  <div>
+                      <div>
                     <label className="block text-sm font-medium mb-2">Instruments</label>
                     {instrumentsLoading ? (
                       <div className="text-gray-400">Loading instruments...</div>
@@ -980,17 +980,17 @@ export function RightsHolderRecordings() {
                           <label htmlFor="mp3-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
                             Upload MP3
                           </label>
-                        </div>
-                      )}
+                </div>
+              )}
                     </div>
                   </div>
 
                   {/* Trackouts File */}
-                  <div>
+                    <div>
                     <label className="block text-sm font-medium mb-2">Trackouts (ZIP)</label>
                     <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
                       {trackoutsFile ? (
-                        <div className="space-y-2">
+                      <div className="space-y-2">
                           <FileArchive className="w-8 h-8 mx-auto text-blue-400" />
                           <p className="text-sm">{trackoutsFile.name}</p>
                           <button
@@ -999,7 +999,7 @@ export function RightsHolderRecordings() {
                           >
                             Remove
                           </button>
-                        </div>
+                          </div>
                       ) : (
                         <div>
                           <Upload className="w-8 h-8 mx-auto text-gray-400 mb-2" />
@@ -1013,8 +1013,8 @@ export function RightsHolderRecordings() {
                           <label htmlFor="trackouts-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
                             Upload Trackouts
                           </label>
-                        </div>
-                      )}
+                    </div>
+                  )}
                     </div>
                   </div>
 
@@ -1046,8 +1046,8 @@ export function RightsHolderRecordings() {
                           <label htmlFor="stems-upload" className="cursor-pointer text-blue-400 hover:text-blue-300">
                             Upload Stems
                           </label>
-                        </div>
-                      )}
+                </div>
+              )}
                     </div>
                   </div>
 
@@ -1059,12 +1059,12 @@ export function RightsHolderRecordings() {
                         <div className="space-y-2">
                           <FileText className="w-8 h-8 mx-auto text-blue-400" />
                           <p className="text-sm">{splitSheetFile.name}</p>
-                          <button
+                <button
                             onClick={() => setSplitSheetFile(null)}
                             className="text-red-400 text-sm hover:text-red-300"
-                          >
+                >
                             Remove
-                          </button>
+                </button>
                         </div>
                       ) : (
                         <div>

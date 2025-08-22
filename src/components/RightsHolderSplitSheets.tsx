@@ -21,15 +21,15 @@ import {
 
 interface SplitSheet {
   id: string;
-  master_recording_id: string;
+  track_id: string;
   rights_holder_id: string;
   status: 'pending_signatures' | 'completed' | 'expired';
   created_at: string;
   updated_at: string;
-  master_recording: {
+  track: {
     title: string;
     artist: string;
-    genre: string;
+    genres: string[];
   };
   participants: SplitSheetParticipant[];
   co_signers: CoSigner[];
@@ -84,15 +84,15 @@ export function RightsHolderSplitSheets() {
     setError(null);
 
     try {
-      // Fetch split sheets with related data
+      // Fetch split sheets with related data from tracks table
       const { data: splitSheetsData, error: splitSheetsError } = await supabase
         .from('split_sheets')
         .select(`
           *,
-          master_recordings (
+          track:tracks (
             title,
             artist,
-            genre
+            genres
           ),
           split_sheet_participants (*),
           co_signers (*)
@@ -150,7 +150,7 @@ export function RightsHolderSplitSheets() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `split-sheet-${splitSheet.master_recording.title}-${splitSheet.id}.txt`;
+      a.download = `split-sheet-${splitSheet.track.title}-${splitSheet.id}.txt`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -167,9 +167,9 @@ export function RightsHolderSplitSheets() {
     
     let document = `SPLIT SHEET\n`;
     document += `================================\n\n`;
-    document += `Track: ${splitSheet.master_recording.title}\n`;
-    document += `Artist: ${splitSheet.master_recording.artist}\n`;
-    document += `Genre: ${splitSheet.master_recording.genre}\n`;
+    document += `Track: ${splitSheet.track.title}\n`;
+    document += `Artist: ${splitSheet.track.artist}\n`;
+    document += `Genre: ${Array.isArray(splitSheet.track.genres) ? splitSheet.track.genres.join(', ') : 'N/A'}\n`;
     document += `Date: ${new Date(splitSheet.created_at).toLocaleDateString()}\n\n`;
     
     document += `PARTICIPANTS:\n`;
@@ -237,8 +237,8 @@ export function RightsHolderSplitSheets() {
   };
 
   const filteredSplitSheets = splitSheets.filter(splitSheet => {
-    const matchesSearch = splitSheet.master_recording.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         splitSheet.master_recording.artist.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = splitSheet.track.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         splitSheet.track.artist.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || splitSheet.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -333,10 +333,10 @@ export function RightsHolderSplitSheets() {
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-white mb-1">
-                    {splitSheet.master_recording.title}
+                    {splitSheet.track.title}
                   </h3>
                   <p className="text-gray-400 text-sm">
-                    {splitSheet.master_recording.artist}
+                    {splitSheet.track.artist}
                   </p>
                 </div>
                 <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getStatusColor(splitSheet.status)}`}>
@@ -441,15 +441,15 @@ export function RightsHolderSplitSheets() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="text-sm text-gray-400">Title</label>
-                    <p className="text-white">{selectedSplitSheet.master_recording.title}</p>
+                    <p className="text-white">{selectedSplitSheet.track.title}</p>
                   </div>
                   <div>
                     <label className="text-sm text-gray-400">Artist</label>
-                    <p className="text-white">{selectedSplitSheet.master_recording.artist}</p>
+                    <p className="text-white">{selectedSplitSheet.track.artist}</p>
                   </div>
                   <div>
                     <label className="text-sm text-gray-400">Genre</label>
-                    <p className="text-white">{selectedSplitSheet.master_recording.genre}</p>
+                    <p className="text-white">{Array.isArray(selectedSplitSheet.track.genres) ? selectedSplitSheet.track.genres.join(', ') : 'N/A'}</p>
                   </div>
                 </div>
               </div>

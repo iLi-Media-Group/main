@@ -98,7 +98,13 @@ import { RightsHolderESignatures } from './components/RightsHolderESignatures';
 import { RightsHolderLicensing } from './components/RightsHolderLicensing';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
+import { SyncProposalDialog } from './components/SyncProposalDialog';
+import { RightsHolderSyncProposalDialog } from './components/RightsHolderSyncProposalDialog';
+import { SyncProposalsPage } from './components/SyncProposalsPage';
+import { CustomSyncRequestDetail } from './components/CustomSyncRequestDetail';
+import { CustomSyncRequestsPage } from './components/CustomSyncRequestsPage';
 import { ProfilePage } from './components/ProfilePage';
+import RightsHolderSyncSubmission from './components/RightsHolderSyncSubmission';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -674,6 +680,35 @@ const App = () => {
           </ProtectedRoute>
         } />
         <Route path="/rights-holder/test" element={<RightsHolderTest />} />
+
+        {/* Rights Holder Sync Proposals */}
+              <Route path="/sync-proposal/:id" element={
+        <RightsHolderProtectedRoute>
+          <RightsHolderSyncProposalDialog />
+        </RightsHolderProtectedRoute>
+      } />
+        <Route path="/sync-proposals" element={
+          <RightsHolderProtectedRoute>
+            <SyncProposalsPage />
+          </RightsHolderProtectedRoute>
+        } />
+        
+        {/* Rights Holder Custom Sync Requests */}
+              <Route path="/custom-sync-request" element={
+        <RightsHolderProtectedRoute>
+          <RightsHolderSyncSubmission />
+        </RightsHolderProtectedRoute>
+      } />
+        <Route path="/custom-sync-request/:id" element={
+          <RightsHolderProtectedRoute>
+            <CustomSyncRequestDetail />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/custom-sync-requests" element={
+          <RightsHolderProtectedRoute>
+            <CustomSyncRequestsPage />
+          </RightsHolderProtectedRoute>
+        } />
 
         {/* Profile Route */}
         <Route path="/profile" element={

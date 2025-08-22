@@ -149,28 +149,28 @@ export function RightsHolderESignatures() {
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4 mb-6">
           <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
                 placeholder="Search tracks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-              />
-            </div>
+                />
+              </div>
           </div>
           <div className="flex gap-2">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-            >
-              <option value="all">All Status</option>
+              >
+                <option value="all">All Status</option>
               <option value="active">Active</option>
               <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
-            </select>
+              </select>
           </div>
         </div>
 
@@ -200,8 +200,8 @@ export function RightsHolderESignatures() {
                     }`}>
                       {track.status}
                     </span>
-                  </div>
                 </div>
+              </div>
 
                 {/* Track Info */}
                 <div className="space-y-2">
@@ -212,12 +212,12 @@ export function RightsHolderESignatures() {
                     <span>{track.bpm} BPM</span>
                     <span>{track.key}</span>
                     {track.duration && <span>{formatDuration(track.duration)}</span>}
-                  </div>
+                </div>
 
                   <div className="text-sm text-gray-400">
                     <p><strong>Genres:</strong> {track.genres.join(', ')}</p>
                     <p><strong>Moods:</strong> {track.moods.join(', ')}</p>
-                  </div>
+              </div>
 
                   {track.master_rights_owner && (
                     <div className="text-sm text-blue-400">
@@ -235,36 +235,36 @@ export function RightsHolderESignatures() {
                     <div className="flex items-center text-sm text-green-400">
                       <FileText className="w-4 h-4 mr-1" />
                       Split Sheet Available
-                    </div>
+                  </div>
                   )}
-                </div>
+              </div>
 
-                {/* Actions */}
+              {/* Actions */}
                 <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
                   <div className="flex space-x-2">
-                    <button
+                <button
                       onClick={() => setSelectedTrack(track)}
                       className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                       title="View Details"
-                    >
+                >
                       <Eye className="w-4 h-4" />
-                    </button>
+                </button>
                     {track.split_sheet_url && (
-                      <button
+                <button
                         onClick={() => window.open(track.split_sheet_url, '_blank')}
                         className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
                         title="Download Split Sheet"
                       >
                         <Download className="w-4 h-4" />
-                      </button>
+                </button>
                     )}
-                  </div>
+              </div>
                   <span className="text-xs text-gray-500">
                     {new Date(track.created_at).toLocaleDateString()}
                   </span>
-                </div>
               </div>
-            ))}
+            </div>
+          ))}
           </div>
         )}
 
@@ -281,43 +281,43 @@ export function RightsHolderESignatures() {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-lg font-semibold mb-4">Track Information</h4>
                   <div className="space-y-3">
-                    <div>
-                      <label className="text-sm text-gray-400">Title</label>
+                  <div>
+                    <label className="text-sm text-gray-400">Title</label>
                       <p className="text-white">{selectedTrack.title}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm text-gray-400">Artist</label>
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-400">Artist</label>
                       <p className="text-white">{selectedTrack.artist}</p>
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                       <label className="text-sm text-gray-400">Genres</label>
                       <p className="text-white">{selectedTrack.genres.join(', ')}</p>
-                    </div>
+                  </div>
                     <div>
                       <label className="text-sm text-gray-400">Moods</label>
                       <p className="text-white">{selectedTrack.moods.join(', ')}</p>
-                    </div>
+                </div>
                     <div>
                       <label className="text-sm text-gray-400">BPM</label>
                       <p className="text-white">{selectedTrack.bpm}</p>
-                    </div>
+              </div>
                     <div>
                       <label className="text-sm text-gray-400">Key</label>
                       <p className="text-white">{selectedTrack.key}</p>
-                    </div>
+                </div>
                     {selectedTrack.duration && (
-                      <div>
+                        <div>
                         <label className="text-sm text-gray-400">Duration</label>
                         <p className="text-white">{formatDuration(selectedTrack.duration)}</p>
-                      </div>
+                        </div>
                     )}
-                  </div>
-                </div>
+                        </div>
+                      </div>
 
                 <div>
                   <h4 className="text-lg font-semibold mb-4">Rights Information</h4>
@@ -329,39 +329,39 @@ export function RightsHolderESignatures() {
                       </div>
                     )}
                     {selectedTrack.publishing_rights_owner && (
-                      <div>
+                        <div>
                         <label className="text-sm text-gray-400">Publishing Rights Owner</label>
                         <p className="text-white">{selectedTrack.publishing_rights_owner}</p>
-                      </div>
+                        </div>
                     )}
-                    <div>
+                        <div>
                       <label className="text-sm text-gray-400">Status</label>
                       <p className="text-white">{selectedTrack.status}</p>
-                    </div>
+                        </div>
                     {selectedTrack.description && (
-                      <div>
+                        <div>
                         <label className="text-sm text-gray-400">Description</label>
                         <p className="text-white">{selectedTrack.description}</p>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
+                        </div>
+                      </div>
 
               {selectedTrack.split_sheet_url && (
                 <div className="mt-6 pt-6 border-t border-gray-700">
                   <h4 className="text-lg font-semibold mb-4">Split Sheet</h4>
                   <div className="flex items-center justify-between">
                     <p className="text-gray-300">Split sheet is available for this track</p>
-                    <button
+                          <button
                       onClick={() => window.open(selectedTrack.split_sheet_url, '_blank')}
                       className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download Split Sheet
-                    </button>
-                  </div>
-                </div>
+                        </button>
+                      </div>
+                    </div>
               )}
 
               <div className="flex justify-end mt-6 pt-6 border-t border-gray-700">
