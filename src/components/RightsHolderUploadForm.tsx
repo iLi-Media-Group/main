@@ -146,6 +146,7 @@ export function RightsHolderUploadForm() {
   // State for tracking expanded categories
   const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
   const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
+  const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
 
   // Initialize form persistence
   const {
@@ -283,6 +284,65 @@ export function RightsHolderUploadForm() {
     });
     
     return categorizedInstruments;
+  };
+
+  // Transform dynamic media types data into categorized structure
+  const getMediaUsageCategories = () => {
+    if (dynamicDataLoading || !mediaTypes.length) {
+      return {}; // Fallback to empty object
+    }
+    
+    // Create intelligent categories based on media type names
+    const categorizedMediaTypes: Record<string, string[]> = {};
+    
+    mediaTypes.forEach(mediaType => {
+      const name = mediaType.name;
+      
+      // Determine category based on the media type name
+      let category = 'Other';
+      
+      if (name.toLowerCase().includes('film') || name.toLowerCase().includes('movie') || 
+          name.toLowerCase().includes('documentary') || name.toLowerCase().includes('short') ||
+          name.toLowerCase().includes('indie') || name.toLowerCase().includes('blockbuster')) {
+        category = 'Film';
+      } else if (name.toLowerCase().includes('tv') || name.toLowerCase().includes('television') ||
+                 name.toLowerCase().includes('show') || name.toLowerCase().includes('series') ||
+                 name.toLowerCase().includes('reality') || name.toLowerCase().includes('drama') ||
+                 name.toLowerCase().includes('comedy') || name.toLowerCase().includes('news')) {
+        category = 'Television';
+      } else if (name.toLowerCase().includes('sport') || name.toLowerCase().includes('nba') ||
+                 name.toLowerCase().includes('nfl') || name.toLowerCase().includes('nhl') ||
+                 name.toLowerCase().includes('mlb') || name.toLowerCase().includes('ncaa') ||
+                 name.toLowerCase().includes('espn') || name.toLowerCase().includes('olympic')) {
+        category = 'Sports';
+      } else if (name.toLowerCase().includes('youtube') || name.toLowerCase().includes('tiktok') ||
+                 name.toLowerCase().includes('social') || name.toLowerCase().includes('digital') ||
+                 name.toLowerCase().includes('website') || name.toLowerCase().includes('app')) {
+        category = 'Digital';
+      } else if (name.toLowerCase().includes('podcast') || name.toLowerCase().includes('audiobook') ||
+                 name.toLowerCase().includes('radio')) {
+        category = 'Audio';
+      } else if (name.toLowerCase().includes('game') || name.toLowerCase().includes('gaming')) {
+        category = 'Gaming';
+      } else if (name.toLowerCase().includes('commercial') || name.toLowerCase().includes('ad') ||
+                 name.toLowerCase().includes('brand') || name.toLowerCase().includes('corporate')) {
+        category = 'Advertising';
+      } else if (name.toLowerCase().includes('education') || name.toLowerCase().includes('training') ||
+                 name.toLowerCase().includes('presentation')) {
+        category = 'Education';
+      }
+      
+      // Only add the media type if it's not exactly the same as the category name
+      // This prevents category names from appearing as sub-items
+      if (name.toLowerCase() !== category.toLowerCase()) {
+        if (!categorizedMediaTypes[category]) {
+          categorizedMediaTypes[category] = [];
+        }
+        categorizedMediaTypes[category].push(name);
+      }
+    });
+    
+    return categorizedMediaTypes;
   };
 
   const audioFileRef = useRef<HTMLInputElement>(null);
@@ -867,113 +927,208 @@ export function RightsHolderUploadForm() {
                </div>
              </div>
 
-                             {/* Mood Selection */}
-               <div>
-                 <label className="block text-gray-300 mb-2">Moods</label>
-                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                   {getMainMoodCategories().map((category) => (
-                     <div key={category} className="mb-4">
-                       <button
-                         type="button"
-                         onClick={() => toggleMoodCategory(category)}
-                         className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
-                       >
-                         <span className="font-medium">{category}</span>
-                         {expandedMoodCategories.has(category) ? (
-                           <ChevronDown className="w-4 h-4" />
-                         ) : (
-                           <ChevronRight className="w-4 h-4" />
-                         )}
-                       </button>
-                       {expandedMoodCategories.has(category) && (
-                         <div className="ml-4 mt-2 space-y-1">
-                           {getSubMoodsForCategory(category).map((mood: string) => (
-                             <label key={mood} className="flex items-center space-x-2 text-gray-300">
-                               <input
-                                 type="checkbox"
-                                 checked={formData.selectedMoods.includes(mood)}
-                                 onChange={(e) => handleMultiSelectChange('selectedMoods', mood, e.target.checked)}
-                                 className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                               />
-                               <span className="capitalize">{mood}</span>
-                             </label>
-                           ))}
-                         </div>
-                       )}
-                     </div>
-                   ))}
-                 </div>
-               </div>
+                                           {/* Moods Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
+                <div className="space-y-3">
+                  {/* Main Mood Categories with Checkboxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {getMainMoodCategories().map((category) => (
+                      <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedMoods.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData({ 
+                                selectedMoods: [...formData.selectedMoods, category]
+                              });
+                            } else {
+                              updateFormData({
+                                selectedMoods: formData.selectedMoods.filter(m => m !== category)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Sub-moods for selected main moods */}
+                  {formData.selectedMoods.filter(mood => getMainMoodCategories().includes(mood)).map((selectedCategory) => {
+                    const subMoods = getSubMoodsForCategory(selectedCategory);
+                    return (
+                      <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                        <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                          <span>{selectedCategory} - Sub-moods</span>
+                          <span className="ml-2 text-sm text-blue-300">({subMoods.length})</span>
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {subMoods.map((subMood) => (
+                            <label key={subMood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedMoods.includes(subMood)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    updateFormData({ 
+                                      selectedMoods: [...formData.selectedMoods, subMood]
+                                    });
+                                  } else {
+                                    updateFormData({
+                                      selectedMoods: formData.selectedMoods.filter(m => m !== subMood)
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm capitalize">{subMood}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                             {/* Instruments Selection */}
-               <div>
-                 <label className="block text-gray-300 mb-2">Instruments</label>
-                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                   {dynamicDataLoading ? (
-                     <div className="text-gray-400 text-center py-4">Loading instruments...</div>
-                   ) : (
-                     <div>
-                       {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => (
-                         <div key={category} className="mb-4">
-                           <button
-                             type="button"
-                             onClick={() => toggleInstrumentCategory(category)}
-                             className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
-                           >
-                             <span className="font-medium">{category}</span>
-                             {expandedInstrumentCategories.has(category) ? (
-                               <ChevronDown className="w-4 h-4" />
-                             ) : (
-                               <ChevronRight className="w-4 h-4" />
-                             )}
-                           </button>
-                           {expandedInstrumentCategories.has(category) && (
-                             <div className="ml-4 mt-2 space-y-1">
-                               {instruments.map((instrument: string) => (
-                                 <label key={instrument} className="flex items-center space-x-2 text-gray-300">
-                                   <input
-                                     type="checkbox"
-                                     checked={formData.selectedInstruments.includes(instrument)}
-                                     onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument, e.target.checked)}
-                                     className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                                   />
-                                   <span>{instrument}</span>
-                                 </label>
-                               ))}
-                             </div>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-                   )}
-                 </div>
-               </div>
+                                           {/* Instruments Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
+                <div className="space-y-3">
+                  {/* Main Instrument Categories with Checkboxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.keys(getInstrumentsCategories()).map((category) => (
+                      <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedInstruments.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData({ 
+                                selectedInstruments: [...formData.selectedInstruments, category]
+                              });
+                            } else {
+                              updateFormData({
+                                selectedInstruments: formData.selectedInstruments.filter(i => i !== category)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-medium">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Instruments for selected categories */}
+                  {formData.selectedInstruments.filter(instrument => Object.keys(getInstrumentsCategories()).includes(instrument)).map((selectedCategory) => {
+                    const instruments = getInstrumentsCategories()[selectedCategory];
+                    return (
+                      <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                        <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                          <span>{selectedCategory} - Instruments</span>
+                          <span className="ml-2 text-sm text-blue-300">({instruments.length})</span>
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {instruments.map((instrument) => (
+                            <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                              <input
+                                type="checkbox"
+                                checked={formData.selectedInstruments.includes(instrument)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    updateFormData({ 
+                                      selectedInstruments: [...formData.selectedInstruments, instrument]
+                                    });
+                                  } else {
+                                    updateFormData({
+                                      selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-sm capitalize">{instrument}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-               {/* Media Usage Types */}
-               {deepMediaSearchEnabled && (
-                 <div>
-                   <label className="block text-gray-300 mb-2">Media Usage Types</label>
-                   <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                     {dynamicDataLoading ? (
-                       <div className="text-gray-400 text-center py-4">Loading media types...</div>
-                     ) : (
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                         {mediaTypes.map((mediaType) => (
-                           <label key={mediaType.id} className="flex items-center space-x-2 text-gray-300">
-                             <input
-                               type="checkbox"
-                               checked={formData.selectedMediaUsage.includes(mediaType.name)}
-                               onChange={(e) => handleMultiSelectChange('selectedMediaUsage', mediaType.name, e.target.checked)}
-                               className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                             />
-                             <span className="text-sm">{mediaType.name}</span>
-                           </label>
-                         ))}
-                       </div>
-                     )}
-                   </div>
-                 </div>
-               )}
+                               {/* Media Usage Section */}
+                {deepMediaSearchEnabled && (
+                  <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                    <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
+                    <div className="space-y-3">
+                      {/* Main Media Categories with Checkboxes */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {Object.keys(getMediaUsageCategories()).map((category) => (
+                          <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedMediaUsage.includes(category)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  updateFormData({ 
+                                    selectedMediaUsage: [...formData.selectedMediaUsage, category]
+                                  });
+                                } else {
+                                  updateFormData({
+                                    selectedMediaUsage: formData.selectedMediaUsage.filter(m => m !== category)
+                                  });
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-sm font-medium">{category}</span>
+                          </label>
+                        ))}
+                      </div>
+                      
+                      {/* Media Types for selected categories */}
+                      {formData.selectedMediaUsage.filter(mediaType => Object.keys(getMediaUsageCategories()).includes(mediaType)).map((selectedCategory) => {
+                        const mediaTypes = getMediaUsageCategories()[selectedCategory];
+                        return (
+                          <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                            <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                              <span>{selectedCategory} - Media Types</span>
+                              <span className="ml-2 text-sm text-blue-300">({mediaTypes.length})</span>
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {mediaTypes.map((mediaType) => (
+                                <label key={mediaType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedMediaUsage.includes(mediaType)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        updateFormData({ 
+                                          selectedMediaUsage: [...formData.selectedMediaUsage, mediaType]
+                                        });
+                                      } else {
+                                        updateFormData({
+                                          selectedMediaUsage: formData.selectedMediaUsage.filter(m => m !== mediaType)
+                                        });
+                                      }
+                                    }}
+                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm capitalize">{mediaType}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               
               <div>
                 <label className="block text-gray-300 mb-2">Description</label>
