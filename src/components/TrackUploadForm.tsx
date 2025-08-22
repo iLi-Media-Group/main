@@ -267,13 +267,50 @@ export function TrackUploadForm() {
       return MEDIA_USAGE_CATEGORIES; // Fallback to static data
     }
     
-    // Group media types by category
+    // Create intelligent categories based on media type names
     const categorizedMediaTypes: Record<string, string[]> = {};
+    
     mediaTypes.forEach(mediaType => {
-      if (!categorizedMediaTypes[mediaType.category]) {
-        categorizedMediaTypes[mediaType.category] = [];
+      const name = mediaType.display_name || mediaType.name;
+      
+      // Determine category based on the media type name
+      let category = 'Other';
+      
+      if (name.toLowerCase().includes('film') || name.toLowerCase().includes('movie') || 
+          name.toLowerCase().includes('documentary') || name.toLowerCase().includes('short') ||
+          name.toLowerCase().includes('indie') || name.toLowerCase().includes('blockbuster')) {
+        category = 'Film';
+      } else if (name.toLowerCase().includes('tv') || name.toLowerCase().includes('television') ||
+                 name.toLowerCase().includes('show') || name.toLowerCase().includes('series') ||
+                 name.toLowerCase().includes('reality') || name.toLowerCase().includes('drama') ||
+                 name.toLowerCase().includes('comedy') || name.toLowerCase().includes('news')) {
+        category = 'Television';
+      } else if (name.toLowerCase().includes('sport') || name.toLowerCase().includes('nba') ||
+                 name.toLowerCase().includes('nfl') || name.toLowerCase().includes('nhl') ||
+                 name.toLowerCase().includes('mlb') || name.toLowerCase().includes('ncaa') ||
+                 name.toLowerCase().includes('espn') || name.toLowerCase().includes('olympic')) {
+        category = 'Sports';
+      } else if (name.toLowerCase().includes('youtube') || name.toLowerCase().includes('tiktok') ||
+                 name.toLowerCase().includes('social') || name.toLowerCase().includes('digital') ||
+                 name.toLowerCase().includes('website') || name.toLowerCase().includes('app')) {
+        category = 'Digital';
+      } else if (name.toLowerCase().includes('podcast') || name.toLowerCase().includes('audiobook') ||
+                 name.toLowerCase().includes('radio')) {
+        category = 'Audio';
+      } else if (name.toLowerCase().includes('game') || name.toLowerCase().includes('gaming')) {
+        category = 'Gaming';
+      } else if (name.toLowerCase().includes('commercial') || name.toLowerCase().includes('ad') ||
+                 name.toLowerCase().includes('brand') || name.toLowerCase().includes('corporate')) {
+        category = 'Advertising';
+      } else if (name.toLowerCase().includes('education') || name.toLowerCase().includes('training') ||
+                 name.toLowerCase().includes('presentation')) {
+        category = 'Education';
       }
-      categorizedMediaTypes[mediaType.category].push(mediaType.display_name || mediaType.name);
+      
+      if (!categorizedMediaTypes[category]) {
+        categorizedMediaTypes[category] = [];
+      }
+      categorizedMediaTypes[category].push(name);
     });
     
     return categorizedMediaTypes;
