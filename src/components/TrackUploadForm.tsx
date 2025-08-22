@@ -1568,6 +1568,101 @@ export function TrackUploadForm() {
                 </div>
               </div>
 
+              {/* Rights Holder Information Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Rights Holder Information</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Rights Holder Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.rightsHolderName}
+                      onChange={(e) => updateFormData({ rightsHolderName: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter rights holder name"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Rights Holder Type
+                    </label>
+                    <select
+                      value={formData.rightsHolderType}
+                      onChange={(e) => updateFormData({ rightsHolderType: e.target.value as 'producer' | 'record_label' | 'publisher' | 'other' })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      disabled={isSubmitting}
+                    >
+                      <option value="producer">Producer</option>
+                      <option value="record_label">Record Label</option>
+                      <option value="publisher">Publisher</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Rights Holder Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.rightsHolderEmail}
+                      onChange={(e) => updateFormData({ rightsHolderEmail: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter rights holder email"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Rights Holder Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.rightsHolderPhone}
+                      onChange={(e) => updateFormData({ rightsHolderPhone: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter rights holder phone"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Rights Holder Address
+                    </label>
+                    <textarea
+                      value={formData.rightsHolderAddress}
+                      onChange={(e) => updateFormData({ rightsHolderAddress: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter rights holder address"
+                      rows={3}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  
+                  <div className="md:col-span-2">
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={formData.rightsDeclarationAccepted}
+                        onChange={(e) => updateFormData({ rightsDeclarationAccepted: e.target.checked })}
+                        className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span className="text-sm">
+                        I declare that I have the legal authority to license this content and that all rights holders have been properly credited and compensated according to the split sheet.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Split Sheet Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Split Sheet Participants</h2>
