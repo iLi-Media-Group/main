@@ -1421,7 +1421,7 @@ export function TrackUploadForm() {
                 <div className="space-y-3">
                   {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => {
                     const categoryMoodsSelected = moods.filter(mood => formData.selectedMoods.includes(mood));
-                    const isExpanded = expandedMoodCategories.includes(category);
+                    const isExpanded = expandedMoodCategories.has(category);
                     
                     return (
                       <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
