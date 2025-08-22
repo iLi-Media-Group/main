@@ -201,13 +201,20 @@ export function TrackUploadForm() {
       return MOODS_CATEGORIES; // Fallback to static data
     }
     
-    // Group moods by category
+    // Group moods by category (main moods) and their sub-moods
     const categorizedMoods: Record<string, string[]> = {};
-    dynamicMoods.forEach(mood => {
-      if (!categorizedMoods[mood.category]) {
-        categorizedMoods[mood.category] = [];
-      }
-      categorizedMoods[mood.category].push(mood.display_name);
+    
+    // First, find all main mood categories
+    const mainMoods = dynamicMoods.filter(mood => 
+      mood.category === mood.display_name // Main mood categories have same name as display_name
+    );
+    
+    // Then group sub-moods under their main categories
+    mainMoods.forEach(mainMood => {
+      const subMoods = dynamicMoods.filter(mood => 
+        mood.category === mainMood.display_name && mood.id !== mainMood.id
+      );
+      categorizedMoods[mainMood.display_name] = subMoods.map(subMood => subMood.name);
     });
     
     return categorizedMoods;
@@ -1473,7 +1480,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="space-y-3">
-                  {/* Main Mood Categories */}
+                  {/* Main Mood Categories with Checkboxes */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {Object.keys(getMoodsCategories()).map((category) => (
                       <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
@@ -1504,7 +1511,10 @@ export function TrackUploadForm() {
                     const subMoods = getMoodsCategories()[selectedCategory] || [];
                     return (
                       <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
-                        <h3 className="text-lg font-medium text-white mb-3">{selectedCategory} - Sub-moods</h3>
+                        <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                          <span>{selectedCategory} - Sub-moods</span>
+                          <span className="ml-2 text-sm text-blue-300">({subMoods.length})</span>
+                        </h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                           {subMoods.map((subMood) => (
                             <label key={subMood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">

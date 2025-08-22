@@ -145,34 +145,57 @@ export function useDynamicSearchData(): DynamicSearchData {
           : mt.name
       })) || [];
 
-      // Fetch unique moods from tracks table
+      // Fetch moods from new moods and sub_moods tables
       let moodsData = null;
       let moodsError = null;
       
       try {
         const result = await supabase
-          .from('tracks')
-          .select('moods')
-          .not('moods', 'is', null);
+          .from('moods')
+          .select(`
+            id,
+            name,
+            display_name,
+            display_order,
+            sub_moods (
+              id,
+              name,
+              display_name,
+              display_order
+            )
+          `)
+          .order('display_order', { ascending: true });
         
         if (result.error) {
           moodsError = result.error;
           moodsData = [];
         } else {
-          // Extract unique moods from all tracks
-          const allMoods = result.data?.flatMap(track => track.moods || []) || [];
-          const uniqueMoods = [...new Set(allMoods)].sort();
+          // Convert to DynamicMood format with categorized structure
+          const dynamicMoods: DynamicMood[] = [];
+          result.data?.forEach(mood => {
+            // Add main mood category
+            dynamicMoods.push({
+              id: mood.id,
+              name: mood.name,
+              display_name: mood.display_name,
+              category: mood.display_name
+            });
+
+            // Add sub-moods
+            mood.sub_moods?.forEach(subMood => {
+              dynamicMoods.push({
+                id: subMood.id,
+                name: subMood.name,
+                display_name: subMood.display_name,
+                category: mood.display_name
+              });
+            });
+          });
           
-          // Convert to the format expected by the interface
-          moodsData = uniqueMoods.map((mood, index) => ({
-            id: `mood-${index}`,
-            name: mood,
-            display_name: mood,
-            category: 'Other' // Default category until we implement proper categorization
-          }));
+          moodsData = dynamicMoods;
         }
       } catch (err) {
-        console.warn('Error fetching moods from tracks, using fallback data');
+        console.warn('Error fetching moods from new tables, using fallback data');
         moodsData = [];
         moodsError = null;
       }

@@ -120,13 +120,20 @@ export function RightsHolderUploadForm() {
       return MOODS_CATEGORIES; // Fallback to static data
     }
     
-    // Group moods by category
+    // Group moods by category (main moods) and their sub-moods
     const categorizedMoods: Record<string, string[]> = {};
-    dynamicMoods.forEach(mood => {
-      if (!categorizedMoods[mood.category]) {
-        categorizedMoods[mood.category] = [];
-      }
-      categorizedMoods[mood.category].push(mood.display_name);
+    
+    // First, find all main mood categories
+    const mainMoods = dynamicMoods.filter(mood => 
+      mood.category === mood.display_name // Main mood categories have same name as display_name
+    );
+    
+    // Then group sub-moods under their main categories
+    mainMoods.forEach(mainMood => {
+      const subMoods = dynamicMoods.filter(mood => 
+        mood.category === mainMood.display_name && mood.id !== mainMood.id
+      );
+      categorizedMoods[mainMood.display_name] = subMoods.map(subMood => subMood.name);
     });
     
     return categorizedMoods;
