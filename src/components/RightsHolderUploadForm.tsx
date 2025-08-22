@@ -5,6 +5,10 @@ import { uploadFile } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { useStableDataFetch } from '../hooks/useStableEffect';
+import { useFormPersistence } from '../hooks/useFormPersistence';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { useCurrentPlan } from '../hooks/useCurrentPlan';
+import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { 
   Upload, 
   Music, 
@@ -22,9 +26,12 @@ import {
   Send,
   Save,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  X,
+  Layers,
+  FileMusic
 } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS } from '../types';
+import { MOODS_CATEGORIES, MOODS, MUSICAL_KEYS } from '../types';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface Genre {
@@ -44,35 +51,55 @@ interface GenreWithSubGenres extends Genre {
   sub_genres: SubGenre[];
 }
 
-interface UploadFormData {
-  // Basic Track Information
+interface FormData {
   title: string;
-  artist: string;
+  bpm: string;
+  key: string;
+  hasStingEnding: boolean;
+  isOneStop: boolean;
   genre: string;
   subGenre: string;
   mood: string;
   subMood: string;
-  bpm: number;
-  key: string;
-  duration: number;
-  description: string;
-  
-  // Rights Information
+  selectedGenres: string[];
+  selectedSubGenres: string[];
+  selectedMoods: string[];
+  selectedInstruments: string[];
+  selectedMediaUsage: string[];
+  mp3Url: string;
+  trackoutsUrl: string;
+  hasVocals: boolean;
+  isSyncOnly: boolean;
+  stemsUrl: string;
+  splitSheetUrl: string;
+  audioFileName: string;
+  explicitLyrics: boolean;
+  isCleanVersion: boolean | null;
+  cleanVersionOf: string;
+  // Sample clearance fields
+  containsLoops: boolean;
+  containsSamples: boolean;
+  containsSpliceLoops: boolean;
+  samplesCleared: boolean;
+  sampleClearanceNotes: string;
+  // Rights management fields
   masterRightsOwner: string;
   publishingRightsOwner: string;
-  
-  // File Uploads
-  audioFile: File | null;
-  artworkFile: File | null;
-  
-  // Split Sheet Data
   participants: SplitSheetParticipant[];
-  
-  // Co-signer Information
   coSigners: CoSigner[];
-  
-  // Instruments
-  selectedInstruments: string[];
+  // New rights holder fields
+  rightsHolderName: string;
+  rightsHolderType: 'producer' | 'record_label' | 'publisher' | 'other';
+  rightsHolderEmail: string;
+  rightsHolderPhone: string;
+  rightsHolderAddress: string;
+  rightsDeclarationAccepted: boolean;
+  // File upload fields (not persisted)
+  audioFile?: File | null;
+  artworkFile?: File | null;
+  description?: string;
+  artist?: string;
+  duration?: number;
 }
 
 interface SplitSheetParticipant {
@@ -102,6 +129,8 @@ export function RightsHolderUploadForm() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [uploadedTrackTitle, setUploadedTrackTitle] = useState('');
   
   // Database-driven dropdown data
   const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
@@ -110,9 +139,83 @@ export function RightsHolderUploadForm() {
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const { mediaTypes, moods: dynamicMoods, instruments: dynamicInstruments, loading: dynamicDataLoading } = useDynamicSearchData();
   
+  // Feature flags and plans
+  const deepMediaSearchEnabled = useFeatureFlag('deep_media_search');
+  const { currentPlan } = useCurrentPlan();
+  
   // State for tracking expanded categories
   const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
   const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
+
+  // Initialize form persistence
+  const {
+    formData,
+    updateFormData,
+    clearSavedData,
+    resetForm: resetFormData
+  } = useFormPersistence({
+    title: '',
+    bpm: '',
+    key: '',
+    hasStingEnding: false,
+    isOneStop: false,
+    genre: '',
+    subGenre: '',
+    mood: '',
+    subMood: '',
+    selectedGenres: [] as string[],
+    selectedSubGenres: [] as string[],
+    selectedMoods: [] as string[],
+    selectedInstruments: [] as string[],
+    selectedMediaUsage: [] as string[],
+    mp3Url: '',
+    trackoutsUrl: '',
+    hasVocals: false,
+    isSyncOnly: false,
+    stemsUrl: '',
+    splitSheetUrl: '',
+    audioFileName: '',
+    explicitLyrics: false,
+    isCleanVersion: null as boolean | null,
+    cleanVersionOf: '',
+    // Sample clearance fields
+    containsLoops: false,
+    containsSamples: false,
+    containsSpliceLoops: false,
+    samplesCleared: false,
+    sampleClearanceNotes: '',
+    // Rights management fields
+    masterRightsOwner: profile?.company_name || '',
+    publishingRightsOwner: profile?.company_name || '',
+    participants: [
+      {
+        id: '1',
+        name: '',
+        role: 'writer' as const,
+        percentage: 100,
+        email: '',
+        pro: '',
+        publisher: ''
+      }
+    ] as SplitSheetParticipant[],
+    coSigners: [] as CoSigner[],
+    // New rights holder fields
+    rightsHolderName: profile?.company_name || '',
+    rightsHolderType: 'record_label' as const,
+    rightsHolderEmail: profile?.email || '',
+    rightsHolderPhone: profile?.phone || '',
+    rightsHolderAddress: '',
+    rightsDeclarationAccepted: false,
+    // File upload fields (not persisted)
+    audioFile: null as File | null,
+    artworkFile: null as File | null,
+    description: '',
+    artist: '',
+    duration: 0
+  }, {
+    storageKey: 'rights-holder-upload',
+    excludeFields: ['audioFile', 'artworkFile', 'trackoutsFile', 'stemsFile', 'splitSheetFile', 'imagePreview']
+  });
 
   // Transform dynamic moods data into categorized structure
   const getMoodsCategories = () => {
@@ -182,8 +285,6 @@ export function RightsHolderUploadForm() {
     return categorizedInstruments;
   };
 
-
-  
   const audioFileRef = useRef<HTMLInputElement>(null);
   const artworkFileRef = useRef<HTMLInputElement>(null);
 
@@ -231,63 +332,33 @@ export function RightsHolderUploadForm() {
     () => true
   );
 
-  const [formData, setFormData] = useState<UploadFormData>({
-    title: '',
-    artist: '',
-    genre: '',
-    subGenre: '',
-    mood: '',
-    subMood: '',
-    bpm: 0,
-    key: '',
-    duration: 0,
-    description: '',
-    masterRightsOwner: profile?.company_name || '',
-    publishingRightsOwner: profile?.company_name || '',
-    audioFile: null,
-    artworkFile: null,
-    participants: [
-      {
-        id: '1',
-        name: '',
-        role: 'writer',
-        percentage: 100,
-        email: '',
-        pro: '',
-        publisher: ''
-      }
-    ],
-    coSigners: [],
-    selectedInstruments: []
-  });
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
     // Handle number inputs properly
     if (type === 'number') {
       const numValue = value === '' ? 0 : Number(value);
-      setFormData(prev => ({
-        ...prev,
+      updateFormData({
         [name]: isNaN(numValue) ? 0 : numValue
-      }));
+      });
     } else {
-      setFormData(prev => ({
-        ...prev,
+      updateFormData({
         [name]: value
-      }));
+      });
     }
   };
 
-  const handleMultiSelectChange = (field: keyof UploadFormData, value: string, checked: boolean) => {
-    setFormData(prev => {
-      const currentValues = prev[field] as string[];
-      if (checked) {
-        return { ...prev, [field]: [...currentValues, value] };
-      } else {
-        return { ...prev, [field]: currentValues.filter(v => v !== value) };
-      }
-    });
+  const handleMultiSelectChange = (field: keyof FormData, value: string, checked: boolean) => {
+    const currentValues = formData[field] as string[];
+    if (checked) {
+      updateFormData({
+        [field]: [...currentValues, value]
+      });
+    } else {
+      updateFormData({
+        [field]: currentValues.filter(v => v !== value)
+      });
+    }
   };
 
   const toggleMoodCategory = (category: string) => {
@@ -323,9 +394,9 @@ export function RightsHolderUploadForm() {
     const file = e.target.files?.[0];
     if (file) {
       if (fileType === 'audio') {
-        setFormData(prev => ({ ...prev, audioFile: file }));
+        updateFormData({ audioFile: file });
       } else {
-        setFormData(prev => ({ ...prev, artworkFile: file }));
+        updateFormData({ artworkFile: file });
       }
     }
   };
@@ -340,26 +411,23 @@ export function RightsHolderUploadForm() {
       pro: '',
       publisher: ''
     };
-    setFormData(prev => ({
-      ...prev,
-      participants: [...prev.participants, newParticipant]
-    }));
+    updateFormData({
+      participants: [...formData.participants, newParticipant]
+    });
   };
 
   const updateParticipant = (id: string, field: keyof SplitSheetParticipant, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      participants: prev.participants.map(p => 
+    updateFormData({
+      participants: formData.participants.map(p => 
         p.id === id ? { ...p, [field]: value } : p
       )
-    }));
+    });
   };
 
   const removeParticipant = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      participants: prev.participants.filter(p => p.id !== id)
-    }));
+    updateFormData({
+      participants: formData.participants.filter(p => p.id !== id)
+    });
   };
 
   const addCoSigner = () => {
@@ -371,26 +439,23 @@ export function RightsHolderUploadForm() {
       invited: false,
       signed: false
     };
-    setFormData(prev => ({
-      ...prev,
-      coSigners: [...prev.coSigners, newCoSigner]
-    }));
+    updateFormData({
+      coSigners: [...formData.coSigners, newCoSigner]
+    });
   };
 
   const updateCoSigner = (id: string, field: keyof CoSigner, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      coSigners: prev.coSigners.map(c => 
+    updateFormData({
+      coSigners: formData.coSigners.map(c => 
         c.id === id ? { ...c, [field]: value } : c
       )
-    }));
+    });
   };
 
   const removeCoSigner = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      coSigners: prev.coSigners.filter(c => c.id !== id)
-    }));
+    updateFormData({
+      coSigners: formData.coSigners.filter(c => c.id !== id)
+    });
   };
 
   const validateStep = (step: number): boolean => {
@@ -458,32 +523,35 @@ export function RightsHolderUploadForm() {
       }
 
       // Ensure numeric fields are valid
-      const bpm = formData.bpm && !isNaN(formData.bpm) ? formData.bpm : null;
-      const duration = formData.duration && !isNaN(formData.duration) ? formData.duration : null;
+      const bpm = formData.bpm && !isNaN(Number(formData.bpm)) ? Number(formData.bpm) : null;
+      const duration = formData.duration && !isNaN(Number(formData.duration)) ? Number(formData.duration) : null;
 
-      // Create master recording record
-      const { data: masterRecording, error: masterError } = await supabase
-        .from('master_recordings')
-        .insert({
-          rights_holder_id: user.id,
-          title: formData.title.trim(),
-          artist: formData.artist.trim(),
-          genre: formData.genre,
-          sub_genre: formData.subGenre || null,
-          mood: formData.mood || null,
-          bpm: bpm,
-          key: formData.key || null,
-          duration: duration,
-          description: formData.description || null,
-          audio_url: audioPath,
-          artwork_url: artworkPath || null,
-          master_rights_owner: formData.masterRightsOwner || null,
-          publishing_rights_owner: formData.publishingRightsOwner || null,
-          status: 'pending_verification',
-          instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null
-        })
-        .select()
-        .single();
+                           // Create master recording record
+        const { data: masterRecording, error: masterError } = await supabase
+          .from('master_recordings')
+          .insert({
+            rights_holder_id: user.id,
+            title: formData.title.trim(),
+            artist: formData.artist.trim(),
+            genres: formData.genre ? [genres.find(g => g.id === formData.genre)?.display_name || formData.genre] : [],
+            sub_genres: formData.subGenre ? [genres.find(g => g.id === formData.genre)?.sub_genres?.find(sg => sg.id === formData.subGenre)?.display_name || formData.subGenre] : [],
+            moods: formData.selectedMoods || [],
+            bpm: bpm,
+            key: formData.key || null,
+            duration: duration,
+            description: formData.description || null,
+            audio_url: audioPath,
+            artwork_url: artworkPath || null,
+            master_rights_owner: formData.masterRightsOwner || null,
+            publishing_rights_owner: formData.publishingRightsOwner || null,
+            status: 'pending_verification',
+            instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null,
+            media_usage: formData.selectedMediaUsage.length > 0 ? formData.selectedMediaUsage : null,
+            has_vocals: formData.hasVocals,
+            is_sync_only: formData.isSyncOnly
+          })
+          .select()
+          .single();
 
       if (masterError) throw masterError;
 
@@ -730,111 +798,162 @@ export function RightsHolderUploadForm() {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-gray-300 mb-2">Key</label>
-                  <select
-                    name="key"
-                    value={formData.key}
-                    onChange={handleInputChange}
-                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="">Select key</option>
-                    {MUSICAL_KEYS.map((key) => (
-                      <option key={key} value={key}>
-                        {key}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                               <div>
+                 <label className="block text-gray-300 mb-2">Key</label>
+                 <select
+                   name="key"
+                   value={formData.key}
+                   onChange={handleInputChange}
+                   className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                 >
+                   <option value="">Select key</option>
+                   {MUSICAL_KEYS.map((key) => (
+                     <option key={key} value={key}>
+                       {key}
+                     </option>
+                   ))}
+                 </select>
+               </div>
+             </div>
 
-              {/* Mood Selection */}
-              <div>
-                <label className="block text-gray-300 mb-2">Mood</label>
-                <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {getMainMoodCategories().map((category) => (
-                    <div key={category} className="mb-4">
-                      <button
-                        type="button"
-                        onClick={() => toggleMoodCategory(category)}
-                        className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
-                      >
-                        <span className="font-medium">{category}</span>
-                        {expandedMoodCategories.has(category) ? (
-                          <ChevronDown className="w-4 h-4" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4" />
-                        )}
-                      </button>
-                      {expandedMoodCategories.has(category) && (
-                        <div className="ml-4 mt-2 space-y-1">
-                          {getSubMoodsForCategory(category).map((mood: string) => (
-                            <label key={mood} className="flex items-center space-x-2 text-gray-300">
-                              <input
-                                type="checkbox"
-                                checked={formData.mood === mood}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setFormData(prev => ({ ...prev, mood: mood }));
-                                  } else {
-                                    setFormData(prev => ({ ...prev, mood: '' }));
-                                  }
-                                }}
-                                className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                              />
-                              <span className="capitalize">{mood}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+             {/* Track Type Options */}
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="flex items-center space-x-3">
+                 <input
+                   type="checkbox"
+                   id="hasVocals"
+                   name="hasVocals"
+                   checked={formData.hasVocals}
+                   onChange={(e) => updateFormData({ hasVocals: e.target.checked })}
+                   className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                 />
+                 <label htmlFor="hasVocals" className="text-gray-300">
+                   Full Track with Vocals
+                 </label>
+               </div>
+               
+               <div className="flex items-center space-x-3">
+                 <input
+                   type="checkbox"
+                   id="isSyncOnly"
+                   name="isSyncOnly"
+                   checked={formData.isSyncOnly}
+                   onChange={(e) => updateFormData({ isSyncOnly: e.target.checked })}
+                   className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                 />
+                 <label htmlFor="isSyncOnly" className="text-gray-300">
+                   Sync Only (Only allow for sync briefs)
+                 </label>
+               </div>
+             </div>
 
-              {/* Instruments Selection */}
-              <div>
-                <label className="block text-gray-300 mb-2">Instruments</label>
-                <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
-                  {dynamicDataLoading ? (
-                    <div className="text-gray-400 text-center py-4">Loading instruments...</div>
-                  ) : (
-                    <div>
-                      {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => (
-                        <div key={category} className="mb-4">
-                          <button
-                            type="button"
-                            onClick={() => toggleInstrumentCategory(category)}
-                            className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
-                          >
-                            <span className="font-medium">{category}</span>
-                            {expandedInstrumentCategories.has(category) ? (
-                              <ChevronDown className="w-4 h-4" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4" />
-                            )}
-                          </button>
-                          {expandedInstrumentCategories.has(category) && (
-                            <div className="ml-4 mt-2 space-y-1">
-                              {instruments.map((instrument: string) => (
-                                <label key={instrument} className="flex items-center space-x-2 text-gray-300">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.selectedInstruments.includes(instrument)}
-                                    onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument, e.target.checked)}
-                                    className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
-                                  />
-                                  <span>{instrument}</span>
-                                </label>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+                             {/* Mood Selection */}
+               <div>
+                 <label className="block text-gray-300 mb-2">Moods</label>
+                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                   {getMainMoodCategories().map((category) => (
+                     <div key={category} className="mb-4">
+                       <button
+                         type="button"
+                         onClick={() => toggleMoodCategory(category)}
+                         className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
+                       >
+                         <span className="font-medium">{category}</span>
+                         {expandedMoodCategories.has(category) ? (
+                           <ChevronDown className="w-4 h-4" />
+                         ) : (
+                           <ChevronRight className="w-4 h-4" />
+                         )}
+                       </button>
+                       {expandedMoodCategories.has(category) && (
+                         <div className="ml-4 mt-2 space-y-1">
+                           {getSubMoodsForCategory(category).map((mood: string) => (
+                             <label key={mood} className="flex items-center space-x-2 text-gray-300">
+                               <input
+                                 type="checkbox"
+                                 checked={formData.selectedMoods.includes(mood)}
+                                 onChange={(e) => handleMultiSelectChange('selectedMoods', mood, e.target.checked)}
+                                 className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                               />
+                               <span className="capitalize">{mood}</span>
+                             </label>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               </div>
+
+                             {/* Instruments Selection */}
+               <div>
+                 <label className="block text-gray-300 mb-2">Instruments</label>
+                 <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                   {dynamicDataLoading ? (
+                     <div className="text-gray-400 text-center py-4">Loading instruments...</div>
+                   ) : (
+                     <div>
+                       {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => (
+                         <div key={category} className="mb-4">
+                           <button
+                             type="button"
+                             onClick={() => toggleInstrumentCategory(category)}
+                             className="flex items-center justify-between w-full p-2 text-left text-white hover:bg-gray-700/50 rounded"
+                           >
+                             <span className="font-medium">{category}</span>
+                             {expandedInstrumentCategories.has(category) ? (
+                               <ChevronDown className="w-4 h-4" />
+                             ) : (
+                               <ChevronRight className="w-4 h-4" />
+                             )}
+                           </button>
+                           {expandedInstrumentCategories.has(category) && (
+                             <div className="ml-4 mt-2 space-y-1">
+                               {instruments.map((instrument: string) => (
+                                 <label key={instrument} className="flex items-center space-x-2 text-gray-300">
+                                   <input
+                                     type="checkbox"
+                                     checked={formData.selectedInstruments.includes(instrument)}
+                                     onChange={(e) => handleMultiSelectChange('selectedInstruments', instrument, e.target.checked)}
+                                     className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                                   />
+                                   <span>{instrument}</span>
+                                 </label>
+                               ))}
+                             </div>
+                           )}
+                         </div>
+                       ))}
+                     </div>
+                   )}
+                 </div>
+               </div>
+
+               {/* Media Usage Types */}
+               {deepMediaSearchEnabled && (
+                 <div>
+                   <label className="block text-gray-300 mb-2">Media Usage Types</label>
+                   <div className="bg-gray-800/30 rounded-lg p-4 max-h-60 overflow-y-auto">
+                     {dynamicDataLoading ? (
+                       <div className="text-gray-400 text-center py-4">Loading media types...</div>
+                     ) : (
+                       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                         {mediaTypes.map((mediaType) => (
+                           <label key={mediaType.id} className="flex items-center space-x-2 text-gray-300">
+                             <input
+                               type="checkbox"
+                               checked={formData.selectedMediaUsage.includes(mediaType.name)}
+                               onChange={(e) => handleMultiSelectChange('selectedMediaUsage', mediaType.name, e.target.checked)}
+                               className="rounded border-gray-600 bg-gray-700 text-blue-500 focus:ring-blue-500"
+                             />
+                             <span className="text-sm">{mediaType.name}</span>
+                           </label>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               )}
               
               <div>
                 <label className="block text-gray-300 mb-2">Description</label>
