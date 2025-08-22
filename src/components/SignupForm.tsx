@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Mail, Lock, User, X, Building2, Music, Info, UserPlus, Sparkles } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { GoogleReCaptchaProvider, useGoogleReCaptcha } from 'react-google-recaptcha-v3';
+
 import { VideoBackground } from './VideoBackground';
 
 interface SignupFormProps {
@@ -25,8 +25,8 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
-  const { signUp, signIn } = useAuth();
+
+  const { signUp, signIn } = useUnifiedAuth();
   const navigate = useNavigate();
   
   // Get redirect and product info from URL params
@@ -544,18 +544,5 @@ function SignupFormContent({ onClose }: SignupFormProps) {
 }
 
 export function SignupForm({ onClose }: SignupFormProps) {
-  console.log('SignupForm: Initializing with reCAPTCHA key');
-  return (
-    <GoogleReCaptchaProvider
-      reCaptchaKey="6LeE_Y4rAAAAALZxpq4wmNgMTCldPePWEKdy2-W0"
-      scriptProps={{
-        async: false,
-        defer: false,
-        appendTo: 'body',
-        nonce: undefined,
-      }}
-    >
-      <SignupFormContent onClose={onClose} />
-    </GoogleReCaptchaProvider>
-  );
+  return <SignupFormContent onClose={onClose} />;
 }
