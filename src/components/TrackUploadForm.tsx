@@ -626,11 +626,16 @@ export function TrackUploadForm() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[DEBUG] 🚀 Form submission started');
     e.preventDefault();
+    console.log('[DEBUG] Form prevented default');
+    
     if (!user || !audioFile) {
       console.error('[DEBUG] Missing user or audio file:', { user: !!user, audioFile: !!audioFile });
       return;
     }
+    
+    console.log('[DEBUG] ✅ User and audio file validation passed');
 
     // Debug authentication status
     console.log('[DEBUG] User authentication check:', {
@@ -2328,6 +2333,7 @@ export function TrackUploadForm() {
             <div className="pt-8 relative z-10">
               <button
                 type="submit"
+                onClick={() => console.log('[DEBUG] 🎯 Submit button clicked!')}
                 className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
                 disabled={isSubmitting || !audioFile}
               >
