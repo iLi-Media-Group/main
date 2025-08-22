@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Loader2, Music, Hash, Image, Search, Play, Pause, ChevronDown, ChevronRight, CheckCircle, AlertCircle, FileAudio, FileText, Users, Building2 } from 'lucide-react';
-import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_TYPES, ALL_INSTRUMENTS, INSTRUMENTS } from '../types';
+import { MOODS_CATEGORIES, MUSICAL_KEYS, MEDIA_USAGE_TYPES, ALL_INSTRUMENTS, INSTRUMENTS, MEDIA_USAGE_CATEGORIES } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
@@ -1476,7 +1476,19 @@ export function TrackUploadForm() {
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={isSubmitting}
                               />
-                              <span className="font-medium text-white">{category}</span>
+                              <button
+                                type="button"
+                                onClick={() => toggleMoodCategory(category)}
+                                className="flex items-center space-x-2 hover:text-blue-300 transition-colors"
+                                disabled={isSubmitting}
+                              >
+                                <span className="font-medium text-white">{category}</span>
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4 text-gray-300" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4 text-gray-300" />
+                                )}
+                              </button>
                             </div>
                             {categoryMoodsSelected.length > 0 && (
                               <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
@@ -1484,18 +1496,6 @@ export function TrackUploadForm() {
                               </span>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleMoodCategory(category)}
-                            className="flex items-center space-x-2 p-1 hover:bg-blue-600/50 rounded transition-colors"
-                            disabled={isSubmitting}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="w-4 h-4 text-gray-300" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-300" />
-                            )}
-                          </button>
                         </div>
                         
                         {/* Collapsible Mood List */}
