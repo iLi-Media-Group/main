@@ -194,6 +194,43 @@ export function TrackUploadForm() {
 
   // Step management for improved layout
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Toggle functions for collapsible categories
+  const toggleMoodCategory = (category: string) => {
+    setExpandedMoodCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleInstrumentCategory = (category: string) => {
+    setExpandedInstrumentCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleMediaCategory = (category: string) => {
+    setExpandedMediaCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
   
   const steps = [
     { number: 1, title: 'Basic Info', icon: FileText },
@@ -1381,36 +1418,94 @@ export function TrackUploadForm() {
               {/* Moods Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
-                <div className="space-y-4">
-                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
-                    <div key={category} className="mb-4">
-                      <h3 className="text-lg font-medium text-white mb-3">{category}</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {moods.map((mood) => (
-                          <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedMoods.includes(mood)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  updateFormData({ 
-                                    selectedMoods: [...formData.selectedMoods, mood]
-                                  });
-                                } else {
-                                  updateFormData({
-                                    selectedMoods: formData.selectedMoods.filter(m => m !== mood)
-                                  });
-                                }
-                              }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                              disabled={isSubmitting}
-                            />
-                            <span className="text-sm capitalize">{mood}</span>
-                          </label>
-                        ))}
+                <div className="space-y-3">
+                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => {
+                    const categoryMoodsSelected = moods.filter(mood => formData.selectedMoods.includes(mood));
+                    const isExpanded = expandedMoodCategories.includes(category);
+                    
+                    return (
+                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
+                        {/* Category Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleMoodCategory(category)}
+                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
+                          disabled={isSubmitting}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={categoryMoodsSelected.length === moods.length}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    // Select all moods in this category
+                                    const newMoods = [...formData.selectedMoods];
+                                    moods.forEach(mood => {
+                                      if (!newMoods.includes(mood)) {
+                                        newMoods.push(mood);
+                                      }
+                                    });
+                                    updateFormData({ selectedMoods: newMoods });
+                                  } else {
+                                    // Deselect all moods in this category
+                                    updateFormData({
+                                      selectedMoods: formData.selectedMoods.filter(mood => !moods.includes(mood))
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={isSubmitting}
+                              />
+                              <span className="font-medium text-white">{category}</span>
+                            </div>
+                            {categoryMoodsSelected.length > 0 && (
+                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                                {categoryMoodsSelected.length}/{moods.length}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-gray-300" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                          </div>
+                        </button>
+                        
+                        {/* Collapsible Mood List */}
+                        {isExpanded && (
+                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {moods.map((mood) => (
+                                <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedMoods.includes(mood)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        updateFormData({ 
+                                          selectedMoods: [...formData.selectedMoods, mood]
+                                        });
+                                      } else {
+                                        updateFormData({
+                                          selectedMoods: formData.selectedMoods.filter(m => m !== mood)
+                                        });
+                                      }
+                                    }}
+                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                    disabled={isSubmitting}
+                                  />
+                                  <span className="text-sm capitalize">{mood}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1424,58 +1519,206 @@ export function TrackUploadForm() {
               {/* Instruments Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(Array.isArray(ALL_INSTRUMENTS) ? ALL_INSTRUMENTS : []).map((instrument) => (
-                    <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
-                                              <input
-                          type="checkbox"
-                        checked={formData.selectedInstruments.includes(instrument)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                                updateFormData({ 
-                              selectedInstruments: [...formData.selectedInstruments, instrument]
-                                });
-                            } else {
-                              updateFormData({
-                              selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
-                              });
-                            }
-                          }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      <span className="text-sm">{instrument}</span>
-                    </label>
-                  ))}
+                <div className="space-y-3">
+                  {Object.entries(INSTRUMENTS).map(([category, instruments]) => {
+                    const categoryInstrumentsSelected = instruments.filter(instrument => formData.selectedInstruments.includes(instrument));
+                    const isExpanded = expandedInstrumentCategories.has(category);
+                    
+                    return (
+                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
+                        {/* Category Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleInstrumentCategory(category)}
+                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
+                          disabled={isSubmitting}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={categoryInstrumentsSelected.length === instruments.length}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    // Select all instruments in this category
+                                    const newInstruments = [...formData.selectedInstruments];
+                                    instruments.forEach(instrument => {
+                                      if (!newInstruments.includes(instrument)) {
+                                        newInstruments.push(instrument);
+                                      }
+                                    });
+                                    updateFormData({ selectedInstruments: newInstruments });
+                                  } else {
+                                    // Deselect all instruments in this category
+                                    updateFormData({
+                                      selectedInstruments: formData.selectedInstruments.filter(instrument => !instruments.includes(instrument))
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={isSubmitting}
+                              />
+                              <span className="font-medium text-white">{category}</span>
+                            </div>
+                            {categoryInstrumentsSelected.length > 0 && (
+                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                                {categoryInstrumentsSelected.length}/{instruments.length}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-gray-300" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                          </div>
+                        </button>
+                        
+                        {/* Collapsible Instrument List */}
+                        {isExpanded && (
+                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                              {instruments.map((instrument) => (
+                                <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.selectedInstruments.includes(instrument)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        updateFormData({ 
+                                          selectedInstruments: [...formData.selectedInstruments, instrument]
+                                        });
+                                      } else {
+                                        updateFormData({
+                                          selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
+                                        });
+                                      }
+                                    }}
+                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                    disabled={isSubmitting}
+                                  />
+                                  <span className="text-sm">{instrument}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Media Usage Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(Array.isArray(MEDIA_USAGE_TYPES) ? MEDIA_USAGE_TYPES : []).map((usage) => (
-                    <label key={usage} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
-                          <input
-                            type="checkbox"
-                        checked={formData.selectedMediaUsage.includes(usage)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                updateFormData({ 
-                              selectedMediaUsage: [...formData.selectedMediaUsage, usage]
-                                });
-                              } else {
-                                updateFormData({
-                              selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== usage)
-                                });
-                              }
-                            }}
-                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                            disabled={isSubmitting}
-                          />
-                      <span className="text-sm">{usage}</span>
-                        </label>
-                      ))}
+                <div className="space-y-3">
+                  {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, subcategories]) => {
+                    // Flatten all usage types for this category
+                    const categoryUsageTypes = Object.entries(subcategories).reduce((acc, [subcategory, types]) => {
+                      types.forEach((type: string) => {
+                        acc.push(`${category} > ${subcategory} > ${type}`);
+                      });
+                      return acc;
+                    }, [] as string[]);
+                    
+                    const categoryUsageSelected = categoryUsageTypes.filter(usage => formData.selectedMediaUsage.includes(usage));
+                    const isExpanded = expandedMediaCategories.has(category);
+                    
+                    return (
+                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
+                        {/* Category Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleMediaCategory(category)}
+                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
+                          disabled={isSubmitting}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                checked={categoryUsageSelected.length === categoryUsageTypes.length}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    // Select all usage types in this category
+                                    const newUsageTypes = [...formData.selectedMediaUsage];
+                                    categoryUsageTypes.forEach(usage => {
+                                      if (!newUsageTypes.includes(usage)) {
+                                        newUsageTypes.push(usage);
+                                      }
+                                    });
+                                    updateFormData({ selectedMediaUsage: newUsageTypes });
+                                  } else {
+                                    // Deselect all usage types in this category
+                                    updateFormData({
+                                      selectedMediaUsage: formData.selectedMediaUsage.filter(usage => !categoryUsageTypes.includes(usage))
+                                    });
+                                  }
+                                }}
+                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                disabled={isSubmitting}
+                              />
+                              <span className="font-medium text-white">{category}</span>
+                            </div>
+                            {categoryUsageSelected.length > 0 && (
+                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                                {categoryUsageSelected.length}/{categoryUsageTypes.length}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-gray-300" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-gray-300" />
+                            )}
+                          </div>
+                        </button>
+                        
+                        {/* Collapsible Media Usage List */}
+                        {isExpanded && (
+                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
+                            <div className="space-y-3">
+                              {Object.entries(subcategories).map(([subcategory, types]) => (
+                                <div key={subcategory} className="border-l-2 border-blue-500/30 pl-3">
+                                  <h4 className="text-sm font-medium text-blue-300 mb-2">{subcategory}</h4>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    {types.map((type: string) => {
+                                      const fullUsageType = `${category} > ${subcategory} > ${type}`;
+                                      return (
+                                        <label key={fullUsageType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
+                                          <input
+                                            type="checkbox"
+                                            checked={formData.selectedMediaUsage.includes(fullUsageType)}
+                                            onChange={(e) => {
+                                              if (e.target.checked) {
+                                                updateFormData({ 
+                                                  selectedMediaUsage: [...formData.selectedMediaUsage, fullUsageType]
+                                                });
+                                              } else {
+                                                updateFormData({
+                                                  selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== fullUsageType)
+                                                });
+                                              }
+                                            }}
+                                            className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                                            disabled={isSubmitting}
+                                          />
+                                          <span className="text-sm">{type}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
