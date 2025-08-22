@@ -48,6 +48,7 @@ interface FormData {
   subGenre: string;
   mood: string;
   subMood: string;
+  selectedMoods: string[];
   selectedInstruments: string[];
   selectedMediaUsage: string[];
   mp3Url: string;
@@ -119,6 +120,7 @@ export function TrackUploadForm() {
     subGenre: '',
     mood: '',
     subMood: '',
+    selectedMoods: [] as string[],
     selectedInstruments: [] as string[],
     selectedMediaUsage: [] as string[],
     mp3Url: '',
