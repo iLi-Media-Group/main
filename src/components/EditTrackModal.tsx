@@ -128,7 +128,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setTrackoutsUrl(track.trackouts_url || '');
 
       console.log('EditTrackModal: Populated form state:', {
-        selectedGenres: initialGenres,
+        selectedGenres: Array.isArray(track.genres) ? track.genres : [],
         selectedMoods: Array.isArray(track.moods) ? track.moods : [],
         hasVocals: track.has_vocals || false,
         isSyncOnly: track.is_sync_only || false
