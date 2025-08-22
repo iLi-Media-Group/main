@@ -628,6 +628,7 @@ export function TrackUploadForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !audioFile) {
+      console.error('[DEBUG] Missing user or audio file:', { user: !!user, audioFile: !!audioFile });
       return;
     }
 
@@ -663,6 +664,22 @@ export function TrackUploadForm() {
       profileError,
       canAccessProfile: !profileError
     });
+
+    // Test basic API connectivity
+    try {
+      const { data: testData, error: testError } = await supabase
+        .from('tracks')
+        .select('id')
+        .limit(1);
+      
+      console.log('[DEBUG] Basic API connectivity test:', {
+        testData: testData ? 'SUCCESS' : 'NO_DATA',
+        testError,
+        canAccessTracks: !testError
+      });
+    } catch (testErr) {
+      console.error('[DEBUG] API connectivity test failed:', testErr);
+    }
 
     try {
       setIsSubmitting(true);
