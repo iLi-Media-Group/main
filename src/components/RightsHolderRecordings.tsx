@@ -207,26 +207,34 @@ export function RightsHolderRecordings() {
   };
 
   const handleEdit = (recording: Track) => {
+    console.log('Editing recording:', recording); // Debug log
+    
     setEditingRecording(recording);
     setEditFormData({
-      title: recording.title,
-      artist: recording.artist,
-      bpm: recording.bpm,
-      key: recording.key,
-      description: recording.description
+      title: recording.title || '',
+      artist: recording.artist || '',
+      bpm: recording.bpm || 0,
+      key: recording.key || '',
+      description: recording.description || ''
     });
     
-    // Set robust edit state
+    // Set robust edit state with defensive checks
     setSelectedGenres(Array.isArray(recording.genres) ? recording.genres : []);
     setSelectedMoods(Array.isArray(recording.moods) ? recording.moods : []);
     setSelectedInstruments(Array.isArray(recording.instruments) ? recording.instruments : []);
     setSelectedMediaUsage(Array.isArray(recording.media_usage) ? recording.media_usage : []);
-    setHasVocals(recording.has_vocals || false);
-    setIsSyncOnly(recording.is_sync_only || false);
+    setHasVocals(Boolean(recording.has_vocals));
+    setIsSyncOnly(Boolean(recording.is_sync_only));
     setStemsUrl(recording.stems_url || '');
     setSplitSheetUrl(recording.split_sheet_url || '');
     setMp3Url(recording.mp3_url || '');
     setTrackoutsUrl(recording.trackouts_url || '');
+    
+    // Reset file states
+    setMp3File(null);
+    setTrackoutsFile(null);
+    setStemsFile(null);
+    setSplitSheetFile(null);
   };
 
   const handleSave = async () => {
@@ -838,33 +846,37 @@ export function RightsHolderRecordings() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Moods</label>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
-                        <div key={category} className="border border-gray-600 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">{category}</span>
-                            <ChevronDown className="w-4 h-4" />
+                      {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => {
+                        // Ensure moods is an array
+                        const moodArray = Array.isArray(moods) ? moods : [];
+                        return (
+                          <div key={category} className="border border-gray-600 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium">{category}</span>
+                              <ChevronDown className="w-4 h-4" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-1">
+                              {moodArray.map((mood) => (
+                                <label key={mood} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedMoods.includes(mood)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedMoods(prev => [...prev, mood]);
+                                      } else {
+                                        setSelectedMoods(prev => prev.filter(m => m !== mood));
+                                      }
+                                    }}
+                                    className="mr-1"
+                                  />
+                                  <span className="text-xs">{mood}</span>
+                                </label>
+                              ))}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-1">
-                            {moods.map((mood) => (
-                              <label key={mood} className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedMoods.includes(mood)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedMoods(prev => [...prev, mood]);
-                                    } else {
-                                      setSelectedMoods(prev => prev.filter(m => m !== mood));
-                                    }
-                                  }}
-                                  className="mr-1"
-                                />
-                                <span className="text-xs">{mood}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -900,33 +912,37 @@ export function RightsHolderRecordings() {
                   <div>
                     <label className="block text-sm font-medium mb-2">Media Usage</label>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, types]) => (
-                        <div key={category} className="border border-gray-600 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium">{category}</span>
-                            <ChevronDown className="w-4 h-4" />
+                      {Object.entries(MEDIA_USAGE_CATEGORIES).map(([category, types]) => {
+                        // Ensure types is an array
+                        const typeArray = Array.isArray(types) ? types : [];
+                        return (
+                          <div key={category} className="border border-gray-600 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium">{category}</span>
+                              <ChevronDown className="w-4 h-4" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-1">
+                              {typeArray.map((type) => (
+                                <label key={type} className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedMediaUsage.includes(type)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedMediaUsage(prev => [...prev, type]);
+                                      } else {
+                                        setSelectedMediaUsage(prev => prev.filter(m => m !== type));
+                                      }
+                                    }}
+                                    className="mr-1"
+                                  />
+                                  <span className="text-xs">{type}</span>
+                                </label>
+                              ))}
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-1">
-                            {types.map((type) => (
-                              <label key={type} className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={selectedMediaUsage.includes(type)}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setSelectedMediaUsage(prev => [...prev, type]);
-                                    } else {
-                                      setSelectedMediaUsage(prev => prev.filter(m => m !== type));
-                                    }
-                                  }}
-                                  className="mr-1"
-                                />
-                                <span className="text-xs">{type}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
