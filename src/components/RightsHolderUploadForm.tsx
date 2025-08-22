@@ -594,11 +594,11 @@ export function RightsHolderUploadForm() {
       const bpm = formData.bpm && !isNaN(Number(formData.bpm)) ? Number(formData.bpm) : null;
       const duration = formData.duration && !isNaN(Number(formData.duration)) ? Number(formData.duration) : null;
 
-                           // Create master recording record
-        const { data: masterRecording, error: masterError } = await supabase
-          .from('master_recordings')
+                                                       // Create track record (same as producer upload)
+        const { data: track, error: trackError } = await supabase
+          .from('tracks')
           .insert({
-            rights_holder_id: user.id,
+            track_producer_id: user.id, // Use same field as producer upload
             title: formData.title.trim(),
             artist: formData.artist.trim(),
             genres: formData.genre ? [genres.find(g => g.id === formData.genre)?.display_name || formData.genre] : [],
@@ -609,10 +609,7 @@ export function RightsHolderUploadForm() {
             duration: duration,
             description: formData.description || null,
             audio_url: audioPath,
-            artwork_url: artworkPath || null,
-            master_rights_owner: formData.masterRightsOwner || null,
-            publishing_rights_owner: formData.publishingRightsOwner || null,
-            status: 'pending_verification',
+            image_url: artworkPath || null, // Use image_url not artwork_url
             instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null,
             media_usage: formData.selectedMediaUsage.length > 0 ? formData.selectedMediaUsage : null,
             has_vocals: formData.hasVocals,
@@ -621,65 +618,7 @@ export function RightsHolderUploadForm() {
           .select()
           .single();
 
-      if (masterError) throw masterError;
-
-      // Create publishing rights record
-      const { error: publishingError } = await supabase
-        .from('publishing_rights')
-        .insert({
-          master_recording_id: masterRecording.id,
-          rights_holder_id: user.id,
-          status: 'pending_verification'
-        });
-
-      if (publishingError) throw publishingError;
-
-      // Create split sheet
-      const { data: splitSheet, error: splitError } = await supabase
-        .from('split_sheets')
-        .insert({
-          master_recording_id: masterRecording.id,
-          rights_holder_id: user.id,
-          status: 'pending_signatures'
-        })
-        .select()
-        .single();
-
-      if (splitError) throw splitError;
-
-      // Create split sheet participants
-      const participantsData = formData.participants.map(p => ({
-        split_sheet_id: splitSheet.id,
-        name: p.name,
-        role: p.role,
-        percentage: p.percentage,
-        email: p.email,
-        pro: p.pro,
-        publisher: p.publisher
-      }));
-
-      const { error: participantsError } = await supabase
-        .from('split_sheet_participants')
-        .insert(participantsData);
-
-      if (participantsError) throw participantsError;
-
-      // Create co-signers if any
-      if (formData.coSigners.length > 0) {
-        const coSignersData = formData.coSigners.map(c => ({
-          split_sheet_id: splitSheet.id,
-          name: c.name,
-          email: c.email,
-          role: c.role,
-          invited: false
-        }));
-
-        const { error: coSignersError } = await supabase
-          .from('co_signers')
-          .insert(coSignersData);
-
-        if (coSignersError) throw coSignersError;
-      }
+      if (trackError) throw trackError;
 
       setSuccess(true);
       setUploadProgress(100);
@@ -709,10 +648,10 @@ export function RightsHolderUploadForm() {
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full text-center">
           <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4">Upload Successful!</h2>
-          <p className="text-gray-300 mb-6">
-            Your track has been uploaded and is pending verification. You'll be redirected to your dashboard shortly.
-          </p>
+                     <h2 className="text-2xl font-bold text-white mb-4">Track Upload Successful!</h2>
+           <p className="text-gray-300 mb-6">
+             Your track has been uploaded to the catalog and is now available for licensing. You'll be redirected to your dashboard shortly.
+           </p>
           <div className="w-full bg-gray-700 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
           </div>
@@ -736,11 +675,11 @@ export function RightsHolderUploadForm() {
     <div className="min-h-screen bg-blue-900/90 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white mb-2">Upload Master Recording</h1>
-          <p className="text-gray-300">Complete the rights verification process for your track</p>
-        </div>
+                 <div className="text-center mb-8">
+           <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+           <h1 className="text-3xl font-bold text-white mb-2">Upload Track</h1>
+           <p className="text-gray-300">Add your track to the MyBeatFi catalog for licensing</p>
+         </div>
 
                  {/* Progress Steps */}
          <div className="flex justify-center mb-8">
