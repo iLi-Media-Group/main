@@ -772,36 +772,36 @@ export function TrackUploadForm() {
       // --- End new logic ---
 
       // Insert or update track in DB
-      const insertData = {
-        track_producer_id: user.id,
-        title: formData.title,
-        artist: user.email?.split('@')[0] || 'Unknown Artist',
-        genres: formData.selectedGenres || [],
-        sub_genres: formData.selectedSubGenres || [],
-        moods: formData.selectedMoods || [],
-        instruments: formData.selectedInstruments || [],
-        media_usage: formData.selectedMediaUsage || [],
-        bpm: bpmNumber,
-        key: formData.key,
-        has_sting_ending: formData.hasStingEnding,
-        is_one_stop: formData.isOneStop,
-        audio_url: `${user.id}/${formData.title}/audio.mp3`,
-        image_url: imageUrl,
-        mp3_url: formData.mp3Url || null,
-        trackouts_url: trackoutsStoragePath || null,
-        stems_url: stemsStoragePath || null,
-        split_sheet_url: splitSheetUploadedUrl || null,
-        has_vocals: formData.hasVocals,
-        is_sync_only: formData.isSyncOnly,
-        explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
-        clean_version_of: null, // Set to null for now since we need to handle UUID properly
-        // Sample clearance fields
-        contains_loops: formData.containsLoops,
-        contains_samples: formData.containsSamples,
-        contains_splice_loops: formData.containsSpliceLoops,
-        samples_cleared: formData.samplesCleared,
-        sample_clearance_notes: formData.sampleClearanceNotes || null
-      };
+                    const insertData = {
+                track_producer_id: user.id,
+                title: formData.title,
+                artist: user.email?.split('@')[0] || 'Unknown Artist',
+                genres: formData.selectedGenres || [],
+                sub_genres: formData.selectedSubGenres || [],
+                moods: formData.selectedMoods || [],
+                instruments: formData.selectedInstruments || [],
+                media_usage: formData.selectedMediaUsage || [],
+                bpm: bpmNumber,
+                key: null, // Set to null since the database constraint rejects simple values like 'C'
+                has_sting_ending: formData.hasStingEnding,
+                is_one_stop: formData.isOneStop,
+                audio_url: `${user.id}/${formData.title}/audio.mp3`,
+                image_url: imageUrl,
+                mp3_url: formData.mp3Url || null,
+                trackouts_url: trackoutsStoragePath || null,
+                stems_url: stemsStoragePath || null,
+                split_sheet_url: splitSheetUploadedUrl || null,
+                has_vocals: formData.hasVocals,
+                is_sync_only: formData.isSyncOnly,
+                explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
+                clean_version_of: null, // Set to null for now since we need to handle UUID properly
+                // Sample clearance fields
+                contains_loops: formData.containsLoops,
+                contains_samples: formData.containsSamples,
+                contains_splice_loops: formData.containsSpliceLoops,
+                samples_cleared: formData.samplesCleared,
+                sample_clearance_notes: formData.sampleClearanceNotes || null
+              };
       
       console.log('[DEBUG] Full insert data:', insertData);
       
