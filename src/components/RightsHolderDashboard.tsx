@@ -804,7 +804,7 @@ export function RightsHolderDashboard() {
             </div>
           </div>
         </div>
-            </div>
+      </div>
     </div>
   );
 }
