@@ -223,7 +223,7 @@ export function RightsHolderDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <Link
-                to="/rights-holder/settings"
+                to="/profile"
                 className="p-2 text-gray-300 hover:text-white transition-colors"
               >
                 <Settings className="w-6 h-6" />
@@ -349,7 +349,7 @@ export function RightsHolderDashboard() {
                 </Link>
 
                 <Link
-                  to="/rights-holder/profile"
+                  to="/profile"
                   className="flex items-center p-3 bg-gray-600/20 hover:bg-gray-600/30 rounded-lg transition-colors group"
                 >
                   <Users className="w-5 h-5 text-gray-400 mr-3" />
