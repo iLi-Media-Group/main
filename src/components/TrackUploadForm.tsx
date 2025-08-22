@@ -1094,23 +1094,19 @@ export function TrackUploadForm() {
                 </select>
               </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Sting Ending
-                </label>
-                    <select
-                      id="track-sting-ending"
-                      name="track-sting-ending"
-                      value={formData.stingEnding}
-                      onChange={(e) => updateFormData({ stingEnding: e.target.value })}
-                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Select ending</option>
-                      <option value="fade">Fade</option>
-                      <option value="cold">Cold</option>
-                      <option value="loop">Loop</option>
-                    </select>
+                  <div className="md:col-span-2">
+                    <label className="flex items-center space-x-2 text-gray-300">
+                      <input
+                        id="track-sting-ending"
+                        name="track-sting-ending"
+                        type="checkbox"
+                        checked={formData.hasStingEnding}
+                        onChange={(e) => updateFormData({ hasStingEnding: e.target.checked })}
+                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        disabled={isSubmitting}
+                      />
+                      <span>Sting ending</span>
+                    </label>
                   </div>
 
                   <div className="md:col-span-2">
