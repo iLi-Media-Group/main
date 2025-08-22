@@ -25,8 +25,18 @@ import {
   Save,
   Copy,
   Share2,
-  BarChart3
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  RotateCcw
 } from 'lucide-react';
+import { MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
+import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { useCurrentPlan } from '../hooks/useCurrentPlan';
+import { PremiumFeatureNotice } from './PremiumFeatureNotice';
+import { uploadFile } from '../lib/storage';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 interface Track {
   id: string;
@@ -35,6 +45,8 @@ interface Track {
   genres: string[];
   sub_genres: string[];
   moods: string[];
+  instruments?: string[];
+  media_usage?: string[];
   bpm: number;
   key: string;
   duration: number;
@@ -49,13 +61,16 @@ interface Track {
   is_sync_only: boolean;
   master_rights_owner?: string;
   publishing_rights_owner?: string;
+  stems_url?: string;
+  split_sheet_url?: string;
+  mp3_url?: string;
+  trackouts_url?: string;
+  deleted_at?: string;
 }
 
 interface EditFormData {
   title: string;
   artist: string;
-  genre: string;
-  mood: string;
   bpm: number;
   key: string;
   description: string;
@@ -64,17 +79,17 @@ interface EditFormData {
 export function RightsHolderRecordings() {
   const { user } = useUnifiedAuth();
   const [recordings, setRecordings] = useState<Track[]>([]);
+  const [deletedRecordings, setDeletedRecordings] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<'active' | 'deleted'>('active');
   const [selectedRecording, setSelectedRecording] = useState<Track | null>(null);
   const [editingRecording, setEditingRecording] = useState<Track | null>(null);
   const [editFormData, setEditFormData] = useState<EditFormData>({
     title: '',
     artist: '',
-    genre: '',
-    mood: '',
     bpm: 0,
     key: '',
     description: ''
@@ -82,12 +97,74 @@ export function RightsHolderRecordings() {
   const [saving, setSaving] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
 
+  // Robust edit state
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [selectedMoods, setSelectedMoods] = useState<string[]>([]);
+  const [selectedInstruments, setSelectedInstruments] = useState<string[]>([]);
+  const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>([]);
+  const [hasVocals, setHasVocals] = useState(false);
+  const [isSyncOnly, setIsSyncOnly] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Data fetching state
+  const [instruments, setInstruments] = useState<InstrumentWithCategory[]>([]);
+  const [instrumentsLoading, setInstrumentsLoading] = useState(true);
+  const [genres, setGenres] = useState<any[]>([]);
+  const [genresLoading, setGenresLoading] = useState(true);
+
+  // File upload state
+  const [stemsUrl, setStemsUrl] = useState('');
+  const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+  const [splitSheetUrl, setSplitSheetUrl] = useState('');
+  const [mp3File, setMp3File] = useState<File | null>(null);
+  const [mp3Url, setMp3Url] = useState('');
+  const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
+  const [trackoutsUrl, setTrackoutsUrl] = useState('');
+  const [stemsFile, setStemsFile] = useState<File | null>(null);
+
+  // Hooks
+  const deepMediaSearchEnabled = useFeatureFlag('deep_media_search');
+  const { currentPlan } = useCurrentPlan();
+  const { mediaTypes } = useDynamicSearchData();
+
   // Fetch recordings on component mount
   useEffect(() => {
     if (user) {
       fetchRecordings();
+      fetchEditData();
     }
   }, [user]);
+
+  // Fetch data for edit functionality
+  const fetchEditData = async () => {
+    try {
+      setGenresLoading(true);
+      setInstrumentsLoading(true);
+      
+      // Fetch genres
+      const { data: genresData, error: genresError } = await supabase
+        .from('genres')
+        .select(`
+          *,
+          sub_genres (*)
+        `)
+        .order('display_name');
+
+      if (genresError) throw genresError;
+      setGenres(genresData || []);
+      
+      // Fetch instruments
+      const instrumentsData = await fetchInstrumentsData();
+      setInstruments(instrumentsData.instruments);
+    } catch (err) {
+      console.error('Error fetching edit data:', err);
+      setGenres([]);
+      setInstruments([]);
+    } finally {
+      setGenresLoading(false);
+      setInstrumentsLoading(false);
+    }
+  };
 
   const fetchRecordings = async () => {
     if (!user) return;
@@ -96,15 +173,28 @@ export function RightsHolderRecordings() {
     setError(null);
 
     try {
-      const { data: recordingsData, error: recordingsError } = await supabase
+      // Fetch active recordings
+      const { data: activeRecordingsData, error: activeError } = await supabase
         .from('tracks')
         .select('*')
         .eq('track_producer_id', user.id)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
-      if (recordingsError) throw recordingsError;
+      if (activeError) throw activeError;
 
-      setRecordings(recordingsData || []);
+      // Fetch deleted recordings
+      const { data: deletedRecordingsData, error: deletedError } = await supabase
+        .from('tracks')
+        .select('*')
+        .eq('track_producer_id', user.id)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (deletedError) throw deletedError;
+
+      setRecordings(activeRecordingsData || []);
+      setDeletedRecordings(deletedRecordingsData || []);
     } catch (err) {
       console.error('Error fetching recordings:', err);
       setError('Failed to load recordings');
@@ -118,12 +208,22 @@ export function RightsHolderRecordings() {
     setEditFormData({
       title: recording.title,
       artist: recording.artist,
-              genre: Array.isArray(recording.genres) ? recording.genres.join(', ') : '',
-              mood: Array.isArray(recording.moods) ? recording.moods.join(', ') : '',
       bpm: recording.bpm,
       key: recording.key,
       description: recording.description
     });
+    
+    // Set robust edit state
+    setSelectedGenres(Array.isArray(recording.genres) ? recording.genres : []);
+    setSelectedMoods(Array.isArray(recording.moods) ? recording.moods : []);
+    setSelectedInstruments(Array.isArray(recording.instruments) ? recording.instruments : []);
+    setSelectedMediaUsage(Array.isArray(recording.media_usage) ? recording.media_usage : []);
+    setHasVocals(recording.has_vocals || false);
+    setIsSyncOnly(recording.is_sync_only || false);
+    setStemsUrl(recording.stems_url || '');
+    setSplitSheetUrl(recording.split_sheet_url || '');
+    setMp3Url(recording.mp3_url || '');
+    setTrackoutsUrl(recording.trackouts_url || '');
   };
 
   const handleSave = async () => {
@@ -131,16 +231,106 @@ export function RightsHolderRecordings() {
 
     setSaving(true);
     try {
+      if (selectedGenres.length === 0) {
+        throw new Error('At least one genre is required');
+      }
+
+      const formattedGenres = selectedGenres;
+      const validMoods = selectedMoods.filter(mood => MOODS.includes(mood));
+
+      // Check if any files are being uploaded
+      const hasFilesToUpload = mp3File || trackoutsFile || stemsFile || splitSheetFile;
+      
+      if (hasFilesToUpload) {
+        setUploadingFiles(true);
+      }
+
+      // File upload logic
+      let mp3UploadedUrl = mp3Url;
+      if (mp3File) {
+        try {
+          const uploadedMp3Path = await uploadFile(
+            mp3File,
+            'track-audio',
+            undefined,
+            `${editingRecording.id}`,
+            'audio.mp3'
+          );
+          mp3UploadedUrl = `${editingRecording.id}/audio.mp3`;
+        } catch (uploadError) {
+          throw new Error(`Failed to upload MP3 file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
+
+      let trackoutsUploadedUrl = trackoutsUrl;
+      if (trackoutsFile) {
+        try {
+          const uploadedTrackoutsPath = await uploadFile(
+            trackoutsFile,
+            'trackouts',
+            undefined,
+            `${editingRecording.id}`,
+            'trackouts.zip'
+          );
+          trackoutsUploadedUrl = `${editingRecording.id}/trackouts.zip`;
+        } catch (uploadError) {
+          throw new Error(`Failed to upload trackouts file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
+
+      let stemsUploadedUrl = stemsUrl;
+      if (stemsFile) {
+        try {
+          const uploadedStemsPath = await uploadFile(
+            stemsFile,
+            'stems',
+            undefined,
+            `${editingRecording.id}`,
+            'stems.zip'
+          );
+          stemsUploadedUrl = `${editingRecording.id}/stems.zip`;
+        } catch (uploadError) {
+          throw new Error(`Failed to upload stems file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
+
+      let splitSheetUploadedUrl = splitSheetUrl;
+      if (splitSheetFile) {
+        try {
+          const uploadedSplitSheetPath = await uploadFile(
+            splitSheetFile,
+            'split-sheets',
+            undefined,
+            `${editingRecording.id}`,
+            'split_sheet.pdf'
+          );
+          splitSheetUploadedUrl = `${editingRecording.id}/split_sheet.pdf`;
+        } catch (uploadError) {
+          throw new Error(`Failed to upload split sheet file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
+
       const { error: updateError } = await supabase
         .from('tracks')
         .update({
           title: editFormData.title,
           artist: editFormData.artist,
-          genres: [editFormData.genre],
-          moods: [editFormData.mood],
+          genres: formattedGenres.map(genreId => {
+            const genre = genres.find(g => g.id === genreId || g.display_name === genreId);
+            return genre?.display_name || genreId;
+          }),
+          moods: validMoods,
+          instruments: selectedInstruments,
+          media_usage: selectedMediaUsage,
+          has_vocals: hasVocals,
+          is_sync_only: isSyncOnly,
           bpm: editFormData.bpm,
           key: editFormData.key,
           description: editFormData.description,
+          mp3_url: mp3UploadedUrl || null,
+          trackouts_url: trackoutsUploadedUrl || null,
+          stems_url: stemsUploadedUrl || null,
+          split_sheet_url: splitSheetUploadedUrl || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', editingRecording.id);
@@ -154,11 +344,19 @@ export function RightsHolderRecordings() {
               ...rec, 
               title: editFormData.title,
               artist: editFormData.artist,
-              genres: [editFormData.genre],
-              moods: [editFormData.mood],
+              genres: formattedGenres,
+              moods: validMoods,
+              instruments: selectedInstruments,
+              media_usage: selectedMediaUsage,
+              has_vocals: hasVocals,
+              is_sync_only: isSyncOnly,
               bpm: editFormData.bpm,
               key: editFormData.key,
               description: editFormData.description,
+              mp3_url: mp3UploadedUrl || null,
+              trackouts_url: trackoutsUploadedUrl || null,
+              stems_url: stemsUploadedUrl || null,
+              split_sheet_url: splitSheetUploadedUrl || null,
               updated_at: new Date().toISOString() 
             }
           : rec
@@ -168,22 +366,81 @@ export function RightsHolderRecordings() {
       setEditFormData({
         title: '',
         artist: '',
-        genre: '',
-        mood: '',
         bpm: 0,
         key: '',
         description: ''
       });
+      
+      // Reset robust edit state
+      setSelectedGenres([]);
+      setSelectedMoods([]);
+      setSelectedInstruments([]);
+      setSelectedMediaUsage([]);
+      setHasVocals(false);
+      setIsSyncOnly(false);
+      setStemsUrl('');
+      setSplitSheetUrl('');
+      setMp3Url('');
+      setTrackoutsUrl('');
+      setMp3File(null);
+      setTrackoutsFile(null);
+      setStemsFile(null);
+      setSplitSheetFile(null);
     } catch (err) {
       console.error('Error updating recording:', err);
-      setError('Failed to update recording');
+      setError(err instanceof Error ? err.message : 'Failed to update recording');
     } finally {
       setSaving(false);
+      setUploadingFiles(false);
     }
   };
 
   const handleDelete = async (recordingId: string) => {
-    if (!confirm('Are you sure you want to delete this recording?')) return;
+    if (!confirm('Are you sure you want to delete this recording? It will be moved to the deleted tab where you can restore it or delete it permanently.')) return;
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('tracks')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('id', recordingId);
+
+      if (deleteError) throw deleteError;
+
+      // Move to deleted recordings
+      const deletedRecording = recordings.find(rec => rec.id === recordingId);
+      if (deletedRecording) {
+        setRecordings(prev => prev.filter(rec => rec.id !== recordingId));
+        setDeletedRecordings(prev => [deletedRecording, ...prev]);
+      }
+    } catch (err) {
+      console.error('Error deleting recording:', err);
+      setError('Failed to delete recording');
+    }
+  };
+
+  const handleRestore = async (recordingId: string) => {
+    try {
+      const { error: restoreError } = await supabase
+        .from('tracks')
+        .update({ deleted_at: null })
+        .eq('id', recordingId);
+
+      if (restoreError) throw restoreError;
+
+      // Move back to active recordings
+      const restoredRecording = deletedRecordings.find(rec => rec.id === recordingId);
+      if (restoredRecording) {
+        setDeletedRecordings(prev => prev.filter(rec => rec.id !== recordingId));
+        setRecordings(prev => [restoredRecording, ...prev]);
+      }
+    } catch (err) {
+      console.error('Error restoring recording:', err);
+      setError('Failed to restore recording');
+    }
+  };
+
+  const handlePermanentDelete = async (recordingId: string) => {
+    if (!confirm('Are you sure you want to permanently delete this recording? This action cannot be undone.')) return;
 
     try {
       const { error: deleteError } = await supabase
@@ -193,10 +450,10 @@ export function RightsHolderRecordings() {
 
       if (deleteError) throw deleteError;
 
-      setRecordings(prev => prev.filter(rec => rec.id !== recordingId));
+      setDeletedRecordings(prev => prev.filter(rec => rec.id !== recordingId));
     } catch (err) {
-      console.error('Error deleting recording:', err);
-      setError('Failed to delete recording');
+      console.error('Error permanently deleting recording:', err);
+      setError('Failed to permanently delete recording');
     }
   };
 
