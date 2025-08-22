@@ -804,10 +804,7 @@ export function RightsHolderDashboard() {
             </div>
           </div>
         </div>
-      </div>
+            </div>
     </div>
   );
 }
-            < / d i v >  
-         < / d i v >  
- 
