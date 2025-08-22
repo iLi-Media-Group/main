@@ -153,8 +153,8 @@ const ProducerApplicationForm: React.FC = () => {
     typeof value === 'string' && value.trim() !== ''
   );
 
-  // Use refresh prevention hook
-  useRefreshPrevention(hasUnsavedChanges);
+  // Temporarily disabled refresh prevention to fix tab switching issue
+  // useRefreshPrevention(hasUnsavedChanges);
 
   // Load saved form data on component mount
   useEffect(() => {
@@ -204,7 +204,8 @@ const ProducerApplicationForm: React.FC = () => {
   const clearSavedFormData = () => {
     localStorage.removeItem(FORM_STORAGE_KEY);
     localStorage.removeItem(FORM_STEP_KEY);
-    clearUnsavedChanges(); // Clear refresh prevention
+    // Temporarily disabled to fix tab switching issue
+    // clearUnsavedChanges(); // Clear refresh prevention
   };
 
   // Validation functions for each step
