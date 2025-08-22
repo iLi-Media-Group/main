@@ -281,12 +281,7 @@ export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
               </div>
             )}
             
-            {/* Debug info - remove after testing */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="text-xs text-gray-500">
-                Debug: audioUrl={track.audioUrl ? 'yes' : 'no'}, trackoutsUrl={track.trackoutsUrl ? 'yes' : 'no'}, stemsUrl={track.stemsUrl ? 'yes' : 'no'}
-              </div>
-            )}
+
             
             {/* MP3 Badge - Show when MP3 exists and trackouts also exist */}
             {track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
