@@ -1965,7 +1965,14 @@ export function TrackUploadForm() {
 
               {/* Split Sheet Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-                <h2 className="text-xl font-semibold text-white mb-4">Split Sheet Participants</h2>
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-white">Split Sheet Participants</h2>
+                  {splitSheetFile && (
+                    <div className="text-sm text-blue-300 bg-blue-500/10 px-3 py-1 rounded-lg">
+                      Optional - Split sheet PDF already uploaded
+                    </div>
+                  )}
+                </div>
                 
                 {(formData.participants || []).map((participant) => (
                   <div key={participant.id} className="bg-white/5 rounded-lg p-4 mb-4">
@@ -2190,6 +2197,23 @@ export function TrackUploadForm() {
               </div>
             </div>
           )}
+
+          {/* Save Progress Button */}
+          <div className="flex justify-center pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                // Save current form data
+                localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+                // Show success message
+                alert('Progress saved! You can return to this form later and your data will be restored.');
+              }}
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Save Progress
+            </button>
+          </div>
 
           {/* Step Navigation */}
           <div className="flex justify-between items-center pt-8">
