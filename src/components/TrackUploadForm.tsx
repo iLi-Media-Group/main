@@ -1381,31 +1381,37 @@ export function TrackUploadForm() {
               {/* Moods Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(Array.isArray(MOODS_CATEGORIES) ? MOODS_CATEGORIES : []).map((mood) => (
-                    <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
+                <div className="space-y-4">
+                  {Object.entries(MOODS_CATEGORIES).map(([category, moods]) => (
+                    <div key={category} className="mb-4">
+                      <h3 className="text-lg font-medium text-white mb-3">{category}</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {moods.map((mood) => (
+                          <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                             <input
                               type="checkbox"
-                        checked={formData.selectedMoods.includes(mood)}
+                              checked={formData.selectedMoods.includes(mood)}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   updateFormData({ 
-                              selectedMoods: [...formData.selectedMoods, mood]
+                                    selectedMoods: [...formData.selectedMoods, mood]
                                   });
                                 } else {
                                   updateFormData({
-                              selectedMoods: formData.selectedMoods.filter(m => m !== mood)
+                                    selectedMoods: formData.selectedMoods.filter(m => m !== mood)
                                   });
                                 }
                               }}
                               className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                               disabled={isSubmitting}
                             />
-                      <span className="text-sm">{mood}</span>
+                            <span className="text-sm capitalize">{mood}</span>
                           </label>
                         ))}
                       </div>
                     </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -1469,8 +1475,8 @@ export function TrackUploadForm() {
                       <span className="text-sm">{usage}</span>
                         </label>
                       ))}
-            </div>
-          </div>
+                </div>
+              </div>
 
               {/* Vocals Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
