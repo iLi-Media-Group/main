@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -256,6 +256,23 @@ export function ProducerDashboard() {
   const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
 
+  // Add debounce mechanism to prevent multiple rapid calls
+  const [isFetching, setIsFetching] = useState(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced fetch function
+  const debouncedFetchDashboardData = useCallback(() => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    fetchTimeoutRef.current = setTimeout(() => {
+      if (!isFetching) {
+        fetchDashboardData();
+      }
+    }, 500); // 500ms debounce
+  }, [isFetching]);
+
   // Reset page when switching tabs
   useEffect(() => {
     setTrackPage(1);
@@ -272,26 +289,35 @@ export function ProducerDashboard() {
     }
   }, [user, searchParams]);
 
-  // Set up real-time subscriptions
+  // Set up real-time subscriptions with debounced updates
   const handleTracksUpdate = useCallback((payload: any) => {
     console.log('Tracks real-time update:', payload);
-    fetchDashboardData();
-  }, []);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
 
   const handleProposalsUpdate = useCallback((payload: any) => {
     console.log('Proposals real-time update:', payload);
-    fetchDashboardData();
-  }, []);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
 
   const handleCustomSyncUpdate = useCallback((payload: any) => {
     console.log('Custom sync real-time update:', payload);
-    fetchDashboardData();
-  }, []);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
 
   // Initialize real-time subscriptions
   useTracksRealTime(handleTracksUpdate);
   useProducerProposalsRealTime(handleProposalsUpdate);
   useProducerCustomSyncRealTime(handleCustomSyncUpdate);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const fetchOpenSyncRequests = async () => {
@@ -355,9 +381,10 @@ export function ProducerDashboard() {
   };
 
   const fetchDashboardData = async () => {
-    if (!user) return;
+    if (!user || isFetching) return;
     
     try {
+      setIsFetching(true);
       setLoading(true);
       setError('');
 
@@ -680,6 +707,7 @@ export function ProducerDashboard() {
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
