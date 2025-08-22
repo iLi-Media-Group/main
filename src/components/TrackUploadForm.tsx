@@ -2295,10 +2295,10 @@ export function TrackUploadForm() {
                     <strong>Key:</strong> {formData.key}
                   </div>
                   <div>
-                    <strong>Genres:</strong> {formData.selectedGenres.join(', ')}
+                    <strong>Genres:</strong> {formData.selectedGenres?.join(', ') || 'None selected'}
                   </div>
                   <div>
-                    <strong>Moods:</strong> {formData.selectedMoods.join(', ')}
+                    <strong>Moods:</strong> {formData.selectedMoods?.join(', ') || 'None selected'}
                   </div>
                   <div>
                     <strong>Master Rights Owner:</strong> {formData.masterRightsOwner}
@@ -2307,10 +2307,10 @@ export function TrackUploadForm() {
                     <strong>Publishing Rights Owner:</strong> {formData.publishingRightsOwner}
                   </div>
                   <div>
-                    <strong>Participants:</strong> {formData.participants.length}
+                    <strong>Participants:</strong> {formData.participants?.length || 0}
                   </div>
                   <div>
-                    <strong>Co-signers:</strong> {formData.coSigners.length}
+                    <strong>Co-signers:</strong> {formData.coSigners?.length || 0}
                   </div>
                 </div>
               </div>
