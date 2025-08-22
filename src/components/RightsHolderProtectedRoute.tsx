@@ -12,7 +12,7 @@ export function RightsHolderProtectedRoute({
   children, 
   requireVerification = false 
 }: RightsHolderProtectedRouteProps) {
-  const { user, rightsHolder, loading, signOut } = useUnifiedAuth();
+  const { user, profile, accountType, loading, signOut } = useUnifiedAuth();
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -48,7 +48,8 @@ export function RightsHolderProtectedRoute({
     );
   }
 
-  if (!rightsHolder) {
+  // Check if user is a rights holder
+  if (!profile || accountType !== 'rights_holder') {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
@@ -70,7 +71,7 @@ export function RightsHolderProtectedRoute({
     );
   }
 
-  if (rightsHolder.verification_status === 'pending') {
+  if (profile.verification_status === 'pending') {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
@@ -92,7 +93,7 @@ export function RightsHolderProtectedRoute({
     );
   }
 
-  if (!rightsHolder.terms_accepted || !rightsHolder.rights_authority_declaration_accepted) {
+  if (!profile.terms_accepted || !profile.rights_authority_declaration_accepted) {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
