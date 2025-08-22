@@ -811,6 +811,8 @@ export function TrackUploadForm() {
         split_sheet_url: splitSheetUploadedUrl || null,
         has_vocals: formData.hasVocals,
         is_sync_only: formData.isSyncOnly,
+        instruments: formData.selectedInstruments || [],
+        media_usage: formData.selectedMediaUsage || [],
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
         clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null
         // Removed sample clearance fields as they might not exist in the tracks table
