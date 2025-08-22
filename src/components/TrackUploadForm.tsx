@@ -1349,7 +1349,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting || genresLoading}
                 >
                   <option value="">Select genre</option>
-                  {(genres || []).map((genre) => (
+                  {(Array.isArray(genres) ? genres : []).map((genre) => (
                     <option key={genre.id} value={genre.id}>
                       {genre.display_name}
                     </option>
@@ -1366,7 +1366,7 @@ export function TrackUploadForm() {
                   disabled={isSubmitting || !formData.genre}
                 >
                   <option value="">Select sub-genre</option>
-                  {formData.genre && (genres || []).find(g => g.id === formData.genre)?.sub_genres?.map((subGenre) => (
+                  {formData.genre && (Array.isArray(genres) ? genres : []).find(g => g.id === formData.genre)?.sub_genres?.map((subGenre) => (
                     <option key={subGenre.id} value={subGenre.id}>
                       {subGenre.display_name}
                     </option>
@@ -1380,7 +1380,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(MOODS_CATEGORIES || []).map((mood) => (
+                  {(Array.isArray(MOODS_CATEGORIES) ? MOODS_CATEGORIES : []).map((mood) => (
                     <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                             <input
                               type="checkbox"
@@ -1416,7 +1416,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {(ALL_INSTRUMENTS || []).map((instrument) => (
+                  {(Array.isArray(ALL_INSTRUMENTS) ? ALL_INSTRUMENTS : []).map((instrument) => (
                     <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                                               <input
                           type="checkbox"
@@ -1445,7 +1445,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(MEDIA_USAGE_TYPES || []).map((usage) => (
+                  {(Array.isArray(MEDIA_USAGE_TYPES) ? MEDIA_USAGE_TYPES : []).map((usage) => (
                     <label key={usage} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                           <input
                             type="checkbox"
