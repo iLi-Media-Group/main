@@ -1602,91 +1602,65 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
                 <div className="space-y-3">
-                  {Object.entries(getInstrumentsCategories()).map(([category, instruments]) => {
-                    const categoryInstrumentsSelected = instruments.filter(instrument => formData.selectedInstruments.includes(instrument));
-                    const isExpanded = expandedInstrumentCategories.has(category);
-                    
+                  {/* Main Instrument Categories with Checkboxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.keys(getInstrumentsCategories()).map((category) => (
+                      <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedInstruments.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData({ 
+                                selectedInstruments: [...formData.selectedInstruments, category]
+                              });
+                            } else {
+                              updateFormData({
+                                selectedInstruments: formData.selectedInstruments.filter(i => i !== category)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                        <span className="text-sm font-medium">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Instruments for selected categories */}
+                  {formData.selectedInstruments.filter(instrument => Object.keys(getInstrumentsCategories()).includes(instrument)).map((selectedCategory) => {
+                    const instruments = getInstrumentsCategories()[selectedCategory];
                     return (
-                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
-                        {/* Category Header */}
-                        <div className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2">
+                      <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                        <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                          <span>{selectedCategory} - Instruments</span>
+                          <span className="ml-2 text-sm text-blue-300">({instruments.length})</span>
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {instruments.map((instrument) => (
+                            <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
                               <input
                                 type="checkbox"
-                                checked={categoryInstrumentsSelected.length === instruments.length}
+                                checked={formData.selectedInstruments.includes(instrument)}
                                 onChange={(e) => {
-                                  e.stopPropagation(); // Prevent event bubbling
                                   if (e.target.checked) {
-                                    // Select all instruments in this category
-                                    const newInstruments = [...formData.selectedInstruments];
-                                    instruments.forEach(instrument => {
-                                      if (!newInstruments.includes(instrument)) {
-                                        newInstruments.push(instrument);
-                                      }
+                                    updateFormData({ 
+                                      selectedInstruments: [...formData.selectedInstruments, instrument]
                                     });
-                                    updateFormData({ selectedInstruments: newInstruments });
                                   } else {
-                                    // Deselect all instruments in this category
                                     updateFormData({
-                                      selectedInstruments: formData.selectedInstruments.filter(instrument => !instruments.includes(instrument))
+                                      selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
                                     });
                                   }
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={isSubmitting}
                               />
-                              <span className="font-medium text-white">{category}</span>
-                            </div>
-                            {categoryInstrumentsSelected.length > 0 && (
-                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                {categoryInstrumentsSelected.length}/{instruments.length}
-                              </span>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => toggleInstrumentCategory(category)}
-                            className="flex items-center space-x-2 p-1 hover:bg-blue-600/50 rounded transition-colors"
-                            disabled={isSubmitting}
-                          >
-                            {isExpanded ? (
-                              <ChevronDown className="w-4 h-4 text-gray-300" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-300" />
-                            )}
-                          </button>
+                              <span className="text-sm capitalize">{instrument}</span>
+                            </label>
+                          ))}
                         </div>
-                        
-                        {/* Collapsible Instrument List */}
-                        {isExpanded && (
-                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                              {instruments.map((instrument) => (
-                                <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.selectedInstruments.includes(instrument)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        updateFormData({ 
-                                          selectedInstruments: [...formData.selectedInstruments, instrument]
-                                        });
-                                      } else {
-                                        updateFormData({
-                                          selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
-                                        });
-                                      }
-                                    }}
-                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                    disabled={isSubmitting}
-                                  />
-                                  <span className="text-sm">{instrument}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -1697,90 +1671,65 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
                 <div className="space-y-3">
-                  {Object.entries(getMediaUsageCategories()).map(([category, mediaTypes]) => {
-                    const categoryUsageSelected = mediaTypes.filter(mediaType => formData.selectedMediaUsage.includes(mediaType));
-                    const isExpanded = expandedMediaCategories.has(category);
-                    
-                    return (
-                      <div key={category} className="border border-blue-600/30 rounded-lg overflow-hidden">
-                        {/* Category Header */}
-                        <button
-                          type="button"
-                          onClick={() => toggleMediaCategory(category)}
-                          className="w-full px-4 py-3 bg-blue-700/50 hover:bg-blue-700/70 transition-colors flex items-center justify-between text-left"
+                  {/* Main Media Categories with Checkboxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {Object.keys(getMediaUsageCategories()).map((category) => (
+                      <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedMediaUsage.includes(category)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              updateFormData({ 
+                                selectedMediaUsage: [...formData.selectedMediaUsage, category]
+                              });
+                            } else {
+                              updateFormData({
+                                selectedMediaUsage: formData.selectedMediaUsage.filter(m => m !== category)
+                              });
+                            }
+                          }}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                           disabled={isSubmitting}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-2">
+                        />
+                        <span className="text-sm font-medium">{category}</span>
+                      </label>
+                    ))}
+                  </div>
+                  
+                  {/* Media Types for selected categories */}
+                  {formData.selectedMediaUsage.filter(mediaType => Object.keys(getMediaUsageCategories()).includes(mediaType)).map((selectedCategory) => {
+                    const mediaTypes = getMediaUsageCategories()[selectedCategory];
+                    return (
+                      <div key={selectedCategory} className="mt-4 p-4 bg-blue-700/30 rounded-lg border border-blue-600/30">
+                        <h3 className="text-lg font-medium text-white mb-3 flex items-center">
+                          <span>{selectedCategory} - Media Types</span>
+                          <span className="ml-2 text-sm text-blue-300">({mediaTypes.length})</span>
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                          {mediaTypes.map((mediaType) => (
+                            <label key={mediaType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
                               <input
                                 type="checkbox"
-                                checked={categoryUsageSelected.length === mediaTypes.length}
+                                checked={formData.selectedMediaUsage.includes(mediaType)}
                                 onChange={(e) => {
                                   if (e.target.checked) {
-                                    // Select all media types in this category
-                                    const newMediaTypes = [...formData.selectedMediaUsage];
-                                    mediaTypes.forEach(mediaType => {
-                                      if (!newMediaTypes.includes(mediaType)) {
-                                        newMediaTypes.push(mediaType);
-                                      }
+                                    updateFormData({ 
+                                      selectedMediaUsage: [...formData.selectedMediaUsage, mediaType]
                                     });
-                                    updateFormData({ selectedMediaUsage: newMediaTypes });
                                   } else {
-                                    // Deselect all media types in this category
                                     updateFormData({
-                                      selectedMediaUsage: formData.selectedMediaUsage.filter(mediaType => !mediaTypes.includes(mediaType))
+                                      selectedMediaUsage: formData.selectedMediaUsage.filter(m => m !== mediaType)
                                     });
                                   }
                                 }}
                                 className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                                 disabled={isSubmitting}
                               />
-                              <span className="font-medium text-white">{category}</span>
-                            </div>
-                            {categoryUsageSelected.length > 0 && (
-                              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                {categoryUsageSelected.length}/{mediaTypes.length}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {isExpanded ? (
-                              <ChevronDown className="w-4 h-4 text-gray-300" />
-                            ) : (
-                              <ChevronRight className="w-4 h-4 text-gray-300" />
-                            )}
-                          </div>
-                        </button>
-                        
-                        {/* Collapsible Media Usage List */}
-                        {isExpanded && (
-                          <div className="px-4 py-3 bg-blue-800/30 border-t border-blue-600/20">
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                              {mediaTypes.map((mediaType) => (
-                                <label key={mediaType} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={formData.selectedMediaUsage.includes(mediaType)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        updateFormData({ 
-                                          selectedMediaUsage: [...formData.selectedMediaUsage, mediaType]
-                                        });
-                                      } else {
-                                        updateFormData({
-                                          selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== mediaType)
-                                        });
-                                      }
-                                    }}
-                                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                    disabled={isSubmitting}
-                                  />
-                                  <span className="text-sm">{mediaType}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                              <span className="text-sm capitalize">{mediaType}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     );
                   })}
