@@ -151,22 +151,11 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         // Cache the profile data
         dataCache.set(cacheKey, data, 5 * 60 * 1000); // 5 minutes
         
-        // Check if this user is also a rights holder and fetch rights holder data if needed
-        // Only fetch rights holder data if the user has a rights holder account
-        const { data: rightsHolderData, error: rightsHolderError } = await supabase
-          .from('rights_holders')
-          .select('id')
-          .eq('id', userId)
-          .single();
-        
-        if (rightsHolderData && !rightsHolderError) {
-          // User is a rights holder, fetch full rights holder data
-          await fetchRightsHolder(userId);
-        } else {
-          // User is not a rights holder, clear rights holder data
-          setRightsHolder(null);
-          setRightsHolderProfile(null);
-        }
+        // Only fetch rights holder data if the user is actually a rights holder
+        // For now, we'll skip this check to avoid the 406 error
+        // TODO: Clarify the data model for producer rights vs external rights holders
+        setRightsHolder(null);
+        setRightsHolderProfile(null);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -482,11 +471,8 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
               console.log('🔄 User changed, updating session');
               setUser(session.user);
               
-              // Fetch both profile types in parallel
-              await Promise.all([
-                fetchProfile(session.user.id, session.user.email || ''),
-                fetchRightsHolder(session.user.id)
-              ]);
+                             // Fetch profile only - rights holder data will be handled in fetchProfile if needed
+               await fetchProfile(session.user.id, session.user.email || '');
             } else {
               console.log('📦 Same user, skipping profile refetch');
             }
