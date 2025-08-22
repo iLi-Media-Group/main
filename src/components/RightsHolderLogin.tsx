@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export function RightsHolderLogin() {
   const navigate = useNavigate();
-  const { signIn } = useRightsHolderAuth();
+  const { signIn } = useUnifiedAuth();
   
   const [formData, setFormData] = useState({
     email: '',

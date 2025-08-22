@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   Building2, 
@@ -37,7 +37,7 @@ interface RecentActivity {
 }
 
 export function RightsHolderDashboard() {
-  const { rightsHolder, rightsHolderProfile } = useRightsHolderAuth();
+  const { user, rightsHolder, rightsHolderProfile } = useUnifiedAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalRecordings: 0,
     pendingVerifications: 0,
@@ -48,21 +48,21 @@ export function RightsHolderDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (rightsHolder) {
+    if (user) {
       fetchDashboardData();
     } else {
-      // If no rightsHolder, still set loading to false to show empty state
+      // If no user, still set loading to false to show empty state
       setLoading(false);
     }
-  }, [rightsHolder]);
+  }, [user]);
 
   const fetchDashboardData = async () => {
-    if (!rightsHolder) {
-      console.log('No rightsHolder available, skipping dashboard data fetch');
+    if (!user) {
+      console.log('No user available, skipping dashboard data fetch');
       return;
     }
 
-    console.log('Fetching dashboard data for rightsHolder:', rightsHolder.id);
+    console.log('Fetching dashboard data for user:', user.id);
     try {
       setLoading(true);
 
@@ -76,7 +76,7 @@ export function RightsHolderDashboard() {
         const { count } = await supabase
           .from('master_recordings')
           .select('*', { count: 'exact', head: true })
-          .eq('rights_holder_id', rightsHolder.id);
+          .eq('rights_holder_id', user.id);
         recordingsCount = count || 0;
       } catch (error) {
         console.log('master_recordings table not found, using default value');
@@ -88,7 +88,7 @@ export function RightsHolderDashboard() {
         const { count } = await supabase
           .from('master_recordings')
           .select('*', { count: 'exact', head: true })
-          .eq('rights_holder_id', rightsHolder.id)
+          .eq('rights_holder_id', user.id)
           .eq('rights_verification_status', 'pending');
         pendingCount = count || 0;
       } catch (error) {
@@ -123,7 +123,7 @@ export function RightsHolderDashboard() {
         const { data: activityData } = await supabase
           .from('master_recordings')
           .select('id, title, rights_verification_status, admin_review_status, created_at')
-          .eq('rights_holder_id', rightsHolder.id)
+          .eq('rights_holder_id', user.id)
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -214,12 +214,12 @@ export function RightsHolderDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white">
-                Welcome back, {rightsHolder.company_name}
-              </h1>
-              <p className="text-gray-300 mt-1">
-                {rightsHolder.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
-              </p>
+                              <h1 className="text-3xl font-bold text-white">
+                  Welcome back, {rightsHolder?.company_name}
+                </h1>
+                <p className="text-gray-300 mt-1">
+                  {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
+                </p>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -415,20 +415,20 @@ export function RightsHolderDashboard() {
             <h3 className="text-lg font-semibold text-white mb-4">Account Status</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Verification Status</p>
-                  <p className={`font-medium ${getStatusColor(rightsHolder.verification_status)}`}>
-                    {rightsHolder.verification_status.charAt(0).toUpperCase() + rightsHolder.verification_status.slice(1)}
-                  </p>
-                </div>
-                {getStatusIcon(rightsHolder.verification_status)}
+                                  <div>
+                    <p className="text-gray-300">Verification Status</p>
+                    <p className={`font-medium ${getStatusColor(rightsHolder?.verification_status || '')}`}>
+                      {rightsHolder?.verification_status?.charAt(0).toUpperCase() + rightsHolder?.verification_status?.slice(1) || 'N/A'}
+                    </p>
+                  </div>
+                  {getStatusIcon(rightsHolder?.verification_status || '')}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                 <div>
                   <p className="text-gray-300">Account Type</p>
                   <p className="font-medium text-white">
-                    {rightsHolder.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'}
+                    {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'}
                   </p>
                 </div>
                 <Building2 className="w-5 h-5 text-blue-400" />
@@ -438,10 +438,10 @@ export function RightsHolderDashboard() {
                  <div>
                    <p className="text-gray-300">Terms Accepted</p>
                    <p className="font-medium text-green-400">
-                     {rightsHolder.terms_accepted ? 'Yes' : 'No'}
+                     {rightsHolder?.terms_accepted ? 'Yes' : 'No'}
                    </p>
                  </div>
-                 {rightsHolder.terms_accepted ? (
+                 {rightsHolder?.terms_accepted ? (
                    <CheckCircle className="w-5 h-5 text-green-400" />
                  ) : (
                    <AlertCircle className="w-5 h-5 text-red-400" />
@@ -452,10 +452,10 @@ export function RightsHolderDashboard() {
                  <div>
                    <p className="text-gray-300">Rights Authority Declaration</p>
                    <p className="font-medium text-green-400">
-                     {rightsHolder.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
+                     {rightsHolder?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
                    </p>
                  </div>
-                 {rightsHolder.rights_authority_declaration_accepted ? (
+                 {rightsHolder?.rights_authority_declaration_accepted ? (
                    <CheckCircle className="w-5 h-5 text-green-400" />
                  ) : (
                    <AlertCircle className="w-5 h-5 text-red-400" />
@@ -466,7 +466,7 @@ export function RightsHolderDashboard() {
                 <div>
                   <p className="text-gray-300">Member Since</p>
                   <p className="font-medium text-white">
-                    {formatDate(rightsHolder.created_at)}
+                    {formatDate(rightsHolder?.created_at || '')}
                   </p>
                 </div>
                 <Calendar className="w-5 h-5 text-gray-400" />

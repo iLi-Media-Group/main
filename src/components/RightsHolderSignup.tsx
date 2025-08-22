@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface SignupFormData {
@@ -25,7 +25,7 @@ interface SignupFormData {
 
 export function RightsHolderSignup() {
   const navigate = useNavigate();
-  const { signUp } = useRightsHolderAuth();
+  const { signUpRightsHolder } = useUnifiedAuth();
   
   const [formData, setFormData] = useState<SignupFormData>({
     email: '',
@@ -164,7 +164,7 @@ export function RightsHolderSignup() {
          rights_authority_declaration_accepted_at: new Date().toISOString(),
        };
 
-      const { error } = await signUp(formData.email, formData.password, rightsHolderData);
+      const { error } = await signUpRightsHolder(formData.email, formData.password, rightsHolderData);
 
       if (error) {
         setError(error.message || 'Signup failed. Please try again.');
