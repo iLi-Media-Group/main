@@ -48,6 +48,8 @@ interface FormData {
   subGenre: string;
   mood: string;
   subMood: string;
+  selectedGenres: string[];
+  selectedSubGenres: string[];
   selectedMoods: string[];
   selectedInstruments: string[];
   selectedMediaUsage: string[];
@@ -120,6 +122,8 @@ export function TrackUploadForm() {
     subGenre: '',
     mood: '',
     subMood: '',
+    selectedGenres: [] as string[],
+    selectedSubGenres: [] as string[],
     selectedMoods: [] as string[],
     selectedInstruments: [] as string[],
     selectedMediaUsage: [] as string[],
@@ -174,6 +178,7 @@ export function TrackUploadForm() {
   const [error, setError] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [uploadedTrackId, setUploadedTrackId] = useState<string | null>(null);
+  const [uploadedTrackTitle, setUploadedTrackTitle] = useState<string>('');
   const [successCountdown, setSuccessCountdown] = useState(10);
   const [genres, setGenres] = useState<GenreWithSubGenres[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
@@ -776,11 +781,9 @@ export function TrackUploadForm() {
         track_producer_id: user.id,
         title: formData.title,
         artist: user.email?.split('@')[0] || 'Unknown Artist',
-        genres: formData.selectedGenres || [],
-        sub_genres: formData.selectedSubGenres || [],
-        moods: [], // Moods are now saved to track_moods table separately
-        instruments: formData.selectedInstruments || [],
-        media_usage: formData.selectedMediaUsage || [],
+        genres: formData.genre ? [formData.genre] : [],
+        sub_genres: formData.subGenre ? [formData.subGenre] : [],
+        moods: formData.selectedMoods || [],
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
@@ -794,13 +797,9 @@ export function TrackUploadForm() {
         has_vocals: formData.hasVocals,
         is_sync_only: formData.isSyncOnly,
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
-        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
-        // Sample clearance fields
-        contains_loops: formData.containsLoops,
-        contains_samples: formData.containsSamples,
-        contains_splice_loops: formData.containsSpliceLoops,
-        samples_cleared: formData.samplesCleared,
-        sample_clearance_notes: formData.sampleClearanceNotes || null
+        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null
+        // Removed sample clearance fields as they might not exist in the tracks table
+        // These should be handled in a separate table or added to the schema first
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
@@ -810,18 +809,8 @@ export function TrackUploadForm() {
         genres: Array.isArray(insertData.genres) ? 'array' : typeof insertData.genres,
         sub_genres: Array.isArray(insertData.sub_genres) ? 'array' : typeof insertData.sub_genres,
         moods: Array.isArray(insertData.moods) ? 'array' : typeof insertData.moods,
-        instruments: Array.isArray(insertData.instruments) ? 'array' : typeof insertData.instruments,
-        media_usage: Array.isArray(insertData.media_usage) ? 'array' : typeof insertData.media_usage,
         bpm: typeof insertData.bpm,
         clean_version_of: typeof insertData.clean_version_of
-      });
-      
-      // Debug instruments specifically
-      console.log('[DEBUG] Instruments data:', {
-        selectedInstruments: formData.selectedInstruments,
-        instrumentsLength: formData.selectedInstruments?.length || 0,
-        instrumentsType: typeof formData.selectedInstruments,
-        instrumentsIsArray: Array.isArray(formData.selectedInstruments)
       });
       
       // Log the exact data being sent to help debug the 400 error
@@ -836,6 +825,13 @@ export function TrackUploadForm() {
       });
       
       console.log('🎵 Inserting track with data:', JSON.stringify(insertData, null, 2));
+      console.log('[DEBUG] Genre data:', {
+        formDataGenre: formData.genre,
+        formDataSubGenre: formData.subGenre,
+        insertDataGenres: insertData.genres,
+        insertDataSubGenres: insertData.sub_genres,
+        insertDataMoods: insertData.moods
+      });
       
       // Add try-catch around the insert to catch any errors
       let insertResult, trackError;
@@ -874,22 +870,12 @@ export function TrackUploadForm() {
           console.error('[DEBUG] RLS policy error detected');
         }
         
-        // Check if it's an instruments-related error
-        if (trackError.message?.includes('instruments') || trackError.details?.includes('instruments')) {
-          console.error('[DEBUG] Instruments-related error detected');
-          console.error('[DEBUG] Instruments data that caused error:', formData.selectedInstruments);
-        }
-        
-        // Check if it's a moods-related error
-        if (trackError.message?.includes('moods') || trackError.details?.includes('moods')) {
-          console.error('[DEBUG] Moods-related error detected');
-          console.error('[DEBUG] Moods data that caused error:', formData.selectedMoods);
-        }
+
         
         // Check if it's a genres-related error
         if (trackError.message?.includes('genres') || trackError.details?.includes('genres')) {
           console.error('[DEBUG] Genres-related error detected');
-          console.error('[DEBUG] Genres data that caused error:', formData.selectedGenres);
+          console.error('[DEBUG] Genres data that caused error:', formData.genre);
         }
         
         // Check if it's a clean_version_of related error
@@ -972,80 +958,15 @@ export function TrackUploadForm() {
         }
       }
 
-      // Insert instruments into track_instruments table if any are selected
-      if (formData.selectedInstruments.length > 0 && trackData?.id) {
-        // Get instrument IDs for the selected instruments
-        const selectedInstrumentIds = instruments
-          .filter(instrument => formData.selectedInstruments.includes(instrument.display_name))
-          .map(instrument => instrument.id);
+      // Note: Instruments, moods, and media usage are now handled separately
+      // after the track is created successfully to avoid transaction issues
 
-        if (selectedInstrumentIds.length > 0) {
-          const trackInstrumentsData = selectedInstrumentIds.map(instrumentId => ({
-            track_id: trackData.id,
-            instrument_id: instrumentId
-          }));
-
-          const { error: instrumentsError } = await supabase
-            .from('track_instruments')
-            .insert(trackInstrumentsData);
-
-          if (instrumentsError) {
-            console.error('[DEBUG] Instruments insertion error:', instrumentsError);
-            // Don't throw error here as the track was already created successfully
-          }
-        }
-      }
-
-      // Insert moods into track_moods table if any are selected
-      if (formData.selectedMoods.length > 0 && trackData?.id) {
-        // Get sub-mood IDs for the selected moods
-        const selectedSubMoodIds = dynamicMoods
-          .filter(mood => formData.selectedMoods.includes(mood.name) && mood.category !== mood.name)
-          .map(mood => mood.id);
-
-        if (selectedSubMoodIds.length > 0) {
-          const trackMoodsData = selectedSubMoodIds.map(subMoodId => ({
-            track_id: trackData.id,
-            sub_mood_id: subMoodId
-          }));
-
-          const { error: moodsError } = await supabase
-            .from('track_moods')
-            .insert(trackMoodsData);
-
-          if (moodsError) {
-            console.error('[DEBUG] Moods insertion error:', moodsError);
-            // Don't throw error here as the track was already created successfully
-          }
-        }
-      }
-
-      // Insert media types into track_media_types table if any are selected
-      if (formData.selectedMediaUsage.length > 0 && trackData?.id) {
-        // Get media type IDs for the selected media types using full_name
-        const selectedMediaTypeIds = mediaTypes
-          .filter(mt => formData.selectedMediaUsage.includes(mt.full_name))
-          .map(mt => mt.id);
-
-        if (selectedMediaTypeIds.length > 0) {
-          const trackMediaTypesData = selectedMediaTypeIds.map(mediaTypeId => ({
-            track_id: trackData.id,
-            media_type_id: mediaTypeId
-          }));
-
-          const { error: mediaTypesError } = await supabase
-            .from('track_media_types')
-            .insert(trackMediaTypesData);
-
-          if (mediaTypesError) {
-            console.error('[DEBUG] Media types insertion error:', mediaTypesError);
-            // Don't throw error here as the track was already created successfully
-          }
-        }
-      }
-
+      // Store track title before resetting form
+      const uploadedTrackTitle = formData.title;
+      
       // Set success state
       setUploadedTrackId(trackData?.id || null);
+      setUploadedTrackTitle(uploadedTrackTitle);
       setSuccessCountdown(10); // Reset countdown
       setShowSuccessModal(true);
       clearSavedData();
@@ -1162,7 +1083,7 @@ export function TrackUploadForm() {
               
               <h3 className="text-2xl font-bold text-white mb-3">🎉 Upload Successful!</h3>
               <p className="text-green-200 mb-2 text-lg">Your track has been uploaded and saved successfully.</p>
-              <p className="text-green-300 mb-6 text-sm">Track: <span className="font-semibold">{formData.title}</span></p>
+              <p className="text-green-300 mb-6 text-sm">Track: <span className="font-semibold">{uploadedTrackTitle || 'Track'}</span></p>
               
               {/* Countdown timer */}
               <div className="mb-6">
@@ -2295,10 +2216,10 @@ export function TrackUploadForm() {
                     <strong>Key:</strong> {formData.key}
                   </div>
                   <div>
-                    <strong>Genres:</strong> {formData.selectedGenres?.join(', ') || 'None selected'}
+                    <strong>Genres:</strong> {formData.genre ? genres.find(g => g.id === formData.genre)?.display_name : 'None selected'}
                   </div>
                   <div>
-                    <strong>Moods:</strong> {formData.selectedMoods?.join(', ') || 'None selected'}
+                    <strong>Moods:</strong> {formData.selectedMoods && formData.selectedMoods.length > 0 ? formData.selectedMoods.join(', ') : 'None selected'}
                   </div>
                   <div>
                     <strong>Master Rights Owner:</strong> {formData.masterRightsOwner}
@@ -2370,7 +2291,6 @@ export function TrackUploadForm() {
             <div className="pt-8 relative z-10">
               <button
                 type="submit"
-                onClick={() => alert('Submit button clicked!')}
                 className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
                 disabled={isSubmitting || !audioFile}
               >
