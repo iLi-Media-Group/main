@@ -771,7 +771,7 @@ export function TrackUploadForm() {
         has_vocals: formData.hasVocals,
         is_sync_only: formData.isSyncOnly,
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
-        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
+        clean_version_of: null, // Set to null for now since we need to handle UUID properly
         // Sample clearance fields
         contains_loops: formData.containsLoops,
         contains_samples: formData.containsSamples,
@@ -781,6 +781,17 @@ export function TrackUploadForm() {
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
+      
+      // Debug data types for all fields
+      console.log('[DEBUG] Data types check:', {
+        genres: Array.isArray(insertData.genres) ? 'array' : typeof insertData.genres,
+        sub_genres: Array.isArray(insertData.sub_genres) ? 'array' : typeof insertData.sub_genres,
+        moods: Array.isArray(insertData.moods) ? 'array' : typeof insertData.moods,
+        instruments: Array.isArray(insertData.instruments) ? 'array' : typeof insertData.instruments,
+        media_usage: Array.isArray(insertData.media_usage) ? 'array' : typeof insertData.media_usage,
+        bpm: typeof insertData.bpm,
+        clean_version_of: typeof insertData.clean_version_of
+      });
       
       // Debug instruments specifically
       console.log('[DEBUG] Instruments data:', {
@@ -847,7 +858,13 @@ export function TrackUploadForm() {
         // Check if it's a genres-related error
         if (trackError.message?.includes('genres') || trackError.details?.includes('genres')) {
           console.error('[DEBUG] Genres-related error detected');
-          console.error('[DEBUG] Genres data that caused error:', formData.genre);
+          console.error('[DEBUG] Genres data that caused error:', formData.selectedGenres);
+        }
+        
+        // Check if it's a clean_version_of related error
+        if (trackError.message?.includes('clean_version_of') || trackError.details?.includes('clean_version_of')) {
+          console.error('[DEBUG] Clean version error detected');
+          console.error('[DEBUG] Clean version data that caused error:', formData.cleanVersionOf);
         }
         
         // Log the full error response for debugging
