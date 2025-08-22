@@ -95,7 +95,7 @@ interface CoSigner {
 
 export function RightsHolderUploadForm() {
   const navigate = useNavigate();
-  const { user, rightsHolder } = useUnifiedAuth();
+  const { user, profile } = useUnifiedAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -170,8 +170,8 @@ export function RightsHolderUploadForm() {
     key: '',
     duration: 0,
     description: '',
-    masterRightsOwner: rightsHolder?.company_name || '',
-    publishingRightsOwner: rightsHolder?.company_name || '',
+    masterRightsOwner: profile?.company_name || '',
+    publishingRightsOwner: profile?.company_name || '',
     audioFile: null,
     artworkFile: null,
     participants: [
@@ -190,11 +190,21 @@ export function RightsHolderUploadForm() {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    const { name, value, type } = e.target;
+    
+    // Handle number inputs properly
+    if (type === 'number') {
+      const numValue = value === '' ? 0 : Number(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: isNaN(numValue) ? 0 : numValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const handleMultiSelectChange = (field: keyof UploadFormData, value: string, checked: boolean) => {
@@ -364,26 +374,41 @@ export function RightsHolderUploadForm() {
         );
       }
 
+      // Validate required fields before insertion
+      if (!formData.title.trim()) {
+        throw new Error('Title is required');
+      }
+      if (!formData.artist.trim()) {
+        throw new Error('Artist is required');
+      }
+      if (!formData.genre) {
+        throw new Error('Genre is required');
+      }
+
+      // Ensure numeric fields are valid
+      const bpm = formData.bpm && !isNaN(formData.bpm) ? formData.bpm : null;
+      const duration = formData.duration && !isNaN(formData.duration) ? formData.duration : null;
+
       // Create master recording record
       const { data: masterRecording, error: masterError } = await supabase
         .from('master_recordings')
         .insert({
           rights_holder_id: user.id,
-          title: formData.title,
-          artist: formData.artist,
+          title: formData.title.trim(),
+          artist: formData.artist.trim(),
           genre: formData.genre,
-          sub_genre: formData.subGenre,
-          mood: formData.mood,
-          bpm: formData.bpm,
-          key: formData.key,
-          duration: formData.duration,
-          description: formData.description,
+          sub_genre: formData.subGenre || null,
+          mood: formData.mood || null,
+          bpm: bpm,
+          key: formData.key || null,
+          duration: duration,
+          description: formData.description || null,
           audio_url: audioPath,
-          artwork_url: artworkPath,
-          master_rights_owner: formData.masterRightsOwner,
-          publishing_rights_owner: formData.publishingRightsOwner,
+          artwork_url: artworkPath || null,
+          master_rights_owner: formData.masterRightsOwner || null,
+          publishing_rights_owner: formData.publishingRightsOwner || null,
           status: 'pending_verification',
-          instruments: formData.selectedInstruments
+          instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null
         })
         .select()
         .single();
