@@ -103,8 +103,24 @@ interface CoSigner {
 }
 
 export function TrackUploadForm() {
-  const { user } = useUnifiedAuth();
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
+
+  // Function to get the correct dashboard URL based on account type
+  const getDashboardUrl = () => {
+    switch (accountType) {
+      case 'rights_holder':
+        return '/rights-holder/dashboard';
+      case 'producer':
+        return '/producer/dashboard';
+      case 'admin':
+        return '/admin';
+      case 'white_label':
+        return '/white-label-dashboard';
+      default:
+        return '/dashboard';
+    }
+  };
 
   // Initialize form persistence
   const {
@@ -519,7 +535,7 @@ export function TrackUploadForm() {
         setTimeout(() => {
           setShowSuccessModal(false);
           setSuccessCountdown(10);
-          navigate('/producer/dashboard');
+          navigate(getDashboardUrl());
         }, 1000);
     }
   }, [showSuccessModal, successCountdown, navigate]);
@@ -631,7 +647,6 @@ export function TrackUploadForm() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
-    alert('Form submission started!');
     console.log('[DEBUG] 🚀 Form submission started');
     e.preventDefault();
     console.log('[DEBUG] Form prevented default');
@@ -1096,7 +1111,7 @@ export function TrackUploadForm() {
                   onClick={() => {
                     setShowSuccessModal(false);
                     setSuccessCountdown(10);
-                    navigate('/producer/dashboard');
+                    navigate(getDashboardUrl());
                   }}
                   className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
