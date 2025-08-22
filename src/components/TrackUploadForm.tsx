@@ -2206,14 +2206,20 @@ export function TrackUploadForm() {
               <span className="text-gray-300 text-sm">Step {currentStep} of {steps.length}</span>
             </div>
             
-            <button
-              type="button"
-              onClick={nextStep}
-              disabled={!validateStep(currentStep)}
-              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center"
-            >
-              Next →
-            </button>
+            {currentStep < 7 && (
+              <button
+                type="button"
+                onClick={nextStep}
+                disabled={!validateStep(currentStep)}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-800 disabled:text-gray-500 text-white font-semibold rounded-lg transition-colors flex items-center"
+              >
+                Next →
+              </button>
+            )}
+            
+            {currentStep === 7 && (
+              <div className="w-24"></div> {/* Spacer to maintain layout */}
+            )}
           </div>
 
           {/* Submit Button - Only show on last step */}
