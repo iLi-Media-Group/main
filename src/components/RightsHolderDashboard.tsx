@@ -394,12 +394,12 @@ export function RightsHolderDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-                              <h1 className="text-3xl font-bold text-white">
-                  Welcome back, {rightsHolder?.company_name}
-                </h1>
-                <p className="text-gray-300 mt-1">
-                  {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
-                </p>
+              <h1 className="text-3xl font-bold text-white">
+                Welcome back, {rightsHolder?.company_name}
+              </h1>
+              <p className="text-gray-300 mt-1">
+                {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <Link
@@ -468,275 +468,275 @@ export function RightsHolderDashboard() {
           </div>
         </div>
 
-                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           {/* Quick Actions */}
-           <div className="lg:col-span-1">
-             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
-               <div className="space-y-3">
-                 <Link
-                   to="/rights-holder/upload"
-                   className="flex items-center p-3 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg transition-colors group"
-                 >
-                   <Upload className="w-5 h-5 text-blue-400 mr-3" />
-                   <span className="text-white">Upload New Recording</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Quick Actions */}
+          <div className="lg:col-span-1">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <Link
+                  to="/rights-holder/upload"
+                  className="flex items-center p-3 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg transition-colors group"
+                >
+                  <Upload className="w-5 h-5 text-blue-400 mr-3" />
+                  <span className="text-white">Upload New Recording</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/rights-holder/recordings"
-                   className="flex items-center p-3 bg-orange-600/20 hover:bg-orange-600/30 rounded-lg transition-colors group"
-                 >
-                   <Music className="w-5 h-5 text-orange-400 mr-3" />
-                   <span className="text-white">Manage Recordings</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+                <Link
+                  to="/rights-holder/recordings"
+                  className="flex items-center p-3 bg-orange-600/20 hover:bg-orange-600/30 rounded-lg transition-colors group"
+                >
+                  <Music className="w-5 h-5 text-orange-400 mr-3" />
+                  <span className="text-white">Manage Recordings</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/rights-holder/split-sheets"
-                   className="flex items-center p-3 bg-green-600/20 hover:bg-green-600/30 rounded-lg transition-colors group"
-                 >
-                   <FileText className="w-5 h-5 text-green-400 mr-3" />
-                   <span className="text-white">Manage Split Sheets</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+                <Link
+                  to="/rights-holder/split-sheets"
+                  className="flex items-center p-3 bg-green-600/20 hover:bg-green-600/30 rounded-lg transition-colors group"
+                >
+                  <FileText className="w-5 h-5 text-green-400 mr-3" />
+                  <span className="text-white">Manage Split Sheets</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/rights-holder/analytics"
-                   className="flex items-center p-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg transition-colors group"
-                 >
-                   <BarChart3 className="w-5 h-5 text-purple-400 mr-3" />
-                   <span className="text-white">View Analytics</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+                <Link
+                  to="/rights-holder/analytics"
+                  className="flex items-center p-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg transition-colors group"
+                >
+                  <BarChart3 className="w-5 h-5 text-purple-400 mr-3" />
+                  <span className="text-white">View Analytics</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/rights-holder/licensing"
-                   className="flex items-center p-3 bg-teal-600/20 hover:bg-teal-600/30 rounded-lg transition-colors group"
-                 >
-                   <FileText className="w-5 h-5 text-teal-400 mr-3" />
-                   <span className="text-white">Licensing & Revenue</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+                <Link
+                  to="/rights-holder/licensing"
+                  className="flex items-center p-3 bg-teal-600/20 hover:bg-teal-600/30 rounded-lg transition-colors group"
+                >
+                  <FileText className="w-5 h-5 text-teal-400 mr-3" />
+                  <span className="text-white">Licensing & Revenue</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/rights-holder/e-signatures"
-                   className="flex items-center p-3 bg-indigo-600/20 hover:bg-indigo-600/30 rounded-lg transition-colors group"
-                 >
-                   <Mail className="w-5 h-5 text-indigo-400 mr-3" />
-                   <span className="text-white">E-Signatures</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
+                <Link
+                  to="/rights-holder/e-signatures"
+                  className="flex items-center p-3 bg-indigo-600/20 hover:bg-indigo-600/30 rounded-lg transition-colors group"
+                >
+                  <Mail className="w-5 h-5 text-indigo-400 mr-3" />
+                  <span className="text-white">E-Signatures</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
 
-                 <Link
-                   to="/profile"
-                   className="flex items-center p-3 bg-gray-600/20 hover:bg-gray-600/30 rounded-lg transition-colors group"
-                 >
-                   <Users className="w-5 h-5 text-gray-400 mr-3" />
-                   <span className="text-white">Update Profile</span>
-                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
-                 </Link>
-               </div>
-             </div>
-           </div>
+                <Link
+                  to="/profile"
+                  className="flex items-center p-3 bg-gray-600/20 hover:bg-gray-600/30 rounded-lg transition-colors group"
+                >
+                  <Users className="w-5 h-5 text-gray-400 mr-3" />
+                  <span className="text-white">Update Profile</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
+              </div>
+            </div>
+          </div>
 
-           {/* Recent Activity and Sync Sections */}
-           <div className="lg:col-span-2 space-y-8">
-             {/* Recent Activity */}
-             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <div className="flex items-center justify-between mb-4">
-                 <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
-                 <Link
-                   to="/rights-holder/recordings"
-                   className="text-blue-400 hover:text-blue-300 text-sm"
-                 >
-                   View all
-                 </Link>
-               </div>
+          {/* Recent Activity and Sync Sections */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Recent Activity */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Recent Activity</h3>
+                <Link
+                  to="/rights-holder/recordings"
+                  className="text-blue-400 hover:text-blue-300 text-sm"
+                >
+                  View all
+                </Link>
+              </div>
 
-               {recentActivity.length === 0 ? (
-                 <div className="text-center py-8">
-                   <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                   <p className="text-gray-400">No recent activity</p>
-                   <p className="text-sm text-gray-500 mt-1">
-                     Start by uploading your first recording
-                   </p>
-                 </div>
-               ) : (
-                 <div className="space-y-4">
-                   {recentActivity.map((activity) => (
-                     <div
-                       key={activity.id}
-                       className="flex items-center p-4 bg-gray-800/30 rounded-lg"
-                     >
-                       {getStatusIcon(activity.status)}
-                       <div className="ml-3 flex-1">
-                         <p className="text-white font-medium">{activity.title}</p>
-                         <p className="text-sm text-gray-400">{activity.description}</p>
-                       </div>
-                       <div className="text-right">
-                         <p className={`text-sm font-medium ${getStatusColor(activity.status)}`}>
-                           {activity.status}
-                         </p>
-                         <p className="text-xs text-gray-500">
-                           {formatDate(activity.created_at)}
-                         </p>
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               )}
-             </div>
+              {recentActivity.length === 0 ? (
+                <div className="text-center py-8">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No recent activity</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Start by uploading your first recording
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentActivity.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex items-center p-4 bg-gray-800/30 rounded-lg"
+                    >
+                      {getStatusIcon(activity.status)}
+                      <div className="ml-3 flex-1">
+                        <p className="text-white font-medium">{activity.title}</p>
+                        <p className="text-sm text-gray-400">{activity.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-medium ${getStatusColor(activity.status)}`}>
+                          {activity.status}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(activity.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-             {/* Sync Proposals Section */}
-             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <div className="flex items-center justify-between mb-6">
-                 <div>
-                   <h3 className="text-lg font-semibold text-white">Sync Proposals</h3>
-                   <p className="text-gray-400 text-sm">Manage sync licensing proposals for your tracks</p>
-                 </div>
-                 <button
-                   onClick={fetchSyncProposals}
-                   disabled={syncProposalsLoading}
-                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
-                 >
-                   <RefreshCw className={`w-4 h-4 mr-2 ${syncProposalsLoading ? 'animate-spin' : ''}`} />
-                   Refresh
-                 </button>
-               </div>
+            {/* Sync Proposals Section */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Sync Proposals</h3>
+                  <p className="text-gray-400 text-sm">Manage sync licensing proposals for your tracks</p>
+                </div>
+                <button
+                  onClick={fetchSyncProposals}
+                  disabled={syncProposalsLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${syncProposalsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
 
-               {syncProposalsLoading ? (
-                 <div className="text-center py-8">
-                   <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-                   <p className="text-gray-400">Loading sync proposals...</p>
-                 </div>
-               ) : syncProposals.length === 0 ? (
-                 <div className="text-center py-8">
-                   <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                   <p className="text-gray-400">No sync proposals yet</p>
-                   <p className="text-sm text-gray-500 mt-1">Proposals will appear here when clients request your tracks</p>
-                 </div>
-               ) : (
-                 <div className="space-y-4">
-                   {syncProposals.slice(0, 5).map((proposal) => (
-                     <div
-                       key={proposal.id}
-                       className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                     >
-                       <div className="flex-1">
-                         <div className="flex items-center gap-3 mb-2">
-                           <h4 className="font-semibold text-white">{proposal.track.title}</h4>
-                           <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(proposal.status)}`}>
-                             {getProposalStatusIcon(proposal.status)}
-                             <span className="ml-1">{proposal.status}</span>
-                           </div>
-                         </div>
-                         <p className="text-sm text-gray-400">
-                           {proposal.client.first_name} {proposal.client.last_name} • ${proposal.sync_fee} • {proposal.project_type}
-                         </p>
-                         <p className="text-xs text-gray-500 mt-1">
-                           {formatDate(proposal.created_at)}
-                         </p>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <Link
-                           to={`/sync-proposal/${proposal.id}`}
-                           className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
-                         >
-                           View Details
-                         </Link>
-                       </div>
-                     </div>
-                   ))}
-                   {syncProposals.length > 5 && (
-                     <div className="text-center pt-4">
-                       <Link
-                         to="/sync-proposals"
-                         className="text-blue-400 hover:text-blue-300 text-sm"
-                       >
-                         View all {syncProposals.length} proposals
-                       </Link>
-                     </div>
-                   )}
-                 </div>
-               )}
-             </div>
+              {syncProposalsLoading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-400">Loading sync proposals...</p>
+                </div>
+              ) : syncProposals.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No sync proposals yet</p>
+                  <p className="text-sm text-gray-500 mt-1">Proposals will appear here when clients request your tracks</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {syncProposals.slice(0, 5).map((proposal) => (
+                    <div
+                      key={proposal.id}
+                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-semibold text-white">{proposal.track.title}</h4>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(proposal.status)}`}>
+                            {getProposalStatusIcon(proposal.status)}
+                            <span className="ml-1">{proposal.status}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400">
+                          {proposal.client.first_name} {proposal.client.last_name} • ${proposal.sync_fee} • {proposal.project_type}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDate(proposal.created_at)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/sync-proposal/${proposal.id}`}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                        >
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                  {syncProposals.length > 5 && (
+                    <div className="text-center pt-4">
+                      <Link
+                        to="/sync-proposals"
+                        className="text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        View all {syncProposals.length} proposals
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-             {/* Custom Sync Requests Section */}
-             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-               <div className="flex items-center justify-between mb-6">
-                 <div>
-                   <h3 className="text-lg font-semibold text-white">Custom Sync Requests</h3>
-                   <p className="text-gray-400 text-sm">Manage custom sync licensing requests</p>
-                 </div>
-                 <button
-                   onClick={fetchCustomSyncRequests}
-                   disabled={customSyncRequestsLoading}
-                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
-                 >
-                   <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
-                   Refresh
-                 </button>
-               </div>
+            {/* Custom Sync Requests Section */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Custom Sync Requests</h3>
+                  <p className="text-gray-400 text-sm">Manage custom sync licensing requests</p>
+                </div>
+                <button
+                  onClick={fetchCustomSyncRequests}
+                  disabled={customSyncRequestsLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              </div>
 
-               {customSyncRequestsLoading ? (
-                 <div className="text-center py-8">
-                   <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-                   <p className="text-gray-400">Loading custom sync requests...</p>
-                 </div>
-               ) : customSyncRequests.length === 0 ? (
-                 <div className="text-center py-8">
-                   <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                   <p className="text-gray-400">No custom sync requests yet</p>
-                   <p className="text-sm text-gray-500 mt-1">Create a request to get started</p>
-                 </div>
-               ) : (
-                 <div className="space-y-4">
-                   {customSyncRequests.slice(0, 5).map((request) => (
-                     <div
-                       key={request.id}
-                       className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                     >
-                       <div className="flex-1">
-                         <div className="flex items-center gap-3 mb-2">
-                           <h4 className="font-semibold text-white">{request.project_title}</h4>
-                           <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(request.status)}`}>
-                             {getProposalStatusIcon(request.status)}
-                             <span className="ml-1">{request.status}</span>
-                           </div>
-                         </div>
-                         <p className="text-sm text-gray-400">
-                           {request.client.first_name} {request.client.last_name} • ${request.sync_fee} • {request.genre}
-                         </p>
-                         <p className="text-xs text-gray-500 mt-1">
-                           {formatDate(request.created_at)}
-                         </p>
-                       </div>
-                       <div className="flex items-center gap-2">
-                         <Link
-                           to={`/custom-sync-request/${request.id}`}
-                           className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
-                         >
-                           View Details
-                         </Link>
-                       </div>
-                     </div>
-                   ))}
-                   {customSyncRequests.length > 5 && (
-                     <div className="text-center pt-4">
-                       <Link
-                         to="/custom-sync-requests"
-                         className="text-blue-400 hover:text-blue-300 text-sm"
-                       >
-                         View all {customSyncRequests.length} requests
-                       </Link>
-                     </div>
-                   )}
-                 </div>
-               )}
-             </div>
-           </div>
-         </div>
+              {customSyncRequestsLoading ? (
+                <div className="text-center py-8">
+                  <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
+                  <p className="text-gray-400">Loading custom sync requests...</p>
+                </div>
+              ) : customSyncRequests.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No custom sync requests yet</p>
+                  <p className="text-sm text-gray-500 mt-1">Create a request to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {customSyncRequests.slice(0, 5).map((request) => (
+                    <div
+                      key={request.id}
+                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-semibold text-white">{request.project_title}</h4>
+                          <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(request.status)}`}>
+                            {getProposalStatusIcon(request.status)}
+                            <span className="ml-1">{request.status}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400">
+                          {request.client.first_name} {request.client.last_name} • ${request.sync_fee} • {request.genre}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatDate(request.created_at)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/custom-sync-request/${request.id}`}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
+                        >
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                  {customSyncRequests.length > 5 && (
+                    <div className="text-center pt-4">
+                      <Link
+                        to="/custom-sync-requests"
+                        className="text-blue-400 hover:text-blue-300 text-sm"
+                      >
+                        View all {customSyncRequests.length} requests
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Account Status */}
         <div className="mt-8">
@@ -744,13 +744,13 @@ export function RightsHolderDashboard() {
             <h3 className="text-lg font-semibold text-white mb-4">Account Status</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                                  <div>
-                    <p className="text-gray-300">Verification Status</p>
-                    <p className={`font-medium ${getStatusColor(rightsHolder?.verification_status || '')}`}>
-                      {rightsHolder?.verification_status?.charAt(0).toUpperCase() + rightsHolder?.verification_status?.slice(1) || 'N/A'}
-                    </p>
-                  </div>
-                  {getStatusIcon(rightsHolder?.verification_status || '')}
+                <div>
+                  <p className="text-gray-300">Verification Status</p>
+                  <p className={`font-medium ${getStatusColor(rightsHolder?.verification_status || '')}`}>
+                    {rightsHolder?.verification_status?.charAt(0).toUpperCase() + rightsHolder?.verification_status?.slice(1) || 'N/A'}
+                  </p>
+                </div>
+                {getStatusIcon(rightsHolder?.verification_status || '')}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
@@ -763,33 +763,33 @@ export function RightsHolderDashboard() {
                 <Building2 className="w-5 h-5 text-blue-400" />
               </div>
 
-                             <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                 <div>
-                   <p className="text-gray-300">Terms Accepted</p>
-                   <p className="font-medium text-green-400">
-                     {rightsHolder?.terms_accepted ? 'Yes' : 'No'}
-                   </p>
-                 </div>
-                 {rightsHolder?.terms_accepted ? (
-                   <CheckCircle className="w-5 h-5 text-green-400" />
-                 ) : (
-                   <AlertCircle className="w-5 h-5 text-red-400" />
-                 )}
-               </div>
+              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                <div>
+                  <p className="text-gray-300">Terms Accepted</p>
+                  <p className="font-medium text-green-400">
+                    {rightsHolder?.terms_accepted ? 'Yes' : 'No'}
+                  </p>
+                </div>
+                {rightsHolder?.terms_accepted ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                )}
+              </div>
 
-               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                 <div>
-                   <p className="text-gray-300">Rights Authority Declaration</p>
-                   <p className="font-medium text-green-400">
-                     {rightsHolder?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
-                   </p>
-                 </div>
-                 {rightsHolder?.rights_authority_declaration_accepted ? (
-                   <CheckCircle className="w-5 h-5 text-green-400" />
-                 ) : (
-                   <AlertCircle className="w-5 h-5 text-red-400" />
-                 )}
-               </div>
+              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                <div>
+                  <p className="text-gray-300">Rights Authority Declaration</p>
+                  <p className="font-medium text-green-400">
+                    {rightsHolder?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
+                  </p>
+                </div>
+                {rightsHolder?.rights_authority_declaration_accepted ? (
+                  <CheckCircle className="w-5 h-5 text-green-400" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                )}
+              </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                 <div>
@@ -804,7 +804,6 @@ export function RightsHolderDashboard() {
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 }
