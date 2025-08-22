@@ -1349,31 +1349,64 @@ export function TrackUploadForm() {
           {/* Genres Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {(genres || []).map((genre) => (
-                    <label key={genre} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
-                        <input
-                          type="checkbox"
-                        checked={formData.selectedGenres.includes(genre)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              updateFormData({ 
-                              selectedGenres: [...formData.selectedGenres, genre]
-                              });
-                            } else {
-                            updateFormData({
-                              selectedGenres: formData.selectedGenres.filter(g => g !== genre)
-                            });
-                            }
-                          }}
-                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                          disabled={isSubmitting}
-                        />
-                      <span className="text-sm">{genre}</span>
-                      </label>
-                    ))}
-                  </div>
+            <div className="space-y-4">
+              {(genres || []).map((genre) => (
+                <div key={genre.id} className="space-y-2">
+                  <label className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.selectedGenres.includes(genre.name)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          updateFormData({ 
+                            selectedGenres: [...formData.selectedGenres, genre.name]
+                          });
+                        } else {
+                          updateFormData({
+                            selectedGenres: formData.selectedGenres.filter(g => g !== genre.name)
+                          });
+                        }
+                      }}
+                      className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                      disabled={isSubmitting}
+                    />
+                    <span className="text-sm font-medium">{genre.display_name}</span>
+                  </label>
+                  
+                  {/* Show sub-genres when genre is selected */}
+                  {formData.selectedGenres.includes(genre.name) && genre.sub_genres && genre.sub_genres.length > 0 && (
+                    <div className="ml-6 space-y-2">
+                      <h4 className="text-sm text-gray-400 font-medium">Sub-genres:</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {genre.sub_genres.map((subGenre) => (
+                          <label key={subGenre.id} className="flex items-center space-x-2 text-gray-400 hover:text-gray-300 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.selectedSubGenres.includes(subGenre.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  updateFormData({ 
+                                    selectedSubGenres: [...formData.selectedSubGenres, subGenre.name]
+                                  });
+                                } else {
+                                  updateFormData({
+                                    selectedSubGenres: formData.selectedSubGenres.filter(sg => sg !== subGenre.name)
+                                  });
+                                }
+                              }}
+                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                              disabled={isSubmitting}
+                            />
+                            <span className="text-xs">{subGenre.display_name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              ))}
+            </div>
+          </div>
 
               {/* Moods Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
