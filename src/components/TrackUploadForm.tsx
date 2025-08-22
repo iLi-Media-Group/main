@@ -307,10 +307,14 @@ export function TrackUploadForm() {
         category = 'Education';
       }
       
-      if (!categorizedMediaTypes[category]) {
-        categorizedMediaTypes[category] = [];
+      // Only add the media type if it's not exactly the same as the category name
+      // This prevents category names from appearing as sub-items
+      if (name.toLowerCase() !== category.toLowerCase()) {
+        if (!categorizedMediaTypes[category]) {
+          categorizedMediaTypes[category] = [];
+        }
+        categorizedMediaTypes[category].push(name);
       }
-      categorizedMediaTypes[category].push(name);
     });
     
     return categorizedMediaTypes;
@@ -744,6 +748,7 @@ export function TrackUploadForm() {
         genres: formData.genre,
         sub_genres: formData.subGenre,
         moods: formData.mood,
+        instruments: formData.selectedInstruments || [],
         bpm: bpmNumber,
         key: formData.key,
         has_sting_ending: formData.hasStingEnding,
