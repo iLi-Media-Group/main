@@ -778,7 +778,7 @@ export function TrackUploadForm() {
         artist: user.email?.split('@')[0] || 'Unknown Artist',
         genres: formData.selectedGenres || [],
         sub_genres: formData.selectedSubGenres || [],
-        moods: formData.selectedMoods || [],
+        moods: [], // Moods are now saved to track_moods table separately
         instruments: formData.selectedInstruments || [],
         media_usage: formData.selectedMediaUsage || [],
         bpm: bpmNumber,
@@ -991,6 +991,30 @@ export function TrackUploadForm() {
 
           if (instrumentsError) {
             console.error('[DEBUG] Instruments insertion error:', instrumentsError);
+            // Don't throw error here as the track was already created successfully
+          }
+        }
+      }
+
+      // Insert moods into track_moods table if any are selected
+      if (formData.selectedMoods.length > 0 && trackData?.id) {
+        // Get sub-mood IDs for the selected moods
+        const selectedSubMoodIds = subMoods
+          .filter(subMood => formData.selectedMoods.includes(subMood.name))
+          .map(subMood => subMood.id);
+
+        if (selectedSubMoodIds.length > 0) {
+          const trackMoodsData = selectedSubMoodIds.map(subMoodId => ({
+            track_id: trackData.id,
+            sub_mood_id: subMoodId
+          }));
+
+          const { error: moodsError } = await supabase
+            .from('track_moods')
+            .insert(trackMoodsData);
+
+          if (moodsError) {
+            console.error('[DEBUG] Moods insertion error:', moodsError);
             // Don't throw error here as the track was already created successfully
           }
         }
