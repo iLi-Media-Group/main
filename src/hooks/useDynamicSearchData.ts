@@ -145,30 +145,36 @@ export function useDynamicSearchData(): DynamicSearchData {
           : mt.name
       })) || [];
 
-      // Fetch moods from the database (using existing columns until migration is applied)
+      // Fetch unique moods from tracks table
       let moodsData = null;
       let moodsError = null;
       
       try {
         const result = await supabase
-          .from('moods')
-          .select(`
-            id,
-            name
-          `)
-          .order('name');
-        moodsData = result.data;
-        moodsError = result.error;
+          .from('tracks')
+          .select('moods')
+          .not('moods', 'is', null);
+        
+        if (result.error) {
+          moodsError = result.error;
+          moodsData = [];
+        } else {
+          // Extract unique moods from all tracks
+          const allMoods = result.data?.flatMap(track => track.moods || []) || [];
+          const uniqueMoods = [...new Set(allMoods)].sort();
+          
+          // Convert to the format expected by the interface
+          moodsData = uniqueMoods.map((mood, index) => ({
+            id: `mood-${index}`,
+            name: mood,
+            display_name: mood,
+            category: 'Other' // Default category until we implement proper categorization
+          }));
+        }
       } catch (err) {
-        // If moods table doesn't exist, use empty array
+        console.warn('Error fetching moods from tracks, using fallback data');
         moodsData = [];
         moodsError = null;
-      }
-
-      // If moods table doesn't exist or there's an error, use empty array
-      if (moodsError) {
-        console.warn('Moods table not available, using fallback data');
-        moodsData = [];
       }
 
       setGenres(genresData || []);
