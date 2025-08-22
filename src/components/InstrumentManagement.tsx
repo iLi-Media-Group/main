@@ -123,6 +123,30 @@ export function InstrumentManagement() {
     }
   };
 
+  const createCategory = async () => {
+    try {
+      if (!newCategory.name.trim()) {
+        setError('Please fill in the category name');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('instrument_categories')
+        .insert({
+          name: newCategory.name
+        });
+
+      if (error) throw error;
+
+      setNewCategory({ name: '' });
+      setShowAddCategoryModal(false);
+      fetchCategories();
+    } catch (err) {
+      console.error('Error creating category:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create category');
+    }
+  };
+
   const updateInstrument = async (instrument: Instrument) => {
     try {
       if (!instrument.name.trim() || !instrument.category.trim()) {
@@ -156,8 +180,33 @@ export function InstrumentManagement() {
     }
   };
 
+  const updateCategory = async (category: InstrumentCategory) => {
+    try {
+      if (!category.name.trim()) {
+        setError('Please fill in the category name');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('instrument_categories')
+        .update({
+          name: category.name,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', category.id);
+
+      if (error) throw error;
+
+      setEditingCategory(null);
+      fetchCategories();
+    } catch (err) {
+      console.error('Error updating category:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update category');
+    }
+  };
+
   const deleteInstrument = async (instrumentId: string) => {
-    if (!confirm('Are you sure you want to delete this instrument? This will also delete all associated sub-instruments.')) {
+    if (!confirm('Are you sure you want to delete this instrument?')) {
       return;
     }
 
@@ -176,76 +225,24 @@ export function InstrumentManagement() {
     }
   };
 
-  const createSubInstrument = async () => {
-    try {
-      if (!newSubInstrument.name.trim() || !newSubInstrument.display_name.trim() || !selectedInstrumentForSubInstrument) {
-        setError('Please fill in all fields and select an instrument');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('sub_instruments')
-        .insert({
-          instrument_id: selectedInstrumentForSubInstrument.id,
-          name: newSubInstrument.name.toLowerCase().replace(/\s+/g, '_'),
-          display_name: newSubInstrument.display_name
-        });
-
-      if (error) throw error;
-
-      setNewSubInstrument({ name: '', display_name: '' });
-      setSelectedInstrumentForSubInstrument(null);
-      setShowAddSubInstrumentModal(false);
-      fetchInstruments();
-    } catch (err) {
-      console.error('Error creating sub-instrument:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create sub-instrument');
-    }
-  };
-
-  const updateSubInstrument = async (subInstrument: SubInstrument) => {
-    try {
-      if (!subInstrument.name.trim() || !subInstrument.display_name.trim()) {
-        setError('Please fill in all fields');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('sub_instruments')
-        .update({
-          name: subInstrument.name.toLowerCase().replace(/\s+/g, '_'),
-          display_name: subInstrument.display_name,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', subInstrument.id);
-
-      if (error) throw error;
-
-      setEditingSubInstrument(null);
-      fetchInstruments();
-    } catch (err) {
-      console.error('Error updating sub-instrument:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update sub-instrument');
-    }
-  };
-
-  const deleteSubInstrument = async (subInstrumentId: string) => {
-    if (!confirm('Are you sure you want to delete this sub-instrument?')) {
+  const deleteCategory = async (categoryId: string) => {
+    if (!confirm('Are you sure you want to delete this category? This will also delete all instruments in this category.')) {
       return;
     }
 
     try {
       const { error } = await supabase
-        .from('sub_instruments')
+        .from('instrument_categories')
         .delete()
-        .eq('id', subInstrumentId);
+        .eq('id', categoryId);
 
       if (error) throw error;
 
+      fetchCategories();
       fetchInstruments();
     } catch (err) {
-      console.error('Error deleting sub-instrument:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete sub-instrument');
+      console.error('Error deleting category:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete category');
     }
   };
 
@@ -263,18 +260,18 @@ export function InstrumentManagement() {
         <h2 className="text-2xl font-bold text-white">Instrument Management</h2>
         <div className="flex space-x-3">
           <button
+            onClick={() => setShowAddCategoryModal(true)}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Category
+          </button>
+          <button
             onClick={() => setShowAddInstrumentModal(true)}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Instrument Category
-          </button>
-          <button
-            onClick={() => setShowAddSubInstrumentModal(true)}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Sub-Instrument
+            Add Instrument
           </button>
         </div>
       </div>
@@ -288,16 +285,47 @@ export function InstrumentManagement() {
         </div>
       )}
 
-      <div className="grid gap-6">
-        {instruments.map((instrument) => (
-          <div key={instrument.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center">
-                <Music className="w-6 h-6 text-blue-500 mr-3" />
-                <div>
-                  <h3 className="text-xl font-semibold text-white">{instrument.display_name}</h3>
-                  <p className="text-sm text-gray-400">ID: {instrument.name}</p>
-                </div>
+      {/* Categories Section */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+        <h3 className="text-xl font-semibold text-white mb-4">Categories</h3>
+        <div className="grid gap-4">
+          {categories.map((category) => (
+            <div key={category.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+              <div>
+                <p className="text-white font-medium">{category.name}</p>
+                <p className="text-sm text-gray-400">ID: {category.id}</p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setEditingCategory(category)}
+                  className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                  title="Edit category"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => deleteCategory(category.id)}
+                  className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                  title="Delete category"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Instruments Section */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+        <h3 className="text-xl font-semibold text-white mb-4">Instruments</h3>
+        <div className="grid gap-4">
+          {instruments.map((instrument) => (
+            <div key={instrument.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+              <div>
+                <p className="text-white font-medium">{instrument.name}</p>
+                <p className="text-sm text-gray-400">Category: {instrument.category_name}</p>
+                <p className="text-sm text-gray-400">ID: {instrument.id}</p>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -316,58 +344,64 @@ export function InstrumentManagement() {
                 </button>
               </div>
             </div>
-
-            <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-300">Sub-Instruments ({instrument.sub_instruments.length})</h4>
-              {instrument.sub_instruments.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {instrument.sub_instruments.map((subInstrument) => (
-                    <div key={subInstrument.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                      <div>
-                        <p className="text-white font-medium">{subInstrument.display_name}</p>
-                        <p className="text-sm text-gray-400">{subInstrument.name}</p>
-                      </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => setEditingSubInstrument(subInstrument)}
-                          className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
-                          title="Edit sub-instrument"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteSubInstrument(subInstrument.id)}
-                          className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                          title="Delete sub-instrument"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">No sub-instruments added yet</p>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {instruments.length === 0 && (
-          <div className="text-center py-12">
-            <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">No instruments found</p>
-            <p className="text-gray-500 text-sm">Click "Add Instrument Category" to create your first instrument</p>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
+
+      {/* Add Category Modal */}
+      {showAddCategoryModal && (
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-xl border border-blue-500/20 p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">Add New Category</h3>
+              <button
+                onClick={() => setShowAddCategoryModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <form onSubmit={e => { e.preventDefault(); createCategory(); }} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Category Name *
+                </label>
+                <input
+                  type="text"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({ name: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                  placeholder="e.g., Guitar"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCategoryModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                >
+                  Create Category
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Add Instrument Modal */}
       {showAddInstrumentModal && (
         <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-xl border border-blue-500/20 p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Add New Instrument Category</h3>
+              <h3 className="text-xl font-bold text-white">Add New Instrument</h3>
               <button
                 onClick={() => setShowAddInstrumentModal(false)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -379,29 +413,32 @@ export function InstrumentManagement() {
             <form onSubmit={e => { e.preventDefault(); createInstrument(); }} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Display Name *
-                </label>
-                <input
-                  type="text"
-                  value={newInstrument.display_name}
-                  onChange={(e) => setNewInstrument({ ...newInstrument, display_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g., Strings"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Internal Name *
+                  Instrument Name *
                 </label>
                 <input
                   type="text"
                   value={newInstrument.name}
                   onChange={(e) => setNewInstrument({ ...newInstrument, name: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g., strings"
+                  placeholder="e.g., acoustic_guitar"
                 />
                 <p className="text-xs text-gray-500 mt-1">This will be converted to lowercase with underscores</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={newInstrument.category}
+                  onChange={(e) => setNewInstrument({ ...newInstrument, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -424,83 +461,48 @@ export function InstrumentManagement() {
         </div>
       )}
 
-      {/* Add Sub-Instrument Modal */}
-      {showAddSubInstrumentModal && (
+      {/* Edit Category Modal */}
+      {editingCategory && (
         <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 rounded-xl border border-blue-500/20 p-6 w-full max-w-md">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Add New Sub-Instrument</h3>
+              <h3 className="text-xl font-bold text-white">Edit Category</h3>
               <button
-                onClick={() => setShowAddSubInstrumentModal(false)}
+                onClick={() => setEditingCategory(null)}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={e => { e.preventDefault(); createSubInstrument(); }} className="space-y-4">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Parent Instrument *
-                </label>
-                <select
-                  value={selectedInstrumentForSubInstrument?.id || ''}
-                  onChange={(e) => {
-                    const instrument = instruments.find(i => i.id === e.target.value);
-                    setSelectedInstrumentForSubInstrument(instrument || null);
-                  }}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="">Select an instrument</option>
-                  {instruments.map(instrument => (
-                    <option key={instrument.id} value={instrument.id}>{instrument.display_name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Display Name *
+                  Category Name *
                 </label>
                 <input
                   type="text"
-                  value={newSubInstrument.display_name}
-                  onChange={(e) => setNewSubInstrument({ ...newSubInstrument, display_name: e.target.value })}
+                  value={editingCategory.name}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g., Violin"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Internal Name *
-                </label>
-                <input
-                  type="text"
-                  value={newSubInstrument.name}
-                  onChange={(e) => setNewSubInstrument({ ...newSubInstrument, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                  placeholder="e.g., violin"
-                />
-                <p className="text-xs text-gray-500 mt-1">This will be converted to lowercase with underscores</p>
               </div>
 
               <div className="flex space-x-3 pt-4">
                 <button
-                  type="button"
-                  onClick={() => setShowAddSubInstrumentModal(false)}
+                  onClick={() => setEditingCategory(null)}
                   className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  type="submit"
+                  onClick={() => updateCategory(editingCategory)}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
                 >
-                  Create Sub-Instrument
+                  Update Category
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
@@ -522,19 +524,7 @@ export function InstrumentManagement() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Display Name *
-                </label>
-                <input
-                  type="text"
-                  value={editingInstrument.display_name}
-                  onChange={(e) => setEditingInstrument({ ...editingInstrument, display_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Internal Name *
+                  Instrument Name *
                 </label>
                 <input
                   type="text"
@@ -543,6 +533,22 @@ export function InstrumentManagement() {
                   className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">This will be converted to lowercase with underscores</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Category *
+                </label>
+                <select
+                  value={editingInstrument.category}
+                  onChange={(e) => setEditingInstrument({ ...editingInstrument, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.name}>{category.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex space-x-3 pt-4">
@@ -557,65 +563,6 @@ export function InstrumentManagement() {
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                   Update Instrument
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Sub-Instrument Modal */}
-      {editingSubInstrument && (
-        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl border border-blue-500/20 p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-white">Edit Sub-Instrument</h3>
-              <button
-                onClick={() => setEditingSubInstrument(null)}
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Display Name *
-                </label>
-                <input
-                  type="text"
-                  value={editingSubInstrument.display_name}
-                  onChange={(e) => setEditingSubInstrument({ ...editingSubInstrument, display_name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Internal Name *
-                </label>
-                <input
-                  type="text"
-                  value={editingSubInstrument.name}
-                  onChange={(e) => setEditingSubInstrument({ ...editingSubInstrument, name: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">This will be converted to lowercase with underscores</p>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button
-                  onClick={() => setEditingSubInstrument(null)}
-                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => updateSubInstrument(editingSubInstrument)}
-                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
-                >
-                  Update Sub-Instrument
                 </button>
               </div>
             </div>
