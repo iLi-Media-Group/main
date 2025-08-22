@@ -250,7 +250,7 @@ export function TrackUploadForm() {
 
   const updateParticipant = (id: string, field: keyof SplitSheetParticipant, value: any) => {
     updateFormData({
-      participants: formData.participants.map(p => 
+      participants: (formData.participants || []).map(p => 
         p.id === id ? { ...p, [field]: value } : p
       )
     });
@@ -258,7 +258,7 @@ export function TrackUploadForm() {
 
   const removeParticipant = (id: string) => {
     updateFormData({
-      participants: formData.participants.filter(p => p.id !== id)
+      participants: (formData.participants || []).filter(p => p.id !== id)
     });
   };
 
@@ -278,7 +278,7 @@ export function TrackUploadForm() {
 
   const updateCoSigner = (id: string, field: keyof CoSigner, value: any) => {
     updateFormData({
-      coSigners: formData.coSigners.map(c => 
+      coSigners: (formData.coSigners || []).map(c => 
         c.id === id ? { ...c, [field]: value } : c
       )
     });
@@ -286,7 +286,7 @@ export function TrackUploadForm() {
 
   const removeCoSigner = (id: string) => {
     updateFormData({
-      coSigners: formData.coSigners.filter(c => c.id !== id)
+      coSigners: (formData.coSigners || []).filter(c => c.id !== id)
     });
   };
 
@@ -1667,7 +1667,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Split Sheet Participants</h2>
                 
-                {formData.participants.map((participant) => (
+                {(formData.participants || []).map((participant) => (
                   <div key={participant.id} className="bg-white/5 rounded-lg p-4 mb-4">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-white font-medium">Participant</h3>
@@ -1784,7 +1784,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Co-signers</h2>
                 
-                {formData.coSigners.map((coSigner) => (
+                {(formData.coSigners || []).map((coSigner) => (
                   <div key={coSigner.id} className="bg-white/5 rounded-lg p-4 mb-4">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-white font-medium">Co-signer</h3>
