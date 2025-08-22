@@ -200,7 +200,7 @@ export function TrackUploadForm() {
     { number: 2, title: 'Audio & Files', icon: FileAudio },
     { number: 3, title: 'Genres & Moods', icon: Music },
     { number: 4, title: 'Instruments & Usage', icon: Users },
-    { number: 5, title: 'Rights & Split Sheet', icon: FileText },
+    { number: 5, title: 'Rights', icon: FileText },
     { number: 6, title: 'Co-signers', icon: Users },
     { number: 7, title: 'Review & Submit', icon: Building2 }
   ];
@@ -1531,10 +1531,10 @@ export function TrackUploadForm() {
             </div>
           )}
 
-          {/* Step 5: Rights & Split Sheet */}
+          {/* Step 5: Rights */}
           {currentStep === 5 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-white mb-6">Rights & Split Sheet</h2>
+              <h2 className="text-2xl font-bold text-white mb-6">Rights</h2>
               
               {/* Rights Declaration Section */}
             <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
