@@ -303,14 +303,29 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Add timeout to prevent infinite loading
+        const timeoutPromise = new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 10000)
+        );
+        
+        const sessionPromise = supabase.auth.getSession();
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
         
         if (session?.user) {
           setUser(session.user);
           await fetchRightsHolder(session.user.id);
+        } else {
+          setUser(null);
+          setRightsHolder(null);
+          setRightsHolderProfile(null);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
+        // If there's an error with the session, clear it automatically
+        await supabase.auth.signOut();
+        setUser(null);
+        setRightsHolder(null);
+        setRightsHolderProfile(null);
       } finally {
         setLoading(false);
       }
@@ -321,16 +336,24 @@ export function RightsHolderAuthProvider({ children }: { children: React.ReactNo
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
-          setUser(session.user);
-          await fetchRightsHolder(session.user.id);
-        } else {
+        try {
+          if (session?.user) {
+            setUser(session.user);
+            await fetchRightsHolder(session.user.id);
+            setLoading(false);
+          } else {
+            setUser(null);
+            setRightsHolder(null);
+            setRightsHolderProfile(null);
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('Error in auth state change:', error);
+          // If there's an error, clear the session automatically
+          await supabase.auth.signOut();
           setUser(null);
           setRightsHolder(null);
           setRightsHolderProfile(null);
-          setLoading(false);
-        }
-        if (session?.user) {
           setLoading(false);
         }
       }

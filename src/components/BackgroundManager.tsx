@@ -43,6 +43,14 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
   const fetchAssets = async () => {
     setLoading(true);
     try {
+      // Check if user is authenticated before making database queries
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        console.log('No authenticated session, skipping background asset fetch');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('background_assets')
         .select('*')

@@ -210,7 +210,7 @@ export function TrackUploadForm() {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+      setCurrentStep(prev => Math.min(prev + 1, 7));
     }
   };
 
@@ -973,6 +973,11 @@ export function TrackUploadForm() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
+          {/* Step 1: Basic Info */}
+          {currentStep === 1 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Basic Track Information</h2>
+              
           {/* Track Details Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Track Details</h2>
@@ -993,8 +998,6 @@ export function TrackUploadForm() {
                   disabled={isSubmitting}
                   required
                 />
-                
-
               </div>
 
               <div>
@@ -1018,7 +1021,7 @@ export function TrackUploadForm() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Musical Key
+                      Key *
                 </label>
                 <select
                   id="track-key"
@@ -1027,30 +1030,44 @@ export function TrackUploadForm() {
                   onChange={(e) => updateFormData({ key: e.target.value })}
                   className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
                   disabled={isSubmitting}
+                      required
                 >
                   <option value="">Select key</option>
-                  {MUSICAL_KEYS.map((musicalKey) => (
-                    <option key={musicalKey} value={musicalKey}>
-                      {musicalKey}
-                    </option>
-                  ))}
+                      <option value="C">C</option>
+                      <option value="C#">C#</option>
+                      <option value="D">D</option>
+                      <option value="D#">D#</option>
+                      <option value="E">E</option>
+                      <option value="F">F</option>
+                      <option value="F#">F#</option>
+                      <option value="G">G</option>
+                      <option value="G#">G#</option>
+                      <option value="A">A</option>
+                      <option value="A#">A#</option>
+                      <option value="B">B</option>
                 </select>
               </div>
 
-              <div className="flex items-center space-x-4">
-                <label className="flex items-center space-x-2 text-gray-300">
-                  <input
-                    id="track-has-sting-ending"
-                    name="track-has-sting-ending"
-                    type="checkbox"
-                    checked={formData.hasStingEnding}
-                    onChange={(e) => updateFormData({ hasStingEnding: e.target.checked })}
-                    className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                    disabled={isSubmitting}
-                  />
-                  <span>Has sting ending</span>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Sting Ending
                 </label>
+                    <select
+                      id="track-sting-ending"
+                      name="track-sting-ending"
+                      value={formData.stingEnding}
+                      onChange={(e) => updateFormData({ stingEnding: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Select ending</option>
+                      <option value="fade">Fade</option>
+                      <option value="cold">Cold</option>
+                      <option value="loop">Loop</option>
+                    </select>
+                  </div>
 
+                  <div className="md:col-span-2">
                 <label className="flex items-center space-x-2 text-gray-300">
                   <input
                     id="track-is-one-stop"
@@ -1105,6 +1122,13 @@ export function TrackUploadForm() {
               )}
             </div>
           </div>
+            </div>
+          )}
+
+          {/* Step 2: Audio & Files */}
+          {currentStep === 2 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Audio & Additional Files</h2>
 
           {/* Audio Upload Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
@@ -1272,822 +1296,366 @@ export function TrackUploadForm() {
               </div>
             </div>
           </div>
-
-          {/* Vocals Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Vocals</h2>
-            
-            <div className="space-y-4">
-              <label className="flex items-center space-x-2 text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={formData.hasVocals}
-                  onChange={(e) => updateFormData({ hasVocals: e.target.checked })}
-                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <span>Track contains vocals</span>
-              </label>
-              {/* Clean version logic - always show if hasVocals is true */}
-              {formData.hasVocals && (
-                <div className="mt-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Is this the clean version of an explicit song?
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2 text-gray-300">
-                      <input
-                        type="radio"
-                        checked={formData.isCleanVersion === true}
-                        onChange={() => {
-                          updateFormData({ 
-                            isCleanVersion: true,
-                            explicitLyrics: false // Uncheck explicit if clean version
-                          });
-                        }}
-                        disabled={isSubmitting}
-                      />
-                      <span>Yes</span>
-                    </label>
-                    <label className="flex items-center space-x-2 text-gray-300">
-                      <input
-                        type="radio"
-                        checked={formData.isCleanVersion === false}
-                        onChange={() => updateFormData({ isCleanVersion: false })}
-                        disabled={isSubmitting}
-                      />
-                      <span>No</span>
-                    </label>
                   </div>
-                  {formData.isCleanVersion && (
-                    <div className="mt-2">
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Select the explicit track this is the clean version of:
-                      </label>
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        placeholder="Type to search tracks..."
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        disabled={isSubmitting}
-                      />
-                      {searchLoading && <div className="text-blue-400 text-xs mt-1">Searching...</div>}
-                      {searchResults.length > 0 && (
-                        <ul className="bg-blue-900/90 border border-blue-500/20 rounded-lg mt-1 max-h-40 overflow-y-auto">
-                          {searchResults.map(track => (
-                            <li
-                              key={track.id}
-                              className={`px-3 py-2 cursor-pointer hover:bg-blue-700/40 text-white ${formData.cleanVersionOf === track.id ? 'bg-blue-700/60' : ''}`}
-                              onClick={() => {
-                                updateFormData({ cleanVersionOf: track.id });
-                                setSearchTerm(track.title);
-                                setSearchResults([]);
-                              }}
-                            >
-                              {track.title}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-                              {/* Explicit Lyrics Checkbox - only show if hasVocals is true and not a clean version */}
-                {formData.hasVocals && (
-                              <label className="flex items-center space-x-2 text-red-300">
-                <input
-                  type="checkbox"
-                  checked={formData.explicitLyrics}
-                  onChange={(e) => updateFormData({ explicitLyrics: e.target.checked })}
-                  className="rounded border-gray-600 text-red-600 focus:ring-red-500"
-                  disabled={isSubmitting || !!formData.isCleanVersion}
-                />
-                <span>This track contains explicit lyrics</span>
-              </label>
-              )}
+          )}
 
-              <label className="flex items-center space-x-2 text-gray-300">
-                <input
-                  type="checkbox"
-                  checked={formData.isSyncOnly}
-                  onChange={(e) => updateFormData({ isSyncOnly: e.target.checked })}
-                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                  disabled={isSubmitting}
-                />
-                <span>Sync Only - Track is only available for submitted Sync Proposals</span>
-              </label>
-            </div>
-          </div>
-
-          {/* Samples and Loops Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Samples and Loops</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Please indicate if this track contains any loops or samples that may need clearance
-            </p>
-            
-            <div className="space-y-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-2 text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.containsLoops}
-                      onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
-                      className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
-                      disabled={isSubmitting}
-                    />
-                                            <span>This track contains loops</span>
-                  </label>
-                  <div className="ml-6 text-sm text-yellow-200/80">
-                    <span>Loops created by other producers require a splitsheet with the appropriate signatures and PRO information for each producer. </span>
-                    <a 
-                      href="/producer/resources" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-300 hover:text-blue-200 underline"
-                    >
-                      View splitsheet template in Resources
-                    </a>
-                  </div>
-                </div>
-                
-                <label className="flex items-center space-x-2 text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={formData.containsSamples}
-                    onChange={(e) => updateFormData({ containsSamples: e.target.checked })}
-                    className="rounded border-gray-600 text-yellow-600 focus:ring-yellow-500"
-                    disabled={isSubmitting}
-                  />
-                  <span>This track contains samples that may need clearance</span>
-                </label>
-                
-                <label className="flex items-center space-x-2 text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={formData.containsSpliceLoops}
-                    onChange={(e) => updateFormData({ containsSpliceLoops: e.target.checked })}
-                    className="rounded border-gray-600 text-orange-600 focus:ring-orange-500"
-                    disabled={isSubmitting}
-                  />
-                                          <span>This track contains Splice loops</span>
-                </label>
-                
-                {formData.containsSamples && (
-                  <div className="space-y-3 ml-6">
-                    <label className="flex items-center space-x-2 text-gray-300">
-                      <input
-                        type="checkbox"
-                        checked={formData.samplesCleared}
-                        onChange={(e) => updateFormData({ samplesCleared: e.target.checked })}
-                        className="rounded border-gray-600 text-green-600 focus:ring-green-500"
-                        disabled={isSubmitting}
-                      />
-                      <span className="text-green-300">All samples in this track have been cleared for use</span>
-                    </label>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Sample Clearance Notes
-                      </label>
-                      <textarea
-                        value={formData.sampleClearanceNotes}
-                        onChange={(e) => updateFormData({ sampleClearanceNotes: e.target.value })}
-                        className="w-full bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 p-3"
-                        placeholder="Provide details about sample sources, clearance status, or any relevant information..."
-                        rows={3}
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Step 3: Genres & Moods */}
+          {currentStep === 3 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Genres & Moods</h2>
 
           {/* Genres Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
-            
-            {genres.length === 0 ? (
-              <div className="text-center py-8">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No genres available</p>
-                <p className="text-sm text-gray-500">Please contact an administrator to add genres</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Primary Genres (Select at least one)
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {genres.map((genre) => (
-                      <label
-                        key={genre.id}
-                        className="flex items-center space-x-2 text-gray-300"
-                      >
+                    <label key={genre} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={formData.selectedGenres.includes(genre.display_name)}
+                        checked={formData.selectedGenres.includes(genre)}
                           onChange={(e) => {
                             if (e.target.checked) {
                               updateFormData({ 
-                                selectedGenres: [...formData.selectedGenres, genre.display_name] 
+                              selectedGenres: [...formData.selectedGenres, genre]
                               });
                             } else {
-                              const newSelectedGenres = formData.selectedGenres.filter((g) => g !== genre.display_name);
-                              updateFormData({ selectedGenres: newSelectedGenres });
-                              // Remove sub-genres for this genre when unchecking
-                              const newSelectedSubGenres = formData.selectedSubGenres.filter(sg => {
-                                const subGenre = genre.sub_genres.find(s => s.display_name === sg);
-                                return !subGenre;
-                              });
-                              updateFormData({ selectedSubGenres: newSelectedSubGenres });
+                            updateFormData({
+                              selectedGenres: formData.selectedGenres.filter(g => g !== genre)
+                            });
                             }
                           }}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                           disabled={isSubmitting}
                         />
-                        <span className="text-sm">{genre.display_name}</span>
+                      <span className="text-sm">{genre}</span>
                       </label>
                     ))}
                   </div>
                 </div>
 
-                {formData.selectedGenres.map((genreName: string) => {
-                  const genre = genres.find(g => g.display_name === genreName);
-                  const subGenres = genre?.sub_genres || [];
-                  
-                  return subGenres.length > 0 ? (
-                    <div key={genreName}>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        {genreName} Sub-Genres
-                      </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {subGenres.map((subGenre) => (
-                          <label
-                            key={subGenre.id}
-                            className="flex items-center space-x-2 text-gray-300"
-                          >
+              {/* Moods Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {moods.map((mood) => (
+                    <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                             <input
                               type="checkbox"
-                              checked={formData.selectedSubGenres.includes(subGenre.display_name)}
+                        checked={formData.selectedMoods.includes(mood)}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   updateFormData({ 
-                                    selectedSubGenres: [...formData.selectedSubGenres, subGenre.display_name] 
+                              selectedMoods: [...formData.selectedMoods, mood]
                                   });
                                 } else {
                                   updateFormData({
-                                    selectedSubGenres: formData.selectedSubGenres.filter((sg) => sg !== subGenre.display_name)
+                              selectedMoods: formData.selectedMoods.filter(m => m !== mood)
                                   });
                                 }
                               }}
                               className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                               disabled={isSubmitting}
                             />
-                            <span className="text-sm">{subGenre.display_name}</span>
+                      <span className="text-sm">{mood}</span>
                           </label>
                         ))}
                       </div>
                     </div>
-                  ) : null;
-                })}
               </div>
             )}
-          </div>
 
-          {/* Moods Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Select the moods that best describe this track. This helps clients find music with the right emotional feel.
-            </p>
-            
+          {/* Step 4: Instruments & Usage */}
+          {currentStep === 4 && (
             <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Primary Moods (Select at least one)
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => (
-                    <label
-                      key={mainMood}
-                      className="flex items-center space-x-2 text-gray-300"
-                    >
+              <h2 className="text-2xl font-bold text-white mb-6">Instruments & Usage</h2>
+              
+              {/* Instruments Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {instruments.map((instrument) => (
+                    <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                                               <input
                           type="checkbox"
-                          checked={formData.selectedMoods.includes(mainMood)}
+                        checked={formData.selectedInstruments.includes(instrument)}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              // Add only the main mood category
-                              if (!formData.selectedMoods.includes(mainMood)) {
                                 updateFormData({ 
-                                  selectedMoods: [...formData.selectedMoods, mainMood] 
+                              selectedInstruments: [...formData.selectedInstruments, instrument]
                                 });
-                              }
                             } else {
-                              // Remove only the main mood category
                               updateFormData({
-                                selectedMoods: formData.selectedMoods.filter((m) => m !== mainMood)
+                              selectedInstruments: formData.selectedInstruments.filter(i => i !== instrument)
                               });
                             }
                           }}
                         className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                         disabled={isSubmitting}
                       />
-                      <span className="text-sm">{mainMood}</span>
+                      <span className="text-sm">{instrument}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {(Object.entries(MOODS_CATEGORIES) as [string, readonly string[]][]).map(([mainMood, subMoods]) => {
-                const isMainMoodSelected = formData.selectedMoods.includes(mainMood);
-                
-                return isMainMoodSelected ? (
-                  <div key={mainMood}>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {mainMood} Sub-Moods
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {subMoods.map((subMood: string) => (
-                        <label
-                          key={subMood}
-                          className="flex items-center space-x-2 text-gray-300"
-                        >
+              {/* Media Usage Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {mediaUsage.map((usage) => (
+                    <label key={usage} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                           <input
                             type="checkbox"
-                            checked={formData.selectedMoods.includes(subMood)}
+                        checked={formData.selectedMediaUsage.includes(usage)}
                             onChange={(e) => {
                               if (e.target.checked) {
                                 updateFormData({ 
-                                  selectedMoods: [...formData.selectedMoods, subMood] 
+                              selectedMediaUsage: [...formData.selectedMediaUsage, usage]
                                 });
                               } else {
                                 updateFormData({
-                                  selectedMoods: formData.selectedMoods.filter((m) => m !== subMood)
+                              selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== usage)
                                 });
                               }
                             }}
                             className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                             disabled={isSubmitting}
                           />
-                          <span className="text-sm">{subMood}</span>
+                      <span className="text-sm">{usage}</span>
                         </label>
                       ))}
-                    </div>
-                  </div>
-                ) : null;
-              })}
             </div>
           </div>
 
-          {/* Instruments Section */}
+              {/* Vocals Section */}
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Select the instruments used in this track. This helps clients find music with specific instrumentation.
-            </p>
-            
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Primary Instrument Categories (Select at least one)
-                </label>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {(() => {
-                    // Group instruments by category
-                    const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
-                    instruments.forEach(instrument => {
-                      const categoryName = instrument.category_info?.display_name || instrument.category;
-                      if (!groupedInstruments[categoryName]) {
-                        groupedInstruments[categoryName] = [];
-                      }
-                      groupedInstruments[categoryName].push(instrument);
-                    });
-
-                    return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => (
-                      <label
-                        key={categoryName}
-                        className="flex items-center space-x-2 text-gray-300"
-                      >
+                <h2 className="text-xl font-semibold text-white mb-4">Vocals</h2>
+                
+                <div className="space-y-4">
+                  <label className="flex items-center space-x-2 text-gray-300">
                         <input
                           type="checkbox"
-                          checked={(formData.selectedInstruments || []).includes(categoryName)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              // Add only the main instrument category
-                              if (!(formData.selectedInstruments || []).includes(categoryName)) {
-                                updateFormData({ 
-                                  selectedInstruments: [...(formData.selectedInstruments || []), categoryName] 
-                                });
-                              }
-                            } else {
-                              // Remove only the main instrument category
-                              updateFormData({
-                                selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== categoryName)
-                              });
-                            }
-                          }}
+                      checked={formData.hasVocals}
+                      onChange={(e) => updateFormData({ hasVocals: e.target.checked })}
                           className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                           disabled={isSubmitting}
                         />
-                        <span className="text-sm">{categoryName}</span>
+                    <span>Track contains vocals</span>
                       </label>
-                    ));
-                  })()}
-                </div>
-              </div>
-
-              {(() => {
-                // Group instruments by category
-                const groupedInstruments: Record<string, InstrumentWithCategory[]> = {};
-                instruments.forEach(instrument => {
-                  const categoryName = instrument.category_info?.display_name || instrument.category;
-                  if (!groupedInstruments[categoryName]) {
-                    groupedInstruments[categoryName] = [];
-                  }
-                  groupedInstruments[categoryName].push(instrument);
-                });
-
-                return Object.entries(groupedInstruments).map(([categoryName, categoryInstruments]) => {
-                  const isMainCategorySelected = (formData.selectedInstruments || []).includes(categoryName);
                   
-                  return isMainCategorySelected ? (
-                    <div key={categoryName}>
+                  {formData.hasVocals && (
+                    <div className="mt-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
-                        {categoryName} Instruments
+                        Is this the clean version of an explicit song?
                       </label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {categoryInstruments.map((instrument) => (
-                          <label
-                            key={instrument.id}
-                            className="flex items-center space-x-2 text-gray-300"
-                          >
+                      <div className="flex items-center space-x-4">
+                        <label className="flex items-center space-x-2 text-gray-300">
                             <input
-                              type="checkbox"
-                              checked={(formData.selectedInstruments || []).includes(instrument.display_name)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
+                            type="radio"
+                            checked={formData.isCleanVersion === true}
+                            onChange={() => {
                                   updateFormData({ 
-                                    selectedInstruments: [...(formData.selectedInstruments || []), instrument.display_name] 
+                                isCleanVersion: true,
+                                explicitLyrics: false
                                   });
-                                } else {
-                                  updateFormData({
-                                    selectedInstruments: (formData.selectedInstruments || []).filter((i) => i !== instrument.display_name)
-                                  });
-                                }
                               }}
-                              className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
                               disabled={isSubmitting}
                             />
-                            <span className="text-sm">{instrument.display_name}</span>
+                          <span>Yes</span>
                           </label>
-                        ))}
+                        <label className="flex items-center space-x-2 text-gray-300">
+                          <input
+                            type="radio"
+                            checked={formData.isCleanVersion === false}
+                            onChange={() => updateFormData({ isCleanVersion: false })}
+                            disabled={isSubmitting}
+                          />
+                          <span>No</span>
+                        </label>
                       </div>
                     </div>
-                  ) : null;
-                });
-              })()}
+                  )}
             </div>
           </div>
-
-          {/* Media Usage Section */}
-          {deepMediaSearchEnabled ? (
-            <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">
-                Media Usage Types (Deep Media Search)
-              </h2>
-              <p className="text-sm text-gray-400 mb-4">
-                Select which media types this track would be suitable for. This helps clients find your music for specific use cases.
-              </p>
-              
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Primary Media Categories (Select at least one)
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(() => {
-                      // Separate parent and child media types
-                      const parentTypes = mediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
-                      const childTypes = mediaTypes.filter(mt => mt.parent_id !== null);
-                      
-                      // Group parent types by category
-                      const parentTypesByCategory = parentTypes.reduce((acc, mediaType) => {
-                        if (!acc[mediaType.category]) {
-                          acc[mediaType.category] = [];
-                        }
-                        acc[mediaType.category].push(mediaType);
-                        return acc;
-                      }, {} as Record<string, typeof parentTypes>);
-
-                      return Object.entries(parentTypesByCategory).map(([category, types]) => 
-                        types.map((parentType) => {
-                          const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
-                          
-                          return (
-                            <label
-                              key={parentType.id}
-                              className="flex items-center space-x-2 text-gray-300"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.selectedMediaUsage.includes(parentType.name)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    // Add only the main media type category
-                                    if (!formData.selectedMediaUsage.includes(parentType.name)) {
-                                      updateFormData({ 
-                                        selectedMediaUsage: [...formData.selectedMediaUsage, parentType.name] 
-                                      });
-                                    }
-                                  } else {
-                                    // Remove only the main media type category
-                                    updateFormData({
-                                      selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== parentType.name)
-                                    });
-                                  }
-                                }}
-                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                disabled={isSubmitting}
-                              />
-                              <span className="text-sm">{parentType.name}</span>
-                            </label>
-                          );
-                        })
-                      ).flat();
-                    })()}
-                  </div>
-                </div>
-
-                {(() => {
-                  // Separate parent and child media types
-                  const parentTypes = mediaTypes.filter(mt => mt.is_parent || mt.parent_id === null);
-                  const childTypes = mediaTypes.filter(mt => mt.parent_id !== null);
-                  
-                  return parentTypes.map((parentType) => {
-                    const childTypesForParent = childTypes.filter(mt => mt.parent_id === parentType.id);
-                    const isMainTypeSelected = formData.selectedMediaUsage.includes(parentType.name);
-                    
-                    return isMainTypeSelected ? (
-                      <div key={parentType.id}>
-                        <label className="block text-sm font-medium text-gray-300 mb-2">
-                          {parentType.name} Media Types
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {childTypesForParent.map((childType) => (
-                            <label
-                              key={childType.id}
-                              className="flex items-center space-x-2 text-gray-300"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.selectedMediaUsage.includes(childType.full_name)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    updateFormData({ 
-                                      selectedMediaUsage: [...formData.selectedMediaUsage, childType.full_name] 
-                                    });
-                                  } else {
-                                    updateFormData({
-                                      selectedMediaUsage: formData.selectedMediaUsage.filter(u => u !== childType.full_name)
-                                    });
-                                  }
-                                }}
-                                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
-                                disabled={isSubmitting}
-                              />
-                              <span className="text-sm">{childType.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null;
-                  });
-                })()}
-              </div>
             </div>
-          ) : (
-            <PremiumFeatureNotice
-              featureName="Deep Media Search"
-              description="Tag your tracks with specific media usage types like TV shows, commercials, podcasts, and more. This helps clients find the perfect music for their specific use cases."
-            />
           )}
 
-          {/* Rights Declaration Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Rights Declaration</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Master Rights Owner *</label>
-                <input
-                  type="text"
-                  value={formData.masterRightsOwner}
-                  onChange={(e) => updateFormData({ masterRightsOwner: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="Who owns the master recording?"
-                  disabled={isSubmitting}
-                />
-              </div>
+          {/* Step 5: Rights & Split Sheet */}
+          {currentStep === 5 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Rights & Split Sheet</h2>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Publishing Rights Owner *</label>
-                <input
-                  type="text"
-                  value={formData.publishingRightsOwner}
-                  onChange={(e) => updateFormData({ publishingRightsOwner: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                  placeholder="Who owns the publishing rights?"
-                  disabled={isSubmitting}
-                />
+              {/* Rights Declaration Section */}
+            <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Rights Declaration</h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Master Rights Owner *
+                  </label>
+                    <input
+                      type="text"
+                      value={formData.masterRightsOwner}
+                      onChange={(e) => updateFormData({ masterRightsOwner: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter master rights owner"
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Publishing Rights Owner *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.publishingRightsOwner}
+                      onChange={(e) => updateFormData({ publishingRightsOwner: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Enter publishing rights owner"
+                      disabled={isSubmitting}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-            
-            <div className="mt-4 bg-blue-500/20 border border-blue-500/50 rounded-lg p-4">
-              <h3 className="text-blue-400 font-semibold mb-2">Rights Declaration</h3>
-              <p className="text-gray-300 text-sm">
-                By uploading this track, you declare that you have the legal authority to license this content 
-                and that all rights holders have been properly credited and compensated according to the split sheet.
-              </p>
-            </div>
-          </div>
 
-          {/* Split Sheet Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Split Sheet</h2>
-              <button
-                type="button"
-                onClick={addParticipant}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
-                disabled={isSubmitting}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Add Participant
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              {formData.participants.map((participant, index) => (
-                <div key={participant.id} className="bg-gray-800/30 rounded-lg p-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-white font-semibold">Participant {index + 1}</h3>
-                    {formData.participants.length > 1 && (
+              {/* Split Sheet Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Split Sheet Participants</h2>
+                
+                {formData.participants.map((participant) => (
+                  <div key={participant.id} className="bg-white/5 rounded-lg p-4 mb-4">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-white font-medium">Participant</h3>
                       <button
                         type="button"
                         onClick={() => removeParticipant(participant.id)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-red-400 hover:text-red-300 text-sm"
                         disabled={isSubmitting}
                       >
                         Remove
                       </button>
-                    )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-gray-300 mb-2">Name</label>
+                              <input
+                          type="text"
+                          value={participant.name}
+                          onChange={(e) => updateParticipant(participant.id, 'name', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="Full name"
+                                disabled={isSubmitting}
+                              />
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-gray-300 mb-2">Name *</label>
-                      <input
-                        type="text"
-                        value={participant.name}
-                        onChange={(e) => updateParticipant(participant.id, 'name', e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        placeholder="Full name"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-300 mb-2">Role *</label>
-                      <select
-                        value={participant.role}
-                        onChange={(e) => updateParticipant(participant.id, 'role', e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        disabled={isSubmitting}
-                      >
-                        <option value="writer">Writer</option>
-                        <option value="producer">Producer</option>
-                        <option value="publisher">Publisher</option>
-                        <option value="performer">Performer</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-300 mb-2">Percentage *</label>
-                      <input
-                        type="number"
-                        value={participant.percentage}
-                        onChange={(e) => updateParticipant(participant.id, 'percentage', parseFloat(e.target.value))}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        placeholder="0-100"
-                        min="0"
-                        max="100"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-300 mb-2">Email</label>
-                      <input
-                        type="email"
-                        value={participant.email}
-                        onChange={(e) => updateParticipant(participant.id, 'email', e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        placeholder="email@example.com"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-300 mb-2">PRO</label>
-                      <select
-                        value={participant.pro}
-                        onChange={(e) => updateParticipant(participant.id, 'pro', e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        disabled={isSubmitting}
-                      >
-                        <option value="">Select PRO</option>
-                        <option value="ascap">ASCAP</option>
-                        <option value="bmi">BMI</option>
-                        <option value="sesac">SESAC</option>
-                        <option value="none">None</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-gray-300 mb-2">Publisher</label>
-                      <input
-                        type="text"
-                        value={participant.publisher}
-                        onChange={(e) => updateParticipant(participant.id, 'publisher', e.target.value)}
-                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                        placeholder="Publisher name"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                  </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Role</label>
+                        <select
+                          value={participant.role}
+                          onChange={(e) => updateParticipant(participant.id, 'role', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          disabled={isSubmitting}
+                        >
+                          <option value="writer">Writer</option>
+                          <option value="composer">Composer</option>
+                          <option value="producer">Producer</option>
+                          <option value="performer">Performer</option>
+                        </select>
                 </div>
-              ))}
-            </div>
-            
-            {formData.participants.length > 0 && (
-              <div className="mt-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4">
-                <h3 className="text-yellow-400 font-semibold mb-2">Total Percentage</h3>
-                <p className="text-gray-300">
-                  Current total: {formData.participants.reduce((sum, p) => sum + p.percentage, 0)}%
-                  {formData.participants.reduce((sum, p) => sum + p.percentage, 0) !== 100 && (
-                    <span className="text-yellow-400 ml-2">(Should equal 100%)</span>
-                  )}
-                </p>
-              </div>
-            )}
-          </div>
 
-          {/* Co-signers Section */}
-          <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-white">Co-signers (Optional)</h2>
-              <button
-                type="button"
-                onClick={addCoSigner}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
-                disabled={isSubmitting}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Add Co-signer
-              </button>
-            </div>
-            
-            {formData.coSigners.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-300 mb-4">No co-signers added yet</p>
-                <p className="text-gray-400 text-sm">
-                  Co-signers will receive email invitations to sign the split sheet electronically.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {formData.coSigners.map((coSigner, index) => (
-                  <div key={coSigner.id} className="bg-gray-800/30 rounded-lg p-4">
+                      <div>
+                        <label className="block text-gray-300 mb-2">Percentage</label>
+                        <input
+                          type="number"
+                          value={participant.percentage}
+                          onChange={(e) => updateParticipant(participant.id, 'percentage', parseFloat(e.target.value) || 0)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="0"
+                          min="0"
+                          max="100"
+                          step="0.1"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Email</label>
+                        <input
+                          type="email"
+                          value={participant.email}
+                          onChange={(e) => updateParticipant(participant.id, 'email', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="email@example.com"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">PRO</label>
+                              <input
+                          type="text"
+                          value={participant.pro}
+                          onChange={(e) => updateParticipant(participant.id, 'pro', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="e.g., ASCAP, BMI, SESAC"
+                                disabled={isSubmitting}
+                              />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-gray-300 mb-2">Publisher</label>
+                        <input
+                          type="text"
+                          value={participant.publisher}
+                          onChange={(e) => updateParticipant(participant.id, 'publisher', e.target.value)}
+                          className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                          placeholder="Publisher name"
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={addParticipant}
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                  disabled={isSubmitting}
+                >
+                  + Add Participant
+                </button>
+                        </div>
+                      </div>
+          )}
+
+          {/* Step 6: Co-signers */}
+          {currentStep === 6 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Co-signers</h2>
+              
+              {/* Co-signers Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Co-signers</h2>
+                
+                {formData.coSigners.map((coSigner) => (
+                  <div key={coSigner.id} className="bg-white/5 rounded-lg p-4 mb-4">
                     <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-white font-semibold">Co-signer {index + 1}</h3>
+                      <h3 className="text-white font-medium">Co-signer</h3>
                       <button
                         type="button"
                         onClick={() => removeCoSigner(coSigner.id)}
-                        className="text-red-400 hover:text-red-300"
+                        className="text-red-400 hover:text-red-300 text-sm"
                         disabled={isSubmitting}
                       >
                         Remove
                       </button>
-                    </div>
+              </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -2100,7 +1668,7 @@ export function TrackUploadForm() {
                           placeholder="Full name"
                           disabled={isSubmitting}
                         />
-                      </div>
+            </div>
                       
                       <div>
                         <label className="block text-gray-300 mb-2">Email</label>
@@ -2128,9 +1696,59 @@ export function TrackUploadForm() {
                     </div>
                   </div>
                 ))}
+                
+                <button
+                  type="button"
+                  onClick={addCoSigner}
+                  className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                  disabled={isSubmitting}
+                >
+                  + Add Co-signer
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Step 7: Review & Submit */}
+          {currentStep === 7 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Review & Submit</h2>
+              
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Review Your Track Information</h2>
+                
+                <div className="space-y-4 text-white">
+                  <div>
+                    <strong>Track Title:</strong> {formData.title}
+                  </div>
+                  <div>
+                    <strong>BPM:</strong> {formData.bpm}
+                  </div>
+                  <div>
+                    <strong>Key:</strong> {formData.key}
+                  </div>
+                  <div>
+                    <strong>Genres:</strong> {formData.selectedGenres.join(', ')}
+                  </div>
+                  <div>
+                    <strong>Moods:</strong> {formData.selectedMoods.join(', ')}
+                  </div>
+                  <div>
+                    <strong>Master Rights Owner:</strong> {formData.masterRightsOwner}
+                  </div>
+                  <div>
+                    <strong>Publishing Rights Owner:</strong> {formData.publishingRightsOwner}
+                  </div>
+                  <div>
+                    <strong>Participants:</strong> {formData.participants.length}
+                  </div>
+                  <div>
+                    <strong>Co-signers:</strong> {formData.coSigners.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Step Navigation */}
           <div className="flex justify-between items-center pt-8">
@@ -2159,12 +1777,12 @@ export function TrackUploadForm() {
 
           {/* Submit Button - Only show on last step */}
           {currentStep === 7 && (
-            <div className="pt-8 relative z-10">
-              <button
-                type="submit"
-                className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
-                disabled={isSubmitting || !audioFile}
-              >
+          <div className="pt-8 relative z-10">
+            <button
+              type="submit"
+              className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
+              disabled={isSubmitting || !audioFile}
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
