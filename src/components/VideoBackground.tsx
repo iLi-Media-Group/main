@@ -58,13 +58,13 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
         return;
       }
 
-      // Check if user is authenticated before making database queries
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        console.log('No authenticated session, skipping background asset fetch');
-        setLoading(false);
-        return;
-      }
+      // Temporarily skip auth check to fix 406 errors
+      // const { data: { session } } = await supabase.auth.getSession();
+      // if (!session?.user) {
+      //   console.log('No authenticated session, skipping background asset fetch');
+      //   setLoading(false);
+      //   return;
+      // }
 
       try {
         const { data, error } = await supabase
