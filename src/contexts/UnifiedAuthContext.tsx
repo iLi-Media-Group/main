@@ -411,6 +411,12 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       async (event, session) => {
         console.log('🔄 Auth state change event:', event, session?.user?.id);
         
+        // Don't process auth state changes if we're already loading
+        if (loading) {
+          console.log('⏳ Skipping auth state change - already loading');
+          return;
+        }
+        
         try {
           if (session?.user) {
             setUser(session.user);
@@ -440,14 +446,13 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
           setNeedsPasswordSetup(false);
           setRightsHolder(null);
           setRightsHolderProfile(null);
-        } finally {
-          setLoading(false);
         }
+        // Don't set loading to false here as it should only be set during initial load
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [isInitialized]);
+  }, [isInitialized, loading]);
 
   const value: UnifiedAuthContextType = {
     user,

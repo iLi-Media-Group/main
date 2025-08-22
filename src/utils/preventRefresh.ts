@@ -26,18 +26,15 @@ class RefreshPreventionManager {
   }
 
   private initialize() {
-    // Prevent page refresh on F5/Ctrl+R
+    // Only prevent refresh on F5/Ctrl+R when there are unsaved changes
     window.addEventListener('keydown', this.handleKeyDown.bind(this));
     
-    // Prevent page refresh on beforeunload
+    // Only prevent beforeunload when there are unsaved changes
     window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
-    
-    // Prevent navigation away from forms
-    window.addEventListener('popstate', this.handlePopState.bind(this));
   }
 
   private handleKeyDown(event: KeyboardEvent) {
-    // Prevent F5 and Ctrl+R refresh
+    // Only prevent F5 and Ctrl+R refresh if there are unsaved changes
     if (event.key === 'F5' || (event.ctrlKey && event.key === 'r')) {
       if (this.hasUnsavedChanges && this.shouldPreventRefresh()) {
         event.preventDefault();
@@ -45,43 +42,14 @@ class RefreshPreventionManager {
         return false;
       }
     }
-    
-    // In development mode, be more aggressive about preventing refreshes
-    if (process.env.NODE_ENV === 'development') {
-      // Prevent any keyboard shortcuts that might trigger reload
-      if (event.ctrlKey && (event.key === 'r' || event.key === 'R')) {
-        event.preventDefault();
-        console.log('Prevented refresh in development mode');
-        return false;
-      }
-    }
   }
 
   private handleBeforeUnload(event: BeforeUnloadEvent) {
+    // Only prevent unload if there are unsaved changes
     if (this.hasUnsavedChanges && this.shouldPreventRefresh()) {
       event.preventDefault();
       event.returnValue = this.warningMessage;
       return this.warningMessage;
-    }
-    
-    // In development mode, be more aggressive about preventing unload
-    if (process.env.NODE_ENV === 'development') {
-      // Always prevent unload in development mode for certain paths
-      const currentPath = window.location.pathname;
-      if (currentPath.includes('/admin') || currentPath.includes('/dashboard') || currentPath.includes('/producer')) {
-        console.log('Prevented unload in development mode for:', currentPath);
-        event.preventDefault();
-        event.returnValue = 'Development mode: Page refresh prevented';
-        return 'Development mode: Page refresh prevented';
-      }
-    }
-  }
-
-  private handlePopState(event: PopStateEvent) {
-    if (this.hasUnsavedChanges && this.shouldPreventRefresh()) {
-      event.preventDefault();
-      this.showNavigationWarning();
-      return false;
     }
   }
 
@@ -109,16 +77,6 @@ class RefreshPreventionManager {
     }
   }
 
-  private showNavigationWarning() {
-    if (confirm(this.warningMessage)) {
-      this.clearUnsavedChanges();
-      // Allow navigation to continue
-    } else {
-      // Prevent navigation
-      window.history.pushState(null, '', window.location.href);
-    }
-  }
-
   public setUnsavedChanges(hasChanges: boolean) {
     this.hasUnsavedChanges = hasChanges;
   }
@@ -138,7 +96,6 @@ class RefreshPreventionManager {
   public destroy() {
     window.removeEventListener('keydown', this.handleKeyDown.bind(this));
     window.removeEventListener('beforeunload', this.handleBeforeUnload.bind(this));
-    window.removeEventListener('popstate', this.handlePopState.bind(this));
   }
 }
 

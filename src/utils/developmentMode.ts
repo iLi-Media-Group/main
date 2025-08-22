@@ -5,16 +5,14 @@ export const isDevelopment = process.env.NODE_ENV === 'development';
 export const shouldPreventReload = (pathname: string): boolean => {
   if (!isDevelopment) return false;
   
-  // Prevent reloads on admin and dashboard pages in development
+  // Only prevent reloads on specific admin pages in development, not all pages
   const protectedPaths = [
-    '/admin',
-    '/dashboard', 
-    '/producer/dashboard',
-    '/producer/banking',
-    '/producer/payouts',
-    '/producer/withdrawals',
-    '/producer/resources',
-    '/producer/upload'
+    '/admin/producer-applications',
+    '/admin/white-label-clients',
+    '/admin/services',
+    '/admin/resources',
+    '/admin/banking',
+    '/admin/analytics'
   ];
   
   return protectedPaths.some(path => pathname.startsWith(path));
@@ -23,7 +21,7 @@ export const shouldPreventReload = (pathname: string): boolean => {
 export const setupDevelopmentProtection = () => {
   if (!isDevelopment) return;
   
-  // Override window.location.reload in development
+  // Only override reload for specific protected paths
   const originalReload = window.location.reload;
   window.location.reload = function(forcedReload?: boolean) {
     const currentPath = window.location.pathname;
@@ -34,16 +32,5 @@ export const setupDevelopmentProtection = () => {
     return originalReload.call(this, forcedReload);
   };
   
-  // Override window.location.replace in development
-  const originalReplace = window.location.replace;
-  window.location.replace = function(url: string) {
-    const currentPath = window.location.pathname;
-    if (shouldPreventReload(currentPath)) {
-      console.warn('Prevented location replace in development mode for:', currentPath);
-      return;
-    }
-    return originalReplace.call(this, url);
-  };
-  
-  console.log('Development mode protection enabled');
+  console.log('Development mode protection enabled (limited scope)');
 };
