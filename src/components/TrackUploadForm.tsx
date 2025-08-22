@@ -1127,25 +1127,46 @@ export function TrackUploadForm() {
               const Icon = step.icon;
               const isActive = currentStep === step.number;
               const isCompleted = currentStep > step.number;
+              const canNavigateTo = isCompleted || isActive;
               
               return (
                 <div key={step.number} className="flex items-center">
-                  <div className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-colors ${
-                    isCompleted ? 'bg-green-500 border-green-500' :
-                    isActive ? 'bg-blue-500 border-blue-500' :
-                    'bg-gray-700 border-gray-600'
-                  }`}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (canNavigateTo) {
+                        setCurrentStep(step.number);
+                      }
+                    }}
+                    disabled={!canNavigateTo}
+                    className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-200 ${
+                      isCompleted ? 'bg-green-500 border-green-500 hover:bg-green-600 hover:border-green-600 cursor-pointer' :
+                      isActive ? 'bg-blue-500 border-blue-500 cursor-pointer' :
+                      'bg-gray-700 border-gray-600 cursor-not-allowed'
+                    } ${canNavigateTo ? 'hover:scale-110 transform' : ''}`}
+                  >
                     {isCompleted ? (
                       <CheckCircle className="w-6 h-6 text-white" />
                     ) : (
                       <Icon className="w-6 h-6 text-white" />
                     )}
-                  </div>
-                  <span className={`ml-2 text-sm font-medium ${
-                    isActive ? 'text-blue-400' : 'text-gray-400'
-                  }`}>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (canNavigateTo) {
+                        setCurrentStep(step.number);
+                      }
+                    }}
+                    disabled={!canNavigateTo}
+                    className={`ml-2 text-sm font-medium transition-colors ${
+                      isActive ? 'text-blue-400 hover:text-blue-300' : 
+                      isCompleted ? 'text-green-400 hover:text-green-300' : 
+                      'text-gray-400 cursor-not-allowed'
+                    } ${canNavigateTo ? 'cursor-pointer' : ''}`}
+                  >
                     {step.title}
-                  </span>
+                  </button>
                   {index < steps.length - 1 && (
                     <div className={`w-8 h-0.5 mx-4 ${
                       isCompleted ? 'bg-green-500' : 'bg-gray-600'
