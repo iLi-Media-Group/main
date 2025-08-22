@@ -613,7 +613,10 @@ export function RightsHolderUploadForm() {
             instruments: formData.selectedInstruments.length > 0 ? formData.selectedInstruments : null,
             media_usage: formData.selectedMediaUsage.length > 0 ? formData.selectedMediaUsage : null,
             has_vocals: formData.hasVocals,
-            is_sync_only: formData.isSyncOnly
+            is_sync_only: formData.isSyncOnly,
+            master_rights_owner: formData.masterRightsOwner || null,
+            publishing_rights_owner: formData.publishingRightsOwner || null,
+            status: 'active'
           })
           .select()
           .single();
