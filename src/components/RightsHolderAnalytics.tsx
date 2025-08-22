@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   BarChart3, 
@@ -44,7 +44,7 @@ interface AnalyticsData {
 }
 
 export function RightsHolderAnalytics() {
-  const { rightsHolder } = useRightsHolderAuth();
+  const { user } = useUnifiedAuth();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,13 +53,13 @@ export function RightsHolderAnalytics() {
 
   // Fetch analytics data on component mount
   useEffect(() => {
-    if (rightsHolder) {
+    if (user) {
       fetchAnalyticsData();
     }
-  }, [rightsHolder, dateRange]);
+  }, [user, dateRange]);
 
   const fetchAnalyticsData = async () => {
-    if (!rightsHolder) return;
+    if (!user) return;
 
     setLoading(true);
     setError(null);
@@ -74,7 +74,7 @@ export function RightsHolderAnalytics() {
       const { data: licensesData, error: licensesError } = await supabase
         .from('rights_licenses')
         .select('*')
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
@@ -84,7 +84,7 @@ export function RightsHolderAnalytics() {
       const { data: recordingsData, error: recordingsError } = await supabase
         .from('master_recordings')
         .select('*')
-        .eq('rights_holder_id', rightsHolder.id);
+        .eq('rights_holder_id', user.id);
 
       if (recordingsError) throw recordingsError;
 

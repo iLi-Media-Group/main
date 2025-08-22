@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   Music, 
@@ -68,7 +68,7 @@ interface EditFormData {
 }
 
 export function RightsHolderRecordings() {
-  const { rightsHolder } = useRightsHolderAuth();
+  const { user } = useUnifiedAuth();
   const [recordings, setRecordings] = useState<MasterRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,13 +90,13 @@ export function RightsHolderRecordings() {
 
   // Fetch recordings on component mount
   useEffect(() => {
-    if (rightsHolder) {
+    if (user) {
       fetchRecordings();
     }
-  }, [rightsHolder]);
+  }, [user]);
 
   const fetchRecordings = async () => {
-    if (!rightsHolder) return;
+    if (!user) return;
 
     setLoading(true);
     setError(null);
@@ -113,7 +113,7 @@ export function RightsHolderRecordings() {
             split_sheet_participants (*)
           )
         `)
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .order('created_at', { ascending: false });
 
       if (recordingsError) throw recordingsError;

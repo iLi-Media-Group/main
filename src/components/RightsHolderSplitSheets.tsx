@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   FileText, 
@@ -61,7 +61,7 @@ interface CoSigner {
 }
 
 export function RightsHolderSplitSheets() {
-  const { rightsHolder } = useRightsHolderAuth();
+  const { user } = useUnifiedAuth();
   const [splitSheets, setSplitSheets] = useState<SplitSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,13 +72,13 @@ export function RightsHolderSplitSheets() {
 
   // Fetch split sheets on component mount
   useEffect(() => {
-    if (rightsHolder) {
+    if (user) {
       fetchSplitSheets();
     }
-  }, [rightsHolder]);
+  }, [user]);
 
   const fetchSplitSheets = async () => {
-    if (!rightsHolder) return;
+    if (!user) return;
 
     setLoading(true);
     setError(null);
@@ -97,7 +97,7 @@ export function RightsHolderSplitSheets() {
           split_sheet_participants (*),
           co_signers (*)
         `)
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .order('created_at', { ascending: false });
 
       if (splitSheetsError) throw splitSheetsError;

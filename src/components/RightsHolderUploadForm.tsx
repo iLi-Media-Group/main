@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { uploadFile } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
@@ -95,7 +95,7 @@ interface CoSigner {
 
 export function RightsHolderUploadForm() {
   const navigate = useNavigate();
-  const { rightsHolder } = useRightsHolderAuth();
+  const { user, rightsHolder } = useUnifiedAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -338,7 +338,7 @@ export function RightsHolderUploadForm() {
   };
 
   const handleSubmit = async () => {
-    if (!rightsHolder || !formData.audioFile) return;
+    if (!user || !formData.audioFile) return;
 
     setUploading(true);
     setError(null);
@@ -350,7 +350,7 @@ export function RightsHolderUploadForm() {
         formData.audioFile,
         'track-audio',
         (progress) => setUploadProgress(progress * 0.7), // Audio is 70% of upload
-        `rights-holders/${rightsHolder.id}`
+        `rights-holders/${user.id}`
       );
 
       // Upload artwork if provided
@@ -360,7 +360,7 @@ export function RightsHolderUploadForm() {
           formData.artworkFile,
           'track-images',
           (progress) => setUploadProgress(70 + progress * 0.3), // Artwork is 30% of upload
-          `rights-holders/${rightsHolder.id}`
+          `rights-holders/${user.id}`
         );
       }
 
@@ -368,7 +368,7 @@ export function RightsHolderUploadForm() {
       const { data: masterRecording, error: masterError } = await supabase
         .from('master_recordings')
         .insert({
-          rights_holder_id: rightsHolder.id,
+          rights_holder_id: user.id,
           title: formData.title,
           artist: formData.artist,
           genre: formData.genre,
@@ -395,7 +395,7 @@ export function RightsHolderUploadForm() {
         .from('publishing_rights')
         .insert({
           master_recording_id: masterRecording.id,
-          rights_holder_id: rightsHolder.id,
+          rights_holder_id: user.id,
           status: 'pending_verification'
         });
 
@@ -406,7 +406,7 @@ export function RightsHolderUploadForm() {
         .from('split_sheets')
         .insert({
           master_recording_id: masterRecording.id,
-          rights_holder_id: rightsHolder.id,
+          rights_holder_id: user.id,
           status: 'pending_signatures'
         })
         .select()

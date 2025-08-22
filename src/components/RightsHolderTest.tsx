@@ -1,10 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Building2, CheckCircle, AlertCircle } from 'lucide-react';
 
 export function RightsHolderTest() {
-  const { user, rightsHolder, loading } = useRightsHolderAuth();
+  const { user, rightsHolder, loading } = useUnifiedAuth();
 
   if (loading) {
     return (

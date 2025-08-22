@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   Mail as MailIcon, 
@@ -74,7 +74,7 @@ interface InvitationFormData {
 }
 
 export function RightsHolderESignatures() {
-  const { rightsHolder } = useRightsHolderAuth();
+  const { rightsHolder } = useUnifiedAuth();
   const [splitSheets, setSplitSheets] = useState<SplitSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

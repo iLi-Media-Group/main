@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useRightsHolderAuth } from '../contexts/RightsHolderAuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
   FileText, 
@@ -131,7 +131,7 @@ interface LicensingStats {
 }
 
 export function RightsHolderLicensing() {
-  const { rightsHolder } = useRightsHolderAuth();
+  const { user } = useUnifiedAuth();
   const [licenses, setLicenses] = useState<RightsHolderLicense[]>([]);
   const [revenue, setRevenue] = useState<RightsHolderRevenue[]>([]);
   const [balance, setBalance] = useState<RightsHolderBalance | null>(null);
@@ -160,13 +160,13 @@ export function RightsHolderLicensing() {
 
   // Fetch data on component mount
   useEffect(() => {
-    if (rightsHolder) {
+    if (user) {
       fetchData();
     }
-  }, [rightsHolder]);
+  }, [user]);
 
   const fetchData = async () => {
-    if (!rightsHolder) return;
+    if (!user) return;
 
     setLoading(true);
     setError(null);
@@ -180,7 +180,7 @@ export function RightsHolderLicensing() {
           master_recording:master_recordings(title, artist, genre),
           buyer:profiles(first_name, last_name, email)
         `)
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .order('created_at', { ascending: false });
 
       if (licensesError) throw licensesError;
@@ -189,7 +189,7 @@ export function RightsHolderLicensing() {
       const { data: revenueData, error: revenueError } = await supabase
         .from('rights_holder_revenue')
         .select('*')
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .order('created_at', { ascending: false });
 
       if (revenueError) throw revenueError;
@@ -198,7 +198,7 @@ export function RightsHolderLicensing() {
       const { data: balanceData, error: balanceError } = await supabase
         .from('rights_holder_balances')
         .select('*')
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .single();
 
       if (balanceError && balanceError.code !== 'PGRST116') throw balanceError;
@@ -207,7 +207,7 @@ export function RightsHolderLicensing() {
       const { data: royaltyData, error: royaltyError } = await supabase
         .from('royalty_distributions')
         .select('*')
-        .eq('rights_holder_id', rightsHolder.id)
+        .eq('rights_holder_id', user.id)
         .order('created_at', { ascending: false });
 
       if (royaltyError) throw royaltyError;
