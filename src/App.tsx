@@ -109,53 +109,54 @@ const App = () => {
   
   // Initialize refresh prevention system
   useEffect(() => {
-    initializeRefreshPrevention({
-      enabled: true,
-      excludePaths: [
-        '/success',
-        '/checkout',
-        '/payment',
-        '/login',
-        '/signup',
-        '/admin',
-        '/admin/dashboard',
-        '/admin/producer-applications',
-        '/admin/white-label-clients',
-        '/admin/services',
-        '/admin/resources',
-        '/admin/banking',
-        '/admin/analytics',
-        '/admin/invite-producer',
-        '/advanced-analytics',
-        '/admin/white-label',
-        '/producer/dashboard',
-        '/dashboard',
-        '/producer/banking',
-        '/producer/payouts',
-        '/producer/withdrawals',
-        '/producer/resources',
-        '/producer/upload',
-        '/white-label-dashboard',
-        '/rights-holder/signup',
-        '/rights-holder/login',
-        '/rights-holder/dashboard',
-        '/rights-holder/upload',
-        '/rights-holder/split-sheets',
-        '/rights-holder/analytics',
-        '/rights-holder/recordings',
-        '/rights-holder/e-signatures',
-        '/rights-holder/licensing',
-        '/admin/rights-verification',
-        '/rights-holder/test'
-      ]
-    });
+    // Temporarily disabled to fix tab switching issue
+    // initializeRefreshPrevention({
+    //   enabled: true,
+    //   excludePaths: [
+    //     '/success',
+    //     '/checkout',
+    //     '/payment',
+    //     '/login',
+    //     '/signup',
+    //     '/admin',
+    //     '/admin/dashboard',
+    //     '/admin/producer-applications',
+    //     '/admin/white-label-clients',
+    //     '/admin/services',
+    //     '/admin/resources',
+    //     '/admin/banking',
+    //     '/admin/analytics',
+    //     '/admin/invite-producer',
+    //     '/advanced-analytics',
+    //     '/admin/white-label',
+    //     '/producer/dashboard',
+    //     '/dashboard',
+    //     '/producer/banking',
+    //     '/producer/payouts',
+    //     '/producer/withdrawals',
+    //     '/producer/resources',
+    //     '/producer/upload',
+    //     '/white-label-dashboard',
+    //     '/rights-holder/signup',
+    //     '/rights-holder/login',
+    //     '/rights-holder/dashboard',
+    //     '/rights-holder/upload',
+    //     '/rights-holder/split-sheets',
+    //     '/rights-holder/analytics',
+    //     '/rights-holder/recordings',
+    //     '/rights-holder/e-signatures',
+    //     '/rights-holder/licensing',
+    //     '/admin/rights-verification',
+    //     '/rights-holder/test'
+    //   ]
+    // });
     
-    // Setup development mode protection
-    setupDevelopmentProtection();
+    // Temporarily disabled to fix tab switching issue
+    // setupDevelopmentProtection();
     
-    // Prevent authentication state loss during development
-    preventAuthLoss();
-    restoreAuthState();
+    // Temporarily disabled to fix tab switching issue
+    // preventAuthLoss();
+    // restoreAuthState();
   }, []);
   
   // Security hook for the entire application
