@@ -14,6 +14,8 @@ export interface SubGenre {
 export interface Mood {
   id: string;
   name: string;
+  display_name?: string;
+  category?: string;
 }
 
 export interface InstrumentCategory {
@@ -70,8 +72,8 @@ export async function fetchSubGenres(): Promise<SubGenre[]> {
 export async function fetchMoods(): Promise<Mood[]> {
   const { data, error } = await supabase
     .from('moods')
-    .select('id, name')
-    .order('name');
+    .select('id, name, display_name, category')
+    .order('category, name');
   
   if (error) {
     console.error('Error fetching moods:', error);

@@ -1437,7 +1437,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="space-y-3">
-                  {/* Main Moods */}
+                  {/* Main Mood Categories */}
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {Object.keys(getMoodsCategories()).map((category) => (
                       <label key={category} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer py-2">
