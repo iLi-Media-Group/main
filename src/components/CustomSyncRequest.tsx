@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
+import { RightsHolderSearch } from './RightsHolderSearch';
 import { useNavigate } from 'react-router-dom';
 
 export default function CustomSyncRequest() {
@@ -21,6 +22,8 @@ export default function CustomSyncRequest() {
   const [isOpenRequest, setIsOpenRequest] = useState(false);
   const [hasPreferredProducer, setHasPreferredProducer] = useState(false);
   const [selectedProducer, setSelectedProducer] = useState('');
+  const [hasPreferredRightsHolder, setHasPreferredRightsHolder] = useState(false);
+  const [selectedRightsHolder, setSelectedRightsHolder] = useState('');
   const [submissionInstructions, setSubmissionInstructions] = useState('');
   const [submissionEmail, setSubmissionEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,7 @@ export default function CustomSyncRequest() {
           reference_url: referenceUrl || null,
           is_open_request: isOpenRequest,
           preferred_producer_id: hasPreferredProducer ? selectedProducer : null,
+          preferred_rights_holder_id: hasPreferredRightsHolder ? selectedRightsHolder : null,
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
           payment_terms: paymentTerms,
@@ -78,6 +82,8 @@ export default function CustomSyncRequest() {
         setIsOpenRequest(false);
         setHasPreferredProducer(false);
         setSelectedProducer('');
+        setHasPreferredRightsHolder(false);
+        setSelectedRightsHolder('');
         setSubmissionInstructions('');
         setSubmissionEmail('');
         setPaymentTerms('immediate');
@@ -296,11 +302,13 @@ export default function CustomSyncRequest() {
                   if (e.target.checked) {
                     setHasPreferredProducer(false);
                     setSelectedProducer('');
+                    setHasPreferredRightsHolder(false);
+                    setSelectedRightsHolder('');
                   }
                 }}
                 className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
               />
-              <span className="text-gray-300">Make this an open request (visible to all producers)</span>
+              <span className="text-gray-300">Make this an open request (visible to all producers, record labels, and publishers)</span>
             </label>
 
             <label className="flex items-center space-x-2">
@@ -329,6 +337,35 @@ export default function CustomSyncRequest() {
                 onChange={setSelectedProducer}
                 disabled={!hasPreferredProducer}
                 required={hasPreferredProducer}
+              />
+            </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={hasPreferredRightsHolder}
+                onChange={(e) => {
+                  setHasPreferredRightsHolder(e.target.checked);
+                  if (e.target.checked) {
+                    setIsOpenRequest(false);
+                  } else {
+                    setSelectedRightsHolder('');
+                  }
+                }}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">Select Preferred Record Label or Publisher</span>
+            </label>
+
+            <div className="pl-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Start Typing the Record Label or Publisher Name and Choose
+              </label>
+              <RightsHolderSearch
+                value={selectedRightsHolder}
+                onChange={setSelectedRightsHolder}
+                disabled={!hasPreferredRightsHolder}
+                required={hasPreferredRightsHolder}
               />
             </div>
           </div>
