@@ -739,23 +739,14 @@ export function RightsHolderDashboard() {
                 <h3 className="text-lg font-semibold text-white">Custom Sync Requests</h3>
                 <p className="text-gray-400 text-sm">Manage custom sync licensing requests</p>
               </div>
-              <div className="flex gap-2">
-                <Link
-                  to="/custom-sync-request"
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Request
-                </Link>
-                <button
-                  onClick={fetchCustomSyncRequests}
-                  disabled={customSyncRequestsLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-              </div>
+              <button
+                onClick={fetchCustomSyncRequests}
+                disabled={customSyncRequestsLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
             </div>
 
             {customSyncRequestsLoading ? (
