@@ -1350,7 +1350,7 @@ export function TrackUploadForm() {
           <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
             <h2 className="text-xl font-semibold text-white mb-4">Genres</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {genres.map((genre) => (
+                    {(genres || []).map((genre) => (
                     <label key={genre} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                         <input
                           type="checkbox"
@@ -1379,7 +1379,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Moods</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {MOODS_CATEGORIES.map((mood) => (
+                  {(MOODS_CATEGORIES || []).map((mood) => (
                     <label key={mood} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                             <input
                               type="checkbox"
@@ -1415,7 +1415,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Instruments</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {ALL_INSTRUMENTS.map((instrument) => (
+                  {(ALL_INSTRUMENTS || []).map((instrument) => (
                     <label key={instrument} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                                               <input
                           type="checkbox"
@@ -1444,7 +1444,7 @@ export function TrackUploadForm() {
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
                 <h2 className="text-xl font-semibold text-white mb-4">Media Usage</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {MEDIA_USAGE_TYPES.map((usage) => (
+                  {(MEDIA_USAGE_TYPES || []).map((usage) => (
                     <label key={usage} className="flex items-center space-x-2 text-gray-300 hover:text-white cursor-pointer">
                           <input
                             type="checkbox"
