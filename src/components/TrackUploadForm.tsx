@@ -626,6 +626,7 @@ export function TrackUploadForm() {
 
 
   const handleSubmit = async (e: React.FormEvent) => {
+    alert('Form submission started!');
     console.log('[DEBUG] 🚀 Form submission started');
     e.preventDefault();
     console.log('[DEBUG] Form prevented default');
@@ -2333,7 +2334,7 @@ export function TrackUploadForm() {
             <div className="pt-8 relative z-10">
               <button
                 type="submit"
-                onClick={() => console.log('[DEBUG] 🎯 Submit button clicked!')}
+                onClick={() => alert('Submit button clicked!')}
                 className="w-full py-4 px-6 bg-green-500 hover:bg-green-600 text-white font-bold text-lg rounded-lg transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 shadow-lg hover:shadow-xl border-2 border-green-400/30 hover:border-green-300/50"
                 disabled={isSubmitting || !audioFile}
               >
