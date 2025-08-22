@@ -100,13 +100,24 @@ export function useDynamicSearchData(): DynamicSearchData {
       if (subGenresError) throw subGenresError;
 
       // Fetch instruments (using existing columns until migration is applied)
-      const { data: instrumentsData, error: instrumentsError } = await supabase
-        .from('instruments')
-        .select(`
-          id,
-          name
-        `)
-        .order('name');
+      let instrumentsData = null;
+      let instrumentsError = null;
+      
+      try {
+        const result = await supabase
+          .from('instruments')
+          .select(`
+            id,
+            name
+          `)
+          .order('name');
+        instrumentsData = result.data;
+        instrumentsError = result.error;
+      } catch (err) {
+        // If instruments table doesn't exist, use empty array
+        instrumentsData = [];
+        instrumentsError = null;
+      }
 
       if (instrumentsError) throw instrumentsError;
 
@@ -135,15 +146,30 @@ export function useDynamicSearchData(): DynamicSearchData {
       })) || [];
 
       // Fetch moods from the database (using existing columns until migration is applied)
-      const { data: moodsData, error: moodsError } = await supabase
-        .from('moods')
-        .select(`
-          id,
-          name
-        `)
-        .order('name');
+      let moodsData = null;
+      let moodsError = null;
+      
+      try {
+        const result = await supabase
+          .from('moods')
+          .select(`
+            id,
+            name
+          `)
+          .order('name');
+        moodsData = result.data;
+        moodsError = result.error;
+      } catch (err) {
+        // If moods table doesn't exist, use empty array
+        moodsData = [];
+        moodsError = null;
+      }
 
-      if (moodsError) throw moodsError;
+      // If moods table doesn't exist or there's an error, use empty array
+      if (moodsError) {
+        console.warn('Moods table not available, using fallback data');
+        moodsData = [];
+      }
 
       setGenres(genresData || []);
       setSubGenres(subGenresData || []);
