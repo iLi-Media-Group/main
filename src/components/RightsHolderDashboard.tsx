@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
+import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
+import { ProposalHistoryDialog } from './ProposalHistoryDialog';
+import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { 
   Building2, 
   Music, 
@@ -117,6 +120,14 @@ export function RightsHolderDashboard() {
   // Custom Sync Requests state
   const [customSyncRequests, setCustomSyncRequests] = useState<CustomSyncRequest[]>([]);
   const [customSyncRequestsLoading, setCustomSyncRequestsLoading] = useState(false);
+
+  // Proposal action state
+  const [selectedProposal, setSelectedProposal] = useState<SyncProposal | null>(null);
+  const [showNegotiationDialog, setShowNegotiationDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -519,6 +530,87 @@ export function RightsHolderDashboard() {
     return hasNewMessage && (hasCounterOffer || needsResponse);
   };
 
+  // Handle proposal actions (negotiate, history, accept, reject)
+  const handleProposalAction = (proposal: SyncProposal, action: 'negotiate' | 'history' | 'accept' | 'reject') => {
+    setSelectedProposal(proposal);
+    
+    switch (action) {
+      case 'negotiate':
+        setShowNegotiationDialog(true);
+        break;
+      case 'history':
+        setShowHistoryDialog(true);
+        break;
+      case 'accept':
+        setConfirmAction('accept');
+        setShowConfirmDialog(true);
+        break;
+      case 'reject':
+        setConfirmAction('reject');
+        setShowConfirmDialog(true);
+        break;
+    }
+  };
+
+  // Handle proposal status change (accept/reject)
+  const handleProposalStatusChange = async () => {
+    if (!selectedProposal || !user) return;
+    
+    try {
+      // Update proposal producer_status (rights holder is the producer in this context)
+      const { error } = await supabase
+        .from('sync_proposals')
+        .update({ 
+          producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedProposal.id);
+
+      if (error) throw error;
+
+      // Create history entry
+      const { error: historyError } = await supabase
+        .from('proposal_history')
+        .insert({
+          proposal_id: selectedProposal.id,
+          previous_status: selectedProposal.producer_status || 'pending',
+          new_status: confirmAction === 'accept' ? 'producer_accepted' : 'rejected',
+          changed_by: user.id
+        });
+
+      if (historyError) throw historyError;
+
+      // Send notification to client
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-proposal-update`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposalId: selectedProposal.id,
+          action: confirmAction,
+          trackTitle: selectedProposal.track.title,
+          clientEmail: selectedProposal.client.email
+        })
+      });
+
+      // Update local state
+      setSyncProposals(syncProposals.map(p => 
+        p.id === selectedProposal.id 
+          ? { ...p, producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected', updated_at: new Date().toISOString() } 
+          : p
+      ));
+      
+      setShowConfirmDialog(false);
+      setSelectedProposal(null);
+      
+    } catch (err) {
+      console.error(`Error ${confirmAction}ing proposal:`, err);
+      setError(`Failed to ${confirmAction} proposal`);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
@@ -842,36 +934,36 @@ export function RightsHolderDashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex space-x-2 mt-2">
-                            <Link
-                              to={`/sync-proposal/${proposal.id}/history`}
-                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                            >
-                              <Clock className="w-3 h-3 inline mr-1" />
-                              History
-                            </Link>
-                            <Link
-                              to={`/sync-proposal/${proposal.id}/negotiate`}
-                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-                            >
-                              <MessageSquare className="w-3 h-3 inline mr-1" />
-                              Negotiate
-                            </Link>
-                            <Link
-                              to={`/sync-proposal/${proposal.id}/accept`}
-                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                            >
-                              <Check className="w-3 h-3 inline mr-1" />
-                              Accept
-                            </Link>
-                            <Link
-                              to={`/sync-proposal/${proposal.id}/decline`}
-                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
-                            >
-                              <X className="w-3 h-3 inline mr-1" />
-                              Decline
-                            </Link>
-                          </div>
+                                                     <div className="flex space-x-2 mt-2">
+                             <button
+                               onClick={() => handleProposalAction(proposal, 'history')}
+                               className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                             >
+                               <Clock className="w-3 h-3 inline mr-1" />
+                               History
+                             </button>
+                             <button
+                               onClick={() => handleProposalAction(proposal, 'negotiate')}
+                               className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                             >
+                               <MessageSquare className="w-3 h-3 inline mr-1" />
+                               Negotiate
+                             </button>
+                             <button
+                               onClick={() => handleProposalAction(proposal, 'accept')}
+                               className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                             >
+                               <Check className="w-3 h-3 inline mr-1" />
+                               Accept
+                             </button>
+                             <button
+                               onClick={() => handleProposalAction(proposal, 'reject')}
+                               className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                             >
+                               <X className="w-3 h-3 inline mr-1" />
+                               Decline
+                             </button>
+                           </div>
                         </div>
                       ))}
                     </>
@@ -952,13 +1044,13 @@ export function RightsHolderDashboard() {
                               </div>
                             </div>
                             <div className="flex space-x-2 mt-2">
-                              <Link
-                                to={`/sync-proposal/${proposal.id}/history`}
+                              <button
+                                onClick={() => handleProposalAction(proposal, 'history')}
                                 className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                               >
                                 <Clock className="w-3 h-3 inline mr-1" />
                                 History
-                              </Link>
+                              </button>
                             </div>
                           </div>
                         );
@@ -997,13 +1089,13 @@ export function RightsHolderDashboard() {
                             </div>
                           </div>
                           <div className="flex space-x-2 mt-2">
-                            <Link
-                              to={`/sync-proposal/${proposal.id}/history`}
+                            <button
+                              onClick={() => handleProposalAction(proposal, 'history')}
                               className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                             >
                               <Clock className="w-3 h-3 inline mr-1" />
                               History
-                            </Link>
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1041,13 +1133,13 @@ export function RightsHolderDashboard() {
                           </div>
                         </div>
                         <div className="flex space-x-2 mt-2">
-                          <Link
-                            to={`/sync-proposal/${proposal.id}/history`}
+                          <button
+                            onClick={() => handleProposalAction(proposal, 'history')}
                             className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                           >
                             <Clock className="w-3 h-3 inline mr-1" />
                             History
-                          </Link>
+                          </button>
                         </div>
                       </div>
                       ))}
@@ -1211,6 +1303,47 @@ export function RightsHolderDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Proposal Action Dialogs */}
+      {selectedProposal && showNegotiationDialog && (
+        <ProposalNegotiationDialog
+          isOpen={showNegotiationDialog}
+          onClose={() => {
+            setShowNegotiationDialog(false);
+            setSelectedProposal(null);
+          }}
+          proposal={selectedProposal}
+          onNegotiationSent={() => {
+            setShowNegotiationDialog(false);
+            setSelectedProposal(null);
+            fetchDashboardData();
+          }}
+        />
+      )}
+
+      {selectedProposal && showHistoryDialog && (
+        <ProposalHistoryDialog
+          isOpen={showHistoryDialog}
+          onClose={() => {
+            setShowHistoryDialog(false);
+            setSelectedProposal(null);
+          }}
+          proposal={selectedProposal}
+        />
+      )}
+
+      {selectedProposal && showConfirmDialog && (
+        <ProposalConfirmDialog
+          isOpen={showConfirmDialog}
+          onClose={() => {
+            setShowConfirmDialog(false);
+            setSelectedProposal(null);
+          }}
+          action={confirmAction}
+          proposal={selectedProposal}
+          onConfirm={handleProposalStatusChange}
+        />
+      )}
     </div>
   );
 }
