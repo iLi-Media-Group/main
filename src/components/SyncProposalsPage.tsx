@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
@@ -12,7 +12,8 @@ import {
   RefreshCw,
   DollarSign,
   Calendar,
-  User
+  User,
+  ArrowLeft
 } from 'lucide-react';
 
 interface SyncProposal {
@@ -47,6 +48,7 @@ interface SyncProposal {
 
 export function SyncProposalsPage() {
   const { user } = useUnifiedAuth();
+  const navigate = useNavigate();
   const [syncProposals, setSyncProposals] = useState<SyncProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,11 +172,27 @@ export function SyncProposalsPage() {
     <div className="min-h-screen bg-blue-900/90 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <MessageSquare className="w-8 h-8 text-blue-400 mr-2" />
-            <h1 className="text-3xl font-bold text-white">Sync Proposals</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <button
+              onClick={() => navigate(-1)}
+              className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div className="flex items-center">
+              <MessageSquare className="w-8 h-8 text-blue-400 mr-2" />
+              <h1 className="text-3xl font-bold text-white">Sync Proposals</h1>
+            </div>
           </div>
+          <Link
+            to="/rights-holder/dashboard"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            Dashboard
+          </Link>
+        </div>
+        <div className="text-center mb-6">
           <p className="text-gray-300">
             Manage sync licensing proposals for your tracks
           </p>

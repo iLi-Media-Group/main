@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { uploadFile } from '../lib/storage';
 import { supabase } from '../lib/supabase';
@@ -19,6 +19,7 @@ import {
   CheckCircle, 
   AlertCircle,
   ArrowRight,
+  ArrowLeft,
   Building2,
   Mic,
   FileAudio,
@@ -678,10 +679,22 @@ export function RightsHolderUploadForm() {
     <div className="min-h-screen bg-blue-900/90 p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <Building2 className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-           <h1 className="text-3xl font-bold text-white mb-2">Upload Track</h1>
-           <p className="text-gray-300">Add your track to the MyBeatFi catalog for licensing</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link
+              to="/rights-holder/dashboard"
+              className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Upload Track</h1>
+              <p className="text-gray-300">Add your track to the MyBeatFi catalog for licensing</p>
+            </div>
+          </div>
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+            <Building2 className="w-4 h-4 text-white" />
+          </div>
         </div>
 
         {/* Progress Steps */}

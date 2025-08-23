@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
   Music, 
@@ -31,7 +32,9 @@ import {
   RotateCcw,
   Volume2,
   FileAudio,
-  FileArchive
+  FileArchive,
+  ArrowLeft,
+  Building2
 } from 'lucide-react';
 import { MOODS_CATEGORIES, MOODS, MEDIA_USAGE_CATEGORIES, MEDIA_USAGE_TYPES } from '../types';
 import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instruments';
@@ -498,18 +501,31 @@ export function RightsHolderRecordings() {
     <div className="min-h-screen bg-gray-900 text-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Manage Recordings</h1>
-            <p className="text-gray-400 mt-2">Manage your uploaded tracks and recordings</p>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center">
+            <Link
+              to="/rights-holder/dashboard"
+              className="mr-4 p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Manage Recordings</h1>
+              <p className="text-gray-400 mt-2">Manage your uploaded tracks and recordings</p>
+            </div>
           </div>
-          <button
-            onClick={fetchRecordings}
-            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </button>
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={fetchRecordings}
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </button>
+            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <Building2 className="w-4 h-4 text-white" />
+            </div>
+          </div>
         </div>
 
         {/* Error Message */}
