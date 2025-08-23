@@ -375,8 +375,8 @@ export function RightsHolderDashboard() {
       
       const currentDate = new Date().toISOString();
       
-      // First, let's fetch all open requests that haven't expired
-      const { data: openRequestsData, error: openRequestsError } = await supabase
+      // Fetch all open requests that haven't expired
+      const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
           *,
@@ -391,39 +391,13 @@ export function RightsHolderDashboard() {
         .gte('end_date', currentDate)
         .order('created_at', { ascending: false });
       
-      if (openRequestsError) {
-        console.error('Error fetching open requests:', openRequestsError);
-        throw openRequestsError;
+      if (requestsError) {
+        console.error('Error fetching custom sync requests:', requestsError);
+        throw requestsError;
       }
       
-      // Also fetch requests where this rights holder is selected or preferred
-      const { data: selectedRequestsData, error: selectedRequestsError } = await supabase
-        .from('custom_sync_requests')
-        .select(`
-          *,
-          client:profiles!custom_sync_requests_client_id_fkey(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .or(`selected_producer_id.eq.${user.id},preferred_rights_holder_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
-      
-      if (selectedRequestsError) {
-        console.error('Error fetching selected requests:', selectedRequestsError);
-        throw selectedRequestsError;
-      }
-      
-      // Combine and deduplicate the results
-      const allRequests = [...(openRequestsData || []), ...(selectedRequestsData || [])];
-      const uniqueRequests = allRequests.filter((request, index, self) => 
-        index === self.findIndex(r => r.id === request.id)
-      );
-      
-      console.log('Fetched custom sync requests:', uniqueRequests);
-      setCustomSyncRequests(uniqueRequests);
+      console.log('Fetched custom sync requests:', requestsData);
+      setCustomSyncRequests(requestsData || []);
     } catch (error) {
       console.error('Error fetching custom sync requests:', error);
       setCustomSyncRequests([]);
