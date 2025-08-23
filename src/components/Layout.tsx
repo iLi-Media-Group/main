@@ -207,7 +207,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   <Link to="/sync-only" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Music className="w-4 h-4 mr-2" />Sync Only Tracks
                   </Link>
-                  {/* Business verification for clients */}
+                  {/* Business verification for clients only (not rights holders) */}
                   {user && (accountType === 'client' || accountType === 'white_label') && (
                     <Link to="/business-verification" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <Building2 className="w-4 h-4 mr-2" />Business Verification
@@ -277,17 +277,27 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
-                      {/* Show main dashboard for all users */}
-                      <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                        {getDashboardIcon()}
-                        {getDashboardLabel()}
-                      </Link>
-                      {/* Show Producer Dashboard for producers and admin+producer users */}
-                      {(accountType === 'producer' || accountType === 'admin,producer' || (isAdmin && accountType !== 'producer' && accountType !== 'admin,producer')) && (
-                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Music className="w-4 h-4 mr-2" />
-                          Producer Dashboard
+                      {/* Show appropriate dashboard based on account type */}
+                      {accountType === 'rights_holder' ? (
+                        <Link to="/rights-holder/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <Building2 className="w-4 h-4 mr-2" />
+                          Rights Holder Dashboard
                         </Link>
+                      ) : (
+                        <>
+                          {/* Show main dashboard for non-rights-holder users */}
+                          <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                            {getDashboardIcon()}
+                            {getDashboardLabel()}
+                          </Link>
+                          {/* Show Producer Dashboard for producers and admin+producer users */}
+                          {(accountType === 'producer' || accountType === 'admin,producer' || (isAdmin && accountType !== 'producer' && accountType !== 'admin,producer')) && (
+                            <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                              <Music className="w-4 h-4 mr-2" />
+                              Producer Dashboard
+                            </Link>
+                          )}
+                        </>
                       )}
                   </>
                 )}
