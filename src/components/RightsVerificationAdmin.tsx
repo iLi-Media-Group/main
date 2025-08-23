@@ -131,7 +131,7 @@ export function RightsVerificationAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'rights-holders' | 'recordings'>('rights-holders');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [selectedItem, setSelectedItem] = useState<RightsHolder | MasterRecording | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -158,6 +158,14 @@ export function RightsVerificationAdmin() {
         .order('created_at', { ascending: false });
 
       console.log('Rights holders query result:', { data: rightsHoldersData, error: rightsHoldersError });
+      
+      // Debug: Log each rights holder's verification status
+      if (rightsHoldersData) {
+        console.log('Rights holders verification status:');
+        rightsHoldersData.forEach((rh, index) => {
+          console.log(`${index + 1}. ${rh.company_name || rh.email}: ${rh.verification_status} (active: ${rh.is_active})`);
+        });
+      }
 
       if (rightsHoldersError) {
         console.error('Rights holders error:', rightsHoldersError);
