@@ -45,10 +45,18 @@ export function ProtectedRoute({
 
   // Check for producer access (including dual roles)
   if (requiresProducer && accountType && !accountType.includes('producer')) {
+    // Rights holders should not access producer routes
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 
   if (requiresClient && accountType && accountType !== 'client' && accountType !== 'white_label') {
+    // Rights holders should not access client routes
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" replace />;
+    }
     return <Navigate to="/producer/dashboard" replace />;
   }
 

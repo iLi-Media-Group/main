@@ -331,6 +331,8 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
               id: data.user.id,
               email: data.user.email,
               account_type: 'rights_holder',
+              verification_status: 'pending',
+              is_active: false,
               ...rightsHolderData,
             });
 

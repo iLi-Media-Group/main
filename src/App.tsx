@@ -240,7 +240,12 @@ const App = () => {
       return <Navigate to="/white-label-dashboard" />;
     }
 
-    // For other users, show the regular dashboard
+    // If user is a rights holder, redirect to rights holder dashboard
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" />;
+    }
+
+    // For other users (clients), show the regular dashboard
     return <ClientDashboard />;
   }
 
