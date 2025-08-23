@@ -284,6 +284,17 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
   // Rights holder authentication methods
   const signUpRightsHolder = async (email: string, password: string, rightsHolderData: Partial<Profile>) => {
+    // Check if email already exists in profiles table
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return { error: new Error('An account with this email already exists') };
+    }
+
     const { data, error } = await supabase.auth.signUp({ 
       email, 
       password,

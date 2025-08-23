@@ -386,7 +386,7 @@ export function RightsHolderDashboard() {
         .from('custom_sync_requests')
         .select(`
           *,
-          client:profiles!custom_sync_requests_client_id_fkey(
+          client:profiles(
             id,
             first_name,
             last_name,
@@ -421,7 +421,7 @@ export function RightsHolderDashboard() {
         .from('custom_sync_requests')
         .select(`
           *,
-          client:profiles!custom_sync_requests_client_id_fkey(
+          client:profiles(
             id,
             first_name,
             last_name,
