@@ -2178,7 +2178,7 @@ export function TrackUploadForm() {
                 
                 <div className="space-y-4">
                   {/* Existing work for hire contracts */}
-                  {formData.workForHireContracts.map((contract, index) => (
+                  {(formData.workForHireContracts || []).map((contract, index) => (
                     <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
                       <div className="flex items-center">
                         <FileText className="w-5 h-5 text-blue-400 mr-3" />
@@ -2187,7 +2187,7 @@ export function TrackUploadForm() {
                       <button
                         type="button"
                         onClick={() => {
-                          const newContracts = [...formData.workForHireContracts];
+                          const newContracts = [...(formData.workForHireContracts || [])];
                           newContracts.splice(index, 1);
                           updateFormData({ workForHireContracts: newContracts });
                         }}
@@ -2200,7 +2200,7 @@ export function TrackUploadForm() {
                   ))}
                   
                   {/* Upload new work for hire contract */}
-                  {formData.workForHireContracts.length < 4 && (
+                  {(formData.workForHireContracts || []).length < 4 && (
                     <div className="border-2 border-dashed border-blue-500/40 rounded-lg p-6 text-center">
                       <input
                         type="file"
@@ -2212,7 +2212,7 @@ export function TrackUploadForm() {
                             setWorkForHireFiles(prev => [...prev, file]);
                             // Add placeholder to form data
                             updateFormData({
-                              workForHireContracts: [...formData.workForHireContracts, `work_for_hire_${Date.now()}.pdf`]
+                              workForHireContracts: [...(formData.workForHireContracts || []), `work_for_hire_${Date.now()}.pdf`]
                             });
                           }
                         }}
@@ -2231,7 +2231,7 @@ export function TrackUploadForm() {
                     </div>
                   )}
                   
-                  {formData.workForHireContracts.length >= 4 && (
+                  {(formData.workForHireContracts || []).length >= 4 && (
                     <div className="text-center py-4">
                       <p className="text-gray-400 text-sm">Maximum 4 work for hire contracts reached</p>
                     </div>
