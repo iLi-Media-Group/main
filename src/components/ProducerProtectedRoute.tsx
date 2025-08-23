@@ -1,0 +1,129 @@
+import React from 'react';
+import { Navigate, Link } from 'react-router-dom';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { Loader2, Music, AlertCircle, Clock, FileText } from 'lucide-react';
+import { ProducerAwaitingApproval } from './ProducerAwaitingApproval';
+
+interface ProducerProtectedRouteProps {
+  children: React.ReactNode;
+  requireVerification?: boolean;
+}
+
+export function ProducerProtectedRoute({ 
+  children, 
+  requireVerification = false 
+}: ProducerProtectedRouteProps) {
+  const { user, profile, accountType, loading, signOut } = useUnifiedAuth();
+
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <Music className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Authentication Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please sign in to access the producer dashboard.
+            </p>
+            <Link
+              to="/producer/login"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is a producer
+  if (!profile || !accountType || !accountType.includes('producer')) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Account Not Found</h2>
+            <p className="text-gray-300 mb-6">
+              Your producer account could not be found. Please contact support.
+            </p>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check for pending verification status
+  if (profile.verification_status === 'pending' || profile.verification_status === null || profile.verification_status === undefined) {
+    console.log('Producer verification status:', profile.verification_status, '- showing awaiting approval page');
+    return <ProducerAwaitingApproval />;
+  }
+
+  // Check for rejected verification status
+  if (profile.verification_status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Application Rejected</h2>
+            <p className="text-gray-300 mb-6">
+              Your producer application has been rejected. Please contact support for more information.
+            </p>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check for terms acceptance
+  if (!profile.terms_accepted || !profile.rights_ownership_declaration_accepted) {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <FileText className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Terms Acceptance Required</h2>
+            <p className="text-gray-300 mb-6">
+              Please accept the terms and conditions to continue.
+            </p>
+            <Link
+              to="/producer/terms"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Review Terms
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // All checks passed, render the protected content
+  return <>{children}</>;
+}

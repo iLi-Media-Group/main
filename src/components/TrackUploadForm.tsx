@@ -63,6 +63,7 @@ interface FormData {
   explicitLyrics: boolean;
   isCleanVersion: boolean | null;
   cleanVersionOf: string;
+  lyrics: string;
   // Sample clearance fields
   containsLoops: boolean;
   containsSamples: boolean;
@@ -155,6 +156,7 @@ export function TrackUploadForm() {
     explicitLyrics: false,
     isCleanVersion: null as boolean | null,
     cleanVersionOf: '',
+    lyrics: '',
     // Sample clearance fields
     containsLoops: false,
     containsSpliceLoops: false,
@@ -839,6 +841,7 @@ export function TrackUploadForm() {
         media_usage: formData.selectedMediaUsage || [],
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
         clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
+        lyrics: formData.lyrics || null,
         // Sample clearance fields
         contains_loops: formData.containsLoops,
         contains_samples: formData.containsSamples,
@@ -1906,6 +1909,25 @@ export function TrackUploadForm() {
                           <span>No</span>
                         </label>
                       </div>
+                    </div>
+                  )}
+                  
+                  {formData.hasVocals && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Song Lyrics (Optional)
+                      </label>
+                      <textarea
+                        value={formData.lyrics}
+                        onChange={(e) => updateFormData({ lyrics: e.target.value })}
+                        className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                        placeholder="Enter the song lyrics here..."
+                        rows={6}
+                        disabled={isSubmitting}
+                      />
+                      <p className="text-xs text-gray-400 mt-1">
+                        Include the complete lyrics for licensing and sync opportunities
+                      </p>
                     </div>
                   )}
             </div>

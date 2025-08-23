@@ -77,6 +77,7 @@ interface FormData {
   explicitLyrics: boolean;
   isCleanVersion: boolean | null;
   cleanVersionOf: string;
+  lyrics: string;
   // Sample clearance fields
   containsLoops: boolean;
   containsSamples: boolean;
@@ -180,6 +181,7 @@ export function RightsHolderUploadForm() {
     explicitLyrics: false,
     isCleanVersion: null as boolean | null,
     cleanVersionOf: '',
+    lyrics: '',
     // Sample clearance fields
     containsLoops: false,
     containsSamples: false,
@@ -615,6 +617,7 @@ export function RightsHolderUploadForm() {
             media_usage: formData.selectedMediaUsage.length > 0 ? formData.selectedMediaUsage : null,
             has_vocals: formData.hasVocals,
             is_sync_only: formData.isSyncOnly,
+            lyrics: formData.lyrics || null,
           master_rights_owner: formData.masterRightsOwner || null,
           publishing_rights_owner: formData.publishingRightsOwner || null,
             status: 'active'
@@ -920,6 +923,24 @@ export function RightsHolderUploadForm() {
                  </label>
                </div>
              </div>
+
+             {/* Lyrics Section - Only show if track has vocals */}
+             {formData.hasVocals && (
+               <div className="mt-4">
+                 <label className="block text-gray-300 mb-2">Song Lyrics (Optional)</label>
+                 <textarea
+                   name="lyrics"
+                   value={formData.lyrics}
+                   onChange={handleInputChange}
+                   rows={6}
+                   className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                   placeholder="Enter the song lyrics here..."
+                 />
+                 <p className="text-xs text-gray-400 mt-1">
+                   Include the complete lyrics for licensing and sync opportunities
+                 </p>
+               </div>
+             )}
 
                                            {/* Moods Section */}
               <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
