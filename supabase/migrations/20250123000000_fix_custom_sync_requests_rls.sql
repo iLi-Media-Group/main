@@ -6,22 +6,22 @@ DROP POLICY IF EXISTS "Producers and Rights Holders can view selected requests" 
 DROP POLICY IF EXISTS "Producers and Rights Holders can view open requests" ON custom_sync_requests;
 DROP POLICY IF EXISTS "Rights Holders can update selected requests" ON custom_sync_requests;
 
--- Create policy for rights holders to see requests that are either:
--- 1. Specifically assigned to them, OR
--- 2. Open to all rights holders (no specific rights holder selected)
-CREATE POLICY "Rights holders can view relevant requests" ON custom_sync_requests
+-- Create unified policy for both producers and rights holders
+-- Logic:
+-- 1. If specific producer selected → only that producer sees it
+-- 2. If specific rights holder selected → only that rights holder sees it  
+-- 3. If neither selected → all producers AND rights holders see it
+CREATE POLICY "Custom sync requests visibility" ON custom_sync_requests
     FOR SELECT USING (
         (status = 'open' AND end_date >= NOW()) AND
-        (auth.uid() = selected_rights_holder_id OR selected_rights_holder_id IS NULL)
-    );
-
--- Create policy for producers to see requests that are either:
--- 1. Specifically assigned to them, OR  
--- 2. Open to all producers (no specific producer selected)
-CREATE POLICY "Producers can view relevant requests" ON custom_sync_requests
-    FOR SELECT USING (
-        (status = 'open' AND end_date >= NOW()) AND
-        (auth.uid() = selected_producer_id OR selected_producer_id IS NULL)
+        (
+            -- Case 1: Specific producer selected - only that producer can see
+            (selected_producer_id IS NOT NULL AND auth.uid() = selected_producer_id) OR
+            -- Case 2: Specific rights holder selected - only that rights holder can see
+            (selected_rights_holder_id IS NOT NULL AND auth.uid() = selected_rights_holder_id) OR
+            -- Case 3: Neither selected - all producers and rights holders can see
+            (selected_producer_id IS NULL AND selected_rights_holder_id IS NULL)
+        )
     );
 
 -- Create policy for rights holders to update requests where they are selected
