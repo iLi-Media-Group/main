@@ -114,6 +114,9 @@ interface UnifiedAuthContextType {
   
   // Regular user methods
   refreshMembership: () => Promise<void>;
+  
+  // Profile management
+  fetchProfile: (userId: string, email: string) => Promise<void>;
 }
 
 const UnifiedAuthContext = createContext<UnifiedAuthContextType | undefined>(undefined);
@@ -589,6 +592,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     signUpRightsHolder,
     updateRightsHolder,
     refreshMembership,
+    fetchProfile,
   };
 
   return (

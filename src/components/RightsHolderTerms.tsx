@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
+import { dataCache, CACHE_KEYS } from '../lib/cache';
 import { FileText, Check, ArrowLeft } from 'lucide-react';
 
 const RightsHolderTerms: React.FC = () => {
   const navigate = useNavigate();
-  const { user, profile } = useUnifiedAuth();
+  const { user, profile, fetchProfile } = useUnifiedAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [rightsAuthorityAccepted, setRightsAuthorityAccepted] = useState(false);
@@ -31,6 +32,17 @@ const RightsHolderTerms: React.FC = () => {
         console.error('Error accepting terms:', error);
         alert('Error accepting terms. Please try again.');
         return;
+      }
+
+      // Clear the profile cache to force a fresh fetch
+      if (user) {
+        const cacheKey = CACHE_KEYS.PROFILE(user.id);
+        dataCache.delete(cacheKey);
+        console.log('🗑️ Cleared profile cache for user:', user.id);
+        
+        // Refresh the profile data
+        await fetchProfile(user.id, user.email || '');
+        console.log('🔄 Refreshed profile data after terms acceptance');
       }
 
       // Redirect to dashboard
