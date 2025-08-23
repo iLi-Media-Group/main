@@ -74,6 +74,8 @@ interface FormData {
   publishingRightsOwner: string;
   participants: SplitSheetParticipant[];
   coSigners: CoSigner[];
+  // Work for hire contracts
+  workForHireContracts: string[];
   // New rights holder fields
   rightsHolderName: string;
   rightsHolderType: 'producer' | 'record_label' | 'publisher' | 'other';
@@ -164,6 +166,8 @@ export function TrackUploadForm() {
     publishingRightsOwner: '',
     participants: [] as SplitSheetParticipant[],
     coSigners: [] as CoSigner[],
+    // Work for hire contracts
+    workForHireContracts: [] as string[],
     // New rights holder fields
     rightsHolderName: '',
     rightsHolderType: 'producer' as const,
@@ -182,6 +186,7 @@ export function TrackUploadForm() {
   const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
   const [stemsFile, setStemsFile] = useState<File | null>(null);
   const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
+  const [workForHireFiles, setWorkForHireFiles] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -791,6 +796,25 @@ export function TrackUploadForm() {
       }
       // --- End new logic ---
 
+      // --- Work for Hire Contracts Upload ---
+      const workForHireUrls: string[] = [];
+      if (workForHireFiles.length > 0) {
+        console.log('[DEBUG] Uploading work for hire contracts:', workForHireFiles.length);
+        for (let i = 0; i < workForHireFiles.length; i++) {
+          const file = workForHireFiles[i];
+          const workForHireSignedUrl = await uploadFile(
+            file,
+            'work-for-hire-contracts',
+            undefined,
+            `${user.id}/${formData.title}`,
+            `work_for_hire_${i + 1}.pdf`
+          );
+          workForHireUrls.push(workForHireSignedUrl);
+          console.log(`[DEBUG] Uploaded work for hire contract ${i + 1}:`, workForHireSignedUrl);
+        }
+      }
+      // --- End Work for Hire Contracts Upload ---
+
       // Insert or update track in DB
       const insertData = {
         track_producer_id: user.id,
@@ -820,7 +844,9 @@ export function TrackUploadForm() {
         contains_samples: formData.containsSamples,
         contains_splice_loops: formData.containsSpliceLoops,
         samples_cleared: formData.samplesCleared,
-        sample_clearance_notes: formData.sampleClearanceNotes || null
+        sample_clearance_notes: formData.sampleClearanceNotes || null,
+        // Work for hire contracts
+        work_for_hire_contracts: workForHireUrls
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
@@ -2139,6 +2165,78 @@ export function TrackUploadForm() {
                 >
                   + Add Participant
                 </button>
+              </div>
+
+              {/* Work for Hire Contracts Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-white">Work for Hire Contracts</h2>
+                  <div className="text-sm text-blue-300 bg-blue-500/10 px-3 py-1 rounded-lg">
+                    Optional - Up to 4 contracts
+                  </div>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Existing work for hire contracts */}
+                  {formData.workForHireContracts.map((contract, index) => (
+                    <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">
+                      <div className="flex items-center">
+                        <FileText className="w-5 h-5 text-blue-400 mr-3" />
+                        <span className="text-white">Work for Hire Contract {index + 1}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newContracts = [...formData.workForHireContracts];
+                          newContracts.splice(index, 1);
+                          updateFormData({ workForHireContracts: newContracts });
+                        }}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Upload new work for hire contract */}
+                  {formData.workForHireContracts.length < 4 && (
+                    <div className="border-2 border-dashed border-blue-500/40 rounded-lg p-6 text-center">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Add to work for hire files array
+                            setWorkForHireFiles(prev => [...prev, file]);
+                            // Add placeholder to form data
+                            updateFormData({
+                              workForHireContracts: [...formData.workForHireContracts, `work_for_hire_${Date.now()}.pdf`]
+                            });
+                          }
+                        }}
+                        className="hidden"
+                        id="work-for-hire-upload"
+                        disabled={isSubmitting}
+                      />
+                      <label
+                        htmlFor="work-for-hire-upload"
+                        className="cursor-pointer flex flex-col items-center"
+                      >
+                        <FileText className="w-8 h-8 text-blue-400 mb-2" />
+                        <span className="text-blue-300 font-medium">Upload Work for Hire Contract</span>
+                        <span className="text-gray-400 text-sm">PDF files only</span>
+                      </label>
+                    </div>
+                  )}
+                  
+                  {formData.workForHireContracts.length >= 4 && (
+                    <div className="text-center py-4">
+                      <p className="text-gray-400 text-sm">Maximum 4 work for hire contracts reached</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Sample Clearance Section */}

@@ -2639,7 +2639,29 @@ const getPlanLevel = (plan: string): number => {
                                     Download Split Sheet
                                   </button>
                                 )}
-                                {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
+                                {license.track.workForHireContracts && license.track.workForHireContracts.length > 0 && (
+                                  <div className="flex flex-col space-y-1">
+                                    {license.track.workForHireContracts.map((contractUrl, index) => (
+                                      <button
+                                        key={index}
+                                        onClick={() => {
+                                          // Clean the path to remove any double encoding or URL issues
+                                          const cleanPath = contractUrl
+                                            .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                            .replace(/\?.*$/, '')
+                                            .replace(/^work-for-hire-contracts\//, '');
+                                          handleDownloadSupabase('work-for-hire-contracts', cleanPath, `${license.track.title}_WorkForHire_${index + 1}.pdf`);
+                                        }}
+                                        className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                                        title={`Download Work for Hire Contract ${index + 1}`}
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Work for Hire {index + 1}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (!license.track.workForHireContracts || license.track.workForHireContracts.length === 0) && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
                                 )}
                               </div>
@@ -2798,7 +2820,29 @@ const getPlanLevel = (plan: string): number => {
                                     Download Split Sheet
                                   </button>
                                 )}
-                                {!proposal.track.mp3_url && !proposal.track.audio_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (
+                                {proposal.track.work_for_hire_contracts && proposal.track.work_for_hire_contracts.length > 0 && (
+                                  <div className="flex flex-col space-y-1">
+                                    {proposal.track.work_for_hire_contracts.map((contractUrl, index) => (
+                                      <button
+                                        key={index}
+                                        onClick={() => {
+                                          // Clean the path to remove any double encoding or URL issues
+                                          const cleanPath = contractUrl
+                                            .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                            .replace(/\?.*$/, '')
+                                            .replace(/^work-for-hire-contracts\//, '');
+                                          handleDownloadSupabase('work-for-hire-contracts', cleanPath, `${proposal.track.title}_WorkForHire_${index + 1}.pdf`);
+                                        }}
+                                        className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                                        title={`Download Work for Hire Contract ${index + 1}`}
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Work for Hire {index + 1}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!proposal.track.mp3_url && !proposal.track.audio_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (!proposal.track.work_for_hire_contracts || proposal.track.work_for_hire_contracts.length === 0) && (
                                   <span className="text-sm text-gray-400 italic">No files available for download</span>
                                 )}
                               </div>

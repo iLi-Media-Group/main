@@ -502,6 +502,33 @@ export function TrackPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Work for Hire Contracts */}
+                  {track.workForHireContracts && track.workForHireContracts.length > 0 && (
+                    <div className="mt-4 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-indigo-300 mb-2">
+                            Work for Hire Contracts Available
+                          </h4>
+                          <div className="space-y-1">
+                            {track.workForHireContracts.map((contract, index) => (
+                              <div key={index} className="flex items-center text-sm text-indigo-200/90">
+                                <FileText className="w-4 h-4 mr-2" />
+                                <span>Work for Hire Contract {index + 1}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-indigo-200/70 mt-2">
+                            These contracts will be available for download after licensing this track.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3">

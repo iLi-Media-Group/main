@@ -61,6 +61,8 @@ export interface Track {
   containsSpliceLoops?: boolean;
   samplesCleared?: boolean;
   sampleClearanceNotes?: string;
+  // Work for hire contracts
+  workForHireContracts?: string[];
   searchScore?: number;
 }
 
