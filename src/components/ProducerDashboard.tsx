@@ -791,7 +791,7 @@ export function ProducerDashboard() {
   // Function to delete all storage files associated with a track using Edge Function
   const deleteTrackStorageFiles = async (track: any) => {
     try {
-      console.log('🗑️ Deleting storage files for track:', track.id, track.title);
+      console.log('🗑️ Deleting storage files for track:', track.title);
       
       // Call the Edge Function to handle storage deletion server-side
       const { data, error } = await supabase.functions.invoke('delete-track-storage', {
@@ -807,7 +807,7 @@ export function ProducerDashboard() {
       }
 
       if (data.success) {
-        console.log(`✅ Storage cleanup completed for track ${track.id}:`, {
+        console.log(`✅ Storage cleanup completed for track:`, {
           deletedFiles: data.deletedFiles,
           failedFiles: data.failedFiles,
           totalFiles: data.totalFiles,
@@ -815,7 +815,7 @@ export function ProducerDashboard() {
           failedCount: data.failedCount
         });
       } else {
-        console.error('❌ Storage cleanup failed for track:', track.id, data.error);
+        console.error('❌ Storage cleanup failed for track:', track.title, data.error);
       }
       
     } catch (error) {
