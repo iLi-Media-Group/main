@@ -486,7 +486,7 @@ export function RightsHolderRecordings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="min-h-screen bg-blue-900/90 text-white p-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
@@ -498,7 +498,7 @@ export function RightsHolderRecordings() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-blue-900/90 text-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -730,7 +730,7 @@ export function RightsHolderRecordings() {
                 {/* Comprehensive Edit Modal */}
         {editingRecording && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-blue-900/90 backdrop-blur-lg rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-white/20">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-semibold">Edit Recording: {editingRecording.title}</h3>
               <button

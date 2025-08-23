@@ -161,7 +161,7 @@ export function RightsHolderProfile({ onClose, onProfileUpdated }: RightsHolderP
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="min-h-screen bg-blue-900/90 text-white p-8">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center h-64">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-400" />
@@ -173,7 +173,7 @@ export function RightsHolderProfile({ onClose, onProfileUpdated }: RightsHolderP
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-blue-900/90 text-white p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center mb-6">
@@ -203,7 +203,7 @@ export function RightsHolderProfile({ onClose, onProfileUpdated }: RightsHolderP
         )}
 
         {/* Profile Form */}
-        <div className="bg-gray-800 rounded-lg p-6">
+        <div className="bg-blue-900/90 backdrop-blur-lg rounded-lg p-6 border border-white/20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Company Information */}
             <div className="space-y-6">
