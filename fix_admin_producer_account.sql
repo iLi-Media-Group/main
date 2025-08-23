@@ -1,32 +1,57 @@
--- Fix Admin/Producer Account Type
--- This script updates the main admin account to have dual role
+-- Fix admin/producer account that was incorrectly converted to rights holder
 
--- First, let's see what account types exist
-SELECT account_type, COUNT(*) FROM profiles GROUP BY account_type;
-
--- Update the main admin account to have dual role
--- Replace 'your-email@example.com' with your actual email
-UPDATE profiles 
-SET account_type = 'admin,producer'
-WHERE email = 'knockriobeats@gmail.com';
-
--- Also update other admin accounts if needed
-UPDATE profiles 
-SET account_type = 'admin,producer'
-WHERE email IN ('info@mybeatfi.io', 'derykbanks@yahoo.com');
-
--- Verify the changes
+-- 1. First, let's see what your account looks like
 SELECT 
-    email,
-    account_type,
-    created_at
+  'Current account state' as info,
+  id, 
+  email, 
+  account_type, 
+  verification_status, 
+  is_active, 
+  created_at,
+  company_name,
+  rights_holder_type,
+  business_structure
 FROM profiles 
-WHERE account_type LIKE '%admin%'
-ORDER BY created_at DESC;
+WHERE email = 'mrsolowkeybeats@gmail.com';
 
--- Check if the constraint allows admin,producer
+-- 2. Fix the account type back to admin,producer
+UPDATE profiles
+SET 
+  account_type = 'admin,producer',
+  verification_status = NULL,
+  is_active = true,
+  company_name = NULL,
+  rights_holder_type = NULL,
+  business_structure = NULL,
+  phone = NULL,
+  address_line_1 = NULL,
+  city = NULL,
+  state = NULL,
+  postal_code = NULL,
+  country = NULL
+WHERE email = 'mrsolowkeybeats@gmail.com';
+
+-- 3. Verify the fix
 SELECT 
-    'profiles with admin,producer' as description,
-    COUNT(*) as count
+  'Account after fix' as info,
+  id, 
+  email, 
+  account_type, 
+  verification_status, 
+  is_active, 
+  created_at,
+  company_name,
+  rights_holder_type,
+  business_structure
 FROM profiles 
-WHERE account_type = 'admin,producer'; 
+WHERE email = 'mrsolowkeybeats@gmail.com';
+
+-- 4. Show all account types to verify
+SELECT 
+  'All account types' as info,
+  account_type,
+  COUNT(*) as count
+FROM profiles 
+GROUP BY account_type
+ORDER BY account_type; 

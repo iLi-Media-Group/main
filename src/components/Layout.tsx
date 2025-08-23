@@ -286,7 +286,10 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
-                      {/* Rights Holder Dashboard */}
+                      {/* Debug info - remove after testing */}
+                      {console.log('🔍 Navigation Debug - user:', user?.email, 'accountType:', accountType)}
+                      
+                      {/* Rights Holder Dashboard - ONLY for rights_holder account type */}
                       {accountType === 'rights_holder' && (
                         <Link to="/rights-holder/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <Building2 className="w-4 h-4 mr-2" />
@@ -294,7 +297,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         </Link>
                       )}
 
-                      {/* Client Dashboard */}
+                      {/* Client Dashboard - ONLY for client account type */}
                       {accountType === 'client' && (
                         <Link to="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <LayoutDashboard className="w-4 h-4 mr-2" />
@@ -302,7 +305,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         </Link>
                       )}
 
-                      {/* Producer Dashboard */}
+                      {/* Producer Dashboard - ONLY for producer account type */}
                       {accountType === 'producer' && (
                         <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <Music className="w-4 h-4 mr-2" />
@@ -310,7 +313,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         </Link>
                       )}
 
-                      {/* Admin + Producer Dashboard */}
+                      {/* Admin + Producer Dashboard - ONLY for admin,producer account type */}
                       {accountType === 'admin,producer' && (
                         <>
                           <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
@@ -324,7 +327,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         </>
                       )}
 
-                      {/* White Label Dashboard */}
+                      {/* White Label Dashboard - ONLY for white_label account type */}
                       {accountType === 'white_label' && (
                         <Link to="/white-label-dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <UserCog className="w-4 h-4 mr-2" />
