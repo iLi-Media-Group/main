@@ -405,20 +405,51 @@ function AdminDashboard() {
         const track_sales_count = trackSales.length;
         const track_sales_amount = trackSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
 
-        // Fetch sync proposals (paid and pending)
+        // Fetch sync proposals (paid and pending) - includes both producer and rights holder proposals
         const { data: syncProposalsData, error: syncProposalsError } = await supabase
           .from('sync_proposals')
-          .select('id, sync_fee, final_amount, negotiated_amount, status, payment_status')
+          .select(`
+            id, 
+            sync_fee, 
+            final_amount, 
+            negotiated_amount, 
+            status, 
+            payment_status,
+            track_id,
+            track:tracks!track_id (
+              id,
+              title,
+              track_producer_id
+            )
+          `)
         if (syncProposalsError) {
           console.error('Error fetching sync proposals:', syncProposalsError);
         }
         const syncProposals = syncProposalsData || [];
-        const sync_proposals_paid = syncProposals.filter(p => p.status === 'accepted' && p.payment_status === 'paid');
-        const sync_proposals_pending = syncProposals.filter(p => p.status === 'pending' || p.status === 'pending_client' || p.status === 'producer_accepted');
+        
+        // Filter for paid proposals (both producer and rights holder)
+        const sync_proposals_paid = syncProposals.filter(p => 
+          p.status === 'accepted' && p.payment_status === 'paid'
+        );
+        
+        // Filter for pending proposals (both producer and rights holder)
+        const sync_proposals_pending = syncProposals.filter(p => 
+          p.status === 'pending' || 
+          p.status === 'pending_client' || 
+          p.status === 'producer_accepted' ||
+          p.status === 'accepted' // Include accepted proposals that haven't been paid yet
+        );
+        
         const sync_proposals_paid_count = sync_proposals_paid.length;
         const sync_proposals_paid_amount = sync_proposals_paid.reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0);
         const sync_proposals_pending_count = sync_proposals_pending.length;
         const sync_proposals_pending_amount = sync_proposals_pending.reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0);
+        
+        // Debug logging to verify rights holder proposals are included
+        console.log('DEBUG: Total sync proposals fetched:', syncProposals.length);
+        console.log('DEBUG: Paid sync proposals:', sync_proposals_paid.length);
+        console.log('DEBUG: Pending sync proposals:', sync_proposals_pending.length);
+        console.log('DEBUG: Sample sync proposal data:', syncProposals.slice(0, 3));
 
         // Fetch custom sync requests (paid and pending) - only fetch once
         const { data: customSyncs, error: customSyncRequestsError } = await supabase
