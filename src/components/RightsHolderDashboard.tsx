@@ -142,6 +142,14 @@ export function RightsHolderDashboard() {
     }
   }, [user]);
 
+  // Separate useEffect for custom sync requests (matching Producer Dashboard pattern)
+  useEffect(() => {
+    if (user) {
+      fetchCustomSyncRequests();
+      fetchCompletedCustomSyncRequests();
+    }
+  }, [user]);
+
   const fetchDashboardData = async () => {
     if (!user) {
       console.log('No user available, skipping dashboard data fetch');
@@ -231,14 +239,8 @@ export function RightsHolderDashboard() {
         setRecentActivity([]);
       }
 
-      // Fetch sync proposals for rights holder tracks
-      await fetchSyncProposals();
-      
-      // Fetch custom sync requests
-      await fetchCustomSyncRequests();
-      
-      // Fetch completed custom sync requests
-      await fetchCompletedCustomSyncRequests();
+             // Fetch sync proposals for rights holder tracks
+       await fetchSyncProposals();
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
