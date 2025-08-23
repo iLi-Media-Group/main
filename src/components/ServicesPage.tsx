@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+// Utility function to truncate long URLs for display
+const truncateUrl = (url: string, maxLength: number = 30): string => {
+  if (!url) return '';
+  
+  // Remove protocol
+  let cleanUrl = url.replace(/^https?:\/\//, '');
+  
+  // If URL is already short enough, return it
+  if (cleanUrl.length <= maxLength) {
+    return cleanUrl;
+  }
+  
+  // Truncate and add ellipsis
+  return cleanUrl.substring(0, maxLength) + '...';
+};
+
 const SERVICE_TYPES = [
   { key: 'studios', label: 'Recording Studios' },
   { key: 'engineers', label: 'Recording Engineers' },
@@ -201,8 +217,9 @@ export default function ServicesPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:underline text-sm"
+                title={service.website} // Show full URL on hover
               >
-                {service.website.replace(/^https?:\/\//, '')}
+                {truncateUrl(service.website)}
               </a>
               {service.subgenres && service.subgenres.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
