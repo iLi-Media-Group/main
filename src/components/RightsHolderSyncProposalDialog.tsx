@@ -695,15 +695,13 @@ export function RightsHolderSyncProposalDialog() {
                 </div>
               )}
 
-              {/* Show accept dialog button when both parties have accepted */}
+              {/* Rights holders don't make payments - clients do */}
               {proposal.status === 'accepted' && proposal.producer_status === 'accepted' && proposal.client_status === 'accepted' && (
                 <div className="mt-6">
-                  <button
-                    onClick={() => setShowAcceptDialog(true)}
-                    className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-                  >
-                    Proceed to Payment
-                  </button>
+                  <div className="w-full px-4 py-3 bg-green-600/20 border border-green-500/30 rounded-lg text-center">
+                    <p className="text-green-400 font-medium">✓ Proposal Accepted</p>
+                    <p className="text-sm text-green-300 mt-1">Waiting for client payment</p>
+                  </div>
                 </div>
               )}
             </div>
