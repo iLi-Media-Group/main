@@ -1,17 +1,17 @@
--- Fix script for rights holder registration issues
+-- Comprehensive fix for rights holder registration issues
 
--- 1. First, let's check what we have
-SELECT 
-  'Current state' as info,
-  COUNT(*) as total_profiles,
-  COUNT(CASE WHEN account_type = 'rights_holder' THEN 1 END) as rights_holders,
-  COUNT(CASE WHEN account_type = 'client' THEN 1 END) as clients,
-  COUNT(CASE WHEN verification_status IS NULL THEN 1 END) as null_verification
-FROM profiles;
+-- 1. First, let's clean up the recent test registrations that were created incorrectly
+-- These are client accounts that should be deleted since they're test accounts
+DELETE FROM profiles 
+WHERE created_at > NOW() - INTERVAL '7 days'
+  AND account_type = 'client'
+  AND email LIKE '%test%'
+  AND company_name IS NULL
+  AND rights_holder_type IS NULL;
 
--- 2. Check for any accounts that should be rights holders but aren't
+-- 2. Check if there are any accounts that should be rights holders but were created as clients
 SELECT 
-  'Accounts that should be rights holders' as info,
+  'Accounts that should be rights holders but were created as clients' as info,
   id, 
   email, 
   account_type, 
@@ -19,41 +19,41 @@ SELECT
   is_active, 
   created_at,
   company_name,
-  rights_holder_type
+  rights_holder_type,
+  business_structure
 FROM profiles 
-WHERE (company_name IS NOT NULL OR rights_holder_type IS NOT NULL)
-  AND account_type != 'rights_holder'
+WHERE account_type = 'client'
+  AND (
+    company_name IS NOT NULL 
+    OR rights_holder_type IS NOT NULL
+    OR business_structure IS NOT NULL
+  )
 ORDER BY created_at DESC;
 
--- 3. Fix any accounts that should be rights holders but have wrong account_type
+-- 3. Convert any accounts that should be rights holders
 UPDATE profiles
 SET 
   account_type = 'rights_holder',
   verification_status = 'pending',
   is_active = false
-WHERE (company_name IS NOT NULL OR rights_holder_type IS NOT NULL)
-  AND account_type != 'rights_holder';
+WHERE account_type = 'client'
+  AND (
+    company_name IS NOT NULL 
+    OR rights_holder_type IS NOT NULL
+    OR business_structure IS NOT NULL
+  );
 
--- 4. Fix any rights holders with null verification_status
-UPDATE profiles
-SET 
-  verification_status = 'pending',
-  is_active = false
-WHERE account_type = 'rights_holder'
-  AND (verification_status IS NULL OR verification_status = '');
-
--- 5. Check the results after the fix
+-- 4. Show the final state
 SELECT 
-  'After fix' as info,
+  'Final state after cleanup' as info,
   COUNT(*) as total_profiles,
   COUNT(CASE WHEN account_type = 'rights_holder' THEN 1 END) as rights_holders,
-  COUNT(CASE WHEN account_type = 'client' THEN 1 END) as clients,
-  COUNT(CASE WHEN verification_status IS NULL THEN 1 END) as null_verification
+  COUNT(CASE WHEN account_type = 'client' THEN 1 END) as clients
 FROM profiles;
 
--- 6. Show all rights holders after the fix
+-- 5. Show all legitimate rights holders
 SELECT 
-  'All rights holders after fix' as info,
+  'All legitimate rights holders' as info,
   id, 
   email, 
   account_type, 
@@ -61,12 +61,13 @@ SELECT
   is_active, 
   created_at,
   company_name,
-  rights_holder_type
+  rights_holder_type,
+  business_structure
 FROM profiles 
 WHERE account_type = 'rights_holder'
 ORDER BY created_at DESC;
 
--- 7. Count by verification status for rights holders
+-- 6. Count by verification status
 SELECT 
   'Rights holders by verification status' as info,
   verification_status,

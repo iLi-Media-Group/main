@@ -154,8 +154,12 @@ export function RightsHolderSignup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('🚀 Rights holder signup form submitted');
+    console.log('📝 Form data:', formData);
+    
     const validationError = validateForm();
     if (validationError) {
+      console.log('❌ Validation error:', validationError);
       setError(validationError);
       return;
     }
@@ -164,35 +168,44 @@ export function RightsHolderSignup() {
     setError(null);
 
     try {
-             const rightsHolderData = {
-         rights_holder_type: formData.rightsHolderType,
-         company_name: formData.companyName,
-         legal_entity_name: formData.legalEntityName,
-         business_structure: formData.businessStructure,
-         website: formData.website || null,
-         phone: formData.phone,
-         address_line_1: formData.addressLine1,
-         city: formData.city,
-         state: formData.state,
-         postal_code: formData.postalCode,
-         country: formData.country,
-         terms_accepted: true,
-         terms_accepted_at: new Date().toISOString(),
-         rights_authority_declaration_accepted: true,
-         rights_authority_declaration_accepted_at: new Date().toISOString(),
-       };
+      const rightsHolderData = {
+        rights_holder_type: formData.rightsHolderType,
+        company_name: formData.companyName,
+        legal_entity_name: formData.legalEntityName,
+        business_structure: formData.businessStructure,
+        website: formData.website || null,
+        phone: formData.phone,
+        address_line_1: formData.addressLine1,
+        city: formData.city,
+        state: formData.state,
+        postal_code: formData.postalCode,
+        country: formData.country,
+        terms_accepted: true,
+        terms_accepted_at: new Date().toISOString(),
+        rights_authority_declaration_accepted: true,
+        rights_authority_declaration_accepted_at: new Date().toISOString(),
+      };
+
+      console.log('📋 Rights holder data to send:', rightsHolderData);
+      console.log('📧 Email:', formData.email);
+      console.log('🔑 Password length:', formData.password.length);
 
       const { error } = await signUpRightsHolder(formData.email, formData.password, rightsHolderData);
 
+      console.log('📤 SignUpRightsHolder result:', { error });
+
       if (error) {
+        console.error('❌ SignUpRightsHolder error:', error);
         setError(error.message || 'Signup failed. Please try again.');
       } else {
+        console.log('✅ SignUpRightsHolder successful');
         setSuccess(true);
         setTimeout(() => {
           navigate('/rights-holder/awaiting-approval');
         }, 2000);
       }
     } catch (err: any) {
+      console.error('❌ Unexpected error in handleSubmit:', err);
       setError(err.message || 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
