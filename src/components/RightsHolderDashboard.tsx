@@ -92,6 +92,7 @@ interface CustomSyncRequest {
   sub_genres: string[];
   status: string;
   selected_producer_id?: string;
+  selected_rights_holder_id?: string;
   created_at: string;
   updated_at: string;
   client: {
@@ -376,12 +377,13 @@ export function RightsHolderDashboard() {
     try {
       setCustomSyncRequestsLoading(true);
       
-      // For rights holders, show all open requests that haven't expired
-      // This allows them to see requests they can potentially submit proposals to
+      // For rights holders, show requests that are either:
+      // 1. Open to all rights holders (no specific rights holder selected)
+      // 2. Specifically assigned to this rights holder
       
       const currentDate = new Date().toISOString();
       
-      // Fetch all open requests that haven't expired
+      // Fetch open requests that haven't expired and are either open to all or assigned to this rights holder
       const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
@@ -395,6 +397,7 @@ export function RightsHolderDashboard() {
         `)
         .eq('status', 'open')
         .gte('end_date', currentDate)
+        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .order('created_at', { ascending: false });
       
       if (requestsError) {
@@ -412,7 +415,8 @@ export function RightsHolderDashboard() {
     }
   };
 
-  // Fetch completed custom sync requests where this rights holder is the selected rights holder
+  // Fetch completed custom sync requests for rights holders
+  // Show requests where this rights holder was selected or all completed requests
   const fetchCompletedCustomSyncRequests = async () => {
     if (!user) return;
     
@@ -428,7 +432,7 @@ export function RightsHolderDashboard() {
             email
           )
         `)
-        .eq('selected_rights_holder_id', user.id)
+        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .in('status', ['completed', 'paid'])
         .order('updated_at', { ascending: false });
 
