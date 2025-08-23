@@ -72,8 +72,33 @@ export function RightsHolderProtectedRoute({
     );
   }
 
-  if (profile.verification_status === 'pending') {
+  // Check for pending verification status
+  if (profile.verification_status === 'pending' || profile.verification_status === null || profile.verification_status === undefined) {
+    console.log('Rights holder verification status:', profile.verification_status, '- showing awaiting approval page');
     return <RightsHolderAwaitingApproval />;
+  }
+
+  // Check for rejected verification status
+  if (profile.verification_status === 'rejected') {
+    return (
+      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">Application Rejected</h2>
+            <p className="text-gray-300 mb-6">
+              Your rights holder application has been rejected. Please contact support for more information.
+            </p>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!profile.terms_accepted || !profile.rights_authority_declaration_accepted) {
