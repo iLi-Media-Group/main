@@ -423,7 +423,6 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
            
            return { error };
          }
-       }
 
     return { error: null };
   };
