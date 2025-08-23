@@ -49,7 +49,7 @@ export function RightsHolderProtectedRoute({
   }
 
   // Check if user is a rights holder
-  if (!profile || accountType !== 'rights_holder') {
+  if (!profile || !accountType || !accountType.includes('rights_holder')) {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
