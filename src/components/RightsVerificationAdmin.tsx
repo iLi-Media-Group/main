@@ -134,6 +134,7 @@ export function RightsVerificationAdmin() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<RightsHolder | MasterRecording | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [reviewNotes, setReviewNotes] = useState('');
   const [reviewAction, setReviewAction] = useState<'approve' | 'reject'>('approve');
 
@@ -557,7 +558,10 @@ export function RightsVerificationAdmin() {
                 {/* Actions */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSelectedItem(rightsHolder)}
+                    onClick={() => {
+                      setSelectedItem(rightsHolder);
+                      setShowDetailsModal(true);
+                    }}
                     className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm"
                   >
                     <Eye className="w-4 h-4 mr-1" />
@@ -639,7 +643,10 @@ export function RightsVerificationAdmin() {
                 {/* Actions */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setSelectedItem(recording)}
+                    onClick={() => {
+                      setSelectedItem(recording);
+                      setShowDetailsModal(true);
+                    }}
                     className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center text-sm"
                   >
                     <Eye className="w-4 h-4 mr-1" />
@@ -691,6 +698,385 @@ export function RightsVerificationAdmin() {
                 : `No ${activeTab === 'rights-holders' ? 'rights holders' : 'recordings'} to review`
               }
             </p>
+          </div>
+        )}
+
+        {/* Details Modal */}
+        {showDetailsModal && selectedItem && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">
+                  {activeTab === 'rights-holders' ? 'Rights Holder Details' : 'Recording Details'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedItem(null);
+                  }}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {activeTab === 'rights-holders' ? (
+                // Rights Holder Details
+                <div className="space-y-6">
+                  {(() => {
+                    const rightsHolder = selectedItem as RightsHolder;
+                    return (
+                      <>
+                        {/* Basic Information */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Building2 className="w-5 h-5 mr-2" />
+                            Basic Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Company Name</label>
+                              <p className="text-white">{rightsHolder.company_name}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                              <p className="text-white">{rightsHolder.email}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Rights Holder Type</label>
+                              <p className="text-white capitalize">{rightsHolder.rights_holder_type.replace('_', ' ')}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Verification Status</label>
+                              <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(rightsHolder.verification_status)}`}>
+                                {getStatusIcon(rightsHolder.verification_status)}
+                                <span className="ml-1">{rightsHolder.verification_status}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Legal Entity Name</label>
+                              <p className="text-white">{rightsHolder.legal_entity_name || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Business Structure</label>
+                              <p className="text-white">{rightsHolder.business_structure || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Tax ID</label>
+                              <p className="text-white">{rightsHolder.tax_id || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Website</label>
+                              <p className="text-white">
+                                {rightsHolder.website ? (
+                                  <a href={rightsHolder.website} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                                    {rightsHolder.website}
+                                  </a>
+                                ) : 'Not provided'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Contact Information */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Users className="w-5 h-5 mr-2" />
+                            Contact Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Contact Person</label>
+                              <p className="text-white">{rightsHolder.contact_person_name || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Contact Title</label>
+                              <p className="text-white">{rightsHolder.contact_person_title || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Contact Email</label>
+                              <p className="text-white">{rightsHolder.contact_person_email || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Contact Phone</label>
+                              <p className="text-white">{rightsHolder.contact_person_phone || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Company Phone</label>
+                              <p className="text-white">{rightsHolder.phone || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Emergency Contact</label>
+                              <p className="text-white">{rightsHolder.emergency_contact_name || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Address Information */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <MapPin className="w-5 h-5 mr-2" />
+                            Address Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                              <p className="text-white">{rightsHolder.address_line_1 || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">City</label>
+                              <p className="text-white">{rightsHolder.city || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">State</label>
+                              <p className="text-white">{rightsHolder.state || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Postal Code</label>
+                              <p className="text-white">{rightsHolder.postal_code || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Country</label>
+                              <p className="text-white">{rightsHolder.country}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Business Information */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <TrendingUp className="w-5 h-5 mr-2" />
+                            Business Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Years in Business</label>
+                              <p className="text-white">{rightsHolder.years_in_business || 'Not provided'}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Genres Specialty</label>
+                              <p className="text-white">
+                                {rightsHolder.genres_specialty && rightsHolder.genres_specialty.length > 0 
+                                  ? rightsHolder.genres_specialty.join(', ') 
+                                  : 'Not provided'}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">PRO Affiliations</label>
+                              <p className="text-white">
+                                {rightsHolder.pro_affiliations && rightsHolder.pro_affiliations.length > 0 
+                                  ? rightsHolder.pro_affiliations.join(', ') 
+                                  : 'Not provided'}
+                              </p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                              <p className="text-white">{rightsHolder.description || 'Not provided'}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Account Status */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Settings className="w-5 h-5 mr-2" />
+                            Account Status
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Terms Accepted</label>
+                              <div className="flex items-center">
+                                {rightsHolder.terms_accepted ? (
+                                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-400 mr-2" />
+                                )}
+                                <span className={rightsHolder.terms_accepted ? 'text-green-400' : 'text-red-400'}>
+                                  {rightsHolder.terms_accepted ? 'Yes' : 'No'}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Rights Declaration</label>
+                              <div className="flex items-center">
+                                {rightsHolder.rights_authority_declaration_accepted ? (
+                                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-400 mr-2" />
+                                )}
+                                <span className={rightsHolder.rights_authority_declaration_accepted ? 'text-green-400' : 'text-red-400'}>
+                                  {rightsHolder.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Account Active</label>
+                              <div className="flex items-center">
+                                {rightsHolder.is_active ? (
+                                  <CheckCircle className="w-4 h-4 text-green-400 mr-2" />
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-400 mr-2" />
+                                )}
+                                <span className={rightsHolder.is_active ? 'text-green-400' : 'text-red-400'}>
+                                  {rightsHolder.is_active ? 'Yes' : 'No'}
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Created Date</label>
+                              <p className="text-white">{new Date(rightsHolder.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Verification Notes */}
+                        {rightsHolder.verification_notes && (
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                              <FileText className="w-5 h-5 mr-2" />
+                              Verification Notes
+                            </h3>
+                            <p className="text-white">{rightsHolder.verification_notes}</p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                // Recording Details
+                <div className="space-y-6">
+                  {(() => {
+                    const recording = selectedItem as MasterRecording;
+                    return (
+                      <>
+                        {/* Basic Information */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Music className="w-5 h-5 mr-2" />
+                            Basic Information
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Title</label>
+                              <p className="text-white">{recording.title}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Artist</label>
+                              <p className="text-white">{recording.artist}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Genre</label>
+                              <p className="text-white">{recording.genre}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Mood</label>
+                              <p className="text-white">{recording.mood}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">BPM</label>
+                              <p className="text-white">{recording.bpm}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Key</label>
+                              <p className="text-white">{recording.key}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Duration</label>
+                              <p className="text-white">{Math.floor(recording.duration / 60)}:{(recording.duration % 60).toString().padStart(2, '0')}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Rights Holder</label>
+                              <p className="text-white">{recording.rights_holder?.company_name}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        {recording.description && (
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                              <FileText className="w-5 h-5 mr-2" />
+                              Description
+                            </h3>
+                            <p className="text-white">{recording.description}</p>
+                          </div>
+                        )}
+
+                        {/* Audio Preview */}
+                        {recording.audio_url && (
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                              <Music className="w-5 h-5 mr-2" />
+                              Audio Preview
+                            </h3>
+                            <audio controls className="w-full">
+                              <source src={recording.audio_url} type="audio/mpeg" />
+                              Your browser does not support the audio element.
+                            </audio>
+                          </div>
+                        )}
+
+                        {/* Verification Status */}
+                        <div className="bg-white/5 rounded-lg p-4">
+                          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                            <Shield className="w-5 h-5 mr-2" />
+                            Verification Status
+                          </h3>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Rights Verification</label>
+                              <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(recording.rights_verification_status)}`}>
+                                {getStatusIcon(recording.rights_verification_status)}
+                                <span className="ml-1">{recording.rights_verification_status}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Admin Review</label>
+                              <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(recording.admin_review_status)}`}>
+                                {getStatusIcon(recording.admin_review_status)}
+                                <span className="ml-1">{recording.admin_review_status}</span>
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Created Date</label>
+                              <p className="text-white">{new Date(recording.created_at).toLocaleDateString()}</p>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1">Last Updated</label>
+                              <p className="text-white">{new Date(recording.updated_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Admin Review Notes */}
+                        {recording.admin_review_notes && (
+                          <div className="bg-white/5 rounded-lg p-4">
+                            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+                              <FileText className="w-5 h-5 mr-2" />
+                              Admin Review Notes
+                            </h3>
+                            <p className="text-white">{recording.admin_review_notes}</p>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              <div className="flex justify-end mt-6">
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedItem(null);
+                  }}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
