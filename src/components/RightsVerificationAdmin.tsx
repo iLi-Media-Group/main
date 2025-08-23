@@ -585,18 +585,30 @@ export function RightsVerificationAdmin() {
                     <Eye className="w-4 h-4 mr-1" />
                     View Details
                   </button>
-                  {rightsHolder.verification_status === 'pending' && (
-                    <button
-                      onClick={() => {
-                        setSelectedItem(rightsHolder);
-                        setReviewAction('approve');
-                        setShowReviewModal(true);
-                      }}
-                      className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                    </button>
-                  )}
+                                     {rightsHolder.verification_status === 'pending' && (
+                     <>
+                       <button
+                         onClick={() => {
+                           setSelectedItem(rightsHolder);
+                           setReviewAction('approve');
+                           setShowReviewModal(true);
+                         }}
+                         className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                       >
+                         <CheckCircle className="w-4 h-4" />
+                       </button>
+                       <button
+                         onClick={() => {
+                           setSelectedItem(rightsHolder);
+                           setReviewAction('reject');
+                           setShowReviewModal(true);
+                         }}
+                         className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                       >
+                         <XCircle className="w-4 h-4" />
+                       </button>
+                     </>
+                   )}
                 </div>
 
                 {/* Date */}
