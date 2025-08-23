@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, AlertCircle, Clock, FileText } from 'lucide-react';
+import { RightsHolderAwaitingApproval } from './RightsHolderAwaitingApproval';
 
 interface RightsHolderProtectedRouteProps {
   children: React.ReactNode;
@@ -72,25 +73,7 @@ export function RightsHolderProtectedRoute({
   }
 
   if (profile.verification_status === 'pending') {
-    return (
-      <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
-        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
-          <div className="text-center">
-            <Clock className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">Account Pending Verification</h2>
-            <p className="text-gray-300 mb-6">
-              Your rights holder account is pending verification. You'll be notified once it's approved.
-            </p>
-            <button
-              onClick={signOut}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <RightsHolderAwaitingApproval />;
   }
 
   if (!profile.terms_accepted || !profile.rights_authority_declaration_accepted) {

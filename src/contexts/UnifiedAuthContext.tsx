@@ -312,6 +312,35 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
           console.error('Error creating rights holder:', insertError);
           return { error: insertError };
         }
+
+        // Send notification email to admin about new rights holder application
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-new-rights-holder-notification', {
+            body: {
+              rightsHolderEmail: email,
+              rightsHolderName: rightsHolderData.company_name || rightsHolderData.legal_entity_name || 'Rights Holder',
+              companyName: rightsHolderData.company_name,
+              rightsHolderType: rightsHolderData.rights_holder_type,
+              businessStructure: rightsHolderData.business_structure,
+              phone: rightsHolderData.phone,
+              address: [
+                rightsHolderData.address_line_1,
+                rightsHolderData.city,
+                rightsHolderData.state,
+                rightsHolderData.postal_code,
+                rightsHolderData.country
+              ].filter(Boolean).join(', ')
+            }
+          });
+
+          if (emailError) {
+            console.error('Error sending notification email:', emailError);
+            // Don't return error here as the account was created successfully
+          }
+        } catch (emailErr) {
+          console.error('Error calling notification email function:', emailErr);
+          // Don't return error here as the account was created successfully
+        }
       } catch (error) {
         console.error('Error creating rights holder:', error);
         return { error };

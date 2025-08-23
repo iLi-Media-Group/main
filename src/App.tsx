@@ -98,6 +98,7 @@ import { RightsHolderESignatures } from './components/RightsHolderESignatures';
 import { RightsHolderLicensing } from './components/RightsHolderLicensing';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
+import { RightsHolderAwaitingApproval } from './components/RightsHolderAwaitingApproval';
 import { SyncProposalDialog } from './components/SyncProposalDialog';
 import { RightsHolderSyncProposalDialog } from './components/RightsHolderSyncProposalDialog';
 import { SyncProposalsPage } from './components/SyncProposalsPage';
@@ -674,6 +675,7 @@ const App = () => {
           </ProtectedRoute>
         } />
         <Route path="/rights-holder/test" element={<RightsHolderTest />} />
+        <Route path="/rights-holder/awaiting-approval" element={<RightsHolderAwaitingApproval />} />
 
         {/* Rights Holder Sync Proposals */}
               <Route path="/sync-proposal/:id" element={

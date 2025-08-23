@@ -218,8 +218,8 @@ export function RightsVerificationAdmin() {
   };
 
   const handleReview = async () => {
-    if (!selectedItem || !reviewNotes.trim()) {
-      alert('Please provide review notes');
+    if (!selectedItem) {
+      alert('Please select an item to review');
       return;
     }
 
@@ -239,14 +239,24 @@ export function RightsVerificationAdmin() {
 
         if (updateError) throw updateError;
 
-        // Send email notification
-        await sendVerificationEmail(
-          rightsHolder.email,
-          rightsHolder.company_name,
-          rightsHolder.rights_holder_type,
-          newStatus as 'verified' | 'rejected',
-          reviewNotes
-        );
+        // Send approval/denial email using new Edge Function
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-rights-holder-approval-email', {
+            body: {
+              rightsHolderEmail: rightsHolder.email,
+              rightsHolderName: rightsHolder.company_name || rightsHolder.legal_entity_name || 'Rights Holder',
+              companyName: rightsHolder.company_name,
+              approvalStatus: newStatus,
+              adminNotes: reviewNotes
+            }
+          });
+
+          if (emailError) {
+            console.error('Error sending approval email:', emailError);
+          }
+        } catch (emailErr) {
+          console.error('Error calling approval email function:', emailErr);
+        }
       } else {
         const recording = selectedItem as MasterRecording;
         const newStatus = reviewAction === 'approve' ? 'verified' : 'rejected';
