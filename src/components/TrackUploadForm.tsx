@@ -2217,7 +2217,6 @@ export function TrackUploadForm() {
               </div>
             </div>
           )}
-          )}
 
           {/* Step 6: Co-signers */}
           {currentStep === 6 && (
