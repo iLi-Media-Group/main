@@ -419,7 +419,10 @@ export function CatalogPage() {
       }
 
       if (filters?.excludeUnclearedSamples === true) {
-        query = query.eq('samples_cleared', true);
+        // Exclude tracks that contain uncleared samples, loops, or Splice loops
+        query = query.eq('contains_samples', false)
+                    .eq('contains_loops', false)
+                    .eq('contains_splice_loops', false);
       }
 
       if (filters?.minBpm !== undefined) {

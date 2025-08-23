@@ -447,6 +447,42 @@ export function TrackPage() {
                     samplesCleared={track.samplesCleared || false}
                     className="mt-4"
                   />
+
+                  {/* Sample Clearance Information */}
+                  {(track.containsLoops || track.containsSamples || track.containsSpliceLoops) && (
+                    <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-blue-300 mb-2">
+                            Sample Clearance Information
+                          </h4>
+                          <div className="space-y-1 text-sm text-blue-200/90">
+                            {track.containsLoops && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains loops
+                              </div>
+                            )}
+                            {track.containsSamples && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains samples {track.samplesCleared && <span className="text-green-400 ml-1">(Cleared)</span>}
+                              </div>
+                            )}
+                            {track.containsSpliceLoops && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains Splice loops
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Sample Clearance Notes */}
                   {track.sampleClearanceNotes && (
