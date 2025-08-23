@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
@@ -103,6 +103,7 @@ interface CustomSyncRequest {
 
 export function RightsHolderDashboard() {
   const { user, profile } = useUnifiedAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalRecordings: 0,
     pendingVerifications: 0,
@@ -120,6 +121,8 @@ export function RightsHolderDashboard() {
   // Custom Sync Requests state
   const [customSyncRequests, setCustomSyncRequests] = useState<CustomSyncRequest[]>([]);
   const [customSyncRequestsLoading, setCustomSyncRequestsLoading] = useState(false);
+  const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
+  const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
 
   // Proposal action state
   const [selectedProposal, setSelectedProposal] = useState<SyncProposal | null>(null);
@@ -232,6 +235,9 @@ export function RightsHolderDashboard() {
       
       // Fetch custom sync requests
       await fetchCustomSyncRequests();
+      
+      // Fetch completed custom sync requests
+      await fetchCompletedCustomSyncRequests();
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -403,6 +409,44 @@ export function RightsHolderDashboard() {
       setCustomSyncRequests([]);
     } finally {
       setCustomSyncRequestsLoading(false);
+    }
+  };
+
+  // Fetch completed custom sync requests where this rights holder is the selected rights holder
+  const fetchCompletedCustomSyncRequests = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
+        .from('custom_sync_requests')
+        .select(`
+          *,
+          client:profiles!custom_sync_requests_client_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .eq('selected_rights_holder_id', user.id)
+        .in('status', ['completed', 'paid'])
+        .order('updated_at', { ascending: false });
+
+      if (customSyncError) {
+        console.error('Error fetching completed custom sync requests:', customSyncError);
+        return;
+      }
+
+      // Transform the data to handle nested arrays
+      const flattenedCustomSyncs = (completedCustomSyncRequestsData || []).map((req: any) => ({
+        ...req,
+        client: Array.isArray(req.client) ? req.client[0] : req.client,
+      }));
+
+      setCompletedCustomSyncRequests(flattenedCustomSyncs);
+    } catch (error) {
+      console.error('Error fetching completed custom sync requests:', error);
+      setCompletedCustomSyncRequests([]);
     }
   };
 
@@ -1135,77 +1179,132 @@ export function RightsHolderDashboard() {
             </div>
 
             {/* Custom Sync Requests Section */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">Custom Sync Requests</h3>
-                  <p className="text-gray-400 text-sm">Manage custom sync licensing requests</p>
-                </div>
+            <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors p-6">
+              <div className="flex items-center mb-6">
                 <button
-                  onClick={fetchCustomSyncRequests}
-                  disabled={customSyncRequestsLoading}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg transition-colors flex items-center"
+                  className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+                  onClick={() => setCustomSyncTab('open')}
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${customSyncRequestsLoading ? 'animate-spin' : ''}`} />
-                  Refresh
+                  Open Custom Sync Requests
+                </button>
+                <button
+                  className={`ml-2 px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'completed' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+                  onClick={() => setCustomSyncTab('completed')}
+                >
+                  Completed Custom Syncs (Paid)
                 </button>
               </div>
-
-              {customSyncRequestsLoading ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-400">Loading custom sync requests...</p>
-                </div>
-              ) : customSyncRequests.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No custom sync requests yet</p>
-                  <p className="text-sm text-gray-500 mt-1">Create a request to get started</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {customSyncRequests.slice(0, 5).map((request) => (
-                    <div
-                      key={request.id}
-                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-white">{request.project_title}</h4>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(request.status)}`}>
-                            {getProposalStatusIcon(request.status)}
-                            <span className="ml-1">{request.status}</span>
+              <div className="bg-blue-900/60 rounded-b-lg p-4">
+                {customSyncTab === 'open' ? (
+                  customSyncRequestsLoading ? (
+                    <div className="text-blue-300">Loading...</div>
+                  ) : customSyncRequests.length === 0 ? (
+                    <div className="text-gray-400">No open custom sync requests at this time.</div>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto space-y-4">
+                      {customSyncRequests.map((req) => (
+                        <div key={req.id} className="bg-blue-800/80 border border-blue-500/40 rounded-xl p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                          <div className="flex-1">
+                            <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                            <div className="text-gray-300 mb-1">{req.project_description}</div>
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                              <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                              <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
+                              <span><strong>Genre:</strong> {req.genre}</span>
+                              <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                            </div>
+                          </div>
+                          <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
+                            <Link
+                              to={`/rights-holder-sync-submission?requestId=${req.id}`}
+                              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
+                            >
+                              Submit Track
+                            </Link>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-400">
-                          {request.client.first_name} {request.client.last_name} • ${request.sync_fee} • {request.genre}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatDate(request.created_at)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/custom-sync-request/${request.id}`}
-                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
-                        >
-                          View Details
-                        </Link>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                  {customSyncRequests.length > 5 && (
-                    <div className="text-center pt-4">
-                      <Link
-                        to="/custom-sync-requests"
-                        className="text-blue-400 hover:text-blue-300 text-sm"
-                      >
-                        View all {customSyncRequests.length} requests
-                      </Link>
+                  )
+                ) : (
+                  completedCustomSyncRequests.length === 0 ? (
+                    <div className="text-gray-400">No completed custom syncs yet.</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {completedCustomSyncRequests.map((req) => {
+                        const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
+                        const client = req.client;
+                        const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email : 'Unknown Client';
+                        
+                        return (
+                          <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div className="flex-1">
+                                <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                                <div className="text-gray-300 mb-1">{req.project_description}</div>
+                                <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                                  <span><strong>Client:</strong> {clientName}</span>
+                                  <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                                  <span><strong>Final Amount:</strong> ${req.final_amount?.toFixed(2) || req.sync_fee?.toFixed(2)}</span>
+                                  <span><strong>Genre:</strong> {req.genre}</span>
+                                  <span><strong>Status:</strong> {req.status}</span>
+                                  <span><strong>Payment Status:</strong> <span className="text-green-400">{req.payment_status}</span></span>
+                                </div>
+                                <div className="text-xs text-gray-400 mt-1">
+                                  <span><strong>Completed:</strong> {new Date(req.updated_at || req.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                              <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
+                                <div className="flex flex-col gap-2">
+                                  <div className="space-y-1">
+                                    {req.mp3_url && (
+                                      <div className="flex items-center text-green-400 text-sm">
+                                        <Check className="w-4 h-4 mr-2" />
+                                        <span>MP3 File</span>
+                                      </div>
+                                    )}
+                                    {req.trackouts_url && (
+                                      <div className="flex items-center text-green-400 text-sm">
+                                        <Check className="w-4 h-4 mr-2" />
+                                        <span>Trackouts ZIP</span>
+                                      </div>
+                                    )}
+                                    {req.stems_url && (
+                                      <div className="flex items-center text-green-400 text-sm">
+                                        <Check className="w-4 h-4 mr-2" />
+                                        <span>Stems ZIP</span>
+                                      </div>
+                                    )}
+                                    {req.split_sheet_url && (
+                                      <div className="flex items-center text-green-400 text-sm">
+                                        <Check className="w-4 h-4 mr-2" />
+                                        <span>Split Sheet PDF</span>
+                                      </div>
+                                    )}
+                                    {!req.mp3_url && !req.trackouts_url && !req.stems_url && !req.split_sheet_url && (
+                                      <div className="flex items-center text-gray-400 text-sm">
+                                        <AlertCircle className="w-4 h-4 mr-2" />
+                                        <span>No files uploaded</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={() => navigate(`/rights-holder/custom-sync-upload?requestId=${req.id}`)}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                                  >
+                                    <Upload className="w-5 h-5 mr-2" />
+                                    {allFilesUploaded ? 'Re-upload Files' : 'Upload Files'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              )}
+                  )
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -63,12 +63,7 @@ interface RightsHolder {
   rights_authority_declaration_accepted: boolean;
   created_at: string;
   updated_at: string;
-  profile?: RightsHolderProfile;
-}
-
-interface RightsHolderProfile {
-  id: string;
-  rights_holder_id: string;
+  // Profile fields that were previously in rights_holder_profiles
   contact_person_name?: string;
   contact_person_title?: string;
   contact_person_email?: string;
@@ -154,13 +149,11 @@ export function RightsVerificationAdmin() {
     try {
       console.log('Fetching rights verification data...');
       
-      // Fetch rights holders with profiles
+      // Fetch rights holders from profiles table (consolidated structure)
       const { data: rightsHoldersData, error: rightsHoldersError } = await supabase
-        .from('rights_holders')
-        .select(`
-          *,
-          profile:rights_holder_profiles(*)
-        `)
+        .from('profiles')
+        .select('*')
+        .eq('account_type', 'rights_holder')
         .order('created_at', { ascending: false });
 
       console.log('Rights holders query result:', { data: rightsHoldersData, error: rightsHoldersError });
@@ -170,20 +163,32 @@ export function RightsVerificationAdmin() {
         throw rightsHoldersError;
       }
 
-      // Fetch master recordings with rights holder info
-      const { data: recordingsData, error: recordingsError } = await supabase
-        .from('master_recordings')
-        .select(`
-          *,
-          rights_holder:rights_holders(*)
-        `)
-        .order('created_at', { ascending: false });
+      // Fetch master recordings with rights holder info (handle case where table might not exist)
+      let recordingsData = [];
+      let recordingsError = null;
+      
+      try {
+        const { data, error } = await supabase
+          .from('master_recordings')
+          .select(`
+            *,
+            rights_holder:profiles(*)
+          `)
+          .order('created_at', { ascending: false });
+        
+        recordingsData = data || [];
+        recordingsError = error;
+      } catch (err) {
+        console.log('master_recordings table may not exist yet, using empty array');
+        recordingsData = [];
+        recordingsError = null;
+      }
 
       console.log('Master recordings query result:', { data: recordingsData, error: recordingsError });
 
       if (recordingsError) {
         console.error('Master recordings error:', recordingsError);
-        throw recordingsError;
+        // Don't throw error for recordings, just log it
       }
 
       setRightsHolders(rightsHoldersData || []);
@@ -223,7 +228,7 @@ export function RightsVerificationAdmin() {
         const newStatus = reviewAction === 'approve' ? 'verified' : 'rejected';
         
         const { error: updateError } = await supabase
-          .from('rights_holders')
+          .from('profiles')
           .update({
             verification_status: newStatus,
             verification_notes: reviewNotes,
