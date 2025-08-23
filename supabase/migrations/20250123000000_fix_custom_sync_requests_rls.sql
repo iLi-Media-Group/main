@@ -1,10 +1,22 @@
 -- Fix RLS policies for custom_sync_requests table
 -- This allows rights holders to see open custom sync requests
 
--- Drop existing policies
+-- Drop ALL existing policies to start fresh
 DROP POLICY IF EXISTS "Producers and Rights Holders can view selected requests" ON custom_sync_requests;
 DROP POLICY IF EXISTS "Producers and Rights Holders can view open requests" ON custom_sync_requests;
 DROP POLICY IF EXISTS "Rights Holders can update selected requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Allow rights holders to view open requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Allow producers to view selected requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Allow rights holders to update selected requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Rights holders can view relevant requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Producers can view relevant requests" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Custom sync requests visibility" ON custom_sync_requests;
+
+-- Drop the overly permissive policies that are causing conflicts
+DROP POLICY IF EXISTS "Enable read access for all users" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Enable update for users based on user_id" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Enable delete for users based on user_id" ON custom_sync_requests;
 
 -- Create unified policy for both producers and rights holders
 -- Logic:

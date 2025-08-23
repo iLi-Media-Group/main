@@ -223,6 +223,45 @@ CREATE POLICY "sync_proposal_history_delete_policy" ON sync_proposal_history
         )
     );
 
+-- Fix RLS policy to match the exact query logic from Rights Holder Dashboard
+-- The dashboard uses: .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
+
+-- Drop existing policies
+DROP POLICY IF EXISTS "Custom sync requests visibility" ON custom_sync_requests;
+DROP POLICY IF EXISTS "Allow rights holders to update selected requests" ON custom_sync_requests;
+
+-- Create simple policy that matches the dashboard query exactly
+CREATE POLICY "Rights holders can view custom sync requests" ON custom_sync_requests
+    FOR SELECT USING (
+        status = 'open' AND 
+        end_date >= NOW() AND
+        (auth.uid() = selected_rights_holder_id OR selected_rights_holder_id IS NULL)
+    );
+
+-- Create policy for producers (similar logic)
+CREATE POLICY "Producers can view custom sync requests" ON custom_sync_requests
+    FOR SELECT USING (
+        status = 'open' AND 
+        end_date >= NOW() AND
+        (auth.uid() = selected_producer_id OR selected_producer_id IS NULL)
+    );
+
+-- Create policy for rights holders to update requests where they are selected
+CREATE POLICY "Rights holders can update selected requests" ON custom_sync_requests
+    FOR UPDATE USING (
+        auth.uid() = selected_rights_holder_id
+    );
+
+-- Verify the policies
+SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual 
+FROM pg_policies 
+WHERE tablename = 'custom_sync_requests';
+
+-- Test the exact query that should work now
+SELECT COUNT(*) as open_requests_count 
+FROM custom_sync_requests 
+WHERE status = 'open' AND end_date >= NOW();
+
 -- Verify RLS is enabled on all tables
 SELECT 
     schemaname,
