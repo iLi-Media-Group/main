@@ -22,7 +22,10 @@ import {
   Plus,
   Search,
   Filter,
-  RefreshCw
+  RefreshCw,
+  X,
+  Check,
+  Eye
 } from 'lucide-react';
 
 interface DashboardStats {
@@ -96,7 +99,7 @@ interface CustomSyncRequest {
 }
 
 export function RightsHolderDashboard() {
-  const { user, rightsHolder, rightsHolderProfile } = useUnifiedAuth();
+  const { user, profile } = useUnifiedAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalRecordings: 0,
     pendingVerifications: 0,
@@ -109,6 +112,7 @@ export function RightsHolderDashboard() {
   // Sync Proposals state
   const [syncProposals, setSyncProposals] = useState<SyncProposal[]>([]);
   const [syncProposalsLoading, setSyncProposalsLoading] = useState(false);
+  const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'paid' | 'declined'>('pending');
   
   // Custom Sync Requests state
   const [customSyncRequests, setCustomSyncRequests] = useState<CustomSyncRequest[]>([]);
@@ -332,7 +336,14 @@ export function RightsHolderDashboard() {
       
       if (proposalsError) throw proposalsError;
       
-      setSyncProposals(proposalsData || []);
+      // Transform the data to match the expected structure
+      const transformedData = (proposalsData || []).map((proposal: any) => ({
+        ...proposal,
+        client: Array.isArray(proposal.client) ? proposal.client[0] : proposal.client,
+        track: Array.isArray(proposal.track) ? proposal.track[0] : proposal.track,
+      }));
+      
+      setSyncProposals(transformedData);
     } catch (error) {
       console.error('Error fetching sync proposals:', error);
       setSyncProposals([]);
@@ -402,6 +413,78 @@ export function RightsHolderDashboard() {
     }
   };
 
+  // Filter sync proposals by status
+  const filteredPendingProposals = syncProposals.filter(p =>
+    (p.status === 'pending' || 
+    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+    p.producer_status !== 'rejected' && 
+    p.client_status !== 'rejected'
+  );
+
+  const filteredAcceptedProposals = syncProposals.filter(p =>
+    p.producer_status === 'accepted' && p.client_status === 'accepted' && p.payment_status !== 'paid'
+  );
+
+  const filteredPaidProposals = syncProposals.filter(
+    p => p.payment_status === 'paid'
+  );
+
+  const filteredDeclinedProposals = syncProposals.filter(p =>
+    p.producer_status === 'rejected' || p.client_status === 'rejected'
+  );
+
+  // Calculate payment due date based on payment terms and acceptance date
+  const calculatePaymentDueDate = (paymentTerms: string, acceptanceDate: string): Date => {
+    const acceptance = new Date(acceptanceDate);
+    
+    switch (paymentTerms) {
+      case 'immediate':
+        return acceptance; // Same day
+      case 'net30':
+        return new Date(acceptance.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+      case 'net60':
+        return new Date(acceptance.getTime() + (60 * 24 * 60 * 60 * 1000)); // 60 days
+      case 'net90':
+        return new Date(acceptance.getTime() + (90 * 24 * 60 * 60 * 1000)); // 90 days
+      default:
+        return acceptance; // Default to immediate
+    }
+  };
+
+  // Get payment terms display text
+  const getPaymentTermsDisplay = (paymentTerms: string): string => {
+    switch (paymentTerms) {
+      case 'immediate':
+        return 'Immediate';
+      case 'net30':
+        return 'Net 30';
+      case 'net60':
+        return 'Net 60';
+      case 'net90':
+        return 'Net 90';
+      default:
+        return 'Immediate';
+    }
+  };
+
+  // Add a helper to determine if a proposal has a pending action
+  const hasPendingAction = (proposal: SyncProposal, userId: string): boolean => {
+    // Show badge if proposal has a message from someone else that hasn't been responded to
+    const hasNewMessage = !!(
+      proposal.last_message_sender_id && 
+      proposal.last_message_sender_id !== userId &&
+      proposal.last_message_at
+    );
+
+    // Show badge if there's a counter offer that needs acceptance
+    const hasCounterOffer = proposal.negotiation_status === 'client_acceptance_required';
+
+    // Show badge if there's a pending negotiation that requires response
+    const needsResponse = proposal.negotiation_status === 'negotiating' && hasNewMessage;
+
+    return hasNewMessage && (hasCounterOffer || needsResponse);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
@@ -421,10 +504,10 @@ export function RightsHolderDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Welcome back, {rightsHolder?.company_name}
+                Welcome back, {profile?.company_name}
               </h1>
               <p className="text-gray-300 mt-1">
-                {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
+                {profile?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -618,7 +701,10 @@ export function RightsHolderDashboard() {
             <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Sync Proposals</h3>
+                  <h3 className="text-lg font-semibold text-white flex items-center">
+                    <FileText className="w-5 h-5 mr-2 text-yellow-400" />
+                    Sync Proposals
+                  </h3>
                   <p className="text-gray-400 text-sm">Manage sync licensing proposals for your tracks</p>
                 </div>
                 <button
@@ -630,60 +716,307 @@ export function RightsHolderDashboard() {
                   Refresh
                 </button>
               </div>
+              
+              {/* Tab Navigation */}
+              <div className="flex space-x-1 mb-4 bg-white/5 rounded-lg p-1">
+                <button
+                  onClick={() => setProposalsTab('pending')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    proposalsTab === 'pending'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Pending/Active ({filteredPendingProposals.length})
+                </button>
+                <button
+                  onClick={() => setProposalsTab('accepted')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    proposalsTab === 'accepted'
+                      ? 'bg-green-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Accepted ({filteredAcceptedProposals.length})
+                </button>
+                <button
+                  onClick={() => setProposalsTab('paid')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    proposalsTab === 'paid'
+                      ? 'bg-purple-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Paid ({filteredPaidProposals.length})
+                </button>
+                <button
+                  onClick={() => setProposalsTab('declined')}
+                  className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                    proposalsTab === 'declined'
+                      ? 'bg-red-600 text-white'
+                      : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Declined ({filteredDeclinedProposals.length})
+                </button>
+              </div>
 
-              {syncProposalsLoading ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-4" />
-                  <p className="text-gray-400">Loading sync proposals...</p>
-                </div>
-              ) : syncProposals.length === 0 ? (
-                <div className="text-center py-8">
-                  <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-400">No sync proposals yet</p>
-                  <p className="text-sm text-gray-500 mt-1">Proposals will appear here when clients request your tracks</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {syncProposals.slice(0, 5).map((proposal) => (
-                    <div
-                      key={proposal.id}
-                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h4 className="font-semibold text-white">{proposal.track.title}</h4>
-                          <div className={`px-2 py-1 rounded-full text-xs font-medium flex items-center ${getProposalStatusColor(proposal.status)}`}>
-                            {getProposalStatusIcon(proposal.status)}
-                            <span className="ml-1">{proposal.status}</span>
+              {/* Tab Content */}
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {proposalsTab === 'pending' && (
+                  filteredPendingProposals.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No pending or active proposals</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredPendingProposals.map((proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors relative"
+                        >
+                          {/* Notification Badge */}
+                          {user && hasPendingAction(proposal, user.id) && (
+                            <span className="absolute top-2 right-2 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                            </span>
+                          )}
+                          
+                          {/* Urgent Badge */}
+                          {proposal.is_urgent && (
+                            <div className="absolute bottom-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                ⚡ URGENT
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                              <p className="text-sm text-gray-400">
+                                From: {proposal.client.first_name} {proposal.client.last_name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Status: {proposal.status} {proposal.producer_status && `(${proposal.producer_status})`}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                              <p className="text-xs text-gray-400">
+                                Expires: {new Date(proposal.expiration_date).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 mt-2">
+                            <Link
+                              to={`/sync-proposal/${proposal.id}`}
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                            >
+                              <Eye className="w-3 h-3 inline mr-1" />
+                              View Details
+                            </Link>
+                            <Link
+                              to={`/sync-proposal/${proposal.id}/negotiate`}
+                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
+                            >
+                              <MessageSquare className="w-3 h-3 inline mr-1" />
+                              Negotiate
+                            </Link>
                           </div>
                         </div>
-                        <p className="text-sm text-gray-400">
-                          {proposal.client.first_name} {proposal.client.last_name} • ${proposal.sync_fee} • {proposal.project_type}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {formatDate(proposal.created_at)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Link
-                          to={`/sync-proposal/${proposal.id}`}
-                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+                      ))}
+                    </>
+                  )
+                )}
+
+                {proposalsTab === 'accepted' && (
+                  filteredAcceptedProposals.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No accepted proposals</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredAcceptedProposals.map((proposal) => {
+                        // Check if payment is pending
+                        const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
+                        const acceptanceDate = proposal.client_accepted_at || proposal.updated_at || proposal.created_at;
+                        const dueDate = calculatePaymentDueDate(paymentTerms, acceptanceDate);
+                        const isOverdue = dueDate < new Date();
+                        const daysUntilDue = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                        const isPaymentPending = paymentTerms !== 'immediate' || isOverdue;
+                        
+                        return (
+                          <div
+                            key={proposal.id}
+                            className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 hover:border-green-500/40 transition-colors relative"
+                          >
+                            {/* Payment Pending Badge - moved to bottom */}
+                            {isPaymentPending && (
+                              <div className="absolute bottom-2 left-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                  Payment Pending
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Urgent Badge */}
+                            {proposal.is_urgent && (
+                              <div className="absolute bottom-2 right-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                  ⚡ URGENT
+                                </span>
+                              </div>
+                            )}
+                            
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                                <p className="text-sm text-gray-400">
+                                  From: {proposal.client.first_name} {proposal.client.last_name}
+                                </p>
+                                <p className="text-xs text-green-400">
+                                  ✓ Accepted by both parties
+                                </p>
+                                
+                                {/* Payment Due Date Info */}
+                                {isPaymentPending && (
+                                  <div className="mt-3 space-y-2">
+                                    <p className="text-sm text-gray-400">
+                                      Payment Terms: <span className="text-blue-400 font-medium">{getPaymentTermsDisplay(paymentTerms)}</span>
+                                    </p>
+                                    <div className="bg-white/10 rounded-lg p-3 border border-yellow-500/30">
+                                      <p className={`text-lg font-bold ${isOverdue ? 'text-red-400' : daysUntilDue <= 7 ? 'text-orange-400' : 'text-green-400'}`}>
+                                        {isOverdue ? '⚠️ OVERDUE' : daysUntilDue === 0 ? '🕐 DUE TODAY' : daysUntilDue === 1 ? '🕐 DUE TOMORROW' : `📅 DUE IN ${daysUntilDue} DAYS`}
+                                      </p>
+                                      <p className="text-base font-medium text-white mt-1">
+                                        Due Date: {dueDate.toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                                <p className="text-xs text-gray-400">
+                                  Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex space-x-2 mt-2">
+                              <Link
+                                to={`/sync-proposal/${proposal.id}`}
+                                className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                              >
+                                <Eye className="w-3 h-3 inline mr-1" />
+                                View Details
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )
+                )}
+
+                {proposalsTab === 'paid' && (
+                  filteredPaidProposals.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No paid proposals</p>
+                    </div>
+                  ) : (
+                    <>
+                      {filteredPaidProposals.map((proposal) => (
+                        <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:border-purple-500/40 transition-colors relative"
                         >
-                          View Details
-                        </Link>
-                      </div>
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                              <p className="text-sm text-gray-400">
+                                From: {proposal.client.first_name} {proposal.client.last_name}
+                              </p>
+                              <p className="text-xs text-purple-400">
+                                ✓ Paid - Sync License
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-semibold text-purple-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                              <p className="text-xs text-gray-400">
+                                Paid: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex space-x-2 mt-2">
+                            <Link
+                              to={`/sync-proposal/${proposal.id}`}
+                              className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                            >
+                              <Eye className="w-3 h-3 inline mr-1" />
+                              View Details
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )
+                )}
+
+                {proposalsTab === 'declined' && (
+                  filteredDeclinedProposals.length === 0 ? (
+                    <div className="text-center py-6 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                      <p className="text-gray-400">No declined proposals</p>
                     </div>
-                  ))}
-                  {syncProposals.length > 5 && (
-                    <div className="text-center pt-4">
-                      <Link
-                        to="/sync-proposals"
-                        className="text-blue-400 hover:text-blue-300 text-sm"
+                  ) : (
+                    <>
+                      {filteredDeclinedProposals.map((proposal) => (
+                      <div
+                        key={proposal.id}
+                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20 hover:border-red-500/40 transition-colors"
                       >
-                        View all {syncProposals.length} proposals
-                      </Link>
-                    </div>
-                  )}
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-white font-medium">{proposal.track.title}</h4>
+                            <p className="text-sm text-gray-400">
+                              From: {proposal.client.first_name} {proposal.client.last_name}
+                            </p>
+                            <p className="text-xs text-red-400">
+                              ✗ Declined {proposal.producer_status === 'rejected' ? 'by you' : 'by client'}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-semibold text-gray-400">${proposal.sync_fee.toFixed(2)}</p>
+                            <p className="text-xs text-gray-400">
+                              Declined: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 mt-2">
+                          <Link
+                            to={`/sync-proposal/${proposal.id}`}
+                            className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                          >
+                            <Eye className="w-3 h-3 inline mr-1" />
+                            View Details
+                          </Link>
+                        </div>
+                      </div>
+                      ))}
+                    </>
+                  )
+                )}
+              </div>
+              
+              {/* View All Link */}
+              {syncProposals.length > 0 && (
+                <div className="text-center pt-4 border-t border-white/10">
+                  <Link
+                    to="/rights-holder/sync-proposals"
+                    className="text-blue-400 hover:text-blue-300 text-sm"
+                  >
+                    View all {syncProposals.length} proposals
+                  </Link>
                 </div>
               )}
             </div>
@@ -772,18 +1105,18 @@ export function RightsHolderDashboard() {
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                 <div>
                   <p className="text-gray-300">Verification Status</p>
-                  <p className={`font-medium ${getStatusColor(rightsHolder?.verification_status || '')}`}>
-                    {rightsHolder?.verification_status?.charAt(0).toUpperCase() + rightsHolder?.verification_status?.slice(1) || 'N/A'}
+                  <p className={`font-medium ${getStatusColor(profile?.verification_status || '')}`}>
+                    {profile?.verification_status ? profile.verification_status.charAt(0).toUpperCase() + profile.verification_status.slice(1) : 'N/A'}
                   </p>
                 </div>
-                {getStatusIcon(rightsHolder?.verification_status || '')}
+                {getStatusIcon(profile?.verification_status || '')}
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                 <div>
                   <p className="text-gray-300">Account Type</p>
                   <p className="font-medium text-white">
-                    {rightsHolder?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'}
+                    {profile?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'}
                   </p>
                 </div>
                 <Building2 className="w-5 h-5 text-blue-400" />
@@ -793,10 +1126,10 @@ export function RightsHolderDashboard() {
                 <div>
                   <p className="text-gray-300">Terms Accepted</p>
                   <p className="font-medium text-green-400">
-                    {rightsHolder?.terms_accepted ? 'Yes' : 'No'}
+                    {profile?.terms_accepted ? 'Yes' : 'No'}
                   </p>
                 </div>
-                {rightsHolder?.terms_accepted ? (
+                {profile?.terms_accepted ? (
                   <CheckCircle className="w-5 h-5 text-green-400" />
                 ) : (
                   <AlertCircle className="w-5 h-5 text-red-400" />
@@ -807,10 +1140,10 @@ export function RightsHolderDashboard() {
                 <div>
                   <p className="text-gray-300">Rights Authority Declaration</p>
                   <p className="font-medium text-green-400">
-                    {rightsHolder?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
+                    {profile?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
                   </p>
                 </div>
-                {rightsHolder?.rights_authority_declaration_accepted ? (
+                {profile?.rights_authority_declaration_accepted ? (
                   <CheckCircle className="w-5 h-5 text-green-400" />
                 ) : (
                   <AlertCircle className="w-5 h-5 text-red-400" />
@@ -821,7 +1154,7 @@ export function RightsHolderDashboard() {
                 <div>
                   <p className="text-gray-300">Member Since</p>
                   <p className="font-medium text-white">
-                    {formatDate(rightsHolder?.created_at || '')}
+                    {formatDate(profile?.created_at || '')}
                   </p>
                 </div>
                 <Calendar className="w-5 h-5 text-gray-400" />
