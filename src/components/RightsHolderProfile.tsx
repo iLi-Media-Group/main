@@ -324,7 +324,16 @@ export function RightsHolderProfile({ onClose, onProfileUpdated }: RightsHolderP
                   <input
                     type="url"
                     value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
+                    onChange={(e) => {
+                      let value = e.target.value;
+                      // Auto-add https:// if user types a domain without protocol
+                      if (value && !value.match(/^https?:\/\//)) {
+                        if (value.includes('.') || value.length > 3) {
+                          value = `https://${value}`;
+                        }
+                      }
+                      setWebsite(value);
+                    }}
                     className="w-full pl-10 pr-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                     placeholder="https://example.com"
                   />

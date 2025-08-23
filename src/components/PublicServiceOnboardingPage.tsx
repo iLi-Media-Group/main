@@ -154,6 +154,15 @@ export default function PublicServiceOnboardingPage() {
         arr = arr.filter((v: string) => v !== value);
       }
       setForm({ ...form, [name]: arr });
+    } else if (name === 'website') {
+      // Auto-add https:// if user types a domain without protocol
+      let processedValue = value;
+      if (value && !value.match(/^https?:\/\//)) {
+        if (value.includes('.') || value.length > 3) {
+          processedValue = `https://${value}`;
+        }
+      }
+      setForm({ ...form, [name]: processedValue });
     } else {
       setForm({ ...form, [name]: value });
     }

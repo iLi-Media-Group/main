@@ -71,10 +71,28 @@ export function RightsHolderSignup() {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    // Special handling for website field to auto-add https://
+    if (name === 'website') {
+      let processedValue = value;
+      
+      // If user starts typing and doesn't have a protocol, add https://
+      if (value && !value.match(/^https?:\/\//)) {
+        // Only add https:// if the user is typing something that looks like a domain
+        if (value.includes('.') || value.length > 3) {
+          processedValue = `https://${value}`;
+        }
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: processedValue,
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      }));
+    }
   };
 
   const validateForm = (): string | null => {
