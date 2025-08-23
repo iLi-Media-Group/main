@@ -1069,22 +1069,7 @@ export function RightsHolderDashboard() {
                                   ✓ Accepted by both parties
                                 </p>
                                 
-                                {/* Payment Due Date Info */}
-                                {isPaymentPending && (
-                                  <div className="mt-3 space-y-2">
-                                    <p className="text-sm text-gray-400">
-                                      Payment Terms: <span className="text-blue-400 font-medium">{getPaymentTermsDisplay(paymentTerms)}</span>
-                                    </p>
-                                    <div className="bg-white/10 rounded-lg p-3 border border-yellow-500/30">
-                                      <p className={`text-lg font-bold ${isOverdue ? 'text-red-400' : daysUntilDue <= 7 ? 'text-orange-400' : 'text-green-400'}`}>
-                                        {isOverdue ? '⚠️ OVERDUE' : daysUntilDue === 0 ? '🕐 DUE TODAY' : daysUntilDue === 1 ? '🕐 DUE TOMORROW' : `📅 DUE IN ${daysUntilDue} DAYS`}
-                                      </p>
-                                      <p className="text-base font-medium text-white mt-1">
-                                        Due Date: {dueDate.toLocaleDateString()}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
+
                               </div>
                                                              <div className="text-right">
                                  <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
