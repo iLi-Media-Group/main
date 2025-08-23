@@ -162,13 +162,13 @@ export function RightsHolderAwaitingApproval() {
             please contact our support team.
           </p>
           <div className="flex flex-wrap gap-4">
-            <a 
-              href="mailto:support@mybeatfi.io" 
+            <button
+              onClick={() => navigate('/contact')}
               className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
             >
               <Mail className="w-4 h-4 mr-2" />
               Contact Support
-            </a>
+            </button>
             <button
               onClick={handleSignOut}
               className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors"
