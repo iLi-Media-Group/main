@@ -89,6 +89,8 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
   };
 
   const getDashboardLabel = () => {
+    console.log('🔍 getDashboardLabel - isAdmin:', isAdmin, 'accountType:', accountType);
+    
     if (isAdmin) {
       return 'Admin Dashboard';
     }
@@ -277,6 +279,11 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
+                      {(() => {
+                        console.log('🔍 Navigation Debug - user:', user?.email, 'isAdmin:', isAdmin, 'accountType:', accountType);
+                        return null;
+                      })()}
+                      
                       {/* Show appropriate dashboard based on account type */}
                       {accountType === 'rights_holder' ? (
                         <Link to="/rights-holder/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>

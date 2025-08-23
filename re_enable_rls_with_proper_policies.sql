@@ -1,3 +1,4 @@
+
 -- Re-enable RLS with Proper Policies
 -- Run this after confirming that disabling RLS fixes the 406 errors
 
