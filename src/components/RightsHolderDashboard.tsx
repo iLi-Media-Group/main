@@ -1009,15 +1009,6 @@ export function RightsHolderDashboard() {
                             key={proposal.id}
                             className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 hover:border-green-500/40 transition-colors relative"
                           >
-                                                         {/* Urgent Badge */}
-                             {proposal.is_urgent && (
-                               <div className="absolute bottom-2 right-2">
-                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
-                                   ⚡ URGENT
-                                 </span>
-                               </div>
-                             )}
-                            
                             <div className="flex items-start justify-between mb-2">
                               <div>
                                 <h4 className="text-white font-medium">{proposal.track.title}</h4>
@@ -1050,6 +1041,14 @@ export function RightsHolderDashboard() {
                                 <p className="text-xs text-gray-400">
                                   Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
                                 </p>
+                                {/* Urgent Badge - moved to underneath the amount and date */}
+                                {proposal.is_urgent && (
+                                  <div className="mt-2">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                      ⚡ URGENT
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                             <div className="flex items-center justify-between mt-2">
