@@ -570,64 +570,114 @@ export function RightsHolderDashboard() {
     }
   };
 
-  // Handle proposal status change (accept/reject)
-  const handleProposalStatusChange = async () => {
-    if (!selectedProposal || !user) return;
-    
-    try {
-      // Update proposal producer_status (rights holder is the producer in this context)
-      const { error } = await supabase
-        .from('sync_proposals')
-        .update({ 
-          producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedProposal.id);
+     // Handle proposal status change (accept/reject)
+   const handleProposalStatusChange = async () => {
+     if (!selectedProposal || !user) return;
+     
+     try {
+       // Update proposal producer_status (rights holder is the producer in this context)
+       const { error } = await supabase
+         .from('sync_proposals')
+         .update({ 
+           producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected',
+           updated_at: new Date().toISOString()
+         })
+         .eq('id', selectedProposal.id);
 
-      if (error) throw error;
+       if (error) throw error;
 
-      // Create history entry
-      const { error: historyError } = await supabase
-        .from('proposal_history')
-        .insert({
-          proposal_id: selectedProposal.id,
-          previous_status: selectedProposal.producer_status || 'pending',
-          new_status: confirmAction === 'accept' ? 'producer_accepted' : 'rejected',
-          changed_by: user.id
-        });
+       // Create history entry
+       const { error: historyError } = await supabase
+         .from('proposal_history')
+         .insert({
+           proposal_id: selectedProposal.id,
+           previous_status: selectedProposal.producer_status || 'pending',
+           new_status: confirmAction === 'accept' ? 'producer_accepted' : 'rejected',
+           changed_by: user.id
+         });
 
-      if (historyError) throw historyError;
+       if (historyError) throw historyError;
 
-      // Send notification to client
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-proposal-update`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          proposalId: selectedProposal.id,
-          action: confirmAction,
-          trackTitle: selectedProposal.track.title,
-          clientEmail: selectedProposal.client.email
-        })
-      });
+       // Send notification to client
+       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-proposal-update`, {
+         method: 'POST',
+         headers: {
+           'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({
+           proposalId: selectedProposal.id,
+           action: confirmAction,
+           trackTitle: selectedProposal.track.title,
+           clientEmail: selectedProposal.client.email
+         })
+       });
 
-      // Update local state
-      setSyncProposals(syncProposals.map(p => 
-        p.id === selectedProposal.id 
-          ? { ...p, producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected', updated_at: new Date().toISOString() } 
-          : p
-      ));
-      
-      setShowConfirmDialog(false);
-      setSelectedProposal(null);
-      
-    } catch (err) {
-      console.error(`Error ${confirmAction}ing proposal:`, err);
-      setError(`Failed to ${confirmAction} proposal`);
-    }
-  };
+       // Update local state
+       setSyncProposals(syncProposals.map(p => 
+         p.id === selectedProposal.id 
+           ? { ...p, producer_status: confirmAction === 'accept' ? 'accepted' : 'rejected', updated_at: new Date().toISOString() } 
+           : p
+       ));
+       
+       setShowConfirmDialog(false);
+       setSelectedProposal(null);
+       
+     } catch (err) {
+       console.error(`Error ${confirmAction}ing proposal:`, err);
+       setError(`Failed to ${confirmAction} proposal`);
+     }
+   };
+
+   // Handle payment pending proposal (for rights holders to initiate payment)
+   const handlePaymentPendingProposal = async (proposal: SyncProposal) => {
+     try {
+       // Ensure negotiation is finalized before payment
+       if (
+         proposal.client_status === 'accepted' &&
+         proposal.producer_status === 'accepted' &&
+         (proposal.status !== 'accepted' || proposal.negotiation_status !== 'accepted')
+       ) {
+         const { error: rpcError } = await supabase.rpc('handle_negotiation_acceptance', {
+           proposal_id: proposal.id,
+           is_sync_proposal: true
+         });
+         if (rpcError) throw rpcError;
+       }
+       
+       const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
+       const amount = proposal.final_amount || proposal.sync_fee;
+       
+       // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json'
+         },
+         body: JSON.stringify({
+           proposal_id: proposal.id,
+           amount: Math.round(amount * 100),
+           client_user_id: user?.id,
+           payment_terms: paymentTerms,
+           metadata: {
+             description: `Sync license for "${proposal.track?.title}"`,
+             payment_terms: paymentTerms
+           }
+         })
+       });
+
+       if (!response.ok) {
+         const errorData = await response.json();
+         throw new Error(errorData.error || 'Failed to create payment session');
+       }
+
+       const { url } = await response.json();
+       window.open(url, '_self');
+     } catch (err) {
+       console.error('Error initiating payment:', err);
+       alert('Failed to initiate payment. Please try again.');
+     }
+   };
 
   if (loading) {
     return (
@@ -1036,38 +1086,49 @@ export function RightsHolderDashboard() {
                                   </div>
                                 )}
                               </div>
-                              <div className="text-right">
-                                <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
-                                <p className="text-xs text-gray-400">
-                                  Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
-                                </p>
-                                {/* Urgent Badge - moved to underneath the amount and date */}
-                                {proposal.is_urgent && (
-                                  <div className="mt-2">
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
-                                      ⚡ URGENT
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-2">
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleProposalAction(proposal, 'history')}
-                                  className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
-                                >
-                                  <Clock className="w-3 h-3 inline mr-1" />
-                                  History
-                                </button>
-                              </div>
-                              {/* Payment Pending Badge - moved to right side */}
-                              {isPaymentPending && (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                  Payment Pending
-                                </span>
-                              )}
-                            </div>
+                                                             <div className="text-right">
+                                 <p className="text-lg font-semibold text-green-400">${(proposal.final_amount || proposal.sync_fee).toFixed(2)}</p>
+                                 <p className="text-xs text-gray-400">
+                                   Accepted: {new Date(proposal.updated_at || proposal.created_at).toLocaleDateString()}
+                                 </p>
+                                 {/* Urgent Badge - moved to underneath the amount and date */}
+                                 {proposal.is_urgent && (
+                                   <div className="mt-2">
+                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                       ⚡ URGENT
+                                     </span>
+                                   </div>
+                                 )}
+                                 {/* Payment Pending Badge - moved to underneath the amount and date */}
+                                 {isPaymentPending && (
+                                   <div className="mt-2">
+                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                       Payment Pending
+                                     </span>
+                                   </div>
+                                 )}
+                               </div>
+                             </div>
+                             <div className="flex items-center justify-between mt-2">
+                               <div className="flex space-x-2">
+                                 <button
+                                   onClick={() => handleProposalAction(proposal, 'history')}
+                                   className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
+                                 >
+                                   <Clock className="w-3 h-3 inline mr-1" />
+                                   History
+                                 </button>
+                                 {/* Complete Payment button - moved to the right side */}
+                                 {isPaymentPending && (
+                                   <button
+                                     onClick={() => handlePaymentPendingProposal(proposal)}
+                                     className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                                   >
+                                     Complete Payment
+                                   </button>
+                                 )}
+                               </div>
+                             </div>
                           </div>
                         );
                       })}

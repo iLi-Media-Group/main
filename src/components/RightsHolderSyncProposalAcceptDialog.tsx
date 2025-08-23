@@ -53,11 +53,15 @@ export function RightsHolderSyncProposalAcceptDialog({
       // Only redirect to Stripe if both parties have accepted
       if (updatedProposal.status === 'accepted') {
         // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          throw new Error('You must be logged in to make a payment');
+        }
+
         const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             proposal_id: proposal.id,

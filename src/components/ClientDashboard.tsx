@@ -1281,8 +1281,7 @@ const getPlanLevel = (plan: string): number => {
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           proposal_id: proposal.id,
