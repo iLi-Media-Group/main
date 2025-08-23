@@ -1084,8 +1084,16 @@ export function RightsHolderDashboard() {
                                      </span>
                                    </div>
                                  )}
-                                 {/* Payment Pending Badge - moved to underneath the amount and date */}
-                                 {isPaymentPending && (
+                                 {/* Overdue Badge - displayed when payment is overdue */}
+                                 {isOverdue && (
+                                   <div className="mt-2">
+                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
+                                       OVERDUE
+                                     </span>
+                                   </div>
+                                 )}
+                                 {/* Payment Pending Badge - positioned under the amount and date */}
+                                 {isPaymentPending && !isOverdue && (
                                    <div className="mt-2">
                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                                        Payment Pending
