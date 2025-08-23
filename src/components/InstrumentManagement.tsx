@@ -50,21 +50,39 @@ export function InstrumentManagement() {
       setLoading(true);
       setError(null);
 
-      // Fetch instruments with their category info
-      const { data: instrumentsData, error: instrumentsError } = await supabase
-        .from('instruments')
-        .select(`
-          *,
-          instrument_categories!inner(name)
-        `)
-        .order('category, name');
+      // First try to fetch instruments with category info
+      let instrumentsData = [];
+      let instrumentsError = null;
+      
+      try {
+        const { data, error } = await supabase
+          .from('instruments')
+          .select(`
+            *,
+            instrument_categories(name)
+          `)
+          .order('category, name');
+        
+        instrumentsData = data || [];
+        instrumentsError = error;
+      } catch (err) {
+        console.log('Failed to fetch with categories, trying simple query');
+        // If the join fails, try a simple query
+        const { data, error } = await supabase
+          .from('instruments')
+          .select('*')
+          .order('category, name');
+        
+        instrumentsData = data || [];
+        instrumentsError = error;
+      }
 
       if (instrumentsError) throw instrumentsError;
       
       // Transform the data to include category name
       const instrumentsWithCategory = (instrumentsData || []).map(instrument => ({
         ...instrument,
-        category_name: instrument.instrument_categories?.name || instrument.category
+        category_name: instrument.instrument_categories?.name || instrument.category || 'Unknown'
       }));
       
       setInstruments(instrumentsWithCategory);
@@ -83,33 +101,43 @@ export function InstrumentManagement() {
         .select('*')
         .order('name');
 
-      if (categoriesError) throw categoriesError;
+      if (categoriesError) {
+        console.log('Categories table may not exist, using empty array');
+        setCategories([]);
+        return;
+      }
       setCategories(categoriesData || []);
     } catch (err) {
-      console.error('Error fetching categories:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+      console.log('Error fetching categories, using empty array:', err);
+      setCategories([]);
     }
   };
 
   const createInstrument = async () => {
     try {
-      if (!newInstrument.name.trim() || !newInstrument.category.trim()) {
-        setError('Please fill in all fields');
+      if (!newInstrument.name.trim()) {
+        setError('Please fill in the instrument name');
         return;
       }
 
-      // Find the category ID
-      const category = categories.find(cat => cat.name === newInstrument.category);
-      if (!category) {
-        setError('Selected category not found');
-        return;
+      let categoryValue = newInstrument.category;
+      
+      // If categories exist, try to find the category ID
+      if (categories.length > 0 && newInstrument.category.trim()) {
+        const category = categories.find(cat => cat.name === newInstrument.category);
+        if (category) {
+          categoryValue = category.id;
+        } else {
+          setError('Selected category not found');
+          return;
+        }
       }
 
       const { error } = await supabase
         .from('instruments')
         .insert({
           name: newInstrument.name.toLowerCase().replace(/\s+/g, '_'),
-          category: category.id
+          category: categoryValue
         });
 
       if (error) throw error;
@@ -136,14 +164,18 @@ export function InstrumentManagement() {
           name: newCategory.name
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating category:', error);
+        setError('Failed to create category. The categories table may not exist.');
+        return;
+      }
 
       setNewCategory({ name: '' });
       setShowAddCategoryModal(false);
       fetchCategories();
     } catch (err) {
       console.error('Error creating category:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create category');
+      setError('Failed to create category. The categories table may not exist.');
     }
   };
 
