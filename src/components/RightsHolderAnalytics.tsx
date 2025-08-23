@@ -29,8 +29,10 @@ interface AnalyticsData {
   totalRevenue: number;
   totalLicenses: number;
   totalRecordings: number;
+  totalSyncProposals: number;
   activeLicenses: number;
   pendingLicenses: number;
+  pendingSyncProposals: number;
   monthlyRevenue: { month: string; revenue: number }[];
   licenseTypes: { type: string; count: number; revenue: number }[];
   topRecordings: { title: string; artist: string; licenses: number; revenue: number }[];
@@ -88,8 +90,26 @@ export function RightsHolderAnalytics() {
 
       if (recordingsError) throw recordingsError;
 
+      // Fetch sync proposals for tracks owned by this rights holder
+      const { data: syncProposalsData, error: syncProposalsError } = await supabase
+        .from('sync_proposals')
+        .select(`
+          *,
+          track:tracks(
+            id,
+            title,
+            artist,
+            track_producer_id
+          )
+        `)
+        .eq('track.track_producer_id', user.id)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
+
+      if (syncProposalsError) throw syncProposalsError;
+
       // Process analytics data
-      const processedData = processAnalyticsData(licensesData || [], recordingsData || []);
+      const processedData = processAnalyticsData(licensesData || [], recordingsData || [], syncProposalsData || []);
       setAnalyticsData(processedData);
     } catch (err) {
       console.error('Error fetching analytics data:', err);
@@ -99,31 +119,37 @@ export function RightsHolderAnalytics() {
     }
   };
 
-  const processAnalyticsData = (licenses: any[], recordings: any[]): AnalyticsData => {
-    // Calculate total revenue
-    const totalRevenue = licenses.reduce((sum, license) => sum + (license.license_fee || 0), 0);
+  const processAnalyticsData = (licenses: any[], recordings: any[], syncProposals: any[]): AnalyticsData => {
+    // Calculate total revenue from licenses and sync proposals
+    const licenseRevenue = licenses.reduce((sum, license) => sum + (license.license_fee || 0), 0);
+    const syncProposalRevenue = syncProposals
+      .filter(p => p.status === 'accepted' && p.payment_status === 'paid')
+      .reduce((sum, proposal) => sum + (proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0), 0);
+    const totalRevenue = licenseRevenue + syncProposalRevenue;
 
     // Calculate monthly revenue
-    const monthlyRevenue = calculateMonthlyRevenue(licenses);
+    const monthlyRevenue = calculateMonthlyRevenue(licenses, syncProposals);
 
     // Calculate license types
     const licenseTypes = calculateLicenseTypes(licenses);
 
     // Calculate top recordings
-    const topRecordings = calculateTopRecordings(licenses, recordings);
+    const topRecordings = calculateTopRecordings(licenses, recordings, syncProposals);
 
     // Calculate recent activity
-    const recentActivity = calculateRecentActivity(licenses);
+    const recentActivity = calculateRecentActivity(licenses, syncProposals);
 
     // Calculate performance metrics
-    const performanceMetrics = calculatePerformanceMetrics(licenses, recordings);
+    const performanceMetrics = calculatePerformanceMetrics(licenses, recordings, syncProposals);
 
     return {
       totalRevenue,
       totalLicenses: licenses.length,
       totalRecordings: recordings.length,
+      totalSyncProposals: syncProposals.length,
       activeLicenses: licenses.filter(l => l.status === 'active').length,
       pendingLicenses: licenses.filter(l => l.status === 'pending').length,
+      pendingSyncProposals: syncProposals.filter(p => p.status === 'pending' || p.status === 'pending_client').length,
       monthlyRevenue,
       licenseTypes,
       topRecordings,
@@ -132,14 +158,25 @@ export function RightsHolderAnalytics() {
     };
   };
 
-  const calculateMonthlyRevenue = (licenses: any[]) => {
+  const calculateMonthlyRevenue = (licenses: any[], syncProposals: any[]) => {
     const monthlyData: { [key: string]: number } = {};
     
+    // Add license revenue
     licenses.forEach(license => {
       const date = new Date(license.created_at);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       monthlyData[monthKey] = (monthlyData[monthKey] || 0) + (license.license_fee || 0);
     });
+
+    // Add sync proposal revenue (only paid proposals)
+    syncProposals
+      .filter(p => p.status === 'accepted' && p.payment_status === 'paid')
+      .forEach(proposal => {
+        const date = new Date(proposal.created_at);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const amount = proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0;
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + amount;
+      });
 
     return Object.entries(monthlyData)
       .map(([month, revenue]) => ({ month, revenue }))
@@ -165,9 +202,10 @@ export function RightsHolderAnalytics() {
     }));
   };
 
-  const calculateTopRecordings = (licenses: any[], recordings: any[]) => {
+  const calculateTopRecordings = (licenses: any[], recordings: any[], syncProposals: any[]) => {
     const recordingStats: { [key: string]: { licenses: number; revenue: number; title: string; artist: string } } = {};
     
+    // Add license revenue
     licenses.forEach(license => {
       const recordingId = license.master_recording_id;
       if (!recordingStats[recordingId]) {
@@ -183,36 +221,89 @@ export function RightsHolderAnalytics() {
       recordingStats[recordingId].revenue += license.license_fee || 0;
     });
 
+    // Add sync proposal revenue
+    syncProposals
+      .filter(p => p.status === 'accepted' && p.payment_status === 'paid')
+      .forEach(proposal => {
+        const trackId = proposal.track_id;
+        if (!recordingStats[trackId]) {
+          const track = proposal.track;
+          recordingStats[trackId] = {
+            licenses: 0,
+            revenue: 0,
+            title: track?.title || 'Unknown',
+            artist: track?.artist || 'Unknown'
+          };
+        }
+        recordingStats[trackId].licenses++;
+        const amount = proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee || 0;
+        recordingStats[trackId].revenue += amount;
+      });
+
     return Object.values(recordingStats)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 5);
   };
 
-  const calculateRecentActivity = (licenses: any[]) => {
-    return licenses
+  const calculateRecentActivity = (licenses: any[], syncProposals: any[]) => {
+    const activities: Array<{
+      type: string;
+      description: string;
+      amount?: number;
+      date: string;
+    }> = [];
+    
+    // Add license activities
+    licenses
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 10)
-      .map(license => ({
-        type: 'license',
-        description: `New license for ${license.license_type || 'standard'} usage`,
-        amount: license.license_fee,
-        date: license.created_at
-      }));
+      .slice(0, 5)
+      .forEach(license => {
+        activities.push({
+          type: 'license',
+          description: `New license for ${license.license_type || 'standard'} usage`,
+          amount: license.license_fee,
+          date: license.created_at
+        });
+      });
+
+    // Add sync proposal activities
+    syncProposals
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+      .forEach(proposal => {
+        const trackTitle = proposal.track?.title || 'Unknown Track';
+        activities.push({
+          type: 'sync_proposal',
+          description: `Sync proposal for "${trackTitle}" - ${proposal.status}`,
+          amount: proposal.final_amount || proposal.negotiated_amount || proposal.sync_fee,
+          date: proposal.created_at
+        });
+      });
+
+    return activities
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 10);
   };
 
-  const calculatePerformanceMetrics = (licenses: any[], recordings: any[]) => {
-    const avgLicenseValue = licenses.length > 0 
-      ? licenses.reduce((sum, l) => sum + (l.license_fee || 0), 0) / licenses.length 
-      : 0;
+  const calculatePerformanceMetrics = (licenses: any[], recordings: any[], syncProposals: any[]) => {
+    const totalLicenseRevenue = licenses.reduce((sum, l) => sum + (l.license_fee || 0), 0);
+    const totalSyncRevenue = syncProposals
+      .filter(p => p.status === 'accepted' && p.payment_status === 'paid')
+      .reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0);
+    
+    const totalRevenue = totalLicenseRevenue + totalSyncRevenue;
+    const totalTransactions = licenses.length + syncProposals.filter(p => p.status === 'accepted' && p.payment_status === 'paid').length;
+    
+    const avgLicenseValue = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
     const conversionRate = recordings.length > 0 
-      ? (licenses.length / recordings.length) * 100 
+      ? (totalTransactions / recordings.length) * 100 
       : 0;
 
     // Calculate growth rate (simplified)
     const growthRate = 15.5; // This would be calculated from historical data
 
-    const activeUsers = licenses.filter(l => l.status === 'active').length;
+    const activeUsers = licenses.filter(l => l.status === 'active').length + syncProposals.filter(p => p.status === 'accepted').length;
 
     return {
       avgLicenseValue,
@@ -368,8 +459,8 @@ export function RightsHolderAnalytics() {
           </div>
         )}
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                 {/* Key Metrics */}
+         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
             <div className="flex items-center justify-between mb-4">
               <div className="p-2 bg-green-500/20 rounded-lg">
@@ -409,18 +500,31 @@ export function RightsHolderAnalytics() {
             <p className="text-gray-400 text-sm">Total Recordings</p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-2 bg-yellow-500/20 rounded-lg">
-                <Users className="w-6 h-6 text-yellow-400" />
-              </div>
-              {getGrowthIcon(8.3)}
-            </div>
-            <h3 className="text-2xl font-bold text-white mb-1">
-              {analyticsData.activeLicenses}
-            </h3>
-            <p className="text-gray-400 text-sm">Active Licenses</p>
-          </div>
+                     <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+             <div className="flex items-center justify-between mb-4">
+               <div className="p-2 bg-yellow-500/20 rounded-lg">
+                 <Users className="w-6 h-6 text-yellow-400" />
+               </div>
+               {getGrowthIcon(8.3)}
+             </div>
+             <h3 className="text-2xl font-bold text-white mb-1">
+               {analyticsData.activeLicenses}
+             </h3>
+             <p className="text-gray-400 text-sm">Active Licenses</p>
+           </div>
+
+           <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+             <div className="flex items-center justify-between mb-4">
+               <div className="p-2 bg-indigo-500/20 rounded-lg">
+                 <FileText className="w-6 h-6 text-indigo-400" />
+               </div>
+               {getGrowthIcon(12.5)}
+             </div>
+             <h3 className="text-2xl font-bold text-white mb-1">
+               {analyticsData.totalSyncProposals}
+             </h3>
+             <p className="text-gray-400 text-sm">Sync Proposals</p>
+           </div>
         </div>
 
         {/* Performance Metrics */}

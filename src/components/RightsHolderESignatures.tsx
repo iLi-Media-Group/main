@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { 
@@ -121,7 +122,7 @@ export function RightsHolderESignatures() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
+    <div className="min-h-screen bg-blue-900/90 text-white p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -177,9 +178,18 @@ export function RightsHolderESignatures() {
         {/* Tracks Grid */}
         {filteredTracks.length === 0 ? (
           <div className="text-center py-12">
-            <Music className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No tracks found</h3>
-            <p className="text-gray-500">Upload tracks to manage split sheets and e-signatures</p>
+            <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No tracks found</h3>
+            <p className="text-gray-300">Upload tracks to manage split sheets and e-signatures</p>
+            <div className="mt-4">
+              <Link
+                to="/rights-holder/upload"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Upload Track
+              </Link>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -239,29 +249,49 @@ export function RightsHolderESignatures() {
                   )}
               </div>
 
-              {/* Actions */}
-                <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-700">
+              {/* E-Signature Status */}
+              <div className="mt-4 pt-4 border-t border-gray-700">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-gray-300">E-Signature Status</span>
+                  <span className="text-xs px-2 py-1 bg-yellow-600/20 text-yellow-400 rounded-full">
+                    Pending
+                  </span>
+                </div>
+                
+                <div className="text-xs text-gray-400 mb-3">
+                  <p>Split sheet requires signatures from all participants</p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-between items-center">
                   <div className="flex space-x-2">
-                <button
+                    <button
                       onClick={() => setSelectedTrack(track)}
                       className="p-2 text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
                       title="View Details"
-                >
+                    >
                       <Eye className="w-4 h-4" />
-                </button>
+                    </button>
+                    <button
+                      className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
+                      title="Send E-Signature Invitations"
+                    >
+                      <MailIcon className="w-4 h-4" />
+                    </button>
                     {track.split_sheet_url && (
-                <button
+                      <button
                         onClick={() => window.open(track.split_sheet_url, '_blank')}
-                        className="p-2 text-green-400 hover:bg-green-400/10 rounded-lg transition-colors"
+                        className="p-2 text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
                         title="Download Split Sheet"
                       >
                         <Download className="w-4 h-4" />
-                </button>
+                      </button>
                     )}
-              </div>
+                  </div>
                   <span className="text-xs text-gray-500">
                     {new Date(track.created_at).toLocaleDateString()}
                   </span>
+                </div>
               </div>
             </div>
           ))}

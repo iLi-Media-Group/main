@@ -624,6 +624,37 @@ export function RightsHolderUploadForm() {
 
       if (trackError) throw trackError;
 
+      // Send co-signer invitation emails if there are co-signers
+      if (formData.coSigners.length > 0) {
+        try {
+          const rightsHolderName = formData.rightsHolderName || user.email || 'Rights Holder';
+          
+          for (const coSigner of formData.coSigners) {
+            if (coSigner.name && coSigner.email) {
+              // Call the co-signer invitation Edge Function
+              const { error: emailError } = await supabase.functions.invoke('send-cosigner-invitation', {
+                body: {
+                  coSignerId: coSigner.id,
+                  coSignerName: coSigner.name,
+                  coSignerEmail: coSigner.email,
+                  trackTitle: formData.title,
+                  rightsHolderName: rightsHolderName,
+                  splitSheetUrl: formData.splitSheetUrl || null
+                }
+              });
+
+              if (emailError) {
+                console.error('Error sending co-signer invitation:', emailError);
+                // Don't throw error here as the track was uploaded successfully
+              }
+            }
+          }
+        } catch (emailErr) {
+          console.error('Error sending co-signer emails:', emailErr);
+          // Don't throw error here as the track was uploaded successfully
+        }
+      }
+
       setSuccess(true);
       setUploadProgress(100);
 
