@@ -85,6 +85,7 @@ import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import { createCheckoutSession } from '../lib/stripe';
 import { PRODUCTS } from '../stripe-config';
+import { formatGenresForDisplay, formatMoodsForDisplay } from '../utils/genreUtils';
 
 interface UserStats {
   membershipType: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access';
@@ -423,7 +424,7 @@ export function TrackPage() {
                 <div className="space-y-3">
                   <div className="flex items-center text-gray-300">
                     <Tag className="w-5 h-5 mr-2 text-blue-400" />
-                    <span>Genres: {track.genres.join(', ')}</span>
+                    <span>Genres: {formatGenresForDisplay(track.genres)}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-300">
@@ -536,7 +537,7 @@ export function TrackPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-white mb-3">Moods</h3>
                   <div className="flex flex-wrap gap-2">
-                    {track.moods.map((mood) => (
+                    {formatMoodsForDisplay(track.moods).split(', ').map((mood) => (
                       <span 
                         key={mood}
                         className="px-3 py-1 bg-white/10 rounded-full text-sm text-gray-300"
