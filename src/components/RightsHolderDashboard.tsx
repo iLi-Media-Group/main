@@ -1269,7 +1269,7 @@ export function RightsHolderDashboard() {
                           </div>
                           <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
                             <Link
-                              to={`/rights-holder-sync-submission?requestId=${req.id}`}
+                              to={`/custom-sync-request?requestId=${req.id}`}
                               className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors"
                             >
                               Submit Track
