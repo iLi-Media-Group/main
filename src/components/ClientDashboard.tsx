@@ -10,6 +10,7 @@ import { createCheckoutSession, cancelUserSubscription, resumeUserSubscription }
 
 import { Track } from '../types';
 import { calculateTimeRemaining } from '../utils/dateUtils';
+import { formatGenresForDisplay } from '../utils/genreUtils';
 import { ClientProfile } from './ClientProfile';
 import { DeleteLicenseDialog } from './DeleteLicenseDialog';
 import { EditRequestDialog } from './EditRequestDialog';
@@ -2531,7 +2532,7 @@ const getPlanLevel = (plan: string): number => {
                                   <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
                                     <span className="flex items-center">
                                       <Tag className="w-4 h-4 mr-1" />
-                                      {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
+                                      {formatGenresForDisplay(license.track.genres)}
                                     </span>
                                     <span className="flex items-center">
                                       <Hash className="w-4 h-4 mr-1" />
@@ -2685,7 +2686,7 @@ const getPlanLevel = (plan: string): number => {
                                   <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
                                     <span className="flex items-center">
                                       <Tag className="w-4 h-4 mr-1" />
-                                      {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
+                                      {formatGenresForDisplay(proposal.track.genres)}
                                     </span>
                                     <span className="flex items-center">
                                       <Hash className="w-4 h-4 mr-1" />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { formatGenresForDisplay } from '../utils/genreUtils';
 import { 
   FileText, 
   Users, 
@@ -471,7 +472,7 @@ export function RightsHolderSplitSheets() {
                   </div>
                   <div>
                     <label className="text-sm text-gray-400">Genre</label>
-                    <p className="text-white">{Array.isArray(selectedSplitSheet.track.genres) ? selectedSplitSheet.track.genres.join(', ') : 'N/A'}</p>
+                    <p className="text-white">{formatGenresForDisplay(selectedSplitSheet.track.genres)}</p>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
+import { formatGenresForDisplay, formatMoodsForDisplay } from '../utils/genreUtils';
 import { 
   Mail as MailIcon, 
   UserPlus, 
@@ -326,11 +327,11 @@ export function RightsHolderESignatures() {
                   </div>
                   <div>
                       <label className="text-sm text-gray-400">Genres</label>
-                      <p className="text-white">{selectedTrack.genres.join(', ')}</p>
+                      <p className="text-white">{formatGenresForDisplay(selectedTrack.genres)}</p>
                   </div>
                     <div>
                       <label className="text-sm text-gray-400">Moods</label>
-                      <p className="text-white">{selectedTrack.moods.join(', ')}</p>
+                      <p className="text-white">{formatMoodsForDisplay(selectedTrack.moods)}</p>
                 </div>
                     <div>
                       <label className="text-sm text-gray-400">BPM</label>

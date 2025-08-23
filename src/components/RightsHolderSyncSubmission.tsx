@@ -5,6 +5,7 @@ import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucid
 import { useLocation } from 'react-router-dom';
 import { Dialog } from './ui/dialog';
 import { AudioPlayer } from './AudioPlayer';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 
 export default function RightsHolderSyncSubmission() {
   const { user } = useUnifiedAuth();
@@ -538,7 +539,7 @@ export default function RightsHolderSyncSubmission() {
                   <span><strong>Sync Fee:</strong> ${requestInfo.sync_fee?.toFixed(2)}</span>
                   <span><strong>End Date:</strong> {new Date(requestInfo.end_date).toLocaleDateString()}</span>
                   <span><strong>Genre:</strong> {requestInfo.genre}</span>
-                  <span><strong>Sub-genres:</strong> {Array.isArray(requestInfo.sub_genres) ? requestInfo.sub_genres.join(', ') : requestInfo.sub_genres}</span>
+                  <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(requestInfo.sub_genres)}</span>
                 </div>
               </div>
             ) : requestId ? (

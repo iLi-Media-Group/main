@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
@@ -1222,7 +1223,7 @@ export function RightsHolderDashboard() {
                               <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
                               <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
                               <span><strong>Genre:</strong> {req.genre}</span>
-                              <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                              <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(req.sub_genres)}</span>
                             </div>
                           </div>
                           <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">

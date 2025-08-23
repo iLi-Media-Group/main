@@ -4,6 +4,7 @@ import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download, CheckCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 
 interface CustomSyncRequest {
   id: string;
@@ -878,7 +879,7 @@ export default function CustomSyncRequestSubs() {
                     <span><strong>Sync Fee:</strong> ${req.sync_fee.toFixed(2)}</span>
                     <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
                     <span><strong>Genre:</strong> {req.genre}</span>
-                    <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                    <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(req.sub_genres)}</span>
                   </div>
                   {/* Delete all except favorites button */}
                   <div className="flex justify-end mb-2">

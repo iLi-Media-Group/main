@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { formatGenresForDisplay, formatMoodsForDisplay } from '../utils/genreUtils';
 import { 
   Music, 
   Edit, 
@@ -653,8 +654,8 @@ export function RightsHolderRecordings() {
               </div>
 
                     <div className="text-sm text-gray-400">
-                      <p><strong>Genres:</strong> {Array.isArray(recording.genres) ? recording.genres.join(', ') : 'None'}</p>
-                      <p><strong>Moods:</strong> {Array.isArray(recording.moods) ? recording.moods.join(', ') : 'None'}</p>
+                      <p><strong>Genres:</strong> {formatGenresForDisplay(recording.genres)}</p>
+                      <p><strong>Moods:</strong> {formatMoodsForDisplay(recording.moods)}</p>
                 </div>
 
                     {recording.has_vocals && (

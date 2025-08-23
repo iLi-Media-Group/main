@@ -4,6 +4,7 @@ import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, Arr
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { parseArrayField } from '../lib/utils';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useTracksRealTime, useProducerProposalsRealTime, useProducerCustomSyncRealTime } from '../hooks/useRealTimeUpdates';
 import { DeleteTrackDialog } from './DeleteTrackDialog';
@@ -1142,7 +1143,7 @@ export function ProducerDashboard() {
                   <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
                   <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
                   <span><strong>Genre:</strong> {req.genre}</span>
-                  <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                  <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(req.sub_genres)}</span>
                 </div>
               </div>
               <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
