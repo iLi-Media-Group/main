@@ -1164,17 +1164,17 @@ export function RightsHolderDashboard() {
                 )}
               </div>
               
-              {/* View All Link */}
-              {syncProposals.length > 0 && (
-                <div className="text-center pt-4 border-t border-white/10">
-                  <Link
-                    to="/rights-holder/sync-proposals"
-                    className="text-blue-400 hover:text-blue-300 text-sm"
-                  >
-                    View all {syncProposals.length} proposals
-                  </Link>
-                </div>
-              )}
+                             {/* View All Link */}
+               {syncProposals.length > 0 && (
+                 <div className="text-center pt-4 border-t border-white/10">
+                   <Link
+                     to="/sync-proposals"
+                     className="text-blue-400 hover:text-blue-300 text-sm"
+                   >
+                     View all {syncProposals.length} proposals
+                   </Link>
+                 </div>
+               )}
             </div>
 
             {/* Custom Sync Requests Section */}
