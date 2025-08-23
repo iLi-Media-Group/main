@@ -372,27 +372,17 @@ export function RightsHolderDashboard() {
     }
   };
 
-  // Fetch custom sync requests
+  // Fetch custom sync requests (simplified to match Producer Dashboard)
   const fetchCustomSyncRequests = async () => {
     if (!user) return;
     
     try {
       setCustomSyncRequestsLoading(true);
       
-      // For rights holders, show requests that are either:
-      // 1. Open to all rights holders (no specific rights holder selected)
-      // 2. Specifically assigned to this rights holder
+      // Simplified query matching Producer Dashboard exactly
       const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
-        .select(`
-          *,
-          client:profiles(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('status', 'open')
         .gte('end_date', new Date().toISOString())
         .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
@@ -415,22 +405,14 @@ export function RightsHolderDashboard() {
     }
   };
 
-  // Fetch completed custom sync requests for rights holders
+  // Fetch completed custom sync requests for rights holders (simplified to match Producer Dashboard)
   const fetchCompletedCustomSyncRequests = async () => {
     if (!user) return;
     
     try {
       const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
-        .select(`
-          *,
-          client:profiles(
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .in('status', ['completed', 'paid'])
         .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .order('updated_at', { ascending: false });
@@ -440,13 +422,7 @@ export function RightsHolderDashboard() {
         return;
       }
 
-      // Transform the data to handle nested arrays
-      const flattenedCustomSyncs = (completedCustomSyncRequestsData || []).map((req: any) => ({
-        ...req,
-        client: Array.isArray(req.client) ? req.client[0] : req.client,
-      }));
-
-      setCompletedCustomSyncRequests(flattenedCustomSyncs);
+      setCompletedCustomSyncRequests(completedCustomSyncRequestsData || []);
     } catch (error) {
       console.error('Error fetching completed custom sync requests:', error);
       setCompletedCustomSyncRequests([]);
@@ -1268,8 +1244,7 @@ export function RightsHolderDashboard() {
                     <div className="space-y-4">
                       {completedCustomSyncRequests.map((req) => {
                         const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
-                        const client = req.client;
-                        const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email : 'Unknown Client';
+                        const clientName = 'Client'; // Simplified since we removed the client join
                         
                         return (
                           <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
