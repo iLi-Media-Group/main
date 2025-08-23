@@ -106,6 +106,7 @@ import { CustomSyncRequestDetail } from './components/CustomSyncRequestDetail';
 import { CustomSyncRequestsPage } from './components/CustomSyncRequestsPage';
 import { ProfilePage } from './components/ProfilePage';
 import RightsHolderSyncSubmission from './components/RightsHolderSyncSubmission';
+import RightsHolderTerms from './components/RightsHolderTerms';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -681,6 +682,7 @@ const App = () => {
         } />
         <Route path="/rights-holder/test" element={<RightsHolderTest />} />
         <Route path="/rights-holder/awaiting-approval" element={<RightsHolderAwaitingApproval />} />
+        <Route path="/rights-holder/terms" element={<RightsHolderTerms />} />
 
         {/* Rights Holder Sync Proposals */}
               <Route path="/sync-proposal/:id" element={
