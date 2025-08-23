@@ -356,13 +356,7 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/custom-sync-request" element={
-          <ProtectedRoute requiresClient>
-            <LayoutWrapper>
-              <CustomSyncRequest />
-            </LayoutWrapper>
-          </ProtectedRoute>
-        } />
+
 
         <Route path="/custom-sync-request-subs" element={
           <ProtectedRoute>
@@ -695,10 +689,10 @@ const App = () => {
         
         {/* Rights Holder Custom Sync Requests */}
               <Route path="/custom-sync-request" element={
-        <RightsHolderProtectedRoute>
-          <RightsHolderSyncSubmission />
-        </RightsHolderProtectedRoute>
-      } />
+          <RightsHolderProtectedRoute>
+            <RightsHolderSyncSubmission />
+          </RightsHolderProtectedRoute>
+        } />
         <Route path="/custom-sync-request/:id" element={
           <RightsHolderProtectedRoute>
             <CustomSyncRequestDetail />
@@ -708,6 +702,15 @@ const App = () => {
           <RightsHolderProtectedRoute>
             <CustomSyncRequestsPage />
           </RightsHolderProtectedRoute>
+        } />
+
+        {/* Client Custom Sync Request */}
+        <Route path="/client/custom-sync-request" element={
+          <ProtectedRoute requiresClient>
+            <LayoutWrapper>
+              <CustomSyncRequest />
+            </LayoutWrapper>
+          </ProtectedRoute>
         } />
 
         {/* Profile Route */}
