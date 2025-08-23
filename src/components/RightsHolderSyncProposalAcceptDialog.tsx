@@ -52,21 +52,32 @@ export function RightsHolderSyncProposalAcceptDialog({
 
       // Only redirect to Stripe if both parties have accepted
       if (updatedProposal.status === 'accepted') {
-        // Create a checkout session for the sync fee
-        const checkoutUrl = await createCheckoutSession(
-          'price_custom',
-          'payment',
-          undefined,
-          {
+        // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
             proposal_id: proposal.id,
             amount: Math.round(proposal.sync_fee * 100),
-            description: `Sync license for "${proposal.track.title}"`,
-            payment_terms: proposal.payment_terms || 'immediate'
-          },
-          `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
-        );
-        // Redirect to checkout
-        window.location.href = checkoutUrl;
+            client_user_id: user?.id,
+            payment_terms: proposal.payment_terms || 'immediate',
+            metadata: {
+              description: `Sync license for "${proposal.track.title}"`,
+              payment_terms: proposal.payment_terms || 'immediate'
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create payment session');
+        }
+
+        const { url } = await response.json();
+        window.location.href = url;
       } else {
         // Show waiting message
         setWaitingMessage('Your acceptance has been recorded. Waiting for the client to accept the proposal. You will be notified when payment is ready.');

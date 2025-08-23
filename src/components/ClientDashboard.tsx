@@ -1276,20 +1276,33 @@ const getPlanLevel = (plan: string): number => {
       }
       const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
       const amount = proposal.final_amount || proposal.sync_fee;
-      // For all payment terms, redirect to Stripe checkout to pay the invoice
-      const checkoutUrl = await createCheckoutSession(
-        'price_custom',
-        'payment',
-        undefined,
-        {
+      
+      // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
           proposal_id: proposal.id,
           amount: Math.round(amount * 100),
-          description: `Sync license for "${proposal.track?.title}"`,
-          payment_terms: paymentTerms
-        },
-        `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
-      );
-      window.open(checkoutUrl, '_self');
+          client_user_id: user?.id,
+          payment_terms: paymentTerms,
+          metadata: {
+            description: `Sync license for "${proposal.track?.title}"`,
+            payment_terms: paymentTerms
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment session');
+      }
+
+      const { url } = await response.json();
+      window.open(url, '_self');
     } catch (err) {
       console.error('Error initiating payment:', err);
       alert('Failed to initiate payment. Please try again.');
