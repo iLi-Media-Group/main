@@ -321,6 +321,7 @@ export function ProducerDashboard() {
 
   useEffect(() => {
     const fetchOpenSyncRequests = async () => {
+      if (!user) return;
       setLoadingSyncRequests(true);
       setSyncRequestsError(null);
       const { data, error } = await supabase
@@ -328,13 +329,14 @@ export function ProducerDashboard() {
         .select('*')
         .eq('status', 'open')
         .gte('end_date', new Date().toISOString())
+        .or(`selected_producer_id.eq.${user.id},selected_producer_id.is.null`)
         .order('created_at', { ascending: false });
       if (error) setSyncRequestsError(error.message);
       else setOpenSyncRequests(data || []);
       setLoadingSyncRequests(false);
     };
     fetchOpenSyncRequests();
-  }, []);
+  }, [user]);
 
   // Fetch renewal requests
   useEffect(() => {
@@ -552,7 +554,7 @@ export function ProducerDashboard() {
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests where this producer is the selected producer
+      // Fetch completed custom sync requests where this producer is the selected producer or open to all
       const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
         .select(`
@@ -563,7 +565,7 @@ export function ProducerDashboard() {
             email
           )
         `)
-        .eq('selected_producer_id', user.id)
+        .or(`selected_producer_id.eq.${user.id},selected_producer_id.is.null`)
         .eq('payment_status', 'paid')
         .order('updated_at', { ascending: false });
 

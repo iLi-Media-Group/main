@@ -377,7 +377,9 @@ export function RightsHolderDashboard() {
     try {
       setCustomSyncRequestsLoading(true);
       
-      // Use the same simple approach as Producer Dashboard
+      // For rights holders, show requests that are either:
+      // 1. Open to all rights holders (no specific rights holder selected)
+      // 2. Specifically assigned to this rights holder
       const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
@@ -391,6 +393,7 @@ export function RightsHolderDashboard() {
         `)
         .eq('status', 'open')
         .gte('end_date', new Date().toISOString())
+        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .order('created_at', { ascending: false });
       
       console.log('Debug - User ID:', user.id);
@@ -427,6 +430,7 @@ export function RightsHolderDashboard() {
           )
         `)
         .in('status', ['completed', 'paid'])
+        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .order('updated_at', { ascending: false });
 
       if (customSyncError) {
