@@ -377,13 +377,7 @@ export function RightsHolderDashboard() {
     try {
       setCustomSyncRequestsLoading(true);
       
-      // For rights holders, show requests that are either:
-      // 1. Open to all rights holders (no specific rights holder selected)
-      // 2. Specifically assigned to this rights holder
-      
-      const currentDate = new Date().toISOString();
-      
-      // Fetch open requests that haven't expired and are either open to all or assigned to this rights holder
+      // Use the same simple approach as Producer Dashboard
       const { data: requestsData, error: requestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
@@ -396,20 +390,17 @@ export function RightsHolderDashboard() {
           )
         `)
         .eq('status', 'open')
-        .gte('end_date', currentDate)
-        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
+        .gte('end_date', new Date().toISOString())
         .order('created_at', { ascending: false });
       
       console.log('Debug - User ID:', user.id);
-      console.log('Debug - Current date:', currentDate);
-      console.log('Debug - OR condition:', `selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`);
+      console.log('Debug - Fetched custom sync requests:', requestsData);
       
       if (requestsError) {
         console.error('Error fetching custom sync requests:', requestsError);
         throw requestsError;
       }
       
-      console.log('Fetched custom sync requests:', requestsData);
       setCustomSyncRequests(requestsData || []);
     } catch (error) {
       console.error('Error fetching custom sync requests:', error);
@@ -420,7 +411,6 @@ export function RightsHolderDashboard() {
   };
 
   // Fetch completed custom sync requests for rights holders
-  // Show requests where this rights holder was selected or all completed requests
   const fetchCompletedCustomSyncRequests = async () => {
     if (!user) return;
     
@@ -436,7 +426,6 @@ export function RightsHolderDashboard() {
             email
           )
         `)
-        .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .in('status', ['completed', 'paid'])
         .order('updated_at', { ascending: false });
 
