@@ -810,11 +810,11 @@ export function RightsHolderDashboard() {
                           </div>
                           <div className="flex space-x-2 mt-2">
                             <Link
-                              to={`/sync-proposal/${proposal.id}`}
+                              to={`/sync-proposal/${proposal.id}/history`}
                               className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                             >
-                              <Eye className="w-3 h-3 inline mr-1" />
-                              View Details
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              History
                             </Link>
                             <Link
                               to={`/sync-proposal/${proposal.id}/negotiate`}
@@ -822,6 +822,20 @@ export function RightsHolderDashboard() {
                             >
                               <MessageSquare className="w-3 h-3 inline mr-1" />
                               Negotiate
+                            </Link>
+                            <Link
+                              to={`/sync-proposal/${proposal.id}/accept`}
+                              className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
+                            >
+                              <Check className="w-3 h-3 inline mr-1" />
+                              Accept
+                            </Link>
+                            <Link
+                              to={`/sync-proposal/${proposal.id}/decline`}
+                              className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                            >
+                              <X className="w-3 h-3 inline mr-1" />
+                              Decline
                             </Link>
                           </div>
                         </div>
@@ -905,11 +919,11 @@ export function RightsHolderDashboard() {
                             </div>
                             <div className="flex space-x-2 mt-2">
                               <Link
-                                to={`/sync-proposal/${proposal.id}`}
+                                to={`/sync-proposal/${proposal.id}/history`}
                                 className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                               >
-                                <Eye className="w-3 h-3 inline mr-1" />
-                                View Details
+                                <Clock className="w-3 h-3 inline mr-1" />
+                                History
                               </Link>
                             </div>
                           </div>
@@ -950,11 +964,11 @@ export function RightsHolderDashboard() {
                           </div>
                           <div className="flex space-x-2 mt-2">
                             <Link
-                              to={`/sync-proposal/${proposal.id}`}
+                              to={`/sync-proposal/${proposal.id}/history`}
                               className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                             >
-                              <Eye className="w-3 h-3 inline mr-1" />
-                              View Details
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              History
                             </Link>
                           </div>
                         </div>
@@ -994,11 +1008,11 @@ export function RightsHolderDashboard() {
                         </div>
                         <div className="flex space-x-2 mt-2">
                           <Link
-                            to={`/sync-proposal/${proposal.id}`}
+                            to={`/sync-proposal/${proposal.id}/history`}
                             className="px-2 py-1 bg-white/10 hover:bg-white/20 text-white text-xs rounded transition-colors"
                           >
-                            <Eye className="w-3 h-3 inline mr-1" />
-                            View Details
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            History
                           </Link>
                         </div>
                       </div>
