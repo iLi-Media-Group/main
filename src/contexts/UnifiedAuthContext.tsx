@@ -284,22 +284,28 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
   // Rights holder authentication methods
   const signUpRightsHolder = async (email: string, password: string, rightsHolderData: Partial<Profile>) => {
+    console.log('🚀 Starting rights holder signup for:', email);
+    
     try {
       // Check if email already exists in profiles table
+      console.log('🔍 Checking if email already exists...');
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, account_type, verification_status')
         .eq('email', email)
         .maybeSingle();
 
       if (checkError) {
-        console.error('Error checking existing email:', checkError);
+        console.error('❌ Error checking existing email:', checkError);
         return { error: new Error('Error checking email availability. Please try again.') };
       }
 
       if (existingProfile) {
+        console.log('❌ Email already exists:', existingProfile);
         return { error: new Error('An account with this email already exists. Please use a different email address or try signing in.') };
       }
+
+      console.log('✅ Email is available, creating auth user...');
 
       // Create the auth user first
       const { data, error } = await supabase.auth.signUp({ 
@@ -311,13 +317,16 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       });
       
       if (error) {
-        console.error('Rights holder sign up error:', error);
+        console.error('❌ Rights holder sign up error:', error);
         return { error };
       }
 
       if (!data.user) {
+        console.error('❌ No user data returned from auth signup');
         return { error: new Error('Failed to create user account. Please try again.') };
       }
+
+      console.log('✅ Auth user created:', data.user.id);
 
       // Insert the profile with retry logic
       let retryCount = 0;
@@ -325,54 +334,66 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       
       while (retryCount < maxRetries) {
         try {
+          console.log(`🔄 Attempting to create profile (attempt ${retryCount + 1}/${maxRetries})...`);
+          
+          const profileData = {
+            id: data.user.id,
+            email: data.user.email,
+            account_type: 'rights_holder',
+            verification_status: 'pending',
+            is_active: false,
+            ...rightsHolderData,
+          };
+          
+          console.log('📝 Profile data to insert:', profileData);
+
           const { error: insertError } = await supabase
             .from('profiles')
-            .insert({
-              id: data.user.id,
-              email: data.user.email,
-              account_type: 'rights_holder',
-              verification_status: 'pending',
-              is_active: false,
-              ...rightsHolderData,
-            });
+            .insert(profileData);
 
           if (insertError) {
-            console.error(`Error creating rights holder (attempt ${retryCount + 1}):`, insertError);
+            console.error(`❌ Error creating rights holder (attempt ${retryCount + 1}):`, insertError);
             
             // Handle specific duplicate key error
             if (insertError.code === '23505' && insertError.message.includes('profiles_email_key')) {
+              console.log('🔄 Duplicate key error detected, checking if it\'s a race condition...');
+              
               // Check if this is actually a duplicate or a race condition
               const { data: doubleCheck } = await supabase
                 .from('profiles')
-                .select('id')
+                .select('id, account_type, verification_status')
                 .eq('email', email)
                 .maybeSingle();
                 
               if (doubleCheck && doubleCheck.id === data.user.id) {
                 // This is our own profile, the insert actually succeeded
-                console.log('Profile insert succeeded despite duplicate key error (race condition)');
+                console.log('✅ Profile insert succeeded despite duplicate key error (race condition)');
                 break;
               } else if (doubleCheck && doubleCheck.id !== data.user.id) {
                 // This is a real duplicate
+                console.log('❌ Real duplicate found:', doubleCheck);
                 return { error: new Error('An account with this email already exists. Please use a different email address or try signing in.') };
               }
             }
             
             // If it's not a duplicate key error, retry
             if (retryCount === maxRetries - 1) {
+              console.error('❌ Max retries reached, giving up');
               return { error: insertError };
             }
             
             retryCount++;
             // Wait a bit before retrying
+            console.log(`⏳ Waiting 1 second before retry...`);
             await new Promise(resolve => setTimeout(resolve, 1000));
             continue;
           }
           
+          console.log('✅ Profile created successfully!');
           // Success, break out of retry loop
           break;
         } catch (retryError) {
-          console.error(`Retry error (attempt ${retryCount + 1}):`, retryError);
+          console.error(`❌ Retry error (attempt ${retryCount + 1}):`, retryError);
           if (retryCount === maxRetries - 1) {
             return { error: retryError };
           }
@@ -381,52 +402,70 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         }
       }
 
-        // Send notification email to admin about new rights holder application
-        try {
-          const { error: emailError } = await supabase.functions.invoke('send-new-rights-holder-notification', {
-            body: {
-              rightsHolderEmail: email,
-              rightsHolderName: rightsHolderData.company_name || rightsHolderData.legal_entity_name || 'Rights Holder',
-              companyName: rightsHolderData.company_name,
-              rightsHolderType: rightsHolderData.rights_holder_type,
-              businessStructure: rightsHolderData.business_structure,
-              phone: rightsHolderData.phone,
-              address: [
-                rightsHolderData.address_line_1,
-                rightsHolderData.city,
-                rightsHolderData.state,
-                rightsHolderData.postal_code,
-                rightsHolderData.country
-              ].filter(Boolean).join(', ')
-            }
-          });
+      // Verify the profile was created correctly
+      console.log('🔍 Verifying profile creation...');
+      const { data: verifyProfile, error: verifyError } = await supabase
+        .from('profiles')
+        .select('id, email, account_type, verification_status, is_active, company_name')
+        .eq('id', data.user.id)
+        .single();
 
-          if (emailError) {
-            console.error('Error sending notification email:', emailError);
-            // Don't return error here as the account was created successfully
+      if (verifyError) {
+        console.error('❌ Error verifying profile:', verifyError);
+      } else {
+        console.log('✅ Profile verification successful:', verifyProfile);
+      }
+
+      // Send notification email to admin about new rights holder application
+      console.log('📧 Sending admin notification email...');
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-new-rights-holder-notification', {
+          body: {
+            rightsHolderEmail: email,
+            rightsHolderName: rightsHolderData.company_name || rightsHolderData.legal_entity_name || 'Rights Holder',
+            companyName: rightsHolderData.company_name,
+            rightsHolderType: rightsHolderData.rights_holder_type,
+            businessStructure: rightsHolderData.business_structure,
+            phone: rightsHolderData.phone,
+            address: [
+              rightsHolderData.address_line_1,
+              rightsHolderData.city,
+              rightsHolderData.state,
+              rightsHolderData.postal_code,
+              rightsHolderData.country
+            ].filter(Boolean).join(', ')
           }
-        } catch (emailErr) {
-          console.error('Error calling notification email function:', emailErr);
-          // Don't return error here as the account was created successfully
-        }
-               } catch (error) {
-           console.error('Error creating rights holder:', error);
-           
-           // If we created the auth user but failed to create the profile, 
-           // we should clean up the auth user to avoid orphaned accounts
-           try {
-             console.log('Cleaning up orphaned auth user due to profile creation failure');
-             // Note: We can't delete the auth user from the client side, 
-             // but we can at least sign out to prevent issues
-             await supabase.auth.signOut();
-           } catch (cleanupError) {
-             console.error('Error during cleanup:', cleanupError);
-           }
-           
-           return { error };
-         }
+        });
 
-    return { error: null };
+        if (emailError) {
+          console.error('❌ Error sending notification email:', emailError);
+          // Don't return error here as the account was created successfully
+        } else {
+          console.log('✅ Admin notification email sent successfully');
+        }
+      } catch (emailErr) {
+        console.error('❌ Error calling notification email function:', emailErr);
+        // Don't return error here as the account was created successfully
+      }
+
+      console.log('🎉 Rights holder signup completed successfully!');
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Error creating rights holder:', error);
+      
+      // If we created the auth user but failed to create the profile, 
+      // we should clean up the auth user to avoid orphaned accounts
+      try {
+        console.log('🧹 Cleaning up orphaned auth user due to profile creation failure');
+        // Note: We can't delete the auth user from the client side, 
+        // but we can at least sign out to prevent issues
+        await supabase.auth.signOut();
+      } catch (cleanupError) {
+        console.error('❌ Error during cleanup:', cleanupError);
+      }
+      
+      return { error };
+    }
   };
 
   const updateRightsHolder = async (data: Partial<Profile>) => {
