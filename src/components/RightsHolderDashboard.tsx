@@ -359,10 +359,13 @@ export function RightsHolderDashboard() {
     try {
       setCustomSyncRequestsLoading(true);
       
-      // Fetch custom sync requests where this rights holder is the selected producer
-      // OR where they are the preferred rights holder
-      // OR where it's an open request that they can potentially submit to
-      const { data: requestsData, error: requestsError } = await supabase
+      // For rights holders, show all open requests that haven't expired
+      // This allows them to see requests they can potentially submit proposals to
+      
+      const currentDate = new Date().toISOString();
+      
+      // First, let's fetch all open requests that haven't expired
+      const { data: openRequestsData, error: openRequestsError } = await supabase
         .from('custom_sync_requests')
         .select(`
           *,
@@ -373,12 +376,43 @@ export function RightsHolderDashboard() {
             email
           )
         `)
-        .or(`selected_producer_id.eq.${user.id},preferred_rights_holder_id.eq.${user.id},and(status.eq.open,end_date.gte.${new Date().toISOString()})`)
+        .eq('status', 'open')
+        .gte('end_date', currentDate)
         .order('created_at', { ascending: false });
       
-      if (requestsError) throw requestsError;
+      if (openRequestsError) {
+        console.error('Error fetching open requests:', openRequestsError);
+        throw openRequestsError;
+      }
       
-      setCustomSyncRequests(requestsData || []);
+      // Also fetch requests where this rights holder is selected or preferred
+      const { data: selectedRequestsData, error: selectedRequestsError } = await supabase
+        .from('custom_sync_requests')
+        .select(`
+          *,
+          client:profiles!custom_sync_requests_client_id_fkey(
+            id,
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .or(`selected_producer_id.eq.${user.id},preferred_rights_holder_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+      
+      if (selectedRequestsError) {
+        console.error('Error fetching selected requests:', selectedRequestsError);
+        throw selectedRequestsError;
+      }
+      
+      // Combine and deduplicate the results
+      const allRequests = [...(openRequestsData || []), ...(selectedRequestsData || [])];
+      const uniqueRequests = allRequests.filter((request, index, self) => 
+        index === self.findIndex(r => r.id === request.id)
+      );
+      
+      console.log('Fetched custom sync requests:', uniqueRequests);
+      setCustomSyncRequests(uniqueRequests);
     } catch (error) {
       console.error('Error fetching custom sync requests:', error);
       setCustomSyncRequests([]);
