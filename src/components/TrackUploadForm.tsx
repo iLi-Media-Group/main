@@ -814,9 +814,13 @@ export function TrackUploadForm() {
         instruments: formData.selectedInstruments || [],
         media_usage: formData.selectedMediaUsage || [],
         explicit_lyrics: formData.isCleanVersion ? false : formData.explicitLyrics,
-        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null
-        // Removed sample clearance fields as they might not exist in the tracks table
-        // These should be handled in a separate table or added to the schema first
+        clean_version_of: formData.isCleanVersion && formData.cleanVersionOf ? formData.cleanVersionOf : null,
+        // Sample clearance fields
+        contains_loops: formData.containsLoops,
+        contains_samples: formData.containsSamples,
+        contains_splice_loops: formData.containsSpliceLoops,
+        samples_cleared: formData.samplesCleared,
+        sample_clearance_notes: formData.sampleClearanceNotes || null
       };
       
       console.log('[DEBUG] Full insert data:', insertData);
@@ -2135,8 +2139,84 @@ export function TrackUploadForm() {
                 >
                   + Add Participant
                 </button>
-                        </div>
-                      </div>
+              </div>
+
+              {/* Sample Clearance Section */}
+              <div className="bg-blue-800/80 backdrop-blur-sm rounded-xl border border-blue-500/40 p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Sample Clearance</h2>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.containsLoops}
+                        onChange={(e) => updateFormData({ containsLoops: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isSubmitting}
+                      />
+                      <label className="ml-2 text-sm text-gray-300">
+                        Contains loops
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.containsSamples}
+                        onChange={(e) => updateFormData({ containsSamples: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isSubmitting}
+                      />
+                      <label className="ml-2 text-sm text-gray-300">
+                        Contains samples
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.containsSpliceLoops}
+                        onChange={(e) => updateFormData({ containsSpliceLoops: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isSubmitting}
+                      />
+                      <label className="ml-2 text-sm text-gray-300">
+                        Contains Splice loops
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.samplesCleared}
+                        onChange={(e) => updateFormData({ samplesCleared: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        disabled={isSubmitting}
+                      />
+                      <label className="ml-2 text-sm text-gray-300">
+                        Samples are cleared
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Sample Clearance Notes
+                    </label>
+                    <textarea
+                      value={formData.sampleClearanceNotes}
+                      onChange={(e) => updateFormData({ sampleClearanceNotes: e.target.value })}
+                      className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                      placeholder="Provide details about sample clearance, sources, or any relevant information..."
+                      rows={3}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           )}
 
           {/* Step 6: Co-signers */}
