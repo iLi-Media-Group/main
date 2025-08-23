@@ -400,6 +400,10 @@ export function RightsHolderDashboard() {
         .or(`selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`)
         .order('created_at', { ascending: false });
       
+      console.log('Debug - User ID:', user.id);
+      console.log('Debug - Current date:', currentDate);
+      console.log('Debug - OR condition:', `selected_rights_holder_id.eq.${user.id},selected_rights_holder_id.is.null`);
+      
       if (requestsError) {
         console.error('Error fetching custom sync requests:', requestsError);
         throw requestsError;
@@ -1088,22 +1092,8 @@ export function RightsHolderDashboard() {
                                      </span>
                                    </div>
                                  )}
-                                 {/* Overdue Badge - displayed when payment is overdue */}
-                                 {isOverdue && (
-                                   <div className="mt-2">
-                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30">
-                                       OVERDUE
-                                     </span>
-                                   </div>
-                                 )}
-                                 {/* Payment Pending Badge - positioned under the amount and date */}
-                                 {isPaymentPending && !isOverdue && (
-                                   <div className="mt-2">
-                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
-                                       Payment Pending
-                                     </span>
-                                   </div>
-                                 )}
+                                 {/* Rights holders don't make payments - overdue badge removed */}
+                                 {/* Rights holders don't make payments - payment pending badge removed */}
                                </div>
                              </div>
                              <div className="flex items-center justify-between mt-2">
@@ -1115,15 +1105,8 @@ export function RightsHolderDashboard() {
                                    <Clock className="w-3 h-3 inline mr-1" />
                                    History
                                  </button>
-                                 {/* Complete Payment button - moved to the right side */}
-                                 {isPaymentPending && (
-                                   <button
-                                     onClick={() => handlePaymentPendingProposal(proposal)}
-                                     className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-                                   >
-                                     Complete Payment
-                                   </button>
-                                 )}
+                                                                 {/* Rights holders don't make payments - they receive payments */}
+                                {/* Payment is handled by the client, not the rights holder */}
                                </div>
                              </div>
                           </div>
