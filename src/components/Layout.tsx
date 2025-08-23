@@ -58,50 +58,57 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
   };
 
   const getDashboardLink = () => {
-    if (isAdmin) {
-      return '/admin';
-    }
     if (accountType === 'white_label') {
       return '/white-label-dashboard';
     }
     if (accountType === 'rights_holder') {
       return '/rights-holder/dashboard';
     }
-    // For producers, return the main dashboard (not producer dashboard since it's shown separately)
-    if (accountType && accountType.includes('producer')) {
+    if (accountType === 'client') {
+      return '/dashboard';
+    }
+    if (accountType === 'producer') {
+      return '/dashboard';
+    }
+    if (accountType === 'admin,producer') {
       return '/dashboard';
     }
     return '/dashboard';
   };
 
   const getDashboardIcon = () => {
-    if (isAdmin) {
-      return <Shield className="w-4 h-4 mr-2" />;
-    }
     if (accountType === 'white_label') {
       return <UserCog className="w-4 h-4 mr-2" />;
     }
     if (accountType === 'rights_holder') {
       return <Building2 className="w-4 h-4 mr-2" />;
     }
-    // For producers, return the main dashboard icon (not producer dashboard since it's shown separately)
+    if (accountType === 'client') {
+      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+    }
+    if (accountType === 'producer') {
+      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+    }
+    if (accountType === 'admin,producer') {
+      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+    }
     return <LayoutDashboard className="w-4 h-4 mr-2" />;
   };
 
   const getDashboardLabel = () => {
-    console.log('🔍 getDashboardLabel - isAdmin:', isAdmin, 'accountType:', accountType);
-    
-    if (isAdmin) {
-      return 'Admin Dashboard';
-    }
     if (accountType === 'white_label') {
       return 'White Label Dashboard';
     }
     if (accountType === 'rights_holder') {
       return 'Rights Holder Dashboard';
     }
-    // For producers, return the main dashboard label (not producer dashboard since it's shown separately)
-    if (accountType && accountType.includes('producer')) {
+    if (accountType === 'client') {
+      return 'Dashboard';
+    }
+    if (accountType === 'producer') {
+      return 'Dashboard';
+    }
+    if (accountType === 'admin,producer') {
       return 'Dashboard';
     }
     return 'Dashboard';
@@ -279,32 +286,50 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
-                      {(() => {
-                        console.log('🔍 Navigation Debug - user:', user?.email, 'isAdmin:', isAdmin, 'accountType:', accountType);
-                        return null;
-                      })()}
-                      
-                      {/* Show appropriate dashboard based on account type */}
-                      {accountType === 'rights_holder' ? (
+                      {/* Rights Holder Dashboard */}
+                      {accountType === 'rights_holder' && (
                         <Link to="/rights-holder/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <Building2 className="w-4 h-4 mr-2" />
                           Rights Holder Dashboard
                         </Link>
-                      ) : (
+                      )}
+
+                      {/* Client Dashboard */}
+                      {accountType === 'client' && (
+                        <Link to="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </Link>
+                      )}
+
+                      {/* Producer Dashboard */}
+                      {accountType === 'producer' && (
+                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <Music className="w-4 h-4 mr-2" />
+                          Producer Dashboard
+                        </Link>
+                      )}
+
+                      {/* Admin + Producer Dashboard */}
+                      {accountType === 'admin,producer' && (
                         <>
-                          {/* Show main dashboard for non-rights-holder users */}
-                          <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                            {getDashboardIcon()}
-                            {getDashboardLabel()}
+                          <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                            <Music className="w-4 h-4 mr-2" />
+                            Producer Dashboard
                           </Link>
-                          {/* Show Producer Dashboard for producers and admin+producer users */}
-                          {(accountType === 'producer' || accountType === 'admin,producer' || (isAdmin && accountType !== 'producer' && accountType !== 'admin,producer')) && (
-                            <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                              <Music className="w-4 h-4 mr-2" />
-                              Producer Dashboard
-                            </Link>
-                          )}
+                          <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                            <Shield className="w-4 h-4 mr-2" />
+                            Admin Dashboard
+                          </Link>
                         </>
+                      )}
+
+                      {/* White Label Dashboard */}
+                      {accountType === 'white_label' && (
+                        <Link to="/white-label-dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <UserCog className="w-4 h-4 mr-2" />
+                          White Label Dashboard
+                        </Link>
                       )}
                   </>
                 )}
