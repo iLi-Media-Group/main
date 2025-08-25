@@ -1328,42 +1328,7 @@ const getPlanLevel = (plan: string): number => {
     }
   };
 
-  // New secure download handler using Edge Function streaming
-  const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3", boomBoxUrl?: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const jwt = session?.access_token;
-      if (!jwt) {
-        alert("You must be logged in to download.");
-        return;
-      }
-      let shareId = trackId;
-      if (boomBoxUrl && boomBoxUrl.includes('app.boombox.io/app/shares/')) {
-        shareId = boomBoxUrl.split('app.boombox.io/app/shares/')[1];
-      }
-      const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&shareId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${jwt}` }
-      });
-      if (!res.ok) {
-        alert("Download failed. Please check your license or contact support.");
-        return;
-      }
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      alert("Download failed. Please contact support.");
-    }
-  };
+
 
 
 
