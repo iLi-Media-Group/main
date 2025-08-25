@@ -98,6 +98,7 @@ import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRo
 import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
 import { TrackUploadForm } from './components/TrackUploadForm';
 import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
+import ApplicationTypeSelector from './components/ApplicationTypeSelector';
 import { RightsHolderAnalytics } from './components/RightsHolderAnalytics';
 import { RightsHolderRecordings } from './components/RightsHolderRecordings';
 import SyncLicensingCourse from './components/SyncLicensingCourse';
@@ -339,7 +340,8 @@ const App = () => {
         <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
         <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
 <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
-<Route path="/sync-licensing-course" element={<LayoutWrapper><SyncLicensingCourse /></LayoutWrapper>} />
+        <Route path="/sync-licensing-course" element={<LayoutWrapper><SyncLicensingCourse /></LayoutWrapper>} />
+        <Route path="/application-type-selector" element={<LayoutWrapper><ApplicationTypeSelector /></LayoutWrapper>} />
         <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
         <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />

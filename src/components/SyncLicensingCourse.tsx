@@ -209,7 +209,7 @@ const SyncLicensingCourse: React.FC = () => {
                   </Link>
                   
                   <Link 
-                    to="/signup" 
+                    to="/application-type-selector" 
                     className="flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
                   >
                     Apply as Producer/Artist
