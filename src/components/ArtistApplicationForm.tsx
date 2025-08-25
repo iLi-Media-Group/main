@@ -320,9 +320,9 @@ const ArtistApplicationForm: React.FC = () => {
                 required
               >
                 <option value="">Select...</option>
-                <option value="solo">Solo Artist</option>
-                <option value="duo">Duo</option>
-                <option value="band">Band</option>
+                <option value="Solo Artist">Solo Artist</option>
+                <option value="Duo">Duo</option>
+                <option value="Band">Band</option>
               </select>
             </div>
 

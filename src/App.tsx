@@ -54,6 +54,7 @@ import ArtistApplicationForm from './components/ArtistApplicationForm';
 import ArtistDashboard from './components/ArtistDashboard';
 import ArtistLogin from './components/ArtistLogin';
 import ApplicationsAdmin from './components/ApplicationsAdmin';
+import ArtistApplicationStatus from './components/ArtistApplicationStatus';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
@@ -362,6 +363,13 @@ const App = () => {
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
               <ApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/artist-application-status" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <ArtistApplicationStatus />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

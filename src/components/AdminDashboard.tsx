@@ -23,6 +23,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { AdminReportGenerator } from './AdminReportGenerator';
 import ProducerApplicationsAdmin from './ProducerApplicationsAdmin';
+import ApplicationsAdmin from './ApplicationsAdmin';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { SynonymManager } from './SynonymManager';
 import { BackgroundManager } from './BackgroundManager';
@@ -1529,7 +1530,7 @@ if (subscription.price_id) {
             { id: 'instruments', label: 'Instruments', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'moods', label: 'Moods', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
-            { id: 'producer_applications', label: 'Producer Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
+            { id: 'producer_applications', label: 'Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'producer_badges', label: 'Producer Badges', icon: <Shield className="w-4 h-4 mr-2" /> },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
             { id: 'synonyms', label: 'Search Synonyms', icon: <Search className="w-4 h-4 mr-2" /> },
@@ -2044,14 +2045,14 @@ if (subscription.price_id) {
         )}
 
         {activeTab === 'producer_applications' && producerOnboardingEnabled && (
-          <ProducerApplicationsAdmin />
+          <ApplicationsAdmin />
         )}
 
         {activeTab === 'producer_applications' && !producerOnboardingEnabled && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <div className="text-center py-12">
               <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-4">Producer Applications</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">Applications</h2>
               <p className="text-gray-400 mb-6">This feature requires the Producer Onboarding add-on to be enabled.</p>
               <p className="text-sm text-gray-500">Contact your administrator to enable this feature.</p>
             </div>

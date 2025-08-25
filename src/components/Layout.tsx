@@ -16,11 +16,36 @@ interface LayoutProps {
 export function Layout({ children, onSignupClick, hideHeader = false }: LayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [artistApplicationStatus, setArtistApplicationStatus] = useState<string | null>(null);
   const { user, accountType, signOut } = useUnifiedAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isAdmin = user?.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email);
 
+  // Check artist application status
+  useEffect(() => {
+    const checkArtistApplicationStatus = async () => {
+      if (accountType === 'artist_band' && user?.email) {
+        try {
+          const { data, error } = await supabase
+            .from('artist_applications')
+            .select('status')
+            .eq('email', user.email)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (!error && data) {
+            setArtistApplicationStatus(data.status);
+          }
+        } catch (error) {
+          console.error('Error checking artist application status:', error);
+        }
+      }
+    };
+
+    checkArtistApplicationStatus();
+  }, [accountType, user?.email]);
 
   useEffect(() => {
     const fetchLogo = async () => {
@@ -57,7 +82,22 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     }
   };
 
+  // Check if artist is approved
+  const isArtistApproved = () => {
+    return accountType === 'artist_band' && artistApplicationStatus === 'approved';
+  };
+
+  // Check if artist application is pending
+  const isArtistPending = () => {
+    return accountType === 'artist_band' && artistApplicationStatus && artistApplicationStatus !== 'approved';
+  };
+
   const getDashboardLink = () => {
+    // Prevent artists from accessing dashboard if not approved
+    if (accountType === 'artist_band' && !isArtistApproved()) {
+      return '/artist-application-status';
+    }
+    
     if (accountType === 'white_label') {
       return '/white-label-dashboard';
     }
@@ -102,6 +142,11 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
   };
 
   const getDashboardLabel = () => {
+    // Show application status for pending artists
+    if (isArtistPending()) {
+      return 'Application Status';
+    }
+    
     if (accountType === 'white_label') {
       return 'White Label Dashboard';
     }
