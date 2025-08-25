@@ -1684,7 +1684,7 @@ const getPlanLevel = (plan: string): number => {
                 See Submissions
               </Link>
               <Link
-                to="/custom-sync-request"
+                to="/client/custom-sync-request"
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
