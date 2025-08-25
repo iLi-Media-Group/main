@@ -23,6 +23,7 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
   const [paymentTerms, setPaymentTerms] = useState<'immediate' | 'net30' | 'net60' | 'net90'>('immediate');
   const [expirationDate, setExpirationDate] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
+  const [useClientContract, setUseClientContract] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -86,6 +87,7 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
           payment_terms: paymentTerms,
           expiration_date: new Date(expirationDate).toISOString(),
           is_urgent: isUrgent,
+          use_client_contract: useClientContract,
           status: 'pending',
           client_status: 'pending',
           producer_status: 'pending',
@@ -293,6 +295,27 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
               Urgent Proposal (Response within 48 hours)
             </label>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={useClientContract}
+              onChange={(e) => setUseClientContract(e.target.checked)}
+              className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+            />
+            <label className="text-gray-300">
+              I will provide my own contract with terms for this sync
+            </label>
+          </div>
+          
+          {useClientContract && (
+            <div className="p-4 bg-blue-800/50 border border-blue-600/30 rounded-lg">
+              <p className="text-blue-200 text-sm">
+                <strong>Note:</strong> If your proposal is accepted, you will be able to upload your contract PDF. 
+                The producer/artist will need to sign your contract before files are made available.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-4">
             <button

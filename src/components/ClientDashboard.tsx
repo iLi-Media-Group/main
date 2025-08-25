@@ -1046,6 +1046,16 @@ const getPlanLevel = (plan: string): number => {
           last_message_at,
           client_terms_accepted,
           producer_terms_accepted,
+          use_client_contract,
+          client_contract_uploaded,
+          client_contract_url,
+          client_contract_filename,
+          client_contract_uploaded_at,
+          client_contract_signed,
+          client_contract_signed_at,
+          client_contract_signed_by,
+          client_contract_signed_url,
+          client_contract_signed_filename,
           client:profiles!sync_proposals_client_id_fkey(
             id,
             first_name,
@@ -1101,6 +1111,15 @@ const getPlanLevel = (plan: string): number => {
       setSyncProposalSortField(field);
       setSyncProposalSortOrder('desc');
     }
+  };
+
+  const handleDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleRemoveFavorite = async (trackId: string) => {
@@ -2008,6 +2027,43 @@ const getPlanLevel = (plan: string): number => {
                       </div>
                     </div>
                     
+                    {/* Contract Information */}
+                    {proposal.use_client_contract && (
+                      <div className="mt-3 p-3 bg-blue-900/30 border border-blue-600/30 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="w-4 h-4 text-blue-400 mr-2" />
+                            <span className="text-blue-200 text-sm font-medium">Client Contract</span>
+                          </div>
+                          {proposal.client_contract_uploaded ? (
+                            <div className="flex items-center space-x-2">
+                              {proposal.client_contract_signed ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Signed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Pending Signature
+                                </span>
+                              )}
+                              <button
+                                onClick={() => handleDownload(proposal.client_contract_url, proposal.client_contract_filename)}
+                                className="text-blue-400 hover:text-blue-300 text-xs"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                              Not Uploaded
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2 mt-4">
                       <button
                         onClick={() => handleShowHistory(proposal)}

@@ -26,6 +26,7 @@ export default function CustomSyncRequest() {
   const [selectedRightsHolder, setSelectedRightsHolder] = useState('');
   const [submissionInstructions, setSubmissionInstructions] = useState('');
   const [submissionEmail, setSubmissionEmail] = useState('');
+  const [useClientContract, setUseClientContract] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -58,6 +59,7 @@ export default function CustomSyncRequest() {
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
           payment_terms: paymentTerms,
+          use_client_contract: useClientContract,
           status: 'open'
         })
         .select()
@@ -368,6 +370,25 @@ export default function CustomSyncRequest() {
                 required={hasPreferredRightsHolder}
               />
             </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={useClientContract}
+                onChange={(e) => setUseClientContract(e.target.checked)}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">I will provide my own contract with terms for this sync</span>
+            </label>
+            
+            {useClientContract && (
+              <div className="p-4 bg-blue-800/50 border border-blue-600/30 rounded-lg">
+                <p className="text-blue-200 text-sm">
+                  <strong>Note:</strong> If your request is accepted, you will be able to upload your contract PDF. 
+                  The producer/artist will need to sign your contract before files are made available.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
