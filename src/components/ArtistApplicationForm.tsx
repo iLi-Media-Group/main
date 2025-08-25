@@ -135,6 +135,9 @@ const ArtistApplicationForm: React.FC = () => {
     if (savedStep) {
       setCurrentStep(parseInt(savedStep));
     }
+    
+    // Clear any existing error state on component mount
+    setError('');
   }, []);
 
   // Save form data to localStorage whenever it changes
@@ -148,6 +151,10 @@ const ArtistApplicationForm: React.FC = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear any previous errors when user makes changes
+    if (error) {
+      setError('');
+    }
   };
 
   const calculateQuizScore = (data: typeof formData): number => {
@@ -260,12 +267,14 @@ const ArtistApplicationForm: React.FC = () => {
   const nextStep = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+      setError(''); // Clear any previous errors when navigating
     }
   };
 
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
+      setError(''); // Clear any previous errors when navigating
     }
   };
 
