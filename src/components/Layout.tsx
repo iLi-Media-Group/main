@@ -499,6 +499,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   <Link to="/pricing" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
                   </Link>
+                  <Link to="/sync-licensing-course" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                    <FileText className="w-4 h-4 mr-2" />Sync Licensing Course
+                  </Link>
                   {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
                     <Link to="/producer/resources" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <FileText className="w-4 h-4 mr-2" />Producer Resources
