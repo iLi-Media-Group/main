@@ -1054,7 +1054,6 @@ const ProducerApplicationForm: React.FC = () => {
                   </div>
                 </div>
               )}
-      )}
 
               {/* Error Message */}
               {error && (
