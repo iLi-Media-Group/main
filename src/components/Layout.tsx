@@ -68,13 +68,13 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
       return '/dashboard';
     }
     if (accountType === 'producer') {
-      return '/dashboard';
+      return '/producer/dashboard';
     }
     if (accountType === 'artist_band') {
       return '/artist/dashboard';
     }
     if (accountType === 'admin,producer') {
-      return '/dashboard';
+      return '/producer/dashboard';
     }
     return '/dashboard';
   };
@@ -112,13 +112,13 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
       return 'Dashboard';
     }
     if (accountType === 'producer') {
-      return 'Dashboard';
+      return 'Producer Dashboard';
     }
     if (accountType === 'artist_band') {
       return 'Artist Dashboard';
     }
     if (accountType === 'admin,producer') {
-      return 'Dashboard';
+      return 'Producer Dashboard';
     }
     return 'Dashboard';
   };
