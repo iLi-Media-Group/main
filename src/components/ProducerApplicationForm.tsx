@@ -349,412 +349,768 @@ const ProducerApplicationForm: React.FC = () => {
 
   if (success) {
     return (
-      <div className="max-w-6xl mx-auto p-8 bg-green-50 rounded-xl shadow-lg flex flex-col items-center">
-        <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-green-800">Thank you!</h2>
-        <p className="text-green-700 text-center">Your application has been submitted. Our team will review and contact you if selected.</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-blue-500/20 text-center">
+          <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-white mb-4">Application Submitted!</h2>
+          <p className="text-gray-300 mb-6">
+            Thank you for your producer application. We'll review your submission and get back to you within 5-7 business days.
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+          >
+            Return to Home
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto bg-white/10 backdrop-blur-md p-8 rounded-xl shadow-lg space-y-8 mt-8">
-      {/* Progress Bar */}
-      <div className="flex items-center mb-6 overflow-x-auto">
-        {steps.map((label, idx) => (
-          <React.Fragment key={label}>
-            <div className={`flex items-center flex-shrink-0 ${idx <= step ? 'text-blue-600' : 'text-gray-400'}`}> 
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 ${idx <= step ? 'border-blue-600 bg-blue-100' : 'border-gray-300 bg-white/20'}`}>{idx + 1}</div>
-              <span className="ml-2 font-medium text-sm whitespace-nowrap">{label}</span>
-            </div>
-            {idx < steps.length - 1 && <div className={`flex-1 h-1 mx-2 rounded min-w-8 ${idx < step ? 'bg-blue-600' : 'bg-gray-300'}`}></div>}
-          </React.Fragment>
-        ))}
-      </div>
-
-      {/* Validation Errors */}
-      {validationErrors.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center mb-2">
-            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
-            <h3 className="text-red-800 font-semibold">Please complete all required fields:</h3>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-white mb-4">Producer Application</h1>
+            <p className="text-xl text-blue-200">
+              Join our sync licensing platform and get your music featured in TV, film, and advertising
+            </p>
           </div>
-          <ul className="text-red-700 text-sm space-y-1">
-            {validationErrors.map((error, index) => (
-              <li key={index} className="flex items-center">
-                <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
-                {error}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
 
-      {/* Step Content */}
-      {step === 0 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><User className="w-5 h-5 mr-2" />Contact Info</h2>
-          <input name="name" placeholder="Full Name *" value={formData.name} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-          <input name="email" type="email" placeholder="Email *" value={formData.email} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-        </div>
-      )}
-      {step === 1 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Music className="w-5 h-5 mr-2" />Experience</h2>
-          <input name="primary_genre" placeholder="Primary Genre *" value={formData.primary_genre} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-          <input name="secondary_genre" placeholder="Secondary Genre (optional)" value={formData.secondary_genre} onChange={handleChange} className="w-full border p-3 rounded text-black" />
-          <input name="years_experience" placeholder="Years of Experience *" value={formData.years_experience} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-          <input name="daws_used" placeholder="DAWs Used (comma separated) *" value={formData.daws_used} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-          <select name="team_type" value={formData.team_type} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Select Team Type *</option>
-            <option value="One Man Team">One Man Team</option>
-            <option value="Band">Band</option>
-            <option value="Other">Other</option>
-          </select>
-          <input name="tracks_per_week" placeholder="Tracks per Week *" value={formData.tracks_per_week} onChange={handleChange} required className="w-full border p-3 rounded text-black" />
-        </div>
-      )}
-      {step === 2 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Music className="w-5 h-5 mr-2" />Music & Links</h2>
-          
-          {/* Instruments Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-white">Instruments You Play (up to 4)</h3>
-            
-            {/* Instrument 1 */}
-            <div className="grid grid-cols-3 gap-2">
-              <input 
-                name="instrument_one" 
-                placeholder="Instrument 1" 
-                value={formData.instrument_one} 
-                onChange={handleChange} 
-                className="col-span-2 border p-3 rounded text-black" 
-              />
-              <select 
-                name="instrument_one_proficiency" 
-                value={formData.instrument_one_proficiency} 
-                onChange={handleChange} 
-                className="border p-3 rounded text-black"
-              >
-                <option value="">Level</option>
-                {proficiencyOptions.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
+          {/* Progress Bar */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-300">Step {step + 1} of {steps.length}</span>
+              <span className="text-sm text-gray-300">{Math.round(((step + 1) / steps.length) * 100)}%</span>
             </div>
-
-            {/* Instrument 2 */}
-            <div className="grid grid-cols-3 gap-2">
-              <input 
-                name="instrument_two" 
-                placeholder="Instrument 2" 
-                value={formData.instrument_two} 
-                onChange={handleChange} 
-                className="col-span-2 border p-3 rounded text-black" 
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((step + 1) / steps.length) * 100}%` }}
               />
-              <select 
-                name="instrument_two_proficiency" 
-                value={formData.instrument_two_proficiency} 
-                onChange={handleChange} 
-                className="border p-3 rounded text-black"
-              >
-                <option value="">Level</option>
-                {proficiencyOptions.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Instrument 3 */}
-            <div className="grid grid-cols-3 gap-2">
-              <input 
-                name="instrument_three" 
-                placeholder="Instrument 3" 
-                value={formData.instrument_three} 
-                onChange={handleChange} 
-                className="col-span-2 border p-3 rounded text-black" 
-              />
-              <select 
-                name="instrument_three_proficiency" 
-                value={formData.instrument_three_proficiency} 
-                onChange={handleChange} 
-                className="border p-3 rounded text-black"
-              >
-                <option value="">Level</option>
-                {proficiencyOptions.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Instrument 4 */}
-            <div className="grid grid-cols-3 gap-2">
-              <input 
-                name="instrument_four" 
-                placeholder="Instrument 4" 
-                value={formData.instrument_four} 
-                onChange={handleChange} 
-                className="col-span-2 border p-3 rounded text-black" 
-              />
-              <select 
-                name="instrument_four_proficiency" 
-                value={formData.instrument_four_proficiency} 
-                onChange={handleChange} 
-                className="border p-3 rounded text-black"
-              >
-                <option value="">Level</option>
-                {proficiencyOptions.map(level => (
-                  <option key={level} value={level}>{level}</option>
-                ))}
-              </select>
             </div>
           </div>
 
-          <select name="sample_use" value={formData.sample_use} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Do you use samples from 3rd parties? *</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          <select name="splice_use" value={formData.splice_use} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Do you use Splice? *</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          <select name="loop_use" value={formData.loop_use} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Do you use loops from other producers? *</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          <select name="ai_generated_music" value={formData.ai_generated_music} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Do you use AI to create music? *</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          <select name="records_artists" value={formData.records_artists} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Do you record artists? *</option>
-            <option value="Yes">Yes</option>
-            <option value="No">No</option>
-          </select>
-          {formData.records_artists === 'Yes' && (
-            <input name="artist_example_link" placeholder="Link to example of artist recording (optional)" value={formData.artist_example_link} onChange={handleChange} className="w-full border p-3 rounded text-black" />
-          )}
-        </div>
-      )}
-      {step === 3 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Briefcase className="w-5 h-5 mr-2" />Business Details</h2>
-          <input name="business_entity" placeholder="Are you an LLC or other registered business? (optional)" value={formData.business_entity} onChange={handleChange} className="w-full border p-3 rounded text-black" />
-          <select name="pro_affiliation" value={formData.pro_affiliation} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            {proOptions.map((pro) => (
-              <option key={pro} value={pro}>{pro ? pro : 'Select your PRO (ASCAP, BMI, etc.) *'}</option>
-            ))}
-          </select>
-        </div>
-      )}
-      {step === 4 && (
-        <div className="space-y-6 animate-fade-in">
-          <h2 className="text-xl font-bold mb-4 flex items-center"><Info className="w-5 h-5 mr-2" />Screening Questions</h2>
-          <p className="text-white text-sm mb-6">Please answer these questions to help us understand your current music business relationships.</p>
-          
-          {/* Label Question */}
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3 text-white">Are you signed to a label?</h3>
-            <select name="signed_to_label" value={formData.signed_to_label} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
-              <option value="">Select an option *</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {formData.signed_to_label === 'Yes' && (
-              <textarea 
-                name="label_relationship_explanation" 
-                placeholder="Please explain your relationship with the label..." 
-                value={formData.label_relationship_explanation} 
-                onChange={handleChange} 
-                className="w-full border p-3 rounded text-black" 
-                rows={3} 
-              />
-            )}
-          </div>
-
-          {/* Publisher Question */}
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3 text-white">Are you signed to a publisher?</h3>
-            <select name="signed_to_publisher" value={formData.signed_to_publisher} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
-              <option value="">Select an option *</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {formData.signed_to_publisher === 'Yes' && (
-              <textarea 
-                name="publisher_relationship_explanation" 
-                placeholder="Please explain your relationship with the publisher..." 
-                value={formData.publisher_relationship_explanation} 
-                onChange={handleChange} 
-                className="w-full border p-3 rounded text-black" 
-                rows={3} 
-              />
-            )}
-          </div>
-
-          {/* Manager/Agent Question */}
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3 text-white">Are you signed to a manager or agent?</h3>
-            <select name="signed_to_manager" value={formData.signed_to_manager} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
-              <option value="">Select an option *</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {formData.signed_to_manager === 'Yes' && (
-              <textarea 
-                name="manager_relationship_explanation" 
-                placeholder="Please explain your relationship with your manager/agent..." 
-                value={formData.manager_relationship_explanation} 
-                onChange={handleChange} 
-                className="w-full border p-3 rounded text-black" 
-                rows={3} 
-              />
-            )}
-          </div>
-
-          {/* Payment Collection Question */}
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3 text-white">Does anyone or any entity collect payment for your music on your behalf?</h3>
-            <select name="entity_collects_payment" value={formData.entity_collects_payment} onChange={handleChange} required className="w-full border p-3 rounded text-black mb-3">
-              <option value="">Select an option *</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
-            </select>
-            {formData.entity_collects_payment === 'Yes' && (
-              <textarea 
-                name="payment_collection_explanation" 
-                placeholder="Please explain who collects payments and how..." 
-                value={formData.payment_collection_explanation} 
-                onChange={handleChange} 
-                className="w-full border p-3 rounded text-black" 
-                rows={3} 
-              />
-            )}
-          </div>
-
-          {/* Production Master Percentage Question */}
-          <div className="bg-white/5 p-4 rounded-lg">
-            <h3 className="font-semibold mb-3 text-white">What percentage of the production master do you typically own?</h3>
-            <input 
-              name="production_master_percentage" 
-              type="number" 
-              min="0" 
-              max="100" 
-              placeholder="Enter percentage (0-100) *" 
-              value={formData.production_master_percentage} 
-              onChange={handleChange} 
-              required 
-              className="w-full border p-3 rounded text-black" 
-            />
-            <p className="text-sm text-gray-400 mt-2">Enter the percentage you typically own of your production masters (e.g., 100 for 100%)</p>
-          </div>
-        </div>
-      )}
-      {step === 5 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Course</h2>
-          <p className="text-white text-sm mb-4">Have you completed a Sync Licensing course online or in person?</p>
-          <select name="sync_licensing_course" value={formData.sync_licensing_course} onChange={handleChange} required className="w-full border p-3 rounded text-black">
-            <option value="">Select an option *</option>
-            <option value="Yes - Online">Yes - Online</option>
-            <option value="Yes - In Person">Yes - In Person</option>
-            <option value="No">No</option>
-          </select>
-        </div>
-      )}
-      {step === 6 && (
-        <div className="space-y-6 animate-fade-in">
-          <h2 className="text-xl font-bold mb-4 flex items-center"><Info className="w-5 h-5 mr-2" />Sync Licensing Quiz</h2>
-          <p className="text-white text-sm mb-6">Please answer these questions about sync licensing. This helps us understand your knowledge level.</p>
-          
-          {quizQuestions.map((question, index) => (
-            <div key={question.id} className="bg-white/5 p-4 rounded-lg">
-              <h3 className="font-semibold mb-3 text-white">
-                Question {index + 1}: {question.question}
-              </h3>
-              
-              {question.isMultipleChoice ? (
-                <div className="space-y-2">
-                  {question.options.map((option, optionIndex) => (
-                    <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name={`quiz_question_${index + 1}`}
-                        value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
-                        checked={formData[`quiz_question_${index + 1}` as keyof typeof formData]?.includes(String.fromCharCode(65 + optionIndex))}
-                        onChange={(e) => {
-                          const currentAnswers = formData[`quiz_question_${index + 1}` as keyof typeof formData] as string || '';
-                          const answer = e.target.value;
-                          
-                          if (e.target.checked) {
-                            // Add answer
-                            const newAnswers = currentAnswers ? `${currentAnswers},${answer}` : answer;
-                            setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
-                          } else {
-                            // Remove answer
-                            const newAnswers = currentAnswers.split(',').filter(a => a !== answer).join(',');
-                            setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
-                          }
-                        }}
-                        className="rounded"
-                      />
-                      <span className="text-white">{option}</span>
-                    </label>
-                  ))}
+          {/* Step Indicator */}
+          <div className="flex justify-center mb-8">
+            <div className="flex space-x-4">
+              {steps.map((stepName, index) => (
+                <div
+                  key={index}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                    index <= step
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}
+                >
+                  <span className="text-sm font-medium">{stepName}</span>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {question.options.map((option, optionIndex) => (
-                    <label key={optionIndex} className="flex items-center space-x-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name={`quiz_question_${index + 1}`}
-                        value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
-                        checked={formData[`quiz_question_${index + 1}` as keyof typeof formData] === String.fromCharCode(65 + optionIndex)}
-                        onChange={handleChange}
-                        className="rounded"
-                      />
-                      <span className="text-white">{option}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Form */}
+          <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-blue-500/20">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Validation Errors */}
+              {validationErrors.length > 0 && (
+                <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-4 flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <div>
+                    <h3 className="text-red-400 font-semibold">Please complete all required fields:</h3>
+                    <ul className="text-red-400 text-sm space-y-1 mt-1">
+                      {validationErrors.map((error, index) => (
+                        <li key={index} className="flex items-center">
+                          <span className="w-1.5 h-1.5 bg-red-400 rounded-full mr-2"></span>
+                          {error}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Step Content */}
+              {step === 0 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Full Name <span className="text-red-400">*</span>
                     </label>
+                    <input
+                      name="name"
+                      type="text"
+                      value={formData.name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Email Address <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+              {step === 1 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Primary Genre <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      name="primary_genre"
+                      type="text"
+                      value={formData.primary_genre}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., Hip-Hop, Pop, Rock, Electronic"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Secondary Genre (Optional)
+                    </label>
+                    <input
+                      name="secondary_genre"
+                      type="text"
+                      value={formData.secondary_genre}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., Trap, R&B, Alternative"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Years of Experience <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      name="years_experience"
+                      type="text"
+                      value={formData.years_experience}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., 3 years"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      DAWs Used (comma separated) <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      name="daws_used"
+                      type="text"
+                      value={formData.daws_used}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., FL Studio, Logic Pro, Ableton"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Team Type <span className="text-red-400">*</span>
+                    </label>
+                    <select
+                      name="team_type"
+                      value={formData.team_type}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      required
+                    >
+                      <option value="">Select Team Type</option>
+                      <option value="One Man Team">One Man Team</option>
+                      <option value="Band">Band</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Tracks per Week <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      name="tracks_per_week"
+                      type="text"
+                      value={formData.tracks_per_week}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., 5-10 tracks"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+              {step === 2 && (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">Instruments You Play (up to 4)</h3>
+                    
+                    {/* Instrument 1 */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Instrument 1</label>
+                        <input 
+                          name="instrument_one" 
+                          type="text"
+                          value={formData.instrument_one} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                          placeholder="e.g., Piano, Guitar, Drums"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Proficiency</label>
+                        <select 
+                          name="instrument_one_proficiency" 
+                          value={formData.instrument_one_proficiency} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                        >
+                          <option value="">Select Level</option>
+                          {proficiencyOptions.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Instrument 2 */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Instrument 2</label>
+                        <input 
+                          name="instrument_two" 
+                          type="text"
+                          value={formData.instrument_two} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                          placeholder="e.g., Bass, Saxophone, Violin"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Proficiency</label>
+                        <select 
+                          name="instrument_two_proficiency" 
+                          value={formData.instrument_two_proficiency} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                        >
+                          <option value="">Select Level</option>
+                          {proficiencyOptions.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Instrument 3 */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Instrument 3</label>
+                        <input 
+                          name="instrument_three" 
+                          type="text"
+                          value={formData.instrument_three} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                          placeholder="e.g., Synth, Trumpet, Cello"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Proficiency</label>
+                        <select 
+                          name="instrument_three_proficiency" 
+                          value={formData.instrument_three_proficiency} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                        >
+                          <option value="">Select Level</option>
+                          {proficiencyOptions.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Instrument 4 */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Instrument 4</label>
+                        <input 
+                          name="instrument_four" 
+                          type="text"
+                          value={formData.instrument_four} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                          placeholder="e.g., Harmonica, Flute, Accordion"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-300 mb-2">Proficiency</label>
+                        <select 
+                          name="instrument_four_proficiency" 
+                          value={formData.instrument_four_proficiency} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                        >
+                          <option value="">Select Level</option>
+                          {proficiencyOptions.map(level => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Production Tools & Methods */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">Production Tools & Methods</h3>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Do you use samples from 3rd parties? <span className="text-red-400">*</span>
+                      </label>
+                      <select 
+                        name="sample_use" 
+                        value={formData.sample_use} 
+                        onChange={handleChange} 
+                        required 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      >
+                        <option value="">Select an option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Do you use Splice? <span className="text-red-400">*</span>
+                      </label>
+                      <select 
+                        name="splice_use" 
+                        value={formData.splice_use} 
+                        onChange={handleChange} 
+                        required 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      >
+                        <option value="">Select an option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Do you use loops from other producers? <span className="text-red-400">*</span>
+                      </label>
+                      <select 
+                        name="loop_use" 
+                        value={formData.loop_use} 
+                        onChange={handleChange} 
+                        required 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      >
+                        <option value="">Select an option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Do you use AI to create music? <span className="text-red-400">*</span>
+                      </label>
+                      <select 
+                        name="ai_generated_music" 
+                        value={formData.ai_generated_music} 
+                        onChange={handleChange} 
+                        required 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      >
+                        <option value="">Select an option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Do you record artists? <span className="text-red-400">*</span>
+                      </label>
+                      <select 
+                        name="records_artists" 
+                        value={formData.records_artists} 
+                        onChange={handleChange} 
+                        required 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      >
+                        <option value="">Select an option</option>
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                      </select>
+                    </div>
+
+                    {formData.records_artists === 'Yes' && (
+                      <div className="mt-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-2">
+                          Link to example of artist recording (Optional)
+                        </label>
+                        <input 
+                          name="artist_example_link" 
+                          type="url"
+                          value={formData.artist_example_link} 
+                          onChange={handleChange} 
+                          className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                          placeholder="https://example.com/recording"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {step === 3 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Are you an LLC or other registered business? (Optional)
+                    </label>
+                    <input 
+                      name="business_entity" 
+                      type="text"
+                      value={formData.business_entity} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                      placeholder="e.g., MyMusic LLC, Sole Proprietorship"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Select your PRO (ASCAP, BMI, etc.) <span className="text-red-400">*</span>
+                    </label>
+                    <select 
+                      name="pro_affiliation" 
+                      value={formData.pro_affiliation} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                    >
+                      <option value="">Select your PRO</option>
+                      {proOptions.slice(1).map((pro) => (
+                        <option key={pro} value={pro}>{pro}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+              {step === 4 && (
+                <div className="space-y-6">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Screening Questions</h3>
+                    <p className="text-gray-300 text-sm">
+                      Please answer these questions to help us understand your current music business relationships.
+                    </p>
+                  </div>
+                  
+                  {/* Label Question */}
+                  <div className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="font-semibold mb-3 text-white">Are you signed to a label?</h3>
+                    <select 
+                      name="signed_to_label" 
+                      value={formData.signed_to_label} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white mb-3"
+                    >
+                      <option value="">Select an option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                    {formData.signed_to_label === 'Yes' && (
+                      <textarea 
+                        name="label_relationship_explanation" 
+                        placeholder="Please explain your relationship with the label..." 
+                        value={formData.label_relationship_explanation} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                        rows={3} 
+                      />
+                    )}
+                  </div>
+
+                  {/* Publisher Question */}
+                  <div className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="font-semibold mb-3 text-white">Are you signed to a publisher?</h3>
+                    <select 
+                      name="signed_to_publisher" 
+                      value={formData.signed_to_publisher} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white mb-3"
+                    >
+                      <option value="">Select an option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                    {formData.signed_to_publisher === 'Yes' && (
+                      <textarea 
+                        name="publisher_relationship_explanation" 
+                        placeholder="Please explain your relationship with the publisher..." 
+                        value={formData.publisher_relationship_explanation} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                        rows={3} 
+                      />
+                    )}
+                  </div>
+
+                  {/* Manager/Agent Question */}
+                  <div className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="font-semibold mb-3 text-white">Are you signed to a manager or agent?</h3>
+                    <select 
+                      name="signed_to_manager" 
+                      value={formData.signed_to_manager} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white mb-3"
+                    >
+                      <option value="">Select an option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                    {formData.signed_to_manager === 'Yes' && (
+                      <textarea 
+                        name="manager_relationship_explanation" 
+                        placeholder="Please explain your relationship with your manager/agent..." 
+                        value={formData.manager_relationship_explanation} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                        rows={3} 
+                      />
+                    )}
+                  </div>
+
+                  {/* Payment Collection Question */}
+                  <div className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="font-semibold mb-3 text-white">Does anyone or any entity collect payment for your music on your behalf?</h3>
+                    <select 
+                      name="entity_collects_payment" 
+                      value={formData.entity_collects_payment} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white mb-3"
+                    >
+                      <option value="">Select an option</option>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                    {formData.entity_collects_payment === 'Yes' && (
+                      <textarea 
+                        name="payment_collection_explanation" 
+                        placeholder="Please explain who collects payments and how..." 
+                        value={formData.payment_collection_explanation} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                        rows={3} 
+                      />
+                    )}
+                  </div>
+
+                  {/* Production Master Percentage Question */}
+                  <div className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="font-semibold mb-3 text-white">What percentage of the production master do you typically own?</h3>
+                    <input 
+                      name="production_master_percentage" 
+                      type="number" 
+                      min="0" 
+                      max="100" 
+                      placeholder="Enter percentage (0-100)" 
+                      value={formData.production_master_percentage} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                    />
+                    <p className="text-sm text-gray-400 mt-2">Enter the percentage you typically own of your production masters (e.g., 100 for 100%)</p>
+                  </div>
+                </div>
+              )}
+              {step === 5 && (
+                <div className="space-y-6">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Sync Licensing Course</h3>
+                    <p className="text-gray-300 text-sm">
+                      Have you completed a Sync Licensing course online or in person?
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Course Completion <span className="text-red-400">*</span>
+                    </label>
+                    <select 
+                      name="sync_licensing_course" 
+                      value={formData.sync_licensing_course} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                    >
+                      <option value="">Select an option</option>
+                      <option value="Yes - Online">Yes - Online</option>
+                      <option value="Yes - In Person">Yes - In Person</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+              {step === 6 && (
+                <div className="space-y-6">
+                  <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-white mb-4">Sync Licensing Quiz</h3>
+                    <p className="text-gray-300 text-sm">
+                      Please answer these questions about sync licensing. This helps us understand your knowledge level.
+                    </p>
+                  </div>
+                  
+                  {quizQuestions.map((question, index) => (
+                    <div key={question.id} className="bg-white/5 border border-blue-500/20 rounded-lg p-6">
+                      <h4 className="text-white font-medium mb-4">
+                        Question {index + 1}: {question.question}
+                      </h4>
+                      <div className="space-y-3">
+                        {question.options.map((option, optionIndex) => (
+                          <label key={optionIndex} className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                              type={question.isMultipleChoice ? "checkbox" : "radio"}
+                              name={`quiz_question_${index + 1}`}
+                              value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
+                              checked={question.isMultipleChoice 
+                                ? formData[`quiz_question_${index + 1}` as keyof typeof formData]?.includes(String.fromCharCode(65 + optionIndex))
+                                : formData[`quiz_question_${index + 1}` as keyof typeof formData] === String.fromCharCode(65 + optionIndex)
+                              }
+                              onChange={(e) => {
+                                if (question.isMultipleChoice) {
+                                  const currentAnswers = formData[`quiz_question_${index + 1}` as keyof typeof formData] as string || '';
+                                  const answer = e.target.value;
+                                  
+                                  if (e.target.checked) {
+                                    // Add answer
+                                    const newAnswers = currentAnswers ? `${currentAnswers},${answer}` : answer;
+                                    setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
+                                  } else {
+                                    // Remove answer
+                                    const newAnswers = currentAnswers.split(',').filter(a => a !== answer).join(',');
+                                    setFormData({ ...formData, [`quiz_question_${index + 1}`]: newAnswers });
+                                  }
+                                } else {
+                                  handleChange(e);
+                                }
+                              }}
+                              className="text-blue-600 focus:ring-blue-500"
+                            />
+                            <span className="text-gray-300">
+                              {String.fromCharCode(65 + optionIndex)}. {option}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
-            </div>
-          ))}
-        </div>
-      )}
-      {step === 7 && (
-        <div className="space-y-4 animate-fade-in">
-          <h2 className="text-xl font-bold mb-2 flex items-center"><Info className="w-5 h-5 mr-2" />Additional Info</h2>
-          <textarea name="additional_info" placeholder="Tell us anything else we should know..." value={formData.additional_info} onChange={handleChange} className="w-full border p-3 rounded text-black" rows={4} />
-        </div>
+              {step === 7 && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Additional Information (Optional)
+                    </label>
+                    <textarea 
+                      name="additional_info" 
+                      placeholder="Tell us anything else we should know..." 
+                      value={formData.additional_info} 
+                      onChange={handleChange} 
+                      className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white" 
+                      rows={4} 
+                    />
+                  </div>
+                </div>
+              )}
       )}
 
-      {/* Error Message */}
-      {error && <p className="text-red-600 text-center">{error}</p>}
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/40 rounded-lg p-4 flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className="text-red-400">{error}</span>
+                </div>
+              )}
 
-      {/* Navigation Buttons */}
-      <div className="flex justify-between items-center mt-8">
-        {step > 0 ? (
-          <button type="button" onClick={prevStep} className="px-6 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300 transition">Back</button>
-        ) : <div />}
-        {step < steps.length - 1 ? (
-          <button type="button" onClick={nextStep} className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-2 hover:bg-blue-700 transition">
-            Next <ArrowRight className="w-4 h-4" />
-          </button>
-        ) : (
-          <button type="submit" disabled={submitting} className="px-6 py-2 rounded-lg bg-blue-600 text-white font-semibold flex items-center gap-2 hover:bg-blue-700 transition">
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Application'}
-          </button>
-        )}
-      </div>
-    </form>
-  );
+              {/* Navigation Buttons */}
+              <div className="flex justify-between pt-6">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={step === 0}
+                  className="flex items-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                >
+                  <ArrowRight className="w-4 h-4 rotate-180" />
+                  <span>Previous</span>
+                </button>
+
+                {step < steps.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                  >
+                    <span>Next</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-800 text-white rounded-lg transition-colors"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Submit Application</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+                         </form>
+           </div>
+         </div>
+       </div>
+     </div>
+   );
 };
 
 export default ProducerApplicationForm;
