@@ -246,14 +246,14 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   <Link to="/sync-licensing-course" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <FileText className="w-4 h-4 mr-2" />Sync Licensing Course
                   </Link>
+                  <Link to="/services" className="flex items-center px-4 py-2 text-purple-400 hover:text-white hover:bg-blue-800/50 font-semibold" onClick={() => setIsMenuOpen(false)}>
+                    <Settings className="w-4 h-4 mr-2" />Services Directory
+                  </Link>
                   {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
                     <Link to="/producer/resources" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                       <FileText className="w-4 h-4 mr-2" />Producer Resources
                     </Link>
                   )}
-                  <Link to="/services" className="flex items-center px-4 py-2 text-purple-400 hover:text-white hover:bg-blue-800/50 font-semibold" onClick={() => setIsMenuOpen(false)}>
-                    <Settings className="w-4 h-4 mr-2" />Services Directory
-                  </Link>
                   <div className="border-t border-blue-500/20 my-1"></div>
                   <Link to="/about" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Info className="w-4 h-4 mr-2" />About Us
