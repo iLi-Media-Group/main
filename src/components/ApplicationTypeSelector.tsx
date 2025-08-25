@@ -73,10 +73,10 @@ const ApplicationTypeSelector: React.FC = () => {
                    <Building2 className="w-8 h-8 text-white" />
                  </div>
                  <h3 className="text-2xl font-bold text-white mb-3">I am a Record Label/Publisher</h3>
-                 <p className="text-gray-300 text-sm mb-6">
-                   I represent a record label or publishing company. I want to manage rights and 
-                   license our catalog for sync opportunities.
-                 </p>
+                                   <p className="text-gray-300 text-sm mb-6">
+                    I represent a record label or publishing company. I want to manage rights and 
+                    license our catalog for sync licensing opportunities.
+                  </p>
                  <Link 
                    to="/rights-holder/signup" 
                    className="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors w-full"
