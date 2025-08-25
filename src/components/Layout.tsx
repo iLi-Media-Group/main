@@ -373,13 +373,13 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                       {/* Admin + Producer Dashboard - ONLY for admin,producer account type */}
                       {accountType === 'admin,producer' && (
                         <>
-                          <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                            <Music className="w-4 h-4 mr-2" />
-                            Producer Dashboard
-                          </Link>
                           <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                             <Shield className="w-4 h-4 mr-2" />
                             Admin Dashboard
+                          </Link>
+                          <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                            <Music className="w-4 h-4 mr-2" />
+                            Producer Dashboard
                           </Link>
                         </>
                       )}
@@ -552,13 +552,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         {getDashboardIcon()}
                         {getDashboardLabel()}
                       </Link>
-                      {/* Always show Producer Dashboard for admin/producer users */}
-                      {(accountType === 'producer' || accountType === 'admin,producer' || isAdmin) && (
-                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Music className="w-4 h-4 mr-2" />
-                          Producer Dashboard
-                        </Link>
-                      )}
+
                   </>
                 )}
                   {/* Authentication links */}
