@@ -344,6 +344,57 @@ Deno.serve(async (req) => {
                 console.error('Error sending payment notification:', notifyError);
               }
               
+              // Create producer transaction record for sync proposal payment
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('sync_fee_rate')
+                  .single();
+
+                const syncFeeRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (syncFeeRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: proposalData.track.track_producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: proposalData.track.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Sync Proposal: ${proposalData.track.title}`,
+                    track_title: proposalData.track.title,
+                    reference_id: metadata.proposal_id,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for sync proposal: ${metadata.proposal_id}`);
+                }
+              } catch (syncError) {
+                console.error('Error creating producer transaction for sync proposal:', syncError);
+              }
+              
               // Return after processing sync proposal payment
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
@@ -355,12 +406,38 @@ Deno.serve(async (req) => {
               const clientId = metadata.client_id;
               
               try {
-                // Update custom sync request status and payment info
+                // First, get the selected submission to ensure we have the correct producer_id
+                const { data: selectedSubmission, error: selectionError } = await supabase
+                  .from('sync_request_selections')
+                  .select('selected_submission_id')
+                  .eq('sync_request_id', syncRequestId)
+                  .eq('client_id', clientId)
+                  .single();
+                
+                if (selectionError) {
+                  console.error('Error fetching selected submission:', selectionError);
+                  return new Response('Error fetching selected submission', { status: 500, headers: corsHeaders });
+                }
+                
+                // Get the submission details to get the producer_id
+                const { data: submissionData, error: submissionError } = await supabase
+                  .from('sync_submissions')
+                  .select('producer_id')
+                  .eq('id', selectedSubmission.selected_submission_id)
+                  .single();
+                
+                if (submissionError) {
+                  console.error('Error fetching submission data:', submissionError);
+                  return new Response('Error fetching submission data', { status: 500, headers: corsHeaders });
+                }
+                
+                // Update custom sync request status and payment info with the correct selected_producer_id
                 const { error: requestError } = await supabase
                   .from('custom_sync_requests')
                   .update({
                     status: 'completed',
                     payment_status: 'paid',
+                    selected_producer_id: submissionData.producer_id,
                     stripe_invoice_id: payment_intent,
                     final_amount: (amount_total / 100).toString(),
                     updated_at: new Date().toISOString()
@@ -371,10 +448,56 @@ Deno.serve(async (req) => {
                   console.error('Error updating sync request:', requestError);
                   return new Response('Error updating sync request', { status: 500, headers: corsHeaders });
                 }
+
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('custom_sync_rate')
+                  .single();
+
+                const customSyncRate = compensationSettings?.custom_sync_rate || 90; // Default to 90%
+                const producerAmount = (amount_total / 100) * (customSyncRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: submissionData.producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                  return new Response('Error updating producer balance', { status: 500, headers: corsHeaders });
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: submissionData.producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Custom Sync: ${metadata.project_title || 'Custom Sync Request'}`,
+                    track_title: metadata.project_title || 'Custom Sync Request',
+                    reference_id: syncRequestId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                  return new Response('Error creating transaction record', { status: 500, headers: corsHeaders });
+                }
                 
                 // (Optional) Add any other logic for notifications, etc.
                 
-                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId}`);
+                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId} with producer ${submissionData.producer_id}`);
                 return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
               } catch (syncError) {
                 console.error('Error processing sync payment:', syncError);
@@ -456,6 +579,58 @@ Deno.serve(async (req) => {
               } catch (emailError) {
                 console.error('Error sending license email:', emailError);
               }
+              
+              // Create producer transaction record for single track sale
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('standard_rate')
+                  .single();
+
+                const standardRate = compensationSettings?.standard_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (standardRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: trackData.track_producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: trackData.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Single Track License: ${trackData.id}`,
+                    track_title: trackData.id,
+                    reference_id: trackId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for single track sale: ${trackId}`);
+                }
+              } catch (saleError) {
+                console.error('Error creating producer transaction for single track sale:', saleError);
+              }
+              
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
           } catch (error) {
@@ -498,18 +673,18 @@ Deno.serve(async (req) => {
           let planName = 'Unknown';
           console.log('Processing subscription with price_id:', priceId);
           switch (priceId) {
-            case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
-              planName = 'Ultimate Access';
-              break;
-            case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
-              planName = 'Platinum Access';
-              break;
-            case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
-              planName = 'Gold Access';
-              break;
-            case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
-              planName = 'Single Track';
-              break;
+                  case 'price_1RvLLRA4Yw5viczUCAGuLpKh':
+        planName = 'Ultimate Access';
+        break;
+      case 'price_1RvLKcA4Yw5viczUItn56P2m':
+        planName = 'Platinum Access';
+        break;
+      case 'price_1RvLJyA4Yw5viczUwdHhIYAQ':
+        planName = 'Gold Access';
+        break;
+      case 'price_1RvLJCA4Yw5viczUrWeCZjom':
+        planName = 'Single Track';
+        break;
             default:
               planName = 'Unknown';
               console.log('Unknown price_id:', priceId);

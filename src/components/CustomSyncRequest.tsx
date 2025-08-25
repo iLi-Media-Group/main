@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Music, Link as LinkIcon, FileText, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
+import { RightsHolderSearch } from './RightsHolderSearch';
 import { useNavigate } from 'react-router-dom';
 
 export default function CustomSyncRequest() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
@@ -21,8 +22,11 @@ export default function CustomSyncRequest() {
   const [isOpenRequest, setIsOpenRequest] = useState(false);
   const [hasPreferredProducer, setHasPreferredProducer] = useState(false);
   const [selectedProducer, setSelectedProducer] = useState('');
+  const [hasPreferredRightsHolder, setHasPreferredRightsHolder] = useState(false);
+  const [selectedRightsHolder, setSelectedRightsHolder] = useState('');
   const [submissionInstructions, setSubmissionInstructions] = useState('');
   const [submissionEmail, setSubmissionEmail] = useState('');
+  const [useClientContract, setUseClientContract] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -45,15 +49,17 @@ export default function CustomSyncRequest() {
           sync_fee: parseFloat(syncFee),
           end_date: endDate,
           genre: selectedGenre,
-          sub_genres: selectedSubGenres,
+          sub_genres: selectedSubGenres.length > 0 ? selectedSubGenres : [],
           reference_artist: referenceArtist || null,
           reference_song: referenceSong || null,
           reference_url: referenceUrl || null,
           is_open_request: isOpenRequest,
           preferred_producer_id: hasPreferredProducer ? selectedProducer : null,
+          preferred_rights_holder_id: hasPreferredRightsHolder ? selectedRightsHolder : null,
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
           payment_terms: paymentTerms,
+          use_client_contract: useClientContract,
           status: 'open'
         })
         .select()
@@ -78,6 +84,8 @@ export default function CustomSyncRequest() {
         setIsOpenRequest(false);
         setHasPreferredProducer(false);
         setSelectedProducer('');
+        setHasPreferredRightsHolder(false);
+        setSelectedRightsHolder('');
         setSubmissionInstructions('');
         setSubmissionEmail('');
         setPaymentTerms('immediate');
@@ -212,7 +220,7 @@ export default function CustomSyncRequest() {
                   Sub-Genres (Optional)
                 </label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {(SUB_GENRES[selectedGenre as keyof typeof SUB_GENRES] || []).map((subGenre) => (
+                  {(SUB_GENRES[selectedGenre.toLowerCase() as keyof typeof SUB_GENRES] || []).map((subGenre) => (
                     <label key={subGenre} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -296,11 +304,13 @@ export default function CustomSyncRequest() {
                   if (e.target.checked) {
                     setHasPreferredProducer(false);
                     setSelectedProducer('');
+                    setHasPreferredRightsHolder(false);
+                    setSelectedRightsHolder('');
                   }
                 }}
                 className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
               />
-              <span className="text-gray-300">Make this an open request (visible to all producers)</span>
+              <span className="text-gray-300">Make this an open request (visible to all producers, record labels, and publishers)</span>
             </label>
 
             <label className="flex items-center space-x-2">
@@ -331,11 +341,57 @@ export default function CustomSyncRequest() {
                 required={hasPreferredProducer}
               />
             </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={hasPreferredRightsHolder}
+                onChange={(e) => {
+                  setHasPreferredRightsHolder(e.target.checked);
+                  if (e.target.checked) {
+                    setIsOpenRequest(false);
+                  } else {
+                    setSelectedRightsHolder('');
+                  }
+                }}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">Select Preferred Record Label or Publisher</span>
+            </label>
+
+            <div className="pl-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Start Typing the Record Label or Publisher Name and Choose
+              </label>
+              <RightsHolderSearch
+                value={selectedRightsHolder}
+                onChange={setSelectedRightsHolder}
+                disabled={!hasPreferredRightsHolder}
+                required={hasPreferredRightsHolder}
+              />
+            </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={useClientContract}
+                onChange={(e) => setUseClientContract(e.target.checked)}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">I will provide my own contract with terms for this sync</span>
+            </label>
+            
+            {useClientContract && (
+              <div className="p-4 bg-blue-800/50 border border-blue-600/30 rounded-lg">
+                <p className="text-blue-200 text-sm">
+                  <strong>Note:</strong> If your request is accepted, you will be able to upload your contract PDF. 
+                  The producer/artist will need to sign your contract before files are made available.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-white">How to Submit</h3>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Special Instructions
@@ -346,22 +402,6 @@ export default function CustomSyncRequest() {
                   value={submissionInstructions}
                   onChange={(e) => setSubmissionInstructions(e.target.value)}
                   rows={4}
-                  className="w-full pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Submission Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={submissionEmail}
-                  onChange={(e) => setSubmissionEmail(e.target.value)}
                   className="w-full pl-10"
                   required
                 />

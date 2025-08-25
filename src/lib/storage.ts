@@ -25,28 +25,6 @@ export async function uploadFile(
     
     console.log('Generated file path:', filePath);
 
-    // Try to list buckets for debugging only (don't use for validation)
-    console.log('Attempting to list buckets...');
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-    if (bucketError) {
-      console.warn('Could not list buckets (this is expected on the client):', bucketError.message);
-    } else if (buckets) {
-      console.log('Successfully listed buckets:', buckets.map(b => b.name));
-      const bucketExists = buckets.some(b => b.name === bucket);
-      console.log(`Bucket '${bucket}' exists in list:`, bucketExists);
-      
-      // Debug: Log bucket details if found
-      const bucketDetails = buckets.find(b => b.name === bucket);
-      if (bucketDetails) {
-        console.log('Bucket details:', {
-          name: bucketDetails.name,
-          public: bucketDetails.public,
-          fileSizeLimit: bucketDetails.file_size_limit,
-          allowedMimeTypes: bucketDetails.allowed_mime_types
-        });
-      }
-    }
-
     // Upload file (don't check bucket existence - proceed with upload)
     console.log('Starting file upload to bucket:', bucket);
     console.log('Upload path:', filePath);

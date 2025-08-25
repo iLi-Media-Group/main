@@ -11,6 +11,7 @@ import { ClientSignupDialog } from './components/ClientSignupDialog';
 import { ClientDashboard } from './components/ClientDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import { ProducerInvitation } from './components/ProducerInvitation';
+import { ArtistInvitation } from './components/ArtistInvitation';
 import { CatalogPage } from './components/CatalogPage';
 import { VocalsPage } from './components/VocalsPage';
 import { SyncOnlyPage } from './components/SyncOnlyPage';
@@ -19,12 +20,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { PricingCarousel } from './components/PricingCarousel';
 import { ClientsCarousel } from './components/ClientsCarousel';
+import { HeroSection } from './components/HeroSection';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
 import { LicenseAgreement } from './components/LicenseAgreement';
 import { SyncProposalLicenseAgreement } from './components/SyncProposalLicenseAgreement';
 import { TestUpload } from './components/TestUpload';
-import { useAuth } from './contexts/AuthContext';
+import { useUnifiedAuth } from './contexts/UnifiedAuthContext';
 import { GoldAccessPage } from './components/GoldAccessPage';
 import CustomSyncRequest from './components/CustomSyncRequest';
 import { OpenSyncBriefs } from './components/OpenSyncBriefs';
@@ -48,6 +50,11 @@ import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
 import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
+import ArtistApplicationForm from './components/ArtistApplicationForm';
+import ArtistDashboard from './components/ArtistDashboard';
+import ArtistLogin from './components/ArtistLogin';
+import ApplicationsAdmin from './components/ApplicationsAdmin';
+import ArtistApplicationStatus from './components/ArtistApplicationStatus';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
@@ -55,6 +62,7 @@ import WhiteLabelAdminPage from './components/WhiteLabelAdminPage';
 import AdminServicesPage from './components/AdminServicesPage';
 import ServicesPage from './components/ServicesPage';
 import ServiceOnboardingPage from './components/ServiceOnboardingPage';
+import PublicServiceOnboardingPage from './components/PublicServiceOnboardingPage';
 import ClientBrandingSettings from './components/ClientBrandingSettings';
 import { WhiteLabelClientProfile } from './components/WhiteLabelClientProfile';
 import { supabase } from './lib/supabase';
@@ -64,13 +72,71 @@ import WhiteLabelClientDashboard from './components/WhiteLabelClientDashboard';
 import ProducerSyncSubmission from './components/ProducerSyncSubmission';
 import CustomSyncRequestSubs from './components/customsyncrequestsubs';
 import PaymentSuccessPage from './components/PaymentSuccessPage';
+import { EmailVerificationPage } from './components/EmailVerificationPage';
+import { AuthCallback } from './components/AuthCallback';
+import { useSecurity } from './hooks/useSecurity';
+import SecurityBlock from './components/SecurityBlock';
+import ProducerResourcesPage from './components/ProducerResourcesPage';
+import AdminResourceManager from './components/AdminResourceManager';
+import { ProducerTracksPage } from './components/ProducerTracksPage';
 
+import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
+import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
+import { BusinessVerificationForm } from './components/BusinessVerificationForm';
+import { PlaylistManager } from './components/PlaylistManager';
+import { PlaylistView } from './components/PlaylistView';
+import { PlaylistAnalytics } from './components/PlaylistAnalytics';
+import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
+import { FollowingPage } from './components/FollowingPage';
+// Removed refresh prevention imports to fix tab switching issue
+
+// Rights Holders System Imports
+import { RightsHolderSignup } from './components/RightsHolderSignup';
+import { RightsHolderLogin } from './components/RightsHolderLogin';
+import { RightsHolderDashboard } from './components/RightsHolderDashboard';
+import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRoute';
+import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
+import { TrackUploadForm } from './components/TrackUploadForm';
+import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
+import ApplicationTypeSelector from './components/ApplicationTypeSelector';
+import { RightsHolderAnalytics } from './components/RightsHolderAnalytics';
+import { RightsHolderRecordings } from './components/RightsHolderRecordings';
+import SyncLicensingCourse from './components/SyncLicensingCourse';
+import { RightsHolderESignatures } from './components/RightsHolderESignatures';
+import { RightsHolderLicensing } from './components/RightsHolderLicensing';
+import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
+import { RightsHolderTest } from './components/RightsHolderTest';
+import { RightsHolderAwaitingApproval } from './components/RightsHolderAwaitingApproval';
+import { SyncProposalDialog } from './components/SyncProposalDialog';
+import { RightsHolderSyncProposalDialog } from './components/RightsHolderSyncProposalDialog';
+import { SyncProposalsPage } from './components/SyncProposalsPage';
+import { CustomSyncRequestDetail } from './components/CustomSyncRequestDetail';
+import { CustomSyncRequestsPage } from './components/CustomSyncRequestsPage';
+import { ProfilePage } from './components/ProfilePage';
+import RightsHolderSyncSubmission from './components/RightsHolderSyncSubmission';
+import RightsHolderTerms from './components/RightsHolderTerms';
+import ProducerTerms from './components/ProducerTerms';
 
 const App = () => {
+  console.log('🚀 App component loaded');
   const [searchParams] = useSearchParams();
   const [isSignupOpen, setIsSignupOpen] = useState(false);
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
+  
+  // Refresh prevention system removed to fix tab switching issue
+  
+  // Security hook for the entire application
+  const {
+    securityViolations,
+    isBlocked,
+    clearViolations,
+    logSecurityViolation,
+  } = useSecurity({
+    enableRateLimiting: true,
+    enableInputValidation: true,
+    enableXSSProtection: true,
+  });
   
   // Check if we have email and redirect params that should trigger opening the signup dialog
   useEffect(() => {
@@ -82,8 +148,46 @@ const App = () => {
     }
   }, [searchParams, user]);
 
+  // Security monitoring - log suspicious activities
+  useEffect(() => {
+    // Monitor for rapid navigation changes (potential bot activity)
+    let navigationCount = 0;
+    const handleNavigation = () => {
+      navigationCount++;
+      if (navigationCount > 10) {
+        logSecurityViolation('Suspicious navigation pattern detected');
+      }
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
+  }, [logSecurityViolation]);
+
+  // Security: Block access if user is blocked
+  if (isBlocked) {
+    return (
+      <SecurityBlock
+        violations={securityViolations}
+        onClearViolations={clearViolations}
+        isBlocked={isBlocked}
+      />
+    );
+  }
+
   const LayoutWrapper = ({ children }: { children: React.ReactNode }) => (
     <Layout onSignupClick={() => setIsSignupOpen(true)}>
+      {children}
+    </Layout>
+  );
+
+  const HomeLayoutWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+      {children}
+    </Layout>
+  );
+
+  const ProducerLandingWrapper = ({ children }: { children: React.ReactNode }) => (
+    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
       {children}
     </Layout>
   );
@@ -100,7 +204,7 @@ const App = () => {
   };
 
   function BrandingRouteWrapper() {
-    const { user } = useAuth();
+    const { user } = useUnifiedAuth();
     const [allowed, setAllowed] = useState<'loading' | 'yes' | 'no'>('loading');
 
     useEffect(() => {
@@ -124,7 +228,7 @@ const App = () => {
   }
 
   function WhiteLabelProfileWrapper() {
-    const { accountType, needsPasswordSetup } = useAuth();
+    const { accountType, needsPasswordSetup } = useUnifiedAuth();
 
     if (accountType === 'white_label' && needsPasswordSetup) {
       return <Navigate to="/white-label-password-setup" />;
@@ -134,7 +238,7 @@ const App = () => {
   }
 
   function DashboardWrapper() {
-    const { accountType, needsPasswordSetup } = useAuth();
+    const { accountType, needsPasswordSetup } = useUnifiedAuth();
 
     // If user is a white label client and needs password setup, redirect them
     if (accountType === 'white_label' && needsPasswordSetup) {
@@ -146,24 +250,22 @@ const App = () => {
       return <Navigate to="/white-label-dashboard" />;
     }
 
-    // For other users, show the regular dashboard
+    // If user is a rights holder, redirect to rights holder dashboard
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" />;
+    }
+
+    // For other users (clients), show the regular dashboard
     return <ClientDashboard />;
   }
 
   return (
     <SiteBrandingProvider>
       <ScrollToTop />
-      <Routes>
+        <Routes>
         <Route path="/" element={
-          <LayoutWrapper>
-            <section className="py-20 text-center">
-              <div className="container mx-auto px-4">
-                <h1 className="text-5xl font-bold mb-6">License Music for Your Media Productions</h1>
-                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                  One-Stop Licensing. Simple, Clear Rights. No Hidden Fees.
-                </p>
-              </div>
-            </section>
+          <HomeLayoutWrapper>
+            <HeroSection onSearch={handleSearch} />
 
             <section className="py-12 bg-black/20">
               <div className="container mx-auto px-4">
@@ -222,7 +324,7 @@ const App = () => {
                 <ClientsCarousel />
               </div>
             </section>
-          </LayoutWrapper>
+          </HomeLayoutWrapper>
         } />
 
         <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
@@ -231,22 +333,48 @@ const App = () => {
         <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
+
         <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
         <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
         <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
         <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
-        <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
+<Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
+        <Route path="/sync-licensing-course" element={<LayoutWrapper><SyncLicensingCourse /></LayoutWrapper>} />
+        <Route path="/application-type-selector" element={<LayoutWrapper><ApplicationTypeSelector /></LayoutWrapper>} />
         <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
         <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+        <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
-        <Route path="/producers" element={<ProducerLandingPage />} />
+                 <Route path="/producers" element={<ProducerLandingWrapper><ProducerLandingPage /></ProducerLandingWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
-        <Route path="/producer-applications-admin" element={<LayoutWrapper><ProducerApplicationsAdmin /></LayoutWrapper>} />
+        <Route path="/artist-application" element={<LayoutWrapper><ArtistApplicationForm /></LayoutWrapper>} />
+        <Route path="/producer-applications-admin" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ProducerApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/applications-admin" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/artist-application-status" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <ArtistApplicationStatus />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
         <Route path="/admin/white-label-clients" element={
           <ProtectedRoute requiresAdmin>
             <AdminWhiteLabelClientsPage />
@@ -262,15 +390,15 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/custom-sync-request" element={
-          <ProtectedRoute requiresClient>
+
+
+        <Route path="/custom-sync-request-subs" element={
+          <ProtectedRoute>
             <LayoutWrapper>
-              <CustomSyncRequest />
+              <CustomSyncRequestSubs />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-
-        <Route path="/custom-sync-request-subs" element={<LayoutWrapper><CustomSyncRequestSubs /></LayoutWrapper>} />
 
         <Route path="/open-sync-briefs" element={
           <ProtectedRoute>
@@ -322,10 +450,24 @@ const App = () => {
           </LayoutWrapper>
         } />
         
+        <Route path="/artist/login" element={
+          <LayoutWrapper>
+            <ArtistLogin />
+          </LayoutWrapper>
+        } />
+        
         <Route path="/producer/dashboard" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/artist/dashboard" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ArtistDashboard />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
@@ -335,6 +477,12 @@ const App = () => {
             <LayoutWrapper>
               <TrackUploadForm />
             </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/custom-sync-upload" element={
+          <ProtectedRoute requiresProducer>
+            <CustomSyncUploadPage />
           </ProtectedRoute>
         } />
 
@@ -358,6 +506,68 @@ const App = () => {
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerWithdrawalsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/resources" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerResourcesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/producer/file-releases" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ProducerFileReleaseManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/producer/playlists" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistManager />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/producer/playlists/:playlistId/analytics" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <PlaylistAnalytics />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+                 <Route path="/playlist/:slug" element={<PlaylistView />} />
+                 <Route path="/favorited-playlists" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FavoritedPlaylistsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/following" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <FollowingPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/business-verification" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <BusinessVerificationForm />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/resources" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdminResourceManager />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
@@ -392,6 +602,14 @@ const App = () => {
           </ProtectedRoute>
         } />
 
+        <Route path="/admin/invite-artist" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ArtistInvitation />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
         <Route path="/admin/banking" element={
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
@@ -407,27 +625,36 @@ const App = () => {
           </ProtectedRoute>
         } />
 
-        <Route path="/advanced-analytics" element={<LayoutWrapper><AdvancedAnalyticsDashboard /></LayoutWrapper>} />
+        <Route path="/advanced-analytics" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <AdvancedAnalyticsDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/admin/white-label" element={
-          accountType === 'admin' ? (
+          <ProtectedRoute requiresAdmin>
             <WhiteLabelAdminPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          </ProtectedRoute>
         } />
 
         <Route path="/admin/services" element={
-          accountType === 'admin' ? (
+          <ProtectedRoute requiresAdmin>
             <AdminServicesPage />
-          ) : (
-            <Navigate to="/" />
-          )
+          </ProtectedRoute>
         } />
 
-        <Route path="/services" element={<LayoutWrapper><ServicesPage /></LayoutWrapper>} />
+        <Route path="/services" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ServicesPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         <Route path="/service-onboarding/:token" element={<ServiceOnboardingPage />} />
+        <Route path="/service-onboarding-public" element={<PublicServiceOnboardingPage />} />
 
         <Route path="/branding" element={<BrandingRouteWrapper />} />
 
@@ -454,6 +681,103 @@ const App = () => {
         <Route path="/producer-sync-submission" element={<LayoutWrapper><ProducerSyncSubmission /></LayoutWrapper>} />
 
         <Route path="/payment-success" element={<PaymentSuccessPage />} />
+
+        {/* Email verification routes */}
+        <Route path="/auth/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
+
+        {/* Rights Holders System Routes */}
+        <Route path="/rights-holder/signup" element={<RightsHolderSignup />} />
+        <Route path="/rights-holder/login" element={<RightsHolderLogin />} />
+        <Route path="/rights-holder/dashboard" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderDashboard />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/upload" element={
+          <RightsHolderProtectedRoute>
+            <TrackUploadForm />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/split-sheets" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderSplitSheets />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/analytics" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderAnalytics />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/recordings" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderRecordings />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/e-signatures" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderESignatures />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/licensing" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderLicensing />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/admin/rights-verification" element={
+          <ProtectedRoute requiresAdmin>
+            <RightsVerificationAdmin />
+          </ProtectedRoute>
+        } />
+        <Route path="/rights-holder/test" element={<RightsHolderTest />} />
+        <Route path="/rights-holder/awaiting-approval" element={<RightsHolderAwaitingApproval />} />
+        <Route path="/rights-holder/terms" element={<RightsHolderTerms />} />
+        <Route path="/producer/terms" element={<ProducerTerms />} />
+
+        {/* Rights Holder Sync Proposals */}
+              <Route path="/sync-proposal/:id" element={
+        <RightsHolderProtectedRoute>
+          <RightsHolderSyncProposalDialog />
+        </RightsHolderProtectedRoute>
+      } />
+        <Route path="/sync-proposals" element={
+          <RightsHolderProtectedRoute>
+            <SyncProposalsPage />
+          </RightsHolderProtectedRoute>
+        } />
+        
+        {/* Rights Holder Custom Sync Requests */}
+              <Route path="/custom-sync-request" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderSyncSubmission />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/custom-sync-request/:id" element={
+          <RightsHolderProtectedRoute>
+            <CustomSyncRequestDetail />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/custom-sync-requests" element={
+          <RightsHolderProtectedRoute>
+            <CustomSyncRequestsPage />
+          </RightsHolderProtectedRoute>
+        } />
+
+        {/* Client Custom Sync Request */}
+        <Route path="/client/custom-sync-request" element={
+          <ProtectedRoute requiresClient>
+            <LayoutWrapper>
+              <CustomSyncRequest />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        {/* Profile Route */}
+        <Route path="/profile" element={
+          <LayoutWrapper>
+            <ProfilePage />
+          </LayoutWrapper>
+        } />
 
         <Route path="*" element={
           <LayoutWrapper>

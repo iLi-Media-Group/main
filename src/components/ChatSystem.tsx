@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Plus, Users, Settings, X, Trash2, AlertTriangle, MoreVertical, Edit } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface ChatRoom {
   id: string;
@@ -177,7 +177,7 @@ function CreateRoomDialog({ isOpen, onClose, onCreateRoom }: CreateRoomDialogPro
 }
 
 export function ChatSystem() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

@@ -57,10 +57,10 @@ const STYLE_TAGS = [
   'Abstract'
 ];
 
-export default function ServiceOnboardingPage() {
+export default function ServiceOnboardingPage({ publicMode = false }: { publicMode?: boolean }) {
   const { token } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState<'validate' | 'form' | 'success' | 'invalid'>('validate');
+  const [step, setStep] = useState<'validate' | 'form' | 'success' | 'invalid'>(publicMode ? 'form' : 'validate');
   const [email, setEmail] = useState('');
   const [tokenData, setTokenData] = useState<any>(null);
   const [form, setForm] = useState({
@@ -70,20 +70,28 @@ export default function ServiceOnboardingPage() {
     contact: '',
     website: '',
     image: '',
+    image2: '',
+    image3: '',
     subgenres: [] as string[],
     tier: '',
     style_tags: [] as string[]
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile2, setImageFile2] = useState<File | null>(null);
+  const [imagePreview2, setImagePreview2] = useState<string | null>(null);
+  const [imageFile3, setImageFile3] = useState<File | null>(null);
+  const [imagePreview3, setImagePreview3] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    setStep('validate');
-    setTokenData(null);
-    setError('');
-  }, [token]);
+    if (!publicMode) {
+      setStep('validate');
+      setTokenData(null);
+      setError('');
+    }
+  }, [token, publicMode]);
 
   const validateToken = async () => {
     setLoading(true);
@@ -105,9 +113,9 @@ export default function ServiceOnboardingPage() {
   };
 
   useEffect(() => {
-    if (token) validateToken();
+    if (!publicMode && token) validateToken();
     // eslint-disable-next-line
-  }, [token]);
+  }, [token, publicMode]);
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +142,7 @@ export default function ServiceOnboardingPage() {
     }
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, imageNum = 1) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -145,8 +153,16 @@ export default function ServiceOnboardingPage() {
       setError('Image size must be less than 2MB');
       return;
     }
-    setImageFile(file);
-    setImagePreview(URL.createObjectURL(file));
+    if (imageNum === 1) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    } else if (imageNum === 2) {
+      setImageFile2(file);
+      setImagePreview2(URL.createObjectURL(file));
+    } else if (imageNum === 3) {
+      setImageFile3(file);
+      setImagePreview3(URL.createObjectURL(file));
+    }
     setError('');
   };
 
@@ -156,12 +172,27 @@ export default function ServiceOnboardingPage() {
     setError('');
     try {
       let imageUrl = form.image;
+      let imageUrl2 = form.image2;
+      let imageUrl3 = form.image3;
       if (imageFile) {
         imageUrl = await uploadFile(imageFile, 'service-images');
       }
-      const payload = { ...form, image: imageUrl };
+      if (imageFile2) {
+        imageUrl2 = await uploadFile(imageFile2, 'service-images');
+      }
+      if (imageFile3) {
+        imageUrl3 = await uploadFile(imageFile3, 'service-images');
+      }
+      const payload = { ...form, image: imageUrl, image2: imageUrl2, image3: imageUrl3 };
       await supabase.from('services').insert([payload]);
-      await supabase.from('service_onboarding_tokens').update({ used: true }).eq('id', tokenData.id);
+      // Only update token if tokenData and tokenData.id exist
+      if (tokenData && tokenData.id) {
+        await supabase.from('service_onboarding_tokens').update({ used: true }).eq('id', tokenData.id);
+      } else if (!publicMode) {
+        setError('Invalid or expired onboarding link.');
+        setLoading(false);
+        return;
+      }
       setStep('success');
     } catch (err: any) {
       setError(err.message || 'Failed to submit service.');
@@ -170,7 +201,7 @@ export default function ServiceOnboardingPage() {
     }
   };
 
-  if (step === 'invalid') {
+  if (!publicMode && step === 'invalid') {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
@@ -195,9 +226,9 @@ export default function ServiceOnboardingPage() {
   return (
     <Layout>
       <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
-        <div className="w-full max-w-2xl bg-white/5 rounded-xl border border-blue-500/20 p-8 mt-8 mb-8 shadow-xl overflow-y-auto max-h-[90vh]">
+        <div className="w-full max-w-lg bg-white/5 rounded-xl border border-blue-500/20 p-4 sm:p-8 mt-8 mb-8 shadow-xl max-h-[90vh] overflow-y-auto flex flex-col">
           <h1 className="text-2xl font-bold mb-6 text-center">Service Provider Onboarding</h1>
-          {step === 'validate' && (
+          {!publicMode && step === 'validate' && (
             <form onSubmit={handleEmailSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-1">Enter your email to continue</label>
@@ -209,7 +240,7 @@ export default function ServiceOnboardingPage() {
                   required
                 />
               </div>
-              {error && <div className="text-red-400">{error}</div>}
+              {typeof error === 'string' && error.trim() && <div className="text-red-400">{error}</div>}
               <button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white font-semibold"
@@ -219,8 +250,7 @@ export default function ServiceOnboardingPage() {
               </button>
             </form>
           )}
-          {step === 'form' && (
-            <form onSubmit={handleFormSubmit} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
@@ -229,7 +259,6 @@ export default function ServiceOnboardingPage() {
                   onChange={handleFormChange}
                   className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                   required
-                  disabled
                 >
                   <option value="studios">Recording Studios</option>
                   <option value="engineers">Recording Engineers</option>
@@ -283,11 +312,35 @@ export default function ServiceOnboardingPage() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={e => handleImageChange(e, 1)}
                   className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
                 />
                 {imagePreview && (
                   <img src={imagePreview} alt="Preview" className="mt-2 h-24 rounded border border-blue-500/20" />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Additional Image 1 (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => handleImageChange(e, 2)}
+                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                />
+                {imagePreview2 && (
+                  <img src={imagePreview2} alt="Preview 2" className="mt-2 h-24 rounded border border-blue-500/20" />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Additional Image 2 (optional)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => handleImageChange(e, 3)}
+                  className="w-full px-3 py-2 rounded bg-white/10 border border-blue-500/20 text-white"
+                />
+                {imagePreview3 && (
+                  <img src={imagePreview3} alt="Preview 3" className="mt-2 h-24 rounded border border-blue-500/20" />
                 )}
               </div>
               <div>
@@ -342,7 +395,7 @@ export default function ServiceOnboardingPage() {
                   </div>
                 </div>
               )}
-              {error && <div className="text-red-400">{error}</div>}
+              {typeof error === 'string' && error.trim() && <div className="text-red-400">{error}</div>}
               <div className="flex justify-end space-x-2 mt-4">
                 <button
                   type="submit"
@@ -353,7 +406,7 @@ export default function ServiceOnboardingPage() {
                 </button>
               </div>
             </form>
-          )}
+          )
         </div>
       </div>
     </Layout>

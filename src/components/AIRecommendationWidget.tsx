@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 const AIRecommendationWidget: React.FC = () => {
   const [query, setQuery] = useState('');

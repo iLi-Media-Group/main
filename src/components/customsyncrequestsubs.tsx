@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { Star, BadgeCheck, Hourglass, MoreVertical, Send, X, CreditCard, MessageCircle, Download, CheckCircle } from 'lucide-react';
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 
 interface CustomSyncRequest {
   id: string;
@@ -36,7 +37,7 @@ interface SyncSubmission {
 }
 
 export default function CustomSyncRequestSubs() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [requests, setRequests] = useState<CustomSyncRequest[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, SyncSubmission[]>>({});
   const [loading, setLoading] = useState(true);
@@ -374,7 +375,6 @@ export default function CustomSyncRequestSubs() {
     }
     
     setConfirmSelect(null);
-    alert('Track selected! All other submissions will be declined.');
   };
 
   // Handle Stripe payment for selected submission
@@ -797,6 +797,47 @@ export default function CustomSyncRequestSubs() {
     }
   };
 
+  // Download function for sync request files
+  const handleDownloadSyncRequest = async (bucket: string, path: string, filename: string) => {
+    try {
+      // First check if the file exists
+      const { data: fileExists, error: checkError } = await supabase.storage
+        .from(bucket)
+        .list(path.split('/').slice(0, -1).join('/'), {
+          search: path.split('/').pop()
+        });
+      
+      if (checkError || !fileExists || fileExists.length === 0) {
+        alert('File not found. The producer may not have uploaded this file yet.');
+        return;
+      }
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, 3600);
+      
+      if (error) {
+        console.error('Error creating signed URL:', error);
+        alert('Failed to download file. Please try again.');
+        return;
+      }
+      
+      if (data?.signedUrl) {
+        // Create a temporary link and trigger download
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        link.target = '_blank'; // This ensures it downloads instead of opening
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      alert('Failed to download file. Please try again.');
+    }
+  };
+
   useEffect(() => {
     if (pendingChatOpen && selectedSubmission) {
       handleMessageProducer();
@@ -838,7 +879,7 @@ export default function CustomSyncRequestSubs() {
                     <span><strong>Sync Fee:</strong> ${req.sync_fee.toFixed(2)}</span>
                     <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
                     <span><strong>Genre:</strong> {req.genre}</span>
-                    <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                    <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(req.sub_genres)}</span>
                   </div>
                   {/* Delete all except favorites button */}
                   <div className="flex justify-end mb-2">
@@ -855,6 +896,94 @@ export default function CustomSyncRequestSubs() {
                       <span className="px-3 py-1 bg-green-700 text-white rounded-full text-sm flex items-center gap-2">
                         <BadgeCheck className="w-4 h-4" /> Paid
                       </span>
+                    </div>
+                  )}
+                  
+                  {/* Download buttons for paid requests */}
+                  {req.payment_status === 'paid' && (
+                    <div className="mb-4 flex flex-wrap gap-2 justify-end">
+                      {/* Find the selected submission for this request */}
+                      {(() => {
+                        const selectedSubId = selectedPerRequest[req.id];
+                        const selectedSub = submissions[req.id]?.find(sub => sub.id === selectedSubId);
+                        
+                        if (!selectedSub) return null;
+                        
+                        return (
+                          <>
+                            {/* MP3 Download - Always available if track_url exists */}
+                            {selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1] : (selectedSub.track_url || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_MP3.mp3`);
+                                }}
+                                className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download MP3"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download MP3
+                              </button>
+                            )}
+                            
+                            {/* Trackouts Download - Only show if producer indicated they have trackouts */}
+                            {selectedSub.has_trackouts && selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_trackouts.zip') : (selectedSub.track_url?.replace('.mp3', '_trackouts.zip') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_Trackouts.zip`);
+                                }}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Trackouts"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Trackouts
+                              </button>
+                            )}
+                            
+                            {/* Stems Download - Only show if producer indicated they have stems */}
+                            {selectedSub.has_stems && selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_stems.zip') : (selectedSub.track_url?.replace('.mp3', '_stems.zip') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_Stems.zip`);
+                                }}
+                                className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Stems"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Stems
+                              </button>
+                            )}
+                            
+                            {/* Split Sheet Download - Always available as it's typically generated */}
+                            {selectedSub.track_url && (
+                              <button
+                                onClick={() => {
+                                  const match = selectedSub.track_url?.match(/sync-submissions\/(.+)$/);
+                                  const filePath = match ? match[1].replace('.mp3', '_split_sheet.pdf') : (selectedSub.track_url?.replace('.mp3', '_split_sheet.pdf') || '');
+                                  handleDownloadSyncRequest('sync-submissions', filePath, `${selectedSub.track_name || 'Track'}_SplitSheet.pdf`);
+                                }}
+                                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm flex items-center gap-2"
+                                title="Download Split Sheet"
+                              >
+                                <Download className="w-3 h-3" />
+                                Download Split Sheet
+                              </button>
+                            )}
+                            
+                            {/* Show message if no additional files are available */}
+                            {!selectedSub.has_trackouts && !selectedSub.has_stems && (
+                              <div className="text-xs text-gray-400 mt-2">
+                                Note: Producer has not indicated availability of trackouts or stems
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                   
@@ -878,9 +1007,30 @@ export default function CustomSyncRequestSubs() {
                   {/* Render submissions for this request */}
                   {submissions[req.id] && submissions[req.id].length > 0 ? (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {submissions[req.id]
-                        .filter(sub => !hiddenSubmissions[req.id] || !hiddenSubmissions[req.id].has(sub.id))
-                        .map((sub) => (
+                      {(() => {
+                        const filteredSubmissions = submissions[req.id].filter(sub => {
+                          // If request is paid, only show the selected submission
+                          if (req.payment_status === 'paid' || paidRequests[req.id]) {
+                            return selectedPerRequest[req.id] === sub.id;
+                          }
+                          // Otherwise, show all submissions except hidden ones
+                          return !hiddenSubmissions[req.id] || !hiddenSubmissions[req.id].has(sub.id);
+                        });
+                        
+                        // If request is paid but no selected submission is found, show a message
+                        if ((req.payment_status === 'paid' || paidRequests[req.id]) && filteredSubmissions.length === 0) {
+                          return (
+                            <div className="col-span-full text-center py-8">
+                              <div className="text-gray-400">
+                                <CheckCircle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                                <p className="text-lg font-semibold mb-2">Request Completed</p>
+                                <p>This request has been paid and completed. The selected submission is no longer available for viewing.</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        return filteredSubmissions.map((sub) => (
                           <div key={sub.id} className="bg-blue-900/60 rounded-lg p-3 mb-2 flex flex-col gap-2 relative">
                             <div className="flex items-center gap-2 mb-1">
                               <button
@@ -893,12 +1043,12 @@ export default function CustomSyncRequestSubs() {
                               <span className="text-white font-semibold text-lg">{sub.track_name || 'Untitled Track'}</span>
                             </div>
                             <div className="text-blue-200 text-sm">
-                              Producer: <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
+                              Producer: <button type="button" className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
                             </div>
                             <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
                             {sub.signed_mp3_url && (
                               <div className="my-2">
-                                <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" />
+                                <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" audioId={`customsync-${sub.id}`} />
                               </div>
                             )}
                             {/* Select button if not already selected */}
@@ -961,17 +1111,15 @@ export default function CustomSyncRequestSubs() {
                                 )}
                                 <button
                                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold shadow"
-                                  onClick={() => {
-                                    setSelectedSubmission({ reqId: req.id, sub });
-                                    handleDeselect();
-                                  }}
+                                  onClick={handleDeselect}
                                 >
                                   De-select
                                 </button>
                               </div>
                             )}
                           </div>
-                        ))}
+                        ));
+                      })()}
                     </div>
                   ) : (
                     <div className="text-blue-300 mt-4">No submissions yet.</div>
@@ -990,8 +1138,8 @@ export default function CustomSyncRequestSubs() {
             <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Selection</h2>
             <p className="mb-6 text-gray-700">Selecting this track will decline all other submissions for this request. Are you sure you want to proceed?</p>
             <div className="flex justify-end gap-4">
-              <button onClick={cancelSelect} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
-              <button onClick={confirmSelectSubmission} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">Yes, Select</button>
+              <button type="button" onClick={cancelSelect} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+              <button type="button" onClick={confirmSelectSubmission} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold">Yes, Select</button>
             </div>
           </div>
         </div>
@@ -1009,6 +1157,7 @@ export default function CustomSyncRequestSubs() {
                 <p className="text-sm text-blue-300">Sync Request: {selectedSubmission?.sub.track_name || 'Custom Sync'}</p>
               </div>
               <button
+                type="button"
                 onClick={() => setShowChatDialog(false)}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >
@@ -1033,7 +1182,7 @@ export default function CustomSyncRequestSubs() {
                     >
                       <p className="text-sm font-medium mb-1">
                         {message.sender.first_name || message.sender.last_name
-                          ? <button className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(message.sender.id); setShowProducerProfileDialog(true); }}>{`${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()}</button>
+                          ? <button type="button" className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(message.sender.id); setShowProducerProfileDialog(true); }}>{`${message.sender.first_name || ''} ${message.sender.last_name || ''}`.trim()}</button>
                           : (message.sender.email === user?.email ? 'You' : 'Unknown')}
                       </p>
                       <p>{message.message}</p>

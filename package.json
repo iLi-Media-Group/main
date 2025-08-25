@@ -4,10 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "dev:stable": "vite --host 0.0.0.0 --port 5173 --force",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "security:audit": "npm audit",
+    "security:fix": "npm audit fix"
   },
   "dependencies": {
     "@heliofi/react": "^1.1.0",
@@ -15,12 +18,14 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@react-pdf/renderer": "^3.4.5",
     "@supabase/supabase-js": "^2.39.7",
+    "@types/dompurify": "^3.0.5",
     "@types/file-saver": "^2.0.7",
     "bs58": "^6.0.0",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^0.2.1",
+    "dompurify": "^3.2.6",
     "file-saver": "^2.0.5",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
@@ -28,9 +33,10 @@
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0",
+    "react-google-recaptcha-v3": "^1.11.0",
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^6.30.1",
-    "recharts": "^3.0.1",
+    "recharts": "^3.1.2",
     "sonner": "^2.0.5",
     "stripe": "^14.12.1",
     "tailwind-merge": "^2.2.1",
@@ -57,5 +63,72 @@
     "typescript-eslint": "^7.1.1",
     "unocss": "^66.2.0",
     "vite": "^5.1.4"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "security": {
+    "csp": {
+      "default-src": [
+        "'self'"
+      ],
+      "script-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "https://www.google.com/recaptcha/",
+        "https://www.gstatic.com/recaptcha/",
+        "https://js.stripe.com",
+        "https://checkout.stripe.com",
+        "https://maps.googleapis.com"
+      ],
+      "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      "font-src": [
+        "'self'",
+        "https://fonts.gstatic.com"
+      ],
+      "img-src": [
+        "'self'",
+        "data:",
+        "https:",
+        "blob:",
+        "https://*.stripe.com",
+        "https://maps.googleapis.com",
+        "https://maps.gstatic.com"
+      ],
+      "connect-src": [
+        "'self'",
+        "https://*.supabase.co",
+        "https://api.stripe.com",
+        "https://checkout.stripe.com",
+        "https://maps.googleapis.com",
+        "wss://*.supabase.co"
+      ],
+      "frame-src": [
+        "'self'",
+        "https://js.stripe.com",
+        "https://checkout.stripe.com",
+        "https://www.google.com/recaptcha/"
+      ],
+      "object-src": [
+        "'none'"
+      ],
+      "base-uri": [
+        "'self'"
+      ],
+      "form-action": [
+        "'self'",
+        "https://checkout.stripe.com"
+      ],
+      "frame-ancestors": [
+        "'none'"
+      ],
+      "upgrade-insecure-requests": []
+    }
   }
 }

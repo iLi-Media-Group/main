@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Loader2, Mail, Phone, MapPin } from 'lucide-react';
+import { VideoBackground } from './VideoBackground';
 
 export default function ContactPage() {
   const [name, setName] = useState('');
@@ -40,8 +41,17 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen">
+      {/* Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        page="contact"
+        alt="Contact us background"
+      />
+      
+      <div className="relative z-10 container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8">Contact Us</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Left column: Info sections */}
@@ -154,5 +164,6 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
