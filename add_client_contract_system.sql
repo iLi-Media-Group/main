@@ -141,15 +141,20 @@ CREATE TRIGGER update_client_contracts_updated_at
 CREATE OR REPLACE FUNCTION handle_client_contract_upload(
   p_sync_proposal_id UUID DEFAULT NULL,
   p_custom_sync_request_id UUID DEFAULT NULL,
-  p_contract_url TEXT,
-  p_contract_filename TEXT,
-  p_uploaded_by UUID
+  p_contract_url TEXT DEFAULT NULL,
+  p_contract_filename TEXT DEFAULT NULL,
+  p_uploaded_by UUID DEFAULT NULL
 )
 RETURNS UUID AS $$
 DECLARE
   v_contract_id UUID;
   v_contract_type TEXT;
 BEGIN
+  -- Validate required parameters
+  IF p_contract_url IS NULL OR p_contract_filename IS NULL OR p_uploaded_by IS NULL THEN
+    RAISE EXCEPTION 'contract_url, contract_filename, and uploaded_by are required parameters';
+  END IF;
+
   -- Determine contract type
   IF p_sync_proposal_id IS NOT NULL THEN
     v_contract_type := 'sync_proposal';
