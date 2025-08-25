@@ -49,6 +49,10 @@ import { WhiteLabelSuccessPage } from './components/WhiteLabelSuccessPage';
 import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
+import ArtistApplicationForm from './components/ArtistApplicationForm';
+import ArtistDashboard from './components/ArtistDashboard';
+import ArtistLogin from './components/ArtistLogin';
+import ApplicationsAdmin from './components/ApplicationsAdmin';
 import ProducerApplicationsAdmin from './components/ProducerApplicationsAdmin';
 import AdminWhiteLabelClientsPage from './components/AdminWhiteLabelClientsPage';
 import { AdvancedAnalyticsDashboard } from './components/AdvancedAnalyticsDashboard';
@@ -342,10 +346,19 @@ const App = () => {
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
                  <Route path="/producers" element={<ProducerLandingWrapper><ProducerLandingPage /></ProducerLandingWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
+        <Route path="/artist-application" element={<LayoutWrapper><ArtistApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
               <ProducerApplicationsAdmin />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/applications-admin" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ApplicationsAdmin />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
@@ -424,10 +437,24 @@ const App = () => {
           </LayoutWrapper>
         } />
         
+        <Route path="/artist/login" element={
+          <LayoutWrapper>
+            <ArtistLogin />
+          </LayoutWrapper>
+        } />
+        
         <Route path="/producer/dashboard" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <ProducerDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        
+        <Route path="/artist/dashboard" element={
+          <ProtectedRoute requiresProducer>
+            <LayoutWrapper>
+              <ArtistDashboard />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

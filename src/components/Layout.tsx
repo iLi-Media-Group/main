@@ -70,6 +70,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     if (accountType === 'producer') {
       return '/dashboard';
     }
+    if (accountType === 'artist_band') {
+      return '/artist/dashboard';
+    }
     if (accountType === 'admin,producer') {
       return '/dashboard';
     }
@@ -89,6 +92,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     if (accountType === 'producer') {
       return <LayoutDashboard className="w-4 h-4 mr-2" />;
     }
+    if (accountType === 'artist_band') {
+      return <Music className="w-4 h-4 mr-2" />;
+    }
     if (accountType === 'admin,producer') {
       return <LayoutDashboard className="w-4 h-4 mr-2" />;
     }
@@ -107,6 +113,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
     }
     if (accountType === 'producer') {
       return 'Dashboard';
+    }
+    if (accountType === 'artist_band') {
+      return 'Artist Dashboard';
     }
     if (accountType === 'admin,producer') {
       return 'Dashboard';
@@ -519,6 +528,9 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                       </Link>
                       <Link to="/producer/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <LogIn className="w-4 h-4 mr-2" />Producer Login
+                      </Link>
+                      <Link to="/artist/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+                        <Music className="w-4 h-4 mr-2" />Artist/Band Login
                       </Link>
                       <Link to="/white-label-login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                         <LogIn className="w-4 h-4 mr-2" />White Label Client Login

@@ -7,7 +7,7 @@ import { isAdminEmail } from '../lib/adminConfig';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | 'rights_holder' | 'artist_band' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
@@ -20,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | 'artist_band' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const [loading, setLoading] = useState(true);

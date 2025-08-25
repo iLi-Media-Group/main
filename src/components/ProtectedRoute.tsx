@@ -43,8 +43,8 @@ export function ProtectedRoute({
     return <Navigate to="/dashboard" replace />;
   }
 
-  // Check for producer access (including dual roles)
-  if (requiresProducer && accountType && !accountType.includes('producer')) {
+  // Check for producer access (including dual roles and artists)
+  if (requiresProducer && accountType && !accountType.includes('producer') && accountType !== 'artist_band') {
     // Rights holders should not access producer routes
     if (accountType === 'rights_holder') {
       return <Navigate to="/rights-holder/dashboard" replace />;

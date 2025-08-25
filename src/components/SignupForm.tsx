@@ -17,7 +17,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [accountType, setAccountType] = useState<'client' | 'producer'>('client');
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'artist_band'>('client');
   const [ageVerified, setAgeVerified] = useState(false);
   const [invitationCode, setInvitationCode] = useState('');
   const [ipiNumber, setIpiNumber] = useState('');
@@ -208,7 +208,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       console.log('Profile created successfully');
 
       // Send welcome email for client accounts
-      if (accountType === 'client') {
+      if (accountType === 'client' || accountType === 'artist_band') {
         try {
           console.log('Sending welcome email...');
           const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
@@ -386,12 +386,13 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               </label>
               <select
                 value={accountType}
-                onChange={(e) => setAccountType(e.target.value as 'client' | 'producer')}
+                onChange={(e) => setAccountType(e.target.value as 'client' | 'producer' | 'artist_band')}
                 className="w-full px-4 py-2"
                 disabled={loading}
               >
                 <option value="client">Sign Up as Client</option>
                 <option value="producer">Sign Up as Producer</option>
+                <option value="artist_band">Sign Up as Artist/Band</option>
               </select>
             </div>
 

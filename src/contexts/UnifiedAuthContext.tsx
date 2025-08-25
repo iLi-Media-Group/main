@@ -6,7 +6,7 @@ import { dataCache, CACHE_KEYS } from '../lib/cache';
 interface Profile {
   id: string;
   email: string;
-  account_type: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder';
+  account_type: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | 'artist_band';
   membership_plan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needs_password_setup: boolean;
   
@@ -99,7 +99,7 @@ interface UnifiedAuthContextType {
   
   // Profile state (unified for all user types)
   profile: Profile | null;
-  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | 'artist_band' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
   
@@ -128,7 +128,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   
   // Profile state (unified for all user types)
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'rights_holder' | 'artist_band' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
 
