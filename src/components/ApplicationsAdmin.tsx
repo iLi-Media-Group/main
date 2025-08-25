@@ -326,6 +326,82 @@ export default function ApplicationsAdmin() {
     }
   };
 
+  const sendArtistInvitationEmail = async (email: string, firstName: string, lastName: string, artistNumber: string, invitationCode: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-artist-invitation', {
+        body: {
+          email,
+          firstName,
+          lastName,
+          artistNumber,
+          invitationCode
+        }
+      });
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error sending artist invitation email:', error);
+      return { success: false, error };
+    }
+  };
+
+  const handleArtistQuickInvite = async (application: ArtistApplication) => {
+    try {
+      // Extract first and last name from the full name
+      const nameParts = application.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Generate artist number using the function
+      const { data: nextArtistNumber } = await supabase.rpc('get_next_artist_number');
+      const artistNumber = nextArtistNumber || 'MBAR-01';
+
+      // Generate invitation code
+      const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      // Create invitation
+      const { error: insertError } = await supabase
+        .from('artist_invitations')
+        .insert({
+          email: application.email,
+          first_name: firstName,
+          last_name: lastName,
+          invitation_code: invitationCode,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          artist_number: artistNumber
+        });
+
+      if (insertError) throw insertError;
+
+      // Send email
+      const emailResult = await sendArtistInvitationEmail(application.email, firstName, lastName, artistNumber, invitationCode);
+
+      // Update application status
+      await supabase
+        .from('artist_applications')
+        .update({ 
+          status: 'invited',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Refresh the applications list
+      fetchAllApplications();
+      fetchApplications();
+
+      // Show success message
+      if (emailResult.success) {
+        alert(`Artist ${firstName} ${lastName} has been invited successfully! Artist Number: ${artistNumber}`);
+      } else {
+        alert(`Artist ${firstName} ${lastName} has been invited, but email failed. Artist Number: ${artistNumber}. You can resend the email later.`);
+      }
+
+    } catch (error) {
+      console.error('Artist quick invite error:', error);
+      alert('Failed to invite artist. Please try again.');
+    }
+  };
+
   const getApplicationTypeBadge = (app: ProducerApplication | ArtistApplication) => {
     const isProducer = 'daws_used' in app;
     return (
@@ -521,6 +597,16 @@ export default function ApplicationsAdmin() {
                             className="bg-green-600 hover:bg-green-700"
                           >
                             <CheckCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {app.status === 'new' && selectedType === 'artist' && (
+                          <Button
+                            onClick={() => handleArtistQuickInvite(app as ArtistApplication)}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700"
+                            title="Quick Invite Artist"
+                          >
+                            <UserPlus className="w-4 h-4" />
                           </Button>
                         )}
                         {app.status === 'new' && (

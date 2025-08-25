@@ -11,6 +11,7 @@ import { ClientSignupDialog } from './components/ClientSignupDialog';
 import { ClientDashboard } from './components/ClientDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import { ProducerInvitation } from './components/ProducerInvitation';
+import { ArtistInvitation } from './components/ArtistInvitation';
 import { CatalogPage } from './components/CatalogPage';
 import { VocalsPage } from './components/VocalsPage';
 import { SyncOnlyPage } from './components/SyncOnlyPage';
@@ -587,6 +588,14 @@ const App = () => {
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
               <ProducerInvitation />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/invite-artist" element={
+          <ProtectedRoute requiresAdmin>
+            <LayoutWrapper>
+              <ArtistInvitation />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

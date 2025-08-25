@@ -73,6 +73,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       // }
 
       let producerNumber: string | null = null;
+      let artistNumber: string | null = null;
       
       // Check invitation code for producer accounts
       if (accountType === 'producer') {
@@ -112,6 +113,37 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         }
 
         producerNumber = invitation.producer_number;
+      }
+
+      // Check invitation code for artist accounts
+      if (accountType === 'artist_band') {
+        if (!invitationCode.trim()) {
+          throw new Error('Artist invitation code is required');
+        }
+
+        // Validate the invitation code and get artist details
+        const { data: isValid, error: validationError } = await supabase
+          .rpc('validate_artist_invitation', {
+            code: invitationCode,
+            email_address: email
+          });
+
+        if (validationError || !isValid) {
+          throw new Error('Invalid or expired artist invitation code');
+        }
+
+        // Get the invitation details to get the artist number
+        const { data: invitation, error: invitationError } = await supabase
+          .from('artist_invitations')
+          .select('artist_number')
+          .eq('invitation_code', invitationCode)
+          .single();
+
+        if (invitationError || !invitation) {
+          throw new Error('Failed to get artist details');
+        }
+
+        artistNumber = invitation.artist_number;
       }
 
       console.log('Creating user account...');
@@ -169,8 +201,9 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             account_type: accountType,
             membership_plan: 'Single Track',
             age_verified: ageVerified, 
-            invitation_code: accountType === 'producer' ? invitationCode : null,
+            invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
             producer_number: accountType === 'producer' ? producerNumber : null,
+            artist_number: accountType === 'artist_band' ? artistNumber : null,
             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
             updated_at: new Date().toISOString()
@@ -191,8 +224,9 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             account_type: accountType,
             membership_plan: 'Single Track',
             age_verified: ageVerified, 
-            invitation_code: accountType === 'producer' ? invitationCode : null,
+            invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
             producer_number: accountType === 'producer' ? producerNumber : null,
+            artist_number: accountType === 'artist_band' ? artistNumber : null,
             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
             created_at: new Date().toISOString(),
@@ -230,9 +264,16 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         }
       }
 
-      // Mark invitation as used if it's a producer
+      // Mark invitation as used if it's a producer or artist
       if (accountType === 'producer') {
         await supabase.rpc('use_producer_invitation', {
+          code: invitationCode,
+          email_address: email
+        });
+      }
+
+      if (accountType === 'artist_band') {
+        await supabase.rpc('use_artist_invitation', {
           code: invitationCode,
           email_address: email
         });
@@ -396,10 +437,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               </select>
             </div>
 
-            {accountType === 'producer' && (
+            {(accountType === 'producer' || accountType === 'artist_band') && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Producer Invitation Code
+                  {accountType === 'producer' ? 'Producer' : 'Artist'} Invitation Code
                 </label>
                 <input
                   type="text"
@@ -411,7 +452,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                   placeholder="Enter your invitation code"
                 />
                 <p className="mt-1 text-xs text-gray-400">
-                  A valid invitation code is required to create a producer account
+                  A valid invitation code is required to create a {accountType === 'producer' ? 'producer' : 'artist'} account
                 </p>
               </div>
             )}
