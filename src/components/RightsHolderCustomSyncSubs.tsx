@@ -169,11 +169,26 @@ export default function RightsHolderCustomSyncSubs() {
             .in('sync_submission_id', requestSubmissionIds)
             .eq('client_id', request.client_id);
 
+          console.log('Request:', request.project_title);
+          console.log('Client ID:', request.client_id);
+          console.log('Submission IDs:', requestSubmissionIds);
+          console.log('Favorites data:', favoritesData);
+          console.log('Favorites error:', favoritesError);
+
           if (!favoritesError && favoritesData) {
             favoritesData.forEach(f => allFavoriteIds.add(f.sync_submission_id));
           }
         }
       }
+      
+      console.log('Final favorite IDs:', Array.from(allFavoriteIds));
+      
+      // Test: Fetch ALL favorites to see if the table has any data
+      const { data: allFavorites, error: allFavoritesError } = await supabase
+        .from('sync_submission_favorites')
+        .select('*');
+      console.log('ALL favorites in table:', allFavorites);
+      console.log('ALL favorites error:', allFavoritesError);
       
       setFavoriteIds(allFavoriteIds);
 
