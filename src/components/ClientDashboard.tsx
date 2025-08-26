@@ -408,7 +408,7 @@ const getPlanLevel = (plan: string): number => {
   };
 
     export function ClientDashboard() {
-  const { user, membershipPlan, refreshMembership } = useUnifiedAuth();
+  const { user, membershipPlan, refreshMembership, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
@@ -1578,6 +1578,34 @@ const getPlanLevel = (plan: string): number => {
               <CreditCard className="w-5 h-5 mr-2" />
               Manage Plan
             </button>
+          </div>
+        </div>
+
+        {/* Account Status */}
+        <div className="mb-8">
+          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+            <h3 className="text-lg font-semibold text-white mb-4">Account Status</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                <div>
+                  <p className="text-gray-300">Account Type</p>
+                  <p className="font-medium text-white">
+                    {accountType === 'white_label' ? 'White Label Dashboard' : 'Client Dashboard'}
+                  </p>
+                </div>
+                <LayoutDashboard className="w-5 h-5 text-blue-400" />
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                <div>
+                  <p className="text-gray-300">Member Since</p>
+                  <p className="font-medium text-white">
+                    {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+                <Calendar className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
           </div>
         </div>
 
