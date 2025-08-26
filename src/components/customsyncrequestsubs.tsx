@@ -232,18 +232,20 @@ export default function CustomSyncRequestSubs() {
           const updatedSubs = await Promise.all(subs.map(async (sub: SyncSubmission) => {
             let producer_name = 'Unknown Producer';
             let producer_number = '';
-            console.log('Processing submission:', sub.id, 'producer_id:', sub.producer_id);
             if (sub.producer_id) {
-              const { data: producerProfile, error: profileError } = await supabase
-                .from('profiles')
-                .select('first_name, last_name, producer_number')
-                .eq('id', sub.producer_id)
-                .maybeSingle();
-              console.log('Producer profile lookup:', { producer_id: sub.producer_id, profile: producerProfile, error: profileError });
-              if (producerProfile) {
-                producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
-                producer_number = producerProfile.producer_number || '';
-                console.log('Final producer name:', producer_name);
+              try {
+                const { data: producerProfile, error: profileError } = await supabase
+                  .from('profiles')
+                  .select('first_name, last_name, producer_number')
+                  .eq('id', sub.producer_id)
+                  .single();
+                
+                if (producerProfile && !profileError) {
+                  producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
+                  producer_number = producerProfile.producer_number || '';
+                }
+              } catch (err) {
+                console.error('Error fetching producer profile:', err);
               }
             }
             // Update signed URL logic to use track_url instead of mp3_url
@@ -265,12 +267,20 @@ export default function CustomSyncRequestSubs() {
         }
         setSubmissions(subMap);
         // Fetch favorites from DB
-        const { data: favs, error: favsError } = await supabase
-          .from('sync_submission_favorites')
-          .select('sync_submission_id')
-          .eq('client_id', user.id);
-        console.log('Favorites fetch:', { favs, error: favsError, client_id: user.id });
-        setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+        try {
+          const { data: favs, error: favsError } = await supabase
+            .from('sync_submission_favorites')
+            .select('sync_submission_id')
+            .eq('client_id', user.id);
+          
+          if (favsError) {
+            console.error('Error fetching favorites:', favsError);
+          } else {
+            setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+          }
+        } catch (err) {
+          console.error('Error in favorites fetch:', err);
+        }
         
         // Load persistent track selections from database
         const { data: selections } = await supabase
@@ -316,37 +326,48 @@ export default function CustomSyncRequestSubs() {
   // Persist favorite/unfavorite in DB and re-fetch after DB operation
   const handleFavorite = async (sub: SyncSubmission) => {
     if (!user) return;
-    // Optimistically update local state
-    setFavoriteIds(prev => {
-      const copy = new Set(prev);
-      if (copy.has(sub.id)) {
-        copy.delete(sub.id);
+    
+    const isCurrentlyFavorite = favoriteIds.has(sub.id);
+    
+    try {
+      if (isCurrentlyFavorite) {
+        // Remove from favorites
+        const { error: deleteError } = await supabase
+          .from('sync_submission_favorites')
+          .delete()
+          .eq('client_id', user.id)
+          .eq('sync_submission_id', sub.id);
+        
+        if (deleteError) {
+          console.error('Error removing favorite:', deleteError);
+          return;
+        }
+        
+        setFavoriteIds(prev => {
+          const copy = new Set(prev);
+          copy.delete(sub.id);
+          return copy;
+        });
       } else {
-        copy.add(sub.id);
+        // Add to favorites
+        const { error: insertError } = await supabase
+          .from('sync_submission_favorites')
+          .insert({ client_id: user.id, sync_submission_id: sub.id });
+        
+        if (insertError) {
+          console.error('Error adding favorite:', insertError);
+          return;
+        }
+        
+        setFavoriteIds(prev => {
+          const copy = new Set(prev);
+          copy.add(sub.id);
+          return copy;
+        });
       }
-      return copy;
-    });
-    // Update DB
-    const isNowFavorite = favoriteIds.has(sub.id);
-    if (isNowFavorite) {
-      await supabase
-        .from('sync_submission_favorites')
-        .delete()
-        .eq('client_id', user.id)
-        .eq('sync_submission_id', sub.id);
-    } else {
-      await supabase
-        .from('sync_submission_favorites')
-        .insert({ client_id: user.id, sync_submission_id: sub.id });
+    } catch (err) {
+      console.error('Error in handleFavorite:', err);
     }
-    // After a short delay, re-fetch favorites to confirm
-    setTimeout(async () => {
-      const { data: favs } = await supabase
-        .from('sync_submission_favorites')
-        .select('sync_submission_id')
-        .eq('client_id', user.id);
-      setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
-    }, 200);
   };
 
   const handleSelect = (reqId: string, subId: string) => {
