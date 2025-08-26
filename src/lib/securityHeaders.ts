@@ -14,7 +14,7 @@ export const getSecurityHeaders = (): SecurityHeaders => {
   return {
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://js.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://www.googletagmanager.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob: https://*.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
@@ -80,7 +80,8 @@ export const isUrlAllowedByCSP = (url: string, directive: string): boolean => {
       'https://www.gstatic.com/recaptcha/',
       'https://js.stripe.com',
       'https://checkout.stripe.com',
-      'https://maps.googleapis.com'
+      'https://maps.googleapis.com',
+      'https://www.googletagmanager.com'
     ],
     'connect-src': [
       'https://*.supabase.co',
