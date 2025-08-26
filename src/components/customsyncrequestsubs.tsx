@@ -275,6 +275,7 @@ export default function CustomSyncRequestSubs() {
         }
         setSubmissions(subMap);
         // Get favorited submissions directly from sync_submissions table
+        const requestIds = (data || []).map(req => req.id);
         const { data: favoritedSubs, error: favsError } = await supabase
           .from('sync_submissions')
           .select('id')
