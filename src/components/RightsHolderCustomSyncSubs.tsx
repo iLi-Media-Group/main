@@ -154,19 +154,20 @@ export default function RightsHolderCustomSyncSubs() {
 
       setSubmissions(submissionsData);
 
-      // Fetch all favorites for submissions to these requests
+      // Fetch favorites for each request based on the client who created the request
       const allFavoriteIds = new Set<string>();
       
-      if (requestsData && requestsData.length > 0) {
-        // Get all submission IDs for these requests
-        const allSubmissionIds = Object.values(submissionsData).flat().map(sub => sub.id);
+      for (const request of requestsData || []) {
+        // Get submission IDs for this specific request
+        const requestSubmissionIds = submissionsData[request.id]?.map(sub => sub.id) || [];
         
-        if (allSubmissionIds.length > 0) {
-          // Fetch all favorites for these submissions
+        if (requestSubmissionIds.length > 0) {
+          // Fetch favorites for these submissions by the client who created this request
           const { data: favoritesData, error: favoritesError } = await supabase
             .from('sync_submission_favorites')
             .select('sync_submission_id')
-            .in('sync_submission_id', allSubmissionIds);
+            .in('sync_submission_id', requestSubmissionIds)
+            .eq('client_id', request.client_id);
 
           if (!favoritesError && favoritesData) {
             favoritesData.forEach(f => allFavoriteIds.add(f.sync_submission_id));
