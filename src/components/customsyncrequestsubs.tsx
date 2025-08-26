@@ -220,6 +220,7 @@ export default function CustomSyncRequestSubs() {
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
       console.log('Fetched custom_sync_requests:', data);
+      console.log('Custom sync requests error:', error);
       if (error) setError(error.message);
       else {
         setRequests(data || []);
@@ -264,10 +265,11 @@ export default function CustomSyncRequestSubs() {
         }
         setSubmissions(subMap);
         // Fetch favorites from DB
-        const { data: favs } = await supabase
+        const { data: favs, error: favsError } = await supabase
           .from('sync_submission_favorites')
           .select('sync_submission_id')
           .eq('client_id', user.id);
+        console.log('Favorites fetch:', { favs, error: favsError, client_id: user.id });
         setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
         
         // Load persistent track selections from database
