@@ -1208,13 +1208,13 @@ export function RightsHolderDashboard() {
                     Completed Custom Syncs (Paid)
                   </button>
                 </div>
-                <Link
-                  to="/rights-holder/custom-sync-subs"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
-                >
-                  <MessageCircle className="w-4 h-4 mr-2" />
-                  See Submissions
-                </Link>
+                                 <Link
+                   to={`/custom-sync-request?requestId=${customSyncRequests[0]?.id || ''}`}
+                   className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+                 >
+                   <MessageCircle className="w-4 h-4 mr-2" />
+                   See Submissions
+                 </Link>
               </div>
               <div className="bg-blue-900/60 rounded-b-lg p-4">
                 {customSyncTab === 'open' ? (
