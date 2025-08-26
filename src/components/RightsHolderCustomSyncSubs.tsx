@@ -386,6 +386,11 @@ export default function RightsHolderCustomSyncSubs() {
                             {submission.has_trackouts && (
                               <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded">Trackouts</span>
                             )}
+                            {favoriteIds.has(submission.id) && (
+                              <span className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded flex items-center gap-1">
+                                <Hourglass className="w-3 h-3" /> In Consideration
+                              </span>
+                            )}
                           </div>
 
                           <div className="text-xs text-gray-400 mt-2">
