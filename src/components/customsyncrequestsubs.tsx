@@ -275,24 +275,16 @@ export default function CustomSyncRequestSubs() {
         }
         setSubmissions(subMap);
         // Fetch favorites from DB
-        try {
-          console.log('Fetching favorites for user:', user.id);
-          const { data: favs, error: favsError } = await supabase
-            .from('sync_submission_favorites')
-            .select('sync_submission_id')
-            .eq('client_id', user.id);
-          
-          console.log('Favorites query result:', { favs, error: favsError });
-          
-          if (favsError) {
-            console.error('Error fetching favorites:', favsError);
-          } else {
-            const favoriteIdsArray = (favs || []).map((f: any) => f.sync_submission_id);
-            console.log('Setting favorite IDs:', favoriteIdsArray);
-            setFavoriteIds(new Set(favoriteIdsArray));
-          }
-        } catch (err) {
-          console.error('Error in favorites fetch:', err);
+        const { data: favs, error: favsError } = await supabase
+          .from('sync_submission_favorites')
+          .select('sync_submission_id')
+          .eq('client_id', user.id);
+        
+        if (favsError) {
+          console.error('Error fetching favorites:', favsError);
+        } else {
+          const favoriteIdsArray = (favs || []).map((f: any) => f.sync_submission_id);
+          setFavoriteIds(new Set(favoriteIdsArray));
         }
         
         // Load persistent track selections from database
