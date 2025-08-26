@@ -274,16 +274,17 @@ export default function CustomSyncRequestSubs() {
           subMap[req.id] = updatedSubs;
         }
         setSubmissions(subMap);
-        // Fetch favorites from DB
-        const { data: favs, error: favsError } = await supabase
-          .from('sync_submission_favorites')
-          .select('sync_submission_id')
-          .eq('client_id', user.id);
+        // Get favorited submissions directly from sync_submissions table
+        const { data: favoritedSubs, error: favsError } = await supabase
+          .from('sync_submissions')
+          .select('id')
+          .eq('favorited', true)
+          .in('sync_request_id', requestIds);
         
         if (favsError) {
-          console.error('Error fetching favorites:', favsError);
+          console.error('Error fetching favorited submissions:', favsError);
         } else {
-          const favoriteIdsArray = (favs || []).map((f: any) => f.sync_submission_id);
+          const favoriteIdsArray = (favoritedSubs || []).map((f: any) => f.id);
           setFavoriteIds(new Set(favoriteIdsArray));
         }
         
@@ -328,7 +329,7 @@ export default function CustomSyncRequestSubs() {
     setPaidRequests(paidStatus);
   };
 
-  // Persist favorite/unfavorite in DB and re-fetch after DB operation
+  // Toggle favorite status directly on the sync_submission record
   const handleFavorite = async (sub: SyncSubmission) => {
     if (!user) return;
     
@@ -336,49 +337,32 @@ export default function CustomSyncRequestSubs() {
     console.log('handleFavorite called:', { submissionId: sub.id, isCurrentlyFavorite, userId: user.id });
     
     try {
-      if (isCurrentlyFavorite) {
-        // Remove from favorites
-        console.log('Removing favorite from database...');
-        const { error: deleteError } = await supabase
-          .from('sync_submission_favorites')
-          .delete()
-          .eq('client_id', user.id)
-          .eq('sync_submission_id', sub.id);
-        
-        console.log('Delete result:', { error: deleteError });
-        
-        if (deleteError) {
-          console.error('Error removing favorite:', deleteError);
-          return;
-        }
-        
-        setFavoriteIds(prev => {
-          const copy = new Set(prev);
-          copy.delete(sub.id);
-          return copy;
-        });
-        console.log('Favorite removed from state');
-      } else {
-        // Add to favorites
-        console.log('Adding favorite to database...');
-        const { error: insertError } = await supabase
-          .from('sync_submission_favorites')
-          .insert({ client_id: user.id, sync_submission_id: sub.id });
-        
-        console.log('Insert result:', { error: insertError });
-        
-        if (insertError) {
-          console.error('Error adding favorite:', insertError);
-          return;
-        }
-        
-        setFavoriteIds(prev => {
-          const copy = new Set(prev);
-          copy.add(sub.id);
-          return copy;
-        });
-        console.log('Favorite added to state');
+      // Update the favorited column directly on the sync_submission
+      console.log('Updating favorite status in database...');
+      const { error: updateError } = await supabase
+        .from('sync_submissions')
+        .update({ favorited: !isCurrentlyFavorite })
+        .eq('id', sub.id);
+      
+      console.log('Update result:', { error: updateError });
+      
+      if (updateError) {
+        console.error('Error updating favorite status:', updateError);
+        return;
       }
+      
+      // Update local state
+      setFavoriteIds(prev => {
+        const copy = new Set(prev);
+        if (isCurrentlyFavorite) {
+          copy.delete(sub.id);
+        } else {
+          copy.add(sub.id);
+        }
+        return copy;
+      });
+      
+      console.log('Favorite status updated in state');
     } catch (err) {
       console.error('Error in handleFavorite:', err);
     }

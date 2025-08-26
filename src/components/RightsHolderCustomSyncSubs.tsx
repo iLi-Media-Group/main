@@ -154,7 +154,7 @@ export default function RightsHolderCustomSyncSubs() {
 
       setSubmissions(submissionsData);
 
-      // Fetch favorites for each request based on the client who created the request
+      // Get favorited submissions directly from sync_submissions table
       const allFavoriteIds = new Set<string>();
       
       for (const request of requestsData || []) {
@@ -162,33 +162,18 @@ export default function RightsHolderCustomSyncSubs() {
         const requestSubmissionIds = submissionsData[request.id]?.map(sub => sub.id) || [];
         
         if (requestSubmissionIds.length > 0) {
-          // Fetch favorites for these submissions by the client who created this request
-          const { data: favoritesData, error: favoritesError } = await supabase
-            .from('sync_submission_favorites')
-            .select('sync_submission_id')
-            .in('sync_submission_id', requestSubmissionIds)
-            .eq('client_id', request.client_id);
+          // Fetch favorited submissions for this request
+          const { data: favoritedSubs, error: favoritesError } = await supabase
+            .from('sync_submissions')
+            .select('id')
+            .in('id', requestSubmissionIds)
+            .eq('favorited', true);
 
-          console.log('Request:', request.project_title);
-          console.log('Client ID:', request.client_id);
-          console.log('Submission IDs:', requestSubmissionIds);
-          console.log('Favorites data:', favoritesData);
-          console.log('Favorites error:', favoritesError);
-
-          if (!favoritesError && favoritesData) {
-            favoritesData.forEach(f => allFavoriteIds.add(f.sync_submission_id));
+          if (!favoritesError && favoritedSubs) {
+            favoritedSubs.forEach(f => allFavoriteIds.add(f.id));
           }
         }
       }
-      
-      console.log('Final favorite IDs:', Array.from(allFavoriteIds));
-      
-      // Test: Fetch ALL favorites to see if the table has any data
-      const { data: allFavorites, error: allFavoritesError } = await supabase
-        .from('sync_submission_favorites')
-        .select('*');
-      console.log('ALL favorites in table:', allFavorites);
-      console.log('ALL favorites error:', allFavoritesError);
       
       setFavoriteIds(allFavoriteIds);
 
