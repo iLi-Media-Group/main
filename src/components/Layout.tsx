@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Music, Upload, LayoutDashboard, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings, Guitar, Building2, Download } from 'lucide-react';
+import { Menu, X, Music, Upload, Layout, LogIn, LogOut, UserPlus, Library, CreditCard, Shield, UserCog, Mic, FileText, Briefcase, Mail, Info, Bell, MessageSquare, DollarSign, Wallet, Settings, Guitar, Building2, Download } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Footer } from './Footer';
@@ -127,18 +127,18 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
       return <Building2 className="w-4 h-4 mr-2" />;
     }
     if (accountType === 'client') {
-      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+      return <Layout className="w-4 h-4 mr-2" />;
     }
     if (accountType === 'producer') {
-      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+      return <Layout className="w-4 h-4 mr-2" />;
     }
     if (accountType === 'artist_band') {
       return <Music className="w-4 h-4 mr-2" />;
     }
     if (accountType === 'admin,producer') {
-      return <LayoutDashboard className="w-4 h-4 mr-2" />;
+      return <Layout className="w-4 h-4 mr-2" />;
     }
-    return <LayoutDashboard className="w-4 h-4 mr-2" />;
+    return <Layout className="w-4 h-4 mr-2" />;
   };
 
   const getDashboardLabel = () => {
@@ -357,7 +357,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                       {/* Client Dashboard - ONLY for client account type */}
                       {accountType === 'client' && (
                         <Link to="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <LayoutDashboard className="w-4 h-4 mr-2" />
+                          <Layout className="w-4 h-4 mr-2" />
                           Dashboard
                         </Link>
                       )}

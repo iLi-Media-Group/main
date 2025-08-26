@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStableDataFetch } from '../hooks/useStableEffect';
-import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard } from 'lucide-react';
+import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard, Layout } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -1593,7 +1593,7 @@ const getPlanLevel = (plan: string): number => {
                     {accountType === 'white_label' ? 'White Label Dashboard' : 'Client Dashboard'}
                   </p>
                 </div>
-                <LayoutDashboard className="w-5 h-5 text-blue-400" />
+                <Layout className="w-5 h-5 text-blue-400" />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">

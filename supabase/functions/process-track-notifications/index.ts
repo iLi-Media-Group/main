@@ -250,11 +250,11 @@ serve(async (req) => {
         <div class="track-details">
           <div class="detail-item">
             <span class="detail-label">Genre:</span>
-            <span class="detail-value">${trackData.genre || 'N/A'}</span>
+            <span class="detail-value">${Array.isArray(trackData.genre) ? trackData.genre.join(', ') : trackData.genre || 'N/A'}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">Sub-Genre:</span>
-            <span class="detail-value">${trackData.sub_genre || 'N/A'}</span>
+            <span class="detail-value">${Array.isArray(trackData.sub_genre) ? trackData.sub_genre.join(', ') : trackData.sub_genre || 'N/A'}</span>
           </div>
           <div class="detail-item">
             <span class="detail-label">BPM:</span>

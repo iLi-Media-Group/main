@@ -239,11 +239,11 @@ serve(async (req) => {
                  <div class="track-details">
                        <div class="detail-item">
               <span class="detail-label">Genre:</span>
-              <span class="detail-value">${trackData.genres && trackData.genres !== '{}' ? trackData.genres : 'N/A'}</span>
+              <span class="detail-value">${Array.isArray(trackData.genres) ? trackData.genres.join(', ') : (trackData.genres && trackData.genres !== '{}' ? trackData.genres : 'N/A')}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Sub-Genre:</span>
-              <span class="detail-value">${trackData.sub_genres && trackData.sub_genres !== '{}' ? trackData.sub_genres : 'N/A'}</span>
+              <span class="detail-value">${Array.isArray(trackData.sub_genres) ? trackData.sub_genres.join(', ') : (trackData.sub_genres && trackData.sub_genres !== '{}' ? trackData.sub_genres : 'N/A')}</span>
             </div>
           <div class="detail-item">
             <span class="detail-label">BPM:</span>
