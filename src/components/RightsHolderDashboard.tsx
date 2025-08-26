@@ -1330,71 +1330,7 @@ export function RightsHolderDashboard() {
           </div>
         </div>
 
-        {/* Account Status */}
-        <div className="mt-8">
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
-            <h3 className="text-lg font-semibold text-white mb-4">Account Status</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Verification Status</p>
-                  <p className={`font-medium ${getStatusColor(profile?.verification_status || '')}`}>
-                    {profile?.verification_status ? profile.verification_status.charAt(0).toUpperCase() + profile.verification_status.slice(1) : 'N/A'}
-                  </p>
-                </div>
-                {getStatusIcon(profile?.verification_status || '')}
-              </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Account Type</p>
-                  <p className="font-medium text-white">
-                    {profile?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'}
-                  </p>
-                </div>
-                <Building2 className="w-5 h-5 text-blue-400" />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Terms Accepted</p>
-                  <p className="font-medium text-green-400">
-                    {profile?.terms_accepted ? 'Yes' : 'No'}
-                  </p>
-                </div>
-                {profile?.terms_accepted ? (
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-red-400" />
-                )}
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Rights Authority Declaration</p>
-                  <p className="font-medium text-green-400">
-                    {profile?.rights_authority_declaration_accepted ? 'Accepted' : 'Pending'}
-                  </p>
-                </div>
-                {profile?.rights_authority_declaration_accepted ? (
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-red-400" />
-                )}
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                <div>
-                  <p className="text-gray-300">Member Since</p>
-                  <p className="font-medium text-white">
-                    {formatDate(profile?.created_at || '')}
-                  </p>
-                </div>
-                <Calendar className="w-5 h-5 text-gray-400" />
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Proposal Action Dialogs */}
