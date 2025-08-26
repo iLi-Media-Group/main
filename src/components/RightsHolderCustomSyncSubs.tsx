@@ -144,16 +144,22 @@ export default function RightsHolderCustomSyncSubs() {
 
       // Fetch favorites for each request based on the client who created the request
       const allFavoriteIds = new Set<string>();
+      console.log('Debug - Fetching favorites for requests:', requestsData?.map(r => ({ id: r.id, client_id: r.client_id })));
+      
       for (const request of requestsData || []) {
+        console.log('Debug - Fetching favorites for request:', request.id, 'client_id:', request.client_id);
         const { data: favoritesData, error: favoritesError } = await supabase
           .from('sync_submission_favorites')
           .select('sync_submission_id')
           .eq('client_id', request.client_id);
 
+        console.log('Debug - Favorites data for request', request.id, ':', favoritesData, 'error:', favoritesError);
+        
         if (!favoritesError && favoritesData) {
           favoritesData.forEach(f => allFavoriteIds.add(f.sync_submission_id));
         }
       }
+      console.log('Debug - All favorite IDs:', Array.from(allFavoriteIds));
       setFavoriteIds(allFavoriteIds);
 
     } catch (err) {
@@ -356,6 +362,10 @@ export default function RightsHolderCustomSyncSubs() {
                                 <Hourglass className="w-3 h-3" /> In Consideration
                               </span>
                             )}
+                            {/* Debug info */}
+                            <span className="text-xs text-gray-500">
+                              Submission ID: {submission.id} | Is Favorited: {favoriteIds.has(submission.id) ? 'Yes' : 'No'}
+                            </span>
                           </div>
 
                           <div className="text-xs text-gray-400 mt-2">
