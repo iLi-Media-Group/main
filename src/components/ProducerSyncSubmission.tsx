@@ -159,10 +159,11 @@ export default function ProducerSyncSubmission() {
       const submissionIds = mySubmissions.map(sub => sub.id);
       if (submissionIds.length === 0) return;
       const { data, error } = await supabase
-        .from('sync_submission_favorites')
-        .select('sync_submission_id')
-        .in('sync_submission_id', submissionIds);
-      if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.sync_submission_id)));
+        .from('sync_submissions')
+        .select('id')
+        .in('id', submissionIds)
+        .eq('favorited', true);
+      if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.id)));
     };
     fetchFavorites();
   }, [mySubmissions, success, editModalOpen]);

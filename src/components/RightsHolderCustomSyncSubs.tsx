@@ -169,10 +169,7 @@ export default function RightsHolderCustomSyncSubs() {
             .in('id', requestSubmissionIds)
             .eq('favorited', true);
 
-          console.log('Rights holder - Request:', request.project_title);
-          console.log('Rights holder - Submission IDs:', requestSubmissionIds);
-          console.log('Rights holder - Favorited subs:', favoritedSubs);
-          console.log('Rights holder - Favorites error:', favoritesError);
+
 
           if (!favoritesError && favoritedSubs) {
             favoritedSubs.forEach(f => allFavoriteIds.add(f.id));
@@ -180,7 +177,7 @@ export default function RightsHolderCustomSyncSubs() {
         }
       }
       
-      console.log('Rights holder - Final favorite IDs:', Array.from(allFavoriteIds));
+
       setFavoriteIds(allFavoriteIds);
 
     } catch (err) {
