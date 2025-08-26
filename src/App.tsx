@@ -96,7 +96,6 @@ import { RightsHolderLogin } from './components/RightsHolderLogin';
 import { RightsHolderDashboard } from './components/RightsHolderDashboard';
 import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRoute';
 import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
-import { TrackUploadForm } from './components/TrackUploadForm';
 import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
 import { TermsAndConditions } from './components/TermsAndConditions';
 import ApplicationTypeSelector from './components/ApplicationTypeSelector';

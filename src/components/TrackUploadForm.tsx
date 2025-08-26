@@ -1867,6 +1867,19 @@ export function TrackUploadForm() {
                     <span>Track contains vocals</span>
                       </label>
                     
+                    {formData.hasVocals && (
+                      <label className="flex items-center space-x-2 text-gray-300">
+                        <input
+                          type="checkbox"
+                          checked={formData.explicitLyrics}
+                          onChange={(e) => updateFormData({ explicitLyrics: e.target.checked })}
+                          className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                          disabled={isSubmitting}
+                        />
+                        <span>Contains explicit lyrics</span>
+                      </label>
+                    )}
+                    
                     <label className="flex items-center space-x-2 text-gray-300">
                         <input
                           type="checkbox"
@@ -1879,7 +1892,7 @@ export function TrackUploadForm() {
                       </label>
                   </div>
                   
-                  {formData.hasVocals && (
+                  {formData.hasVocals && formData.explicitLyrics && (
                     <div className="mt-2">
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Is this the clean version of an explicit song?
