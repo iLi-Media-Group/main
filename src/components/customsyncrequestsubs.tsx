@@ -395,8 +395,8 @@ export default function CustomSyncRequestSubs() {
           price_id: 'price_custom',
           custom_amount: Math.round(request.sync_fee * 100), // Convert to cents
           mode: 'payment',
-          success_url: `${window.location.origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-          cancel_url: `${window.location.origin}/custom-sync-requests`,
+          success_url: `${window.location.origin}/custom-sync-request-subs?payment=success&session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/dashboard`,
           metadata: {
             sync_request_id: reqId,
             sync_submission_id: selectedSub.id,
