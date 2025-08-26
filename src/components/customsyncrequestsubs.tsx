@@ -233,19 +233,15 @@ export default function CustomSyncRequestSubs() {
             let producer_name = 'Unknown Producer';
             let producer_number = '';
             if (sub.producer_id) {
-              try {
-                const { data: producerProfile, error: profileError } = await supabase
-                  .from('profiles')
-                  .select('first_name, last_name, producer_number')
-                  .eq('id', sub.producer_id)
-                  .single();
-                
-                if (producerProfile && !profileError) {
-                  producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
-                  producer_number = producerProfile.producer_number || '';
-                }
-              } catch (err) {
-                console.error('Error fetching producer profile:', err);
+              const { data: producerProfile } = await supabase
+                .from('profiles')
+                .select('first_name, last_name, producer_number')
+                .eq('id', sub.producer_id)
+                .maybeSingle();
+              
+              if (producerProfile) {
+                producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
+                producer_number = producerProfile.producer_number || '';
               }
             }
             // Update signed URL logic to use track_url instead of mp3_url
@@ -268,15 +264,20 @@ export default function CustomSyncRequestSubs() {
         setSubmissions(subMap);
         // Fetch favorites from DB
         try {
+          console.log('Fetching favorites for user:', user.id);
           const { data: favs, error: favsError } = await supabase
             .from('sync_submission_favorites')
             .select('sync_submission_id')
             .eq('client_id', user.id);
           
+          console.log('Favorites query result:', { favs, error: favsError });
+          
           if (favsError) {
             console.error('Error fetching favorites:', favsError);
           } else {
-            setFavoriteIds(new Set((favs || []).map((f: any) => f.sync_submission_id)));
+            const favoriteIdsArray = (favs || []).map((f: any) => f.sync_submission_id);
+            console.log('Setting favorite IDs:', favoriteIdsArray);
+            setFavoriteIds(new Set(favoriteIdsArray));
           }
         } catch (err) {
           console.error('Error in favorites fetch:', err);
