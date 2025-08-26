@@ -18,7 +18,7 @@ export const getSecurityHeaders = (): SecurityHeaders => {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: https: blob: https://*.stripe.com https://maps.googleapis.com https://maps.gstatic.com",
-      "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://maps.googleapis.com wss://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co https://api.stripe.com https://checkout.stripe.com https://maps.googleapis.com https://www.google-analytics.com wss://*.supabase.co",
       "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://www.google.com/recaptcha/",
       "object-src 'none'",
       "base-uri 'self'",
@@ -88,6 +88,7 @@ export const isUrlAllowedByCSP = (url: string, directive: string): boolean => {
       'https://api.stripe.com',
       'https://checkout.stripe.com',
       'https://maps.googleapis.com',
+      'https://www.google-analytics.com',
       'wss://*.supabase.co'
     ],
     'frame-src': [
