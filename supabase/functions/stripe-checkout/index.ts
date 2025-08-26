@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       return corsResponse({ error: 'Method not allowed' }, 405);
     }
 
-    const { price_id, success_url, cancel_url, mode, metadata = {} } = await req.json();
+    const { price_id, success_url, cancel_url, mode, metadata = {}, custom_amount } = await req.json();
 
     // Validate required parameters
     if (!price_id || !success_url || !cancel_url || !mode) {
@@ -70,7 +70,18 @@ Deno.serve(async (req) => {
     // Create the checkout session
     const session = await stripe.checkout.sessions.create({
       customer: testCustomer.id,
-      line_items: [
+      line_items: custom_amount ? [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: metadata.description || 'Custom Payment',
+            },
+            unit_amount: custom_amount,
+          },
+          quantity: 1,
+        },
+      ] : [
         {
           price: price_id,
           quantity: 1,
