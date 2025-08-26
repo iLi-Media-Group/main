@@ -231,15 +231,18 @@ export default function CustomSyncRequestSubs() {
           const updatedSubs = await Promise.all(subs.map(async (sub: SyncSubmission) => {
             let producer_name = 'Unknown Producer';
             let producer_number = '';
+            console.log('Processing submission:', sub.id, 'producer_id:', sub.producer_id);
             if (sub.producer_id) {
-              const { data: producerProfile } = await supabase
+              const { data: producerProfile, error: profileError } = await supabase
                 .from('profiles')
                 .select('first_name, last_name, producer_number')
                 .eq('id', sub.producer_id)
                 .maybeSingle();
+              console.log('Producer profile lookup:', { producer_id: sub.producer_id, profile: producerProfile, error: profileError });
               if (producerProfile) {
                 producer_name = `${producerProfile.first_name || ''} ${producerProfile.last_name || ''}`.trim() || 'Unknown Producer';
                 producer_number = producerProfile.producer_number || '';
+                console.log('Final producer name:', producer_name);
               }
             }
             // Update signed URL logic to use track_url instead of mp3_url
