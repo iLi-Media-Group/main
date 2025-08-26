@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { dataCache, CACHE_KEYS } from '../lib/cache';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface Profile {
   id: string;
@@ -146,7 +147,19 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
     if (cachedProfile && !isFetching) {
       console.log('📦 Using cached profile data');
       setProfile(cachedProfile);
-      setAccountType(cachedProfile.account_type);
+      
+      // Check if user is an admin by email (even for cached data)
+      if (isAdminEmail(email)) {
+        // Special handling for knockriobeats@gmail.com - dual admin/producer role
+        if (email.toLowerCase() === 'knockriobeats@gmail.com') {
+          setAccountType('admin,producer');
+        } else {
+          setAccountType('admin');
+        }
+      } else {
+        setAccountType(cachedProfile.account_type);
+      }
+      
       setMembershipPlan(cachedProfile.membership_plan);
       setNeedsPasswordSetup(cachedProfile.needs_password_setup);
       return;
@@ -180,7 +193,19 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       if (data) {
         console.log('✅ Profile data fetched successfully');
         setProfile(data);
-        setAccountType(data.account_type);
+        
+        // Check if user is an admin by email
+        if (isAdminEmail(email)) {
+          // Special handling for knockriobeats@gmail.com - dual admin/producer role
+          if (email.toLowerCase() === 'knockriobeats@gmail.com') {
+            setAccountType('admin,producer');
+          } else {
+            setAccountType('admin');
+          }
+        } else {
+          setAccountType(data.account_type);
+        }
+        
         setMembershipPlan(data.membership_plan);
         setNeedsPasswordSetup(data.needs_password_setup);
         

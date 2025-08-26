@@ -8,6 +8,7 @@ import { fetchInstrumentsData, type InstrumentWithCategory } from '../lib/instru
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { isAdminEmail } from '../lib/adminConfig';
 import { uploadFile, validateAudioFile, validateArchiveFile } from '../lib/storage';
 import { AudioPlayer } from './AudioPlayer';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
@@ -111,16 +112,35 @@ export function TrackUploadForm() {
 
   // Function to get the correct dashboard URL based on account type
   const getDashboardUrl = () => {
+    console.log('🔍 getDashboardUrl called with accountType:', accountType);
+    console.log('🔍 user email:', user?.email);
+    
+    // Check if user is an admin by email (fallback check)
+    const isAdmin = user?.email && isAdminEmail(user.email);
+    
     switch (accountType) {
       case 'rights_holder':
+        console.log('📍 Redirecting to rights_holder dashboard');
         return '/rights-holder/dashboard';
       case 'producer':
+        console.log('📍 Redirecting to producer dashboard');
         return '/producer/dashboard';
       case 'admin':
+        console.log('📍 Redirecting to admin dashboard');
         return '/admin';
+      case 'admin,producer':
+        console.log('📍 Redirecting to producer dashboard (admin,producer)');
+        return '/producer/dashboard';
       case 'white_label':
+        console.log('📍 Redirecting to white_label dashboard');
         return '/white-label-dashboard';
       default:
+        // Fallback: if accountType is null/undefined but user is admin, redirect to admin
+        if (isAdmin) {
+          console.log('📍 Fallback: Redirecting to admin dashboard (admin email detected)');
+          return '/admin';
+        }
+        console.log('📍 Redirecting to default dashboard (accountType:', accountType, ')');
         return '/dashboard';
     }
   };
@@ -540,9 +560,14 @@ export function TrackUploadForm() {
     } else if (showSuccessModal && successCountdown === 0) {
               // Auto-dismiss after countdown reaches 0
         setTimeout(() => {
+          console.log('⏰ Auto-redirect triggered (countdown reached 0)');
+          console.log('⏰ Current accountType:', accountType);
+          console.log('⏰ Current user email:', user?.email);
           setShowSuccessModal(false);
           setSuccessCountdown(10);
-          navigate(getDashboardUrl());
+          const dashboardUrl = getDashboardUrl();
+          console.log('⏰ Auto-navigating to:', dashboardUrl);
+          navigate(dashboardUrl);
         }, 1000);
     }
   }, [showSuccessModal, successCountdown, navigate]);
@@ -1144,9 +1169,14 @@ export function TrackUploadForm() {
               <div className="space-y-3">
                 <button
                   onClick={() => {
+                    console.log('🚀 Go to Dashboard Now button clicked');
+                    console.log('🚀 Current accountType:', accountType);
+                    console.log('🚀 Current user email:', user?.email);
                     setShowSuccessModal(false);
                     setSuccessCountdown(10);
-                    navigate(getDashboardUrl());
+                    const dashboardUrl = getDashboardUrl();
+                    console.log('🚀 Navigating to:', dashboardUrl);
+                    navigate(dashboardUrl);
                   }}
                   className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg"
                 >
