@@ -23,6 +23,7 @@ import {
   ArrowRight,
   Mail,
   MessageSquare,
+  MessageCircle,
   Plus,
   Search,
   Filter,
