@@ -333,15 +333,19 @@ export default function CustomSyncRequestSubs() {
     if (!user) return;
     
     const isCurrentlyFavorite = favoriteIds.has(sub.id);
+    console.log('handleFavorite called:', { submissionId: sub.id, isCurrentlyFavorite, userId: user.id });
     
     try {
       if (isCurrentlyFavorite) {
         // Remove from favorites
+        console.log('Removing favorite from database...');
         const { error: deleteError } = await supabase
           .from('sync_submission_favorites')
           .delete()
           .eq('client_id', user.id)
           .eq('sync_submission_id', sub.id);
+        
+        console.log('Delete result:', { error: deleteError });
         
         if (deleteError) {
           console.error('Error removing favorite:', deleteError);
@@ -353,11 +357,15 @@ export default function CustomSyncRequestSubs() {
           copy.delete(sub.id);
           return copy;
         });
+        console.log('Favorite removed from state');
       } else {
         // Add to favorites
+        console.log('Adding favorite to database...');
         const { error: insertError } = await supabase
           .from('sync_submission_favorites')
           .insert({ client_id: user.id, sync_submission_id: sub.id });
+        
+        console.log('Insert result:', { error: insertError });
         
         if (insertError) {
           console.error('Error adding favorite:', insertError);
@@ -369,6 +377,7 @@ export default function CustomSyncRequestSubs() {
           copy.add(sub.id);
           return copy;
         });
+        console.log('Favorite added to state');
       }
     } catch (err) {
       console.error('Error in handleFavorite:', err);
