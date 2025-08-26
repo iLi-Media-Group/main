@@ -54,6 +54,8 @@ const ArtistApplicationStatus: React.FC = () => {
         return <XCircle className="w-8 h-8 text-red-500" />;
       case 'invited':
         return <Mail className="w-8 h-8 text-blue-500" />;
+      case 'onboarded':
+        return <CheckCircle className="w-8 h-8 text-green-500" />;
       default:
         return <Clock className="w-8 h-8 text-yellow-500" />;
     }
@@ -67,6 +69,8 @@ const ArtistApplicationStatus: React.FC = () => {
         return 'Application Not Approved';
       case 'invited':
         return 'Invitation Sent';
+      case 'onboarded':
+        return 'Account Created & Onboarded';
       case 'new':
         return 'Under Review';
       default:
@@ -82,6 +86,8 @@ const ArtistApplicationStatus: React.FC = () => {
         return 'Thank you for your application. Unfortunately, we are unable to approve your application at this time. You may reapply in the future.';
       case 'invited':
         return 'An invitation has been sent to your email address. Please check your inbox and follow the instructions to complete your account setup.';
+      case 'onboarded':
+        return 'Welcome! Your account has been successfully created and you are now fully onboarded. You can access your dashboard and start uploading your music.';
       case 'new':
         return 'Your application is currently under review. We typically review applications within 5-7 business days. You will receive an email notification once a decision has been made.';
       default:
@@ -97,6 +103,8 @@ const ArtistApplicationStatus: React.FC = () => {
         return 'bg-red-500/10 border-red-500/20 text-red-400';
       case 'invited':
         return 'bg-blue-500/10 border-blue-500/20 text-blue-400';
+      case 'onboarded':
+        return 'bg-green-500/10 border-green-500/20 text-green-400';
       default:
         return 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400';
     }
@@ -189,7 +197,7 @@ const ArtistApplicationStatus: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              {application.status === 'approved' ? (
+              {(application.status === 'approved' || application.status === 'onboarded') ? (
                 <button
                   onClick={() => window.location.href = '/artist/dashboard'}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"

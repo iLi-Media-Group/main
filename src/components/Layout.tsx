@@ -84,7 +84,11 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
 
   // Check if artist is approved
   const isArtistApproved = () => {
-    return accountType === 'artist_band' && artistApplicationStatus === 'approved';
+    if (accountType === 'artist_band') {
+      // Artists with "approved" or "onboarded" status can access dashboard
+      return artistApplicationStatus === 'approved' || artistApplicationStatus === 'onboarded';
+    }
+    return false;
   };
 
   // Check if artist application is pending
