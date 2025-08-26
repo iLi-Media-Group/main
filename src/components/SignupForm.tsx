@@ -19,6 +19,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   const [companyName, setCompanyName] = useState('');
   const [accountType, setAccountType] = useState<'client' | 'producer' | 'artist_band'>('client');
   const [ageVerified, setAgeVerified] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [invitationCode, setInvitationCode] = useState('');
   const [ipiNumber, setIpiNumber] = useState('');
   const [performingRightsOrg, setPerformingRightsOrg] = useState('');
@@ -50,6 +51,10 @@ function SignupFormContent({ onClose }: SignupFormProps) {
 
       if (!ageVerified) {
         throw new Error('You must be 18 years or older to create an account');
+      }
+
+      if (!termsAccepted) {
+        throw new Error('You must accept the Terms and Conditions to create an account');
       }
 
       if (!validatePassword(password)) {
@@ -200,13 +205,15 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             company_name: companyName.trim() || null,
             account_type: accountType,
             membership_plan: 'Single Track',
-            age_verified: ageVerified, 
-            invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
-            producer_number: accountType === 'producer' ? producerNumber : null,
-            artist_number: accountType === 'artist_band' ? artistNumber : null,
-            ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
-            performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
-            updated_at: new Date().toISOString()
+                         age_verified: ageVerified,
+             terms_accepted: termsAccepted,
+             terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+             invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
+             producer_number: accountType === 'producer' ? producerNumber : null,
+             artist_number: accountType === 'artist_band' ? artistNumber : null,
+             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
+             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+             updated_at: new Date().toISOString()
           })
           .eq('id', user.id);
         profileError = error;
@@ -221,16 +228,18 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             first_name: firstName,
             last_name: lastName,
             company_name: companyName.trim() || null,
-            account_type: accountType,
-            membership_plan: 'Single Track',
-            age_verified: ageVerified, 
-            invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
-            producer_number: accountType === 'producer' ? producerNumber : null,
-            artist_number: accountType === 'artist_band' ? artistNumber : null,
-            ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
-            performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+                         account_type: accountType,
+             membership_plan: 'Single Track',
+             age_verified: ageVerified,
+             terms_accepted: termsAccepted,
+             terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+             invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
+             producer_number: accountType === 'producer' ? producerNumber : null,
+             artist_number: accountType === 'artist_band' ? artistNumber : null,
+             ipi_number: accountType === 'producer' ? ipiNumber.trim() : null,
+             performing_rights_org: accountType === 'producer' ? performingRightsOrg : null,
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString()
           });
         profileError = error;
       }
@@ -568,6 +577,28 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               />
               <span className="text-sm text-gray-300">
                 I am 18 years or older
+              </span>
+            </label>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                required
+              />
+              <span className="text-sm text-gray-300">
+                I agree to follow the{' '}
+                <a 
+                  href="/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  Terms and Conditions
+                </a>
+                {' '}of this website and service
               </span>
             </label>
 

@@ -98,6 +98,7 @@ import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRo
 import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
 import { TrackUploadForm } from './components/TrackUploadForm';
 import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
+import { TermsAndConditions } from './components/TermsAndConditions';
 import ApplicationTypeSelector from './components/ApplicationTypeSelector';
 import { RightsHolderAnalytics } from './components/RightsHolderAnalytics';
 import { RightsHolderRecordings } from './components/RightsHolderRecordings';
@@ -337,6 +338,7 @@ const App = () => {
         <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />
         <Route path="/privacy" element={<LayoutWrapper><PrivacyPolicy /></LayoutWrapper>} />
+        <Route path="/terms" element={<LayoutWrapper><TermsAndConditions /></LayoutWrapper>} />
         <Route path="/dispute-resolution" element={<LayoutWrapper><DisputeResolution /></LayoutWrapper>} />
         <Route path="/about" element={<LayoutWrapper><AboutPage /></LayoutWrapper>} />
 <Route path="/contact" element={<LayoutWrapper><ContactPage /></LayoutWrapper>} />
