@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "pnpm run build"
   publish = "dist"
 
 [build.environment]
@@ -41,11 +41,6 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 # Security: Block access to sensitive files
 [[redirects]]
   from = "/.env*"
@@ -77,3 +72,20 @@
   RATE_LIMIT_ENABLED = "true"
   RATE_LIMIT_MAX_REQUESTS = "50"
   RATE_LIMIT_WINDOW_MS = "60000" 
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+[build.processing.images]
+  compress = true 
