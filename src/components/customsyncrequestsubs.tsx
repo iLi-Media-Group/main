@@ -216,7 +216,13 @@ export default function CustomSyncRequestSubs() {
       setError(null);
       const { data, error } = await supabase
         .from('custom_sync_requests')
-        .select('*, sync_submissions(*)')
+        .select(`
+          *,
+          sync_submissions(
+            *,
+            producer:profiles!sync_submissions_producer_id_fkey(first_name, last_name, producer_number)
+          )
+        `)
         .eq('client_id', user.id)
         .order('created_at', { ascending: false });
       console.log('Fetched custom_sync_requests:', data);
@@ -232,7 +238,13 @@ export default function CustomSyncRequestSubs() {
           const updatedSubs = await Promise.all(subs.map(async (sub: SyncSubmission) => {
             let producer_name = 'Unknown Producer';
             let producer_number = '';
-            if (sub.producer_id) {
+            
+            // Use the joined producer data if available
+            if (sub.producer && sub.producer.first_name) {
+              producer_name = `${sub.producer.first_name || ''} ${sub.producer.last_name || ''}`.trim() || 'Unknown Producer';
+              producer_number = sub.producer.producer_number || '';
+            } else if (sub.producer_id) {
+              // Fallback to separate query if joined data not available
               const { data: producerProfile } = await supabase
                 .from('profiles')
                 .select('first_name, last_name, producer_number')
@@ -1073,6 +1085,13 @@ export default function CustomSyncRequestSubs() {
                               Producer: <button type="button" className="underline hover:text-blue-400" onClick={e => { e.stopPropagation(); setProducerProfileId(sub.producer_id || ''); setShowProducerProfileDialog(true); }}>{sub.producer_name || 'Unknown'}</button>
                             </div>
                             <div className="text-blue-200 text-xs">BPM: {sub.track_bpm} | Key: {sub.track_key}</div>
+                            {favoriteIds.has(sub.id) && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="bg-blue-600/20 text-blue-400 px-2 py-1 rounded text-xs flex items-center gap-1">
+                                  <Hourglass className="w-3 h-3" /> In Consideration
+                                </span>
+                              </div>
+                            )}
                             {sub.signed_mp3_url && (
                               <div className="my-2">
                                 <AudioPlayer src={sub.signed_mp3_url} title={sub.track_name || 'Track'} size="sm" audioId={`customsync-${sub.id}`} />
