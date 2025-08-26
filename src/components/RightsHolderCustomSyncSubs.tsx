@@ -142,16 +142,19 @@ export default function RightsHolderCustomSyncSubs() {
 
       setSubmissions(submissionsData);
 
-      // Fetch favorites
-      const { data: favoritesData, error: favoritesError } = await supabase
-        .from('sync_submission_favorites')
-        .select('sync_submission_id')
-        .eq('client_id', user.id);
+      // Fetch favorites for each request based on the client who created the request
+      const allFavoriteIds = new Set<string>();
+      for (const request of requestsData || []) {
+        const { data: favoritesData, error: favoritesError } = await supabase
+          .from('sync_submission_favorites')
+          .select('sync_submission_id')
+          .eq('client_id', request.client_id);
 
-      if (!favoritesError && favoritesData) {
-        const favoriteIdsSet = new Set(favoritesData.map(f => f.sync_submission_id));
-        setFavoriteIds(favoriteIdsSet);
+        if (!favoritesError && favoritesData) {
+          favoritesData.forEach(f => allFavoriteIds.add(f.sync_submission_id));
+        }
       }
+      setFavoriteIds(allFavoriteIds);
 
     } catch (err) {
       console.error('Error fetching requests:', err);
@@ -161,49 +164,11 @@ export default function RightsHolderCustomSyncSubs() {
     }
   };
 
+  // Rights holders cannot favorite submissions - only clients can do that
+  // This function is kept for compatibility but does nothing
   const toggleFavorite = async (submission: SyncSubmission, reqId: string) => {
-    if (!user) return;
-
-    try {
-      const isFavorited = favoriteIds.has(submission.id);
-      
-      if (isFavorited) {
-        // Remove from favorites
-        const { error } = await supabase
-          .from('sync_submission_favorites')
-          .delete()
-          .eq('sync_submission_id', submission.id)
-          .eq('client_id', user.id);
-
-        if (!error) {
-          setFavoriteIds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(submission.id);
-            return newSet;
-          });
-          setFavorites(prev => {
-            const newFavorites = { ...prev };
-            delete newFavorites[submission.id];
-            return newFavorites;
-          });
-        }
-      } else {
-        // Add to favorites
-        const { error } = await supabase
-          .from('sync_submission_favorites')
-          .insert({
-            sync_submission_id: submission.id,
-            client_id: user.id
-          });
-
-        if (!error) {
-          setFavoriteIds(prev => new Set([...prev, submission.id]));
-          setFavorites(prev => ({ ...prev, [submission.id]: submission }));
-        }
-      }
-    } catch (err) {
-      console.error('Error toggling favorite:', err);
-    }
+    // Rights holders cannot favorite submissions
+    return;
   };
 
   const hideSubmission = (reqId: string, subId: string) => {
