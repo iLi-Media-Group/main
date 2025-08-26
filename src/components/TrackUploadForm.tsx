@@ -112,11 +112,16 @@ export function TrackUploadForm() {
 
   // Function to get the correct dashboard URL based on account type
   const getDashboardUrl = () => {
-    // Check if user is an admin by email (primary check)
+    // Check if user is an admin by email
     const isAdmin = user?.email && isAdminEmail(user.email);
     
-    // If user is admin, always redirect to admin dashboard
-    if (isAdmin) {
+    // For track uploads, prioritize producer dashboard for admin,producer users
+    if (isAdmin && accountType === 'admin,producer') {
+      return '/producer/dashboard';
+    }
+    
+    // For pure admin users (not producers), redirect to admin dashboard
+    if (isAdmin && accountType === 'admin') {
       return '/admin';
     }
     
