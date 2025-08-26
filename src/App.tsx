@@ -114,6 +114,7 @@ import { CustomSyncRequestDetail } from './components/CustomSyncRequestDetail';
 import { CustomSyncRequestsPage } from './components/CustomSyncRequestsPage';
 import { ProfilePage } from './components/ProfilePage';
 import RightsHolderSyncSubmission from './components/RightsHolderSyncSubmission';
+import RightsHolderCustomSyncSubs from './components/RightsHolderCustomSyncSubs';
 import RightsHolderTerms from './components/RightsHolderTerms';
 import ProducerTerms from './components/ProducerTerms';
 
@@ -761,6 +762,11 @@ const App = () => {
         <Route path="/custom-sync-requests" element={
           <RightsHolderProtectedRoute>
             <CustomSyncRequestsPage />
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/custom-sync-subs" element={
+          <RightsHolderProtectedRoute>
+            <RightsHolderCustomSyncSubs />
           </RightsHolderProtectedRoute>
         } />
 

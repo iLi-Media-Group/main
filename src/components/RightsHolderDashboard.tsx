@@ -1192,19 +1192,28 @@ export function RightsHolderDashboard() {
 
             {/* Custom Sync Requests Section */}
             <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors p-6">
-              <div className="flex items-center mb-6">
-                <button
-                  className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
-                  onClick={() => setCustomSyncTab('open')}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center">
+                  <button
+                    className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+                    onClick={() => setCustomSyncTab('open')}
+                  >
+                    Open Custom Sync Requests
+                  </button>
+                  <button
+                    className={`ml-2 px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'completed' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
+                    onClick={() => setCustomSyncTab('completed')}
+                  >
+                    Completed Custom Syncs (Paid)
+                  </button>
+                </div>
+                <Link
+                  to="/rights-holder/custom-sync-subs"
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
                 >
-                  Open Custom Sync Requests
-                </button>
-                <button
-                  className={`ml-2 px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'completed' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
-                  onClick={() => setCustomSyncTab('completed')}
-                >
-                  Completed Custom Syncs (Paid)
-                </button>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  See Submissions
+                </Link>
               </div>
               <div className="bg-blue-900/60 rounded-b-lg p-4">
                 {customSyncTab === 'open' ? (
