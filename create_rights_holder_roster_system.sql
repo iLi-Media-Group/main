@@ -109,46 +109,83 @@ ALTER TABLE roster_entity_members ENABLE ROW LEVEL SECURITY;
 -- ============================================
 
 -- Rights holders can manage their own roster entities
-CREATE POLICY IF NOT EXISTS "Rights holders can manage own roster entities" ON roster_entities
-    FOR ALL USING (
-        rights_holder_id = auth.uid() AND
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND rights_holder_type IN ('record_label', 'publisher')
-        )
-    );
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'roster_entities' 
+        AND policyname = 'Rights holders can manage own roster entities'
+    ) THEN
+        CREATE POLICY "Rights holders can manage own roster entities" ON roster_entities
+            FOR ALL USING (
+                rights_holder_id = auth.uid() AND
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND rights_holder_type IN ('record_label', 'publisher')
+                )
+            );
+    END IF;
+END $$;
 
 -- Rights holders can manage their own roster entity members
-CREATE POLICY IF NOT EXISTS "Rights holders can manage own roster entity members" ON roster_entity_members
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM roster_entities re
-            JOIN profiles p ON p.id = re.rights_holder_id
-            WHERE re.id = roster_entity_members.roster_entity_id
-            AND p.id = auth.uid()
-            AND p.rights_holder_type IN ('record_label', 'publisher')
-        )
-    );
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'roster_entity_members' 
+        AND policyname = 'Rights holders can manage own roster entity members'
+    ) THEN
+        CREATE POLICY "Rights holders can manage own roster entity members" ON roster_entity_members
+            FOR ALL USING (
+                EXISTS (
+                    SELECT 1 FROM roster_entities re
+                    JOIN profiles p ON p.id = re.rights_holder_id
+                    WHERE re.id = roster_entity_members.roster_entity_id
+                    AND p.id = auth.uid()
+                    AND p.rights_holder_type IN ('record_label', 'publisher')
+                )
+            );
+    END IF;
+END $$;
 
 -- Admins can manage all roster entities
-CREATE POLICY IF NOT EXISTS "Admins can manage all roster entities" ON roster_entities
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND account_type LIKE '%admin%'
-        )
-    );
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'roster_entities' 
+        AND policyname = 'Admins can manage all roster entities'
+    ) THEN
+        CREATE POLICY "Admins can manage all roster entities" ON roster_entities
+            FOR ALL USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND account_type LIKE '%admin%'
+                )
+            );
+    END IF;
+END $$;
 
-CREATE POLICY IF NOT EXISTS "Admins can manage all roster entity members" ON roster_entity_members
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM profiles 
-            WHERE id = auth.uid() 
-            AND account_type LIKE '%admin%'
-        )
-    );
+-- Admins can manage all roster entity members
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_policies 
+        WHERE tablename = 'roster_entity_members' 
+        AND policyname = 'Admins can manage all roster entity members'
+    ) THEN
+        CREATE POLICY "Admins can manage all roster entity members" ON roster_entity_members
+            FOR ALL USING (
+                EXISTS (
+                    SELECT 1 FROM profiles 
+                    WHERE id = auth.uid() 
+                    AND account_type LIKE '%admin%'
+                )
+            );
+    END IF;
+END $$;
 
 -- ============================================
 -- 8. TRIGGERS FOR UPDATED_AT
