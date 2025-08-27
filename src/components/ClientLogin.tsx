@@ -28,30 +28,6 @@ export function ClientLogin() {
 
       // Check if user is an admin
       const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
-      
-      if (!isAdmin) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (profileError) {
-          if (profileError.code !== 'PGRST116') {
-            console.error('Profile lookup error:', profileError);
-            // Continue with login even if profile lookup fails
-          }
-          // If no profile found, continue with login for admin emails
-          if (!isAdmin) {
-            // For non-admin emails without a profile, we'll create one after successful login
-            console.log('No profile found, will create after login');
-          }
-        }
-        
-        if (profileData && profileData.account_type === 'producer' && !isAdmin) {
-          throw new Error('Please use the producer login page');
-        }
-      }
 
       const { error: signInError } = await signIn(email, password);
       
