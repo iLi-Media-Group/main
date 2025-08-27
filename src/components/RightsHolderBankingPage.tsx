@@ -440,32 +440,133 @@ export function RightsHolderBankingPage() {
               <BarChart3 className="w-5 h-5 text-gray-400 mr-2" />
               Revenue Breakdown
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="text-center">
-                <p className="text-sm text-gray-400">Sync Proposals</p>
-                <p className="text-lg font-bold text-white">${revenueStats.syncProposalsRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{revenueStats.syncProposalsCount} transactions</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-400">Custom Sync</p>
-                <p className="text-lg font-bold text-white">${revenueStats.customSyncRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{revenueStats.customSyncCount} transactions</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-400">License Fees</p>
-                <p className="text-lg font-bold text-white">${revenueStats.licenseFeesRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{revenueStats.licenseCount} transactions</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-400">Membership</p>
-                <p className="text-lg font-bold text-white">${revenueStats.membershipRevenue.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{revenueStats.membershipCount} transactions</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-gray-400">Royalties</p>
-                <p className="text-lg font-bold text-white">${revenueStats.royaltyPayments.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{revenueStats.royaltyCount} transactions</p>
-              </div>
+            
+            <div className="space-y-4">
+              {revenueStats.totalRevenue === 0 ? (
+                <p className="text-gray-400 text-center py-4">No revenue data available</p>
+              ) : (
+                <>
+                  {/* Sync Proposals */}
+                  {revenueStats.syncProposalsRevenue > 0 && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <span className="text-green-400">Sync Proposals</span>
+                          <span className="text-gray-400 text-sm ml-2">({revenueStats.syncProposalsCount} {revenueStats.syncProposalsCount === 1 ? 'transaction' : 'transactions'})</span>
+                        </div>
+                        <span className="text-white font-semibold">
+                          ${revenueStats.syncProposalsRevenue.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-green-600 h-2 rounded-full"
+                          style={{ width: `${(revenueStats.syncProposalsRevenue / revenueStats.totalRevenue) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-right text-xs text-gray-400 mt-1">
+                        {((revenueStats.syncProposalsRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Custom Sync Requests */}
+                  {revenueStats.customSyncRevenue > 0 && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <span className="text-blue-400">Custom Sync Requests</span>
+                          <span className="text-gray-400 text-sm ml-2">({revenueStats.customSyncCount} {revenueStats.customSyncCount === 1 ? 'transaction' : 'transactions'})</span>
+                        </div>
+                        <span className="text-white font-semibold">
+                          ${revenueStats.customSyncRevenue.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${(revenueStats.customSyncRevenue / revenueStats.totalRevenue) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-right text-xs text-gray-400 mt-1">
+                        {((revenueStats.customSyncRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+
+                  {/* License Fees */}
+                  {revenueStats.licenseFeesRevenue > 0 && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <span className="text-purple-400">License Fees</span>
+                          <span className="text-gray-400 text-sm ml-2">({revenueStats.licenseCount} {revenueStats.licenseCount === 1 ? 'transaction' : 'transactions'})</span>
+                        </div>
+                        <span className="text-white font-semibold">
+                          ${revenueStats.licenseFeesRevenue.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-purple-600 h-2 rounded-full"
+                          style={{ width: `${(revenueStats.licenseFeesRevenue / revenueStats.totalRevenue) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-right text-xs text-gray-400 mt-1">
+                        {((revenueStats.licenseFeesRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Membership Revenue */}
+                  {revenueStats.membershipRevenue > 0 && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <span className="text-orange-400">Membership Revenue</span>
+                          <span className="text-gray-400 text-sm ml-2">({revenueStats.membershipCount} {revenueStats.membershipCount === 1 ? 'transaction' : 'transactions'})</span>
+                        </div>
+                        <span className="text-white font-semibold">
+                          ${revenueStats.membershipRevenue.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-orange-600 h-2 rounded-full"
+                          style={{ width: `${(revenueStats.membershipRevenue / revenueStats.totalRevenue) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-right text-xs text-gray-400 mt-1">
+                        {((revenueStats.membershipRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Royalty Payments */}
+                  {revenueStats.royaltyPayments > 0 && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <div className="flex items-center">
+                          <span className="text-yellow-400">Royalty Payments</span>
+                          <span className="text-gray-400 text-sm ml-2">({revenueStats.royaltyCount} {revenueStats.royaltyCount === 1 ? 'transaction' : 'transactions'})</span>
+                        </div>
+                        <span className="text-white font-semibold">
+                          ${revenueStats.royaltyPayments.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-700 rounded-full h-2">
+                        <div 
+                          className="bg-yellow-600 h-2 rounded-full"
+                          style={{ width: `${(revenueStats.royaltyPayments / revenueStats.totalRevenue) * 100}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-right text-xs text-gray-400 mt-1">
+                        {((revenueStats.royaltyPayments / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -610,78 +711,183 @@ export function RightsHolderBankingPage() {
           )}
         </Card>
 
-        {/* Revenue Report Modal */}
-        {showRevenueReport && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-white">Comprehensive Revenue Report</h3>
-                <button
-                  onClick={() => setShowRevenueReport(false)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
-                    <CardContent className="p-4">
-                      <h4 className="text-lg font-semibold text-white mb-3">Sync Proposals</h4>
-                      <p className="text-2xl font-bold text-green-400">${revenueStats.syncProposalsRevenue.toFixed(2)}</p>
-                      <p className="text-sm text-gray-400">{revenueStats.syncProposalsCount} transactions</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
-                    <CardContent className="p-4">
-                      <h4 className="text-lg font-semibold text-white mb-3">Custom Sync Requests</h4>
-                      <p className="text-2xl font-bold text-blue-400">${revenueStats.customSyncRevenue.toFixed(2)}</p>
-                      <p className="text-sm text-gray-400">{revenueStats.customSyncCount} transactions</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
-                    <CardContent className="p-4">
-                      <h4 className="text-lg font-semibold text-white mb-3">License Fees</h4>
-                      <p className="text-2xl font-bold text-purple-400">${revenueStats.licenseFeesRevenue.toFixed(2)}</p>
-                      <p className="text-sm text-gray-400">{revenueStats.licenseCount} transactions</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20">
-                    <CardContent className="p-4">
-                      <h4 className="text-lg font-semibold text-white mb-3">Membership Revenue</h4>
-                      <p className="text-2xl font-bold text-orange-400">${revenueStats.membershipRevenue.toFixed(2)}</p>
-                      <p className="text-sm text-gray-400">{revenueStats.membershipCount} transactions</p>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="flex justify-center space-x-4">
-                  <button
-                    onClick={() => exportRevenueReport('csv')}
-                    disabled={exporting}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-                  >
-                    <FileSpreadsheet className="w-4 h-4" />
-                    <span>{exporting ? 'Exporting...' : 'Export CSV'}</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => exportRevenueReport('pdf')}
-                    disabled={exporting}
-                    className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                  >
-                    <FileTextIcon className="w-4 h-4" />
-                    <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+                 {/* Revenue Report Modal */}
+         {showRevenueReport && (
+           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+             <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+               <div className="flex justify-between items-center mb-6">
+                 <h3 className="text-xl font-bold text-white">Comprehensive Revenue Report</h3>
+                 <button
+                   onClick={() => setShowRevenueReport(false)}
+                   className="text-gray-400 hover:text-white"
+                 >
+                   <X className="w-6 h-6" />
+                 </button>
+               </div>
+               
+               <div className="space-y-6">
+                 {/* Total Revenue Summary */}
+                 <div className="bg-white/5 rounded-lg p-6 border border-purple-500/20">
+                   <p className="text-3xl font-bold text-white">${revenueStats.totalRevenue.toFixed(2)}</p>
+                   <p className="text-gray-400 mt-1">Total Revenue</p>
+                 </div>
+
+                 {/* Revenue Breakdown */}
+                 <div className="bg-white/5 rounded-lg p-6 border border-purple-500/20">
+                   <h4 className="text-lg font-semibold text-white mb-4">Revenue by Source</h4>
+                   
+                   <div className="space-y-4">
+                     {revenueStats.totalRevenue === 0 ? (
+                       <p className="text-gray-400 text-center py-4">No revenue data available</p>
+                     ) : (
+                       <>
+                         {/* Sync Proposals */}
+                         {revenueStats.syncProposalsRevenue > 0 && (
+                           <div>
+                             <div className="flex justify-between items-center mb-1">
+                               <div className="flex items-center">
+                                 <span className="text-green-400">Sync Proposals</span>
+                                 <span className="text-gray-400 text-sm ml-2">({revenueStats.syncProposalsCount} {revenueStats.syncProposalsCount === 1 ? 'transaction' : 'transactions'})</span>
+                               </div>
+                               <span className="text-white font-semibold">
+                                 ${revenueStats.syncProposalsRevenue.toFixed(2)}
+                               </span>
+                             </div>
+                             <div className="w-full bg-gray-700 rounded-full h-2">
+                               <div 
+                                 className="bg-green-600 h-2 rounded-full"
+                                 style={{ width: `${(revenueStats.syncProposalsRevenue / revenueStats.totalRevenue) * 100}%` }}
+                               ></div>
+                             </div>
+                             <p className="text-right text-xs text-gray-400 mt-1">
+                               {((revenueStats.syncProposalsRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                             </p>
+                           </div>
+                         )}
+
+                         {/* Custom Sync Requests */}
+                         {revenueStats.customSyncRevenue > 0 && (
+                           <div>
+                             <div className="flex justify-between items-center mb-1">
+                               <div className="flex items-center">
+                                 <span className="text-blue-400">Custom Sync Requests</span>
+                                 <span className="text-gray-400 text-sm ml-2">({revenueStats.customSyncCount} {revenueStats.customSyncCount === 1 ? 'transaction' : 'transactions'})</span>
+                               </div>
+                               <span className="text-white font-semibold">
+                                 ${revenueStats.customSyncRevenue.toFixed(2)}
+                               </span>
+                             </div>
+                             <div className="w-full bg-gray-700 rounded-full h-2">
+                               <div 
+                                 className="bg-blue-600 h-2 rounded-full"
+                                 style={{ width: `${(revenueStats.customSyncRevenue / revenueStats.totalRevenue) * 100}%` }}
+                               ></div>
+                             </div>
+                             <p className="text-right text-xs text-gray-400 mt-1">
+                               {((revenueStats.customSyncRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                             </p>
+                           </div>
+                         )}
+
+                         {/* License Fees */}
+                         {revenueStats.licenseFeesRevenue > 0 && (
+                           <div>
+                             <div className="flex justify-between items-center mb-1">
+                               <div className="flex items-center">
+                                 <span className="text-purple-400">License Fees</span>
+                                 <span className="text-gray-400 text-sm ml-2">({revenueStats.licenseCount} {revenueStats.licenseCount === 1 ? 'transaction' : 'transactions'})</span>
+                               </div>
+                               <span className="text-white font-semibold">
+                                 ${revenueStats.licenseFeesRevenue.toFixed(2)}
+                               </span>
+                             </div>
+                             <div className="w-full bg-gray-700 rounded-full h-2">
+                               <div 
+                                 className="bg-purple-600 h-2 rounded-full"
+                                 style={{ width: `${(revenueStats.licenseFeesRevenue / revenueStats.totalRevenue) * 100}%` }}
+                               ></div>
+                             </div>
+                             <p className="text-right text-xs text-gray-400 mt-1">
+                               {((revenueStats.licenseFeesRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                             </p>
+                           </div>
+                         )}
+
+                         {/* Membership Revenue */}
+                         {revenueStats.membershipRevenue > 0 && (
+                           <div>
+                             <div className="flex justify-between items-center mb-1">
+                               <div className="flex items-center">
+                                 <span className="text-orange-400">Membership Revenue</span>
+                                 <span className="text-gray-400 text-sm ml-2">({revenueStats.membershipCount} {revenueStats.membershipCount === 1 ? 'transaction' : 'transactions'})</span>
+                               </div>
+                               <span className="text-white font-semibold">
+                                 ${revenueStats.membershipRevenue.toFixed(2)}
+                               </span>
+                             </div>
+                             <div className="w-full bg-gray-700 rounded-full h-2">
+                               <div 
+                                 className="bg-orange-600 h-2 rounded-full"
+                                 style={{ width: `${(revenueStats.membershipRevenue / revenueStats.totalRevenue) * 100}%` }}
+                               ></div>
+                             </div>
+                             <p className="text-right text-xs text-gray-400 mt-1">
+                               {((revenueStats.membershipRevenue / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                             </p>
+                           </div>
+                         )}
+
+                         {/* Royalty Payments */}
+                         {revenueStats.royaltyPayments > 0 && (
+                           <div>
+                             <div className="flex justify-between items-center mb-1">
+                               <div className="flex items-center">
+                                 <span className="text-yellow-400">Royalty Payments</span>
+                                 <span className="text-gray-400 text-sm ml-2">({revenueStats.royaltyCount} {revenueStats.royaltyCount === 1 ? 'transaction' : 'transactions'})</span>
+                               </div>
+                               <span className="text-white font-semibold">
+                                 ${revenueStats.royaltyPayments.toFixed(2)}
+                               </span>
+                             </div>
+                             <div className="w-full bg-gray-700 rounded-full h-2">
+                               <div 
+                                 className="bg-yellow-600 h-2 rounded-full"
+                                 style={{ width: `${(revenueStats.royaltyPayments / revenueStats.totalRevenue) * 100}%` }}
+                               ></div>
+                             </div>
+                             <p className="text-right text-xs text-gray-400 mt-1">
+                               {((revenueStats.royaltyPayments / revenueStats.totalRevenue) * 100).toFixed(1)}%
+                             </p>
+                           </div>
+                         )}
+                       </>
+                     )}
+                   </div>
+                 </div>
+                 
+                 <div className="flex justify-center space-x-4">
+                   <button
+                     onClick={() => exportRevenueReport('csv')}
+                     disabled={exporting}
+                     className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                   >
+                     <FileSpreadsheet className="w-4 h-4" />
+                     <span>{exporting ? 'Exporting...' : 'Export CSV'}</span>
+                   </button>
+                   
+                   <button
+                     onClick={() => exportRevenueReport('pdf')}
+                     disabled={exporting}
+                     className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                   >
+                     <FileTextIcon className="w-4 h-4" />
+                     <span>{exporting ? 'Exporting...' : 'Export PDF'}</span>
+                   </button>
+                 </div>
+               </div>
+             </div>
+           </div>
+         )}
       </div>
     </div>
   );
