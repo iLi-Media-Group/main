@@ -447,7 +447,7 @@ const App = () => {
         } />
         
         <Route path="/artist/dashboard" element={
-          <ProtectedRoute requiresProducer>
+          <ProtectedRoute requiresArtist>
             <LayoutWrapper>
               <ArtistDashboard />
             </LayoutWrapper>

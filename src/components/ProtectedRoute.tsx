@@ -8,13 +8,15 @@ interface ProtectedRouteProps {
   requiresProducer?: boolean;
   requiresClient?: boolean;
   requiresAdmin?: boolean;
+  requiresArtist?: boolean;
 }
 
 export function ProtectedRoute({ 
   children, 
   requiresProducer = false,
   requiresClient = false,
-  requiresAdmin = false
+  requiresAdmin = false,
+  requiresArtist = false
 }: ProtectedRouteProps) {
   const { user, loading, accountType } = useUnifiedAuth();
 
@@ -48,6 +50,24 @@ export function ProtectedRoute({
     // Rights holders should not access producer routes
     if (accountType === 'rights_holder') {
       return <Navigate to="/rights-holder/dashboard" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check for artist access (only artist_band accounts)
+  if (requiresArtist && accountType && accountType !== 'artist_band') {
+    // Redirect non-artist accounts to their appropriate dashboard
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" replace />;
+    }
+    if (accountType === 'client' || accountType === 'white_label') {
+      return <Navigate to="/dashboard" replace />;
+    }
+    if (accountType === 'producer' || accountType === 'admin,producer') {
+      return <Navigate to="/producer/dashboard" replace />;
+    }
+    if (accountType === 'admin') {
+      return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/dashboard" replace />;
   }
