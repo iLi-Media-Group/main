@@ -1,0 +1,7 @@
+[33mcommit ea8796b47d6d472128169e9c351cb39c126c83b4[m
+Author: MyBeatFi Admin <theilimediagroup@gmail.com>
+Date:   Wed Aug 27 08:35:53 2025 -0300
+
+    Add simple script to show actual policy names and conditions
+
+show_actual_policies.sql
