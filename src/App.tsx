@@ -274,6 +274,7 @@ const App = () => {
     }
 
     // For other users (clients), show the regular dashboard
+    // This includes when accountType is null, 'client', or any other type not specifically handled above
     return <ClientDashboard />;
   }
 
