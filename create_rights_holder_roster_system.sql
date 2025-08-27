@@ -65,16 +65,15 @@ SELECT
     COUNT(DISTINCT CASE WHEN t.deleted_at IS NULL THEN t.id END) as active_tracks,
     COUNT(DISTINCT sp.id) as sync_proposals_completed,
     COUNT(DISTINCT CASE WHEN sp.status = 'pending' THEN sp.id END) as sync_proposals_pending,
-    COUNT(DISTINCT csr.id) as custom_sync_requests_completed,
-    COUNT(DISTINCT CASE WHEN csr.status = 'pending' THEN csr.id END) as custom_sync_requests_pending,
+    0 as custom_sync_requests_completed,
+    0 as custom_sync_requests_pending,
     COALESCE(SUM(sp.final_amount), 0) as total_sync_revenue,
-    COALESCE(SUM(csr.final_amount), 0) as total_custom_sync_revenue,
+    0 as total_custom_sync_revenue,
     COALESCE(SUM(s.amount), 0) as total_sales_revenue,
-    (COALESCE(SUM(sp.final_amount), 0) + COALESCE(SUM(csr.final_amount), 0) + COALESCE(SUM(s.amount), 0)) as total_revenue
+    (COALESCE(SUM(sp.final_amount), 0) + COALESCE(SUM(s.amount), 0)) as total_revenue
 FROM roster_entities re
 LEFT JOIN tracks t ON t.roster_entity_id = re.id
 LEFT JOIN sync_proposals sp ON sp.track_id = t.id AND sp.status = 'accepted'
-LEFT JOIN custom_sync_requests csr ON csr.track_id = t.id AND csr.status = 'completed'
 LEFT JOIN sales s ON s.track_id = t.id
 WHERE re.is_active = true
 GROUP BY re.id, re.name, re.entity_type, re.date_entered, re.rights_holder_id;
@@ -195,13 +194,12 @@ BEGIN
         COUNT(DISTINCT CASE WHEN t.deleted_at IS NULL THEN t.id END)::BIGINT as active_tracks,
         COUNT(DISTINCT sp.id)::BIGINT as sync_proposals_completed,
         COUNT(DISTINCT CASE WHEN sp.status = 'pending' THEN sp.id END)::BIGINT as sync_proposals_pending,
-        COUNT(DISTINCT csr.id)::BIGINT as custom_sync_requests_completed,
-        COUNT(DISTINCT CASE WHEN csr.status = 'pending' THEN csr.id END)::BIGINT as custom_sync_requests_pending,
-        (COALESCE(SUM(sp.final_amount), 0) + COALESCE(SUM(csr.final_amount), 0) + COALESCE(SUM(s.amount), 0)) as total_revenue
+        0::BIGINT as custom_sync_requests_completed,
+        0::BIGINT as custom_sync_requests_pending,
+        (COALESCE(SUM(sp.final_amount), 0) + COALESCE(SUM(s.amount), 0)) as total_revenue
     FROM roster_entities re
     LEFT JOIN tracks t ON t.roster_entity_id = re.id
     LEFT JOIN sync_proposals sp ON sp.track_id = t.id AND sp.status = 'accepted'
-    LEFT JOIN custom_sync_requests csr ON csr.track_id = t.id AND csr.status = 'completed'
     LEFT JOIN sales s ON s.track_id = t.id
     WHERE re.id = entity_id AND re.is_active = true
     GROUP BY re.id;
