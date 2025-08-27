@@ -96,6 +96,8 @@ interface FormData {
   rightsHolderPhone: string;
   rightsHolderAddress: string;
   rightsDeclarationAccepted: boolean;
+  // Roster entity selection
+  rosterEntityId?: string;
   // File upload fields (not persisted)
   audioFile?: File | null;
   artworkFile?: File | null;
@@ -149,6 +151,10 @@ export function RightsHolderUploadForm() {
   const [expandedMoodCategories, setExpandedMoodCategories] = useState<Set<string>>(new Set());
   const [expandedInstrumentCategories, setExpandedInstrumentCategories] = useState<Set<string>>(new Set());
   const [expandedMediaCategories, setExpandedMediaCategories] = useState<Set<string>>(new Set());
+  
+  // Roster entities for selection
+  const [rosterEntities, setRosterEntities] = useState<any[]>([]);
+  const [rosterEntitiesLoading, setRosterEntitiesLoading] = useState(true);
 
   // Initialize form persistence
   const {
@@ -184,6 +190,36 @@ export function RightsHolderUploadForm() {
     lyrics: '',
     // Sample clearance fields
     containsLoops: false,
+    containsSpliceLoops: false,
+    containsSamples: false,
+    samplesCleared: false,
+    sampleClearanceNotes: '',
+    // Rights management fields
+    masterRightsOwner: '',
+    publishingRightsOwner: '',
+    participants: [] as SplitSheetParticipant[],
+    coSigners: [] as CoSigner[],
+    // Work for hire contracts
+    workForHireContracts: [] as string[],
+    // New rights holder fields
+    rightsHolderName: '',
+    rightsHolderType: 'producer' as const,
+    rightsHolderEmail: '',
+    rightsHolderPhone: '',
+    rightsHolderAddress: '',
+    rightsDeclarationAccepted: false,
+    // Roster entity selection
+    rosterEntityId: '',
+    // File upload fields (not persisted)
+    audioFile: null,
+    artworkFile: null,
+    description: '',
+    artist: '',
+    duration: 0
+  }, {
+    storageKey: 'rights-holder-upload-form',
+    excludeFields: ['audioFile', 'artworkFile']
+  });
     containsSamples: false,
     containsSpliceLoops: false,
     samplesCleared: false,
@@ -403,6 +439,33 @@ export function RightsHolderUploadForm() {
     () => true
   );
 
+  // Fetch roster entities for selection
+  useStableDataFetch(
+    async () => {
+      if (!user) return;
+      
+      try {
+        setRosterEntitiesLoading(true);
+        const { data, error } = await supabase
+          .from('roster_entities')
+          .select('id, name, entity_type, display_name')
+          .eq('rights_holder_id', user.id)
+          .eq('is_active', true)
+          .order('name');
+
+        if (error) throw error;
+        setRosterEntities(data || []);
+      } catch (err) {
+        console.error('Error fetching roster entities:', err);
+        setRosterEntities([]);
+      } finally {
+        setRosterEntitiesLoading(false);
+      }
+    },
+    [user],
+    () => !!user
+  );
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -620,6 +683,7 @@ export function RightsHolderUploadForm() {
             lyrics: formData.lyrics || null,
           master_rights_owner: formData.masterRightsOwner || null,
           publishing_rights_owner: formData.publishingRightsOwner || null,
+          roster_entity_id: formData.rosterEntityId || null,
             status: 'active'
         })
         .select()
@@ -825,6 +889,27 @@ export function RightsHolderUploadForm() {
                     className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                     placeholder="Enter artist name"
                   />
+                </div>
+                
+                <div>
+                  <label className="block text-gray-300 mb-2">Roster Entity</label>
+                  <select
+                    name="rosterEntityId"
+                    value={formData.rosterEntityId}
+                    onChange={handleInputChange}
+                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                    disabled={rosterEntitiesLoading}
+                  >
+                    <option value="">Select roster entity (optional)</option>
+                    {rosterEntities.map((entity) => (
+                      <option key={entity.id} value={entity.id}>
+                        {entity.name} ({entity.entity_type})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Link this track to an artist, band, or producer from your roster
+                  </p>
                 </div>
                 
                 <div>

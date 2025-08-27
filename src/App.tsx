@@ -102,9 +102,10 @@ import ApplicationTypeSelector from './components/ApplicationTypeSelector';
 import { RightsHolderAnalytics } from './components/RightsHolderAnalytics';
 import { RightsHolderRecordings } from './components/RightsHolderRecordings';
 import SyncLicensingCourse from './components/SyncLicensingCourse';
-import { RightsHolderESignatures } from './components/RightsHolderESignatures';
-import { RightsHolderLicensing } from './components/RightsHolderLicensing';
-import { RightsHolderBankingPage } from './components/RightsHolderBankingPage';
+         import { RightsHolderESignatures } from './components/RightsHolderESignatures';
+         import { RightsHolderLicensing } from './components/RightsHolderLicensing';
+         import { RightsHolderBankingPage } from './components/RightsHolderBankingPage';
+         import { RightsHolderRosterPage } from './components/RightsHolderRosterPage';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
 import { RightsHolderAwaitingApproval } from './components/RightsHolderAwaitingApproval';
@@ -729,13 +730,20 @@ const App = () => {
             </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
-        <Route path="/rights-holder/banking" element={
-          <RightsHolderProtectedRoute>
-            <LayoutWrapper>
-              <RightsHolderBankingPage />
-            </LayoutWrapper>
-          </RightsHolderProtectedRoute>
-        } />
+                 <Route path="/rights-holder/banking" element={
+           <RightsHolderProtectedRoute>
+             <LayoutWrapper>
+               <RightsHolderBankingPage />
+             </LayoutWrapper>
+           </RightsHolderProtectedRoute>
+         } />
+         <Route path="/rights-holder/roster" element={
+           <RightsHolderProtectedRoute>
+             <LayoutWrapper>
+               <RightsHolderRosterPage />
+             </LayoutWrapper>
+           </RightsHolderProtectedRoute>
+         } />
         <Route path="/admin/rights-verification" element={
           <ProtectedRoute requiresAdmin>
             <RightsVerificationAdmin />
