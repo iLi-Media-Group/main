@@ -739,17 +739,21 @@ export function RightsHolderDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+          <Link
+            to="/rights-holder/banking"
+            className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
+          >
             <div className="flex items-center">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
+              <div className="p-2 bg-purple-500/20 rounded-lg group-hover:bg-purple-500/30 transition-colors">
                 <DollarSign className="w-6 h-6 text-purple-400" />
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-300">Total Revenue</p>
                 <p className="text-2xl font-bold text-white">${stats.totalRevenue.toLocaleString()}</p>
               </div>
+              <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
             </div>
-          </div>
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
