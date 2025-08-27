@@ -108,6 +108,7 @@ export function RightsHolderRosterPage() {
       setLoading(true);
       setError(null);
 
+      // First, try to fetch from the analytics view
       let query = supabase
         .from('roster_entity_analytics')
         .select('*')
@@ -128,8 +129,49 @@ export function RightsHolderRosterPage() {
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      setRosterEntities(data || []);
+      if (error) {
+        console.error('Analytics view error:', error);
+        // Fallback to base table if view fails
+        let fallbackQuery = supabase
+          .from('roster_entities')
+          .select('*')
+          .eq('rights_holder_id', user.id)
+          .eq('is_active', true);
+
+        // Apply filters
+        if (filterType !== 'all') {
+          fallbackQuery = fallbackQuery.eq('entity_type', filterType);
+        }
+
+        // Apply search
+        if (searchTerm) {
+          fallbackQuery = fallbackQuery.ilike('name', `%${searchTerm}%`);
+        }
+
+        // Apply sorting
+        fallbackQuery = fallbackQuery.order(sortField, { ascending: sortOrder === 'asc' });
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        
+        if (fallbackError) throw fallbackError;
+        
+        // Add default analytics values
+        const entitiesWithDefaults = (fallbackData || []).map(entity => ({
+          ...entity,
+          entity_name: entity.name,
+          total_tracks: 0,
+          active_tracks: 0,
+          sync_proposals_completed: 0,
+          sync_proposals_pending: 0,
+          custom_sync_requests_completed: 0,
+          custom_sync_requests_pending: 0,
+          total_revenue: 0
+        }));
+        
+        setRosterEntities(entitiesWithDefaults);
+      } else {
+        setRosterEntities(data || []);
+      }
 
     } catch (err) {
       console.error('Error fetching roster entities:', err);
