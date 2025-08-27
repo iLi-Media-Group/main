@@ -226,8 +226,8 @@ export function RightsHolderESignatures() {
                 </div>
 
                   <div className="text-sm text-gray-400">
-                    <p><strong>Genres:</strong> {track.genres.join(', ')}</p>
-                    <p><strong>Moods:</strong> {track.moods.join(', ')}</p>
+                    <p><strong>Genres:</strong> {Array.isArray(track.genres) ? track.genres.join(', ') : track.genres || 'N/A'}</p>
+                    <p><strong>Moods:</strong> {Array.isArray(track.moods) ? track.moods.join(', ') : track.moods || 'N/A'}</p>
               </div>
 
                   {track.master_rights_owner && (
