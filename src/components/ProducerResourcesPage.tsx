@@ -62,7 +62,7 @@ export const ProducerResourcesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (user && (accountType === 'producer' || accountType === 'admin,producer')) {
+    if (user && (accountType === 'producer' || accountType === 'admin,producer' || accountType === 'rights_holder' || accountType === 'artist_band')) {
       fetchResources();
     }
   }, [user, accountType]);
@@ -132,12 +132,12 @@ export const ProducerResourcesPage: React.FC = () => {
     return categories.find(cat => cat.id === categoryId);
   };
 
-  if (accountType !== 'producer' && accountType !== 'admin,producer') {
+  if (accountType !== 'producer' && accountType !== 'admin,producer' && accountType !== 'rights_holder' && accountType !== 'artist_band') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600">This page is only available for producers.</p>
+          <p className="text-gray-600">This page is only available for producers, rights holders, and artists.</p>
         </div>
       </div>
     );
@@ -148,9 +148,9 @@ export const ProducerResourcesPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Producer Resources</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Content Creator Resources</h1>
           <p className="text-gray-300">
-            Essential tools, templates, and resources to help you succeed in the music industry.
+            Essential tools, templates, and resources to help producers, rights holders, and artists succeed in the music industry.
           </p>
         </div>
 

@@ -106,6 +106,7 @@ import SyncLicensingCourse from './components/SyncLicensingCourse';
          import { RightsHolderLicensing } from './components/RightsHolderLicensing';
          import { RightsHolderBankingPage } from './components/RightsHolderBankingPage';
          import { RightsHolderRosterPage } from './components/RightsHolderRosterPage';
+import { RightsHolderResourcesPage } from './components/RightsHolderResourcesPage';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
 import { RightsHolderAwaitingApproval } from './components/RightsHolderAwaitingApproval';
@@ -495,7 +496,7 @@ const App = () => {
         } />
 
         <Route path="/producer/resources" element={
-          <ProtectedRoute requiresProducer>
+          <ProtectedRoute>
             <LayoutWrapper>
               <ProducerResourcesPage />
             </LayoutWrapper>
