@@ -25,12 +25,10 @@ const ArtistLogin: React.FC = () => {
         return;
       }
 
-      // Check if the user is an artist/band account
-      if (result.user) {
-        // The auth context will handle the redirect based on account type
-        // Artists will be redirected to /artist/dashboard which then redirects to /producer/dashboard
-        navigate('/artist/dashboard');
-      }
+      // Successful login - navigate to artist dashboard
+      // The ArtistDashboard component will handle the redirect to producer dashboard
+      console.log('🎵 Artist login successful, navigating to dashboard...');
+      navigate('/artist/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');

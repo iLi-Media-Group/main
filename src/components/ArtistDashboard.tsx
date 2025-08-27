@@ -7,6 +7,7 @@ const ArtistDashboard: React.FC = () => {
   useEffect(() => {
     // Redirect artists to the producer dashboard since they use the same system
     // But we'll pass a flag to indicate it's an artist dashboard
+    console.log('🎵 ArtistDashboard: Redirecting to producer dashboard...');
     navigate('/producer/dashboard?dashboardType=artist', { replace: true });
   }, [navigate]);
 
