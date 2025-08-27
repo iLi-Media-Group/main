@@ -104,6 +104,7 @@ import { RightsHolderRecordings } from './components/RightsHolderRecordings';
 import SyncLicensingCourse from './components/SyncLicensingCourse';
 import { RightsHolderESignatures } from './components/RightsHolderESignatures';
 import { RightsHolderLicensing } from './components/RightsHolderLicensing';
+import { RightsHolderBankingPage } from './components/RightsHolderBankingPage';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
 import { RightsHolderAwaitingApproval } from './components/RightsHolderAwaitingApproval';
@@ -725,6 +726,13 @@ const App = () => {
           <RightsHolderProtectedRoute>
             <LayoutWrapper>
               <RightsHolderLicensing />
+            </LayoutWrapper>
+          </RightsHolderProtectedRoute>
+        } />
+        <Route path="/rights-holder/banking" element={
+          <RightsHolderProtectedRoute>
+            <LayoutWrapper>
+              <RightsHolderBankingPage />
             </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
