@@ -20,7 +20,8 @@ import {
   LogIn, 
   LogOut, 
   UserPlus,
-  BookOpen
+  BookOpen,
+  Users
 } from 'lucide-react';
 
 interface NavigationProps {
