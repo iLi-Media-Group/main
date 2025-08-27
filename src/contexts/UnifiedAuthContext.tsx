@@ -140,29 +140,42 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
   // Fetch user profile (unified for all user types)
   const fetchProfile = async (userId: string, email: string) => {
+    // CRITICAL SECURITY: Validate input parameters
+    if (!userId || !email) {
+      console.error('❌ Invalid parameters for fetchProfile:', { userId, email });
+      throw new Error('Invalid profile parameters');
+    }
+    
     // Check cache first
     const cacheKey = CACHE_KEYS.PROFILE(userId);
     const cachedProfile = dataCache.get<Profile>(cacheKey);
     
     if (cachedProfile && !isFetching) {
       console.log('📦 Using cached profile data');
-      setProfile(cachedProfile);
       
-      // Check if user is an admin by email (even for cached data)
-      if (isAdminEmail(email)) {
-        // Special handling for knockriobeats@gmail.com - dual admin/producer role
-        if (email.toLowerCase() === 'knockriobeats@gmail.com') {
-          setAccountType('admin,producer');
-        } else {
-          setAccountType('admin');
-        }
+      // CRITICAL SECURITY: Verify cached profile still belongs to the same user
+      if (cachedProfile.id !== userId || cachedProfile.email !== email) {
+        console.error('❌ Cached profile ownership mismatch, clearing cache');
+        dataCache.delete(cacheKey);
       } else {
-        setAccountType(cachedProfile.account_type);
+        setProfile(cachedProfile);
+        
+        // Check if user is an admin by email (even for cached data)
+        if (isAdminEmail(email)) {
+          // Special handling for knockriobeats@gmail.com - dual admin/producer role
+          if (email.toLowerCase() === 'knockriobeats@gmail.com') {
+            setAccountType('admin,producer');
+          } else {
+            setAccountType('admin');
+          }
+        } else {
+          setAccountType(cachedProfile.account_type);
+        }
+        
+        setMembershipPlan(cachedProfile.membership_plan);
+        setNeedsPasswordSetup(cachedProfile.needs_password_setup);
+        return;
       }
-      
-      setMembershipPlan(cachedProfile.membership_plan);
-      setNeedsPasswordSetup(cachedProfile.needs_password_setup);
-      return;
     }
 
     if (isFetching) {
@@ -172,7 +185,7 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
     try {
       setIsFetching(true);
-      console.log('🔄 Fetching profile for user:', userId);
+      console.log('🔄 Fetching profile for user:', userId, 'email:', email);
       
       // Fetch profile from unified profiles table
       // CRITICAL SECURITY: Verify the profile belongs to the authenticated user
@@ -268,20 +281,65 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
 
   // Regular user authentication methods
   const signIn = async (email: string, password: string) => {
+    console.log('🔐 Starting authentication for:', email);
+    
+    // CRITICAL SECURITY: First verify the email/password combination
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      console.error('Sign in error:', error);
+      console.error('❌ Authentication failed:', error);
       return { error };
     }
+    
     if (data.user) {
+      console.log('✅ Authentication successful for user:', data.user.id);
+      
       try {
+        // CRITICAL SECURITY: Verify that the authenticated user owns the profile
+        // This prevents cross-account access
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .eq('email', email) // Double-check email matches
+          .single();
+        
+        if (profileError) {
+          console.error('❌ Profile verification failed:', profileError);
+          // Sign out the user since they don't have a valid profile
+          await supabase.auth.signOut();
+          return { error: new Error('Account verification failed. Please contact support.') };
+        }
+        
+        if (!profileData) {
+          console.error('❌ No profile found for authenticated user');
+          await supabase.auth.signOut();
+          return { error: new Error('Account not found. Please contact support.') };
+        }
+        
+        // CRITICAL SECURITY: Verify the profile belongs to the authenticated user
+        if (profileData.id !== data.user.id || profileData.email !== email) {
+          console.error('❌ Profile ownership verification failed');
+          console.error('Profile ID:', profileData.id, 'User ID:', data.user.id);
+          console.error('Profile email:', profileData.email, 'Auth email:', email);
+          await supabase.auth.signOut();
+          return { error: new Error('Account verification failed. Please contact support.') };
+        }
+        
+        console.log('✅ Profile ownership verified successfully');
+        
+        // Now fetch the profile data
         await fetchProfile(data.user.id, data.user.email || '');
+        
       } catch (err) {
-        console.error('Error fetching profile after sign in:', err);
+        console.error('❌ Error during profile verification:', err);
+        await supabase.auth.signOut();
         setAccountType('client');
         setNeedsPasswordSetup(false);
+        return { error: new Error('Account verification failed. Please contact support.') };
       }
     }
+    
+    console.log('✅ Sign in completed successfully');
     return { error: null };
   };
 
