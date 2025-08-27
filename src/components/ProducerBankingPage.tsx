@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Target } from 'lucide-react';
+import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Target, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useProducerBalancesRealTime } from '../hooks/useRealTimeUpdates';
@@ -59,11 +59,18 @@ export function ProducerBankingPage() {
     percentage: number;
     estimatedEarnings: number;
   } | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<{
+    hasRecentUpload: boolean;
+    lastUploadDate: string | null;
+    totalTracks: number;
+    uploadStatus: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchData();
       fetchBucketPercentage();
+      fetchUploadStatus();
     }
   }, [user, filterType, dateRange, sortField, sortOrder]);
 
@@ -248,6 +255,31 @@ export function ProducerBankingPage() {
     }
   };
 
+  const fetchUploadStatus = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_upload_status')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setUploadStatus({
+          hasRecentUpload: data.has_recent_upload,
+          lastUploadDate: data.last_upload_date,
+          totalTracks: data.total_tracks,
+          uploadStatus: data.upload_status
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching upload status:', error);
+    }
+  };
+
   const handleSort = (field: 'date' | 'amount' | 'type') => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -393,6 +425,46 @@ export function ProducerBankingPage() {
                 <p className="text-xs text-gray-400 mt-3">
                   The 45% bucket is distributed among all {dashboardType === 'artist' ? 'producer/artist' : 'producer'}s based on their track license activity. 
                   More licenses = higher percentage of the membership revenue pool.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upload Status Information */}
+        {uploadStatus && (
+          <Card className="mb-8 bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                <Upload className="w-5 h-5 text-orange-400 mr-2" />
+                90-Day Upload Requirement
+              </h3>
+              <div className="text-sm text-gray-300 space-y-2">
+                <div className="flex items-center space-x-2">
+                  {uploadStatus.hasRecentUpload ? (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={uploadStatus.hasRecentUpload ? 'text-green-400' : 'text-red-400'}>
+                    {uploadStatus.uploadStatus}
+                  </span>
+                </div>
+                <p>
+                  <strong>Total Tracks:</strong> {uploadStatus.totalTracks}
+                </p>
+                {uploadStatus.lastUploadDate && (
+                  <p>
+                    <strong>Last Upload:</strong> {new Date(uploadStatus.lastUploadDate).toLocaleDateString()}
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 mt-3">
+                  To qualify for the 2% no-sales bucket, you must upload at least one track within the last 90 days. 
+                  {!uploadStatus.hasRecentUpload && (
+                    <span className="text-orange-400 font-medium">
+                      {' '}Upload a new track to regain eligibility.
+                    </span>
+                  )}
                 </p>
               </div>
             </CardContent>
