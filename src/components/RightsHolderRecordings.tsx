@@ -68,6 +68,7 @@ interface Track {
   is_sync_only: boolean;
   master_rights_owner?: string;
   publishing_rights_owner?: string;
+  roster_entity_id?: string;
   stems_url?: string;
   split_sheet_url?: string;
   mp3_url?: string;
@@ -111,6 +112,7 @@ export function RightsHolderRecordings() {
   const [selectedMediaUsage, setSelectedMediaUsage] = useState<string[]>([]);
   const [hasVocals, setHasVocals] = useState(false);
   const [isSyncOnly, setIsSyncOnly] = useState(false);
+  const [selectedRosterEntity, setSelectedRosterEntity] = useState<string>('');
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Data fetching state
@@ -118,6 +120,8 @@ export function RightsHolderRecordings() {
   const [instrumentsLoading, setInstrumentsLoading] = useState(true);
   const [genres, setGenres] = useState<any[]>([]);
   const [genresLoading, setGenresLoading] = useState(true);
+  const [rosterEntities, setRosterEntities] = useState<any[]>([]);
+  const [rosterEntitiesLoading, setRosterEntitiesLoading] = useState(true);
 
   // File upload state
   const [stemsUrl, setStemsUrl] = useState('');
@@ -147,6 +151,7 @@ export function RightsHolderRecordings() {
     try {
       setGenresLoading(true);
       setInstrumentsLoading(true);
+      setRosterEntitiesLoading(true);
       
       // Fetch genres
       const { data: genresData, error: genresError } = await supabase
@@ -163,13 +168,30 @@ export function RightsHolderRecordings() {
       // Fetch instruments
       const instrumentsData = await fetchInstrumentsData();
       setInstruments(instrumentsData.instruments);
+
+      // Fetch roster entities for rights holders
+      const { data: rosterData, error: rosterError } = await supabase
+        .from('roster_entities')
+        .select('id, name, entity_type, display_name')
+        .eq('rights_holder_id', user?.id)
+        .eq('is_active', true)
+        .order('name');
+
+      if (rosterError) {
+        console.error('Error fetching roster entities:', rosterError);
+        setRosterEntities([]);
+      } else {
+        setRosterEntities(rosterData || []);
+      }
     } catch (err) {
       console.error('Error fetching edit data:', err);
       setGenres([]);
       setInstruments([]);
+      setRosterEntities([]);
     } finally {
       setGenresLoading(false);
       setInstrumentsLoading(false);
+      setRosterEntitiesLoading(false);
     }
   };
 
@@ -233,6 +255,7 @@ export function RightsHolderRecordings() {
     setSplitSheetUrl(recording.split_sheet_url || '');
     setMp3Url(recording.mp3_url || '');
     setTrackoutsUrl(recording.trackouts_url || '');
+    setSelectedRosterEntity(recording.roster_entity_id || '');
     
     // Reset file states
     setMp3File(null);
@@ -342,6 +365,7 @@ export function RightsHolderRecordings() {
           bpm: editFormData.bpm,
           key: editFormData.key,
           description: editFormData.description,
+          roster_entity_id: selectedRosterEntity || null,
           mp3_url: mp3UploadedUrl || null,
           trackouts_url: trackoutsUploadedUrl || null,
           stems_url: stemsUploadedUrl || null,
@@ -368,6 +392,7 @@ export function RightsHolderRecordings() {
               bpm: editFormData.bpm,
               key: editFormData.key,
               description: editFormData.description,
+              roster_entity_id: selectedRosterEntity || null,
               mp3_url: mp3UploadedUrl || null,
               trackouts_url: trackoutsUploadedUrl || null,
               stems_url: stemsUploadedUrl || null,
@@ -765,6 +790,30 @@ export function RightsHolderRecordings() {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
                       placeholder="Artist name"
                     />
+                    </div>
+
+                    {/* Roster Creator field - only show for rights holders */}
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Roster Creator
+                        <span className="text-xs text-gray-400 ml-2">(Record Labels & Publishers only)</span>
+                      </label>
+                      <select
+                        value={selectedRosterEntity}
+                        onChange={(e) => setSelectedRosterEntity(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:border-blue-500"
+                        disabled={rosterEntitiesLoading}
+                      >
+                        <option value="">Select roster creator (optional)</option>
+                        {rosterEntities.map((entity) => (
+                          <option key={entity.id} value={entity.id}>
+                            {entity.name} ({entity.entity_type})
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Link this track to an artist, band, or producer from your roster. This helps track performance and revenue per creator.
+                      </p>
                     </div>
 
                   <div className="grid grid-cols-2 gap-4">
