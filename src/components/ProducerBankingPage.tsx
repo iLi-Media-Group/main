@@ -381,7 +381,7 @@ export function ProducerBankingPage() {
               </h3>
               <div className="text-sm text-gray-300 space-y-2">
                 <p>
-                  <strong>Your Share:</strong> {bucketPercentage.percentage.toFixed(1)}% of the 45% producer bucket
+                  <strong>Your Share:</strong> {bucketPercentage.percentage.toFixed(1)}% of the 45% bucket
                 </p>
                 <p>
                   <strong>Based on:</strong> {bucketPercentage.producerLicenses} track licenses this month 
@@ -391,7 +391,7 @@ export function ProducerBankingPage() {
                   <strong>Estimated Earnings:</strong> ${bucketPercentage.estimatedEarnings.toFixed(2)} from membership revenue sharing
                 </p>
                 <p className="text-xs text-gray-400 mt-3">
-                  The 45% producer bucket is distributed among all {dashboardType === 'artist' ? 'producer/artist' : 'producer'}s based on their track license activity. 
+                  The 45% bucket is distributed among all {dashboardType === 'artist' ? 'producer/artist' : 'producer'}s based on their track license activity. 
                   More licenses = higher percentage of the membership revenue pool.
                 </p>
               </div>

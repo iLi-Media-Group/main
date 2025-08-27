@@ -6,7 +6,7 @@ import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 interface ChatRoom {
   id: string;
   name: string;
-  room_type: 'admin' | 'producer' | 'mixed';
+  room_type: 'admin' | 'producer' | 'mixed' | 'artist' | 'record_label' | 'publisher';
   created_at: string;
   created_by: string;
 }
@@ -26,7 +26,7 @@ interface ChatMessage {
 interface CreateRoomDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateRoom: (name: string, type: 'admin' | 'producer' | 'mixed') => Promise<void>;
+  onCreateRoom: (name: string, type: 'admin' | 'producer' | 'mixed' | 'artist' | 'record_label' | 'publisher') => Promise<void>;
 }
 
 interface DeleteRoomDialogProps {
@@ -100,8 +100,60 @@ function DeleteRoomDialog({ isOpen, onClose, roomName, onConfirm }: DeleteRoomDi
 
 function CreateRoomDialog({ isOpen, onClose, onCreateRoom }: CreateRoomDialogProps) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<'admin' | 'producer' | 'mixed'>('mixed');
+  const [type, setType] = useState<'admin' | 'producer' | 'mixed' | 'artist' | 'record_label' | 'publisher'>('mixed');
   const [loading, setLoading] = useState(false);
+  
+  // Get user status from parent component
+  const { user } = useUnifiedAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userAccountType, setUserAccountType] = useState<string | null>(null);
+  const [userRightsHolderType, setUserRightsHolderType] = useState<string | null>(null);
+
+  // Check user status when dialog opens
+  useEffect(() => {
+    if (isOpen && user) {
+      checkUserStatus();
+    }
+  }, [isOpen, user]);
+
+  const checkUserStatus = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('email, account_type, rights_holder_type')
+      .eq('id', user.id)
+      .single();
+      
+    if (data) {
+      if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(data.email)) {
+        setIsAdmin(true);
+      }
+      setUserAccountType(data.account_type);
+      setUserRightsHolderType(data.rights_holder_type);
+    }
+  };
+
+  const canCreateRoomType = (roomType: string): boolean => {
+    if (isAdmin) return true; // Admins can create all room types
+    
+    switch (roomType) {
+      case 'mixed':
+        return true; // All users can create mixed rooms
+      case 'admin':
+        return isAdmin;
+      case 'producer':
+        return userAccountType === 'producer' || userAccountType === 'admin,producer';
+      case 'artist':
+        return userAccountType === 'artist_band';
+      case 'record_label':
+        return userAccountType === 'rights_holder' && userRightsHolderType === 'record_label';
+      case 'publisher':
+        return userAccountType === 'rights_holder' && userRightsHolderType === 'publisher';
+      default:
+        return false;
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -144,13 +196,16 @@ function CreateRoomDialog({ isOpen, onClose, onCreateRoom }: CreateRoomDialogPro
             </label>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as 'admin' | 'producer' | 'mixed')}
+              onChange={(e) => setType(e.target.value as 'admin' | 'producer' | 'mixed' | 'artist' | 'record_label' | 'publisher')}
               className="w-full"
               required
             >
               <option value="mixed">Mixed (All Users)</option>
-              <option value="admin">Admin Only</option>
-              <option value="producer">Producers Only</option>
+              {canCreateRoomType('admin') && <option value="admin">Admin Only</option>}
+              {canCreateRoomType('producer') && <option value="producer">Producers Only</option>}
+              {canCreateRoomType('artist') && <option value="artist">Artist Only</option>}
+              {canCreateRoomType('record_label') && <option value="record_label">Record Labels Only</option>}
+              {canCreateRoomType('publisher') && <option value="publisher">Publishers Only</option>}
             </select>
           </div>
 
@@ -186,6 +241,8 @@ export function ChatSystem() {
   const [showCreateRoom, setShowCreateRoom] = useState(false);
   const [showDeleteRoom, setShowDeleteRoom] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userAccountType, setUserAccountType] = useState<string | null>(null);
+  const [userRightsHolderType, setUserRightsHolderType] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [subscription, setSubscription] = useState<any>(null);
@@ -234,7 +291,7 @@ export function ChatSystem() {
 
   useEffect(() => {
     if (user) {
-      checkAdminStatus();
+      checkUserStatus();
       fetchRooms();
       
       // Subscribe to room changes
@@ -282,22 +339,50 @@ export function ChatSystem() {
     scrollToBottom();
   }, [messages]);
 
-  const checkAdminStatus = async () => {
+  const checkUserStatus = async () => {
     if (!user) return;
     
     const { data } = await supabase
       .from('profiles')
-      .select('email')
+      .select('email, account_type, rights_holder_type')
       .eq('id', user.id)
       .single();
       
-    if (data && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(data.email)) {
-      setIsAdmin(true);
+    if (data) {
+      // Check admin status
+      if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(data.email)) {
+        setIsAdmin(true);
+      }
+      
+      // Set account type and rights holder type for access control
+      setUserAccountType(data.account_type);
+      setUserRightsHolderType(data.rights_holder_type);
     }
   };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const canAccessRoomType = (roomType: string): boolean => {
+    if (isAdmin) return true; // Admins can access all room types
+    
+    switch (roomType) {
+      case 'mixed':
+        return true; // All users can access mixed rooms
+      case 'admin':
+        return isAdmin;
+      case 'producer':
+        return userAccountType === 'producer' || userAccountType === 'admin,producer';
+      case 'artist':
+        return userAccountType === 'artist_band';
+      case 'record_label':
+        return userAccountType === 'rights_holder' && userRightsHolderType === 'record_label';
+      case 'publisher':
+        return userAccountType === 'rights_holder' && userRightsHolderType === 'publisher';
+      default:
+        return false;
+    }
   };
 
   const fetchRooms = async () => {
@@ -309,7 +394,11 @@ export function ChatSystem() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data) setRooms(data);
+      if (data) {
+        // Filter rooms based on user access
+        const accessibleRooms = data.filter(room => canAccessRoomType(room.room_type));
+        setRooms(accessibleRooms);
+      }
     } catch (error) {
       console.error('Error fetching rooms:', error);
     } finally {
@@ -412,7 +501,7 @@ export function ChatSystem() {
     }
   };
 
-  const handleCreateRoom = async (name: string, type: 'admin' | 'producer' | 'mixed') => {
+  const handleCreateRoom = async (name: string, type: 'admin' | 'producer' | 'mixed' | 'artist' | 'record_label' | 'publisher') => {
     try {
       // First create the room
       const { data: roomData, error: roomError } = await supabase
