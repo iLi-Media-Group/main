@@ -48,13 +48,13 @@ export function ClientLogin() {
           }
         }
 
-        // If no profile found or account type is not client-related
-        if ((!profileData || (profileData.account_type !== 'client' && profileData.account_type !== 'white_label')) && !isAdmin) {
-          if (profileData?.account_type === 'producer') {
+        // If profile exists but account type is not client-related
+        if (profileData && profileData.account_type !== 'client' && profileData.account_type !== 'white_label') {
+          if (profileData.account_type === 'producer') {
             throw new Error('Please use the producer login page');
-          } else if (profileData?.account_type === 'rights_holder') {
+          } else if (profileData.account_type === 'rights_holder') {
             throw new Error('Please use the rights holder login page');
-          } else if (profileData?.account_type === 'artist_band') {
+          } else if (profileData.account_type === 'artist_band') {
             throw new Error('Please use the artist login page');
           } else {
             throw new Error('Please use the producer login page');
