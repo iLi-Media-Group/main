@@ -201,14 +201,30 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for roster_entities
-CREATE TRIGGER IF NOT EXISTS update_roster_entities_updated_at 
-    BEFORE UPDATE ON roster_entities 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger 
+        WHERE tgname = 'update_roster_entities_updated_at'
+    ) THEN
+        CREATE TRIGGER update_roster_entities_updated_at 
+            BEFORE UPDATE ON roster_entities 
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- Triggers for roster_entity_members
-CREATE TRIGGER IF NOT EXISTS update_roster_entity_members_updated_at 
-    BEFORE UPDATE ON roster_entity_members 
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_trigger 
+        WHERE tgname = 'update_roster_entity_members_updated_at'
+    ) THEN
+        CREATE TRIGGER update_roster_entity_members_updated_at 
+            BEFORE UPDATE ON roster_entity_members 
+            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;
 
 -- ============================================
 -- 9. HELPER FUNCTIONS
