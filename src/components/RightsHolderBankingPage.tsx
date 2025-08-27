@@ -135,43 +135,11 @@ export function RightsHolderBankingPage() {
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      // Fetch rights holder balance
-      const { data: balanceData, error: balanceError } = await supabase
-        .from('rights_holder_balances')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .single();
-
-      if (balanceError && balanceError.code !== 'PGRST116') {
-        throw balanceError;
-      }
-
-      if (balanceData) {
-        setBalance(balanceData.available_balance || 0);
-        setPendingBalance(balanceData.pending_balance || 0);
-      }
-
-      // Fetch transactions
-      const { data: transactionsData, error: transactionsError } = await supabase
-        .from('rights_holder_transactions')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (transactionsError) throw transactionsError;
-      setTransactions(transactionsData || []);
-
-      // Fetch bank accounts
-      const { data: bankAccountsData, error: bankAccountsError } = await supabase
-        .from('rights_holder_bank_accounts')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .order('is_primary', { ascending: false });
-
-      if (bankAccountsError && bankAccountsError.code !== 'PGRST116') {
-        throw bankAccountsError;
-      }
-      setBankAccounts(bankAccountsData || []);
+      // For now, set default values since the banking tables don't exist yet
+      setBalance(0);
+      setPendingBalance(0);
+      setTransactions([]);
+      setBankAccounts([]);
 
     } catch (err) {
       console.error('Error fetching banking data:', err);
@@ -185,170 +153,30 @@ export function RightsHolderBankingPage() {
     if (!user) return;
 
     try {
-      // Calculate date range based on timeframe
-      const endDate = new Date();
-      const startDate = new Date();
-      
-      if (timeframe === 'month') {
-        startDate.setMonth(startDate.getMonth() - 1);
-      } else if (timeframe === 'quarter') {
-        startDate.setMonth(startDate.getMonth() - 3);
-      } else if (timeframe === 'year') {
-        startDate.setFullYear(startDate.getFullYear() - 1);
-      } else {
-        // 'all' - set to a date far in the past
-        startDate.setFullYear(2020);
-      }
+      // For now, set default values since the revenue tables don't exist yet
+      const defaultStats: RevenueStats = {
+        totalRevenue: 0,
+        pendingBalance: 0,
+        availableBalance: 0,
+        lifetimeEarnings: 0,
+        syncProposalsRevenue: 0,
+        customSyncRevenue: 0,
+        licenseFeesRevenue: 0,
+        membershipRevenue: 0,
+        royaltyPayments: 0,
+        syncProposalsCount: 0,
+        customSyncCount: 0,
+        licenseCount: 0,
+        membershipCount: 0,
+        royaltyCount: 0,
+      };
 
-      // Fetch sync proposals revenue
-      const { data: syncProposalsData, error: syncProposalsError } = await supabase
-        .from('sync_proposals')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .eq('status', 'accepted')
-        .eq('payment_status', 'paid')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
+      setRevenueStats(defaultStats);
+      setMonthlyRevenue([]);
+      setRevenueSources([]);
 
-      if (syncProposalsError) throw syncProposalsError;
-
-      // Fetch custom sync requests revenue
-      const { data: customSyncData, error: customSyncError } = await supabase
-        .from('custom_sync_requests')
-        .select('*')
-        .eq('selected_rights_holder_id', user.id)
-        .eq('status', 'completed')
-        .eq('payment_status', 'paid')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
-      if (customSyncError) throw customSyncError;
-
-      // Fetch license fees revenue
-      const { data: licenseFeesData, error: licenseFeesError } = await supabase
-        .from('rights_holder_revenue')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .eq('revenue_type', 'license_fee')
-        .eq('payment_status', 'paid')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
-      if (licenseFeesError) throw licenseFeesError;
-
-      // Fetch membership revenue
-      const { data: membershipData, error: membershipError } = await supabase
-        .from('rights_holder_revenue')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .eq('revenue_type', 'membership_revenue')
-        .eq('payment_status', 'paid')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
-      if (membershipError) throw membershipError;
-
-      // Fetch royalty payments
-      const { data: royaltyData, error: royaltyError } = await supabase
-        .from('rights_holder_revenue')
-        .select('*')
-        .eq('rights_holder_id', user.id)
-        .eq('revenue_type', 'royalty_payment')
-        .eq('payment_status', 'paid')
-        .gte('created_at', startDate.toISOString())
-        .lte('created_at', endDate.toISOString());
-
-      if (royaltyError) throw royaltyError;
-
-      // Calculate totals
-      const syncProposalsRevenue = syncProposalsData?.reduce((sum, p) => sum + (p.final_amount || p.negotiated_amount || p.sync_fee || 0), 0) || 0;
-      const customSyncRevenue = customSyncData?.reduce((sum, c) => sum + (c.final_amount || c.negotiated_amount || c.sync_fee || 0), 0) || 0;
-      const licenseFeesRevenue = licenseFeesData?.reduce((sum, l) => sum + l.rights_holder_amount, 0) || 0;
-      const membershipRevenue = membershipData?.reduce((sum, m) => sum + m.rights_holder_amount, 0) || 0;
-      const royaltyPayments = royaltyData?.reduce((sum, r) => sum + r.rights_holder_amount, 0) || 0;
-
-      const totalRevenue = syncProposalsRevenue + customSyncRevenue + licenseFeesRevenue + membershipRevenue + royaltyPayments;
-
-      // Create revenue sources array for the sophisticated report
-      const sources = [];
-      if (syncProposalsRevenue > 0) {
-        sources.push({
-          source: 'Sync Proposals',
-          amount: syncProposalsRevenue,
-          count: syncProposalsData?.length || 0,
-          percentage: (syncProposalsRevenue / totalRevenue) * 100,
-          type: 'completed' as const
-        });
-      }
-      if (customSyncRevenue > 0) {
-        sources.push({
-          source: 'Custom Sync Requests',
-          amount: customSyncRevenue,
-          count: customSyncData?.length || 0,
-          percentage: (customSyncRevenue / totalRevenue) * 100,
-          type: 'completed' as const
-        });
-      }
-      if (licenseFeesRevenue > 0) {
-        sources.push({
-          source: 'License Fees',
-          amount: licenseFeesRevenue,
-          count: licenseFeesData?.length || 0,
-          percentage: (licenseFeesRevenue / totalRevenue) * 100,
-          type: 'completed' as const
-        });
-      }
-      if (membershipRevenue > 0) {
-        sources.push({
-          source: 'Membership Revenue',
-          amount: membershipRevenue,
-          count: membershipData?.length || 0,
-          percentage: (membershipRevenue / totalRevenue) * 100,
-          type: 'completed' as const
-        });
-      }
-      if (royaltyPayments > 0) {
-        sources.push({
-          source: 'Royalty Payments',
-          amount: royaltyPayments,
-          count: royaltyData?.length || 0,
-          percentage: (royaltyPayments / totalRevenue) * 100,
-          type: 'completed' as const
-        });
-      }
-
-      setRevenueSources(sources);
-
-      // Generate monthly revenue data (simplified for now)
-      const monthlyData = [];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      for (let i = 0; i < 12; i++) {
-        monthlyData.push({
-          month: months[i],
-          amount: Math.random() * totalRevenue * 0.1 // Simplified random data
-        });
-      }
-      setMonthlyRevenue(monthlyData);
-
-      setRevenueStats({
-        totalRevenue,
-        pendingBalance: pendingBalance,
-        availableBalance: balance,
-        lifetimeEarnings: totalRevenue,
-        syncProposalsRevenue,
-        customSyncRevenue,
-        licenseFeesRevenue,
-        membershipRevenue,
-        royaltyPayments,
-        syncProposalsCount: syncProposalsData?.length || 0,
-        customSyncCount: customSyncData?.length || 0,
-        licenseCount: licenseFeesData?.length || 0,
-        membershipCount: membershipData?.length || 0,
-        royaltyCount: royaltyData?.length || 0,
-      });
-
-    } catch (error) {
-      console.error('Error fetching revenue stats:', error);
+    } catch (err) {
+      console.error('Error fetching revenue stats:', err);
     }
   };
 
