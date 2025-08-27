@@ -93,7 +93,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
 
   // Check if artist application is pending
   const isArtistPending = () => {
-    return accountType === 'artist_band' && artistApplicationStatus && artistApplicationStatus !== 'approved';
+    return accountType === 'artist_band' && artistApplicationStatus && artistApplicationStatus !== 'approved' && artistApplicationStatus !== 'onboarded';
   };
 
   const getDashboardLink = () => {
@@ -371,6 +371,14 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
                           <Music className="w-4 h-4 mr-2" />
                           Producer Dashboard
+                        </Link>
+                      )}
+
+                      {/* Artist Dashboard - ONLY for artist_band account type */}
+                      {accountType === 'artist_band' && (
+                        <Link to="/artist/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                          <Mic className="w-4 h-4 mr-2" />
+                          Artist Dashboard
                         </Link>
                       )}
 

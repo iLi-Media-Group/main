@@ -1015,7 +1015,9 @@ export function ProducerDashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Producer Dashboard</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {dashboardType === 'artist' ? 'Artist Dashboard' : 'Producer Dashboard'}
+            </h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
                 Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
