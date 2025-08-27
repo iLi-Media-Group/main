@@ -347,62 +347,11 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                   {/* Dashboard links */}
                   {user && (
                     <>
-                      {/* Debug info - remove after testing */}
-                      {console.log('🔍 Navigation Debug - user:', user?.email, 'accountType:', accountType)}
-                      
-                      {/* Rights Holder Dashboard - ONLY for rights_holder account type */}
-                      {accountType === 'rights_holder' && (
-                        <Link to="/rights-holder/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Building2 className="w-4 h-4 mr-2" />
-                          Rights Holder Dashboard
-                        </Link>
-                      )}
-
-                      {/* Client Dashboard - ONLY for client account type */}
-                      {accountType === 'client' && (
-                        <Link to="/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Layout className="w-4 h-4 mr-2" />
-                          Dashboard
-                        </Link>
-                      )}
-
-                      {/* Producer Dashboard - ONLY for producer account type */}
-                      {accountType === 'producer' && (
-                        <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Music className="w-4 h-4 mr-2" />
-                          Producer Dashboard
-                        </Link>
-                      )}
-
-                      {/* Artist Dashboard - ONLY for artist_band account type */}
-                      {accountType === 'artist_band' && (
-                        <Link to="/artist/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <Mic className="w-4 h-4 mr-2" />
-                          Artist Dashboard
-                        </Link>
-                      )}
-
-                      {/* Admin + Producer Dashboard - ONLY for admin,producer account type */}
-                      {accountType === 'admin,producer' && (
-                        <>
-                          <Link to="/admin" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                            <Shield className="w-4 h-4 mr-2" />
-                            Admin Dashboard
-                          </Link>
-                          <Link to="/producer/dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                            <Music className="w-4 h-4 mr-2" />
-                            Producer Dashboard
-                          </Link>
-                        </>
-                      )}
-
-                      {/* White Label Dashboard - ONLY for white_label account type */}
-                      {accountType === 'white_label' && (
-                        <Link to="/white-label-dashboard" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
-                          <UserCog className="w-4 h-4 mr-2" />
-                          White Label Dashboard
-                        </Link>
-                      )}
+                      {/* Unified Dashboard Link */}
+                      <Link to={getDashboardLink()} className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50 border border-transparent hover:border-blue-500/40 transition-colors" onClick={() => setIsMenuOpen(false)}>
+                        {getDashboardIcon()}
+                        {getDashboardLabel()}
+                      </Link>
                   </>
                 )}
                   {/* Authentication links */}
