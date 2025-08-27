@@ -1503,7 +1503,7 @@ export function ProducerDashboard() {
                   Sync Proposals
                 </h3>
                 <Link
-                  to="/producer/banking"
+                  to={`/producer/banking${dashboardType === 'artist' ? '?dashboardType=artist' : ''}`}
                   className="text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
                 >
                   <DollarSign className="w-4 h-4 mr-1" />

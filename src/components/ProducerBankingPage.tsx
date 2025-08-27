@@ -6,6 +6,7 @@ import { useProducerBalancesRealTime } from '../hooks/useRealTimeUpdates';
 import { BankAccountForm } from './BankAccountForm';
 import { WithdrawalRequestForm } from './WithdrawalRequestForm';
 import { Card, CardContent } from './ui/card';
+import { useSearchParams } from 'react-router-dom';
 
 interface Transaction {
   id: string;
@@ -36,6 +37,8 @@ interface BankAccount {
 
 export function ProducerBankingPage() {
   const { user } = useUnifiedAuth();
+  const [searchParams] = useSearchParams();
+  const dashboardType = searchParams.get('dashboardType');
   const [balance, setBalance] = useState(0);
   const [pendingBalance, setPendingBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -287,7 +290,9 @@ export function ProducerBankingPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Producer Banking</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {dashboardType === 'artist' ? 'Artist Banking' : 'Producer Banking'}
+            </h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
                 Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
