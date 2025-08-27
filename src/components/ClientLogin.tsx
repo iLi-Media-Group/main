@@ -26,40 +26,51 @@ export function ClientLogin() {
       setError('');
       setLoading(true);
 
-      // Check if user is an admin
-      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
+      const loginEmail = email.toLowerCase().trim();
 
-      // Authenticate first
-      const { error: signInError } = await signIn(email, password);
+      // Check if user is an admin
+      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(loginEmail);
       
-      if (signInError) {
-        throw new Error('Invalid email or password. Please check your credentials and try again.');
+      if (!isAdmin) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', loginEmail)
+          .maybeSingle();
+
+        if (profileError) {
+          if (profileError.code !== 'PGRST116') {
+            throw new Error('Failed to verify account type');
+          }
+          // If no profile found, continue with login for admin emails
+          if (!isAdmin) {
+            throw new Error('Please use the producer login page');
+          }
+        }
+
+        // If no profile found or account type is not client-related
+        if ((!profileData || (profileData.account_type !== 'client' && profileData.account_type !== 'white_label')) && !isAdmin) {
+          if (profileData?.account_type === 'producer') {
+            throw new Error('Please use the producer login page');
+          } else if (profileData?.account_type === 'rights_holder') {
+            throw new Error('Please use the rights holder login page');
+          } else if (profileData?.account_type === 'artist_band') {
+            throw new Error('Please use the artist login page');
+          } else {
+            throw new Error('Please use the producer login page');
+          }
+        }
       }
 
-             // After successful authentication, check if user is a producer, rights holder, or artist and redirect them
-       if (!isAdmin) {
-         const { data: profileData, error: profileError } = await supabase
-           .from('profiles')
-           .select('account_type')
-           .eq('email', email)
-           .maybeSingle();
-
-         if (profileData) {
-           if (profileData.account_type === 'producer') {
-             // Sign out and redirect to producer login
-             await supabase.auth.signOut();
-             throw new Error('Please use the producer login page');
-           } else if (profileData.account_type === 'rights_holder') {
-             // Sign out and redirect to rights holder login
-             await supabase.auth.signOut();
-             throw new Error('Please use the rights holder login page');
-           } else if (profileData.account_type === 'artist_band') {
-             // Sign out and redirect to artist login
-             await supabase.auth.signOut();
-             throw new Error('Please use the artist login page');
-           }
-         }
-       }
+      // Attempt to sign in
+      const { error: signInError } = await signIn(loginEmail, password);
+      
+      if (signInError) {
+        if (signInError.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password');
+        }
+        throw signInError;
+      }
 
       // Handle redirect based on URL params
       if (redirectTo === 'pricing' && productId) {
@@ -79,45 +90,38 @@ export function ClientLogin() {
         }
       }
 
-             // Handle navigation for client-related account types
-       if (isAdmin) {
-         navigate('/admin');
-       } else {
-         // Check account type and redirect accordingly
-         const { data: profileData, error: profileError } = await supabase
-           .from('profiles')
-           .select('account_type, needs_password_setup')
-           .eq('email', email)
-           .maybeSingle();
+      // Redirect to appropriate dashboard
+      if (isAdmin) {
+        navigate('/admin');
+      } else {
+        // Check if white label client needs password setup
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type, needs_password_setup')
+          .eq('email', loginEmail)
+          .maybeSingle();
 
-         if (profileData) {
-           if (profileData.account_type === 'white_label') {
-             if (profileData.needs_password_setup) {
-               navigate('/white-label-password-setup');
-             } else {
-               navigate('/white-label-dashboard');
-             }
-           } else {
-             // Default to client dashboard for 'client' account type
-             navigate('/dashboard');
-           }
-         } else {
-           // Fallback to client dashboard
-           navigate('/dashboard');
-         }
-       }
+        if (profileData?.account_type === 'white_label' && profileData?.needs_password_setup) {
+          navigate('/white-label-password-setup');
+        } else if (profileData?.account_type === 'white_label') {
+          navigate('/white-label-dashboard');
+        } else {
+          // Default to client dashboard
+          navigate('/dashboard');
+        }
+      }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to sign in');
       
-             // Sign out if authentication succeeded but authorization failed
-       if (err instanceof Error && (
-         err.message === 'Please use the producer login page' ||
-         err.message === 'Please use the rights holder login page' ||
-         err.message === 'Please use the artist login page'
-       )) {
-         await supabase.auth.signOut();
-       }
+      // Sign out if authentication succeeded but authorization failed
+      if (err instanceof Error && (
+        err.message === 'Please use the producer login page' ||
+        err.message === 'Please use the rights holder login page' ||
+        err.message === 'Please use the artist login page'
+      )) {
+        await supabase.auth.signOut();
+      }
     } finally {
       setLoading(false);
     }
@@ -179,18 +183,18 @@ export function ClientLogin() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-                Email or Username
+                Email
               </label>
               <input
-                type="text"
+                type="email"
                 id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your email address"
                 autoComplete="email"
+                className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <div>
@@ -204,14 +208,14 @@ export function ClientLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your password"
                 autoComplete="current-password"
+                className="mt-1 block w-full rounded-md bg-gray-800/50 border border-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <button
               type="submit"
-              className="btn-primary w-full flex items-center justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="btn-primary w-full"
               disabled={loading}
             >
               {loading ? 'Signing in...' : 'Sign In'}
