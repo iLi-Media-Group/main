@@ -193,7 +193,6 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .eq('email', email) // Additional security check - ensure email matches
         .single();
 
       if (error) {
@@ -300,7 +299,6 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
-          .eq('email', email) // Double-check email matches
           .single();
         
         if (profileError) {
@@ -317,9 +315,16 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         }
         
         // CRITICAL SECURITY: Verify the profile belongs to the authenticated user
-        if (profileData.id !== data.user.id || profileData.email !== email) {
+        if (profileData.id !== data.user.id) {
           console.error('❌ Profile ownership verification failed');
           console.error('Profile ID:', profileData.id, 'User ID:', data.user.id);
+          await supabase.auth.signOut();
+          return { error: new Error('Account verification failed. Please contact support.') };
+        }
+        
+        // CRITICAL SECURITY: Verify the email matches
+        if (profileData.email !== email) {
+          console.error('❌ Email verification failed');
           console.error('Profile email:', profileData.email, 'Auth email:', email);
           await supabase.auth.signOut();
           return { error: new Error('Account verification failed. Please contact support.') };
