@@ -256,6 +256,11 @@ const App = () => {
       return <Navigate to="/rights-holder/dashboard" />;
     }
 
+    // If user is an artist, redirect to artist dashboard
+    if (accountType === 'artist_band') {
+      return <Navigate to="/artist/dashboard" />;
+    }
+
     // For other users (clients), show the regular dashboard
     return <ClientDashboard />;
   }
