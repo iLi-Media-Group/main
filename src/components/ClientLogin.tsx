@@ -69,14 +69,36 @@ export function ClientLogin() {
         }
       }
 
-      // Default navigation - let the AuthContext handle the routing based on account type
-      // The AuthContext will automatically redirect white label clients to password setup if needed
+      // Handle navigation based on account type
       if (isAdmin) {
         navigate('/admin');
       } else {
-        // For non-admin users, navigate to dashboard
-        // The DashboardWrapper will handle white label client routing
-        navigate('/dashboard');
+        // Check account type and redirect accordingly
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type, needs_password_setup')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (profileData) {
+          if (profileData.account_type === 'white_label') {
+            if (profileData.needs_password_setup) {
+              navigate('/white-label-password-setup');
+            } else {
+              navigate('/white-label-dashboard');
+            }
+          } else if (profileData.account_type === 'rights_holder') {
+            navigate('/rights-holder/dashboard');
+          } else if (profileData.account_type === 'artist_band') {
+            navigate('/artist/dashboard');
+          } else {
+            // Default to client dashboard
+            navigate('/dashboard');
+          }
+        } else {
+          // Fallback to client dashboard
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       console.error('Login error:', err);

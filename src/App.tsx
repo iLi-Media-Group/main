@@ -238,45 +238,7 @@ const App = () => {
     return <WhiteLabelClientProfile />;
   }
 
-  function DashboardWrapper() {
-    const { accountType, needsPasswordSetup, loading, profile } = useUnifiedAuth();
 
-    // Show loading while authentication is being processed
-    if (loading) {
-      return (
-        <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-            <p className="text-gray-300">Loading dashboard...</p>
-          </div>
-        </div>
-      );
-    }
-
-    // If user is a white label client and needs password setup, redirect them
-    if (accountType === 'white_label' && needsPasswordSetup) {
-      return <Navigate to="/white-label-password-setup" />;
-    }
-
-    // If user is a white label client and doesn't need password setup, redirect to dashboard
-    if (accountType === 'white_label' && !needsPasswordSetup) {
-      return <Navigate to="/white-label-dashboard" />;
-    }
-
-    // If user is a rights holder, redirect to rights holder dashboard
-    if (accountType === 'rights_holder') {
-      return <Navigate to="/rights-holder/dashboard" />;
-    }
-
-    // If user is an artist, redirect to artist dashboard
-    if (accountType === 'artist_band') {
-      return <Navigate to="/artist/dashboard" />;
-    }
-
-    // For other users (clients), show the regular dashboard
-    // This includes when accountType is null, 'client', or any other type not specifically handled above
-    return <ClientDashboard />;
-  }
 
   return (
     <SiteBrandingProvider>
@@ -595,7 +557,15 @@ const App = () => {
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <LayoutWrapper>
-              <DashboardWrapper />
+              <ClientDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/white-label-dashboard" element={
+          <ProtectedRoute>
+            <LayoutWrapper>
+              <WhiteLabelClientDashboard />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
