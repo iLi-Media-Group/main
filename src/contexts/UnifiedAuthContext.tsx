@@ -105,7 +105,7 @@ interface UnifiedAuthContextType {
   needsPasswordSetup: boolean;
   
   // Authentication methods
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string, expectedAccountType?: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any; requiresEmailConfirmation?: boolean }>;
   signOut: () => Promise<void>;
   
@@ -279,8 +279,8 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
   };
 
   // Regular user authentication methods
-  const signIn = async (email: string, password: string) => {
-    console.log('🔐 Starting authentication for:', email);
+  const signIn = async (email: string, password: string, expectedAccountType?: string) => {
+    console.log('🔐 Starting authentication for:', email, 'expected account type:', expectedAccountType);
     
     // CRITICAL SECURITY: First verify the email/password combination
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -330,7 +330,16 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
           return { error: new Error('Account verification failed. Please contact support.') };
         }
         
-        console.log('✅ Profile ownership verified successfully');
+        // CRITICAL SECURITY: Verify account type if expected account type is provided
+        // Allow admins to use any login form
+        if (expectedAccountType && profileData.account_type !== expectedAccountType && !isAdminEmail(email)) {
+          console.error('❌ Account type verification failed');
+          console.error('Expected account type:', expectedAccountType, 'Actual account type:', profileData.account_type);
+          await supabase.auth.signOut();
+          return { error: new Error(`Please use the ${expectedAccountType} login page`) };
+        }
+        
+        console.log('✅ Profile ownership and account type verified successfully');
         
         // Now fetch the profile data
         await fetchProfile(data.user.id, data.user.email || '');

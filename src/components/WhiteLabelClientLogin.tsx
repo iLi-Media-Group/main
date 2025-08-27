@@ -20,43 +20,8 @@ export function WhiteLabelClientLogin() {
     try {
       const emailLower = email.toLowerCase().trim();
 
-      // Check if user is an admin
-      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(emailLower);
-      
-      if (!isAdmin) {
-        // Verify account type before authentication
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type')
-          .eq('email', emailLower)
-          .maybeSingle();
-
-        if (profileError) {
-          if (profileError.code !== 'PGRST116') {
-            throw new Error('Failed to verify account type');
-          }
-          // If no profile found, deny access
-          throw new Error('Please use the appropriate login page for your account type');
-        }
-
-        // If profile exists but account type is not white_label
-        if (profileData && profileData.account_type !== 'white_label') {
-          if (profileData.account_type === 'client') {
-            throw new Error('Please use the client login page');
-          } else if (profileData.account_type === 'producer') {
-            throw new Error('Please use the producer login page');
-          } else if (profileData.account_type === 'rights_holder') {
-            throw new Error('Please use the rights holder login page');
-          } else if (profileData.account_type === 'artist_band') {
-            throw new Error('Please use the artist login page');
-          } else {
-            throw new Error('Please use the appropriate login page for your account type');
-          }
-        }
-      }
-
-      // Attempt to sign in
-      const { error: signInError } = await signIn(emailLower, password);
+      // Attempt to sign in with account type validation
+      const { error: signInError } = await signIn(emailLower, password, 'white_label');
       if (signInError) {
         if (signInError.message === 'Invalid login credentials') {
           throw new Error('Invalid email or password');

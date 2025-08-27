@@ -28,44 +28,8 @@ export function ClientLogin() {
 
       const loginEmail = email.toLowerCase().trim();
 
-      // Check if user is an admin
-      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(loginEmail);
-      
-      if (!isAdmin) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type')
-          .eq('email', loginEmail)
-          .maybeSingle();
-
-        if (profileError) {
-          if (profileError.code !== 'PGRST116') {
-            throw new Error('Failed to verify account type');
-          }
-          // If no profile found, continue with login for admin emails
-          if (!isAdmin) {
-            throw new Error('Please use the producer login page');
-          }
-        }
-
-        // If profile exists but account type is not client
-        if (profileData && profileData.account_type !== 'client') {
-          if (profileData.account_type === 'producer') {
-            throw new Error('Please use the producer login page');
-          } else if (profileData.account_type === 'rights_holder') {
-            throw new Error('Please use the rights holder login page');
-          } else if (profileData.account_type === 'artist_band') {
-            throw new Error('Please use the artist login page');
-          } else if (profileData.account_type === 'white_label') {
-            throw new Error('Please use the white label client login page');
-          } else {
-            throw new Error('Please use the appropriate login page for your account type');
-          }
-        }
-      }
-
-      // Attempt to sign in
-      const { error: signInError } = await signIn(loginEmail, password);
+      // Attempt to sign in with account type validation
+      const { error: signInError } = await signIn(loginEmail, password, 'client');
       
       if (signInError) {
         if (signInError.message === 'Invalid login credentials') {
@@ -92,13 +56,8 @@ export function ClientLogin() {
         }
       }
 
-      // Redirect to appropriate dashboard
-      if (isAdmin) {
-        navigate('/admin');
-      } else {
-        // Client accounts go to client dashboard
-        navigate('/dashboard');
-      }
+      // Redirect to client dashboard
+      navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
