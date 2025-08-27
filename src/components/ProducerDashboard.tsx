@@ -207,6 +207,7 @@ export function ProducerDashboard() {
   const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const dashboardType = searchParams.get('dashboardType');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [pendingProposals, setPendingProposals] = useState<Proposal[]>([]);
@@ -1506,7 +1507,7 @@ export function ProducerDashboard() {
                   className="text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
                 >
                   <DollarSign className="w-4 h-4 mr-1" />
-                  View Earnings
+                  {dashboardType === 'artist' ? 'Artist Banking' : 'View Earnings'}
                 </Link>
               </div>
               
