@@ -272,7 +272,7 @@ const Navigation: React.FC<NavigationProps> = ({
 
   return (
     <div className="relative">
-      {/* Guitar Icon Button */}
+      {/* Logo Button */}
       <button
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className="text-gray-300 hover:text-white transition-all duration-300 p-2"
@@ -280,7 +280,23 @@ const Navigation: React.FC<NavigationProps> = ({
         {isMenuOpen ? (
           <X className="w-6 h-6" />
         ) : (
-          <Guitar className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
+          logoUrl ? (
+            <img
+              src={logoUrl}
+              alt="Logo"
+              className="w-6 h-6 object-contain"
+              style={{ 
+                border: 'none', 
+                boxShadow: 'none', 
+                background: 'transparent', 
+                padding: 0, 
+                margin: 0,
+                mixBlendMode: 'normal'
+              }}
+            />
+          ) : (
+            <Music className={`w-6 h-6 ${isMenuOpen ? 'animate-bounce' : 'hover:animate-bounce'}`} />
+          )
         )}
       </button>
 
