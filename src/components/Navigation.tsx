@@ -109,9 +109,9 @@ const Navigation: React.FC<NavigationProps> = ({
           <Settings className="w-4 h-4 mr-2" />Services Directory
         </Link>
       )}
-      <Link to="/producer-resources" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-        <BookOpen className="w-4 h-4 mr-2" />Producer Resources
-      </Link>
+             <Link to="/producer/resources" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+         <BookOpen className="w-4 h-4 mr-2" />Content Creator Resources
+       </Link>
       <Link to="/about" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
         <Info className="w-4 h-4 mr-2" />About Us
       </Link>
