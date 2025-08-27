@@ -182,13 +182,13 @@ const App = () => {
   );
 
   const HomeLayoutWrapper = ({ children }: { children: React.ReactNode }) => (
-    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+    <Layout onSignupClick={() => setIsSignupOpen(true)}>
       {children}
     </Layout>
   );
 
   const ProducerLandingWrapper = ({ children }: { children: React.ReactNode }) => (
-    <Layout onSignupClick={() => setIsSignupOpen(true)} hideHeader={true}>
+    <Layout onSignupClick={() => setIsSignupOpen(true)}>
       {children}
     </Layout>
   );
