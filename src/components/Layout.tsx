@@ -221,4 +221,4 @@ const Layout: React.FC<LayoutProps> = ({ children, onSignupClick, hideHeader = f
   );
 };
 
-export default Layout;
+export { Layout };
