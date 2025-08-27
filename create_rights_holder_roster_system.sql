@@ -109,7 +109,7 @@ ALTER TABLE roster_entity_members ENABLE ROW LEVEL SECURITY;
 -- ============================================
 
 -- Rights holders can manage their own roster entities
-CREATE POLICY "Rights holders can manage own roster entities" ON roster_entities
+CREATE POLICY IF NOT EXISTS "Rights holders can manage own roster entities" ON roster_entities
     FOR ALL USING (
         rights_holder_id = auth.uid() AND
         EXISTS (
@@ -120,7 +120,7 @@ CREATE POLICY "Rights holders can manage own roster entities" ON roster_entities
     );
 
 -- Rights holders can manage their own roster entity members
-CREATE POLICY "Rights holders can manage own roster entity members" ON roster_entity_members
+CREATE POLICY IF NOT EXISTS "Rights holders can manage own roster entity members" ON roster_entity_members
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM roster_entities re
@@ -132,7 +132,7 @@ CREATE POLICY "Rights holders can manage own roster entity members" ON roster_en
     );
 
 -- Admins can manage all roster entities
-CREATE POLICY "Admins can manage all roster entities" ON roster_entities
+CREATE POLICY IF NOT EXISTS "Admins can manage all roster entities" ON roster_entities
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM profiles 
@@ -141,7 +141,7 @@ CREATE POLICY "Admins can manage all roster entities" ON roster_entities
         )
     );
 
-CREATE POLICY "Admins can manage all roster entity members" ON roster_entity_members
+CREATE POLICY IF NOT EXISTS "Admins can manage all roster entity members" ON roster_entity_members
     FOR ALL USING (
         EXISTS (
             SELECT 1 FROM profiles 
@@ -164,12 +164,12 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for roster_entities
-CREATE TRIGGER update_roster_entities_updated_at 
+CREATE TRIGGER IF NOT EXISTS update_roster_entities_updated_at 
     BEFORE UPDATE ON roster_entities 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Triggers for roster_entity_members
-CREATE TRIGGER update_roster_entity_members_updated_at 
+CREATE TRIGGER IF NOT EXISTS update_roster_entity_members_updated_at 
     BEFORE UPDATE ON roster_entity_members 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
