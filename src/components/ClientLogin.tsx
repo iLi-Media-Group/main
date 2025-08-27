@@ -29,10 +29,26 @@ export function ClientLogin() {
       // Check if user is an admin
       const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email);
 
+      // Authenticate first
       const { error: signInError } = await signIn(email, password);
       
       if (signInError) {
         throw new Error('Invalid email or password. Please check your credentials and try again.');
+      }
+
+      // After successful authentication, check if user is a producer and redirect them
+      if (!isAdmin) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', email)
+          .maybeSingle();
+
+        if (profileData && profileData.account_type === 'producer') {
+          // Sign out and redirect to producer login
+          await supabase.auth.signOut();
+          throw new Error('Please use the producer login page');
+        }
       }
 
       // Handle redirect based on URL params
