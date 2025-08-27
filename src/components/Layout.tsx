@@ -262,8 +262,8 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[9999] top-full max-h-[80vh] overflow-y-auto">
-                <div className="py-1">
+              <div className="absolute right-0 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[9999] top-full max-h-[80vh] overflow-y-auto isolate pointer-events-auto">
+                <div className="py-1 relative">
                   {/* Common menu items for all users */}
                   <Link to="/catalog" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Library className="w-4 h-4 mr-2" />Browse Catalog
@@ -495,8 +495,8 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
 
             {/* Menu Dropdown */}
             {isMenuOpen && (
-              <div className="absolute right-4 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[9999] top-full max-h-[80vh] overflow-y-auto">
-                <div className="py-1">
+              <div className="absolute right-4 mt-2 w-48 rounded-lg bg-blue-900/90 backdrop-blur-sm border border-blue-500/20 shadow-xl z-[9999] top-full max-h-[80vh] overflow-y-auto isolate pointer-events-auto">
+                <div className="py-1 relative">
                   {/* Common menu items for all users */}
                   <Link to="/catalog" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
                     <Library className="w-4 h-4 mr-2" />Browse Catalog
