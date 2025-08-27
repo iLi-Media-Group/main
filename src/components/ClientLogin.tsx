@@ -79,11 +79,14 @@ export function ClientLogin() {
 
       // Default navigation - let the AuthContext handle the routing based on account type
       // The AuthContext will automatically redirect white label clients to password setup if needed
+      console.log('🔍 ClientLogin - isAdmin:', isAdmin, 'navigating to dashboard');
       if (isAdmin) {
+        console.log('🔄 Redirecting admin to admin dashboard');
         navigate('/admin');
       } else {
         // For non-admin users, navigate to dashboard
         // The DashboardWrapper will handle white label client routing
+        console.log('🔄 Redirecting client to dashboard');
         navigate('/dashboard');
       }
     } catch (err) {
