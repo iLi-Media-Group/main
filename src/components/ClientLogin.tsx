@@ -36,20 +36,30 @@ export function ClientLogin() {
         throw new Error('Invalid email or password. Please check your credentials and try again.');
       }
 
-      // After successful authentication, check if user is a producer and redirect them
-      if (!isAdmin) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type')
-          .eq('email', email)
-          .maybeSingle();
+             // After successful authentication, check if user is a producer, rights holder, or artist and redirect them
+       if (!isAdmin) {
+         const { data: profileData, error: profileError } = await supabase
+           .from('profiles')
+           .select('account_type')
+           .eq('email', email)
+           .maybeSingle();
 
-        if (profileData && profileData.account_type === 'producer') {
-          // Sign out and redirect to producer login
-          await supabase.auth.signOut();
-          throw new Error('Please use the producer login page');
-        }
-      }
+         if (profileData) {
+           if (profileData.account_type === 'producer') {
+             // Sign out and redirect to producer login
+             await supabase.auth.signOut();
+             throw new Error('Please use the producer login page');
+           } else if (profileData.account_type === 'rights_holder') {
+             // Sign out and redirect to rights holder login
+             await supabase.auth.signOut();
+             throw new Error('Please use the rights holder login page');
+           } else if (profileData.account_type === 'artist_band') {
+             // Sign out and redirect to artist login
+             await supabase.auth.signOut();
+             throw new Error('Please use the artist login page');
+           }
+         }
+       }
 
       // Handle redirect based on URL params
       if (redirectTo === 'pricing' && productId) {
@@ -69,45 +79,45 @@ export function ClientLogin() {
         }
       }
 
-      // Handle navigation based on account type
-      if (isAdmin) {
-        navigate('/admin');
-      } else {
-        // Check account type and redirect accordingly
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type, needs_password_setup')
-          .eq('email', email)
-          .maybeSingle();
+             // Handle navigation for client-related account types
+       if (isAdmin) {
+         navigate('/admin');
+       } else {
+         // Check account type and redirect accordingly
+         const { data: profileData, error: profileError } = await supabase
+           .from('profiles')
+           .select('account_type, needs_password_setup')
+           .eq('email', email)
+           .maybeSingle();
 
-        if (profileData) {
-          if (profileData.account_type === 'white_label') {
-            if (profileData.needs_password_setup) {
-              navigate('/white-label-password-setup');
-            } else {
-              navigate('/white-label-dashboard');
-            }
-          } else if (profileData.account_type === 'rights_holder') {
-            navigate('/rights-holder/dashboard');
-          } else if (profileData.account_type === 'artist_band') {
-            navigate('/artist/dashboard');
-          } else {
-            // Default to client dashboard
-            navigate('/dashboard');
-          }
-        } else {
-          // Fallback to client dashboard
-          navigate('/dashboard');
-        }
-      }
+         if (profileData) {
+           if (profileData.account_type === 'white_label') {
+             if (profileData.needs_password_setup) {
+               navigate('/white-label-password-setup');
+             } else {
+               navigate('/white-label-dashboard');
+             }
+           } else {
+             // Default to client dashboard for 'client' account type
+             navigate('/dashboard');
+           }
+         } else {
+           // Fallback to client dashboard
+           navigate('/dashboard');
+         }
+       }
     } catch (err) {
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
       
-      // Sign out if authentication succeeded but authorization failed
-      if (err instanceof Error && err.message === 'Please use the producer login page') {
-        await supabase.auth.signOut();
-      }
+             // Sign out if authentication succeeded but authorization failed
+       if (err instanceof Error && (
+         err.message === 'Please use the producer login page' ||
+         err.message === 'Please use the rights holder login page' ||
+         err.message === 'Please use the artist login page'
+       )) {
+         await supabase.auth.signOut();
+       }
     } finally {
       setLoading(false);
     }
