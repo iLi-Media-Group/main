@@ -681,37 +681,51 @@ const App = () => {
         <Route path="/rights-holder/login" element={<RightsHolderLogin />} />
         <Route path="/rights-holder/dashboard" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderDashboard />
+            <LayoutWrapper>
+              <RightsHolderDashboard />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/upload" element={
           <RightsHolderProtectedRoute>
-            <TrackUploadForm />
+            <LayoutWrapper>
+              <TrackUploadForm />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/split-sheets" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderSplitSheets />
+            <LayoutWrapper>
+              <RightsHolderSplitSheets />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/analytics" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderAnalytics />
+            <LayoutWrapper>
+              <RightsHolderAnalytics />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/recordings" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderRecordings />
+            <LayoutWrapper>
+              <RightsHolderRecordings />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/e-signatures" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderESignatures />
+            <LayoutWrapper>
+              <RightsHolderESignatures />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/licensing" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderLicensing />
+            <LayoutWrapper>
+              <RightsHolderLicensing />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/admin/rights-verification" element={
@@ -727,34 +741,46 @@ const App = () => {
         {/* Rights Holder Sync Proposals */}
               <Route path="/sync-proposal/:id" element={
         <RightsHolderProtectedRoute>
-          <RightsHolderSyncProposalDialog />
+          <LayoutWrapper>
+            <RightsHolderSyncProposalDialog />
+          </LayoutWrapper>
         </RightsHolderProtectedRoute>
       } />
         <Route path="/sync-proposals" element={
           <RightsHolderProtectedRoute>
-            <SyncProposalsPage />
+            <LayoutWrapper>
+              <SyncProposalsPage />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         
         {/* Rights Holder Custom Sync Requests */}
               <Route path="/custom-sync-request" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderSyncSubmission />
+            <LayoutWrapper>
+              <RightsHolderSyncSubmission />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/custom-sync-request/:id" element={
           <RightsHolderProtectedRoute>
-            <CustomSyncRequestDetail />
+            <LayoutWrapper>
+              <CustomSyncRequestDetail />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/custom-sync-requests" element={
           <RightsHolderProtectedRoute>
-            <CustomSyncRequestsPage />
+            <LayoutWrapper>
+              <CustomSyncRequestsPage />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
         <Route path="/rights-holder/custom-sync-subs" element={
           <RightsHolderProtectedRoute>
-            <RightsHolderCustomSyncSubs />
+            <LayoutWrapper>
+              <RightsHolderCustomSyncSubs />
+            </LayoutWrapper>
           </RightsHolderProtectedRoute>
         } />
 
