@@ -714,7 +714,7 @@ export function RightsHolderRosterPage() {
                         </td>
                       </tr>
                     ))
-                  )}
+                  })()}
                 </tbody>
               </table>
             </div>
