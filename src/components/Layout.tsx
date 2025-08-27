@@ -249,7 +249,7 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                 </div>
               </>
             )}
-            {/* Music menu button */}
+            {/* Music menu button - always show for all users */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-gray-300 hover:text-white transition-all duration-300 p-2"
