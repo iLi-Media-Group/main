@@ -352,8 +352,8 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
                         {getDashboardIcon()}
                         {getDashboardLabel()}
                       </Link>
-                  </>
-                )}
+                    </>
+                  )}
                   {/* Authentication links */}
                   {user ? (
                     <button type="button" onClick={handleSignOut} className="w-full flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
