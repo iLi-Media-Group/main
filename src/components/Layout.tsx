@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Music, Settings } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
-import Footer from './Footer';
+import { Footer } from './Footer';
 import AISearchBrain from './AISearchBrain';
 import Navigation from './Navigation';
 
