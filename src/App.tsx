@@ -239,10 +239,10 @@ const App = () => {
   }
 
   function DashboardWrapper() {
-    const { accountType, needsPasswordSetup, loading } = useUnifiedAuth();
+    const { accountType, needsPasswordSetup, loading, profile } = useUnifiedAuth();
 
     // Show loading while authentication is being processed
-    if (loading) {
+    if (loading || !profile) {
       return (
         <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
           <div className="text-center">
@@ -253,34 +253,27 @@ const App = () => {
       );
     }
 
-    console.log('🔍 DashboardWrapper - accountType:', accountType, 'needsPasswordSetup:', needsPasswordSetup);
-
     // If user is a white label client and needs password setup, redirect them
     if (accountType === 'white_label' && needsPasswordSetup) {
-      console.log('🔄 Redirecting to white label password setup');
       return <Navigate to="/white-label-password-setup" />;
     }
 
     // If user is a white label client and doesn't need password setup, redirect to dashboard
     if (accountType === 'white_label' && !needsPasswordSetup) {
-      console.log('🔄 Redirecting to white label dashboard');
       return <Navigate to="/white-label-dashboard" />;
     }
 
     // If user is a rights holder, redirect to rights holder dashboard
     if (accountType === 'rights_holder') {
-      console.log('🔄 Redirecting to rights holder dashboard');
       return <Navigate to="/rights-holder/dashboard" />;
     }
 
     // If user is an artist, redirect to artist dashboard
     if (accountType === 'artist_band') {
-      console.log('🔄 Redirecting to artist dashboard');
       return <Navigate to="/artist/dashboard" />;
     }
 
     // For other users (clients), show the regular dashboard
-    console.log('🔄 Showing client dashboard');
     return <ClientDashboard />;
   }
 
