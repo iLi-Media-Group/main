@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export function LogoUpload() {
+interface LogoUploadProps {
+  onLogoUpdate?: () => void;
+}
+
+export function LogoUpload({ onLogoUpdate }: LogoUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,8 +53,11 @@ export function LogoUpload() {
 
       if (updateError) throw updateError;
 
-      // Trigger a state update instead of reloading
-      // The parent component should handle logo updates
+      // Trigger logo refresh in parent component
+      if (onLogoUpdate) {
+        onLogoUpdate();
+      }
+      
       setUploading(false);
     } catch (err) {
       console.error('Upload error:', err);
