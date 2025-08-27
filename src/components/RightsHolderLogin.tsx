@@ -36,14 +36,55 @@ export function RightsHolderLogin() {
     setError(null);
 
     try {
-      const { error } = await signIn(formData.email, formData.password);
+      const loginEmail = formData.email.toLowerCase().trim();
 
-      if (error) {
-        setError(error.message || 'Login failed. Please check your credentials.');
-      } else {
-        // Successful login - redirect to dashboard
-        navigate('/rights-holder/dashboard');
+      // Check if user is an admin
+      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(loginEmail);
+      
+      if (!isAdmin) {
+        // Verify account type before authentication
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', loginEmail)
+          .maybeSingle();
+
+        if (profileError) {
+          if (profileError.code !== 'PGRST116') {
+            throw new Error('Failed to verify account type');
+          }
+          // If no profile found, deny access
+          throw new Error('Please use the appropriate login page for your account type');
+        }
+
+        // If profile exists but account type is not rights_holder
+        if (profileData && profileData.account_type !== 'rights_holder') {
+          if (profileData.account_type === 'client') {
+            throw new Error('Please use the client login page');
+          } else if (profileData.account_type === 'producer') {
+            throw new Error('Please use the producer login page');
+          } else if (profileData.account_type === 'artist_band') {
+            throw new Error('Please use the artist login page');
+          } else if (profileData.account_type === 'white_label') {
+            throw new Error('Please use the white label client login page');
+          } else {
+            throw new Error('Please use the appropriate login page for your account type');
+          }
+        }
       }
+
+      // Attempt to sign in
+      const { error: signInError } = await signIn(loginEmail, formData.password);
+      
+      if (signInError) {
+        if (signInError.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password');
+        }
+        throw signInError;
+      }
+
+      // Successful login - redirect to dashboard
+      navigate('/rights-holder/dashboard');
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
     } finally {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Music, AlertCircle } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const ArtistLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,21 +18,62 @@ const ArtistLogin: React.FC = () => {
     setError('');
 
     try {
-      const result = await signIn(email, password);
+      const loginEmail = email.toLowerCase().trim();
+
+      // Check if user is an admin
+      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(loginEmail);
+      
+      if (!isAdmin) {
+        // Verify account type before authentication
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', loginEmail)
+          .maybeSingle();
+
+        if (profileError) {
+          if (profileError.code !== 'PGRST116') {
+            throw new Error('Failed to verify account type');
+          }
+          // If no profile found, deny access
+          throw new Error('Please use the appropriate login page for your account type');
+        }
+
+        // If profile exists but account type is not artist_band
+        if (profileData && profileData.account_type !== 'artist_band') {
+          if (profileData.account_type === 'client') {
+            throw new Error('Please use the client login page');
+          } else if (profileData.account_type === 'producer') {
+            throw new Error('Please use the producer login page');
+          } else if (profileData.account_type === 'rights_holder') {
+            throw new Error('Please use the rights holder login page');
+          } else if (profileData.account_type === 'white_label') {
+            throw new Error('Please use the white label client login page');
+          } else {
+            throw new Error('Please use the appropriate login page for your account type');
+          }
+        }
+      }
+
+      // Attempt to sign in
+      const result = await signIn(loginEmail, password);
       
       if (result.error) {
-        setError(result.error);
+        if (result.error.message === 'Invalid login credentials') {
+          setError('Invalid email or password');
+        } else {
+          setError(result.error.message || 'Login failed. Please check your credentials.');
+        }
         setLoading(false);
         return;
       }
 
       // Successful login - navigate to artist dashboard
-      // The ArtistDashboard component will handle the redirect to producer dashboard
       console.log('🎵 Artist login successful, navigating to dashboard...');
       navigate('/artist/dashboard');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      setError(err.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setLoading(false);
     }

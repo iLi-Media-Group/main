@@ -18,14 +18,52 @@ export function WhiteLabelClientLogin() {
     setError('');
     setLoading(true);
     try {
-      const emailLower = email.toLowerCase();
-      // Always attempt to sign in
+      const emailLower = email.toLowerCase().trim();
+
+      // Check if user is an admin
+      const isAdmin = ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(emailLower);
+      
+      if (!isAdmin) {
+        // Verify account type before authentication
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('account_type')
+          .eq('email', emailLower)
+          .maybeSingle();
+
+        if (profileError) {
+          if (profileError.code !== 'PGRST116') {
+            throw new Error('Failed to verify account type');
+          }
+          // If no profile found, deny access
+          throw new Error('Please use the appropriate login page for your account type');
+        }
+
+        // If profile exists but account type is not white_label
+        if (profileData && profileData.account_type !== 'white_label') {
+          if (profileData.account_type === 'client') {
+            throw new Error('Please use the client login page');
+          } else if (profileData.account_type === 'producer') {
+            throw new Error('Please use the producer login page');
+          } else if (profileData.account_type === 'rights_holder') {
+            throw new Error('Please use the rights holder login page');
+          } else if (profileData.account_type === 'artist_band') {
+            throw new Error('Please use the artist login page');
+          } else {
+            throw new Error('Please use the appropriate login page for your account type');
+          }
+        }
+      }
+
+      // Attempt to sign in
       const { error: signInError } = await signIn(emailLower, password);
       if (signInError) {
-        setError('Invalid email or password.');
-        setLoading(false);
-        return;
+        if (signInError.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password');
+        }
+        throw signInError;
       }
+
       // After login, check if password setup is required
       const { data: client, error: clientError } = await supabase
         .from('white_label_clients')
@@ -33,14 +71,10 @@ export function WhiteLabelClientLogin() {
         .eq('owner_email', emailLower)
         .maybeSingle();
       if (clientError && clientError.code !== 'PGRST116') {
-        setError('Error looking up white label client.');
-        setLoading(false);
-        return;
+        throw new Error('Error looking up white label client.');
       }
       if (!client) {
-        setError('No white label client found for this email.');
-        setLoading(false);
-        return;
+        throw new Error('No white label client found for this email.');
       }
       if (client.password_setup_required) {
         navigate('/white-label-password-setup', { state: { email: emailLower } });
@@ -48,8 +82,8 @@ export function WhiteLabelClientLogin() {
         return;
       }
       navigate('/white-label-dashboard');
-    } catch (err) {
-      setError('Failed to sign in. Please try again.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in. Please try again.');
       console.error('White label login error:', err);
     } finally {
       setLoading(false);
