@@ -814,7 +814,7 @@ export function RightsHolderRosterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Entity Type
+                    Creator Type
                   </label>
                   <select
                     value={formData.entity_type}
@@ -829,14 +829,14 @@ export function RightsHolderRosterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Name *
+                    Creator Name *
                   </label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full px-3 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white focus:outline-none focus:border-purple-500"
-                    placeholder="Enter name"
+                    placeholder="Enter creator name"
                   />
                 </div>
 
@@ -923,7 +923,7 @@ export function RightsHolderRosterPage() {
                     ) : (
                       <Save className="w-4 h-4" />
                     )}
-                    <span>{imageUploading ? 'Uploading...' : 'Add Entity'}</span>
+                    <span>{imageUploading ? 'Uploading...' : 'Add Creator'}</span>
                   </button>
                 </div>
               </div>
