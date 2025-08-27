@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Users, 
   User, 
@@ -26,7 +26,9 @@ import {
   Mail,
   Globe,
   UserPlus,
-  BarChart3
+  BarChart3,
+  Upload,
+  Image
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
@@ -42,6 +44,7 @@ interface RosterEntity {
   website?: string;
   bio?: string;
   genres?: string[];
+  image_url?: string;
   social_media?: any;
   contact_info?: any;
   is_active: boolean;
@@ -92,8 +95,15 @@ export function RightsHolderRosterPage() {
     website: '',
     bio: '',
     genres: [] as string[],
+    image_url: '',
     is_active: true
   });
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -241,11 +251,33 @@ export function RightsHolderRosterPage() {
     if (!user || !formData.name.trim()) return;
 
     try {
+      let imageUrl = formData.image_url;
+
+      // Upload image if selected
+      if (imageFile) {
+        setImageUploading(true);
+        const fileName = `roster-${Date.now()}-${imageFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('profile-photos')
+          .upload(fileName, imageFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(fileName);
+
+        imageUrl = urlData.publicUrl;
+        setImageUploading(false);
+      }
+
       const { data, error } = await supabase
         .from('roster_entities')
         .insert({
           rights_holder_id: user.id,
-          ...formData
+          ...formData,
+          image_url: imageUrl
         })
         .select()
         .single();
@@ -262,14 +294,57 @@ export function RightsHolderRosterPage() {
         website: '',
         bio: '',
         genres: [],
+        image_url: '',
         is_active: true
       });
+      setImageFile(null);
+      setImagePreview(null);
       fetchRosterEntities();
 
     } catch (err) {
       console.error('Error adding roster entity:', err);
       setError('Failed to add roster entity. Please try again.');
+      setImageUploading(false);
     }
+  };
+
+  // Image upload handlers
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image file size must be less than 5MB');
+        return;
+      }
+
+      setImageFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleImageRemove = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const openImageSelector = () => {
+    fileInputRef.current?.click();
   };
 
   const getEntityIcon = (entityType: string) => {
@@ -433,7 +508,26 @@ export function RightsHolderRosterPage() {
                       >
                         <td className="px-4 py-4">
                           <div className="flex items-center space-x-3">
-                            {getEntityIcon(entity.entity_type)}
+                            {entity.image_url ? (
+                              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                                <img 
+                                  src={entity.image_url} 
+                                  alt={entity.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                                <div className="w-full h-full flex items-center justify-center hidden">
+                                  {getEntityIcon(entity.entity_type)}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                                {getEntityIcon(entity.entity_type)}
+                              </div>
+                            )}
                             <div>
                               <p className="text-white font-medium">{entity.name}</p>
                               {entity.display_name && (
@@ -515,7 +609,26 @@ export function RightsHolderRosterPage() {
               <div className="p-6 border-b border-purple-500/20">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
-                    {getEntityIcon(selectedEntity.entity_type)}
+                    {selectedEntity.image_url ? (
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700 flex-shrink-0">
+                        <img 
+                          src={selectedEntity.image_url} 
+                          alt={selectedEntity.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="w-full h-full flex items-center justify-center hidden">
+                          {getEntityIcon(selectedEntity.entity_type)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
+                        {getEntityIcon(selectedEntity.entity_type)}
+                      </div>
+                    )}
                     <div>
                       <h2 className="text-2xl font-bold text-white">{selectedEntity.name}</h2>
                       <p className="text-gray-400">{getEntityTypeLabel(selectedEntity.entity_type)}</p>
@@ -649,6 +762,56 @@ export function RightsHolderRosterPage() {
               </div>
 
               <div className="p-6 space-y-4">
+                {/* Image Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Profile Image
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-700 flex items-center justify-center flex-shrink-0">
+                      {imagePreview ? (
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Image className="w-8 h-8 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex flex-col space-y-2">
+                      <button
+                        type="button"
+                        onClick={openImageSelector}
+                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        <span>Upload Image</span>
+                      </button>
+                      {imagePreview && (
+                        <button
+                          type="button"
+                          onClick={handleImageRemove}
+                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+                        >
+                          <X className="w-4 h-4" />
+                          <span>Remove</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Supported formats: JPG, PNG, GIF. Max size: 5MB
+                  </p>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Entity Type
@@ -745,17 +908,22 @@ export function RightsHolderRosterPage() {
                 <div className="flex justify-end space-x-3 pt-4">
                   <button
                     onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                    disabled={imageUploading}
+                    className="px-4 py-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAddEntity}
-                    disabled={!formData.name.trim()}
+                    disabled={!formData.name.trim() || imageUploading}
                     className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
                   >
-                    <Save className="w-4 h-4" />
-                    <span>Add Entity</span>
+                    {imageUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    <span>{imageUploading ? 'Uploading...' : 'Add Entity'}</span>
                   </button>
                 </div>
               </div>

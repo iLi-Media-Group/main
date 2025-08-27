@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS roster_entities (
     website TEXT,
     bio TEXT,
     genres TEXT[],
+    image_url TEXT, -- Profile image URL stored in profile-photos bucket
     social_media JSONB DEFAULT '{}',
     contact_info JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT true,
