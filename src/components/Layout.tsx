@@ -381,7 +381,6 @@ export function Layout({ children, onSignupClick, hideHeader = false }: LayoutPr
           </div>
         </nav>
       </header>
-      )}
 
       {/* Minimal Floating Header for Home Page */}
       {hideHeader && (
