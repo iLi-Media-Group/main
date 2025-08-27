@@ -2,11 +2,25 @@
 -- This script fixes the security flaw where users can access other users' profiles
 
 -- ============================================
--- 1. DROP THE DANGEROUS PUBLIC ACCESS POLICY
+-- 1. DROP ALL EXISTING POLICIES FIRST
 -- ============================================
 
--- Drop the policy that allows public access to all profiles
+-- Drop ALL existing policies to start fresh
 DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON profiles;
+DROP POLICY IF EXISTS "Users can view own profile only" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile only" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile only" ON profiles;
+DROP POLICY IF EXISTS "Admins can view all profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
+DROP POLICY IF EXISTS "Admins can insert profiles" ON profiles;
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
+DROP POLICY IF EXISTS "Users can insert their own profile" ON profiles;
+DROP POLICY IF EXISTS "Enable read access for all users" ON profiles;
+DROP POLICY IF EXISTS "Enable insert for authenticated users only" ON profiles;
+DROP POLICY IF EXISTS "Enable update for authenticated users only" ON profiles;
+DROP POLICY IF EXISTS "Enable delete for authenticated users only" ON profiles;
 
 -- ============================================
 -- 2. CREATE SECURE RLS POLICIES
