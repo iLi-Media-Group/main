@@ -49,8 +49,8 @@ export function RightsHolderProtectedRoute({
     );
   }
 
-  // Check if user is a rights holder
-  if (!profile || !accountType || !accountType.includes('rights_holder')) {
+  // CRITICAL SECURITY: Check if user is a rights holder AND verify email ownership
+  if (!profile || !accountType || !accountType.includes('rights_holder') || profile.email !== user.email) {
     return (
       <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">

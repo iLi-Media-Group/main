@@ -175,10 +175,12 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
       console.log('🔄 Fetching profile for user:', userId);
       
       // Fetch profile from unified profiles table
+      // CRITICAL SECURITY: Verify the profile belongs to the authenticated user
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
+        .eq('email', email) // Additional security check - ensure email matches
         .single();
 
       if (error) {
