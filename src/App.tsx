@@ -242,7 +242,7 @@ const App = () => {
     const { accountType, needsPasswordSetup, loading, profile } = useUnifiedAuth();
 
     // Show loading while authentication is being processed
-    if (loading || !profile) {
+    if (loading) {
       return (
         <div className="min-h-screen bg-blue-900/90 flex items-center justify-center">
           <div className="text-center">
