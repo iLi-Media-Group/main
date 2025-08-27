@@ -439,10 +439,14 @@ export function RightsHolderUploadForm() {
     () => true
   );
 
-  // Fetch roster entities for selection
+  // Fetch roster entities for selection (only for record labels and publishers)
   useStableDataFetch(
     async () => {
-      if (!user) return;
+      if (!user || (formData.rightsHolderType !== 'record_label' && formData.rightsHolderType !== 'publisher')) {
+        setRosterEntities([]);
+        setRosterEntitiesLoading(false);
+        return;
+      }
       
       try {
         setRosterEntitiesLoading(true);
@@ -462,8 +466,8 @@ export function RightsHolderUploadForm() {
         setRosterEntitiesLoading(false);
       }
     },
-    [user],
-    () => !!user
+    [user, formData.rightsHolderType],
+    () => !!user && (formData.rightsHolderType === 'record_label' || formData.rightsHolderType === 'publisher')
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -891,26 +895,32 @@ export function RightsHolderUploadForm() {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-gray-300 mb-2">Roster Entity</label>
-                  <select
-                    name="rosterEntityId"
-                    value={formData.rosterEntityId}
-                    onChange={handleInputChange}
-                    className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
-                    disabled={rosterEntitiesLoading}
-                  >
-                    <option value="">Select roster entity (optional)</option>
-                    {rosterEntities.map((entity) => (
-                      <option key={entity.id} value={entity.id}>
-                        {entity.name} ({entity.entity_type})
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Link this track to an artist, band, or producer from your roster
-                  </p>
-                </div>
+                {/* Roster Creator field - only show for record labels and publishers */}
+                {(formData.rightsHolderType === 'record_label' || formData.rightsHolderType === 'publisher') && (
+                  <div>
+                    <label className="block text-gray-300 mb-2">
+                      Roster Creator
+                      <span className="text-xs text-gray-400 ml-2">(Record Labels & Publishers only)</span>
+                    </label>
+                    <select
+                      name="rosterEntityId"
+                      value={formData.rosterEntityId}
+                      onChange={handleInputChange}
+                      className="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+                      disabled={rosterEntitiesLoading}
+                    >
+                      <option value="">Select roster creator (optional)</option>
+                      {rosterEntities.map((entity) => (
+                        <option key={entity.id} value={entity.id}>
+                          {entity.name} ({entity.entity_type})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Link this track to an artist, band, or producer from your roster. This helps track performance and revenue per creator.
+                    </p>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-gray-300 mb-2">Genre *</label>
