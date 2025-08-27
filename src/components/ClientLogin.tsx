@@ -48,16 +48,18 @@ export function ClientLogin() {
           }
         }
 
-        // If profile exists but account type is not client-related
-        if (profileData && profileData.account_type !== 'client' && profileData.account_type !== 'white_label') {
+        // If profile exists but account type is not client
+        if (profileData && profileData.account_type !== 'client') {
           if (profileData.account_type === 'producer') {
             throw new Error('Please use the producer login page');
           } else if (profileData.account_type === 'rights_holder') {
             throw new Error('Please use the rights holder login page');
           } else if (profileData.account_type === 'artist_band') {
             throw new Error('Please use the artist login page');
+          } else if (profileData.account_type === 'white_label') {
+            throw new Error('Please use the white label client login page');
           } else {
-            throw new Error('Please use the producer login page');
+            throw new Error('Please use the appropriate login page for your account type');
           }
         }
       }
@@ -94,21 +96,8 @@ export function ClientLogin() {
       if (isAdmin) {
         navigate('/admin');
       } else {
-        // Check if white label client needs password setup
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('account_type, needs_password_setup')
-          .eq('email', loginEmail)
-          .maybeSingle();
-
-        if (profileData?.account_type === 'white_label' && profileData?.needs_password_setup) {
-          navigate('/white-label-password-setup');
-        } else if (profileData?.account_type === 'white_label') {
-          navigate('/white-label-dashboard');
-        } else {
-          // Default to client dashboard
-          navigate('/dashboard');
-        }
+        // Client accounts go to client dashboard
+        navigate('/dashboard');
       }
     } catch (err) {
       console.error('Login error:', err);
