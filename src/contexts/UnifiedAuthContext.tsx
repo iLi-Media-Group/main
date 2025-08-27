@@ -331,12 +331,31 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         }
         
         // CRITICAL SECURITY: Verify account type if expected account type is provided
-        // Allow admins to use any login form
-        if (expectedAccountType && profileData.account_type !== expectedAccountType && !isAdminEmail(email)) {
-          console.error('❌ Account type verification failed');
-          console.error('Expected account type:', expectedAccountType, 'Actual account type:', profileData.account_type);
-          await supabase.auth.signOut();
-          return { error: new Error(`Please use the ${expectedAccountType} login page`) };
+        // Only allow admins to bypass validation for specific login forms
+        if (expectedAccountType && profileData.account_type !== expectedAccountType) {
+          // Check if user is admin and if this login form is appropriate for their account type
+          const isAdmin = isAdminEmail(email);
+          const canUseThisLoginForm = isAdmin && (
+            // Admin users can use producer login if they have producer access
+            (expectedAccountType === 'producer' && profileData.account_type.includes('producer')) ||
+            // Admin users can use admin login if they have admin access
+            (expectedAccountType === 'admin' && profileData.account_type.includes('admin')) ||
+            // Admin users can use client login if they have client access (but they shouldn't)
+            (expectedAccountType === 'client' && profileData.account_type === 'client') ||
+            // Admin users can use artist login if they have artist access
+            (expectedAccountType === 'artist_band' && profileData.account_type === 'artist_band') ||
+            // Admin users can use rights holder login if they have rights holder access
+            (expectedAccountType === 'rights_holder' && profileData.account_type === 'rights_holder') ||
+            // Admin users can use white label login if they have white label access
+            (expectedAccountType === 'white_label' && profileData.account_type === 'white_label')
+          );
+          
+          if (!canUseThisLoginForm) {
+            console.error('❌ Account type verification failed');
+            console.error('Expected account type:', expectedAccountType, 'Actual account type:', profileData.account_type);
+            await supabase.auth.signOut();
+            return { error: new Error(`Please use the ${expectedAccountType} login page`) };
+          }
         }
         
         console.log('✅ Profile ownership and account type verified successfully');
