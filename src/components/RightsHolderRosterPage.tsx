@@ -73,12 +73,14 @@ interface RosterEntityMember {
 export function RightsHolderRosterPage() {
   const { user } = useUnifiedAuth();
   const [rosterEntities, setRosterEntities] = useState<RosterEntity[]>([]);
+  const [disabledRosterEntities, setDisabledRosterEntities] = useState<RosterEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'artist' | 'band' | 'producer'>('all');
   const [sortField, setSortField] = useState<'name' | 'date_entered' | 'total_revenue' | 'total_tracks'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [activeTab, setActiveTab] = useState<'active' | 'disabled'>('active');
   const [selectedEntity, setSelectedEntity] = useState<RosterEntity | null>(null);
   const [showEntityModal, setShowEntityModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -109,7 +111,7 @@ export function RightsHolderRosterPage() {
     if (user) {
       fetchRosterEntities();
     }
-  }, [user, searchTerm, filterType, sortField, sortOrder]);
+  }, [user, searchTerm, filterType, sortField, sortOrder, activeTab]);
 
   const fetchRosterEntities = async () => {
     if (!user) return;
@@ -118,70 +120,72 @@ export function RightsHolderRosterPage() {
       setLoading(true);
       setError(null);
 
-      // First, try to fetch from the analytics view
-      let query = supabase
-        .from('roster_entity_analytics')
+      // Fetch active entities
+      let activeQuery = supabase
+        .from('roster_entities')
         .select('*')
-        .eq('rights_holder_id', user.id);
+        .eq('rights_holder_id', user.id)
+        .eq('is_active', true);
 
-      // Apply filters
-      if (filterType !== 'all') {
-        query = query.eq('entity_type', filterType);
+      // Apply filters for active entities only when on active tab
+      if (activeTab === 'active' && filterType !== 'all') {
+        activeQuery = activeQuery.eq('entity_type', filterType);
       }
 
-      // Apply search
-      if (searchTerm) {
-        query = query.ilike('entity_name', `%${searchTerm}%`);
+      // Apply search for active entities only when on active tab
+      if (activeTab === 'active' && searchTerm) {
+        activeQuery = activeQuery.ilike('name', `%${searchTerm}%`);
       }
 
-      // Apply sorting
-      query = query.order(sortField, { ascending: sortOrder === 'asc' });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Analytics view error:', error);
-        // Fallback to base table if view fails
-        let fallbackQuery = supabase
-          .from('roster_entities')
-          .select('*')
-          .eq('rights_holder_id', user.id)
-          .eq('is_active', true);
-
-        // Apply filters
-        if (filterType !== 'all') {
-          fallbackQuery = fallbackQuery.eq('entity_type', filterType);
-        }
-
-        // Apply search
-        if (searchTerm) {
-          fallbackQuery = fallbackQuery.ilike('name', `%${searchTerm}%`);
-        }
-
-        // Apply sorting
-        fallbackQuery = fallbackQuery.order(sortField, { ascending: sortOrder === 'asc' });
-
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-        
-        if (fallbackError) throw fallbackError;
-        
-        // Add default analytics values
-        const entitiesWithDefaults = (fallbackData || []).map(entity => ({
-          ...entity,
-          entity_name: entity.name,
-          total_tracks: 0,
-          active_tracks: 0,
-          sync_proposals_completed: 0,
-          sync_proposals_pending: 0,
-          custom_sync_requests_completed: 0,
-          custom_sync_requests_pending: 0,
-          total_revenue: 0
-        }));
-        
-        setRosterEntities(entitiesWithDefaults);
+      // Apply sorting for active entities only when on active tab
+      if (activeTab === 'active') {
+        activeQuery = activeQuery.order(sortField, { ascending: sortOrder === 'asc' });
       } else {
-        setRosterEntities(data || []);
+        activeQuery = activeQuery.order('name', { ascending: true });
       }
+
+      const { data: activeData, error: activeError } = await activeQuery;
+
+      if (activeError) throw activeError;
+
+      // Fetch disabled entities (always fetch all disabled, no filters)
+      const { data: disabledData, error: disabledError } = await supabase
+        .from('roster_entities')
+        .select('*')
+        .eq('rights_holder_id', user.id)
+        .eq('is_active', false)
+        .order('name', { ascending: true });
+
+      if (disabledError) throw disabledError;
+
+      // Add default analytics values to active entities
+      const activeEntitiesWithDefaults = (activeData || []).map(entity => ({
+        ...entity,
+        entity_name: entity.name,
+        total_tracks: 0,
+        active_tracks: 0,
+        sync_proposals_completed: 0,
+        sync_proposals_pending: 0,
+        custom_sync_requests_completed: 0,
+        custom_sync_requests_pending: 0,
+        total_revenue: 0
+      }));
+
+      // Add default analytics values to disabled entities
+      const disabledEntitiesWithDefaults = (disabledData || []).map(entity => ({
+        ...entity,
+        entity_name: entity.name,
+        total_tracks: 0,
+        active_tracks: 0,
+        sync_proposals_completed: 0,
+        sync_proposals_pending: 0,
+        custom_sync_requests_completed: 0,
+        custom_sync_requests_pending: 0,
+        total_revenue: 0
+      }));
+
+      setRosterEntities(activeEntitiesWithDefaults);
+      setDisabledRosterEntities(disabledEntitiesWithDefaults);
 
     } catch (err) {
       console.error('Error fetching roster entities:', err);
@@ -308,6 +312,46 @@ export function RightsHolderRosterPage() {
     }
   };
 
+  const handleDisableEntity = async (entityId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('roster_entities')
+        .update({ is_active: false })
+        .eq('id', entityId)
+        .eq('rights_holder_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the roster entities
+      fetchRosterEntities();
+    } catch (err) {
+      console.error('Error disabling roster entity:', err);
+      setError('Failed to disable roster entity. Please try again.');
+    }
+  };
+
+  const handleEnableEntity = async (entityId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('roster_entities')
+        .update({ is_active: true })
+        .eq('id', entityId)
+        .eq('rights_holder_id', user.id);
+
+      if (error) throw error;
+
+      // Refresh the roster entities
+      fetchRosterEntities();
+    } catch (err) {
+      console.error('Error enabling roster entity:', err);
+      setError('Failed to enable roster entity. Please try again.');
+    }
+  };
+
   // Image upload handlers
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -416,10 +460,13 @@ export function RightsHolderRosterPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search roster entities..."
+                  placeholder={activeTab === 'active' ? "Search roster entities..." : "Search disabled roster entities..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                  disabled={activeTab === 'disabled'}
+                  className={`w-full pl-10 pr-4 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 ${
+                    activeTab === 'disabled' ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 />
               </div>
 
@@ -428,7 +475,10 @@ export function RightsHolderRosterPage() {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as any)}
-                  className="pl-8 pr-4 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm appearance-none cursor-pointer"
+                  disabled={activeTab === 'disabled'}
+                  className={`pl-8 pr-4 py-2 bg-white/5 border border-purple-500/20 rounded-lg text-white text-sm appearance-none ${
+                    activeTab === 'disabled' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
                 >
                   <option value="all">All Types</option>
                   <option value="artist">Artists</option>
@@ -438,8 +488,40 @@ export function RightsHolderRosterPage() {
                 <Filter className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               </div>
             </div>
+            {activeTab === 'disabled' && (
+              <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                <p className="text-yellow-400 text-sm">
+                  <AlertCircle className="w-4 h-4 inline mr-2" />
+                  Search and filters are disabled for disabled roster entities. All disabled entities are shown.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {/* Tabs */}
+        <div className="flex space-x-1 mb-6 bg-white/5 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('active')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'active'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Active Roster ({rosterEntities.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('disabled')}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'disabled'
+                ? 'bg-purple-600 text-white'
+                : 'text-gray-400 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            Disabled Roster ({disabledRosterEntities.length})
+          </button>
+        </div>
 
         {/* Roster List */}
         <Card className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20">
@@ -491,19 +573,38 @@ export function RightsHolderRosterPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rosterEntities.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
-                        <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
-                        <p>No roster entities found</p>
-                        <p className="text-sm mt-1">Add your first artist, band, or producer to get started</p>
-                      </td>
-                    </tr>
-                  ) : (
-                    rosterEntities.map((entity) => (
+                  {(() => {
+                    const currentEntities = activeTab === 'active' ? rosterEntities : disabledRosterEntities;
+                    const entityCount = currentEntities.length;
+                    
+                    if (entityCount === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={8} className="px-4 py-8 text-center text-gray-400">
+                            <Users className="w-12 h-12 mx-auto mb-4 text-gray-500" />
+                            <p>
+                              {activeTab === 'active' 
+                                ? 'No active roster entities found' 
+                                : 'No disabled roster entities found'
+                              }
+                            </p>
+                            <p className="text-sm mt-1">
+                              {activeTab === 'active' 
+                                ? 'Add your first artist, band, or producer to get started' 
+                                : 'Disabled roster entities will appear here'
+                              }
+                            </p>
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return currentEntities.map((entity) => (
                       <tr
                         key={entity.id}
-                        className="border-b border-gray-800 hover:bg-white/5 cursor-pointer"
+                        className={`border-b border-gray-800 hover:bg-white/5 cursor-pointer ${
+                          activeTab === 'disabled' ? 'opacity-60' : ''
+                        }`}
                         onClick={() => handleEntityClick(entity)}
                       >
                         <td className="px-4 py-4">
@@ -582,15 +683,33 @@ export function RightsHolderRosterPage() {
                             >
                               <Eye className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                // Handle edit
-                              }}
-                              className="p-1 text-gray-400 hover:text-blue-400 transition-colors"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
+                            {activeTab === 'active' ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Are you sure you want to disable ${entity.name}? This will hide their tracks from the library but preserve existing licenses.`)) {
+                                    handleDisableEntity(entity.id);
+                                  }
+                                }}
+                                className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                                title="Disable roster creator"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (confirm(`Are you sure you want to re-enable ${entity.name}? This will make their tracks visible in the library again.`)) {
+                                    handleEnableEntity(entity.id);
+                                  }
+                                }}
+                                className="p-1 text-gray-400 hover:text-green-400 transition-colors"
+                                title="Re-enable roster creator"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
