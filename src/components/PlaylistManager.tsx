@@ -376,11 +376,16 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-3 mt-auto">
                   <a
-                    href={`/music-playlist/${playlist.slug}`}
+                    href={`/playlist/${playlist.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
                     title="View playlist"
+                    onClick={() => {
+                      console.log('🎵 Playlist View Button Clicked');
+                      console.log('📋 Playlist:', playlist);
+                      console.log('🔗 URL:', `/playlist/${playlist.slug}`);
+                    }}
                   >
                     <ExternalLink className="w-4 h-4 mx-auto mb-1" />
                     View
