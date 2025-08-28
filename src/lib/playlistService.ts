@@ -149,7 +149,6 @@ export class PlaylistService {
     }
 
     // Get the creator's profile information separately
-    console.log('👤 Fetching creator profile for ID:', playlist.producer_id);
     const { data: creator, error: creatorError } = await supabase
       .from('profiles')
       .select(`
@@ -163,14 +162,10 @@ export class PlaylistService {
       .single();
 
     if (creatorError) {
-      console.log('❌ Error fetching creator profile:', creatorError);
       // Continue without creator info rather than failing
-    } else {
-      console.log('✅ Creator profile fetched:', creator);
     }
 
     // Get tracks for this playlist
-    console.log('🎵 Fetching tracks for playlist ID:', playlist.id);
     const { data: tracks, error: tracksError } = await supabase
       .from('playlist_tracks')
       .select(`
@@ -209,11 +204,7 @@ export class PlaylistService {
       .order('position', { ascending: true });
 
     if (tracksError) {
-      console.log('❌ Error fetching tracks:', tracksError);
       // Don't throw error, just continue with empty tracks array
-      console.log('⚠️ Continuing with empty tracks array due to error');
-    } else {
-      console.log('✅ Tracks fetched:', tracks?.length || 0, 'tracks');
     }
 
     const result = {
@@ -221,14 +212,6 @@ export class PlaylistService {
       producer: creator, // Add the creator profile info
       tracks: tracks || []
     };
-    
-    console.log('✅ PlaylistService.getPlaylist returning result:', {
-      id: result.id,
-      name: result.name,
-      slug: result.slug,
-      tracks_count: result.tracks.length,
-      has_producer: !!result.producer
-    });
     
     return result;
   }
