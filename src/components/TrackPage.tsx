@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic } from 'lucide-react';
+import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic, Plus } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
 import { TrackClearanceBadges } from './TrackClearanceBadges';
+import { AddToPlaylistModal } from './AddToPlaylistModal';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -110,6 +111,7 @@ export function TrackPage() {
   const [cleanVersion, setCleanVersion] = useState<Track | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
 
   // Fetch clean version if this is an explicit track
   useEffect(() => {
@@ -640,6 +642,16 @@ export function TrackPage() {
                     </>
                   )}
                 </button>
+
+                {user && (
+                  <button
+                    onClick={() => setShowAddToPlaylistModal(true)}
+                    className="py-3 px-6 rounded-lg text-white font-semibold transition-colors flex items-center bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add to Playlist
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -673,6 +685,14 @@ export function TrackPage() {
               producerId={track.producer.id}
             />
           )}
+
+          <AddToPlaylistModal
+            isOpen={showAddToPlaylistModal}
+            onClose={() => setShowAddToPlaylistModal(false)}
+            trackId={track.id}
+            trackTitle={track.title}
+            accountType={accountType}
+          />
         </>
       )}
     </div>

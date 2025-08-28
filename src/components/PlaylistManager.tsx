@@ -17,6 +17,7 @@ import { PlaylistService } from '../lib/playlistService';
 import { Playlist, CreatePlaylistData, UpdatePlaylistData } from '../types/playlist';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
+import { CatalogBrowserModal } from './CatalogBrowserModal';
 
 interface PlaylistManagerProps {
   onPlaylistCreated?: (playlist: Playlist) => void;
@@ -34,6 +35,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPlaylist, setEditingPlaylist] = useState<Playlist | null>(null);
   const [showAddTracksModal, setShowAddTracksModal] = useState(false);
+  const [showCatalogBrowser, setShowCatalogBrowser] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
   const [producerTracks, setProducerTracks] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,8 +206,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
 
   const handleAddTracks = (playlist: Playlist) => {
     setSelectedPlaylist(playlist);
-    loadProducerTracks();
-    setShowAddTracksModal(true);
+    setShowCatalogBrowser(true);
   };
 
   const handleAddTrackToPlaylist = async (trackId: string) => {
@@ -634,6 +635,21 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
             </div>
           </div>
         </div>
+      )}
+
+      {/* Catalog Browser Modal */}
+      {showCatalogBrowser && selectedPlaylist && (
+        <CatalogBrowserModal
+          isOpen={showCatalogBrowser}
+          onClose={() => {
+            setShowCatalogBrowser(false);
+            setSelectedPlaylist(null);
+          }}
+          playlistId={selectedPlaylist.id}
+          onTrackAdded={() => {
+            loadPlaylists(); // Refresh playlists to show updated track count
+          }}
+        />
       )}
     </div>
   );
