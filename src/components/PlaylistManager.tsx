@@ -649,6 +649,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
           onTrackAdded={() => {
             loadPlaylists(); // Refresh playlists to show updated track count
           }}
+          accountType={accountType}
         />
       )}
     </div>

@@ -5,12 +5,14 @@ import { Track } from '../types';
 import { parseArrayField } from '../lib/utils';
 import { AudioPlayer } from './AudioPlayer';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface CatalogBrowserModalProps {
   isOpen: boolean;
   onClose: () => void;
   playlistId: string;
   onTrackAdded: () => void;
+  accountType?: string;
 }
 
 // Track Image Component with Signed URL
@@ -72,8 +74,10 @@ export function CatalogBrowserModal({
   isOpen, 
   onClose, 
   playlistId, 
-  onTrackAdded 
+  onTrackAdded,
+  accountType = 'client'
 }: CatalogBrowserModalProps) {
+  const { user } = useUnifiedAuth();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -95,13 +99,27 @@ export function CatalogBrowserModal({
 
   const loadFilters = async () => {
     try {
-      // Load genres
-      const { data: genreData } = await supabase
+      // Build base query for filters
+      let genreQuery = supabase
         .from('tracks')
         .select('genres')
         .not('genres', 'is', null)
         .is('deleted_at', null);
 
+      let moodQuery = supabase
+        .from('tracks')
+        .select('moods')
+        .not('moods', 'is', null)
+        .is('deleted_at', null);
+
+      // Filter based on account type
+      if (accountType !== 'client' && user) {
+        genreQuery = genreQuery.eq('track_producer_id', user.id);
+        moodQuery = moodQuery.eq('track_producer_id', user.id);
+      }
+
+      // Load genres
+      const { data: genreData } = await genreQuery;
       const allGenres = new Set<string>();
       genreData?.forEach(track => {
         const trackGenres = parseArrayField(track.genres);
@@ -110,12 +128,7 @@ export function CatalogBrowserModal({
       setGenres(Array.from(allGenres).sort());
 
       // Load moods
-      const { data: moodData } = await supabase
-        .from('tracks')
-        .select('moods')
-        .not('moods', 'is', null)
-        .is('deleted_at', null);
-
+      const { data: moodData } = await moodQuery;
       const allMoods = new Set<string>();
       moodData?.forEach(track => {
         const trackMoods = parseArrayField(track.moods);
@@ -163,8 +176,25 @@ export function CatalogBrowserModal({
             avatar_path
           )
         `, { count: 'exact' })
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false });
+        .is('deleted_at', null);
+
+      // Filter tracks based on account type
+      if (accountType === 'client') {
+        // Clients can see all tracks from the catalog
+        query = query.order('created_at', { ascending: false });
+      } else {
+        // Artists, rights holders, and producers can only see their own tracks
+        if (user) {
+          query = query.eq('track_producer_id', user.id);
+        } else {
+          // If no user, return empty result
+          setTracks([]);
+          setTotalPages(1);
+          setLoading(false);
+          return;
+        }
+        query = query.order('created_at', { ascending: false });
+      }
 
       // Apply filters
       if (searchTerm) {
@@ -247,15 +277,24 @@ export function CatalogBrowserModal({
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-blue-900/90 rounded-xl p-6 max-w-6xl w-full mx-4 shadow-lg border border-blue-500/40 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-2xl font-semibold text-white">Browse Catalog</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
+                 <div className="flex items-center justify-between mb-6">
+           <div>
+             <h3 className="text-2xl font-semibold text-white">
+               {accountType === 'client' ? 'Browse Catalog' : 'Your Tracks'}
+             </h3>
+             {accountType !== 'client' && (
+               <p className="text-gray-400 text-sm mt-1">
+                 Select from your uploaded tracks to add to this playlist
+               </p>
+             )}
+           </div>
+           <button
+             onClick={onClose}
+             className="text-gray-400 hover:text-white transition-colors"
+           >
+             <X className="w-6 h-6" />
+           </button>
+         </div>
 
         {/* Search and Filters */}
         <div className="mb-6 space-y-4">
@@ -263,13 +302,13 @@ export function CatalogBrowserModal({
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search tracks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-                />
+                                 <input
+                   type="text"
+                   placeholder={accountType === 'client' ? "Search tracks..." : "Search your tracks..."}
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                   className="w-full pl-10 pr-4 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                 />
               </div>
             </div>
             <button
