@@ -335,6 +335,7 @@ const App = () => {
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+        <Route path="/playlist/:slug" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
         <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
@@ -548,8 +549,7 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-                 <Route path="/playlist/:slug" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
-                 <Route path="/favorited-playlists" element={
+        <Route path="/favorited-playlists" element={
           <ProtectedRoute>
             <LayoutWrapper>
               <FavoritedPlaylistsPage />
