@@ -1584,9 +1584,9 @@ const getPlanLevel = (plan: string): number => {
 
 
         {/* License Usage and Discount Codes - Side by Side */}
-        <div className="mb-8 grid grid-cols-1 lg:grid-cols-6 gap-6">
-          {/* License Usage Section - Narrower */}
-          <div className="lg:col-span-3 p-6 glass-card rounded-lg">
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-10 gap-6">
+          {/* License Usage Section - 40% less wide */}
+          <div className="lg:col-span-4 p-6 glass-card rounded-lg">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -1674,7 +1674,7 @@ const getPlanLevel = (plan: string): number => {
         </div>
 
           {/* Discount Codes Section - Side by Side */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-6">
             <DiscountCodesSection />
           </div>
         </div>
