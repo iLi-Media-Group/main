@@ -34,15 +34,16 @@ async function generateWelcomePDF(firstName: string) {
 }
 
 serve(async (req) => {
+  // CORS headers for all responses
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS'
+  };
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
-      headers: { 
-        'Access-Control-Allow-Origin': '*', 
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS' 
-      } 
-    });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -156,15 +157,24 @@ serve(async (req) => {
         if (!response.ok) {
           const errorText = await response.text();
           console.error("Test email send failed:", errorText);
-          return new Response(`Test email failed: ${errorText}`, { status: 500 });
+          return new Response(`Test email failed: ${errorText}`, { 
+            status: 500,
+            headers: corsHeaders
+          });
         }
 
         const result = await response.json();
         console.log('Test email sent successfully:', result);
-        return new Response("Test welcome email sent!", { status: 200 });
+        return new Response("Test welcome email sent!", { 
+          status: 200,
+          headers: corsHeaders
+        });
       }
       
-      return new Response("Test email parameter required", { status: 400 });
+      return new Response("Test email parameter required", { 
+        status: 400,
+        headers: corsHeaders
+      });
     }
 
     const { email, first_name, account_type = 'client' } = await req.json();
@@ -173,7 +183,10 @@ serve(async (req) => {
     
     if (!email) {
       console.error('Email is required');
-      return new Response("Email is required", { status: 400 });
+      return new Response("Email is required", { 
+        status: 400,
+        headers: corsHeaders
+      });
     }
     
     const pdfBytes = await generateWelcomePDF(first_name);
@@ -300,14 +313,23 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Email send failed:", errorText);
-      return new Response(`Failed to send welcome email: ${errorText}`, { status: 500 });
+      return new Response(`Failed to send welcome email: ${errorText}`, { 
+        status: 500,
+        headers: corsHeaders
+      });
     }
 
     const result = await response.json();
     console.log('Email sent successfully:', result);
-    return new Response("Welcome email sent!", { status: 200 });
+    return new Response("Welcome email sent!", { 
+      status: 200,
+      headers: corsHeaders
+    });
   } catch (err) {
     console.error("Edge function error:", err);
-    return new Response(`Error sending email: ${err.message}`, { status: 500 });
+    return new Response(`Error sending email: ${err.message}`, { 
+      status: 500,
+      headers: corsHeaders
+    });
   }
 }); 
