@@ -168,7 +168,7 @@ export function CatalogBrowserModal({
           has_vocals,
           is_sync_only,
           track_producer_id,
-          producer:profiles!tracks_track_producer_id (
+          producer:profiles!tracks_track_producer_id_fkey (
             id,
             first_name,
             last_name,
