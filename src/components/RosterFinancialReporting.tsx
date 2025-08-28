@@ -336,12 +336,12 @@ export function RosterFinancialReporting() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
                   <h2 className="text-2xl font-bold text-white">Roster Financial Reporting</h2>
-        <p className="text-gray-600 font-bold">Comprehensive revenue tracking and payment management for your roster</p>
+        <p className="text-white font-bold">Comprehensive revenue tracking and payment management for your roster</p>
         </div>
         <div className="flex items-center space-x-2">
           <button
