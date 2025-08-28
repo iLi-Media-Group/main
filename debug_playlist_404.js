@@ -1,86 +1,83 @@
-// Debug script to identify playlist 404 issue
+// Debug script to test playlist access
 // Run this in the browser console on mybeatfi.io
 
-async function debugPlaylist404() {
-  console.log('🔍 Debugging playlist 404 issue...');
+console.log('🔍 Testing playlist access...');
+
+// Test the specific playlists we know exist
+const testSlugs = [
+  'john-sama/test-list',           // Client playlist
+  'knock-rio-beats/hiphop-playlist' // Producer playlist
+];
+
+async function testPlaylistAccess() {
+  console.log('🌐 Current URL:', window.location.href);
+  console.log('🔧 Testing React Router setup...');
   
-  const testSlug = 'john-sama/test-list';
-  console.log('Testing slug:', testSlug);
+  // Check if we're on the right domain
+  if (!window.location.href.includes('mybeatfi.io')) {
+    console.log('⚠️ Not on mybeatfi.io domain');
+    return;
+  }
   
-  try {
-    // 1. Check if the playlist exists in the database
-    console.log('\n1. Checking if playlist exists in database...');
-    const { data: playlists, error: dbError } = await supabase
-      .from('playlists')
-      .select('*')
-      .eq('slug', testSlug);
+  for (const slug of testSlugs) {
+    console.log(`\n📋 Testing playlist: ${slug}`);
     
-    if (dbError) {
-      console.error('❌ Database error:', dbError);
-      return;
-    }
-    
-    console.log('📊 Database query result:', playlists);
-    
-    if (playlists && playlists.length > 0) {
-      console.log('✅ Playlist found in database:', playlists[0]);
-      
-      // 2. Check if the user can access it
-      console.log('\n2. Checking user access...');
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 Current user:', user ? user.id : 'Not logged in');
-      
-      if (user) {
-        console.log('🔐 User is logged in, checking ownership...');
-        const playlist = playlists[0];
-        console.log('📋 Playlist owner:', playlist.producer_id);
-        console.log('👤 Current user:', user.id);
-        console.log('🔗 Is owner?', playlist.producer_id === user.id);
-        console.log('🌐 Is public?', playlist.is_public);
-        console.log('🏷️ Creator type:', playlist.creator_type);
-      }
-      
-    } else {
-      console.log('❌ No playlist found with slug:', testSlug);
-      
-      // 3. Check what playlists exist for the current user
-      console.log('\n3. Checking user\'s playlists...');
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        const { data: userPlaylists, error: userError } = await supabase
-          .from('playlists')
-          .select('*')
-          .eq('producer_id', user.id);
-        
-        if (userError) {
-          console.error('❌ Error fetching user playlists:', userError);
-        } else {
-          console.log('📋 User\'s playlists:', userPlaylists);
-          
-          if (userPlaylists && userPlaylists.length > 0) {
-            console.log('🎯 Available playlist slugs:');
-            userPlaylists.forEach((p, i) => {
-              console.log(`  ${i + 1}. ${p.name} -> ${p.slug} (${p.creator_type})`);
-            });
-          }
-        }
-      }
-    }
-    
-    // 4. Test the PlaylistService.getPlaylist method directly
-    console.log('\n4. Testing PlaylistService.getPlaylist...');
     try {
-      const playlistData = await PlaylistService.getPlaylist(testSlug);
-      console.log('🎵 PlaylistService result:', playlistData);
-    } catch (serviceError) {
-      console.error('❌ PlaylistService error:', serviceError);
+      // Test direct API call to verify playlist exists
+      const response = await fetch(`https://yciqkebqlajqbpwlujma.supabase.co/rest/v1/playlists?select=*&slug=eq.${slug}`, {
+        headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljaXFrZWJxbGFqcWJwd2x1am1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzOTI4OTAsImV4cCI6MjA3MTk2ODg5MH0.2dcd40dc-9e3a-43a7-93de-a22a4aaca532',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljaXFrZWJxbGFqcWJwd2x1am1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzOTI4OTAsImV4cCI6MjA3MTk2ODg5MH0.2dcd40dc-9e3a-43a7-93de-a22a4aaca532'
+        }
+      });
+      
+      const data = await response.json();
+      console.log(`✅ API Response for ${slug}:`, data);
+      
+      if (data && data.length > 0) {
+        console.log(`✅ Playlist found:`, data[0]);
+        
+        // Test the exact URL that should work
+        const testUrl = `https://mybeatfi.io/playlist/${slug}`;
+        console.log(`🔗 Testing URL: ${testUrl}`);
+        
+        // Try to navigate to the URL
+        console.log('🔄 Attempting navigation...');
+        window.location.href = testUrl;
+        
+      } else {
+        console.log(`❌ Playlist not found in API`);
+      }
+      
+    } catch (error) {
+      console.log(`❌ API Error for ${slug}:`, error);
     }
-    
-  } catch (error) {
-    console.error('❌ Debug failed:', error);
   }
 }
 
-// Run the debug
-debugPlaylist404();
+// Also test if we can access the route from the current page
+function testCurrentPageRouting() {
+  console.log('\n🧪 Testing current page routing...');
+  
+  // Check if React Router is available
+  if (window.ReactRouterDOM) {
+    console.log('✅ React Router DOM is available');
+  } else {
+    console.log('❌ React Router DOM not found');
+  }
+  
+  // Check if we can access the PlaylistView component
+  if (window.PlaylistView) {
+    console.log('✅ PlaylistView component is available');
+  } else {
+    console.log('❌ PlaylistView component not found');
+  }
+  
+  // Test a simple navigation
+  console.log('🔄 Testing navigation to a known working route...');
+  window.location.href = '/catalog';
+}
+
+// Run the tests
+testPlaylistAccess();
+// testCurrentPageRouting();

@@ -58,3 +58,62 @@ FROM custom_sync_requests csr
 WHERE csr.status = 'open' 
   AND csr.end_date >= NOW()
 LIMIT 1; 
+
+-- Check RLS policies for playlists table
+-- Run this in the Supabase SQL Editor
+
+-- 1. Check all RLS policies on playlists table
+SELECT 
+    policyname,
+    permissive,
+    roles,
+    cmd,
+    qual,
+    with_check
+FROM pg_policies 
+WHERE tablename = 'playlists'
+ORDER BY policyname;
+
+-- 2. Check if RLS is enabled on playlists table
+SELECT 
+    schemaname,
+    tablename,
+    rowsecurity
+FROM pg_tables 
+WHERE tablename = 'playlists';
+
+-- 3. Test if we can access the specific playlist as an anonymous user
+SELECT 
+    id,
+    name,
+    slug,
+    is_public,
+    creator_type,
+    producer_id
+FROM playlists 
+WHERE slug = 'john-sama/test-list';
+
+-- 4. Test if we can access any public playlists
+SELECT 
+    id,
+    name,
+    slug,
+    is_public,
+    creator_type,
+    producer_id
+FROM playlists 
+WHERE is_public = true
+LIMIT 5;
+
+-- 5. Check if there are any tracks in the playlist
+SELECT 
+    pt.id,
+    pt.playlist_id,
+    pt.track_id,
+    pt.position,
+    t.title,
+    t.artist
+FROM playlist_tracks pt
+LEFT JOIN tracks t ON pt.track_id = t.id
+WHERE pt.playlist_id = 'c0fe350b-5328-46af-9d7b-a991b7db339b'
+ORDER BY pt.position; 

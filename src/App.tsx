@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useSearchParams, Navigate, useParams } from 'react-router-dom';
 import { ScrollToTop } from "./components/ScrollToTop";
 import { SearchBox } from './components/SearchBox';
 import { ProducerLogin } from './components/ProducerLogin';
@@ -88,6 +88,7 @@ import { PlaylistView } from './components/PlaylistView';
 import { PlaylistAnalytics } from './components/PlaylistAnalytics';
 import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
 import { FollowingPage } from './components/FollowingPage';
+import { TestPlaylistRoute } from './components/TestPlaylistRoute';
 // Removed refresh prevention imports to fix tab switching issue
 
 // Rights Holders System Imports
@@ -335,6 +336,7 @@ const App = () => {
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
+        <Route path="/test-playlist/:slug" element={<LayoutWrapper><TestPlaylistRoute /></LayoutWrapper>} />
         <Route path="/playlist/:slug" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
         <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
@@ -542,7 +544,7 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-        <Route path="/producer/playlists/:playlistId/analytics" element={
+                <Route path="/producer/playlists/:playlistId/analytics" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
               <PlaylistAnalytics />
