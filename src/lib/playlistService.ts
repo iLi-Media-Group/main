@@ -119,7 +119,9 @@ export class PlaylistService {
 
   // Get a single playlist with tracks
   static async getPlaylist(slug: string): Promise<PlaylistWithTracks | null> {
-    const { data: playlist, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    let query = supabase
       .from('playlists')
       .select(`
         *,
@@ -131,9 +133,17 @@ export class PlaylistService {
           avatar_path
         )
       `)
-      .eq('slug', slug)
-      .eq('is_public', true)
-      .single();
+      .eq('slug', slug);
+
+    // If user is logged in, allow them to see their own playlists regardless of public status
+    // If not logged in, only show public playlists
+    if (user) {
+      query = query.or(`is_public.eq.true,producer_id.eq.${user.id}`);
+    } else {
+      query = query.eq('is_public', true);
+    }
+
+    const { data: playlist, error } = await query.single();
 
     if (error || !playlist) return null;
 
