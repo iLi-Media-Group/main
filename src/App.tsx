@@ -85,6 +85,7 @@ import { ProducerFileReleaseManager } from './components/ProducerFileReleaseMana
 import { BusinessVerificationForm } from './components/BusinessVerificationForm';
 import { PlaylistManager } from './components/PlaylistManager';
 import { PlaylistView } from './components/PlaylistView';
+import { TestPlaylistView } from './components/TestPlaylistView';
 import { PlaylistAnalytics } from './components/PlaylistAnalytics';
 import { FavoritedPlaylistsPage } from './components/FavoritedPlaylistsPage';
 import { FollowingPage } from './components/FollowingPage';
@@ -337,7 +338,7 @@ const App = () => {
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
         <Route path="/test-playlist/:slug" element={<LayoutWrapper><TestPlaylistRoute /></LayoutWrapper>} />
-        <Route path="/playlist-view/:slug" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
+        <Route path="/playlist-view/:slug" element={<TestPlaylistView />} />
         <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
         <Route path="/white-label" element={<LayoutWrapper><WhiteLabelPage /></LayoutWrapper>} />
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
