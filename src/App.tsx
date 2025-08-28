@@ -106,6 +106,7 @@ import SyncLicensingCourse from './components/SyncLicensingCourse';
          import { RightsHolderLicensing } from './components/RightsHolderLicensing';
          import { RightsHolderBankingPage } from './components/RightsHolderBankingPage';
          import { RightsHolderRosterPage } from './components/RightsHolderRosterPage';
+import { RosterFinancialReporting } from './components/RosterFinancialReporting';
 import { RightsHolderResourcesPage } from './components/RightsHolderResourcesPage';
 import { RightsVerificationAdmin } from './components/RightsVerificationAdmin';
 import { RightsHolderTest } from './components/RightsHolderTest';
@@ -765,6 +766,13 @@ const App = () => {
            <RightsHolderProtectedRoute>
              <LayoutWrapper>
                <RightsHolderRosterPage />
+             </LayoutWrapper>
+           </RightsHolderProtectedRoute>
+         } />
+         <Route path="/rights-holder/financial-reporting" element={
+           <RightsHolderProtectedRoute>
+             <LayoutWrapper>
+               <RosterFinancialReporting />
              </LayoutWrapper>
            </RightsHolderProtectedRoute>
          } />

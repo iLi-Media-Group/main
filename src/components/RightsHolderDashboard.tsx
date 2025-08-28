@@ -833,6 +833,15 @@ export function RightsHolderDashboard() {
                   <span className="text-white">Manage Playlists</span>
                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
                 </Link>
+
+                <Link
+                  to="/rights-holder/financial-reporting"
+                  className="flex items-center p-3 bg-green-600/20 hover:bg-green-600/30 rounded-lg transition-colors group"
+                >
+                  <BarChart3 className="w-5 h-5 text-green-400 mr-3" />
+                  <span className="text-white">Financial Reporting</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
             </div>
           </div>
