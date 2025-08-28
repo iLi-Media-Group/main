@@ -1,76 +1,56 @@
--- Check what exists in the current database tables
+-- Check what tables exist for revenue tracking
+-- This will help us understand what data sources are available
 
--- Check if instruments table exists
-SELECT 
-    'Instruments table check' as info,
-    EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'instruments'
-    ) as instruments_table_exists;
+-- Check if roster_revenue_transactions exists
+SELECT 'roster_revenue_transactions' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'roster_revenue_transactions'
+) as exists;
 
--- Check if instrument_categories table exists  
-SELECT 
-    'Instrument categories table check' as info,
-    EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'instrument_categories'
-    ) as instrument_categories_table_exists;
+-- Check if sync_proposals exists and has revenue data
+SELECT 'sync_proposals' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'sync_proposals'
+) as exists;
 
--- Show media_types table structure
-SELECT 
-    'Media types table structure' as info,
-    column_name,
-    data_type,
-    is_nullable
+-- Check if custom_sync_requests exists
+SELECT 'custom_sync_requests' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'custom_sync_requests'
+) as exists;
+
+-- Check if sales exists
+SELECT 'sales' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'sales'
+) as exists;
+
+-- Check if tracks exists and has roster_entity_id
+SELECT 'tracks' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'tracks'
+) as exists;
+
+-- Check if tracks has roster_entity_id column
+SELECT 'tracks.roster_entity_id' as column_name, EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'tracks' AND column_name = 'roster_entity_id'
+) as exists;
+
+-- Check if roster_entities exists
+SELECT 'roster_entities' as table_name, EXISTS (
+    SELECT 1 FROM information_schema.tables 
+    WHERE table_name = 'roster_entities'
+) as exists;
+
+-- Check what columns sync_proposals has
+SELECT column_name, data_type 
 FROM information_schema.columns 
-WHERE table_schema = 'public' 
-AND table_name = 'media_types'
+WHERE table_name = 'sync_proposals' 
 ORDER BY ordinal_position;
 
--- Show sample media_types data
-SELECT 
-    'Sample media_types data' as info,
-    id,
-    name
-FROM media_types 
-LIMIT 10;
-
--- Show instruments table structure (if exists)
-SELECT 
-    'Instruments table structure' as info,
-    column_name,
-    data_type,
-    is_nullable
+-- Check what columns custom_sync_requests has
+SELECT column_name, data_type 
 FROM information_schema.columns 
-WHERE table_schema = 'public' 
-AND table_name = 'instruments'
+WHERE table_name = 'custom_sync_requests' 
 ORDER BY ordinal_position;
-
--- Show sample instruments data (if exists)
-SELECT 
-    'Sample instruments data' as info,
-    id,
-    name
-FROM instruments 
-LIMIT 10;
-
--- Show instrument_categories table structure (if exists)
-SELECT 
-    'Instrument categories table structure' as info,
-    column_name,
-    data_type,
-    is_nullable
-FROM information_schema.columns 
-WHERE table_schema = 'public' 
-AND table_name = 'instrument_categories'
-ORDER BY ordinal_position;
-
--- Show sample instrument_categories data (if exists)
-SELECT 
-    'Sample instrument_categories data' as info,
-    id,
-    name
-FROM instrument_categories 
-LIMIT 10;

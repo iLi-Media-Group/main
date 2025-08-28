@@ -94,13 +94,13 @@ export function RosterFinancialReporting() {
   // Filter states
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedEntity, setSelectedEntity] = useState<string>('all');
-  const [selectedEntityType, setSelectedEntityType] = useState<string>('all');
+  const [selectedCreator, setSelectedCreator] = useState<string>('all');
+  const [selectedCreatorType, setSelectedCreatorType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   
   // View states
   const [activeTab, setActiveTab] = useState<'monthly' | 'ytd' | 'payments'>('monthly');
-  const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set());
+  const [expandedCreators, setExpandedCreators] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState<string>('total_net_revenue');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -108,7 +108,7 @@ export function RosterFinancialReporting() {
     if (user) {
       fetchFinancialData();
     }
-  }, [user, selectedYear, selectedMonth, selectedEntity, selectedEntityType, activeTab]);
+  }, [user, selectedYear, selectedMonth, selectedCreator, selectedCreatorType, activeTab]);
 
   const fetchFinancialData = async () => {
     if (!user) return;
@@ -143,12 +143,12 @@ export function RosterFinancialReporting() {
       query = query.eq('month', selectedMonth);
     }
 
-    if (selectedEntity !== 'all') {
-      query = query.eq('roster_entity_id', selectedEntity);
+    if (selectedCreator !== 'all') {
+      query = query.eq('roster_entity_id', selectedCreator);
     }
 
-    if (selectedEntityType !== 'all') {
-      query = query.eq('entity_type', selectedEntityType);
+    if (selectedCreatorType !== 'all') {
+      query = query.eq('entity_type', selectedCreatorType);
     }
 
     if (searchTerm) {
@@ -162,27 +162,146 @@ export function RosterFinancialReporting() {
   };
 
   const fetchYTDData = async () => {
-    let query = supabase
-      .from('roster_ytd_analytics')
-      .select('*')
-      .eq('rights_holder_id', user.id);
+    try {
+      // Get current year
+      const currentYear = new Date().getFullYear();
+      
+      // Query sync proposals for the current year
+      const { data: syncProposals, error: spError } = await supabase
+        .from('sync_proposals')
+        .select(`
+          id,
+          final_amount,
+          payment_status,
+          created_at,
+          track_id,
+          tracks!inner(
+            roster_entity_id,
+            roster_entities!inner(
+              id,
+              name,
+              entity_type,
+              rights_holder_id
+            )
+          )
+        `)
+        .eq('status', 'accepted')
+        .eq('tracks.roster_entities.rights_holder_id', user.id)
+        .gte('created_at', `${currentYear}-01-01`)
+        .lte('created_at', `${currentYear}-12-31`);
 
-    if (selectedEntity !== 'all') {
-      query = query.eq('roster_entity_id', selectedEntity);
+      if (spError) throw spError;
+
+      // Query custom sync requests for the current year
+      const { data: customSyncRequests, error: csrError } = await supabase
+        .from('custom_sync_requests')
+        .select(`
+          id,
+          final_amount,
+          payment_status,
+          created_at,
+          selected_rights_holder_id
+        `)
+        .eq('status', 'completed')
+        .eq('selected_rights_holder_id', user.id)
+        .gte('created_at', `${currentYear}-01-01`)
+        .lte('created_at', `${currentYear}-12-31`);
+
+      if (csrError) throw csrError;
+
+      // Process and combine the data
+      const ytdData = processYTDData(syncProposals || [], customSyncRequests || []);
+      setYtdData(ytdData);
+    } catch (error) {
+      console.error('Error fetching YTD data:', error);
+      throw error;
     }
+  };
 
-    if (selectedEntityType !== 'all') {
-      query = query.eq('entity_type', selectedEntityType);
-    }
+  const processYTDData = (syncProposals: any[], customSyncRequests: any[]) => {
+    // Group by roster creator
+    const creatorMap = new Map();
 
-    if (searchTerm) {
-      query = query.ilike('entity_name', `%${searchTerm}%`);
-    }
+    // Process sync proposals
+    syncProposals.forEach(sp => {
+      const creatorId = sp.tracks?.roster_entities?.id;
+      if (!creatorId) return;
 
-    const { data, error } = await query.order(sortField, { ascending: sortOrder === 'asc' });
+      if (!creatorMap.has(creatorId)) {
+        creatorMap.set(creatorId, {
+          roster_entity_id: creatorId,
+          entity_name: sp.tracks.roster_entities.name,
+          entity_type: sp.tracks.roster_entities.entity_type,
+          rights_holder_id: sp.tracks.roster_entities.rights_holder_id,
+          current_year: new Date().getFullYear(),
+          total_transactions_ytd: 0,
+          total_gross_revenue_ytd: 0,
+          total_net_revenue_ytd: 0,
+          license_fee_revenue_ytd: 0,
+          sync_proposal_revenue_ytd: 0,
+          custom_sync_revenue_ytd: 0,
+          royalty_payment_revenue_ytd: 0,
+          advance_payment_revenue_ytd: 0,
+          paid_transactions_ytd: 0,
+          paid_amount_ytd: 0,
+          pending_amount_ytd: 0
+        });
+      }
 
-    if (error) throw error;
-    setYtdData(data || []);
+      const creator = creatorMap.get(creatorId);
+      creator.total_transactions_ytd++;
+      creator.total_gross_revenue_ytd += sp.final_amount || 0;
+      creator.total_net_revenue_ytd += sp.final_amount || 0;
+      creator.sync_proposal_revenue_ytd += sp.final_amount || 0;
+      
+      if (sp.payment_status === 'paid') {
+        creator.paid_transactions_ytd++;
+        creator.paid_amount_ytd += sp.final_amount || 0;
+      } else {
+        creator.pending_amount_ytd += sp.final_amount || 0;
+      }
+    });
+
+    // Process custom sync requests
+    customSyncRequests.forEach(csr => {
+      const creatorId = 'custom_sync'; // For custom sync, we'll group them together
+      
+      if (!creatorMap.has(creatorId)) {
+        creatorMap.set(creatorId, {
+          roster_entity_id: creatorId,
+          entity_name: 'Custom Sync Requests',
+          entity_type: 'custom_sync',
+          rights_holder_id: csr.selected_rights_holder_id,
+          current_year: new Date().getFullYear(),
+          total_transactions_ytd: 0,
+          total_gross_revenue_ytd: 0,
+          total_net_revenue_ytd: 0,
+          license_fee_revenue_ytd: 0,
+          sync_proposal_revenue_ytd: 0,
+          custom_sync_revenue_ytd: 0,
+          royalty_payment_revenue_ytd: 0,
+          advance_payment_revenue_ytd: 0,
+          paid_transactions_ytd: 0,
+          paid_amount_ytd: 0,
+          pending_amount_ytd: 0
+        });
+      }
+
+      const creator = creatorMap.get(creatorId);
+      creator.total_transactions_ytd++;
+      creator.total_gross_revenue_ytd += csr.final_amount || 0;
+      creator.total_net_revenue_ytd += csr.final_amount || 0;
+      creator.custom_sync_revenue_ytd += csr.final_amount || 0;
+      
+      if (csr.payment_status === 'paid') {
+        creator.paid_transactions_ytd++;
+        creator.paid_amount_ytd += csr.final_amount || 0;
+      } else {
+        creator.pending_amount_ytd += csr.final_amount || 0;
+      }
+    });
+
+    return Array.from(creatorMap.values());
   };
 
   const fetchPaymentSchedules = async () => {
@@ -191,12 +310,12 @@ export function RosterFinancialReporting() {
       .select('*')
       .eq('rights_holder_id', user.id);
 
-    if (selectedEntity !== 'all') {
-      query = query.eq('roster_entity_id', selectedEntity);
+    if (selectedCreator !== 'all') {
+      query = query.eq('roster_entity_id', selectedCreator);
     }
 
-    if (selectedEntityType !== 'all') {
-      query = query.eq('entity_type', selectedEntityType);
+    if (selectedCreatorType !== 'all') {
+      query = query.eq('entity_type', selectedCreatorType);
     }
 
     if (searchTerm) {
@@ -209,14 +328,14 @@ export function RosterFinancialReporting() {
     setPaymentSchedules(data || []);
   };
 
-  const toggleEntityExpansion = (entityId: string) => {
-    const newExpanded = new Set(expandedEntities);
-    if (newExpanded.has(entityId)) {
-      newExpanded.delete(entityId);
+  const toggleCreatorExpansion = (creatorId: string) => {
+    const newExpanded = new Set(expandedCreators);
+    if (newExpanded.has(creatorId)) {
+      newExpanded.delete(creatorId);
     } else {
-      newExpanded.add(entityId);
+      newExpanded.add(creatorId);
     }
-    setExpandedEntities(newExpanded);
+    setExpandedCreators(newExpanded);
   };
 
   const handleSort = (field: string) => {
@@ -400,35 +519,35 @@ export function RosterFinancialReporting() {
             </select>
           </div>
 
-          {/* Entity Type Filter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-            <select
-              value={selectedEntityType}
-              onChange={(e) => setSelectedEntityType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Types</option>
-              <option value="artist">Artist</option>
-              <option value="band">Band</option>
-              <option value="producer">Producer</option>
-            </select>
-          </div>
+                     {/* Creator Type Filter */}
+           <div>
+             <label className="block text-sm font-medium text-gray-700 mb-1">Creator Type</label>
+             <select
+               value={selectedCreatorType}
+               onChange={(e) => setSelectedCreatorType(e.target.value)}
+               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+             >
+               <option value="all">All Types</option>
+               <option value="artist">Artist</option>
+               <option value="band">Band</option>
+               <option value="producer">Producer</option>
+             </select>
+           </div>
 
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by entity name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
+           {/* Search */}
+           <div className="lg:col-span-2">
+             <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+             <div className="relative">
+               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+               <input
+                 type="text"
+                 placeholder="Search by creator name..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+               />
+             </div>
+           </div>
         </div>
       </div>
 
@@ -476,14 +595,14 @@ export function RosterFinancialReporting() {
           {/* Monthly Revenue Tab */}
           {activeTab === 'monthly' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Monthly Revenue Breakdown
-                </h3>
-                <div className="text-sm text-gray-500">
-                  {monthlyData.length} entities found
-                </div>
-              </div>
+                             <div className="flex items-center justify-between">
+                 <h3 className="text-lg font-semibold text-gray-900">
+                   Monthly Revenue Breakdown
+                 </h3>
+                 <div className="text-sm text-gray-500">
+                   {monthlyData.length} creators found
+                 </div>
+               </div>
 
               {monthlyData.length === 0 ? (
                 <div className="text-center py-8">
@@ -497,16 +616,16 @@ export function RosterFinancialReporting() {
                       <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
-                            <button
-                              onClick={() => toggleEntityExpansion(`${entity.roster_entity_id}-${entity.year}-${entity.month}`)}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              {expandedEntities.has(`${entity.roster_entity_id}-${entity.year}-${entity.month}`) ? (
-                                <ChevronUp className="w-5 h-5" />
-                              ) : (
-                                <ChevronDown className="w-5 h-5" />
-                              )}
-                            </button>
+                                                         <button
+                               onClick={() => toggleCreatorExpansion(`${entity.roster_entity_id}-${entity.year}-${entity.month}`)}
+                               className="text-gray-400 hover:text-gray-600"
+                             >
+                               {expandedCreators.has(`${entity.roster_entity_id}-${entity.year}-${entity.month}`) ? (
+                                 <ChevronUp className="w-5 h-5" />
+                               ) : (
+                                 <ChevronDown className="w-5 h-5" />
+                               )}
+                             </button>
                             <div>
                               <h4 className="font-semibold text-gray-900">{entity.entity_name}</h4>
                               <p className="text-sm text-gray-500">
@@ -525,7 +644,7 @@ export function RosterFinancialReporting() {
                         </div>
                       </div>
 
-                      {expandedEntities.has(`${entity.roster_entity_id}-${entity.year}-${entity.month}`) && (
+                                             {expandedCreators.has(`${entity.roster_entity_id}-${entity.year}-${entity.month}`) && (
                         <div className="p-4 space-y-4">
                           {/* Revenue Breakdown */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -598,14 +717,14 @@ export function RosterFinancialReporting() {
           {/* Year-to-Date Tab */}
           {activeTab === 'ytd' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Year-to-Date Revenue Summary
-                </h3>
-                <div className="text-sm text-gray-500">
-                  {ytdData.length} entities found
-                </div>
-              </div>
+                             <div className="flex items-center justify-between">
+                 <h3 className="text-lg font-semibold text-gray-900">
+                   Year-to-Date Revenue Summary
+                 </h3>
+                 <div className="text-sm text-gray-500">
+                   {ytdData.length} creators found
+                 </div>
+               </div>
 
               {ytdData.length === 0 ? (
                 <div className="text-center py-8">
@@ -617,9 +736,9 @@ export function RosterFinancialReporting() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Entity
-                        </th>
+                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                           Creator
+                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Type
                         </th>

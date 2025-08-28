@@ -238,7 +238,7 @@ serve(async (req) => {
           body: JSON.stringify({
             from: "MyBeatFi <welcome@mybeatfi.io>",
             to: testEmail,
-            subject: "🧪 Test Welcome Email - MyBeatFi",
+            subject: "Test Welcome Email - MyBeatFi",
             html,
             attachments: [
               {
