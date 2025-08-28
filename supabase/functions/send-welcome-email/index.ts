@@ -24,9 +24,100 @@ async function generateWelcomePDF(firstName: string) {
   });
 
   page.drawText(
-    `Thank you for joining MyBeatFi.io!\n\nThis guide will help you get started.\n\n- Explore premium beats\n- License music for your projects\n- Connect with top producers\n\nVisit your dashboard to begin your journey!`,
+    `Thank you for joining MyBeatFi.io!\n\nThis guide will help you get started with our comprehensive music licensing platform.`,
     { x: 50, y: 700, size: 14, font, color: rgb(0, 0, 0) }
   );
+
+  // Add comprehensive feature summary
+  const features = [
+    "🎵 CORE MUSIC LICENSING PLATFORM",
+    "• Browse Music Catalog - Access to a comprehensive library of tracks from producers worldwide",
+    "• Instant Licensing - Quick and easy music licensing for projects",
+    "• Multiple Account Types - Support for clients, artists, record labels, and producers",
+    "",
+    "🎪 TARGET USE CASES",
+    "• Content Creators - YouTube, social media, streaming content",
+    "• Advertisers - Commercial campaigns and brand content",
+    "• Film & TV - Background music and soundtracks",
+    "• Podcasters - Intro/outro music and background tracks",
+    "• Game Developers - In-game music and sound effects",
+    "• Event Planners - Event and presentation music",
+    "",
+    "🔍 ADVANCED SEARCH & DISCOVERY",
+    "• Genre Filtering - Filter tracks by musical genres",
+    "• Mood Filtering - Find tracks by emotional tone and atmosphere",
+    "• Artist Search - Search by track title or artist name",
+    "• Pagination - Browse through large catalogs efficiently",
+    "",
+    "🎼 PLAYLIST MANAGEMENT",
+    "• Create Playlists - Build custom playlists for projects and inspiration",
+    "• Add Tracks - Add any track from the catalog to playlists",
+    "• Share Playlists - Share playlists with music supervisors, agencies, and others",
+    "• Catalog Browser - Full catalog access with search and filtering",
+    "• Track Organization - Organize favorite tracks for easy access",
+    "",
+    "📊 USER DASHBOARD",
+    "• Personalized Dashboard - Custom interface for client needs",
+    "• Profile Management - Edit account information and preferences",
+    "• Quick Access - Easy navigation to key features",
+    "• License Usage Tracking - Monitor your licensing activity",
+    "• Cost Management - Track spending and usage patterns",
+    "",
+    "⚡ ROBUST LICENSING SYSTEM",
+    "• On-demand licenses - Choose a track to license and complete the process now",
+    "• Sync Proposals - Submit your project and pitch to a creator for pre-made tracks",
+    "• Custom Sync Requests - Request a custom track for your media production",
+    "",
+    "📁 PROJECT MANAGEMENT",
+    "• Track Favorites - Save tracks for later consideration",
+    "• Project Organization - Group tracks by project or campaign",
+    "• Playlisting - Create and Share playlists with others",
+    "",
+    "🔒 SECURITY & PRIVACY",
+    "• Secure Authentication - Protected user accounts",
+    "• Data Privacy - User information protection",
+    "• Professional Branding - Trusted platform for music licensing",
+    "",
+    "📞 SUPPORT & RESOURCES",
+    "• Educational Content - Weekly emails with platform tips",
+    "• Announcements Page - YouTube videos and Web-based stories for sync",
+    "• Professional Support - Backed by iLi Media Group, LLC",
+    "",
+    "💻 USER EXPERIENCE",
+    "• Modern UI - Clean, professional interface",
+    "• Mobile Responsive - Access from any device",
+    "• Fast Performance - Optimized for quick browsing and licensing",
+    "• Intuitive Navigation - Easy-to-use platform design",
+    "",
+    "SUMMARY",
+    "MyBeatFi provides a comprehensive, user-friendly platform for clients to discover, license,",
+    "and manage music for their creative projects with professional support.",
+    "",
+    "Visit your dashboard to begin your journey!"
+  ];
+
+  let yPosition = 650;
+  features.forEach((feature, index) => {
+    if (feature.startsWith("🎵") || feature.startsWith("🎪") || feature.startsWith("🔍") || 
+        feature.startsWith("🎼") || feature.startsWith("📊") || feature.startsWith("⚡") || 
+        feature.startsWith("📁") || feature.startsWith("🔒") || feature.startsWith("📞") || 
+        feature.startsWith("💻") || feature === "SUMMARY") {
+      // Section headers - bold and larger
+      page.drawText(feature, { x: 50, y: yPosition, size: 12, font, color: rgb(0, 0.88, 1) });
+      yPosition -= 20;
+    } else if (feature.startsWith("•")) {
+      // Feature items - normal size
+      page.drawText(feature, { x: 50, y: yPosition, size: 10, font, color: rgb(0, 0, 0) });
+      yPosition -= 15;
+    } else if (feature === "") {
+      // Empty lines for spacing
+      yPosition -= 10;
+    } else {
+      // Regular text
+      page.drawText(feature, { x: 50, y: yPosition, size: 10, font, color: rgb(0, 0, 0) });
+      yPosition -= 15;
+    }
+  });
 
   // ...add more content as needed...
 
@@ -58,22 +149,24 @@ serve(async (req) => {
         const pdfBytes = await generateWelcomePDF('Test User');
         const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
 
-        const html = `<!DOCTYPE html>
+                 const html = `<!DOCTYPE html>
 <html>
   <head>
     <style>
       body {
         font-family: Arial, sans-serif;
-        background: #111827;
-        color: #f9fafb;
+        background: #ffffff;
+        color: #333333;
         padding: 40px;
+        margin: 0;
       }
       .container {
         max-width: 600px;
         margin: auto;
-        background: #1f2937;
+        background: #ffffff;
         border-radius: 8px;
         padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .header {
         text-align: center;
@@ -86,15 +179,17 @@ serve(async (req) => {
       .title {
         font-size: 22px;
         font-weight: bold;
+        color: #1f2937;
       }
       .body-text {
         margin: 20px 0;
         line-height: 1.6;
+        color: #374151;
       }
       .button {
         display: inline-block;
         background: #3b82f6;
-        color: white;
+        color: white !important;
         text-decoration: none;
         padding: 12px 24px;
         border-radius: 6px;
@@ -103,17 +198,17 @@ serve(async (req) => {
       .footer {
         margin-top: 30px;
         font-size: 12px;
-        color: #9ca3af;
+        color: #6b7280;
         text-align: center;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <img class="logo" src="https://mybeatfi.io/logo.png" alt="MyBeatFi Logo" />
-        <div class="title">Welcome to MyBeatFi.io, Test User!</div>
-      </div>
+             <div class="header">
+         <img class="logo" src="https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/logos/logo-1753301925481" alt="MyBeatFi Logo" />
+         <div class="title">Welcome to MyBeatFi.io, Test User!</div>
+       </div>
       <div class="body-text">
         This is a test welcome email to verify the email system is working correctly.
         <br /><br />
@@ -139,7 +234,7 @@ serve(async (req) => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "MyBeatFi <welcome@mybeatfi.com>",
+            from: "MyBeatFi <welcome@mybeatfi.io>",
             to: testEmail,
             subject: "🧪 Test Welcome Email - MyBeatFi",
             html,
@@ -213,16 +308,18 @@ serve(async (req) => {
     <style>
       body {
         font-family: Arial, sans-serif;
-        background: #111827;
-        color: #f9fafb;
+        background: #ffffff;
+        color: #333333;
         padding: 40px;
+        margin: 0;
       }
       .container {
         max-width: 600px;
         margin: auto;
-        background: #1f2937;
+        background: #ffffff;
         border-radius: 8px;
         padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       }
       .header {
         text-align: center;
@@ -235,15 +332,17 @@ serve(async (req) => {
       .title {
         font-size: 22px;
         font-weight: bold;
+        color: #1f2937;
       }
       .body-text {
         margin: 20px 0;
         line-height: 1.6;
+        color: #374151;
       }
       .button {
         display: inline-block;
         background: #3b82f6;
-        color: white;
+        color: white !important;
         text-decoration: none;
         padding: 12px 24px;
         border-radius: 6px;
@@ -252,17 +351,17 @@ serve(async (req) => {
       .footer {
         margin-top: 30px;
         font-size: 12px;
-        color: #9ca3af;
+        color: #6b7280;
         text-align: center;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <img class="logo" src="https://mybeatfi.io/logo.png" alt="MyBeatFi Logo" />
-        <div class="title">Welcome to MyBeatFi.io, ${first_name || 'there'}!</div>
-      </div>
+             <div class="header">
+         <img class="logo" src="https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/logos/logo-1753301925481" alt="MyBeatFi Logo" />
+         <div class="title">Welcome to MyBeatFi.io, ${first_name || 'there'}!</div>
+       </div>
       <div class="body-text">
         ${welcomeMessage}
         <br /><br />
@@ -295,7 +394,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "MyBeatFi <welcome@mybeatfi.com>",
+        from: "MyBeatFi <welcome@mybeatfi.io>",
         to: email,
         subject: subject,
         html,
