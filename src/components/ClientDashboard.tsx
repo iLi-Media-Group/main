@@ -1583,39 +1583,39 @@ const getPlanLevel = (plan: string): number => {
 
 
 
-        {/* Discount Codes Section - Compact */}
-        <DiscountCodesSection />
-
-        <div className="mb-8 p-6 glass-card rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-white">License Usage</h2>
-              </div>
-              <p className="text-gray-300">
-                <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
-                <br />
-                {membershipPlan === 'Gold Access' ? (
-                  <>
-                    You have used {userStats.totalLicenses} of your 10 monthly licenses
-                    ({userStats.remainingLicenses} remaining)
-                  </>
-                ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
-                  'You have unlimited licenses available'
-                ) : (
-                  'Single track license'
-                )}
-              </p>
-              {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
-                  {userStats.daysUntilReset !== null && (
-                    <span className="ml-2">
-                      ({userStats.daysUntilReset} days until reset)
-                    </span>
+        {/* License Usage and Discount Codes - Side by Side */}
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* License Usage Section - Less Wide */}
+          <div className="lg:col-span-2 p-6 glass-card rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-bold text-white">License Usage</h2>
+                </div>
+                <p className="text-gray-300">
+                  <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
+                  <br />
+                  {membershipPlan === 'Gold Access' ? (
+                    <>
+                      You have used {userStats.totalLicenses} of your 10 monthly licenses
+                      ({userStats.remainingLicenses} remaining)
+                    </>
+                  ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
+                    'You have unlimited licenses available'
+                  ) : (
+                    'Single track license'
                   )}
                 </p>
-              )}
+                {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
+                    {userStats.daysUntilReset !== null && (
+                      <span className="ml-2">
+                        ({userStats.daysUntilReset} days until reset)
+                      </span>
+                    )}
+                  </p>
+                )}
               {pendingDowngrade && downgradeEffectiveDate && (
                 <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center justify-between">
                   <div className="flex items-center">
@@ -1671,6 +1671,12 @@ const getPlanLevel = (plan: string): number => {
               />
             </div>
           )}
+        </div>
+
+          {/* Discount Codes Section - Side by Side */}
+          <div className="lg:col-span-1">
+            <DiscountCodesSection />
+          </div>
         </div>
 
 

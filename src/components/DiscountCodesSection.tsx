@@ -118,25 +118,51 @@ const DiscountCodesSection: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center mb-4">
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2 text-sm text-blue-700 dark:text-blue-300">
-          Loading discount codes...
+      <div className="h-full">
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white flex items-center">
+            <Tag className="w-4 h-4 mr-2 text-green-400" />
+            Active Discounts
+          </h3>
+        </div>
+        <div className="flex justify-center">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2 text-sm text-blue-700 dark:text-blue-300">
+            Loading discount codes...
+          </div>
         </div>
       </div>
     );
   }
 
   if (discountCodes.length === 0) {
-    return null; // Don't show anything if no discount codes
+    return (
+      <div className="h-full">
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white flex items-center">
+            <Tag className="w-4 h-4 mr-2 text-green-400" />
+            Active Discounts
+          </h3>
+        </div>
+        <div className="text-center py-4">
+          <p className="text-gray-400 text-sm">No active discounts available</p>
+        </div>
+      </div>
+    );
   }
 
-  // Show multiple discounts in a compact grid if 3 or fewer
+  // Show multiple discounts in a compact vertical layout
   if (discountCodes.length <= 3) {
     return (
-      <div className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
+      <div className="h-full">
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white flex items-center">
+            <Tag className="w-4 h-4 mr-2 text-green-400" />
+            Active Discounts
+          </h3>
+        </div>
+        <div className="space-y-3">
           {discountCodes.map((discount) => (
-            <div key={discount.id} className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-3 py-2 shadow-lg">
+            <div key={discount.id} className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-3 py-3 shadow-lg">
               <div className="flex flex-col gap-2">
                 {/* Header - Compact */}
                 <div className="flex items-center justify-between">
@@ -192,8 +218,14 @@ const DiscountCodesSection: React.FC = () => {
 
   // Show carousel for 4+ discounts
   return (
-    <div className="mb-4">
-      <div className="relative max-w-6xl mx-auto px-12">
+    <div className="h-full">
+      <div className="mb-3">
+        <h3 className="text-lg font-bold text-white flex items-center">
+          <Tag className="w-4 h-4 mr-2 text-green-400" />
+          Active Discounts
+        </h3>
+      </div>
+      <div className="relative">
         {/* Navigation Arrows - Outside Container */}
         {discountCodes.length > 1 && (
           <>
@@ -214,9 +246,9 @@ const DiscountCodesSection: React.FC = () => {
 
         {/* Carousel Container */}
         <div className="overflow-hidden rounded-lg">
-          <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentIndex * 50}%)` }}>
+          <div className="flex transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
             {discountCodes.map((discount) => (
-              <div key={discount.id} className="w-1/2 flex-shrink-0 px-2">
+              <div key={discount.id} className="w-full flex-shrink-0 px-2">
                 <div className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-4 py-3 shadow-lg">
                   <div className="flex flex-col gap-2">
                     {/* Header - Compact */}
