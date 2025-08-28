@@ -51,7 +51,12 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
 }
 
 export function PlaylistView() {
+  console.log('🎵 PlaylistView component is being rendered!');
+  console.log('🔍 Current URL:', window.location.href);
+  
   const { slug } = useParams<{ slug: string }>();
+  console.log('📋 Slug from params:', slug);
+  
   const navigate = useNavigate();
   const { user } = useAuth();
   const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
