@@ -548,7 +548,7 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
-                 <Route path="/playlist/:slug" element={<PlaylistView />} />
+                 <Route path="/playlist/:slug" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
                  <Route path="/favorited-playlists" element={
           <ProtectedRoute>
             <LayoutWrapper>
