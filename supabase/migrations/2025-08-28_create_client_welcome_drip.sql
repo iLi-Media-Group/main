@@ -16,6 +16,33 @@ create table if not exists client_welcome_drip_subscriptions (
   unique(user_id)
 );
 
+-- Enable RLS
+alter table client_welcome_drip_subscriptions enable row level security;
+
+-- Users can only see their own drip subscription
+create policy "Users can view own drip subscription"
+  on client_welcome_drip_subscriptions
+  for select
+  using (auth.uid() = user_id);
+
+-- Users can update their own drip subscription (for unsubscribe, etc.)
+create policy "Users can update own drip subscription"
+  on client_welcome_drip_subscriptions
+  for update
+  using (auth.uid() = user_id);
+
+-- Service role can do everything (for edge functions)
+create policy "Service role full access"
+  on client_welcome_drip_subscriptions
+  for all
+  using (auth.role() = 'service_role');
+
+-- Allow inserts from service role (for scheduling)
+create policy "Service role can insert"
+  on client_welcome_drip_subscriptions
+  for insert
+  with check (auth.role() = 'service_role');
+
 create index if not exists idx_client_welcome_drip_next_send_at
   on client_welcome_drip_subscriptions(next_send_at);
 
