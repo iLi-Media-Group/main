@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   Plus, 
   Edit, 
@@ -375,10 +375,8 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
 
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-3 mt-auto">
-                  <a
-                    href={`/view-playlist/${playlist.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to={`/view-playlist/${playlist.slug}`}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
                     title="View playlist"
                     onClick={() => {
@@ -389,7 +387,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                   >
                     <ExternalLink className="w-4 h-4 mx-auto mb-1" />
                     View
-                  </a>
+                  </Link>
                   <button
                     onClick={() => handleAddTracks(playlist)}
                     className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-green-500/25"
