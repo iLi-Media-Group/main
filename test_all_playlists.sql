@@ -35,3 +35,15 @@ SELECT
   END as slug_format
 FROM playlists 
 ORDER BY created_at DESC;
+
+-- Check for the specific playlist mentioned in the URL
+SELECT 
+  id,
+  name,
+  slug,
+  producer_id,
+  creator_type,
+  is_public
+FROM playlists 
+WHERE slug LIKE '%knock-rio-beats%' OR slug LIKE '%hiphop-playlist%'
+ORDER BY created_at DESC;
