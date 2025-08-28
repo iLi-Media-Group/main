@@ -121,19 +121,10 @@ export class PlaylistService {
   static async getPlaylist(slug: string): Promise<PlaylistWithTracks | null> {
     const { data: { user } } = await supabase.auth.getUser();
     
-    // First, try to get the playlist by slug
+    // First, try to get the playlist by slug without the foreign key join
     let { data: playlist, error } = await supabase
       .from('playlists')
-      .select(`
-        *,
-        producer:profiles!playlists_producer_id_fkey (
-          id,
-          first_name,
-          last_name,
-          email,
-          avatar_path
-        )
-      `)
+      .select('*')
       .eq('slug', slug)
       .single();
 
@@ -155,6 +146,24 @@ export class PlaylistService {
         console.log('User not logged in and playlist is not public');
         return null;
       }
+    }
+
+    // Get the creator's profile information separately
+    const { data: creator, error: creatorError } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        email,
+        avatar_path
+      `)
+      .eq('id', playlist.producer_id)
+      .single();
+
+    if (creatorError) {
+      console.log('Error fetching creator profile:', creatorError);
+      // Continue without creator info rather than failing
     }
 
     // Get tracks for this playlist
@@ -199,6 +208,7 @@ export class PlaylistService {
 
     return {
       ...playlist,
+      producer: creator, // Add the creator profile info
       tracks: tracks || []
     };
   }
