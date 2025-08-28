@@ -384,7 +384,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                     onClick={() => {
                       console.log('🎵 Playlist View Button Clicked');
                       console.log('📋 Playlist:', playlist);
-                      console.log('🔗 URL:', `/playlist/${playlist.slug}`);
+                      console.log('🔗 URL:', `/view-playlist/${playlist.slug}`);
                     }}
                   >
                     <ExternalLink className="w-4 h-4 mx-auto mb-1" />

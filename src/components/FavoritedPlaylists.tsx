@@ -105,7 +105,7 @@ export function FavoritedPlaylists() {
         {playlists.map((playlist) => (
           <Link
             key={playlist.playlist_id}
-            to={`/playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
+                            to={`/view-playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
             className="block bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-colors group"
           >
             <div className="flex items-start justify-between">

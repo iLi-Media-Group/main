@@ -168,7 +168,7 @@ export function FavoritedPlaylistsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
                     <Link
-                      to={`/playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
+                      to={`/view-playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
                       className="block"
                     >
                       <h3 className="text-lg font-semibold text-white hover:text-blue-300 transition-colors truncate">
@@ -215,7 +215,7 @@ export function FavoritedPlaylistsPage() {
 
                 <div className="mt-4">
                   <Link
-                    to={`/playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
+                    to={`/view-playlist/${playlist.producer_name.toLowerCase().replace(/\s+/g, '-')}/${playlist.playlist_name.toLowerCase().replace(/\s+/g, '-')}`}
                     className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
                   >
                     View Playlist
