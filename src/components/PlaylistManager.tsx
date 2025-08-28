@@ -231,7 +231,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
   };
 
   const copyPlaylistUrl = (slug: string) => {
-    const url = `${window.location.origin}/playlist-view/${slug}`;
+    const url = `${window.location.origin}/music-playlist/${slug}`;
     navigator.clipboard.writeText(url);
     // You could add a toast notification here
   };
@@ -376,13 +376,13 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-3 mt-auto">
                   <Link
-                    to={`/playlist-view/${playlist.slug}`}
+                    to={`/music-playlist/${playlist.slug}`}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
                     title="View playlist"
                     onClick={() => {
                       console.log('🎵 Playlist View Button Clicked');
                       console.log('📋 Playlist:', playlist);
-                      console.log('🔗 URL:', `/playlist-view/${playlist.slug}`);
+                      console.log('🔗 URL:', `/music-playlist/${playlist.slug}`);
                     }}
                   >
                     <ExternalLink className="w-4 h-4 mx-auto mb-1" />
