@@ -337,7 +337,7 @@ const App = () => {
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
-        <Route path="/test-playlist/:slug" element={<LayoutWrapper><TestPlaylistRoute /></LayoutWrapper>} />
+        <Route path="/test-playlist/*" element={<LayoutWrapper><TestPlaylistRoute /></LayoutWrapper>} />
         <Route path="/test-simple" element={<LayoutWrapper><div className="min-h-screen bg-red-900 flex items-center justify-center"><div className="text-white text-2xl">Simple Route Working!</div></div></LayoutWrapper>} />
         <Route path="/music-playlist/:slug" element={<LayoutWrapper><TestPlaylistRoute /></LayoutWrapper>} />
         <Route path="/producer/:producerId/tracks" element={<LayoutWrapper><ProducerTracksPage /></LayoutWrapper>} />
