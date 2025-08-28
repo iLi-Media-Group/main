@@ -41,13 +41,15 @@ export function AuthCallback() {
             if (insertError) {
               console.error('Error creating profile:', insertError);
             } else {
-              // Send welcome email for new client accounts
+              // Send welcome email for new client accounts created via email confirmation
+              // This handles users who signed up but needed email confirmation
               try {
                 console.log('Sending welcome email after email verification...');
                 const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
                   body: {
                     email: data.session.user.email,
-                    first_name: data.session.user.user_metadata?.first_name || 'there'
+                    first_name: data.session.user.user_metadata?.first_name || 'there',
+                    account_type: 'client'
                   }
                 });
                 

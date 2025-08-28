@@ -250,27 +250,26 @@ function SignupFormContent({ onClose }: SignupFormProps) {
       }
       console.log('Profile created successfully');
 
-      // Send welcome email for client accounts
-      if (accountType === 'client' || accountType === 'artist_band') {
-        try {
-          console.log('Sending welcome email...');
-          const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              email: email,
-              first_name: firstName
-            }
-          });
-          
-          if (emailError) {
-            console.error('Welcome email error:', emailError);
-            // Don't throw error - welcome email failure shouldn't prevent signup
-          } else {
-            console.log('Welcome email sent successfully');
+      // Send welcome email for all account types
+      try {
+        console.log('Sending welcome email...');
+        const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: email,
+            first_name: firstName,
+            account_type: accountType
           }
-        } catch (emailErr) {
-          console.error('Welcome email failed:', emailErr);
-          // Don't throw error - welcome email failure shouldn't prevent signup
+        });
+        
+        if (emailError) {
+          console.error('Welcome email error:', emailError);
+          // Log the error but don't prevent signup completion
+        } else {
+          console.log('Welcome email sent successfully');
         }
+      } catch (emailErr) {
+        console.error('Welcome email failed:', emailErr);
+        // Log the error but don't prevent signup completion
       }
 
       // Mark invitation as used if it's a producer or artist

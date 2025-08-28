@@ -569,6 +569,28 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         // Don't return error here as the account was created successfully
       }
 
+      // Send welcome email to the rights holder
+      console.log('📧 Sending welcome email to rights holder...');
+      try {
+        const { error: welcomeEmailError } = await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            email: email,
+            first_name: rightsHolderData.company_name || rightsHolderData.legal_entity_name || 'there',
+            account_type: 'rights_holder'
+          }
+        });
+
+        if (welcomeEmailError) {
+          console.error('❌ Error sending welcome email:', welcomeEmailError);
+          // Don't return error here as the account was created successfully
+        } else {
+          console.log('✅ Welcome email sent successfully to rights holder');
+        }
+      } catch (welcomeEmailErr) {
+        console.error('❌ Error calling welcome email function:', welcomeEmailErr);
+        // Don't return error here as the account was created successfully
+      }
+
       console.log('🎉 Rights holder signup completed successfully!');
       return { error: null };
     } catch (error) {

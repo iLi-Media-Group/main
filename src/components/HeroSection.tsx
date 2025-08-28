@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Search, ArrowRight, Music, Video, Mic, Building2 } from 'lucide-react';
+import { Play, Search, ArrowRight, Music, Video, Mic, Building2, UserPlus, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -183,7 +183,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
              className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
            >
              <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
-             Create Free Account
+             Create Free Client Account
              <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
            </button>
           
@@ -198,15 +198,35 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
 
         {/* Rights Holders Section */}
         <div className="border-t border-white/20 pt-8">
-          <p className="text-gray-400 mb-4">Are you a Record Label or Publisher?</p>
-          <button 
-            onClick={() => navigate('/rights-holder/signup')}
-            className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center mx-auto"
-          >
-            <Building2 className="w-4 h-4 mr-2" />
-            Join as Record Label/Publisher
-            <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
-          </button>
+          <p className="text-gray-400 mb-4">Are you a Record Label, Publisher, Producer, or Artist?</p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <button 
+              onClick={() => navigate('/rights-holder/signup')}
+              className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              Join as Record Label/Publisher
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+            </button>
+            
+            <button 
+              onClick={() => navigate('/producer-application')}
+              className="group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+            >
+              <Music className="w-4 h-4 mr-2" />
+              Join as Producer
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+            </button>
+            
+            <button 
+              onClick={() => navigate('/artist-application')}
+              className="group bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Join as Artist
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+            </button>
+          </div>
         </div>
       </div>
 
