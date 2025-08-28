@@ -824,6 +824,15 @@ export function RightsHolderDashboard() {
                   <span className="text-white">Update Profile</span>
                   <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
                 </Link>
+
+                <Link
+                  to="/record-label/playlists"
+                  className="flex items-center p-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg transition-colors group"
+                >
+                  <Music className="w-5 h-5 text-purple-400 mr-3" />
+                  <span className="text-white">Manage Playlists</span>
+                  <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
             </div>
           </div>
@@ -1334,22 +1343,7 @@ export function RightsHolderDashboard() {
           </div>
         </div>
 
-        {/* Playlists Quick Access */}
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">Record Label Playlists</h2>
-              <p className="text-gray-400 text-sm mt-1">Create and manage your music playlists</p>
-            </div>
-            <Link
-              to="/record-label/playlists"
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <Music className="w-5 h-5 mr-2" />
-              Manage Playlists
-            </Link>
-          </div>
-        </div>
+
 
 
       </div>

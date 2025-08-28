@@ -58,17 +58,37 @@ export function AuthCallback() {
                 } else {
                   console.log('Welcome email sent successfully after verification');
                 }
-                // Also schedule the client welcome drip series
-                try {
-                  await supabase.functions.invoke('schedule-client-welcome-drip', {
-                    body: {
-                      user_id: data.session.user.id,
-                      email: data.session.user.email,
-                      first_name: data.session.user.user_metadata?.first_name || 'there'
-                    }
-                  });
-                } catch (scheduleErr) {
-                  console.error('Failed to schedule client welcome drip after verification:', scheduleErr);
+                // Also schedule the welcome drip series based on account type
+                const account_type = data.session.user.user_metadata?.account_type || 'client';
+                
+                if (account_type === 'client') {
+                  try {
+                    await supabase.functions.invoke('schedule-client-welcome-drip', {
+                      body: {
+                        user_id: data.session.user.id,
+                        email: data.session.user.email,
+                        first_name: data.session.user.user_metadata?.first_name || 'there',
+                        account_type: 'client'
+                      }
+                    });
+                    console.log('Client welcome drip scheduled after verification');
+                  } catch (scheduleErr) {
+                    console.error('Failed to schedule client welcome drip after verification:', scheduleErr);
+                  }
+                } else if (['producer', 'artist_band', 'rights_holder'].includes(account_type)) {
+                  try {
+                    await supabase.functions.invoke('schedule-producer-welcome-drip', {
+                      body: {
+                        user_id: data.session.user.id,
+                        email: data.session.user.email,
+                        first_name: data.session.user.user_metadata?.first_name || 'there',
+                        account_type: account_type
+                      }
+                    });
+                    console.log('Producer welcome drip scheduled after verification');
+                  } catch (scheduleErr) {
+                    console.error('Failed to schedule producer welcome drip after verification:', scheduleErr);
+                  }
                 }
               } catch (emailErr) {
                 console.error('Welcome email failed after verification:', emailErr);

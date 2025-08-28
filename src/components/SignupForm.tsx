@@ -272,18 +272,34 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         // Log the error but don't prevent signup completion
       }
 
-      // Schedule 6-week client welcome drip for client accounts only
+      // Schedule 6-week welcome drip for all account types
       if (accountType === 'client') {
         try {
           await supabase.functions.invoke('schedule-client-welcome-drip', {
             body: {
               user_id: user.id,
               email: email,
-              first_name: firstName
+              first_name: firstName,
+              account_type: accountType
             }
           });
+          console.log('Client welcome drip scheduled');
         } catch (e) {
           console.error('Failed to schedule client welcome drip:', e);
+        }
+      } else if (['producer', 'artist_band', 'rights_holder'].includes(accountType)) {
+        try {
+          await supabase.functions.invoke('schedule-producer-welcome-drip', {
+            body: {
+              user_id: user.id,
+              email: email,
+              first_name: firstName,
+              account_type: accountType
+            }
+          });
+          console.log('Producer welcome drip scheduled');
+        } catch (e) {
+          console.error('Failed to schedule producer welcome drip:', e);
         }
       }
 

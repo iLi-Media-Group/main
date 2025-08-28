@@ -25,22 +25,7 @@ const ArtistDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Playlists Quick Access */}
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-white">Artist Playlists</h2>
-              <p className="text-gray-400 text-sm mt-1">Create and manage your music playlists</p>
-            </div>
-            <Link
-              to="/artist/playlists"
-              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
-            >
-              <Music className="w-5 h-5 mr-2" />
-              Manage Playlists
-            </Link>
-          </div>
-        </div>
+
 
         {/* Additional sections can be added here */}
         <div className="text-center py-8">

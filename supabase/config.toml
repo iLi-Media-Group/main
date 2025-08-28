@@ -4,6 +4,12 @@ verify_jwt = false
 [functions.schedule-client-welcome-drip]
 verify_jwt = false
 
+[functions.schedule-producer-welcome-drip]
+verify_jwt = false
+
+[functions.process-producer-welcome-drip]
+verify_jwt = false
+
 
 [functions.search-tracks]
 enabled = true
