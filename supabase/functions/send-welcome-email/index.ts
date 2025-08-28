@@ -258,8 +258,14 @@ serve(async (req) => {
         When you're ready, click below to explore your dashboard.
       </div>
       <div style="text-align: center;">
-        <a href="https://mybeatfi.io/dashboard" class="button">Go to Dashboard</a>
+        <a href="${account_type === 'client' ? 'https://mybeatfi.io/catalog' : 'https://mybeatfi.io/dashboard'}" class="button">${account_type === 'client' ? 'Browse the Catalog' : 'Go to Dashboard'}</a>
       </div>
+      ${account_type === 'client' ? `
+      <div class="body-text" style="text-align: center; margin-top: 30px;">
+        We're glad you're here. Let's make something amazing together.<br/><br/>
+        — The MyBeatFi Team
+      </div>
+      ` : ''}
       <div class="footer">
         This email was sent by MyBeatFi.io | iLi Media Group, LLC<br />
         2025 © All rights reserved.
