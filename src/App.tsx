@@ -124,6 +124,7 @@ import RightsHolderCustomSyncSubs from './components/RightsHolderCustomSyncSubs'
 import RightsHolderTerms from './components/RightsHolderTerms';
 import ProducerTerms from './components/ProducerTerms';
 import { WelcomeEmailTest } from './components/WelcomeEmailTest';
+import DripEmailPreview from './components/DripEmailPreview';
 
 const App = () => {
   console.log('🚀 App component loaded');
@@ -322,6 +323,7 @@ const App = () => {
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
         <Route path="/test-welcome-email" element={<WelcomeEmailTest />} />
+        <Route path="/drip-email-preview" element={<DripEmailPreview />} />
 
         <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/refund-policy" element={<LayoutWrapper><RefundPolicy /></LayoutWrapper>} />

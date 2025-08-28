@@ -10,6 +10,9 @@ verify_jwt = false
 [functions.process-producer-welcome-drip]
 verify_jwt = false
 
+[functions.test-drip-emails]
+verify_jwt = false
+
 
 [functions.search-tracks]
 enabled = true

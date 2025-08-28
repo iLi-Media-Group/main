@@ -1532,6 +1532,7 @@ if (subscription.price_id) {
             { id: 'instruments', label: 'Instruments', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'moods', label: 'Moods', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
+            { id: 'drip_emails', label: 'Drip Email Preview', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
             { id: 'producer_badges', label: 'Producer Badges', icon: <Shield className="w-4 h-4 mr-2" /> },
             { id: 'services', label: 'Services', icon: <Settings className="w-4 h-4 mr-2" /> },
@@ -2043,6 +2044,43 @@ if (subscription.price_id) {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Drip Email Preview */}
+        {activeTab === 'drip_emails' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Drip Email Preview</h2>
+              <Link
+                to="/drip-email-preview"
+                target="_blank"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                View All Emails
+              </Link>
+            </div>
+            <div className="text-center py-12">
+              <Mail className="w-16 h-16 text-blue-400 mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-white mb-4">Preview Drip Email Campaigns</h3>
+              <p className="text-gray-400 mb-6">
+                See exactly how your 6-week drip email campaigns will look to clients and producers.
+              </p>
+              <p className="text-sm text-gray-500 mb-8">
+                Click "View All Emails" to see the complete visual preview of all 12 emails.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <h4 className="font-semibold text-white mb-2">👥 Client Emails</h4>
+                  <p className="text-sm text-gray-300">6 weekly emails for new client onboarding</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <h4 className="font-semibold text-white mb-2">🎵 Producer Emails</h4>
+                  <p className="text-sm text-gray-300">6 weekly emails for new producer onboarding</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
