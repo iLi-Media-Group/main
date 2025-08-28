@@ -254,7 +254,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
         <div className="flex-1">
           <h2 className="text-3xl font-bold text-white mb-2">{getTitle()}</h2>
-          <p className="text-gray-400 text-lg">Create and manage playlists to share with music supervisors</p>
+                        <p className="text-gray-400 text-lg">Create and manage playlists to share with music supervisors, agencies and others</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
