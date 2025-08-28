@@ -30,12 +30,12 @@ async function generateWelcomePDF(firstName: string) {
 
   // Add comprehensive feature summary
   const features = [
-    "🎵 CORE MUSIC LICENSING PLATFORM",
+    "CORE MUSIC LICENSING PLATFORM",
     "• Browse Music Catalog - Access to a comprehensive library of tracks from producers worldwide",
     "• Instant Licensing - Quick and easy music licensing for projects",
     "• Multiple Account Types - Support for clients, artists, record labels, and producers",
     "",
-    "🎪 TARGET USE CASES",
+    "TARGET USE CASES",
     "• Content Creators - YouTube, social media, streaming content",
     "• Advertisers - Commercial campaigns and brand content",
     "• Film & TV - Background music and soundtracks",
@@ -43,47 +43,47 @@ async function generateWelcomePDF(firstName: string) {
     "• Game Developers - In-game music and sound effects",
     "• Event Planners - Event and presentation music",
     "",
-    "🔍 ADVANCED SEARCH & DISCOVERY",
+    "ADVANCED SEARCH & DISCOVERY",
     "• Genre Filtering - Filter tracks by musical genres",
     "• Mood Filtering - Find tracks by emotional tone and atmosphere",
     "• Artist Search - Search by track title or artist name",
     "• Pagination - Browse through large catalogs efficiently",
     "",
-    "🎼 PLAYLIST MANAGEMENT",
+    "PLAYLIST MANAGEMENT",
     "• Create Playlists - Build custom playlists for projects and inspiration",
     "• Add Tracks - Add any track from the catalog to playlists",
     "• Share Playlists - Share playlists with music supervisors, agencies, and others",
     "• Catalog Browser - Full catalog access with search and filtering",
     "• Track Organization - Organize favorite tracks for easy access",
     "",
-    "📊 USER DASHBOARD",
+    "USER DASHBOARD",
     "• Personalized Dashboard - Custom interface for client needs",
     "• Profile Management - Edit account information and preferences",
     "• Quick Access - Easy navigation to key features",
     "• License Usage Tracking - Monitor your licensing activity",
     "• Cost Management - Track spending and usage patterns",
     "",
-    "⚡ ROBUST LICENSING SYSTEM",
+    "ROBUST LICENSING SYSTEM",
     "• On-demand licenses - Choose a track to license and complete the process now",
     "• Sync Proposals - Submit your project and pitch to a creator for pre-made tracks",
     "• Custom Sync Requests - Request a custom track for your media production",
     "",
-    "📁 PROJECT MANAGEMENT",
+    "PROJECT MANAGEMENT",
     "• Track Favorites - Save tracks for later consideration",
     "• Project Organization - Group tracks by project or campaign",
     "• Playlisting - Create and Share playlists with others",
     "",
-    "🔒 SECURITY & PRIVACY",
+    "SECURITY & PRIVACY",
     "• Secure Authentication - Protected user accounts",
     "• Data Privacy - User information protection",
     "• Professional Branding - Trusted platform for music licensing",
     "",
-    "📞 SUPPORT & RESOURCES",
+    "SUPPORT & RESOURCES",
     "• Educational Content - Weekly emails with platform tips",
     "• Announcements Page - YouTube videos and Web-based stories for sync",
     "• Professional Support - Backed by iLi Media Group, LLC",
     "",
-    "💻 USER EXPERIENCE",
+    "USER EXPERIENCE",
     "• Modern UI - Clean, professional interface",
     "• Mobile Responsive - Access from any device",
     "• Fast Performance - Optimized for quick browsing and licensing",
@@ -98,10 +98,12 @@ async function generateWelcomePDF(firstName: string) {
 
   let yPosition = 650;
   features.forEach((feature, index) => {
-    if (feature.startsWith("🎵") || feature.startsWith("🎪") || feature.startsWith("🔍") || 
-        feature.startsWith("🎼") || feature.startsWith("📊") || feature.startsWith("⚡") || 
-        feature.startsWith("📁") || feature.startsWith("🔒") || feature.startsWith("📞") || 
-        feature.startsWith("💻") || feature === "SUMMARY") {
+    if (feature === "CORE MUSIC LICENSING PLATFORM" || feature === "TARGET USE CASES" || 
+        feature === "ADVANCED SEARCH & DISCOVERY" || feature === "PLAYLIST MANAGEMENT" || 
+        feature === "USER DASHBOARD" || feature === "ROBUST LICENSING SYSTEM" || 
+        feature === "PROJECT MANAGEMENT" || feature === "SECURITY & PRIVACY" || 
+        feature === "SUPPORT & RESOURCES" || feature === "USER EXPERIENCE" || 
+        feature === "SUMMARY") {
       // Section headers - bold and larger
       page.drawText(feature, { x: 50, y: yPosition, size: 12, font, color: rgb(0, 0.88, 1) });
       yPosition -= 20;
