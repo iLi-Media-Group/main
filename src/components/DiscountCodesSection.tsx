@@ -150,7 +150,7 @@ const DiscountCodesSection: React.FC = () => {
     );
   }
 
-  // Show multiple discounts in a compact vertical layout
+  // Show multiple discounts in a compact horizontal layout
   if (discountCodes.length <= 3) {
     return (
       <div className="h-full">
@@ -160,9 +160,9 @@ const DiscountCodesSection: React.FC = () => {
             Active Discounts
           </h3>
         </div>
-        <div className="space-y-3">
+        <div className="flex gap-3 overflow-x-auto">
           {discountCodes.map((discount) => (
-            <div key={discount.id} className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-3 py-3 shadow-lg">
+            <div key={discount.id} className="bg-gradient-to-r from-green-500 to-green-600 dark:from-green-600 dark:to-green-700 border border-green-400 dark:border-green-500 rounded-lg px-3 py-3 shadow-lg flex-shrink-0 min-w-[200px]">
               <div className="flex flex-col gap-2">
                 {/* Header - Compact */}
                 <div className="flex items-center justify-between">
