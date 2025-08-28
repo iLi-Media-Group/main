@@ -6,6 +6,7 @@ import { formatSubGenresForDisplay } from '../utils/genreUtils';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
+import { PlaylistManager } from './PlaylistManager';
 import { 
   Building2, 
   Music, 
@@ -1332,6 +1333,21 @@ export function RightsHolderDashboard() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Playlists Section */}
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Record Label Playlists</h2>
+            <Link
+              to="/record-label/playlists"
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Manage Playlists
+            </Link>
+          </div>
+          <PlaylistManager accountType="rights_holder" title="Record Label Playlists" />
         </div>
 
 

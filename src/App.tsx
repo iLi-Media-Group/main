@@ -515,7 +515,28 @@ const App = () => {
         <Route path="/producer/playlists" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
-              <PlaylistManager />
+              <PlaylistManager accountType="producer" />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/client/playlists" element={
+          <ProtectedRoute requiresClient>
+            <LayoutWrapper>
+              <PlaylistManager accountType="client" />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/artist/playlists" element={
+          <ProtectedRoute requiresArtist>
+            <LayoutWrapper>
+              <PlaylistManager accountType="artist_band" />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/record-label/playlists" element={
+          <ProtectedRoute requiresRecordLabel>
+            <LayoutWrapper>
+              <PlaylistManager accountType="rights_holder" />
             </LayoutWrapper>
           </ProtectedRoute>
         } />

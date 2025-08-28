@@ -20,9 +20,11 @@ import { supabase } from '../lib/supabase';
 
 interface PlaylistManagerProps {
   onPlaylistCreated?: (playlist: Playlist) => void;
+  accountType?: string; // 'producer', 'client', 'artist_band', 'rights_holder'
+  title?: string; // Custom title for the playlist manager
 }
 
-export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
+export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', title }: PlaylistManagerProps) {
   const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -46,15 +48,48 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
     is_public: true
   });
 
+  // Get the appropriate title based on account type
+  const getTitle = () => {
+    if (title) return title;
+    switch (accountType) {
+      case 'client':
+        return 'Your Playlists';
+      case 'artist_band':
+        return 'Artist Playlists';
+      case 'rights_holder':
+        return 'Record Label Playlists';
+      case 'producer':
+      default:
+        return 'Producer Playlists';
+    }
+  };
+
   useEffect(() => {
     loadPlaylists();
-  }, []);
+  }, [accountType]);
 
   const loadPlaylists = async () => {
     try {
       setLoading(true);
       setError(''); // Clear any previous errors
-      const playlistsData = await PlaylistService.getProducerPlaylistsWithFavorites();
+      
+      let playlistsData;
+      switch (accountType) {
+        case 'client':
+          playlistsData = await PlaylistService.getClientPlaylists();
+          break;
+        case 'artist_band':
+          playlistsData = await PlaylistService.getArtistPlaylists();
+          break;
+        case 'rights_holder':
+          playlistsData = await PlaylistService.getRecordLabelPlaylists();
+          break;
+        case 'producer':
+        default:
+          playlistsData = await PlaylistService.getProducerPlaylistsWithFavorites();
+          break;
+      }
+      
       setPlaylists(playlistsData);
     } catch (err) {
       console.error('Failed to load playlists:', err);
@@ -81,8 +116,14 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.name.trim()) {
+      setError('Playlist name is required');
+      return;
+    }
+
     try {
-      const newPlaylist = await PlaylistService.createPlaylist(formData);
+      setError('');
+      const newPlaylist = await PlaylistService.createPlaylist(formData, accountType);
       setPlaylists(prev => [newPlaylist, ...prev]);
       setShowCreateModal(false);
       setFormData({
@@ -212,7 +253,7 @@ export function PlaylistManager({ onPlaylistCreated }: PlaylistManagerProps) {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
         <div className="flex-1">
-          <h2 className="text-3xl font-bold text-white mb-2">Playlists</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">{getTitle()}</h2>
           <p className="text-gray-400 text-lg">Create and manage playlists to share with music supervisors</p>
         </div>
         <button

@@ -9,8 +9,8 @@ import {
 } from '../types/playlist';
 
 export class PlaylistService {
-  // Create a new playlist
-  static async createPlaylist(data: CreatePlaylistData): Promise<Playlist> {
+  // Create a new playlist for any account type
+  static async createPlaylist(data: CreatePlaylistData, accountType: string = 'producer'): Promise<Playlist> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -27,7 +27,8 @@ export class PlaylistService {
         logo_url: data.logo_url,
         photo_url: data.photo_url,
         is_public: data.is_public ?? true,
-        slug
+        slug,
+        creator_type: accountType
       })
       .select(`
         *,
@@ -45,14 +46,19 @@ export class PlaylistService {
     return playlist;
   }
 
-  // Get all playlists for a producer
+  // Get all playlists for a producer (backward compatibility)
   static async getProducerPlaylists(): Promise<Playlist[]> {
+    return this.getUserPlaylists('producer');
+  }
+
+  // Get all playlists for any account type
+  static async getUserPlaylists(accountType?: string): Promise<Playlist[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    console.log('Fetching playlists for user:', user.id);
+    console.log('Fetching playlists for user:', user.id, 'account type:', accountType);
 
-    const { data: playlists, error } = await supabase
+    let query = supabase
       .from('playlists')
       .select(`
         *,
@@ -64,8 +70,14 @@ export class PlaylistService {
           avatar_path
         )
       `)
-      .eq('producer_id', user.id)
-      .order('created_at', { ascending: false });
+      .eq('producer_id', user.id);
+
+    // If account type is specified, filter by it
+    if (accountType) {
+      query = query.eq('creator_type', accountType);
+    }
+
+    const { data: playlists, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching playlists:', error);
@@ -88,6 +100,21 @@ export class PlaylistService {
     );
 
     return playlistsWithCounts;
+  }
+
+  // Get playlists for clients
+  static async getClientPlaylists(): Promise<Playlist[]> {
+    return this.getUserPlaylists('client');
+  }
+
+  // Get playlists for artists
+  static async getArtistPlaylists(): Promise<Playlist[]> {
+    return this.getUserPlaylists('artist_band');
+  }
+
+  // Get playlists for record labels
+  static async getRecordLabelPlaylists(): Promise<Playlist[]> {
+    return this.getUserPlaylists('rights_holder');
   }
 
   // Get a single playlist with tracks
