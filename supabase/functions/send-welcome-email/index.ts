@@ -290,17 +290,17 @@ serve(async (req) => {
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
 
     // Customize email content based on account type
-    let subject = `🎉 Welcome to MyBeatFi, ${first_name || 'there'}!`;
+    let subject = `Welcome to MyBeatFi, ${first_name || 'there'}!`;
     let welcomeMessage = "Thanks for signing up. You're now part of a global community of creatives ready to license, sync, and discover incredible music.";
     
     if (account_type === 'producer') {
-      subject = `🎵 Welcome to MyBeatFi Producer Network, ${first_name || 'there'}!`;
+      subject = `Welcome to MyBeatFi Producer Network, ${first_name || 'there'}!`;
       welcomeMessage = "Congratulations on joining the MyBeatFi Producer Network! You're now part of an exclusive community of talented producers ready to license your music worldwide.";
     } else if (account_type === 'artist_band') {
-      subject = `🎤 Welcome to MyBeatFi Artist Network, ${first_name || 'there'}!`;
+      subject = `Welcome to MyBeatFi Artist Network, ${first_name || 'there'}!`;
       welcomeMessage = "Welcome to the MyBeatFi Artist Network! You're now part of a community of artists and bands ready to license your music for sync opportunities.";
     } else if (account_type === 'rights_holder') {
-      subject = `🏢 Welcome to MyBeatFi Rights Holder Network, ${first_name || 'there'}!`;
+      subject = `Welcome to MyBeatFi Rights Holder Network, ${first_name || 'there'}!`;
       welcomeMessage = "Welcome to the MyBeatFi Rights Holder Network! You're now part of a community of record labels and publishers managing music licensing.";
     }
 
