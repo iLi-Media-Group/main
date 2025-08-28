@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Play, 
   Pause, 
@@ -55,8 +55,9 @@ export function PlaylistView() {
   console.log('🔍 Current URL:', window.location.href);
   console.log('🔍 Pathname:', window.location.pathname);
   
-  const { slug } = useParams<{ slug: string }>();
-  console.log('📋 Slug from params:', slug);
+  const location = useLocation();
+  const slug = location.pathname.replace('/test-playlist/', '');
+  console.log('📋 Slug from pathname:', slug);
   console.log('📋 Slug type:', typeof slug);
   console.log('📋 Slug length:', slug?.length);
   
