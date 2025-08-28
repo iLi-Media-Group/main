@@ -231,7 +231,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
   };
 
   const copyPlaylistUrl = (slug: string) => {
-    const url = `${window.location.origin}/music-playlist/${slug}`;
+    const url = `${window.location.origin}/view-playlist/${slug}`;
     navigator.clipboard.writeText(url);
     // You could add a toast notification here
   };
@@ -351,7 +351,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                   <h4 className="text-xs font-semibold text-white mb-2 uppercase tracking-wide">Playlist URL</h4>
                   <div className="flex items-center space-x-3">
                     <code className="text-xs text-blue-200 bg-black/30 px-3 py-2 rounded-lg flex-1 truncate border border-white/10 font-mono">
-                      {window.location.origin}/music-playlist/{playlist.slug}
+                      {window.location.origin}/view-playlist/{playlist.slug}
                     </code>
                     <button
                       onClick={() => copyPlaylistUrl(playlist.slug)}
@@ -376,7 +376,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-3 mt-auto">
                   <a
-                    href={`/playlist/${playlist.slug}`}
+                    href={`/view-playlist/${playlist.slug}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl text-sm font-medium text-center transition-all duration-200 hover:shadow-lg hover:shadow-blue-500/25"
