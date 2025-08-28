@@ -119,10 +119,7 @@ export class PlaylistService {
 
   // Get a single playlist with tracks
   static async getPlaylist(slug: string): Promise<PlaylistWithTracks | null> {
-    console.log('🔍 PlaylistService.getPlaylist called with slug:', slug);
-    
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('👤 User auth result:', user ? `Logged in as ${user.id}` : 'Not logged in');
     
     // First, try to get the playlist by slug without the foreign key join
     let { data: playlist, error } = await supabase
@@ -132,41 +129,24 @@ export class PlaylistService {
       .single();
 
     if (error || !playlist) {
-      console.log('❌ Playlist not found or error:', error);
       return null;
     }
-
-    console.log('✅ Playlist found:', {
-      id: playlist.id,
-      name: playlist.name,
-      slug: playlist.slug,
-      is_public: playlist.is_public,
-      creator_type: playlist.creator_type,
-      producer_id: playlist.producer_id
-    });
 
     // Check if user can access this playlist
     if (user) {
       // User is logged in - they can see their own playlists or public playlists
       const isOwner = playlist.producer_id === user.id;
       const isPublic = playlist.is_public;
-      console.log('🔐 Access check for logged-in user:', { isOwner, isPublic });
       
       if (!isOwner && !isPublic) {
-        console.log('❌ User cannot access this playlist - not owner and not public');
         return null;
       }
     } else {
       // User is not logged in - they can only see public playlists
-      console.log('🔐 Access check for anonymous user:', { is_public: playlist.is_public });
-      
       if (!playlist.is_public) {
-        console.log('❌ User not logged in and playlist is not public');
         return null;
       }
     }
-
-    console.log('✅ Access granted, proceeding to fetch creator profile and tracks');
 
     // Get the creator's profile information separately
     console.log('👤 Fetching creator profile for ID:', playlist.producer_id);
@@ -230,7 +210,8 @@ export class PlaylistService {
 
     if (tracksError) {
       console.log('❌ Error fetching tracks:', tracksError);
-      throw tracksError;
+      // Don't throw error, just continue with empty tracks array
+      console.log('⚠️ Continuing with empty tracks array due to error');
     } else {
       console.log('✅ Tracks fetched:', tracks?.length || 0, 'tracks');
     }
