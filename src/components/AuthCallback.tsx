@@ -58,6 +58,18 @@ export function AuthCallback() {
                 } else {
                   console.log('Welcome email sent successfully after verification');
                 }
+                // Also schedule the client welcome drip series
+                try {
+                  await supabase.functions.invoke('schedule-client-welcome-drip', {
+                    body: {
+                      user_id: data.session.user.id,
+                      email: data.session.user.email,
+                      first_name: data.session.user.user_metadata?.first_name || 'there'
+                    }
+                  });
+                } catch (scheduleErr) {
+                  console.error('Failed to schedule client welcome drip after verification:', scheduleErr);
+                }
               } catch (emailErr) {
                 console.error('Welcome email failed after verification:', emailErr);
               }

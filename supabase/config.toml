@@ -1,3 +1,10 @@
+[functions.process-client-welcome-drip]
+verify_jwt = false
+schedule = "0 * * * *" # run hourly; function sends only if due
+
+[functions.schedule-client-welcome-drip]
+verify_jwt = false
+
 
 [functions.search-tracks]
 enabled = true

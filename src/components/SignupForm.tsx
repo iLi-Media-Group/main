@@ -272,6 +272,21 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         // Log the error but don't prevent signup completion
       }
 
+      // Schedule 6-week client welcome drip for client accounts only
+      if (accountType === 'client') {
+        try {
+          await supabase.functions.invoke('schedule-client-welcome-drip', {
+            body: {
+              user_id: user.id,
+              email: email,
+              first_name: firstName
+            }
+          });
+        } catch (e) {
+          console.error('Failed to schedule client welcome drip:', e);
+        }
+      }
+
       // Mark invitation as used if it's a producer or artist
       if (accountType === 'producer') {
         await supabase.rpc('use_producer_invitation', {
