@@ -27,7 +27,6 @@ import DiscountCodesSection from './DiscountCodesSection';
 import { AudioPlayer } from './AudioPlayer';
 import { FavoritedPlaylists } from './FavoritedPlaylists';
 import { Following } from './Following';
-import { PlaylistManager } from './PlaylistManager';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -1681,19 +1680,21 @@ const getPlanLevel = (plan: string): number => {
         </div>
 
 
-        {/* Playlists Section */}
+        {/* Playlists Quick Access */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Your Playlists</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Your Playlists</h2>
+              <p className="text-gray-400 text-sm mt-1">Create and manage your music playlists</p>
+            </div>
             <Link
               to="/client/playlists"
-              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Music className="w-5 h-5 mr-2" />
               Manage Playlists
             </Link>
           </div>
-          <PlaylistManager accountType="client" title="Your Playlists" />
         </div>
 
         {/* Custom Sync Requests Section */}
