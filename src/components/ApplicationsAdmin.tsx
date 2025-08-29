@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/button';
-import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown, Star, UserPlus, Users } from 'lucide-react';
+import { Mail, User, Music, Calendar, Filter, Search, Eye, CheckCircle, Clock, XCircle, Save, ArrowUpDown, Star, UserPlus, Users, Building2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { calculateRankingScore, applicationToRankingCriteria, RankingResult } from '../lib/rankingSystem';
@@ -117,13 +117,46 @@ type ArtistApplication = {
   manual_review?: boolean;
 };
 
-type ApplicationType = 'producer' | 'artist';
+type RightsHolderApplication = {
+  id: string;
+  company_name: string;
+  contact_first_name: string;
+  contact_last_name: string;
+  email: string;
+  phone: string;
+  rights_holder_type: string;
+  website: string;
+  company_size: string;
+  years_in_business: number;
+  primary_genres: string[];
+  catalog_size: number;
+  has_sync_experience: boolean;
+  sync_experience_details: string;
+  has_licensing_team: boolean;
+  licensing_team_size: number;
+  revenue_range: string;
+  target_markets: string[];
+  additional_info: string;
+  status: string;
+  review_tier: string | null;
+  auto_disqualified: boolean;
+  application_score: number;
+  score_breakdown?: any;
+  rejection_reason?: string;
+  manual_review_approved?: boolean;
+  manual_review?: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+type ApplicationType = 'producer' | 'artist' | 'rights_holder';
 type TabType = 'new' | 'invited' | 'onboarded' | 'save_for_later' | 'declined' | 'manual_review' | 'all';
 
 export default function ApplicationsAdmin() {
   const navigate = useNavigate();
   const [producerApplications, setProducerApplications] = useState<ProducerApplication[]>([]);
   const [artistApplications, setArtistApplications] = useState<ArtistApplication[]>([]);
+  const [rightsHolderApplications, setRightsHolderApplications] = useState<RightsHolderApplication[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('new');
   const [selectedType, setSelectedType] = useState<ApplicationType>('producer');
@@ -132,7 +165,7 @@ export default function ApplicationsAdmin() {
   const [sortBy, setSortBy] = useState<'date' | 'genre' | 'ranking'>('ranking');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [search, setSearch] = useState<string>('');
-  const [selectedApplication, setSelectedApplication] = useState<ProducerApplication | ArtistApplication | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<ProducerApplication | ArtistApplication | RightsHolderApplication | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [showRankingBreakdown, setShowRankingBreakdown] = useState(false);
   const [tabCounts, setTabCounts] = useState<Record<TabType, number>>({
@@ -146,13 +179,28 @@ export default function ApplicationsAdmin() {
   });
 
   // Get current applications based on selected type
-  const getCurrentApplications = () => {
-    return selectedType === 'producer' ? producerApplications : artistApplications;
+  const getCurrentApplications = (): (ProducerApplication | ArtistApplication | RightsHolderApplication)[] => {
+    if (selectedType === 'producer') return producerApplications;
+    if (selectedType === 'artist') return artistApplications;
+    return rightsHolderApplications;
+  };
+
+  // Get application name for display
+  const getApplicationName = (app: ProducerApplication | ArtistApplication | RightsHolderApplication) => {
+    if ('company_name' in app) {
+      return app.company_name; // Rights holder
+    }
+    return app.name; // Producer or artist
+  };
+
+  // Get application email for display
+  const getApplicationEmail = (app: ProducerApplication | ArtistApplication | RightsHolderApplication) => {
+    return app.email;
   };
 
   // Get all applications for tab counts
-  const getAllApplications = () => {
-    return [...producerApplications, ...artistApplications];
+  const getAllApplications = (): (ProducerApplication | ArtistApplication | RightsHolderApplication)[] => {
+    return [...producerApplications, ...artistApplications, ...rightsHolderApplications];
   };
 
   useEffect(() => {
@@ -178,11 +226,20 @@ export default function ApplicationsAdmin() {
 
       if (artistError) throw artistError;
 
+      // Fetch rights holder applications
+      const { data: rightsHolderData, error: rightsHolderError } = await supabase
+        .from('rights_holder_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (rightsHolderError) throw rightsHolderError;
+
       setProducerApplications(producerData || []);
       setArtistApplications(artistData || []);
+      setRightsHolderApplications(rightsHolderData || []);
 
       // Calculate tab counts
-      updateTabCounts([...(producerData || []), ...(artistData || [])]);
+      updateTabCounts([...(producerData || []), ...(artistData || []), ...(rightsHolderData || [])]);
 
     } catch (error) {
       console.error('Error fetching applications:', error);
@@ -191,7 +248,7 @@ export default function ApplicationsAdmin() {
     }
   };
 
-  const updateTabCounts = (allApps: any[]) => {
+  const updateTabCounts = (allApps: (ProducerApplication | ArtistApplication | RightsHolderApplication)[]) => {
     const counts = {
       new: allApps.filter(app => app.status === 'new').length,
       invited: allApps.filter(app => app.status === 'invited').length,
@@ -204,7 +261,7 @@ export default function ApplicationsAdmin() {
     setTabCounts(counts);
   };
 
-  const getFilteredApplications = () => {
+  const getFilteredApplications = (): (ProducerApplication | ArtistApplication | RightsHolderApplication)[] => {
     let apps = getCurrentApplications();
 
     // Filter by tab
@@ -218,32 +275,47 @@ export default function ApplicationsAdmin() {
 
     // Filter by search
     if (search) {
-      apps = apps.filter(app => 
-        app.name.toLowerCase().includes(search.toLowerCase()) ||
-        app.email.toLowerCase().includes(search.toLowerCase()) ||
-        (selectedType === 'producer' ? 
-          (app as ProducerApplication).primary_genre?.toLowerCase().includes(search.toLowerCase()) :
-          (app as ArtistApplication).primary_genre?.toLowerCase().includes(search.toLowerCase())
-        )
-      );
+      apps = apps.filter(app => {
+        const name = getApplicationName(app);
+        const email = getApplicationEmail(app);
+        const searchLower = search.toLowerCase();
+        
+        if (name.toLowerCase().includes(searchLower) || email.toLowerCase().includes(searchLower)) {
+          return true;
+        }
+        
+        // Check genre for producer and artist applications
+        if (selectedType === 'producer' && 'primary_genre' in app) {
+          return app.primary_genre?.toLowerCase().includes(searchLower);
+        }
+        if (selectedType === 'artist' && 'primary_genre' in app) {
+          return app.primary_genre?.toLowerCase().includes(searchLower);
+        }
+        
+        return false;
+      });
     }
 
-    // Filter by genre
-    if (selectedGenre) {
-      apps = apps.filter(app => 
-        selectedType === 'producer' ? 
-          (app as ProducerApplication).primary_genre === selectedGenre :
-          (app as ArtistApplication).primary_genre === selectedGenre
-      );
+    // Filter by genre (only for producer and artist applications)
+    if (selectedGenre && selectedType !== 'rights_holder') {
+      apps = apps.filter(app => {
+        if ('primary_genre' in app) {
+          return app.primary_genre === selectedGenre;
+        }
+        return false;
+      });
     }
 
     // Filter by ranking range
     if (selectedRankingRange) {
       const [min, max] = selectedRankingRange.split('-').map(Number);
       apps = apps.filter(app => {
-        const score = selectedType === 'producer' ? 
-          (app as ProducerApplication).ranking_score || 0 :
-          (app as ArtistApplication).application_score || 0;
+        let score = 0;
+        if ('ranking_score' in app) {
+          score = app.ranking_score || 0;
+        } else if ('application_score' in app) {
+          score = app.application_score || 0;
+        }
         return score >= min && score <= max;
       });
     }
@@ -258,21 +330,13 @@ export default function ApplicationsAdmin() {
           bValue = new Date(b.created_at).getTime();
           break;
         case 'genre':
-          aValue = selectedType === 'producer' ? 
-            (a as ProducerApplication).primary_genre :
-            (a as ArtistApplication).primary_genre;
-          bValue = selectedType === 'producer' ? 
-            (b as ProducerApplication).primary_genre :
-            (b as ArtistApplication).primary_genre;
+          aValue = 'primary_genre' in a ? a.primary_genre : '';
+          bValue = 'primary_genre' in b ? b.primary_genre : '';
           break;
         case 'ranking':
         default:
-          aValue = selectedType === 'producer' ? 
-            (a as ProducerApplication).ranking_score || 0 :
-            (a as ArtistApplication).application_score || 0;
-          bValue = selectedType === 'producer' ? 
-            (b as ProducerApplication).ranking_score || 0 :
-            (b as ArtistApplication).application_score || 0;
+          aValue = 'ranking_score' in a ? a.ranking_score || 0 : 'application_score' in a ? a.application_score || 0 : 0;
+          bValue = 'ranking_score' in b ? b.ranking_score || 0 : 'application_score' in b ? b.application_score || 0 : 0;
           break;
       }
 
@@ -289,9 +353,15 @@ export default function ApplicationsAdmin() {
   const updateApplicationStatus = async (applicationId: string, status: string, type: ApplicationType) => {
     try {
       // Get the application data BEFORE updating status
-      const app = type === 'producer' ? 
-        producerApplications.find(a => a.id === applicationId) :
-        artistApplications.find(a => a.id === applicationId);
+      let app: ProducerApplication | ArtistApplication | RightsHolderApplication | undefined;
+      
+      if (type === 'producer') {
+        app = producerApplications.find(a => a.id === applicationId);
+      } else if (type === 'artist') {
+        app = artistApplications.find(a => a.id === applicationId);
+      } else if (type === 'rights_holder') {
+        app = rightsHolderApplications.find(a => a.id === applicationId);
+      }
       
       if (!app) {
         console.error('Application not found:', applicationId);
@@ -299,7 +369,9 @@ export default function ApplicationsAdmin() {
       }
 
       // Update the status first
-      const table = type === 'producer' ? 'producer_applications' : 'artist_applications';
+      const table = type === 'producer' ? 'producer_applications' : 
+                   type === 'artist' ? 'artist_applications' : 
+                   'rights_holder_applications';
       const { error } = await supabase
         .from(table)
         .update({ status, updated_at: new Date().toISOString() })
@@ -314,10 +386,12 @@ export default function ApplicationsAdmin() {
       if (status === 'invited') {
         try {
           await sendApprovalEmail(app, type);
-          alert(`SUCCESS: ${app.name} has been invited and email sent!`);
-        } catch (emailError) {
+          const appName = getApplicationName(app);
+          alert(`SUCCESS: ${appName} has been invited and email sent!`);
+        } catch (emailError: any) {
           console.error('Email sending failed:', emailError);
-          alert(`ERROR: ${app.name} was invited but email failed to send: ${emailError.message}`);
+          const appName = getApplicationName(app);
+          alert(`ERROR: ${appName} was invited but email failed to send: ${emailError.message}`);
         }
       }
 
@@ -327,7 +401,7 @@ export default function ApplicationsAdmin() {
     }
   };
 
-  const sendApprovalEmail = async (app: ProducerApplication | ArtistApplication, type: ApplicationType) => {
+  const sendApprovalEmail = async (app: ProducerApplication | ArtistApplication | RightsHolderApplication, type: ApplicationType) => {
     try {
       if (type === 'producer') {
         const producerApp = app as ProducerApplication;
@@ -439,13 +513,110 @@ export default function ApplicationsAdmin() {
           }
         });
 
-        if (emailError) throw emailError;
-      }
-    } catch (error) {
-      console.error('Error sending approval email:', error);
-      throw error;
-    }
-  };
+                 if (emailError) throw emailError;
+       } else if (type === 'artist') {
+         const artistApp = app as ArtistApplication;
+         
+         // Extract first and last name from the full name
+         const nameParts = artistApp.name.split(' ');
+         const firstName = nameParts[0] || '';
+         const lastName = nameParts.slice(1).join(' ') || '';
+         
+         // Generate artist number using the function
+         const { data: nextArtistNumber } = await supabase.rpc('get_next_artist_number');
+         const artistNumber = nextArtistNumber || 'MBAR-01';
+
+         // Generate invitation code
+         const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+         // Get current user and ensure we have the user ID
+         const { data: { user }, error: userError } = await supabase.auth.getUser();
+         if (userError) throw userError;
+         if (!user?.id) throw new Error('User not authenticated');
+
+         // Create invitation record
+         const { error: insertError } = await supabase
+           .from('artist_invitations')
+           .insert({
+             email: artistApp.email,
+             first_name: firstName,
+             last_name: lastName,
+             invitation_code: invitationCode,
+             created_by: user.id,
+             artist_number: artistNumber
+           })
+           .select();
+
+         if (insertError) {
+           console.error('Insert error:', insertError);
+           throw insertError;
+         }
+
+         // Send invitation email
+         const { error: emailError } = await supabase.functions.invoke('send-artist-invitation', {
+           body: {
+             email: artistApp.email,
+             firstName,
+             lastName,
+             artistNumber,
+             invitationCode
+           }
+         });
+
+         if (emailError) throw emailError;
+       } else if (type === 'rights_holder') {
+         const rightsHolderApp = app as RightsHolderApplication;
+         
+         // Generate rights holder number using the function
+         const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
+         const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
+
+         // Generate invitation code
+         const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+         // Get current user and ensure we have the user ID
+         const { data: { user }, error: userError } = await supabase.auth.getUser();
+         if (userError) throw userError;
+         if (!user?.id) throw new Error('User not authenticated');
+
+         // Create invitation record
+         const { error: insertError } = await supabase
+           .from('rights_holder_invitations')
+           .insert({
+             email: rightsHolderApp.email,
+             company_name: rightsHolderApp.company_name,
+             contact_first_name: rightsHolderApp.contact_first_name,
+             contact_last_name: rightsHolderApp.contact_last_name,
+             invitation_code: invitationCode,
+             created_by: user.id,
+             rights_holder_number: rightsHolderNumber
+           })
+           .select();
+
+         if (insertError) {
+           console.error('Insert error:', insertError);
+           throw insertError;
+         }
+
+         // Send invitation email
+         const { error: emailError } = await supabase.functions.invoke('send-rights-holder-invitation', {
+           body: {
+             email: rightsHolderApp.email,
+             companyName: rightsHolderApp.company_name,
+             contactFirstName: rightsHolderApp.contact_first_name,
+             contactLastName: rightsHolderApp.contact_last_name,
+             rightsHolderNumber,
+             invitationCode
+           }
+         });
+
+         if (emailError) throw emailError;
+       }
+     } catch (error) {
+       console.error('Error sending approval email:', error);
+       throw error;
+     }
+   };
 
   const sendArtistInvitationEmail = async (email: string, firstName: string, lastName: string, artistNumber: string, invitationCode: string) => {
     try {
@@ -522,24 +693,94 @@ export default function ApplicationsAdmin() {
     }
   };
 
-  const getApplicationTypeBadge = (app: ProducerApplication | ArtistApplication) => {
-    const isProducer = 'daws_used' in app;
-    return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-        isProducer 
-          ? 'bg-blue-100 text-blue-800' 
-          : 'bg-purple-100 text-purple-800'
-      }`}>
-        {isProducer ? 'Producer' : 'Artist'}
-      </span>
-    );
+  const handleRightsHolderQuickInvite = async (application: RightsHolderApplication) => {
+    try {
+      // Generate rights holder number using the function
+      const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
+      const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
+
+      // Generate invitation code
+      const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+      // Create invitation
+      const { error: insertError } = await supabase
+        .from('rights_holder_invitations')
+        .insert({
+          email: application.email,
+          company_name: application.company_name,
+          contact_first_name: application.contact_first_name,
+          contact_last_name: application.contact_last_name,
+          invitation_code: invitationCode,
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+          rights_holder_number: rightsHolderNumber
+        });
+
+      if (insertError) throw insertError;
+
+      // Send email
+      const { error: emailError } = await supabase.functions.invoke('send-rights-holder-invitation', {
+        body: {
+          email: application.email,
+          companyName: application.company_name,
+          contactFirstName: application.contact_first_name,
+          contactLastName: application.contact_last_name,
+          rightsHolderNumber,
+          invitationCode
+        }
+      });
+
+      if (emailError) throw emailError;
+
+      // Update application status
+      await supabase
+        .from('rights_holder_applications')
+        .update({ 
+          status: 'invited',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Refresh the applications list
+      fetchApplications();
+
+      // Show success message
+      alert(`Rights Holder ${application.company_name} has been invited successfully! Rights Holder Number: ${rightsHolderNumber}`);
+
+    } catch (error) {
+      console.error('Rights holder quick invite error:', error);
+      alert('Failed to invite rights holder. Please try again.');
+    }
   };
 
-  const getApplicationScore = (app: ProducerApplication | ArtistApplication) => {
+  const getApplicationTypeBadge = (app: ProducerApplication | ArtistApplication | RightsHolderApplication) => {
+    if ('daws_used' in app) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          Producer
+        </span>
+      );
+    } else if ('artist_type' in app) {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+          Artist
+        </span>
+      );
+    } else {
+      return (
+        <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Rights Holder
+        </span>
+      );
+    }
+  };
+
+  const getApplicationScore = (app: ProducerApplication | ArtistApplication | RightsHolderApplication) => {
     if ('ranking_score' in app) {
       return (app as ProducerApplication).ranking_score || 0;
+    } else if ('application_score' in app) {
+      return (app as ArtistApplication | RightsHolderApplication).application_score || 0;
     } else {
-      return (app as ArtistApplication).application_score || 0;
+      return 0;
     }
   };
 
@@ -562,33 +803,44 @@ export default function ApplicationsAdmin() {
           </Button>
         </div>
 
-        {/* Type Selector */}
-        <div className="bg-white/10 backdrop-blur-lg rounded-lg p-4 mb-6">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setSelectedType('producer')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedType === 'producer'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              <Music className="w-4 h-4 inline mr-2" />
-              Producer Applications ({producerApplications.length})
-            </button>
-            <button
-              onClick={() => setSelectedType('artist')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedType === 'artist'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              <Users className="w-4 h-4 inline mr-2" />
-              Artist Applications ({artistApplications.length})
-            </button>
-          </div>
-        </div>
+                 {/* Type Selector */}
+         <div className="bg-white/10 backdrop-blur-lg rounded-lg p-4 mb-6">
+           <div className="flex space-x-4">
+             <button
+               onClick={() => setSelectedType('producer')}
+               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                 selectedType === 'producer'
+                   ? 'bg-blue-600 text-white'
+                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+               }`}
+             >
+               <Music className="w-4 h-4 inline mr-2" />
+               Producer Applications ({producerApplications.length})
+             </button>
+             <button
+               onClick={() => setSelectedType('artist')}
+               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                 selectedType === 'artist'
+                   ? 'bg-purple-600 text-white'
+                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+               }`}
+             >
+               <Users className="w-4 h-4 inline mr-2" />
+               Artist Applications ({artistApplications.length})
+             </button>
+             <button
+               onClick={() => setSelectedType('rights_holder')}
+               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                 selectedType === 'rights_holder'
+                   ? 'bg-green-600 text-white'
+                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+               }`}
+             >
+               <Building2 className="w-4 h-4 inline mr-2" />
+               Rights Holder Applications ({rightsHolderApplications.length})
+             </button>
+           </div>
+         </div>
 
         {/* Filters and Search */}
         <div className="bg-white/10 backdrop-blur-lg rounded-lg p-4 mb-6">
@@ -680,12 +932,14 @@ export default function ApplicationsAdmin() {
                     <div className="flex items-center space-x-4">
                       {getApplicationTypeBadge(app)}
                       <div>
-                        <h3 className="text-white font-semibold">{app.name}</h3>
-                        <p className="text-gray-400 text-sm">{app.email}</p>
+                        <h3 className="text-white font-semibold">{getApplicationName(app)}</h3>
+                        <p className="text-gray-400 text-sm">{getApplicationEmail(app)}</p>
                         <p className="text-gray-400 text-sm">
                           {selectedType === 'producer' ? 
                             (app as ProducerApplication).primary_genre :
-                            (app as ArtistApplication).primary_genre
+                            selectedType === 'artist' ? 
+                            (app as ArtistApplication).primary_genre :
+                            (app as RightsHolderApplication).rights_holder_type
                           }
                         </p>
                       </div>
@@ -729,6 +983,16 @@ export default function ApplicationsAdmin() {
                             <UserPlus className="w-4 h-4" />
                           </Button>
                         )}
+                        {app.status === 'new' && selectedType === 'rights_holder' && (
+                          <Button
+                            onClick={() => handleRightsHolderQuickInvite(app as RightsHolderApplication)}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700"
+                            title="Quick Invite Rights Holder"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+                        )}
                         {app.status === 'new' && (
                           <Button
                             onClick={() => updateApplicationStatus(app.id, 'declined', selectedType)}
@@ -765,118 +1029,167 @@ export default function ApplicationsAdmin() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-white font-semibold mb-2">Basic Information</h3>
-                <p className="text-gray-300">Name: {selectedApplication.name}</p>
-                <p className="text-gray-300">Email: {selectedApplication.email}</p>
+                <p className="text-gray-300">Name: {getApplicationName(selectedApplication)}</p>
+                <p className="text-gray-300">Email: {getApplicationEmail(selectedApplication)}</p>
                 <p className="text-gray-300">Status: {selectedApplication.status}</p>
                 <p className="text-gray-300">Created: {new Date(selectedApplication.created_at).toLocaleString()}</p>
               </div>
 
-              {/* Show different fields based on application type */}
-              {selectedType === 'producer' ? (
-                <>
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Producer Details</h3>
-                    <p className="text-gray-300">Primary Genre: {(selectedApplication as ProducerApplication).primary_genre}</p>
-                    <p className="text-gray-300">Secondary Genre: {(selectedApplication as ProducerApplication).secondary_genre || 'N/A'}</p>
-                    <p className="text-gray-300">Years Experience: {(selectedApplication as ProducerApplication).years_experience}</p>
-                    <p className="text-gray-300">DAWs Used: {(selectedApplication as ProducerApplication).daws_used}</p>
-                    <p className="text-gray-300">Team Type: {(selectedApplication as ProducerApplication).team_type}</p>
-                    <p className="text-gray-300">Tracks per Week: {(selectedApplication as ProducerApplication).tracks_per_week}</p>
-                  </div>
+                             {/* Show different fields based on application type */}
+               {selectedType === 'producer' ? (
+                 <>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Producer Details</h3>
+                     <p className="text-gray-300">Primary Genre: {(selectedApplication as ProducerApplication).primary_genre}</p>
+                     <p className="text-gray-300">Secondary Genre: {(selectedApplication as ProducerApplication).secondary_genre || 'N/A'}</p>
+                     <p className="text-gray-300">Years Experience: {(selectedApplication as ProducerApplication).years_experience}</p>
+                     <p className="text-gray-300">DAWs Used: {(selectedApplication as ProducerApplication).daws_used}</p>
+                     <p className="text-gray-300">Team Type: {(selectedApplication as ProducerApplication).team_type}</p>
+                     <p className="text-gray-300">Tracks per Week: {(selectedApplication as ProducerApplication).tracks_per_week}</p>
+                   </div>
 
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Music Creation</h3>
-                    <p className="text-gray-300">Sample Use: {(selectedApplication as ProducerApplication).sample_use ? 'Yes' : 'No'}</p>
-                    <p className="text-gray-300">Splice Use: {(selectedApplication as ProducerApplication).splice_use}</p>
-                    <p className="text-gray-300">Loop Use: {(selectedApplication as ProducerApplication).loop_use}</p>
-                    <p className="text-gray-300">AI-Generated Music: {(selectedApplication as ProducerApplication).ai_generated_music ? 'Yes' : 'No'}</p>
-                  </div>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Music Creation</h3>
+                     <p className="text-gray-300">Sample Use: {(selectedApplication as ProducerApplication).sample_use ? 'Yes' : 'No'}</p>
+                     <p className="text-gray-300">Splice Use: {(selectedApplication as ProducerApplication).splice_use}</p>
+                     <p className="text-gray-300">Loop Use: {(selectedApplication as ProducerApplication).loop_use}</p>
+                     <p className="text-gray-300">AI-Generated Music: {(selectedApplication as ProducerApplication).ai_generated_music ? 'Yes' : 'No'}</p>
+                   </div>
 
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Business Information</h3>
-                    <p className="text-gray-300">Business Entity: {(selectedApplication as ProducerApplication).business_entity || 'N/A'}</p>
-                    <p className="text-gray-300">PRO Affiliation: {(selectedApplication as ProducerApplication).pro_affiliation}</p>
-                    <p className="text-gray-300">Auto-Disqualified: {(selectedApplication as ProducerApplication).auto_disqualified ? 'Yes' : 'No'}</p>
-                  </div>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Business Information</h3>
+                     <p className="text-gray-300">Business Entity: {(selectedApplication as ProducerApplication).business_entity || 'N/A'}</p>
+                     <p className="text-gray-300">PRO Affiliation: {(selectedApplication as ProducerApplication).pro_affiliation}</p>
+                     <p className="text-gray-300">Auto-Disqualified: {(selectedApplication as ProducerApplication).auto_disqualified ? 'Yes' : 'No'}</p>
+                   </div>
 
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
-                    <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ProducerApplication).sync_licensing_course || 'N/A'}</p>
-                    <p className="text-gray-300">Quiz Score: {(selectedApplication as ProducerApplication).quiz_score || 0}/{(selectedApplication as ProducerApplication).quiz_total_questions || 5}</p>
-                    <p className="text-gray-300">Quiz Completed: {(selectedApplication as ProducerApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                    <p className="text-gray-300">Q1 Answer: {(selectedApplication as ProducerApplication).quiz_question_1 || 'N/A'}</p>
-                    <p className="text-gray-300">Q2 Answer: {(selectedApplication as ProducerApplication).quiz_question_2 || 'N/A'}</p>
-                    <p className="text-gray-300">Q3 Answer: {(selectedApplication as ProducerApplication).quiz_question_3 || 'N/A'}</p>
-                    <p className="text-gray-300">Q4 Answer: {(selectedApplication as ProducerApplication).quiz_question_4 || 'N/A'}</p>
-                    <p className="text-gray-300">Q5 Answer: {(selectedApplication as ProducerApplication).quiz_question_5 || 'N/A'}</p>
-                  </div>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
+                     <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ProducerApplication).sync_licensing_course || 'N/A'}</p>
+                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ProducerApplication).quiz_score || 0}/{(selectedApplication as ProducerApplication).quiz_total_questions || 5}</p>
+                     <p className="text-gray-300">Quiz Completed: {(selectedApplication as ProducerApplication).quiz_completed ? 'Yes' : 'No'}</p>
+                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ProducerApplication).quiz_question_1 || 'N/A'}</p>
+                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ProducerApplication).quiz_question_2 || 'N/A'}</p>
+                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ProducerApplication).quiz_question_3 || 'N/A'}</p>
+                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ProducerApplication).quiz_question_4 || 'N/A'}</p>
+                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ProducerApplication).quiz_question_5 || 'N/A'}</p>
+                   </div>
 
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Screening Questions</h3>
-                    <p className="text-gray-300">Signed to Label: {(selectedApplication as ProducerApplication).signed_to_label || 'N/A'}</p>
-                    {(selectedApplication as ProducerApplication).signed_to_label === 'Yes' && (selectedApplication as ProducerApplication).label_relationship_explanation && (
-                      <p className="text-gray-300">Label Relationship: {(selectedApplication as ProducerApplication).label_relationship_explanation}</p>
-                    )}
-                    <p className="text-gray-300">Signed to Publisher: {(selectedApplication as ProducerApplication).signed_to_publisher || 'N/A'}</p>
-                    {(selectedApplication as ProducerApplication).signed_to_publisher === 'Yes' && (selectedApplication as ProducerApplication).publisher_relationship_explanation && (
-                      <p className="text-gray-300">Publisher Relationship: {(selectedApplication as ProducerApplication).publisher_relationship_explanation}</p>
-                    )}
-                    <p className="text-gray-300">Signed to Manager: {(selectedApplication as ProducerApplication).signed_to_manager || 'N/A'}</p>
-                    {(selectedApplication as ProducerApplication).signed_to_manager === 'Yes' && (selectedApplication as ProducerApplication).manager_relationship_explanation && (
-                      <p className="text-gray-300">Manager Relationship: {(selectedApplication as ProducerApplication).manager_relationship_explanation}</p>
-                    )}
-                    <p className="text-gray-300">Entity Collects Payment: {(selectedApplication as ProducerApplication).entity_collects_payment || 'N/A'}</p>
-                    {(selectedApplication as ProducerApplication).entity_collects_payment === 'Yes' && (selectedApplication as ProducerApplication).payment_collection_explanation && (
-                      <p className="text-gray-300">Payment Collection: {(selectedApplication as ProducerApplication).payment_collection_explanation}</p>
-                    )}
-                    <p className="text-gray-300">Production Master Percentage: {(selectedApplication as ProducerApplication).production_master_percentage || 0}%</p>
-                  </div>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Screening Questions</h3>
+                     <p className="text-gray-300">Signed to Label: {(selectedApplication as ProducerApplication).signed_to_label || 'N/A'}</p>
+                     {(selectedApplication as ProducerApplication).signed_to_label === 'Yes' && (selectedApplication as ProducerApplication).label_relationship_explanation && (
+                       <p className="text-gray-300">Label Relationship: {(selectedApplication as ProducerApplication).label_relationship_explanation}</p>
+                     )}
+                     <p className="text-gray-300">Signed to Publisher: {(selectedApplication as ProducerApplication).signed_to_publisher || 'N/A'}</p>
+                     {(selectedApplication as ProducerApplication).signed_to_publisher === 'Yes' && (selectedApplication as ProducerApplication).publisher_relationship_explanation && (
+                       <p className="text-gray-300">Publisher Relationship: {(selectedApplication as ProducerApplication).publisher_relationship_explanation}</p>
+                     )}
+                     <p className="text-gray-300">Signed to Manager: {(selectedApplication as ProducerApplication).signed_to_manager || 'N/A'}</p>
+                     {(selectedApplication as ProducerApplication).signed_to_manager === 'Yes' && (selectedApplication as ProducerApplication).manager_relationship_explanation && (
+                       <p className="text-gray-300">Manager Relationship: {(selectedApplication as ProducerApplication).manager_relationship_explanation}</p>
+                     )}
+                     <p className="text-gray-300">Entity Collects Payment: {(selectedApplication as ProducerApplication).entity_collects_payment || 'N/A'}</p>
+                     {(selectedApplication as ProducerApplication).entity_collects_payment === 'Yes' && (selectedApplication as ProducerApplication).payment_collection_explanation && (
+                       <p className="text-gray-300">Payment Collection: {(selectedApplication as ProducerApplication).payment_collection_explanation}</p>
+                     )}
+                     <p className="text-gray-300">Production Master Percentage: {(selectedApplication as ProducerApplication).production_master_percentage || 0}%</p>
+                   </div>
 
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Ranking & Status</h3>
-                    <p className="text-gray-300">Ranking Score: {(selectedApplication as ProducerApplication).ranking_score || 0} points</p>
-                    <p className="text-gray-300">Is Auto-Rejected: {(selectedApplication as ProducerApplication).is_auto_rejected ? 'Yes' : 'No'}</p>
-                    {(selectedApplication as ProducerApplication).is_auto_rejected && (
-                      <p className="text-red-300">Rejection Reason: {(selectedApplication as ProducerApplication).rejection_reason}</p>
-                    )}
-                  </div>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Ranking & Status</h3>
+                     <p className="text-gray-300">Ranking Score: {(selectedApplication as ProducerApplication).ranking_score || 0} points</p>
+                     <p className="text-gray-300">Is Auto-Rejected: {(selectedApplication as ProducerApplication).is_auto_rejected ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as ProducerApplication).is_auto_rejected && (
+                       <p className="text-red-300">Rejection Reason: {(selectedApplication as ProducerApplication).rejection_reason}</p>
+                     )}
+                   </div>
 
-                  {(selectedApplication as ProducerApplication).additional_info && (
-                    <div>
-                      <h3 className="text-white font-semibold mb-2">Additional Information</h3>
-                      <p className="text-gray-300 whitespace-pre-wrap">{(selectedApplication as ProducerApplication).additional_info}</p>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div>
-                  <h3 className="text-white font-semibold mb-2">Artist Details</h3>
-                  <p className="text-gray-300">Artist Type: {(selectedApplication as ArtistApplication).artist_type}</p>
-                  <p className="text-gray-300">Primary Genre: {(selectedApplication as ArtistApplication).primary_genre}</p>
-                  <p className="text-gray-300">Stage Name: {(selectedApplication as ArtistApplication).stage_name}</p>
-                  <p className="text-gray-300">Music Producer: {(selectedApplication as ArtistApplication).music_producer}</p>
-                  
-                  <h3 className="text-white font-semibold mb-2 mt-4">Sync Licensing & Quiz</h3>
-                  <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
-                  <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
-                  <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                  {(selectedApplication as ArtistApplication).quiz_question_1 && (
-                    <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1}</p>
-                  )}
-                  {(selectedApplication as ArtistApplication).quiz_question_2 && (
-                    <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2}</p>
-                  )}
-                  {(selectedApplication as ArtistApplication).quiz_question_3 && (
-                    <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3}</p>
-                  )}
-                  {(selectedApplication as ArtistApplication).quiz_question_4 && (
-                    <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4}</p>
-                  )}
-                  {(selectedApplication as ArtistApplication).quiz_question_5 && (
-                    <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5}</p>
-                  )}
-                </div>
-              )}
+                   {(selectedApplication as ProducerApplication).additional_info && (
+                     <div>
+                       <h3 className="text-white font-semibold mb-2">Additional Information</h3>
+                       <p className="text-gray-300 whitespace-pre-wrap">{(selectedApplication as ProducerApplication).additional_info}</p>
+                     </div>
+                   )}
+                 </>
+               ) : selectedType === 'artist' ? (
+                 <div>
+                   <h3 className="text-white font-semibold mb-2">Artist Details</h3>
+                   <p className="text-gray-300">Artist Type: {(selectedApplication as ArtistApplication).artist_type}</p>
+                   <p className="text-gray-300">Primary Genre: {(selectedApplication as ArtistApplication).primary_genre}</p>
+                   <p className="text-gray-300">Stage Name: {(selectedApplication as ArtistApplication).stage_name}</p>
+                   <p className="text-gray-300">Music Producer: {(selectedApplication as ArtistApplication).music_producer}</p>
+                   
+                   <h3 className="text-white font-semibold mb-2 mt-4">Sync Licensing & Quiz</h3>
+                   <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
+                   <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
+                   <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
+                   {(selectedApplication as ArtistApplication).quiz_question_1 && (
+                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1}</p>
+                   )}
+                   {(selectedApplication as ArtistApplication).quiz_question_2 && (
+                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2}</p>
+                   )}
+                   {(selectedApplication as ArtistApplication).quiz_question_3 && (
+                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3}</p>
+                   )}
+                   {(selectedApplication as ArtistApplication).quiz_question_4 && (
+                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4}</p>
+                   )}
+                   {(selectedApplication as ArtistApplication).quiz_question_5 && (
+                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5}</p>
+                   )}
+                 </div>
+               ) : (
+                 <>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Rights Holder Details</h3>
+                     <p className="text-gray-300">Company Name: {(selectedApplication as RightsHolderApplication).company_name}</p>
+                     <p className="text-gray-300">Contact: {(selectedApplication as RightsHolderApplication).contact_first_name} {(selectedApplication as RightsHolderApplication).contact_last_name}</p>
+                     <p className="text-gray-300">Phone: {(selectedApplication as RightsHolderApplication).phone || 'N/A'}</p>
+                     <p className="text-gray-300">Rights Holder Type: {(selectedApplication as RightsHolderApplication).rights_holder_type}</p>
+                     <p className="text-gray-300">Website: {(selectedApplication as RightsHolderApplication).website || 'N/A'}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Company Information</h3>
+                     <p className="text-gray-300">Company Size: {(selectedApplication as RightsHolderApplication).company_size || 'N/A'}</p>
+                     <p className="text-gray-300">Years in Business: {(selectedApplication as RightsHolderApplication).years_in_business || 'N/A'}</p>
+                     <p className="text-gray-300">Catalog Size: {(selectedApplication as RightsHolderApplication).catalog_size || 'N/A'} tracks</p>
+                     <p className="text-gray-300">Revenue Range: {(selectedApplication as RightsHolderApplication).revenue_range || 'N/A'}</p>
+                     <p className="text-gray-300">Primary Genres: {(selectedApplication as RightsHolderApplication).primary_genres?.join(', ') || 'N/A'}</p>
+                     <p className="text-gray-300">Target Markets: {(selectedApplication as RightsHolderApplication).target_markets?.join(', ') || 'N/A'}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Licensing Information</h3>
+                     <p className="text-gray-300">Has Sync Experience: {(selectedApplication as RightsHolderApplication).has_sync_experience ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as RightsHolderApplication).has_sync_experience && (
+                       <p className="text-gray-300">Sync Experience Details: {(selectedApplication as RightsHolderApplication).sync_experience_details || 'N/A'}</p>
+                     )}
+                     <p className="text-gray-300">Has Licensing Team: {(selectedApplication as RightsHolderApplication).has_licensing_team ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as RightsHolderApplication).has_licensing_team && (
+                       <p className="text-gray-300">Licensing Team Size: {(selectedApplication as RightsHolderApplication).licensing_team_size || 'N/A'}</p>
+                     )}
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Application Status</h3>
+                     <p className="text-gray-300">Application Score: {(selectedApplication as RightsHolderApplication).application_score || 0} points</p>
+                     <p className="text-gray-300">Auto-Disqualified: {(selectedApplication as RightsHolderApplication).auto_disqualified ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as RightsHolderApplication).rejection_reason && (
+                       <p className="text-red-300">Rejection Reason: {(selectedApplication as RightsHolderApplication).rejection_reason}</p>
+                     )}
+                   </div>
+
+                   {(selectedApplication as RightsHolderApplication).additional_info && (
+                     <div>
+                       <h3 className="text-white font-semibold mb-2">Additional Information</h3>
+                       <p className="text-gray-300 whitespace-pre-wrap">{(selectedApplication as RightsHolderApplication).additional_info}</p>
+                     </div>
+                   )}
+                 </>
+               )}
 
               {/* Action Buttons Section */}
               <div className="pt-4 border-t border-gray-600">

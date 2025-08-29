@@ -51,6 +51,7 @@ import { WhiteLabelPasswordSetup } from './components/WhiteLabelPasswordSetup';
 import ProducerLandingPage from './components/ProducerLandingPage';
 import ProducerApplicationForm from './components/ProducerApplicationForm';
 import ArtistApplicationForm from './components/ArtistApplicationForm';
+import RightsHolderApplicationForm from './components/RightsHolderApplicationForm';
 import ArtistDashboard from './components/ArtistDashboard';
 import ArtistLogin from './components/ArtistLogin';
 import ApplicationsAdmin from './components/ApplicationsAdmin';
@@ -79,6 +80,7 @@ import SecurityBlock from './components/SecurityBlock';
 import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
+import { TrackDurationAdminPage } from './pages/TrackDurationAdminPage';
 
 import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
@@ -347,7 +349,8 @@ const App = () => {
         <Route path="/white-label/success" element={<LayoutWrapper><WhiteLabelSuccessPage /></LayoutWrapper>} />
                  <Route path="/producers" element={<ProducerLandingWrapper><ProducerLandingPage /></ProducerLandingWrapper>} />
         <Route path="/producer-application" element={<LayoutWrapper><ProducerApplicationForm /></LayoutWrapper>} />
-        <Route path="/artist-application" element={<LayoutWrapper><ArtistApplicationForm /></LayoutWrapper>} />
+<Route path="/artist-application" element={<LayoutWrapper><ArtistApplicationForm /></LayoutWrapper>} />
+<Route path="/rights-holder-application" element={<LayoutWrapper><RightsHolderApplicationForm /></LayoutWrapper>} />
         <Route path="/producer-applications-admin" element={
           <ProtectedRoute requiresAdmin>
             <LayoutWrapper>
@@ -645,6 +648,12 @@ const App = () => {
             <LayoutWrapper>
               <ProducerApplicationsAdmin />
             </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin/track-durations" element={
+          <ProtectedRoute requiresAdmin>
+            <TrackDurationAdminPage />
           </ProtectedRoute>
         } />
 
