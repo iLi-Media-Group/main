@@ -334,34 +334,22 @@ export default function ApplicationsAdmin() {
       if (type === 'producer') {
         const producerApp = app as ProducerApplication;
         
-        console.log('Starting producer invitation process for:', producerApp.email);
-        
         // Extract first and last name from the full name
         const nameParts = producerApp.name.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        console.log('Name parts:', { firstName, lastName });
-
         // Generate producer number using the existing function
         const { data: nextProducerNumber, error: numberError } = await supabase.rpc('get_next_producer_number');
-        if (numberError) {
-          console.error('Error getting producer number:', numberError);
-          throw numberError;
-        }
+        if (numberError) throw numberError;
         const producerNumber = nextProducerNumber || 'MBPR-01';
-        console.log('Generated producer number:', producerNumber);
 
         // Generate invitation code
         const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        console.log('Generated invitation code:', invitationCode);
 
         // Get current user
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          console.error('Error getting user:', userError);
-          throw userError;
-        }
+        if (userError) throw userError;
 
         // Create invitation record
         const { error: insertError } = await supabase
@@ -375,21 +363,9 @@ export default function ApplicationsAdmin() {
             producer_number: producerNumber
           });
 
-        if (insertError) {
-          console.error('Error creating invitation record:', insertError);
-          throw insertError;
-        }
-        console.log('Invitation record created successfully');
+        if (insertError) throw insertError;
 
         // Send invitation email using the existing function
-        console.log('Sending email with params:', {
-          email: producerApp.email,
-          firstName,
-          lastName,
-          producerNumber,
-          invitationCode
-        });
-
         const { data: emailData, error: emailError } = await supabase.functions.invoke('send-producer-invitation', {
           body: {
             email: producerApp.email,
@@ -400,13 +376,7 @@ export default function ApplicationsAdmin() {
           }
         });
 
-        if (emailError) {
-          console.error('Email function error:', emailError);
-          throw emailError;
-        }
-
-        console.log('Email function response:', emailData);
-        console.log(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
+        if (emailError) throw emailError;
       }
     } catch (error) {
       console.error('Error sending approval email:', error);
