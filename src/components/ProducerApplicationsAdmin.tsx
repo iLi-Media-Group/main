@@ -1620,6 +1620,30 @@ export default function ProducerApplicationsAdmin() {
               </Button>
             </div>
             
+            {/* Temporary Debug - Remove after fixing */}
+            <div className="mb-4 p-3 bg-red-900/50 rounded text-xs text-white">
+              <strong>DEBUG - Available Data:</strong>
+              <div className="mt-2">
+                <p>Quiz Score: {selectedApplication.quiz_score || 'null'}</p>
+                <p>Ranking Score: {selectedApplication.ranking_score || 'null'}</p>
+                <p>Is Auto Rejected: {selectedApplication.is_auto_rejected ? 'true' : 'false'}</p>
+                <p>Signed to Label: {selectedApplication.signed_to_label || 'null'}</p>
+                <p>Quiz Q1: {selectedApplication.quiz_question_1 || 'null'}</p>
+                <p>Quiz Q2: {selectedApplication.quiz_question_2 || 'null'}</p>
+                <p>Quiz Q3: {selectedApplication.quiz_question_3 || 'null'}</p>
+                <p>Quiz Q4: {selectedApplication.quiz_question_4 || 'null'}</p>
+                <p>Quiz Q5: {selectedApplication.quiz_question_5 || 'null'}</p>
+                <p>Secondary Genre: {selectedApplication.secondary_genre || 'null'}</p>
+                <p>Team Type: {selectedApplication.team_type || 'null'}</p>
+                <p>Sample Use: {selectedApplication.sample_use || 'null'}</p>
+                <p>Splice Use: {selectedApplication.splice_use || 'null'}</p>
+                <p>Loop Use: {selectedApplication.loop_use || 'null'}</p>
+                <p>AI Generated Music: {selectedApplication.ai_generated_music || 'null'}</p>
+                <p>Business Entity: {selectedApplication.business_entity || 'null'}</p>
+                <p>PRO Affiliation: {selectedApplication.pro_affiliation || 'null'}</p>
+              </div>
+            </div>
+            
 
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
