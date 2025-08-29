@@ -64,6 +64,17 @@ export interface Track {
   // Work for hire contracts
   workForHireContracts?: string[];
   searchScore?: number;
+  // Related tracks
+  relatedTracks?: RelatedTrack[];
+}
+
+export interface RelatedTrack {
+  id: string;
+  trackId: string;
+  relatedTrackId: string;
+  relationshipType: 'related' | 'radio_version' | 'instrumental' | 'vocal_version' | 'chorus_only' | 'clean_version' | 'explicit_version';
+  relatedTrack?: Track;
+  createdAt: string;
 }
 
 export interface SyncProposal {

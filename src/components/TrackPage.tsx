@@ -143,6 +143,19 @@ export function TrackPage() {
     }
   }, [trackId, user, membershipPlan]);
 
+  const getRelationshipTypeLabel = (type: string) => {
+    const labels = {
+      'related': 'Related',
+      'radio_version': 'Radio Version',
+      'instrumental': 'Instrumental',
+      'vocal_version': 'Vocal Version',
+      'chorus_only': 'Chorus Only',
+      'clean_version': 'Clean Version',
+      'explicit_version': 'Explicit Version'
+    };
+    return labels[type as keyof typeof labels] || type;
+  };
+
   const fetchTrackData = async () => {
     try {
       setLoading(true);
@@ -163,6 +176,37 @@ export function TrackPage() {
         `)
         .eq('id', trackId)
         .single();
+
+      if (trackError) throw trackError;
+
+      // Fetch related tracks
+      const { data: relatedTracksData, error: relatedTracksError } = await supabase
+        .from('related_tracks')
+        .select(`
+          id,
+          track_id,
+          related_track_id,
+          relationship_type,
+          created_at,
+          related_track:tracks!related_tracks_related_track_id_fkey (
+            id,
+            title,
+            artist,
+            duration,
+            bpm,
+            key,
+            genres,
+            moods,
+            has_vocals,
+            is_sync_only,
+            explicit_lyrics
+          )
+        `)
+        .eq('track_id', trackId);
+
+      if (relatedTracksError) {
+        console.error('Error fetching related tracks:', relatedTracksError);
+      }
 
       if (trackError) throw trackError;
       
@@ -217,7 +261,16 @@ export function TrackPage() {
           containsSamples: trackData.contains_samples || false,
           containsSpliceLoops: trackData.contains_splice_loops || false,
           samplesCleared: trackData.samples_cleared || false,
-          sampleClearanceNotes: trackData.sample_clearance_notes || null
+          sampleClearanceNotes: trackData.sample_clearance_notes || null,
+          // Related tracks
+          relatedTracks: (relatedTracksData || []).map(rt => ({
+            id: rt.id,
+            trackId: rt.track_id,
+            relatedTrackId: rt.related_track_id,
+            relationshipType: rt.relationship_type,
+            relatedTrack: rt.related_track,
+            createdAt: rt.created_at
+          }))
         };
         
         setTrack(mappedTrack);
@@ -421,6 +474,43 @@ export function TrackPage() {
                 )}
                 <TrackAudioPlayer track={track} />
               </div>
+
+              {/* Related Tracks Section */}
+              {track.relatedTracks && track.relatedTracks.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Music className="w-5 h-5 text-blue-400" />
+                    Related Tracks
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {track.relatedTracks.map((relatedTrack) => (
+                      <div
+                        key={relatedTrack.id}
+                        className="p-3 bg-gray-800/50 rounded-lg border border-gray-600 hover:border-blue-500/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <a
+                              href={`/track/${relatedTrack.relatedTrack?.id}`}
+                              className="text-white font-medium hover:text-blue-400 transition-colors block"
+                            >
+                              {relatedTrack.relatedTrack?.title}
+                            </a>
+                            <p className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.artist}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
+                                {getRelationshipTypeLabel(relatedTrack.relationshipType)}
+                              </span>
+                              <span className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.duration}</span>
+                              <span className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.bpm} BPM</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="space-y-3">

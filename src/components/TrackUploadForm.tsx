@@ -17,6 +17,7 @@ import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { useFormPersistence } from '../hooks/useFormPersistence';
 import { FilePersistenceManager } from '../utils/filePersistence';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { RelatedTracksManager } from './RelatedTracksManager';
 
 
 const FORM_STORAGE_KEY = 'trackUploadFormData';
@@ -215,6 +216,7 @@ export function TrackUploadForm() {
   const [splitSheetFile, setSplitSheetFile] = useState<File | null>(null);
   const [workForHireFiles, setWorkForHireFiles] = useState<File[]>([]);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [relatedTracks, setRelatedTracks] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
@@ -425,7 +427,8 @@ export function TrackUploadForm() {
     { number: 4, title: 'Instruments & Usage', icon: Users },
     { number: 5, title: 'Rights', icon: FileText },
     { number: 6, title: 'Co-signers', icon: Users },
-    { number: 7, title: 'Review & Submit', icon: Building2 }
+    { number: 7, title: 'Related Tracks', icon: Music },
+    { number: 8, title: 'Review & Submit', icon: Building2 }
   ];
 
   const validateStep = (step: number): boolean => {
@@ -443,6 +446,8 @@ export function TrackUploadForm() {
       case 6:
         return true; // Co-signers are optional
       case 7:
+        return true; // Related tracks are optional
+      case 8:
         return true; // Review step
       default:
         return false;
@@ -451,7 +456,7 @@ export function TrackUploadForm() {
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 7));
+      setCurrentStep(prev => Math.min(prev + 1, 8));
     }
   };
 
@@ -1001,6 +1006,35 @@ export function TrackUploadForm() {
         .single();
 
       if (trackFetchError) throw trackFetchError;
+
+      // Save related tracks if any were selected
+      if (trackData?.id && relatedTracks.length > 0) {
+        try {
+          const relatedTracksData = relatedTracks
+            .filter(rt => rt.id.startsWith('temp-')) // Only process temporary tracks from upload
+            .map(rt => ({
+              track_id: trackData.id,
+              related_track_id: rt.relatedTrackId,
+              relationship_type: rt.relationshipType
+            }));
+
+          if (relatedTracksData.length > 0) {
+            const { error: relatedTracksError } = await supabase
+              .from('related_tracks')
+              .insert(relatedTracksData);
+
+            if (relatedTracksError) {
+              console.error('Error saving related tracks:', relatedTracksError);
+              // Don't throw error here as the main track was saved successfully
+            } else {
+              console.log('Related tracks saved successfully:', relatedTracksData.length);
+            }
+          }
+        } catch (error) {
+          console.error('Error processing related tracks:', error);
+          // Don't throw error here as the main track was saved successfully
+        }
+      }
 
       // Insert music rights information into music_rights table
       if (trackData?.id) {
@@ -2453,8 +2487,25 @@ export function TrackUploadForm() {
             </div>
           )}
 
-          {/* Step 7: Review & Submit */}
+          {/* Step 7: Related Tracks */}
           {currentStep === 7 && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-white mb-6">Related Tracks</h2>
+              <p className="text-gray-300 mb-6">
+                Link this track to other tracks in your catalog (e.g., radio versions, instrumentals, clean versions, etc.)
+              </p>
+              
+              <RelatedTracksManager
+                currentTrackId=""
+                userId={user?.id || ''}
+                onRelatedTracksChange={setRelatedTracks}
+                className="mb-6"
+              />
+            </div>
+          )}
+
+          {/* Step 8: Review & Submit */}
+          {currentStep === 8 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-white mb-6">Review & Submit</h2>
               
@@ -2488,6 +2539,9 @@ export function TrackUploadForm() {
                   </div>
                   <div>
                     <strong>Co-signers:</strong> {formData.coSigners?.length || 0}
+                  </div>
+                  <div>
+                    <strong>Related Tracks:</strong> {relatedTracks?.length || 0}
                   </div>
                 </div>
               </div>
@@ -2526,7 +2580,7 @@ export function TrackUploadForm() {
               <span className="text-gray-300 text-sm">Step {currentStep} of {steps.length}</span>
             </div>
             
-            {currentStep < 7 && (
+            {currentStep < 8 && (
               <button
                 type="button"
                 onClick={nextStep}
@@ -2537,13 +2591,13 @@ export function TrackUploadForm() {
               </button>
             )}
             
-            {currentStep === 7 && (
+            {currentStep === 8 && (
               <div className="w-24"></div>
             )}
           </div>
 
           {/* Submit Button - Only show on last step */}
-          {currentStep === 7 && (
+          {currentStep === 8 && (
             <div className="pt-8 relative z-10">
               <button
                 type="submit"
