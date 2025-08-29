@@ -298,19 +298,7 @@ export default function ApplicationsAdmin() {
         return;
       }
 
-      // If this is an invitation, send the email FIRST to ensure it goes out
-      if (status === 'invited') {
-        try {
-          await sendApprovalEmail(app, type);
-          console.log('Email sent successfully for:', app.email);
-        } catch (emailError) {
-          console.error('Email sending failed:', emailError);
-          alert(`ERROR: Email failed to send for ${app.name}. Status was NOT updated. Please try again.`);
-          return; // Don't update status if email fails
-        }
-      }
-
-      // Now update the status
+      // Update the status first
       const table = type === 'producer' ? 'producer_applications' : 'artist_applications';
       const { error } = await supabase
         .from(table)
@@ -322,9 +310,17 @@ export default function ApplicationsAdmin() {
       // Refresh applications after status update
       await fetchApplications();
 
-      // Show success message for invitations
+      // If this is an invitation, send the email in the background
       if (status === 'invited') {
-        alert(`SUCCESS: ${app.name} has been invited and email sent!`);
+        sendApprovalEmail(app, type)
+          .then(() => {
+            console.log('Email sent successfully for:', app.email);
+            alert(`SUCCESS: ${app.name} has been invited and email sent!`);
+          })
+          .catch((emailError) => {
+            console.error('Email sending failed:', emailError);
+            alert(`WARNING: ${app.name} was invited but email failed to send. You can resend the email later.`);
+          });
       }
 
     } catch (error) {
