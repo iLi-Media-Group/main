@@ -376,14 +376,61 @@ export default function ApplicationsAdmin() {
 
         if (insertError) throw insertError;
 
-        // Send invitation email using the existing function
-        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-producer-invitation', {
+        // Send invitation email using the working system from ProducerApplicationsAdmin
+        const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #6366f1;">🎵 Welcome to MyBeatFi! 🎵</h1>
+            <h2>CONGRATULATIONS!</h2>
+            
+            <p>Dear ${firstName} ${lastName},</p>
+            
+            <p>We are thrilled to inform you that your producer application has been reviewed and <strong>ACCEPTED</strong>!</p>
+            
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3>📋 Your Producer Details:</h3>
+              <ul>
+                <li><strong>Producer Number:</strong> ${producerNumber}</li>
+                <li><strong>Email:</strong> ${producerApp.email}</li>
+                <li><strong>Status:</strong> ACCEPTED</li>
+              </ul>
+            </div>
+            
+            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3>🔑 Your Invitation Code:</h3>
+              <p><strong>${invitationCode}</strong></p>
+              <p style="font-size: 14px; color: #92400e;">Use this code when signing up as a producer</p>
+            </div>
+            
+            <h3>🔑 Next Steps:</h3>
+            <ol>
+              <li>Go to: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+              <li>Select "Sign Up as Producer"</li>
+              <li>Enter your invitation code: <strong>${invitationCode}</strong></li>
+              <li>Complete your profile setup</li>
+              <li>Start uploading your tracks and connecting with clients</li>
+            </ol>
+            
+            <p><strong>🎯 Keep your invitation code safe - you'll need it to create your account!</strong></p>
+            
+            <p>Welcome to MyBeatFi!</p>
+            
+            <p>Best regards,<br>The MyBeatFi Team</p>
+          </div>
+        `;
+
+        const { error: emailError } = await supabase.functions.invoke('send-email-resend', {
           body: {
-            email: producerApp.email,
-            firstName,
-            lastName,
-            producerNumber,
-            invitationCode
+            to: producerApp.email,
+            subject: emailSubject,
+            html: emailHtml,
+            producerData: {
+              email: producerApp.email,
+              firstName,
+              lastName,
+              producerNumber,
+              invitationCode
+            }
           }
         });
 
