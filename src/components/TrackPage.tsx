@@ -204,6 +204,8 @@ export function TrackPage() {
         `)
         .eq('track_id', trackId);
 
+      console.log('Related tracks query result:', { relatedTracksData, relatedTracksError, trackId });
+
       if (relatedTracksError) {
         console.error('Error fetching related tracks:', relatedTracksError);
       }

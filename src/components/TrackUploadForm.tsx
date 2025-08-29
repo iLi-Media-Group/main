@@ -1010,6 +1010,8 @@ export function TrackUploadForm() {
       // Save related tracks if any were selected
       if (trackData?.id && relatedTracks.length > 0) {
         try {
+          console.log('Processing related tracks for saving:', relatedTracks);
+          
           const relatedTracksData = relatedTracks
             .filter(rt => rt.id.startsWith('temp-')) // Only process temporary tracks from upload
             .map(rt => ({
@@ -1018,10 +1020,15 @@ export function TrackUploadForm() {
               relationship_type: rt.relationshipType
             }));
 
+          console.log('Filtered related tracks data:', relatedTracksData);
+
           if (relatedTracksData.length > 0) {
-            const { error: relatedTracksError } = await supabase
+            const { data: insertResult, error: relatedTracksError } = await supabase
               .from('related_tracks')
-              .insert(relatedTracksData);
+              .insert(relatedTracksData)
+              .select();
+
+            console.log('Related tracks insert result:', { insertResult, relatedTracksError });
 
             if (relatedTracksError) {
               console.error('Error saving related tracks:', relatedTracksError);

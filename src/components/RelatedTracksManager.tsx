@@ -277,24 +277,28 @@ export function RelatedTracksManager({
               Select Related Track
             </label>
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search your tracks..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
-              />
+                             <input
+                 type="text"
+                 placeholder="Search your tracks..."
+                 value={searchTerm}
+                 onChange={(e) => setSearchTerm(e.target.value)}
+                 onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+                 className="w-full px-3 py-2 bg-white/5 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+               />
               {searchTerm && (
                 <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg max-h-48 overflow-y-auto">
                   {filteredTracks.map(track => (
-                    <button
-                      key={track.id}
-                      onClick={() => {
-                        setSelectedTrackId(track.id);
-                        setSearchTerm(track.title);
-                      }}
-                      className="w-full px-3 py-2 text-left text-white hover:bg-gray-700 flex items-center justify-between"
-                    >
+                                         <button
+                       key={track.id}
+                       type="button"
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         setSelectedTrackId(track.id);
+                         setSearchTerm(track.title);
+                       }}
+                       className="w-full px-3 py-2 text-left text-white hover:bg-gray-700 flex items-center justify-between"
+                     >
                       <div>
                         <div className="font-medium">{track.title}</div>
                         <div className="text-sm text-gray-400">{track.artist}</div>
@@ -331,11 +335,16 @@ export function RelatedTracksManager({
 
           {/* Add Button */}
           <div className="flex items-end">
-            <button
-              onClick={addRelatedTrack}
-              disabled={!selectedTrackId || loading}
-              className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
+                         <button
+               type="button"
+               onClick={(e) => {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 addRelatedTrack();
+               }}
+               disabled={!selectedTrackId || loading}
+               className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+             >
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
               ) : (
