@@ -653,13 +653,81 @@ export default function ApplicationsAdmin() {
 
               {/* Show different fields based on application type */}
               {selectedType === 'producer' ? (
-                <div>
-                  <h3 className="text-white font-semibold mb-2">Producer Details</h3>
-                  <p className="text-gray-300">Primary Genre: {(selectedApplication as ProducerApplication).primary_genre}</p>
-                  <p className="text-gray-300">Years Experience: {(selectedApplication as ProducerApplication).years_experience}</p>
-                  <p className="text-gray-300">DAWs Used: {(selectedApplication as ProducerApplication).daws_used}</p>
-                  <p className="text-gray-300">Tracks per Week: {(selectedApplication as ProducerApplication).tracks_per_week}</p>
-                </div>
+                <>
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Producer Details</h3>
+                    <p className="text-gray-300">Primary Genre: {(selectedApplication as ProducerApplication).primary_genre}</p>
+                    <p className="text-gray-300">Secondary Genre: {(selectedApplication as ProducerApplication).secondary_genre || 'N/A'}</p>
+                    <p className="text-gray-300">Years Experience: {(selectedApplication as ProducerApplication).years_experience}</p>
+                    <p className="text-gray-300">DAWs Used: {(selectedApplication as ProducerApplication).daws_used}</p>
+                    <p className="text-gray-300">Team Type: {(selectedApplication as ProducerApplication).team_type}</p>
+                    <p className="text-gray-300">Tracks per Week: {(selectedApplication as ProducerApplication).tracks_per_week}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Music Creation</h3>
+                    <p className="text-gray-300">Sample Use: {(selectedApplication as ProducerApplication).sample_use ? 'Yes' : 'No'}</p>
+                    <p className="text-gray-300">Splice Use: {(selectedApplication as ProducerApplication).splice_use}</p>
+                    <p className="text-gray-300">Loop Use: {(selectedApplication as ProducerApplication).loop_use}</p>
+                    <p className="text-gray-300">AI-Generated Music: {(selectedApplication as ProducerApplication).ai_generated_music ? 'Yes' : 'No'}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Business Information</h3>
+                    <p className="text-gray-300">Business Entity: {(selectedApplication as ProducerApplication).business_entity || 'N/A'}</p>
+                    <p className="text-gray-300">PRO Affiliation: {(selectedApplication as ProducerApplication).pro_affiliation}</p>
+                    <p className="text-gray-300">Auto-Disqualified: {(selectedApplication as ProducerApplication).auto_disqualified ? 'Yes' : 'No'}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
+                    <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ProducerApplication).sync_licensing_course || 'N/A'}</p>
+                    <p className="text-gray-300">Quiz Score: {(selectedApplication as ProducerApplication).quiz_score || 0}/{(selectedApplication as ProducerApplication).quiz_total_questions || 5}</p>
+                    <p className="text-gray-300">Quiz Completed: {(selectedApplication as ProducerApplication).quiz_completed ? 'Yes' : 'No'}</p>
+                    <p className="text-gray-300">Q1 Answer: {(selectedApplication as ProducerApplication).quiz_question_1 || 'N/A'}</p>
+                    <p className="text-gray-300">Q2 Answer: {(selectedApplication as ProducerApplication).quiz_question_2 || 'N/A'}</p>
+                    <p className="text-gray-300">Q3 Answer: {(selectedApplication as ProducerApplication).quiz_question_3 || 'N/A'}</p>
+                    <p className="text-gray-300">Q4 Answer: {(selectedApplication as ProducerApplication).quiz_question_4 || 'N/A'}</p>
+                    <p className="text-gray-300">Q5 Answer: {(selectedApplication as ProducerApplication).quiz_question_5 || 'N/A'}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Screening Questions</h3>
+                    <p className="text-gray-300">Signed to Label: {(selectedApplication as ProducerApplication).signed_to_label || 'N/A'}</p>
+                    {(selectedApplication as ProducerApplication).signed_to_label === 'Yes' && (selectedApplication as ProducerApplication).label_relationship_explanation && (
+                      <p className="text-gray-300">Label Relationship: {(selectedApplication as ProducerApplication).label_relationship_explanation}</p>
+                    )}
+                    <p className="text-gray-300">Signed to Publisher: {(selectedApplication as ProducerApplication).signed_to_publisher || 'N/A'}</p>
+                    {(selectedApplication as ProducerApplication).signed_to_publisher === 'Yes' && (selectedApplication as ProducerApplication).publisher_relationship_explanation && (
+                      <p className="text-gray-300">Publisher Relationship: {(selectedApplication as ProducerApplication).publisher_relationship_explanation}</p>
+                    )}
+                    <p className="text-gray-300">Signed to Manager: {(selectedApplication as ProducerApplication).signed_to_manager || 'N/A'}</p>
+                    {(selectedApplication as ProducerApplication).signed_to_manager === 'Yes' && (selectedApplication as ProducerApplication).manager_relationship_explanation && (
+                      <p className="text-gray-300">Manager Relationship: {(selectedApplication as ProducerApplication).manager_relationship_explanation}</p>
+                    )}
+                    <p className="text-gray-300">Entity Collects Payment: {(selectedApplication as ProducerApplication).entity_collects_payment || 'N/A'}</p>
+                    {(selectedApplication as ProducerApplication).entity_collects_payment === 'Yes' && (selectedApplication as ProducerApplication).payment_collection_explanation && (
+                      <p className="text-gray-300">Payment Collection: {(selectedApplication as ProducerApplication).payment_collection_explanation}</p>
+                    )}
+                    <p className="text-gray-300">Production Master Percentage: {(selectedApplication as ProducerApplication).production_master_percentage || 0}%</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-white font-semibold mb-2">Ranking & Status</h3>
+                    <p className="text-gray-300">Ranking Score: {(selectedApplication as ProducerApplication).ranking_score || 0} points</p>
+                    <p className="text-gray-300">Is Auto-Rejected: {(selectedApplication as ProducerApplication).is_auto_rejected ? 'Yes' : 'No'}</p>
+                    {(selectedApplication as ProducerApplication).is_auto_rejected && (
+                      <p className="text-red-300">Rejection Reason: {(selectedApplication as ProducerApplication).rejection_reason}</p>
+                    )}
+                  </div>
+
+                  {(selectedApplication as ProducerApplication).additional_info && (
+                    <div>
+                      <h3 className="text-white font-semibold mb-2">Additional Information</h3>
+                      <p className="text-gray-300 whitespace-pre-wrap">{(selectedApplication as ProducerApplication).additional_info}</p>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div>
                   <h3 className="text-white font-semibold mb-2">Artist Details</h3>
