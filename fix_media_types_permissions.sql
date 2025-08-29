@@ -32,3 +32,4 @@ FROM pg_policies
 WHERE tablename = 'media_types'
 ORDER BY policyname;
 
+

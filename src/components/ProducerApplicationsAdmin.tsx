@@ -1620,13 +1620,7 @@ export default function ProducerApplicationsAdmin() {
               </Button>
             </div>
             
-            {/* Debug section - remove after testing */}
-            <div className="mb-4 p-3 bg-red-900/50 rounded text-xs text-white">
-              <strong>DEBUG - Raw Application Data:</strong>
-              <pre className="whitespace-pre-wrap overflow-auto max-h-32">
-                {JSON.stringify(selectedApplication, null, 2)}
-              </pre>
-            </div>
+
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -1784,14 +1778,328 @@ export default function ProducerApplicationsAdmin() {
               </div>
             )}
             
-            <div className="flex justify-end space-x-2 mt-6 pt-4 border-t border-white/20">
-              <Button
-                onClick={() => setShowApplicationModal(false)}
-                variant="outline"
-                className="text-white border-white hover:bg-white/10"
-              >
-                Close
-              </Button>
+            {/* Action Buttons Section */}
+            <div className="mt-6 pt-4 border-t border-white/20">
+              <h3 className="text-lg font-semibold mb-4 text-white">Application Actions</h3>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
+                {/* New Applications Actions */}
+                {selectedApplication.status === 'new' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        handleInviteProducer(selectedApplication);
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Manual Invite
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        handleMoveToManualReview(selectedApplication);
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      size="sm"
+                    >
+                      <Clock className="w-4 h-4 mr-1" />
+                      Manual Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'manual_review', 'Tier 2');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Tier 2 Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'save_for_later');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      size="sm"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save for Later
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </>
+                )}
+
+                {/* Invited Applications Actions */}
+                {selectedApplication.status === 'invited' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        handleMoveToOnboarded(selectedApplication);
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      size="sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Move to Onboarded
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'new');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      Move to New
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'manual_review');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      size="sm"
+                    >
+                      <Clock className="w-4 h-4 mr-1" />
+                      Manual Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'save_for_later');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      size="sm"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save for Later
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </>
+                )}
+
+                {/* Onboarded Applications Actions */}
+                {selectedApplication.status === 'onboarded' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'new');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      Move to New
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'manual_review');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      size="sm"
+                    >
+                      <Clock className="w-4 h-4 mr-1" />
+                      Manual Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'save_for_later');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      size="sm"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save for Later
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </>
+                )}
+
+                {/* Save for Later Applications Actions */}
+                {selectedApplication.status === 'save_for_later' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'new');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      Move to New
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        handleInviteProducer(selectedApplication);
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                      size="sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Manual Invite
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'manual_review');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      size="sm"
+                    >
+                      <Clock className="w-4 h-4 mr-1" />
+                      Manual Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </>
+                )}
+
+                {/* Declined Applications Actions */}
+                {selectedApplication.status === 'declined' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'new');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      Move to New
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'manual_review');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                      size="sm"
+                    >
+                      <Clock className="w-4 h-4 mr-1" />
+                      Manual Review
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'save_for_later');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      size="sm"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save for Later
+                    </Button>
+                  </>
+                )}
+
+                {/* Manual Review Applications Actions */}
+                {selectedApplication.status === 'in_review' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'new');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      size="sm"
+                    >
+                      Move to New
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        handleMoveToOnboarded(selectedApplication);
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-purple-600 hover:bg-purple-700 text-white"
+                      size="sm"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Move to Onboarded
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'save_for_later');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                      size="sm"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save for Later
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined');
+                        setShowApplicationModal(false);
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-1" />
+                      Decline
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => setShowApplicationModal(false)}
+                  variant="outline"
+                  className="text-white border-white hover:bg-white/10"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
