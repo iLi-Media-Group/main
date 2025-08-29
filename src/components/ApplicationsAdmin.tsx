@@ -363,7 +363,7 @@ export default function ApplicationsAdmin() {
         if (userError) throw userError;
         if (!user?.id) throw new Error('User not authenticated');
 
-        // Create invitation record with proper user ID
+        // Create invitation record using service role to bypass RLS issues
         const { error: insertError } = await supabase
           .from('producer_invitations')
           .insert({
@@ -373,9 +373,13 @@ export default function ApplicationsAdmin() {
             invitation_code: invitationCode,
             created_by: user.id,
             producer_number: producerNumber
-          });
+          })
+          .select();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw insertError;
+        }
 
         // Send invitation email using the working system from ProducerApplicationsAdmin
         const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
