@@ -317,12 +317,58 @@ export default function ApplicationsAdmin() {
 
   const sendApprovalEmail = async (email: string, type: ApplicationType) => {
     try {
-      const { error } = await supabase.functions.invoke('send-producer-approval-email', {
-        body: { email, type }
-      });
-      if (error) throw error;
+      if (type === 'producer') {
+        // Find the producer application to get the name
+        const producerApp = producerApplications.find(app => app.email === email);
+        if (!producerApp) {
+          console.error('Producer application not found for email:', email);
+          return;
+        }
+
+        // Extract first and last name from the full name
+        const nameParts = producerApp.name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Generate producer number using the existing function
+        const { data: nextProducerNumber } = await supabase.rpc('get_next_producer_number');
+        const producerNumber = nextProducerNumber || 'MBPR-01';
+
+        // Generate invitation code
+        const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+
+        // Create invitation record
+        const { error: insertError } = await supabase
+          .from('producer_invitations')
+          .insert({
+            email: producerApp.email,
+            first_name: firstName,
+            last_name: lastName,
+            invitation_code: invitationCode,
+            created_by: (await supabase.auth.getUser()).data.user?.id,
+            producer_number: producerNumber
+          });
+
+        if (insertError) throw insertError;
+
+        // Send invitation email using the existing function
+        const { error: emailError } = await supabase.functions.invoke('send-producer-invitation', {
+          body: {
+            email: producerApp.email,
+            firstName,
+            lastName,
+            producerNumber,
+            invitationCode
+          }
+        });
+
+        if (emailError) throw emailError;
+
+        console.log(`Producer ${firstName} ${lastName} has been invited successfully! Producer Number: ${producerNumber}`);
+      }
     } catch (error) {
       console.error('Error sending approval email:', error);
+      throw error;
     }
   };
 
