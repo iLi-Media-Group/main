@@ -358,11 +358,12 @@ export default function ApplicationsAdmin() {
         // Generate invitation code
         const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 
-        // Get current user
+        // Get current user and ensure we have the user ID
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError) throw userError;
+        if (!user?.id) throw new Error('User not authenticated');
 
-        // Create invitation record
+        // Create invitation record with proper user ID
         const { error: insertError } = await supabase
           .from('producer_invitations')
           .insert({
@@ -370,7 +371,7 @@ export default function ApplicationsAdmin() {
             first_name: firstName,
             last_name: lastName,
             invitation_code: invitationCode,
-            created_by: user?.id,
+            created_by: user.id,
             producer_number: producerNumber
           });
 
