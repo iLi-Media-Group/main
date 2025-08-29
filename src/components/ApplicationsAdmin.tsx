@@ -696,19 +696,19 @@ export default function ApplicationsAdmin() {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
                   {/* New Applications Actions */}
-                  {selectedApplication.status === 'new' && (
-                    <>
-                      <Button
-                        onClick={() => {
-                          updateApplicationStatus(selectedApplication.id, 'invited', selectedType);
-                          setShowApplicationModal(false);
-                        }}
+                {selectedApplication.status === 'new' && (
+                  <>
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'invited', selectedType);
+                        setShowApplicationModal(false);
+                      }}
                         className="bg-green-600 hover:bg-green-700 text-white"
                         size="sm"
-                      >
+                    >
                         <UserPlus className="w-4 h-4 mr-1" />
-                        Approve
-                      </Button>
+                      Approve
+                    </Button>
                       <Button
                         onClick={() => {
                           updateApplicationStatus(selectedApplication.id, 'manual_review', selectedType);
@@ -731,11 +731,11 @@ export default function ApplicationsAdmin() {
                         <Save className="w-4 h-4 mr-1" />
                         Save for Later
                       </Button>
-                      <Button
-                        onClick={() => {
-                          updateApplicationStatus(selectedApplication.id, 'declined', selectedType);
-                          setShowApplicationModal(false);
-                        }}
+                    <Button
+                      onClick={() => {
+                        updateApplicationStatus(selectedApplication.id, 'declined', selectedType);
+                        setShowApplicationModal(false);
+                      }}
                         className="bg-red-600 hover:bg-red-700 text-white"
                         size="sm"
                       >
@@ -985,10 +985,10 @@ export default function ApplicationsAdmin() {
                         size="sm"
                       >
                         <XCircle className="w-4 h-4 mr-1" />
-                        Decline
-                      </Button>
-                    </>
-                  )}
+                      Decline
+                    </Button>
+                  </>
+                )}
                 </div>
 
                 {/* Close Button */}

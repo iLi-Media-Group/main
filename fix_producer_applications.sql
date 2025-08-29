@@ -93,7 +93,7 @@ BEGIN
         -- Ensure score doesn't go below 0
         IF calc_ranking_score < 0 THEN
             calc_ranking_score := 0;
-        END IF;
+    END IF;
         
         -- Update the application
         UPDATE producer_applications 
@@ -136,4 +136,4 @@ SELECT
     COUNT(CASE WHEN quiz_completed = TRUE THEN 1 END) as quiz_completed,
     ROUND(AVG(ranking_score)) as average_ranking_score,
     MAX(ranking_score) as highest_ranking_score
-FROM producer_applications; 
+FROM producer_applications;

@@ -1672,8 +1672,12 @@ export default function ProducerApplicationsAdmin() {
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-white">Instruments & Proficiency</h3>
                 <div className="space-y-2 text-sm text-white">
-                  {selectedApplication.instrument_one && (
+                  {selectedApplication.instrument_one ? (
                     <p><strong>Instrument 1:</strong> {selectedApplication.instrument_one} ({selectedApplication.instrument_one_proficiency || 'N/A'})</p>
+                  ) : selectedApplication.instruments ? (
+                    <p><strong>Instruments:</strong> {selectedApplication.instruments}</p>
+                  ) : (
+                    <p><strong>Instruments:</strong> N/A</p>
                   )}
                   {selectedApplication.instrument_two && (
                     <p><strong>Instrument 2:</strong> {selectedApplication.instrument_two} ({selectedApplication.instrument_two_proficiency || 'N/A'})</p>
@@ -1683,10 +1687,6 @@ export default function ProducerApplicationsAdmin() {
                   )}
                   {selectedApplication.instrument_four && (
                     <p><strong>Instrument 4:</strong> {selectedApplication.instrument_four} ({selectedApplication.instrument_four_proficiency || 'N/A'})</p>
-                  )}
-                  {!selectedApplication.instrument_one && !selectedApplication.instrument_two && 
-                   !selectedApplication.instrument_three && !selectedApplication.instrument_four && (
-                    <p><strong>Instruments:</strong> {selectedApplication.instruments || 'N/A'}</p>
                   )}
                 </div>
               </div>
@@ -1708,9 +1708,7 @@ export default function ProducerApplicationsAdmin() {
                   {selectedApplication.records_artists === 'Yes' && selectedApplication.artist_example_link && (
                     <p><strong>Artist Example Link:</strong> <a href={selectedApplication.artist_example_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.artist_example_link}</a></p>
                   )}
-                  {selectedApplication.artist_collab && (
-                    <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab}</p>
-                  )}
+                  <p><strong>Artist Collaboration:</strong> {selectedApplication.artist_collab || 'N/A'}</p>
                 </div>
               </div>
               
@@ -1733,21 +1731,11 @@ export default function ProducerApplicationsAdmin() {
                   <p><strong>Sync Licensing Course:</strong> {selectedApplication.sync_licensing_course || 'N/A'}</p>
                   <p><strong>Quiz Score:</strong> {selectedApplication.quiz_score || 0}/{selectedApplication.quiz_total_questions || 5}</p>
                   <p><strong>Quiz Completed:</strong> {selectedApplication.quiz_completed ? 'Yes' : 'No'}</p>
-                  {selectedApplication.quiz_question_1 && (
-                    <p><strong>Q1 Answer:</strong> {selectedApplication.quiz_question_1}</p>
-                  )}
-                  {selectedApplication.quiz_question_2 && (
-                    <p><strong>Q2 Answer:</strong> {selectedApplication.quiz_question_2}</p>
-                  )}
-                  {selectedApplication.quiz_question_3 && (
-                    <p><strong>Q3 Answer:</strong> {selectedApplication.quiz_question_3}</p>
-                  )}
-                  {selectedApplication.quiz_question_4 && (
-                    <p><strong>Q4 Answer:</strong> {selectedApplication.quiz_question_4}</p>
-                  )}
-                  {selectedApplication.quiz_question_5 && (
-                    <p><strong>Q5 Answer:</strong> {selectedApplication.quiz_question_5}</p>
-                  )}
+                  <p><strong>Q1 Answer:</strong> {selectedApplication.quiz_question_1 || 'N/A'}</p>
+                  <p><strong>Q2 Answer:</strong> {selectedApplication.quiz_question_2 || 'N/A'}</p>
+                  <p><strong>Q3 Answer:</strong> {selectedApplication.quiz_question_3 || 'N/A'}</p>
+                  <p><strong>Q4 Answer:</strong> {selectedApplication.quiz_question_4 || 'N/A'}</p>
+                  <p><strong>Q5 Answer:</strong> {selectedApplication.quiz_question_5 || 'N/A'}</p>
                 </div>
               </div>
               
@@ -1774,9 +1762,9 @@ export default function ProducerApplicationsAdmin() {
                 </div>
               </div>
               
-              <div>
+                <div>
                 <h3 className="text-lg font-semibold mb-3 text-white">Ranking & Status</h3>
-                <div className="space-y-2 text-sm text-white">
+                  <div className="space-y-2 text-sm text-white">
                   <p><strong>Ranking Score:</strong> {selectedApplication.ranking_score || 0} points</p>
                   <p><strong>Is Auto-Rejected:</strong> {selectedApplication.is_auto_rejected ? 'Yes' : 'No'}</p>
                   {selectedApplication.is_auto_rejected && (
@@ -1784,15 +1772,15 @@ export default function ProducerApplicationsAdmin() {
                   )}
                   {selectedApplication.ranking_breakdown && (
                     <>
-                      <p><strong>Experience Score:</strong> {selectedApplication.ranking_breakdown.experienceScore} points</p>
-                      <p><strong>Output Score:</strong> {selectedApplication.ranking_breakdown.outputScore} points</p>
-                      <p><strong>Skillset Score:</strong> {selectedApplication.ranking_breakdown.skillsetScore} points</p>
-                      <p><strong>Disqualifier Penalty:</strong> {selectedApplication.ranking_breakdown.disqualifierPenalty} points</p>
-                      <p><strong>Quiz Score:</strong> {selectedApplication.ranking_breakdown.quizScore} points</p>
+                    <p><strong>Experience Score:</strong> {selectedApplication.ranking_breakdown.experienceScore} points</p>
+                    <p><strong>Output Score:</strong> {selectedApplication.ranking_breakdown.outputScore} points</p>
+                    <p><strong>Skillset Score:</strong> {selectedApplication.ranking_breakdown.skillsetScore} points</p>
+                    <p><strong>Disqualifier Penalty:</strong> {selectedApplication.ranking_breakdown.disqualifierPenalty} points</p>
+                    <p><strong>Quiz Score:</strong> {selectedApplication.ranking_breakdown.quizScore} points</p>
                     </>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
             </div>
             
             {selectedApplication.additional_info && (
@@ -2116,13 +2104,13 @@ export default function ProducerApplicationsAdmin() {
 
               {/* Close Button */}
               <div className="flex justify-end">
-                <Button
-                  onClick={() => setShowApplicationModal(false)}
-                  variant="outline"
-                  className="text-white border-white hover:bg-white/10"
-                >
-                  Close
-                </Button>
+              <Button
+                onClick={() => setShowApplicationModal(false)}
+                variant="outline"
+                className="text-white border-white hover:bg-white/10"
+              >
+                Close
+              </Button>
               </div>
             </div>
           </div>
