@@ -10,7 +10,7 @@ const corsHeaders = {
 const clientTemplates = [
   {
     week: 1,
-    subject: 'Need music for your project? Start licensing instantly.',
+    subject: 'Need music without copyright risk?',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -32,9 +32,11 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Meet Mario. He's producing an indie film and needs music that fits the mood without copyright risk.
+        Meet Mario, an indie filmmaker with a vision. He's working on his latest project and knows the right soundtrack will set the mood. But Mario has a challenge: he can't risk copyright issues or spend weeks chasing down music rights.
         <br /><br />
-        With MyBeatFi Track Licensing, you can license tracks legally and securely—ready for film, ads, or podcasts.
+        That's where MyBeatFi Track Licensing comes in. With just a few clicks, Mario discovers music that fits his story perfectly and licenses it instantly—legally and securely.
+        <br /><br />
+        The result? His film now carries the emotional weight he imagined, without any legal headaches.
       </div>
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/catalog" class="button">Browse Tracks & License Now</a>
@@ -49,7 +51,7 @@ const clientTemplates = [
   },
   {
     week: 2,
-    subject: 'Connect directly with producers before you license',
+    subject: 'Work directly with producers through Sync Proposals',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -71,9 +73,11 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Imagine Sarah, a creative director. She finds the perfect track listed as a Sync Proposal.
+        Imagine Sarah, a creative director producing a high-profile TV commercial. While browsing MyBeatFi, she finds the perfect track. But it's listed as a Sync Proposal.
         <br /><br />
-        That means the producer wants to be contacted first. Share details, chat, negotiate, then receive the official license.
+        At first, Sarah wonders if this means extra steps. Instead, it opens the door to direct collaboration with the producer. She submits her project details, chats with the creator, negotiates usage terms, and receives the official license—tailored to her campaign.
+        <br /><br />
+        The result? Sarah secures a track that feels custom-made, and her commercial connects with audiences exactly as she envisioned.
       </div>
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/sync-proposals" class="button">Submit a Sync Proposal Today</a>
@@ -88,7 +92,7 @@ const clientTemplates = [
   },
   {
     week: 3,
-    subject: 'Get music custom-made for your project',
+    subject: 'Get original music made just for your project',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -110,9 +114,11 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Meet David. He needs a completely original soundtrack for a fashion brand campaign.
+        Meet David, a brand manager preparing for a fashion campaign. He knows the soundtrack has to be unique—something no one has heard before. But stock music won't cut it, and he doesn't have in-house composers.
         <br /><br />
-        With Custom Sync Requests, connect with producers who create on-brand music just for you.
+        With Custom Sync Requests on MyBeatFi, David posts his creative brief. Within days, talented producers submit tracks crafted specifically for his brand. He reviews the options, chooses one, and works directly with the producer to finalize delivery.
+        <br /><br />
+        The result? His campaign debuts with an exclusive soundtrack that feels fresh, elevates the brand, and sets it apart from competitors.
       </div>
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/custom-sync-request" class="button">Request a Custom Track Now</a>
@@ -127,7 +133,7 @@ const clientTemplates = [
   },
   {
     week: 4,
-    subject: 'Save the tracks you love (and never lose them)',
+    subject: 'Never lose the perfect track again',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -149,9 +155,11 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Picture Ana. She hears the perfect track late at night and wants to find it later.
+        Picture Ana, a documentary filmmaker. One late night, she stumbles across a track that perfectly matches her project. Excited, she tells herself she'll grab it tomorrow—but by the next morning, she can't remember which one it was.
         <br /><br />
-        Click the heart icon to favorite tracks—ready to revisit anytime.
+        Luckily, MyBeatFi makes it simple. With the Favorite feature, Ana can just click the heart icon and save any track to revisit later.
+        <br /><br />
+        The result? Ana never loses a great find again, and she builds a personal library of music ready for her projects.
       </div>
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/catalog" class="button">Start Favoriting Tracks Today</a>
@@ -166,7 +174,7 @@ const clientTemplates = [
   },
   {
     week: 5,
-    subject: 'Stay connected to your favorite creators',
+    subject: 'Get notified when your favorite producers upload',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -188,10 +196,14 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Take James. He follows producers who match his projects. When they upload, he's first to know.
+        Take James, a podcast producer who discovers a creator with exactly the sound he loves—catchy, modern, and perfectly suited to his episodes. In the past, he'd have to keep checking back, hoping to catch new uploads.
+        <br /><br />
+        With MyBeatFi, James simply follows the producer. Now, whenever that creator uploads new music, James is notified instantly.
+        <br /><br />
+        The result? James always has fresh tracks on hand, and his podcast stays sounding current and professional.
       </div>
       <div style="text-align: center;">
-        <a href="https://mybeatfi.io/producers" class="button">Follow a Producer Now</a>
+        <a href="https://mybeatfi.io/producers" class="button">Follow Your Favorite Producers Now</a>
       </div>
       <div class="footer">
         This email was sent by MyBeatFi.io | iLi Media Group, LLC<br />
@@ -203,7 +215,7 @@ const clientTemplates = [
   },
   {
     week: 6,
-    subject: 'Curated playlists, saved for you',
+    subject: 'Keep your projects organized with playlists',
     html: (firstName: string) => `<!DOCTYPE html>
 <html>
   <head>
@@ -225,7 +237,11 @@ const clientTemplates = [
         <div class="title">Hi ${firstName || 'there'},</div>
       </div>
       <div class="body-text">
-        Think of Carla. She favorites playlists full of cinematic tracks and returns anytime.
+        Think of Carla, a director working on a documentary. She discovers a playlist filled with cinematic tracks that perfectly match her style. Instead of scrambling to find those sounds again, she simply favorites the playlist.
+        <br /><br />
+        Now Carla has an inspiration library at her fingertips. Whenever she needs a mood board of music—or a quick set of tracks for a project—her playlists are ready.
+        <br /><br />
+        The result? Carla saves time, stays organized, and can focus on telling her story while MyBeatFi keeps the music in order.
       </div>
       <div style="text-align: center;">
         <a href="https://mybeatfi.io/favorited-playlists" class="button">Discover & Favorite Playlists Now</a>
