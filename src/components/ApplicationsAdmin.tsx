@@ -337,10 +337,23 @@ export default function ApplicationsAdmin() {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        // Generate producer number using the existing function
-        const { data: nextProducerNumber, error: numberError } = await supabase.rpc('get_next_producer_number');
-        if (numberError) throw numberError;
-        const producerNumber = nextProducerNumber || 'MBPR-01';
+        // Generate producer number using the working approach from ProducerApplicationsAdmin
+        const { data: nextNumber } = await supabase
+          .from('profiles')
+          .select('producer_number')
+          .not('producer_number', 'is', null)
+          .order('producer_number', { ascending: false })
+          .limit(1);
+
+        let producerNumber = 'mbfpr-001';
+        if (nextNumber && nextNumber.length > 0) {
+          const lastNumber = nextNumber[0].producer_number;
+          const match = lastNumber.match(/mbfpr-(\d+)/);
+          if (match) {
+            const nextNum = parseInt(match[1]) + 1;
+            producerNumber = `mbfpr-${nextNum.toString().padStart(3, '0')}`;
+          }
+        }
 
         // Generate invitation code
         const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
