@@ -296,35 +296,30 @@ export default function ApplicationsAdmin() {
 
       if (error) throw error;
 
-      // Refresh applications
-      await fetchApplications();
-
-      // Send approval email if status is 'invited'
+      // Send approval email if status is 'invited' - do this BEFORE refreshing
       if (status === 'invited') {
         const app = type === 'producer' ? 
           producerApplications.find(a => a.id === applicationId) :
           artistApplications.find(a => a.id === applicationId);
         
         if (app) {
-          await sendApprovalEmail(app.email, type);
+          await sendApprovalEmail(app, type);
         }
       }
+
+      // Refresh applications after email is sent
+      await fetchApplications();
 
     } catch (error) {
       console.error('Error updating application status:', error);
     }
   };
 
-  const sendApprovalEmail = async (email: string, type: ApplicationType) => {
+  const sendApprovalEmail = async (app: ProducerApplication | ArtistApplication, type: ApplicationType) => {
     try {
       if (type === 'producer') {
-        // Find the producer application to get the name
-        const producerApp = producerApplications.find(app => app.email === email);
-        if (!producerApp) {
-          console.error('Producer application not found for email:', email);
-          return;
-        }
-
+        const producerApp = app as ProducerApplication;
+        
         // Extract first and last name from the full name
         const nameParts = producerApp.name.split(' ');
         const firstName = nameParts[0] || '';
