@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video, Clock } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { useAdminRealTime } from '../hooks/useRealTimeUpdates';
@@ -2222,6 +2222,40 @@ if (subscription.price_id) {
         {activeTab === 'rights_verification' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <RightsVerificationAdmin />
+          </div>
+        )}
+
+        {/* Track Duration Management */}
+        {activeTab === 'track_durations' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Track Duration Management</h2>
+              <Link
+                to="/admin/track-durations"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center"
+              >
+                <Clock className="w-5 h-5 mr-2" />
+                Open Track Duration Tool
+              </Link>
+            </div>
+            <div className="bg-blue-950/80 border border-blue-500/40 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-blue-200 mb-4">
+                Track Duration Updater
+              </h3>
+              <p className="text-blue-100 mb-4">
+                Update track durations by calculating them from the actual audio files. This tool finds tracks with missing, 
+                default (3:30), or zero (0:00) durations and updates them with the correct duration from the audio files.
+              </p>
+              <div className="bg-yellow-900/80 border border-yellow-500/40 rounded-lg p-4">
+                <h4 className="text-yellow-200 font-semibold mb-2">Important Notes:</h4>
+                <ul className="text-yellow-100 text-sm space-y-1">
+                  <li>• Audio files must be accessible via URL</li>
+                  <li>• CORS must be enabled for the audio files</li>
+                  <li>• Process may take time for large numbers of tracks</li>
+                  <li>• Only updates tracks that need duration fixes</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
