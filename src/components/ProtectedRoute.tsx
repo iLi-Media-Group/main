@@ -34,6 +34,16 @@ export function ProtectedRoute({
 
   const isAdmin = user.email && isAdminEmail(user.email);
 
+  // Debug logging for admin routes
+  if (requiresAdmin) {
+    console.log('🔐 Admin route access check:', {
+      userEmail: user.email,
+      isAdminEmail: isAdmin,
+      accountType: accountType,
+      loading: loading
+    });
+  }
+
   // Admins can access all routes
   if (isAdmin) {
     return <>{children}</>;

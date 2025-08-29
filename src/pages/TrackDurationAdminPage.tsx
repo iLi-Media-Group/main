@@ -8,13 +8,33 @@ export function TrackDurationAdminPage() {
   const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
 
+  // Debug logging
+  console.log('🔐 TrackDurationAdminPage access check:', {
+    userEmail: user?.email,
+    accountType: accountType,
+    user: user
+  });
+
   // Only allow producers or admins to access this page
-  if (!user || (accountType !== 'producer' && accountType !== 'admin')) {
+  // Check for admin email first, then account type
+  const isAdmin = user?.email && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(user.email.toLowerCase());
+  const isProducer = accountType === 'producer' || (accountType && accountType.includes('producer'));
+  const isAdminAccount = accountType === 'admin' || (accountType && accountType.includes('admin'));
+  
+  console.log('🔐 Access control variables:', {
+    isAdmin,
+    isProducer,
+    isAdminAccount,
+    finalAccess: isAdmin || isProducer || isAdminAccount
+  });
+  
+  if (!user || (!isAdmin && !isProducer && !isAdminAccount)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
           <p className="text-gray-300">You don't have permission to access this page.</p>
+          <p className="text-gray-400 text-sm mt-2">User: {user?.email} | Account Type: {accountType}</p>
         </div>
       </div>
     );

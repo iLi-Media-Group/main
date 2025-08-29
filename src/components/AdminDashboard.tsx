@@ -1540,6 +1540,7 @@ if (subscription.price_id) {
             { id: 'backgrounds', label: 'Background Manager', icon: <Video className="w-4 h-4 mr-2" /> },
             { id: 'media_types', label: 'Media Types', icon: <Video className="w-4 h-4 mr-2" /> },
             { id: 'rights_verification', label: 'Rights Verification', icon: <Shield className="w-4 h-4 mr-2" /> },
+            { id: 'track_durations', label: 'Track Durations', icon: <Clock className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
