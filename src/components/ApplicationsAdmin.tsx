@@ -288,6 +288,16 @@ export default function ApplicationsAdmin() {
 
   const updateApplicationStatus = async (applicationId: string, status: string, type: ApplicationType) => {
     try {
+      // Get the application data BEFORE updating status
+      const app = type === 'producer' ? 
+        producerApplications.find(a => a.id === applicationId) :
+        artistApplications.find(a => a.id === applicationId);
+      
+      if (!app) {
+        console.error('Application not found:', applicationId);
+        return;
+      }
+
       const table = type === 'producer' ? 'producer_applications' : 'artist_applications';
       const { error } = await supabase
         .from(table)
@@ -298,16 +308,13 @@ export default function ApplicationsAdmin() {
 
       // Send approval email if status is 'invited' - do this BEFORE refreshing
       if (status === 'invited') {
-        const app = type === 'producer' ? 
-          producerApplications.find(a => a.id === applicationId) :
-          artistApplications.find(a => a.id === applicationId);
-        
-        if (app) {
-          await sendApprovalEmail(app, type);
-        }
+        // Send email in background - don't block the UI
+        sendApprovalEmail(app, type).catch(emailError => {
+          console.error('Email sending failed but status was updated:', emailError);
+        });
       }
 
-      // Refresh applications after email is sent
+      // Refresh applications after status update
       await fetchApplications();
 
     } catch (error) {
