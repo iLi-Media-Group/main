@@ -1620,29 +1620,7 @@ export default function ProducerApplicationsAdmin() {
               </Button>
             </div>
             
-            {/* Temporary Debug - Remove after fixing */}
-            <div className="mb-4 p-3 bg-red-900/50 rounded text-xs text-white">
-              <strong>DEBUG - Available Data:</strong>
-              <div className="mt-2">
-                <p>Quiz Score: {selectedApplication.quiz_score || 'null'}</p>
-                <p>Ranking Score: {selectedApplication.ranking_score || 'null'}</p>
-                <p>Is Auto Rejected: {selectedApplication.is_auto_rejected ? 'true' : 'false'}</p>
-                <p>Signed to Label: {selectedApplication.signed_to_label || 'null'}</p>
-                <p>Quiz Q1: {selectedApplication.quiz_question_1 || 'null'}</p>
-                <p>Quiz Q2: {selectedApplication.quiz_question_2 || 'null'}</p>
-                <p>Quiz Q3: {selectedApplication.quiz_question_3 || 'null'}</p>
-                <p>Quiz Q4: {selectedApplication.quiz_question_4 || 'null'}</p>
-                <p>Quiz Q5: {selectedApplication.quiz_question_5 || 'null'}</p>
-                <p>Secondary Genre: {selectedApplication.secondary_genre || 'null'}</p>
-                <p>Team Type: {selectedApplication.team_type || 'null'}</p>
-                <p>Sample Use: {selectedApplication.sample_use || 'null'}</p>
-                <p>Splice Use: {selectedApplication.splice_use || 'null'}</p>
-                <p>Loop Use: {selectedApplication.loop_use || 'null'}</p>
-                <p>AI Generated Music: {selectedApplication.ai_generated_music || 'null'}</p>
-                <p>Business Entity: {selectedApplication.business_entity || 'null'}</p>
-                <p>PRO Affiliation: {selectedApplication.pro_affiliation || 'null'}</p>
-              </div>
-            </div>
+
             
 
             
@@ -1652,6 +1630,12 @@ export default function ProducerApplicationsAdmin() {
                 <div className="space-y-2 text-sm text-white">
                   <p><strong>Name:</strong> {selectedApplication.name}</p>
                   <p><strong>Email:</strong> {selectedApplication.email}</p>
+                  {(selectedApplication.first_name || selectedApplication.last_name) && (
+                    <p><strong>Full Name:</strong> {selectedApplication.first_name || ''} {selectedApplication.last_name || ''}</p>
+                  )}
+                  {selectedApplication.phone && (
+                    <p><strong>Phone:</strong> {selectedApplication.phone}</p>
+                  )}
                   <p><strong>Status:</strong> {selectedApplication.status}</p>
                   <p><strong>Created:</strong> {new Date(selectedApplication.created_at).toLocaleString()}</p>
                 </div>
@@ -1662,7 +1646,13 @@ export default function ProducerApplicationsAdmin() {
                 <div className="space-y-2 text-sm text-white">
                   <p><strong>Primary Genre:</strong> {selectedApplication.primary_genre}</p>
                   <p><strong>Secondary Genre:</strong> {selectedApplication.secondary_genre || 'N/A'}</p>
+                  {selectedApplication.genres && selectedApplication.genres.length > 0 && (
+                    <p><strong>All Genres:</strong> {selectedApplication.genres.join(', ')}</p>
+                  )}
                   <p><strong>Years Experience:</strong> {selectedApplication.years_experience}</p>
+                  {selectedApplication.experience_level && (
+                    <p><strong>Experience Level:</strong> {selectedApplication.experience_level}</p>
+                  )}
                   <p><strong>DAWs Used:</strong> {selectedApplication.daws_used}</p>
                   <p><strong>Team Type:</strong> {selectedApplication.team_type}</p>
                   <p><strong>Tracks per Week:</strong> {selectedApplication.tracks_per_week}</p>
@@ -1783,10 +1773,56 @@ export default function ProducerApplicationsAdmin() {
                 </div>
             </div>
             
+            {/* Links & Portfolio Section */}
+            {(selectedApplication.spotify_link || selectedApplication.best_track_link || selectedApplication.social_media_links || selectedApplication.portfolio_links) && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3 text-white">Links & Portfolio</h3>
+                <div className="space-y-2 text-sm text-white">
+                  {selectedApplication.spotify_link && (
+                    <p><strong>Spotify Link:</strong> <a href={selectedApplication.spotify_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.spotify_link}</a></p>
+                  )}
+                  {selectedApplication.best_track_link && (
+                    <p><strong>Best Track Link:</strong> <a href={selectedApplication.best_track_link} target="_blank" rel="noopener noreferrer" className="text-blue-300 underline hover:text-blue-200">{selectedApplication.best_track_link}</a></p>
+                  )}
+                  {selectedApplication.social_media_links && (
+                    <p><strong>Social Media Links:</strong> {JSON.stringify(selectedApplication.social_media_links)}</p>
+                  )}
+                  {selectedApplication.portfolio_links && selectedApplication.portfolio_links.length > 0 && (
+                    <p><strong>Portfolio Links:</strong> {selectedApplication.portfolio_links.join(', ')}</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Equipment Section */}
+            {selectedApplication.equipment && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3 text-white">Equipment</h3>
+                <p className="text-sm text-white whitespace-pre-wrap">{selectedApplication.equipment}</p>
+              </div>
+            )}
+
+            {/* Why Join Section */}
+            {selectedApplication.why_join && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3 text-white">Why Join MyBeatFi</h3>
+                <p className="text-sm text-white whitespace-pre-wrap">{selectedApplication.why_join}</p>
+              </div>
+            )}
+
+            {/* Additional Information Section */}
             {selectedApplication.additional_info && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3 text-white">Additional Information</h3>
                 <p className="text-sm text-white whitespace-pre-wrap">{selectedApplication.additional_info}</p>
+              </div>
+            )}
+
+            {/* Admin Notes Section */}
+            {selectedApplication.admin_notes && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3 text-white">Admin Notes</h3>
+                <p className="text-sm text-white whitespace-pre-wrap">{selectedApplication.admin_notes}</p>
               </div>
             )}
             
