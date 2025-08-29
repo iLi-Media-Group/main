@@ -16,6 +16,48 @@ interface TrackDurationUpdaterProps {
   onComplete?: () => void;
 }
 
+// Component to handle signed URL generation for track audio
+function TrackAudioProcessor({ track, onDurationCalculated }: { 
+  track: Track; 
+  onDurationCalculated: (duration: string) => void;
+}) {
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
+
+  useEffect(() => {
+    if (signedUrl && !loading && !error) {
+      // Calculate duration using the signed URL
+      calculateAudioDuration(signedUrl)
+        .then(duration => {
+          onDurationCalculated(duration);
+        })
+        .catch(error => {
+          console.error(`Error calculating duration for ${track.title}:`, error);
+          // Pass error through the callback
+          onDurationCalculated('error');
+        });
+    }
+  }, [signedUrl, loading, error, track.title, onDurationCalculated]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
+        <span className="text-blue-200 text-sm">Loading audio...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-red-400 text-sm p-2">
+        Audio unavailable: {error}
+      </div>
+    );
+  }
+
+  return null; // Component handles the processing internally
+}
+
 export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdaterProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(false);
@@ -102,8 +144,17 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           continue;
         }
 
-        // Calculate duration from audio file
-        const newDuration = await calculateAudioDuration(track.audioUrl);
+        // Get signed URL for the audio file
+        const { data: signedUrlData, error: urlError } = await supabase.storage
+          .from('track-audio')
+          .createSignedUrl(track.audioUrl, 3600); // 1 hour expiry
+
+        if (urlError || !signedUrlData?.signedUrl) {
+          throw new Error(`Failed to get signed URL: ${urlError?.message || 'No signed URL returned'}`);
+        }
+
+        // Calculate duration from audio file using signed URL
+        const newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
         
         // Update database
         await updateTrackDuration(track.id, newDuration);
@@ -138,7 +189,17 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
     try {
       setCurrentTrack(track.title);
       
-      const newDuration = await calculateAudioDuration(track.audioUrl);
+      // Get signed URL for the audio file
+      const { data: signedUrlData, error: urlError } = await supabase.storage
+        .from('track-audio')
+        .createSignedUrl(track.audioUrl, 3600); // 1 hour expiry
+
+      if (urlError || !signedUrlData?.signedUrl) {
+        throw new Error(`Failed to get signed URL: ${urlError?.message || 'No signed URL returned'}`);
+      }
+
+      // Calculate duration from audio file using signed URL
+      const newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
       await updateTrackDuration(track.id, newDuration);
       
       setTracks(prev => prev.map(t => 
