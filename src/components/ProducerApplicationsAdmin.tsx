@@ -1695,6 +1695,9 @@ export default function ProducerApplicationsAdmin() {
                   <p><strong>PRO Affiliation:</strong> {selectedApplication.pro_affiliation}</p>
                   <p><strong>Auto-Disqualified:</strong> {selectedApplication.auto_disqualified ? 'Yes' : 'No'}</p>
                   <p><strong>Review Tier:</strong> {selectedApplication.review_tier || 'N/A'}</p>
+                  <p><strong>Manual Review:</strong> {selectedApplication.manual_review ? 'Yes' : 'No'}</p>
+                  <p><strong>Manual Review Approved:</strong> {selectedApplication.manual_review_approved ? 'Yes' : 'No'}</p>
+                  <p><strong>Requires Review:</strong> {selectedApplication.requires_review ? 'Yes' : 'No'}</p>
                 </div>
               </div>
               
@@ -1722,22 +1725,48 @@ export default function ProducerApplicationsAdmin() {
                 </div>
               </div>
               
-              {selectedApplication.ranking_breakdown && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-white">Ranking Breakdown</h3>
-                  <div className="space-y-2 text-sm text-white">
-                    <p><strong>Total Score:</strong> {selectedApplication.ranking_score} points</p>
-                    <p><strong>Experience Score:</strong> {selectedApplication.ranking_breakdown.experienceScore} points</p>
-                    <p><strong>Output Score:</strong> {selectedApplication.ranking_breakdown.outputScore} points</p>
-                    <p><strong>Skillset Score:</strong> {selectedApplication.ranking_breakdown.skillsetScore} points</p>
-                    <p><strong>Disqualifier Penalty:</strong> {selectedApplication.ranking_breakdown.disqualifierPenalty} points</p>
-                    <p><strong>Quiz Score:</strong> {selectedApplication.ranking_breakdown.quizScore} points</p>
-                    {selectedApplication.is_auto_rejected && (
-                      <p className="text-red-300"><strong>Rejection Reason:</strong> {selectedApplication.rejection_reason}</p>
-                    )}
-                  </div>
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white">Screening Questions</h3>
+                <div className="space-y-2 text-sm text-white">
+                  <p><strong>Signed to Label:</strong> {selectedApplication.signed_to_label || 'N/A'}</p>
+                  {selectedApplication.signed_to_label === 'Yes' && selectedApplication.label_relationship_explanation && (
+                    <p><strong>Label Relationship:</strong> {selectedApplication.label_relationship_explanation}</p>
+                  )}
+                  <p><strong>Signed to Publisher:</strong> {selectedApplication.signed_to_publisher || 'N/A'}</p>
+                  {selectedApplication.signed_to_publisher === 'Yes' && selectedApplication.publisher_relationship_explanation && (
+                    <p><strong>Publisher Relationship:</strong> {selectedApplication.publisher_relationship_explanation}</p>
+                  )}
+                  <p><strong>Signed to Manager:</strong> {selectedApplication.signed_to_manager || 'N/A'}</p>
+                  {selectedApplication.signed_to_manager === 'Yes' && selectedApplication.manager_relationship_explanation && (
+                    <p><strong>Manager Relationship:</strong> {selectedApplication.manager_relationship_explanation}</p>
+                  )}
+                  <p><strong>Entity Collects Payment:</strong> {selectedApplication.entity_collects_payment || 'N/A'}</p>
+                  {selectedApplication.entity_collects_payment === 'Yes' && selectedApplication.payment_collection_explanation && (
+                    <p><strong>Payment Collection:</strong> {selectedApplication.payment_collection_explanation}</p>
+                  )}
+                  <p><strong>Production Master Percentage:</strong> {selectedApplication.production_master_percentage || 0}%</p>
                 </div>
-              )}
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3 text-white">Ranking & Status</h3>
+                <div className="space-y-2 text-sm text-white">
+                  <p><strong>Ranking Score:</strong> {selectedApplication.ranking_score || 0} points</p>
+                  <p><strong>Is Auto-Rejected:</strong> {selectedApplication.is_auto_rejected ? 'Yes' : 'No'}</p>
+                  {selectedApplication.is_auto_rejected && (
+                    <p className="text-red-300"><strong>Rejection Reason:</strong> {selectedApplication.rejection_reason}</p>
+                  )}
+                  {selectedApplication.ranking_breakdown && (
+                    <>
+                      <p><strong>Experience Score:</strong> {selectedApplication.ranking_breakdown.experienceScore} points</p>
+                      <p><strong>Output Score:</strong> {selectedApplication.ranking_breakdown.outputScore} points</p>
+                      <p><strong>Skillset Score:</strong> {selectedApplication.ranking_breakdown.skillsetScore} points</p>
+                      <p><strong>Disqualifier Penalty:</strong> {selectedApplication.ranking_breakdown.disqualifierPenalty} points</p>
+                      <p><strong>Quiz Score:</strong> {selectedApplication.ranking_breakdown.quizScore} points</p>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
             
             {selectedApplication.additional_info && (

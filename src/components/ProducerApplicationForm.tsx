@@ -257,11 +257,8 @@ const ProducerApplicationForm: React.FC = () => {
         break;
       
       case 6: // Quiz
-        if (!formData.quiz_question_1) errors.push('Please answer quiz question 1');
-        if (!formData.quiz_question_2) errors.push('Please answer quiz question 2');
-        if (!formData.quiz_question_3) errors.push('Please answer quiz question 3');
-        if (!formData.quiz_question_4) errors.push('Please answer quiz question 4');
-        if (!formData.quiz_question_5) errors.push('Please answer quiz question 5');
+        // Make quiz validation less strict - allow submission even if some questions are missed
+        // This prevents users from getting stuck if they can't answer all questions
         break;
       
       default:
@@ -326,15 +323,30 @@ const ProducerApplicationForm: React.FC = () => {
     // Check if AI-generated music is "Yes" - this is a disqualifying factor
     const isDisqualified = formData.ai_generated_music === 'Yes';
     
-    // Prepare the data to insert
+    // Ensure all required fields have values, even if empty strings
     const submissionData = {
       ...formData,
+      // Ensure quiz fields are never null
+      quiz_question_1: formData.quiz_question_1 || '',
+      quiz_question_2: formData.quiz_question_2 || '',
+      quiz_question_3: formData.quiz_question_3 || '',
+      quiz_question_4: formData.quiz_question_4 || '',
+      quiz_question_5: formData.quiz_question_5 || '',
       quiz_score: quizScore,
       quiz_completed: true,
+      quiz_total_questions: 5,
       auto_disqualified: isDisqualified,
       status: 'new', // Ensure new applications have 'new' status
-      is_auto_rejected: false // Ensure new applications are not auto-rejected
+      is_auto_rejected: false, // Ensure new applications are not auto-rejected
+      // Ensure screening questions are never null
+      signed_to_label: formData.signed_to_label || '',
+      signed_to_publisher: formData.signed_to_publisher || '',
+      signed_to_manager: formData.signed_to_manager || '',
+      entity_collects_payment: formData.entity_collects_payment || '',
+      production_master_percentage: formData.production_master_percentage || 0
     };
+    
+    console.log('Submitting application data:', submissionData);
     
     const { error } = await supabase.from('producer_applications').insert([submissionData]);
     if (error) {
