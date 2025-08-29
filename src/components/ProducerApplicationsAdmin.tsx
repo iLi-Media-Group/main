@@ -1620,6 +1620,14 @@ export default function ProducerApplicationsAdmin() {
               </Button>
             </div>
             
+            {/* TEMPORARY DEBUG - Show all available data */}
+            <div className="mb-4 p-3 bg-red-900/50 rounded text-xs text-white max-h-64 overflow-y-auto">
+              <strong>DEBUG - ALL AVAILABLE DATA:</strong>
+              <pre className="whitespace-pre-wrap mt-2">
+                {JSON.stringify(selectedApplication, null, 2)}
+              </pre>
+            </div>
+            
 
             
 
