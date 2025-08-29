@@ -1620,6 +1620,14 @@ export default function ProducerApplicationsAdmin() {
               </Button>
             </div>
             
+            {/* Debug section - remove after testing */}
+            <div className="mb-4 p-3 bg-red-900/50 rounded text-xs text-white">
+              <strong>DEBUG - Raw Application Data:</strong>
+              <pre className="whitespace-pre-wrap overflow-auto max-h-32">
+                {JSON.stringify(selectedApplication, null, 2)}
+              </pre>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-white">Contact Information</h3>
