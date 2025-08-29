@@ -426,9 +426,8 @@ export default function ApplicationsAdmin() {
         })
         .eq('id', application.id);
 
-      // Refresh the applications list
-      fetchAllApplications();
-      fetchApplications();
+             // Refresh the applications list
+       fetchApplications();
 
       // Show success message
       if (emailResult.success) {
