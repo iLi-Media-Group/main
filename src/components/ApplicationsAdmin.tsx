@@ -310,17 +310,15 @@ export default function ApplicationsAdmin() {
       // Refresh applications after status update
       await fetchApplications();
 
-      // If this is an invitation, send the email in the background
+      // If this is an invitation, send the email synchronously to catch errors
       if (status === 'invited') {
-        sendApprovalEmail(app, type)
-          .then(() => {
-            console.log('Email sent successfully for:', app.email);
-            alert(`SUCCESS: ${app.name} has been invited and email sent!`);
-          })
-          .catch((emailError) => {
-            console.error('Email sending failed:', emailError);
-            alert(`WARNING: ${app.name} was invited but email failed to send. You can resend the email later.`);
-          });
+        try {
+          await sendApprovalEmail(app, type);
+          alert(`SUCCESS: ${app.name} has been invited and email sent!`);
+        } catch (emailError) {
+          console.error('Email sending failed:', emailError);
+          alert(`ERROR: ${app.name} was invited but email failed to send: ${emailError.message}`);
+        }
       }
 
     } catch (error) {
