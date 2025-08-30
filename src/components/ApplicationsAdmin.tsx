@@ -255,7 +255,7 @@ export default function ApplicationsAdmin() {
       onboarded: allApps.filter(app => app.status === 'onboarded').length,
       save_for_later: allApps.filter(app => app.status === 'save_for_later').length,
       declined: allApps.filter(app => app.status === 'declined').length,
-      manual_review: allApps.filter(app => app.manual_review === true).length,
+      manual_review: allApps.filter(app => app.status === 'manual_review').length,
       all: allApps.length
     };
     setTabCounts(counts);
@@ -267,7 +267,7 @@ export default function ApplicationsAdmin() {
     // Filter by tab
     if (activeTab !== 'all') {
       if (activeTab === 'manual_review') {
-        apps = apps.filter(app => app.manual_review === true);
+        apps = apps.filter(app => app.status === 'manual_review');
       } else {
         apps = apps.filter(app => app.status === activeTab);
       }
@@ -737,25 +737,29 @@ export default function ApplicationsAdmin() {
       const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
       const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
 
-      // Find the user by email
-      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
-      if (userError) throw userError;
+      // Find the user by email using profiles table instead of admin API
+      const { data: profileData, error: profileLookupError } = await supabase
+        .from('profiles')
+        .select('id, email, verification_status')
+        .eq('email', application.email)
+        .single();
 
-      const user = userData.users.find(u => u.email === application.email);
-      if (!user) {
-        throw new Error('User not found. They may not have completed the signup process.');
+      if (profileLookupError || !profileData) {
+        throw new Error('User profile not found. They may not have completed the signup process.');
       }
 
+      const userId = profileData.id;
+
       // Update profile to verified status
-      const { error: profileError } = await supabase
+      const { error: profileUpdateError } = await supabase
         .from('profiles')
         .update({ 
           verification_status: 'verified',
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('id', userId);
 
-      if (profileError) throw profileError;
+      if (profileUpdateError) throw profileUpdateError;
 
       // Update rights holder to active status
       const { error: rightsHolderError } = await supabase
@@ -765,7 +769,7 @@ export default function ApplicationsAdmin() {
           is_active: true,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('id', userId);
 
       if (rightsHolderError) throw rightsHolderError;
 
