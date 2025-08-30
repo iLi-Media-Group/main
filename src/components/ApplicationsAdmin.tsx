@@ -372,9 +372,28 @@ export default function ApplicationsAdmin() {
       const table = type === 'producer' ? 'producer_applications' : 
                    type === 'artist' ? 'artist_applications' : 
                    'rights_holder_applications';
+      
+      // Prepare update data
+      const updateData: any = { 
+        status, 
+        updated_at: new Date().toISOString() 
+      };
+      
+      // Set boolean fields based on status
+      if (status === 'manual_review') {
+        updateData.manual_review = true;
+        updateData.manual_review_approved = false;
+      } else if (status === 'onboarded' || status === 'invited') {
+        updateData.manual_review = false;
+        updateData.manual_review_approved = true;
+      } else {
+        updateData.manual_review = false;
+        updateData.manual_review_approved = false;
+      }
+      
       const { error } = await supabase
         .from(table)
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', applicationId);
 
       if (error) throw error;
