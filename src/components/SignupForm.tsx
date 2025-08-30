@@ -527,15 +527,14 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                           </p>
                         </div>
                         
-                                                 <div className="p-3 bg-blue-800/70 border border-blue-500/50 rounded-lg">
-                          <h4 className="text-sm font-medium text-blue-300 mb-2">How Agent Commissions Work:</h4>
-                          <ul className="text-xs text-gray-300 space-y-1">
-                            <li>• MyBeatFi takes 10% of the total deal amount</li>
-                            <li>• Your commission is calculated from the remaining 90%</li>
-                            <li>• Example: $1000 deal with 20% commission = $180 to you, $720 to talent</li>
-                            <li>• You can adjust commission rates per deal</li>
-                          </ul>
-                        </div>
+                                                                          <div className="p-3 bg-blue-800/70 border border-blue-500/50 rounded-lg">
+                           <h4 className="text-sm font-medium text-blue-300 mb-2">How Agent Commissions Work:</h4>
+                           <ul className="text-xs text-gray-300 space-y-1">
+                             <li>• MyBeatFi takes a % of the total deal amount</li>
+                             <li>• Your commission is calculated from the remaining %</li>
+                             <li>• You can adjust commission rates per deal</li>
+                           </ul>
+                         </div>
                         
                                                  <div className="p-3 bg-green-800/70 border border-green-500/50 rounded-lg">
                           <h4 className="text-sm font-medium text-green-300 mb-2">Example Custom Sync Request:</h4>
