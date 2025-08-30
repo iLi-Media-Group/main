@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   requiresClient?: boolean;
   requiresAdmin?: boolean;
   requiresArtist?: boolean;
+  requiresAgent?: boolean;
 }
 
 export function ProtectedRoute({ 
@@ -16,7 +17,8 @@ export function ProtectedRoute({
   requiresProducer = false,
   requiresClient = false,
   requiresAdmin = false,
-  requiresArtist = false
+  requiresArtist = false,
+  requiresAgent = false
 }: ProtectedRouteProps) {
   const { user, loading, accountType } = useUnifiedAuth();
 
@@ -88,6 +90,24 @@ export function ProtectedRoute({
       return <Navigate to="/rights-holder/dashboard" replace />;
     }
     return <Navigate to="/producer/dashboard" replace />;
+  }
+
+  // Check for agent access (only client accounts with is_agent flag)
+  if (requiresAgent && accountType && accountType !== 'client') {
+    // Redirect non-client accounts to their appropriate dashboard
+    if (accountType === 'rights_holder') {
+      return <Navigate to="/rights-holder/dashboard" replace />;
+    }
+    if (accountType === 'producer' || accountType === 'admin,producer') {
+      return <Navigate to="/producer/dashboard" replace />;
+    }
+    if (accountType === 'artist_band') {
+      return <Navigate to="/artist/dashboard" replace />;
+    }
+    if (accountType === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
   }
 
   // If accountType is still loading or null, show loading instead of redirecting

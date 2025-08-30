@@ -18,6 +18,8 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   const [lastName, setLastName] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [accountType, setAccountType] = useState<'client' | 'producer' | 'artist_band'>('client');
+  const [isAgent, setIsAgent] = useState(false);
+  const [agentCommissionPercentage, setAgentCommissionPercentage] = useState(20);
   const [ageVerified, setAgeVerified] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [invitationCode, setInvitationCode] = useState('');
@@ -205,9 +207,11 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             company_name: companyName.trim() || null,
             account_type: accountType,
             membership_plan: 'Single Track',
-                         age_verified: ageVerified,
-             terms_accepted: termsAccepted,
-             terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+            age_verified: ageVerified,
+            terms_accepted: termsAccepted,
+            terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+            is_agent: isAgent,
+            agent_commission_percentage: isAgent ? agentCommissionPercentage : 0.00,
              invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
              producer_number: accountType === 'producer' ? producerNumber : null,
              artist_number: accountType === 'artist_band' ? artistNumber : null,
@@ -229,10 +233,12 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             last_name: lastName,
             company_name: companyName.trim() || null,
                          account_type: accountType,
-             membership_plan: 'Single Track',
-             age_verified: ageVerified,
-             terms_accepted: termsAccepted,
-             terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+            membership_plan: 'Single Track',
+            age_verified: ageVerified,
+            terms_accepted: termsAccepted,
+            terms_accepted_at: termsAccepted ? new Date().toISOString() : null,
+            is_agent: isAgent,
+            agent_commission_percentage: isAgent ? agentCommissionPercentage : 0.00,
              invitation_code: (accountType === 'producer' || accountType === 'artist_band') ? invitationCode : null,
              producer_number: accountType === 'producer' ? producerNumber : null,
              artist_number: accountType === 'artist_band' ? artistNumber : null,
@@ -475,6 +481,67 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                 <option value="artist_band">Sign Up as Artist/Band</option>
               </select>
             </div>
+
+            {accountType === 'client' && (
+              <div className="space-y-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <input
+                    type="checkbox"
+                    id="isAgent"
+                    checked={isAgent}
+                    onChange={(e) => setIsAgent(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                    disabled={loading}
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="isAgent" className="block text-sm font-medium text-gray-300 mb-1">
+                      I am an Agent
+                    </label>
+                    <p className="text-xs text-gray-400 mb-3">
+                      Check this if you are an agent representing clients and shopping music for them. 
+                      You'll get access to commission tracking and agent-specific features.
+                    </p>
+                    
+                    {isAgent && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            Default Commission Percentage
+                          </label>
+                          <div className="relative">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.01"
+                              value={agentCommissionPercentage}
+                              onChange={(e) => setAgentCommissionPercentage(parseFloat(e.target.value) || 0)}
+                              className="w-full px-4 py-2 pr-8"
+                              disabled={loading}
+                              placeholder="20"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-400">
+                            This is your default commission rate. You can adjust it per deal when submitting custom sync requests.
+                          </p>
+                        </div>
+                        
+                        <div className="p-3 bg-blue-800/30 border border-blue-500/20 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-300 mb-2">How Agent Commissions Work:</h4>
+                          <ul className="text-xs text-gray-300 space-y-1">
+                            <li>• MyBeatFi takes 10% of the total deal amount</li>
+                            <li>• Your commission is calculated from the remaining 90%</li>
+                            <li>• Example: $1000 deal with 20% commission = $180 to you, $720 to talent</li>
+                            <li>• You can adjust commission rates per deal</li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {(accountType === 'producer' || accountType === 'artist_band') && (
               <div>

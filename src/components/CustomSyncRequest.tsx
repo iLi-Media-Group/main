@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Music, Link as LinkIcon, FileText, Mail } from 'lucide-react';
+import { Calendar, Music, Link as LinkIcon, FileText, Mail, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { GENRES, SUB_GENRES } from '../types';
@@ -31,6 +31,52 @@ export default function CustomSyncRequest() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [paymentTerms, setPaymentTerms] = useState('immediate');
+  const [isAgent, setIsAgent] = useState(false);
+  const [agentCommissionPercentage, setAgentCommissionPercentage] = useState(20);
+  const [showCommissionBreakdown, setShowCommissionBreakdown] = useState(false);
+
+  // Check if user is an agent and load their default commission
+  useEffect(() => {
+    const checkAgentStatus = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_agent, agent_commission_percentage')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) throw error;
+        
+        if (profile?.is_agent) {
+          setIsAgent(true);
+          setAgentCommissionPercentage(profile.agent_commission_percentage || 20);
+        }
+      } catch (err) {
+        console.error('Error checking agent status:', err);
+      }
+    };
+    
+    checkAgentStatus();
+  }, [user]);
+
+  // Calculate commission breakdown
+  const calculateCommissionBreakdown = () => {
+    const totalAmount = parseFloat(syncFee) || 0;
+    const mybeatfiFee = totalAmount * 0.10; // 10% to MyBeatFi
+    const remainingAmount = totalAmount * 0.90; // 90% to talent
+    const agentCommission = remainingAmount * (agentCommissionPercentage / 100);
+    const talentCompensation = remainingAmount - agentCommission;
+    
+    return {
+      totalAmount,
+      mybeatfiFee,
+      remainingAmount,
+      agentCommission,
+      talentCompensation
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,6 +106,8 @@ export default function CustomSyncRequest() {
           submission_email: submissionEmail,
           payment_terms: paymentTerms,
           use_client_contract: useClientContract,
+          agent_commission_percentage: isAgent ? agentCommissionPercentage : 0,
+          agent_id: isAgent ? user.id : null,
           status: 'open'
         })
         .select()
@@ -192,6 +240,86 @@ export default function CustomSyncRequest() {
               <option value="net90">Net 90</option>
             </select>
           </div>
+
+          {isAgent && (
+            <div className="space-y-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-blue-300">Agent Commission</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCommissionBreakdown(!showCommissionBreakdown)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span>{showCommissionBreakdown ? 'Hide' : 'Show'} Breakdown</span>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Commission Percentage
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={agentCommissionPercentage}
+                      onChange={(e) => setAgentCommissionPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-2 pr-8"
+                      placeholder="20"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Commission is calculated from the 90% that goes to talent
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Your Commission
+                  </label>
+                  <div className="text-2xl font-bold text-blue-400">
+                    ${calculateCommissionBreakdown().agentCommission.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    From ${calculateCommissionBreakdown().totalAmount.toFixed(2)} total deal
+                  </p>
+                </div>
+              </div>
+
+              {showCommissionBreakdown && (
+                <div className="p-4 bg-blue-800/30 border border-blue-500/20 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-300 mb-3">Commission Breakdown</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Total Deal Amount:</span>
+                      <span className="text-white font-medium">${calculateCommissionBreakdown().totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">MyBeatFi Fee (10%):</span>
+                      <span className="text-gray-400">-${calculateCommissionBreakdown().mybeatfiFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Remaining for Talent (90%):</span>
+                      <span className="text-white font-medium">${calculateCommissionBreakdown().remainingAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-500/30 pt-2">
+                      <span className="text-blue-300">Your Commission ({agentCommissionPercentage}%):</span>
+                      <span className="text-blue-400 font-medium">-${calculateCommissionBreakdown().agentCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-500/30 pt-2">
+                      <span className="text-green-300">Talent Compensation:</span>
+                      <span className="text-green-400 font-medium">${calculateCommissionBreakdown().talentCompensation.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>

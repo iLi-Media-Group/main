@@ -408,8 +408,15 @@ const getPlanLevel = (plan: string): number => {
   };
 
     export function ClientDashboard() {
-  const { user, membershipPlan, refreshMembership, accountType } = useUnifiedAuth();
+  const { user, membershipPlan, refreshMembership, accountType, profile } = useUnifiedAuth();
   const navigate = useNavigate();
+  
+  // Redirect agents to agent dashboard
+  useEffect(() => {
+    if (profile?.is_agent) {
+      navigate('/agent/dashboard', { replace: true });
+    }
+  }, [profile, navigate]);
   const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);

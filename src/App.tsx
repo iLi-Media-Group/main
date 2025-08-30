@@ -99,6 +99,9 @@ import { RightsHolderSignup } from './components/RightsHolderSignup';
 import { RightsHolderLogin } from './components/RightsHolderLogin';
 import { RightsHolderDashboard } from './components/RightsHolderDashboard';
 import { RightsHolderProtectedRoute } from './components/RightsHolderProtectedRoute';
+import { AgentDashboard } from './components/AgentDashboard';
+import { AgentRevenueReport } from './components/AgentRevenueReport';
+import { AgentBanking } from './components/AgentBanking';
 import { RightsHolderUploadForm } from './components/RightsHolderUploadForm';
 import { RightsHolderSplitSheets } from './components/RightsHolderSplitSheets';
 import { TermsAndConditions } from './components/TermsAndConditions';
@@ -594,6 +597,30 @@ const App = () => {
           <ProtectedRoute>
             <LayoutWrapper>
               <ClientDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/agent/dashboard" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <AgentDashboard />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/agent/revenue-report" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <AgentRevenueReport />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/agent/banking" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <AgentBanking />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
