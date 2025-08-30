@@ -1,15 +1,15 @@
--- Read Current RLS Policies for rights_holder_applications
--- This will show us exactly what policies exist
+-- Read current RLS policies for rights_holder_applications table
+-- This will help us understand what's blocking the 403 error
 
--- Check if RLS is enabled on the table
+-- Check if RLS is enabled
 SELECT 
   schemaname,
   tablename,
-  rowsecurity as rls_enabled
+  rowsecurity
 FROM pg_tables 
 WHERE tablename = 'rights_holder_applications';
 
--- Show all current policies for the table
+-- List all policies with their conditions
 SELECT 
   policyname,
   permissive,
@@ -21,7 +21,7 @@ FROM pg_policies
 WHERE tablename = 'rights_holder_applications'
 ORDER BY policyname;
 
--- Show the exact policy conditions in a readable format
+-- Show policy conditions in a readable format
 SELECT 
   policyname,
   cmd,
