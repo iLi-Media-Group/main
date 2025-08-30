@@ -47,9 +47,25 @@ export function RightsHolderAwaitingApproval() {
     
     setIsRefreshing(true);
     try {
+      console.log('Starting refresh...');
+      
+      // Clear current state first
+      setApplicationStatus(null);
+      setApplicationDetails(null);
+      
+      // Fetch fresh data
       await fetchProfile(user.id, user.email || '');
       await fetchApplicationStatus();
-      console.log('Profile refreshed, verification status:', profile?.verification_status);
+      
+      console.log('Refresh completed. Profile verification status:', profile?.verification_status);
+      console.log('Current application status:', applicationStatus);
+      
+      // Force a re-render by updating state again
+      setTimeout(async () => {
+        await fetchApplicationStatus();
+        console.log('Second fetch completed. Application status:', applicationStatus);
+      }, 500);
+      
     } catch (error) {
       console.error('Error refreshing profile:', error);
     } finally {
@@ -278,20 +294,54 @@ export function RightsHolderAwaitingApproval() {
             <p className="text-gray-300 mb-6">
               If you've received an approval email, click the button below to refresh your status.
             </p>
-            <button
-              onClick={handleRefreshStatus}
-              disabled={isRefreshing}
-              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors"
-            >
-              {isRefreshing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Refreshing...
-                </>
-              ) : (
-                'Refresh Status'
-              )}
-            </button>
+            <div className="space-y-4">
+              <button
+                onClick={handleRefreshStatus}
+                disabled={isRefreshing}
+                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors"
+              >
+                {isRefreshing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Refreshing...
+                  </>
+                ) : (
+                  'Refresh Status'
+                )}
+              </button>
+              
+              <button
+                onClick={async () => {
+                  console.log('Manual refresh clicked');
+                  if (!user?.email) return;
+                  
+                  try {
+                    const { data, error } = await supabase
+                      .from('rights_holder_applications')
+                      .select('status, company_name, rights_holder_type, business_structure')
+                      .eq('email', user.email)
+                      .single();
+                    
+                    if (error) {
+                      console.error('Manual refresh error:', error);
+                      return;
+                    }
+                    
+                    console.log('Manual refresh result:', data);
+                    alert(`Current status: ${data.status}\nCompany: ${data.company_name}`);
+                    
+                    // Update state
+                    setApplicationStatus(data.status);
+                    setApplicationDetails(data);
+                  } catch (err) {
+                    console.error('Manual refresh failed:', err);
+                  }
+                }}
+                className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+              >
+                Manual Refresh (Debug)
+              </button>
+            </div>
           </div>
         </div>
 
