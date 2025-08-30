@@ -482,8 +482,8 @@ function SignupFormContent({ onClose }: SignupFormProps) {
               </select>
             </div>
 
-            {accountType === 'client' && (
-              <div className="space-y-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                         {accountType === 'client' && (
+               <div className="space-y-4 p-4 bg-blue-900/80 border border-blue-500/60 rounded-lg">
                 <div className="flex items-start space-x-3">
                   <input
                     type="checkbox"
@@ -527,7 +527,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                           </p>
                         </div>
                         
-                        <div className="p-3 bg-blue-800/30 border border-blue-500/20 rounded-lg">
+                                                 <div className="p-3 bg-blue-800/70 border border-blue-500/50 rounded-lg">
                           <h4 className="text-sm font-medium text-blue-300 mb-2">How Agent Commissions Work:</h4>
                           <ul className="text-xs text-gray-300 space-y-1">
                             <li>• MyBeatFi takes 10% of the total deal amount</li>
@@ -537,13 +537,13 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                           </ul>
                         </div>
                         
-                        <div className="p-3 bg-green-800/30 border border-green-500/20 rounded-lg">
+                                                 <div className="p-3 bg-green-800/70 border border-green-500/50 rounded-lg">
                           <h4 className="text-sm font-medium text-green-300 mb-2">Example Custom Sync Request:</h4>
                           <div className="text-xs text-gray-300 space-y-2">
                             <p><strong>Project:</strong> Netflix Documentary - "Urban Beats"</p>
                             <p><strong>Deal Amount:</strong> $2,500</p>
                             <p><strong>Your Commission:</strong> 25%</p>
-                            <div className="bg-gray-800/50 p-2 rounded text-xs">
+                                                         <div className="bg-gray-800/80 p-2 rounded text-xs">
                               <p><strong>Breakdown:</strong></p>
                               <p>• MyBeatFi Fee (10%): $250</p>
                               <p>• Remaining for Talent (90%): $2,250</p>
