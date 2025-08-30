@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, AlertCircle, Clock, FileText } from 'lucide-react';
@@ -13,7 +13,15 @@ export function RightsHolderProtectedRoute({
   children, 
   requireVerification = false 
 }: RightsHolderProtectedRouteProps) {
-  const { user, profile, accountType, loading, signOut } = useUnifiedAuth();
+  const { user, profile, accountType, loading, signOut, fetchProfile } = useUnifiedAuth();
+
+  // Refresh profile data on mount to ensure we have the latest verification status
+  useEffect(() => {
+    if (user && profile?.verification_status === 'pending') {
+      console.log('Refreshing profile data to check for approval status...');
+      fetchProfile(user.id, user.email || '');
+    }
+  }, [user, profile?.verification_status, fetchProfile]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -77,6 +85,9 @@ export function RightsHolderProtectedRoute({
     console.log('Rights holder verification status:', profile.verification_status, '- showing awaiting approval page');
     return <RightsHolderAwaitingApproval />;
   }
+
+  // Log the current verification status for debugging
+  console.log('Rights holder verification status:', profile.verification_status, '- allowing access to dashboard');
 
   // Check for rejected verification status
   if (profile.verification_status === 'rejected') {
