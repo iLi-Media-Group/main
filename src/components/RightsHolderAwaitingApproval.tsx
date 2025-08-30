@@ -22,12 +22,30 @@ export function RightsHolderAwaitingApproval() {
     try {
       console.log('Fetching application status for email:', user.email);
       
-      // Fetch the rights holder application status
-      const { data: applicationData, error } = await supabase
+      // Try to fetch by email first, then by user ID if that fails
+      let { data: applicationData, error } = await supabase
         .from('rights_holder_applications')
         .select('*')
         .eq('email', user.email)
         .single();
+
+      if (error) {
+        console.log('Email query failed, trying user ID:', error);
+        // Try with user ID instead
+        const { data: applicationDataById, error: errorById } = await supabase
+          .from('rights_holder_applications')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (errorById) {
+          console.error('Both email and ID queries failed:', errorById);
+          return;
+        }
+        
+        applicationData = applicationDataById;
+        error = null;
+      }
 
       if (error) {
         console.error('Error fetching application status:', error);
@@ -315,27 +333,47 @@ export function RightsHolderAwaitingApproval() {
                   console.log('Manual refresh clicked');
                   if (!user?.email) return;
                   
-                  try {
-                    const { data, error } = await supabase
-                      .from('rights_holder_applications')
-                      .select('status, company_name, rights_holder_type, business_structure')
-                      .eq('email', user.email)
-                      .single();
+                                     try {
+                     // Try to fetch by email first, then by user ID if that fails
+                     let { data, error } = await supabase
+                       .from('rights_holder_applications')
+                       .select('status, company_name, rights_holder_type, business_structure')
+                       .eq('email', user.email)
+                       .single();
                     
-                    if (error) {
-                      console.error('Manual refresh error:', error);
-                      return;
-                    }
+                     if (error) {
+                       console.log('Email query failed, trying user ID:', error);
+                       // Try with user ID instead
+                       const { data: dataById, error: errorById } = await supabase
+                         .from('rights_holder_applications')
+                         .select('status, company_name, rights_holder_type, business_structure')
+                         .eq('id', user.id)
+                         .single();
+                       
+                       if (errorById) {
+                         console.error('Both email and ID queries failed:', errorById);
+                         alert('Could not fetch application data. Please try again.');
+                         return;
+                       }
+                       
+                       data = dataById;
+                       error = null;
+                     }
                     
-                    console.log('Manual refresh result:', data);
-                    alert(`Current status: ${data.status}\nCompany: ${data.company_name}`);
+                     if (error) {
+                       console.error('Manual refresh error:', error);
+                       return;
+                     }
                     
-                    // Update state
-                    setApplicationStatus(data.status);
-                    setApplicationDetails(data);
-                  } catch (err) {
-                    console.error('Manual refresh failed:', err);
-                  }
+                     console.log('Manual refresh result:', data);
+                     alert(`Current status: ${data.status}\nCompany: ${data.company_name}`);
+                    
+                     // Update state
+                     setApplicationStatus(data.status);
+                     setApplicationDetails(data);
+                   } catch (err) {
+                     console.error('Manual refresh failed:', err);
+                   }
                 }}
                 className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
               >
