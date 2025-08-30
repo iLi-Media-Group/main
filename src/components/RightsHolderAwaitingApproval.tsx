@@ -25,7 +25,7 @@ export function RightsHolderAwaitingApproval() {
              // Try a simpler approach - just query by email with basic fields
        const { data: applicationData, error } = await supabase
          .from('rights_holder_applications')
-         .select('id, email, status, company_name, rights_holder_type, business_structure')
+         .select('id, email, status, company_name, rights_holder_type')
          .eq('email', user.email)
          .maybeSingle(); // Use maybeSingle instead of single to avoid errors if no record found
 
@@ -217,12 +217,12 @@ export function RightsHolderAwaitingApproval() {
                       {applicationDetails.rights_holder_type?.replace('_', ' ') || 'Not specified'}
                     </p>
                   </div>
-                  <div>
-                    <span className="text-gray-400 text-sm">Business Structure:</span>
-                    <p className="text-white font-medium capitalize">
-                      {applicationDetails.business_structure?.replace('_', ' ') || 'Not specified'}
-                    </p>
-                  </div>
+                                     <div>
+                     <span className="text-gray-400 text-sm">Application ID:</span>
+                     <p className="text-white font-medium">
+                       {applicationDetails.id || 'Not available'}
+                     </p>
+                   </div>
                 </div>
               </div>
               
@@ -324,7 +324,7 @@ export function RightsHolderAwaitingApproval() {
                      // Simple query by email only - use basic fields first
                      const { data, error } = await supabase
                        .from('rights_holder_applications')
-                       .select('status, company_name')
+                       .select('status, company_name, rights_holder_type')
                        .eq('email', user.email)
                        .maybeSingle();
                     
