@@ -1057,13 +1057,14 @@ export default function ApplicationsAdmin() {
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        {app.status === 'new' && (
+                        {app.status === 'new' && selectedType !== 'rights_holder' && (
                           <Button
-                            onClick={() => updateApplicationStatus(app.id, 'invited', selectedType)}
+                            onClick={() => updateApplicationStatus(app.id, 'manual_review', selectedType)}
                             size="sm"
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-yellow-600 hover:bg-yellow-700"
+                            title="Move to Manual Review"
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            <Clock className="w-4 h-4" />
                           </Button>
                         )}
                         {app.status === 'new' && selectedType === 'artist' && (
