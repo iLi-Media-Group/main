@@ -20,6 +20,8 @@ export function RightsHolderAwaitingApproval() {
     if (!user?.email) return;
     
     try {
+      console.log('Fetching application status for email:', user.email);
+      
       // Fetch the rights holder application status
       const { data: applicationData, error } = await supabase
         .from('rights_holder_applications')
@@ -32,6 +34,7 @@ export function RightsHolderAwaitingApproval() {
         return;
       }
 
+      console.log('Application data received:', applicationData);
       setApplicationDetails(applicationData);
       setApplicationStatus(applicationData.status);
     } catch (error) {
@@ -58,6 +61,15 @@ export function RightsHolderAwaitingApproval() {
   useEffect(() => {
     fetchApplicationStatus();
   }, [user?.email]);
+
+  // Add debugging to see what status we're getting
+  useEffect(() => {
+    console.log('Application Status Debug:', {
+      applicationStatus,
+      profileVerificationStatus: profile?.verification_status,
+      applicationDetails
+    });
+  }, [applicationStatus, profile?.verification_status, applicationDetails]);
 
   // Get status display based on application status and profile verification
   const getStatusDisplay = () => {
