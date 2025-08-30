@@ -413,10 +413,10 @@ const getPlanLevel = (plan: string): number => {
   
   // Redirect agents to agent dashboard
   useEffect(() => {
-    if (profile?.is_agent) {
+    if (accountType === 'agent') {
       navigate('/agent/dashboard', { replace: true });
     }
-  }, [profile, navigate]);
+  }, [accountType, navigate]);
   const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);

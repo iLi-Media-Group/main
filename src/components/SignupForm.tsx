@@ -205,7 +205,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             first_name: firstName,
             last_name: lastName,
             company_name: companyName.trim() || null,
-            account_type: accountType,
+                         account_type: isAgent ? 'agent' : accountType,
             membership_plan: 'Single Track',
             age_verified: ageVerified,
             terms_accepted: termsAccepted,
@@ -232,7 +232,7 @@ function SignupFormContent({ onClose }: SignupFormProps) {
             first_name: firstName,
             last_name: lastName,
             company_name: companyName.trim() || null,
-                         account_type: accountType,
+                         account_type: isAgent ? 'agent' : accountType,
             membership_plan: 'Single Track',
             age_verified: ageVerified,
             terms_accepted: termsAccepted,
@@ -344,12 +344,19 @@ function SignupFormContent({ onClose }: SignupFormProps) {
         console.log('Closing form and navigating...');
         onClose();
         
-        // For client accounts, go directly to the dashboard
-        if (accountType === 'client') {
-          console.log('Navigating to client dashboard');
-          navigate('/dashboard');
-          return;
-        }
+                 // For agent accounts, go to agent dashboard
+         if (isAgent) {
+           console.log('Navigating to agent dashboard');
+           navigate('/agent/dashboard');
+           return;
+         }
+         
+         // For client accounts, go directly to the dashboard
+         if (accountType === 'client') {
+           console.log('Navigating to client dashboard');
+           navigate('/dashboard');
+           return;
+         }
         
         // For producer accounts, go directly to dashboard
         console.log('Navigating to producer dashboard');

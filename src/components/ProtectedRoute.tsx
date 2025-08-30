@@ -92,9 +92,9 @@ export function ProtectedRoute({
     return <Navigate to="/producer/dashboard" replace />;
   }
 
-  // Check for agent access (only client accounts with is_agent flag)
-  if (requiresAgent && accountType && accountType !== 'client') {
-    // Redirect non-client accounts to their appropriate dashboard
+  // Check for agent access (agent accounts)
+  if (requiresAgent && accountType && accountType !== 'agent') {
+    // Redirect non-agent accounts to their appropriate dashboard
     if (accountType === 'rights_holder') {
       return <Navigate to="/rights-holder/dashboard" replace />;
     }
