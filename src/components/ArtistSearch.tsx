@@ -39,10 +39,8 @@ export function ArtistSearch({ value, onChange, disabled = false, required = fal
                artist.email.toLowerCase().includes(searchLower);
       });
       setFilteredArtists(filtered);
-      setShowDropdown(true);
     } else {
-      setFilteredArtists([]);
-      setShowDropdown(false);
+      setFilteredArtists(artists);
     }
   }, [searchTerm, artists]);
 
@@ -109,6 +107,7 @@ export function ArtistSearch({ value, onChange, disabled = false, required = fal
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
           className="w-full pl-10 pr-10"
           placeholder="Search artists/bands..."
           disabled={disabled}
@@ -125,7 +124,7 @@ export function ArtistSearch({ value, onChange, disabled = false, required = fal
         )}
       </div>
 
-      {showDropdown && filteredArtists.length > 0 && (
+      {showDropdown && (
         <div className="absolute z-[9999] w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredArtists.map((artist) => (
             <button

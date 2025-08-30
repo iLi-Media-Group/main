@@ -41,10 +41,8 @@ export function RightsHolderSearch({ value, onChange, disabled = false, required
                email.includes(searchLower);
       });
       setFilteredRightsHolders(filtered);
-      setShowDropdown(true);
     } else {
-      setFilteredRightsHolders([]);
-      setShowDropdown(false);
+      setFilteredRightsHolders(rightsHolders);
     }
   }, [searchTerm, rightsHolders]);
 
@@ -117,6 +115,7 @@ export function RightsHolderSearch({ value, onChange, disabled = false, required
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
           className="w-full pl-10 pr-10"
           placeholder="Search record labels and publishers..."
           disabled={disabled}
@@ -133,7 +132,7 @@ export function RightsHolderSearch({ value, onChange, disabled = false, required
         )}
       </div>
 
-      {showDropdown && filteredRightsHolders.length > 0 && (
+      {showDropdown && (
         <div className="absolute z-[9999] w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredRightsHolders.map((rightsHolder) => (
             <button
