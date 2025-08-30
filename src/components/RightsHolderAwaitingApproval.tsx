@@ -22,12 +22,12 @@ export function RightsHolderAwaitingApproval() {
     try {
       console.log('Fetching application status for email:', user.email);
       
-      // Try a simpler approach - just query by email
-      const { data: applicationData, error } = await supabase
-        .from('rights_holder_applications')
-        .select('*')
-        .eq('email', user.email)
-        .maybeSingle(); // Use maybeSingle instead of single to avoid errors if no record found
+             // Try a simpler approach - just query by email with basic fields
+       const { data: applicationData, error } = await supabase
+         .from('rights_holder_applications')
+         .select('id, email, status, company_name, rights_holder_type, business_structure')
+         .eq('email', user.email)
+         .maybeSingle(); // Use maybeSingle instead of single to avoid errors if no record found
 
       if (error) {
         console.error('Error fetching application status:', error);
@@ -321,10 +321,10 @@ export function RightsHolderAwaitingApproval() {
                   if (!user?.email) return;
                   
                                      try {
-                     // Simple query by email only
+                     // Simple query by email only - use basic fields first
                      const { data, error } = await supabase
                        .from('rights_holder_applications')
-                       .select('status, company_name, rights_holder_type, business_structure')
+                       .select('status, company_name')
                        .eq('email', user.email)
                        .maybeSingle();
                     

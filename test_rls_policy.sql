@@ -1,42 +1,42 @@
--- Test the exact RLS policy logic to see what's happening
--- Let's check what the current user context is and test the policy
+-- Test RLS Policy for Rights Holder Applications
+-- This script will help us debug the RLS policy issue
 
--- Check current user context
-SELECT auth.uid() as current_user_id;
-
--- Test the exact condition from the RLS policy
--- The policy condition is:
--- (status = 'open' AND end_date >= NOW()) AND
--- (
---   (selected_producer_id IS NOT NULL AND auth.uid() = selected_producer_id) OR
---   (selected_rights_holder_id IS NOT NULL AND auth.uid() = selected_rights_holder_id) OR
---   (selected_producer_id IS NULL AND selected_rights_holder_id IS NULL)
--- )
-
--- Let's test each part:
+-- First, let's see what the current user's email is in auth.users
 SELECT 
   id,
-  status,
-  selected_producer_id,
-  selected_rights_holder_id,
-  end_date,
-  NOW() as current_time,
-  end_date >= NOW() as is_future,
-  status = 'open' as is_open,
-  selected_producer_id IS NULL as producer_null,
-  selected_rights_holder_id IS NULL as rights_holder_null,
-  (selected_producer_id IS NULL AND selected_rights_holder_id IS NULL) as both_null
-FROM custom_sync_requests 
-WHERE status = 'open';
+  email,
+  created_at
+FROM auth.users 
+WHERE email = 'ilimediagroup3@gmail.com';
 
--- Test if the policy condition would match for the current user
+-- Now let's test the RLS policy directly
+-- This simulates what the user should be able to see
 SELECT 
-  id,
-  status,
-  selected_producer_id,
-  selected_rights_holder_id,
-  end_date,
-  (status = 'open' AND end_date >= NOW()) as basic_condition,
-  (selected_producer_id IS NULL AND selected_rights_holder_id IS NULL) as case_3_condition
-FROM custom_sync_requests 
-WHERE status = 'open' AND end_date >= NOW();
+  'Testing RLS policy for user: ilimediagroup3@gmail.com' as test_info;
+
+-- Let's also check if there are any other policies that might be interfering
+SELECT 
+  schemaname,
+  tablename,
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual
+FROM pg_policies 
+WHERE tablename = 'rights_holder_applications'
+ORDER BY policyname;
+
+-- Let's create a simpler policy that should definitely work
+-- Drop the existing user policy
+DROP POLICY IF EXISTS "Users can read own applications" ON rights_holder_applications;
+
+-- Create a new policy that's more explicit
+CREATE POLICY "Users can read own applications v2" ON rights_holder_applications
+  FOR SELECT USING (
+    email = 'ilimediagroup3@gmail.com' OR
+    email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  );
+
+-- Test the new policy
+SELECT 'New RLS policy created' as status;
