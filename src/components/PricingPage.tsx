@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { PricingCarousel } from './PricingCarousel';
 import { getUserSubscription, getMembershipPlanFromPriceId, formatDate, cancelUserSubscription } from '../lib/stripe';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { CreditCard, Calendar, CheckCircle, ArrowRight } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 
 export function PricingPage() {
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership } = useUnifiedAuth();
   const [searchParams] = useSearchParams();
   const [subscription, setSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(false);

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Resend Function</title>
+</head>
+<body>
+    <h1>Test Resend Email Function</h1>
+    <button onclick="testResendFunction()">Test Resend Function</button>
+    <div id="result"></div>
+
+    <script>
+        async function testResendFunction() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/send-email-resend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljaXFrZWJxbGFqcWJwd2x1am1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ2ODU5NjMsImV4cCI6MjA1MDI2MTk2M30.Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8'
+                    },
+                    body: JSON.stringify({
+                        to: 'test@example.com',
+                        subject: 'Test Email',
+                        html: '<p>This is a test email from the Resend function</p>',
+                        text: 'This is a test email from the Resend function'
+                    })
+                });
+                
+                const result = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(result, null, 2)}</pre>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

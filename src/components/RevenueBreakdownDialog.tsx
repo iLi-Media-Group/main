@@ -149,7 +149,7 @@ export function RevenueBreakdownDialog({
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests
+      // Fetch paid custom sync requests
       let customSyncQuery = supabase
         .from('custom_sync_requests')
         .select(`
@@ -158,20 +158,64 @@ export function RevenueBreakdownDialog({
           final_amount,
           negotiated_amount,
           status,
+          payment_status,
           created_at,
-          preferred_producer_id
+          selected_producer_id,
+          updated_at
         `)
-        .eq('status', 'completed')
+        .eq('payment_status', 'paid')
         .gte('created_at', startDate.toISOString());
 
       // Filter by producer if specified
       if (producerId) {
-        customSyncQuery = customSyncQuery.eq('preferred_producer_id', producerId);
+        customSyncQuery = customSyncQuery.eq('selected_producer_id', producerId);
       }
 
       const { data: customSyncData, error: customSyncError } = await customSyncQuery;
 
       if (customSyncError) throw customSyncError;
+
+      // Debug logging for custom sync data
+      console.log('=== CUSTOM SYNC DEBUG ===');
+      console.log('Custom sync query result:', customSyncData);
+      console.log('Producer ID filter:', producerId);
+      console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
+      console.log('=== END CUSTOM SYNC DEBUG ===');
+
+      // Fallback: Also check for any recent custom sync requests that might have been missed
+      let fallbackCustomSyncQuery = supabase
+        .from('custom_sync_requests')
+        .select(`
+          id,
+          sync_fee,
+          final_amount,
+          negotiated_amount,
+          status,
+          payment_status,
+          created_at,
+          selected_producer_id,
+          updated_at
+        `)
+        .eq('payment_status', 'paid')
+        .gte('updated_at', startDate.toISOString());
+
+      if (producerId) {
+        fallbackCustomSyncQuery = fallbackCustomSyncQuery.eq('selected_producer_id', producerId);
+      }
+
+      const { data: fallbackCustomSyncData, error: fallbackCustomSyncError } = await fallbackCustomSyncQuery;
+      
+      if (fallbackCustomSyncError) {
+        console.warn('Fallback custom sync query error:', fallbackCustomSyncError);
+      }
+
+      // Combine and deduplicate custom sync data
+      const allCustomSyncData = [...(customSyncData || []), ...(fallbackCustomSyncData || [])];
+      const uniqueCustomSyncData = allCustomSyncData.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id)
+      );
+
+      console.log('Combined custom sync data count:', uniqueCustomSyncData.length);
 
       // Fetch white label setup fees
       let whiteLabelSetupQuery = supabase
@@ -213,6 +257,22 @@ export function RevenueBreakdownDialog({
       // Split into paid and pending
       const paidMonthly = (whiteLabelMonthlyData || []).filter(p => p.status === 'paid');
       const pendingMonthly = (whiteLabelMonthlyData || []).filter(p => p.status === 'pending');
+
+      // Fetch membership subscriptions (Gold, Platinum, Ultimate Access)
+      let membershipSubscriptionsQuery = supabase
+        .from('stripe_subscriptions')
+        .select('id, subscription_id, status, price_id, created_at')
+        .eq('status', 'active')
+        .in('price_id', [
+          'price_1RvLLRA4Yw5viczUCAGuLpKh', // Ultimate Access
+          'price_1RvLKcA4Yw5viczUItn56P2m', // Platinum Access
+          'price_1RvLJyA4Yw5viczUwdHhIYAQ'  // Gold Access
+        ])
+        .gte('created_at', startDate.toISOString());
+
+      const { data: membershipSubscriptionsData, error: membershipSubscriptionsError } = await membershipSubscriptionsQuery;
+
+      if (membershipSubscriptionsError) throw membershipSubscriptionsError;
 
       // Fetch pending sync proposals
       let pendingSyncProposalsQuery = supabase
@@ -400,8 +460,8 @@ export function RevenueBreakdownDialog({
 
       // Process custom sync requests
       const customSyncRevenue = {
-        count: customSyncData?.length || 0,
-        amount: customSyncData?.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
+        count: uniqueCustomSyncData.length,
+        amount: uniqueCustomSyncData.reduce((sum, request) => sum + (request.final_amount || request.sync_fee || 0), 0) || 0
       };
 
       // Process white label setup fees
@@ -414,6 +474,24 @@ export function RevenueBreakdownDialog({
       const whiteLabelMonthlyRevenue = {
         count: (paidMonthly.length + pendingMonthly.length),
         amount: (paidMonthly.reduce((sum, p) => sum + (p.amount || 0), 0) + pendingMonthly.reduce((sum, p) => sum + (p.amount || 0), 0))
+      };
+
+      // Process membership subscriptions
+      const membershipSubscriptionsRevenue = {
+        count: membershipSubscriptionsData?.length || 0,
+        amount: (membershipSubscriptionsData || []).reduce((sum, subscription) => {
+          // Calculate monthly revenue based on price IDs
+          switch (subscription.price_id) {
+            case 'price_1RvLLRA4Yw5viczUCAGuLpKh': // Ultimate Access
+              return sum + 299; // Ultimate Access monthly
+            case 'price_1RvLKcA4Yw5viczUItn56P2m': // Platinum Access
+              return sum + 199; // Platinum Access monthly
+            case 'price_1RvLJyA4Yw5viczUwdHhIYAQ': // Gold Access
+              return sum + 99; // Gold Access monthly
+            default:
+              return sum + 99; // Default to Gold Access amount
+          }
+        }, 0)
       };
 
       // Combine all revenue sources
@@ -462,6 +540,16 @@ export function RevenueBreakdownDialog({
           source: 'White Label Monthly',
           amount: whiteLabelMonthlyRevenue.amount,
           count: whiteLabelMonthlyRevenue.count,
+          type: 'completed',
+          percentage: 0 // Will be calculated later
+        });
+      }
+
+      if (membershipSubscriptionsRevenue.count > 0) {
+        completedSources.push({
+          source: 'Membership Subscriptions',
+          amount: membershipSubscriptionsRevenue.amount,
+          count: membershipSubscriptionsRevenue.count,
           type: 'completed',
           percentage: 0 // Will be calculated later
         });
@@ -532,9 +620,10 @@ export function RevenueBreakdownDialog({
       console.log('Timeframe:', timeframe);
       console.log('Month count:', monthCount);
       console.log('Initialized months:', months);
+      console.log('Date range:', startDate.toISOString(), 'to', endDate.toISOString());
       console.log('Sales data count:', salesData?.length || 0);
       console.log('Sync proposals count:', syncProposalsData?.length || 0);
-      console.log('Custom sync count:', customSyncData?.length || 0);
+      console.log('Custom sync count:', uniqueCustomSyncData.length);
       console.log('White Label Setup count:', whiteLabelSetupData?.length || 0);
       console.log('White Label Monthly (paid) count:', paidMonthly.length);
       console.log('White Label Monthly (pending) count:', pendingMonthly.length);
@@ -565,12 +654,16 @@ export function RevenueBreakdownDialog({
       });
       
       // Add custom sync requests to months
-      customSyncData?.forEach(req => {
-        const date = new Date(req.created_at);
-        const monthKey = getMonthKey(date);
-        console.log(`Custom sync: ${date.toISOString()} -> ${monthKey}, amount: ${req.final_amount || req.sync_fee}`);
+      uniqueCustomSyncData.forEach(req => {
+        // Use updated_at for payment date, fallback to created_at
+        const paymentDate = req.updated_at ? new Date(req.updated_at) : new Date(req.created_at);
+        const monthKey = getMonthKey(paymentDate);
+        const amount = req.final_amount || req.sync_fee || 0;
+        console.log(`Custom sync: ${paymentDate.toISOString()} -> ${monthKey}, amount: ${amount}, ID: ${req.id}`);
         if (months[monthKey] !== undefined) {
-          months[monthKey] += (req.final_amount || req.sync_fee) || 0;
+          months[monthKey] += amount;
+        } else {
+          console.log(`Month key ${monthKey} not found in months object`);
         }
       });
 

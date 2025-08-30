@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { Calendar, Music, Link as LinkIcon, FileText, Mail } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Music, Link as LinkIcon, FileText, Mail, Calculator } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
+import { RightsHolderSearch } from './RightsHolderSearch';
+import { ArtistSearch } from './ArtistSearch';
 import { useNavigate } from 'react-router-dom';
 
 export default function CustomSyncRequest() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [projectTitle, setProjectTitle] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
@@ -21,12 +23,67 @@ export default function CustomSyncRequest() {
   const [isOpenRequest, setIsOpenRequest] = useState(false);
   const [hasPreferredProducer, setHasPreferredProducer] = useState(false);
   const [selectedProducer, setSelectedProducer] = useState('');
+  const [hasPreferredArtist, setHasPreferredArtist] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState('');
+  const [hasPreferredRightsHolder, setHasPreferredRightsHolder] = useState(false);
+  const [selectedRightsHolder, setSelectedRightsHolder] = useState('');
   const [submissionInstructions, setSubmissionInstructions] = useState('');
   const [submissionEmail, setSubmissionEmail] = useState('');
+  const [useClientContract, setUseClientContract] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [paymentTerms, setPaymentTerms] = useState('immediate');
+  const [isAgent, setIsAgent] = useState(false);
+  const [agentCommissionPercentage, setAgentCommissionPercentage] = useState(20);
+  const [showCommissionBreakdown, setShowCommissionBreakdown] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Check if user is an agent and load their default commission
+  useEffect(() => {
+    const checkAgentStatus = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_agent, agent_commission_percentage, account_type')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) throw error;
+        
+        if (profile) {
+          setUserProfile(profile);
+          setIsAgent(profile.is_agent || profile.account_type === 'agent');
+          if (profile.agent_commission_percentage) {
+            setAgentCommissionPercentage(profile.agent_commission_percentage);
+          }
+        }
+      } catch (err) {
+        console.error('Error checking agent status:', err);
+      }
+    };
+    
+    checkAgentStatus();
+  }, [user]);
+
+  // Calculate commission breakdown
+  const calculateCommissionBreakdown = () => {
+    const totalAmount = parseFloat(syncFee) || 0;
+    const mybeatfiFee = totalAmount * 0.10; // 10% to MyBeatFi
+    const remainingAmount = totalAmount * 0.90; // 90% to talent
+    const agentCommission = remainingAmount * (agentCommissionPercentage / 100);
+    const talentCompensation = remainingAmount - agentCommission;
+    
+    return {
+      totalAmount,
+      mybeatfiFee,
+      remainingAmount,
+      agentCommission,
+      talentCompensation
+    };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +102,20 @@ export default function CustomSyncRequest() {
           sync_fee: parseFloat(syncFee),
           end_date: endDate,
           genre: selectedGenre,
-          sub_genres: selectedSubGenres,
+          sub_genres: selectedSubGenres.length > 0 ? selectedSubGenres : [],
           reference_artist: referenceArtist || null,
           reference_song: referenceSong || null,
           reference_url: referenceUrl || null,
           is_open_request: isOpenRequest,
           preferred_producer_id: hasPreferredProducer ? selectedProducer : null,
+          preferred_artist_id: hasPreferredArtist ? selectedArtist : null,
+          preferred_rights_holder_id: hasPreferredRightsHolder ? selectedRightsHolder : null,
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
           payment_terms: paymentTerms,
+          use_client_contract: useClientContract,
+          agent_commission_percentage: isAgent ? agentCommissionPercentage : 0,
+          agent_id: isAgent ? user.id : null,
           status: 'open'
         })
         .select()
@@ -64,7 +126,12 @@ export default function CustomSyncRequest() {
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
-        navigate('/dashboard');
+        // Redirect agents to their submissions page, clients to dashboard
+        if (isAgent) {
+          navigate('/agent/custom-sync-request-subs');
+        } else {
+          navigate('/dashboard');
+        }
         // Reset form
         setProjectTitle('');
         setProjectDescription('');
@@ -78,6 +145,8 @@ export default function CustomSyncRequest() {
         setIsOpenRequest(false);
         setHasPreferredProducer(false);
         setSelectedProducer('');
+        setHasPreferredRightsHolder(false);
+        setSelectedRightsHolder('');
         setSubmissionInstructions('');
         setSubmissionEmail('');
         setPaymentTerms('immediate');
@@ -185,6 +254,86 @@ export default function CustomSyncRequest() {
             </select>
           </div>
 
+          {isAgent && (
+            <div className="space-y-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-blue-300">Agent Commission</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCommissionBreakdown(!showCommissionBreakdown)}
+                  className="flex items-center space-x-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span>{showCommissionBreakdown ? 'Hide' : 'Show'} Breakdown</span>
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Commission Percentage
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={agentCommissionPercentage}
+                      onChange={(e) => setAgentCommissionPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full px-4 py-2 pr-8"
+                      placeholder="20"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Commission is calculated from the 90% that goes to talent
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Your Commission
+                  </label>
+                  <div className="text-2xl font-bold text-blue-400">
+                    ${calculateCommissionBreakdown().agentCommission.toFixed(2)}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    From ${calculateCommissionBreakdown().totalAmount.toFixed(2)} total deal
+                  </p>
+                </div>
+              </div>
+
+              {showCommissionBreakdown && (
+                <div className="p-4 bg-blue-800/30 border border-blue-500/20 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-300 mb-3">Commission Breakdown</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Total Deal Amount:</span>
+                      <span className="text-white font-medium">${calculateCommissionBreakdown().totalAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">MyBeatFi Fee (10%):</span>
+                      <span className="text-gray-400">-${calculateCommissionBreakdown().mybeatfiFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Remaining for Talent (90%):</span>
+                      <span className="text-white font-medium">${calculateCommissionBreakdown().remainingAmount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-500/30 pt-2">
+                      <span className="text-blue-300">Your Commission ({agentCommissionPercentage}%):</span>
+                      <span className="text-blue-400 font-medium">-${calculateCommissionBreakdown().agentCommission.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between border-t border-blue-500/30 pt-2">
+                      <span className="text-green-300">Talent Compensation:</span>
+                      <span className="text-green-400 font-medium">${calculateCommissionBreakdown().talentCompensation.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -212,7 +361,7 @@ export default function CustomSyncRequest() {
                   Sub-Genres (Optional)
                 </label>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {(SUB_GENRES[selectedGenre as keyof typeof SUB_GENRES] || []).map((subGenre) => (
+                  {(SUB_GENRES[selectedGenre.toLowerCase() as keyof typeof SUB_GENRES] || []).map((subGenre) => (
                     <label key={subGenre} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -296,11 +445,15 @@ export default function CustomSyncRequest() {
                   if (e.target.checked) {
                     setHasPreferredProducer(false);
                     setSelectedProducer('');
+                    setHasPreferredArtist(false);
+                    setSelectedArtist('');
+                    setHasPreferredRightsHolder(false);
+                    setSelectedRightsHolder('');
                   }
                 }}
                 className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
               />
-              <span className="text-gray-300">Make this an open request (visible to all producers)</span>
+              <span className="text-gray-300">Make this an open request (visible to all producers, record labels, and publishers)</span>
             </label>
 
             <label className="flex items-center space-x-2">
@@ -331,11 +484,86 @@ export default function CustomSyncRequest() {
                 required={hasPreferredProducer}
               />
             </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={hasPreferredArtist}
+                onChange={(e) => {
+                  setHasPreferredArtist(e.target.checked);
+                  if (e.target.checked) {
+                    setIsOpenRequest(false);
+                  } else {
+                    setSelectedArtist('');
+                  }
+                }}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">Select Preferred Artist/Band</span>
+            </label>
+
+            <div className="pl-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Start Typing the Artist/Band Name and Choose
+              </label>
+              <ArtistSearch
+                value={selectedArtist}
+                onChange={setSelectedArtist}
+                disabled={!hasPreferredArtist}
+                required={hasPreferredArtist}
+              />
+            </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={hasPreferredRightsHolder}
+                onChange={(e) => {
+                  setHasPreferredRightsHolder(e.target.checked);
+                  if (e.target.checked) {
+                    setIsOpenRequest(false);
+                  } else {
+                    setSelectedRightsHolder('');
+                  }
+                }}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">Select Preferred Record Label or Publisher</span>
+            </label>
+
+            <div className="pl-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Start Typing the Record Label or Publisher Name and Choose
+              </label>
+              <RightsHolderSearch
+                value={selectedRightsHolder}
+                onChange={setSelectedRightsHolder}
+                disabled={!hasPreferredRightsHolder}
+                required={hasPreferredRightsHolder}
+              />
+            </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={useClientContract}
+                onChange={(e) => setUseClientContract(e.target.checked)}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">I will provide my own contract with terms for this sync</span>
+            </label>
+            
+            {useClientContract && (
+              <div className="p-4 bg-blue-800/50 border border-blue-600/30 rounded-lg">
+                <p className="text-blue-200 text-sm">
+                  <strong>Note:</strong> If your request is accepted, you will be able to upload your contract PDF. 
+                  The producer/artist will need to sign your contract before files are made available.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="space-y-6">
-            <h3 className="text-lg font-medium text-white">How to Submit</h3>
-
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Special Instructions
@@ -346,22 +574,6 @@ export default function CustomSyncRequest() {
                   value={submissionInstructions}
                   onChange={(e) => setSubmissionInstructions(e.target.value)}
                   rows={4}
-                  className="w-full pl-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Submission Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="email"
-                  value={submissionEmail}
-                  onChange={(e) => setSubmissionEmail(e.target.value)}
                   className="w-full pl-10"
                   required
                 />

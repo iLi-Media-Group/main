@@ -1,0 +1,26 @@
+[functions.process-client-welcome-drip]
+verify_jwt = false
+
+[functions.schedule-client-welcome-drip]
+verify_jwt = false
+
+[functions.schedule-producer-welcome-drip]
+verify_jwt = false
+
+[functions.process-producer-welcome-drip]
+verify_jwt = false
+
+[functions.test-drip-emails]
+verify_jwt = false
+
+
+[functions.search-tracks]
+enabled = true
+verify_jwt = true
+import_map = "./functions/search-tracks/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/search-tracks/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/search-tracks/*.html" ]

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, DollarSign, AlertCircle, Loader2, Building, Bitcoin } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface WithdrawalRequestFormProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ export function WithdrawalRequestForm({
   availableBalance,
   paymentMethods
 }: WithdrawalRequestFormProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [amount, setAmount] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [loading, setLoading] = useState(false);

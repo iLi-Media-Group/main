@@ -44,11 +44,16 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-white font-semibold mb-4">For Producers</h3>
+            <h3 className="text-white font-semibold mb-4">For Producers/Artists</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/producers" className="text-gray-400 hover:text-white transition-colors">
                   Become a Sync Producer
+                </Link>
+              </li>
+              <li>
+                <Link to="/artist-application" className="text-gray-400 hover:text-white transition-colors">
+                  Become a Sync Artist
                 </Link>
               </li>
               <li>
@@ -86,6 +91,11 @@ export function Footer() {
           <div>
             <h3 className="text-white font-semibold mb-4">Legal</h3>
             <ul className="space-y-2">
+              <li>
+                <Link to="/terms" className="text-gray-400 hover:text-white transition-colors">
+                  Terms and Conditions
+                </Link>
+              </li>
               <li>
                 <Link to="/refund-policy" className="text-gray-400 hover:text-white transition-colors">
                   Refund Policy

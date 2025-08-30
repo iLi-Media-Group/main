@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 export function useCurrentPlan() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [currentPlan, setCurrentPlan] = useState<string>('starter');
   const [loading, setLoading] = useState(true);
 
