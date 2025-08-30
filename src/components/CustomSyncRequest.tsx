@@ -37,6 +37,7 @@ export default function CustomSyncRequest() {
   const [isAgent, setIsAgent] = useState(false);
   const [agentCommissionPercentage, setAgentCommissionPercentage] = useState(20);
   const [showCommissionBreakdown, setShowCommissionBreakdown] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   // Check if user is an agent and load their default commission
   useEffect(() => {
@@ -46,15 +47,18 @@ export default function CustomSyncRequest() {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('is_agent, agent_commission_percentage')
+          .select('is_agent, agent_commission_percentage, account_type')
           .eq('id', user.id)
           .single();
         
         if (error) throw error;
         
-        if (profile?.is_agent) {
-          setIsAgent(true);
-          setAgentCommissionPercentage(profile.agent_commission_percentage || 20);
+        if (profile) {
+          setUserProfile(profile);
+          setIsAgent(profile.is_agent || profile.account_type === 'agent');
+          if (profile.agent_commission_percentage) {
+            setAgentCommissionPercentage(profile.agent_commission_percentage);
+          }
         }
       } catch (err) {
         console.error('Error checking agent status:', err);
