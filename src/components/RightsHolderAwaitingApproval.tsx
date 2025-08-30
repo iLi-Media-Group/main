@@ -22,33 +22,20 @@ export function RightsHolderAwaitingApproval() {
     try {
       console.log('Fetching application status for email:', user.email);
       
-      // Try to fetch by email first, then by user ID if that fails
-      let { data: applicationData, error } = await supabase
+      // Try a simpler approach - just query by email
+      const { data: applicationData, error } = await supabase
         .from('rights_holder_applications')
         .select('*')
         .eq('email', user.email)
-        .single();
-
-      if (error) {
-        console.log('Email query failed, trying user ID:', error);
-        // Try with user ID instead
-        const { data: applicationDataById, error: errorById } = await supabase
-          .from('rights_holder_applications')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (errorById) {
-          console.error('Both email and ID queries failed:', errorById);
-          return;
-        }
-        
-        applicationData = applicationDataById;
-        error = null;
-      }
+        .maybeSingle(); // Use maybeSingle instead of single to avoid errors if no record found
 
       if (error) {
         console.error('Error fetching application status:', error);
+        return;
+      }
+
+      if (!applicationData) {
+        console.log('No application found for email:', user.email);
         return;
       }
 
@@ -334,34 +321,21 @@ export function RightsHolderAwaitingApproval() {
                   if (!user?.email) return;
                   
                                      try {
-                     // Try to fetch by email first, then by user ID if that fails
-                     let { data, error } = await supabase
+                     // Simple query by email only
+                     const { data, error } = await supabase
                        .from('rights_holder_applications')
                        .select('status, company_name, rights_holder_type, business_structure')
                        .eq('email', user.email)
-                       .single();
-                    
-                     if (error) {
-                       console.log('Email query failed, trying user ID:', error);
-                       // Try with user ID instead
-                       const { data: dataById, error: errorById } = await supabase
-                         .from('rights_holder_applications')
-                         .select('status, company_name, rights_holder_type, business_structure')
-                         .eq('id', user.id)
-                         .single();
-                       
-                       if (errorById) {
-                         console.error('Both email and ID queries failed:', errorById);
-                         alert('Could not fetch application data. Please try again.');
-                         return;
-                       }
-                       
-                       data = dataById;
-                       error = null;
-                     }
+                       .maybeSingle();
                     
                      if (error) {
                        console.error('Manual refresh error:', error);
+                       alert('Error fetching application data. Please try again.');
+                       return;
+                     }
+                    
+                     if (!data) {
+                       alert('No application found for this email address.');
                        return;
                      }
                     
