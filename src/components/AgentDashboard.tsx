@@ -294,7 +294,7 @@ export function AgentDashboard() {
                 <h3 className="text-lg font-semibold text-white mb-4">Quick Actions</h3>
                 <div className="space-y-3">
                   <Link
-                    to="/custom-sync-request"
+                    to="/agent/custom-sync-request"
                     className="flex items-center p-3 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg transition-colors group"
                   >
                     <FileText className="w-5 h-5 text-blue-400 mr-3" />
@@ -303,7 +303,7 @@ export function AgentDashboard() {
                   </Link>
 
                   <Link
-                    to="/custom-sync-requests"
+                    to="/agent/custom-sync-requests"
                     className="flex items-center p-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg transition-colors group"
                   >
                     <BarChart3 className="w-5 h-5 text-purple-400 mr-3" />

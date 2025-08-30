@@ -883,6 +883,22 @@ const App = () => {
           </ProtectedRoute>
         } />
 
+        {/* Agent Custom Sync Request */}
+        <Route path="/agent/custom-sync-request" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <CustomSyncRequest />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+        <Route path="/agent/custom-sync-requests" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <CustomSyncRequestsPage />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
+
         {/* Profile Route */}
         <Route path="/profile" element={
           <LayoutWrapper>
