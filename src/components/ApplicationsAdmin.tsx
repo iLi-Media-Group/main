@@ -695,6 +695,90 @@ export default function ApplicationsAdmin() {
 
   const handleRightsHolderQuickInvite = async (application: RightsHolderApplication) => {
     try {
+      // Use the new approval flow since accounts are created immediately
+      await handleRightsHolderPasswordApproval(application);
+    } catch (error) {
+      console.error('Rights holder quick invite error:', error);
+      alert('Failed to approve rights holder. Please try again.');
+    }
+  };
+
+  const handleRightsHolderPasswordApproval = async (application: RightsHolderApplication) => {
+    try {
+      // Generate rights holder number
+      const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
+      const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
+
+      // Find the user by email
+      const { data: userData, error: userError } = await supabase.auth.admin.listUsers();
+      if (userError) throw userError;
+
+      const user = userData.users.find(u => u.email === application.email);
+      if (!user) {
+        throw new Error('User not found. They may not have completed the signup process.');
+      }
+
+      // Update profile to verified status
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          verification_status: 'verified',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Update rights holder to active status
+      const { error: rightsHolderError } = await supabase
+        .from('rights_holders')
+        .update({ 
+          verification_status: 'verified',
+          is_active: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (rightsHolderError) throw rightsHolderError;
+
+      // Update application status to onboarded
+      await supabase
+        .from('rights_holder_applications')
+        .update({ 
+          status: 'onboarded',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', application.id);
+
+      // Send approval email
+      const { error: emailError } = await supabase.functions.invoke('send-rights-holder-approval', {
+        body: {
+          email: application.email,
+          companyName: application.company_name,
+          contactFirstName: application.contact_first_name,
+          contactLastName: application.contact_last_name,
+          rightsHolderNumber
+        }
+      });
+
+      if (emailError) {
+        console.error('Email sending failed:', emailError);
+        alert(`Rights Holder ${application.company_name} has been approved! Rights Holder Number: ${rightsHolderNumber}. However, the approval email failed to send.`);
+      } else {
+        alert(`Rights Holder ${application.company_name} has been approved! Rights Holder Number: ${rightsHolderNumber}. Approval email sent.`);
+      }
+
+      // Refresh the applications list
+      fetchApplications();
+
+    } catch (error) {
+      console.error('Rights holder approval error:', error);
+      throw error;
+    }
+  };
+
+  const handleRightsHolderInvitationApproval = async (application: RightsHolderApplication) => {
+    try {
       // Generate rights holder number using the function
       const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
       const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
@@ -747,8 +831,8 @@ export default function ApplicationsAdmin() {
       alert(`Rights Holder ${application.company_name} has been invited successfully! Rights Holder Number: ${rightsHolderNumber}`);
 
     } catch (error) {
-      console.error('Rights holder quick invite error:', error);
-      alert('Failed to invite rights holder. Please try again.');
+      console.error('Rights holder invitation approval error:', error);
+      throw error;
     }
   };
 

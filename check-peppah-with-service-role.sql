@@ -23,3 +23,4 @@ SELECT id, email, account_type FROM public.profiles WHERE email ILIKE '%peppah%'
 SELECT 'ALL PROFILES WITH EMAIL:' as info;
 SELECT id, email, account_type, created_at, updated_at FROM public.profiles WHERE email IS NOT NULL ORDER BY created_at DESC LIMIT 10;
 
+

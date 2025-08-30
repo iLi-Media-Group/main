@@ -133,6 +133,9 @@ const Layout: React.FC<LayoutProps> = ({ children, onSignupClick, hideHeader = f
                       <Link to="/rights-holder/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
                           <Settings className="w-4 h-4 mr-2" />Record Label/Publisher
                       </Link>
+                      <Link to="/artist/login" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50">
+                          <Settings className="w-4 h-4 mr-2" />Artist Login
+                      </Link>
                       </div>
                   </div>
                 </div>

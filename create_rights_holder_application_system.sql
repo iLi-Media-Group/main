@@ -143,3 +143,4 @@ CREATE POLICY "Enable service role access" ON rights_holder_invitations
 -- 7. Test the function
 SELECT get_next_rights_holder_number() as next_rights_holder_number;
 
+

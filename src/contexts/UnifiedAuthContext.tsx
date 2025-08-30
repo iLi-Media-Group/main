@@ -537,37 +537,8 @@ export function UnifiedAuthProvider({ children }: { children: React.ReactNode })
         console.log('✅ Profile verification successful:', verifyProfile);
       }
 
-      // Send notification email to admin about new rights holder application
-      console.log('📧 Sending admin notification email...');
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-new-rights-holder-notification', {
-          body: {
-            rightsHolderEmail: email,
-            rightsHolderName: rightsHolderData.company_name || rightsHolderData.legal_entity_name || 'Rights Holder',
-            companyName: rightsHolderData.company_name,
-            rightsHolderType: rightsHolderData.rights_holder_type,
-            businessStructure: rightsHolderData.business_structure,
-            phone: rightsHolderData.phone,
-            address: [
-              rightsHolderData.address_line_1,
-              rightsHolderData.city,
-              rightsHolderData.state,
-              rightsHolderData.postal_code,
-              rightsHolderData.country
-            ].filter(Boolean).join(', ')
-          }
-        });
-
-        if (emailError) {
-          console.error('❌ Error sending notification email:', emailError);
-          // Don't return error here as the account was created successfully
-        } else {
-          console.log('✅ Admin notification email sent successfully');
-        }
-      } catch (emailErr) {
-        console.error('❌ Error calling notification email function:', emailErr);
-        // Don't return error here as the account was created successfully
-      }
+      // Note: Admin notification is no longer needed since applications are reviewed in the admin dashboard
+      console.log('📋 Rights holder application submitted - will be reviewed in admin dashboard');
 
       // Send welcome email to the rights holder
       console.log('📧 Sending welcome email to rights holder...');
