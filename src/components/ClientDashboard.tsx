@@ -427,7 +427,6 @@ const getPlanLevel = (plan: string): number => {
   const [sortField, setSortField] = useState<'renewal' | 'title' | 'genre' | 'bpm'>('renewal');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
   const [userStats, setUserStats] = useState<UserStats>({
     totalLicenses: 0,
     remainingLicenses: 0,
@@ -653,7 +652,6 @@ const getPlanLevel = (plan: string): number => {
         .single();
 
       if (profileData) {
-        setProfile(profileData);
         setPendingDowngrade(!!profileData.subscription_cancel_at_period_end);
         setDowngradeEffectiveDate(profileData.subscription_current_period_end || null);
       }
