@@ -369,12 +369,12 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4 overflow-hidden">
       {/* Creative/Media Production Video Background */}
-      <VideoBackground 
-        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
-        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
-        page="signup"
-        alt="Creative media production background"
-      />
+             <VideoBackground 
+         videoUrl=""
+         fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+         page="signup"
+         alt="Creative media production background"
+       />
       
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white/20 backdrop-blur-md p-8 rounded-xl border border-blue-500/20 shadow-xl max-h-[90vh] overflow-y-auto">
@@ -535,6 +535,22 @@ function SignupFormContent({ onClose }: SignupFormProps) {
                             <li>• Example: $1000 deal with 20% commission = $180 to you, $720 to talent</li>
                             <li>• You can adjust commission rates per deal</li>
                           </ul>
+                        </div>
+                        
+                        <div className="p-3 bg-green-800/30 border border-green-500/20 rounded-lg">
+                          <h4 className="text-sm font-medium text-green-300 mb-2">Example Custom Sync Request:</h4>
+                          <div className="text-xs text-gray-300 space-y-2">
+                            <p><strong>Project:</strong> Netflix Documentary - "Urban Beats"</p>
+                            <p><strong>Deal Amount:</strong> $2,500</p>
+                            <p><strong>Your Commission:</strong> 25%</p>
+                            <div className="bg-gray-800/50 p-2 rounded text-xs">
+                              <p><strong>Breakdown:</strong></p>
+                              <p>• MyBeatFi Fee (10%): $250</p>
+                              <p>• Remaining for Talent (90%): $2,250</p>
+                              <p>• Your Commission (25% of $2,250): $562.50</p>
+                              <p>• Talent Receives: $1,687.50</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

@@ -63,7 +63,8 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
 
       // Check if user is authenticated using unified auth
       if (!user) {
-        console.log('No authenticated user, skipping background asset fetch');
+        console.log('No authenticated user, using default background');
+        setBackgroundAsset(null);
         setLoading(false);
         return;
       }
@@ -111,10 +112,13 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   // Use database asset if available, otherwise use provided props
   const finalVideoUrl = backgroundAsset?.type === 'video' ? backgroundAsset.url : videoUrl;
   const finalFallbackImage = backgroundAsset?.type === 'image' ? backgroundAsset.url : fallbackImage;
+  
+  // For signup page, always use fallback image to ensure reliability
+  const shouldUseFallback = page === 'signup' || !finalVideoUrl || finalVideoUrl.includes('vimeo.com');
 
   return (
     <div className="absolute inset-0 w-full h-full">
-      {backgroundAsset?.type === 'video' && !isVideoError && !loading ? (
+      {backgroundAsset?.type === 'video' && !isVideoError && !loading && !shouldUseFallback ? (
         <video
           autoPlay
           muted
