@@ -4,12 +4,27 @@ import { Clock, Building2, CheckCircle, AlertCircle, Mail, Phone, MapPin } from 
 import { useNavigate } from 'react-router-dom';
 
 export function RightsHolderAwaitingApproval() {
-  const { user, profile, signOut } = useUnifiedAuth();
+  const { user, profile, signOut, fetchProfile } = useUnifiedAuth();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleSignOut = () => {
     signOut();
     navigate('/');
+  };
+
+  const handleRefreshStatus = async () => {
+    if (!user) return;
+    
+    setIsRefreshing(true);
+    try {
+      await fetchProfile(user.id, user.email || '');
+      console.log('Profile refreshed, verification status:', profile?.verification_status);
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -148,6 +163,30 @@ export function RightsHolderAwaitingApproval() {
                 Upon approval, you'll have full access to the rights holder dashboard.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Refresh Status Section */}
+        <div className="bg-blue-900/90 backdrop-blur-lg rounded-xl p-8 border border-white/20 mb-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-4">Check Approval Status</h2>
+            <p className="text-gray-300 mb-6">
+              If you've received an approval email, click the button below to refresh your status.
+            </p>
+            <button
+              onClick={handleRefreshStatus}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white font-semibold rounded-lg transition-colors"
+            >
+              {isRefreshing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Refreshing...
+                </>
+              ) : (
+                'Refresh Status'
+              )}
+            </button>
           </div>
         </div>
 
