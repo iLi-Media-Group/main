@@ -1058,6 +1058,27 @@ export default function ApplicationsAdmin() {
                             <XCircle className="w-4 h-4" />
                           </Button>
                         )}
+                        {/* Buttons for applications in manual review */}
+                        {app.status === 'manual_review' && selectedType === 'rights_holder' && (
+                          <Button
+                            onClick={() => handleRightsHolderQuickInvite(app as RightsHolderApplication)}
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700"
+                            title="Approve Rights Holder (Account Already Created)"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {app.status === 'manual_review' && (
+                          <Button
+                            onClick={() => updateApplicationStatus(app.id, 'declined', selectedType)}
+                            size="sm"
+                            className="bg-red-600 hover:bg-red-700"
+                            title="Decline Application"
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
