@@ -28,6 +28,7 @@ interface EditTrackModalProps {
     mp3_url?: string;
     trackouts_url?: string;
     audio_url?: string;
+    image_url?: string;
   };
   onUpdate: () => void;
 }
@@ -62,6 +63,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
   const [trackoutsFile, setTrackoutsFile] = useState<File | null>(null);
   const [trackoutsUrl, setTrackoutsUrl] = useState(track.trackouts_url || '');
   const [stemsFile, setStemsFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState(track.image_url || '');
   
   // Fetch genres and instruments from database - use stable effect to prevent refreshes
   useStableDataFetch(
@@ -126,6 +129,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       setSplitSheetUrl(track.split_sheet_url || '');
       setMp3Url(track.mp3_url || '');
       setTrackoutsUrl(track.trackouts_url || '');
+      setImageUrl(track.image_url || '');
 
       console.log('EditTrackModal: Populated form state:', {
         selectedGenres: Array.isArray(track.genres) ? track.genres : [],
@@ -157,7 +161,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
       const validMoods = selectedMoods.filter(mood => MOODS.includes(mood));
 
       // Check if any files are being uploaded
-      const hasFilesToUpload = mp3File || trackoutsFile || stemsFile || splitSheetFile;
+      const hasFilesToUpload = mp3File || trackoutsFile || stemsFile || splitSheetFile || imageFile;
       
       if (hasFilesToUpload) {
         setUploadingFiles(true);
@@ -246,6 +250,26 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           throw new Error(`Failed to upload split sheet file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
         }
       }
+
+      let imageUploadedUrl = imageUrl;
+      if (imageFile) {
+        try {
+          console.log('Uploading image file:', imageFile.name);
+          const uploadedImagePath = await uploadFile(
+            imageFile,
+            'track-images',
+            undefined,
+            `${track.id}`,
+            'cover.jpg'
+          );
+          imageUploadedUrl = `${track.id}/cover.jpg`;
+          setImageUrl(imageUploadedUrl);
+          console.log('Image upload successful:', uploadedImagePath);
+        } catch (uploadError) {
+          console.error('Image upload failed:', uploadError);
+          throw new Error(`Failed to upload image file: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+        }
+      }
       // --- End file upload logic ---
 
       console.log('Updating track with data:', {
@@ -258,7 +282,8 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
         mp3_url: mp3UploadedUrl,
         trackouts_url: trackoutsUploadedUrl,
         stems_url: stemsUploadedUrl,
-        split_sheet_url: splitSheetUploadedUrl
+        split_sheet_url: splitSheetUploadedUrl,
+        image_url: imageUploadedUrl
       });
 
       const { error: updateError } = await supabase
@@ -278,6 +303,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           trackouts_url: trackoutsUploadedUrl || null,
           stems_url: stemsUploadedUrl || null,
           split_sheet_url: splitSheetUploadedUrl || null,
+          image_url: imageUploadedUrl || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', track.id);
@@ -358,6 +384,7 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
                 <p className="text-gray-400">Trackouts: <span className="text-white">{track.trackouts_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
                 <p className="text-gray-400">Stems: <span className="text-white">{track.stems_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
                 <p className="text-gray-400">Split Sheet: <span className="text-white">{track.split_sheet_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
+                <p className="text-gray-400">Cover Image: <span className="text-white">{track.image_url ? '✓ Available' : '❌ Not uploaded'}</span></p>
               </div>
             </div>
           </div>
@@ -733,6 +760,36 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
           </div>
 
 
+
+          {/* Cover Image Upload */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Cover Image {imageUrl && !imageFile && <span className="text-green-400">(Current: ✓)</span>}
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={e => setImageFile(e.target.files?.[0] || null)}
+              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              disabled={loading || uploadingFiles}
+            />
+            {imageFile && (
+              <p className="text-green-400 text-sm mt-1">✓ {imageFile.name} selected (will replace existing)</p>
+            )}
+            {imageUrl && !imageFile && (
+              <div className="mt-2">
+                <p className="text-blue-400 text-sm mb-2">Current cover image:</p>
+                <img 
+                  src={imageUrl} 
+                  alt="Current cover" 
+                  className="w-32 h-32 object-cover rounded-lg border border-blue-500/20"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Split Sheet PDF */}
           <div className="mb-4">
