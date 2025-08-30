@@ -117,7 +117,7 @@ export function ProducerSearch({ value, onChange, disabled = false, required = f
       </div>
 
       {showDropdown && filteredProducers.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-[9999] w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredProducers.map((producer) => (
             <button
               key={producer.id}

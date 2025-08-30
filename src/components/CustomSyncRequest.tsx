@@ -5,6 +5,7 @@ import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { GENRES, SUB_GENRES } from '../types';
 import { ProducerSearch } from './ProducerSearch';
 import { RightsHolderSearch } from './RightsHolderSearch';
+import { ArtistSearch } from './ArtistSearch';
 import { useNavigate } from 'react-router-dom';
 
 export default function CustomSyncRequest() {
@@ -22,6 +23,8 @@ export default function CustomSyncRequest() {
   const [isOpenRequest, setIsOpenRequest] = useState(false);
   const [hasPreferredProducer, setHasPreferredProducer] = useState(false);
   const [selectedProducer, setSelectedProducer] = useState('');
+  const [hasPreferredArtist, setHasPreferredArtist] = useState(false);
+  const [selectedArtist, setSelectedArtist] = useState('');
   const [hasPreferredRightsHolder, setHasPreferredRightsHolder] = useState(false);
   const [selectedRightsHolder, setSelectedRightsHolder] = useState('');
   const [submissionInstructions, setSubmissionInstructions] = useState('');
@@ -101,6 +104,7 @@ export default function CustomSyncRequest() {
           reference_url: referenceUrl || null,
           is_open_request: isOpenRequest,
           preferred_producer_id: hasPreferredProducer ? selectedProducer : null,
+          preferred_artist_id: hasPreferredArtist ? selectedArtist : null,
           preferred_rights_holder_id: hasPreferredRightsHolder ? selectedRightsHolder : null,
           submission_instructions: submissionInstructions,
           submission_email: submissionEmail,
@@ -437,6 +441,8 @@ export default function CustomSyncRequest() {
                   if (e.target.checked) {
                     setHasPreferredProducer(false);
                     setSelectedProducer('');
+                    setHasPreferredArtist(false);
+                    setSelectedArtist('');
                     setHasPreferredRightsHolder(false);
                     setSelectedRightsHolder('');
                   }
@@ -472,6 +478,35 @@ export default function CustomSyncRequest() {
                 onChange={setSelectedProducer}
                 disabled={!hasPreferredProducer}
                 required={hasPreferredProducer}
+              />
+            </div>
+
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={hasPreferredArtist}
+                onChange={(e) => {
+                  setHasPreferredArtist(e.target.checked);
+                  if (e.target.checked) {
+                    setIsOpenRequest(false);
+                  } else {
+                    setSelectedArtist('');
+                  }
+                }}
+                className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+              />
+              <span className="text-gray-300">Select Preferred Artist/Band</span>
+            </label>
+
+            <div className="pl-6">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Start Typing the Artist/Band Name and Choose
+              </label>
+              <ArtistSearch
+                value={selectedArtist}
+                onChange={setSelectedArtist}
+                disabled={!hasPreferredArtist}
+                required={hasPreferredArtist}
               />
             </div>
 
