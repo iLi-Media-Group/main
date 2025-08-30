@@ -12,7 +12,7 @@ export interface Instrument {
   id: string;
   name: string;
   display_name: string;
-  category: string;
+  category_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -50,7 +50,7 @@ export async function fetchInstrumentsData(): Promise<InstrumentsData> {
     // Add category info to instruments
     const instrumentsWithCategory: InstrumentWithCategory[] = instruments.map(instrument => ({
       ...instrument,
-      category_info: categories.find(cat => cat.name === instrument.category)
+      category_info: categories.find(cat => cat.id === instrument.category_id)
     }));
 
     return {
@@ -67,7 +67,7 @@ export function formatInstrumentsForDisplay(instruments: InstrumentWithCategory[
   const formatted: Record<string, string[]> = {};
 
   instruments.forEach(instrument => {
-    const categoryName = instrument.category_info?.display_name || instrument.category;
+    const categoryName = instrument.category_info?.display_name || 'Unknown';
     if (!formatted[categoryName]) {
       formatted[categoryName] = [];
     }
@@ -85,20 +85,19 @@ export function getInstrumentCategory(instrumentName: string, instruments: Instr
   const instrument = instruments.find(inst => 
     inst.display_name.toLowerCase() === instrumentName.toLowerCase()
   );
-  return instrument?.category_info?.display_name || instrument?.category || null;
+  return instrument?.category_info?.display_name || null;
 }
 
 export function getInstrumentsByCategory(categoryName: string, instruments: InstrumentWithCategory[]): InstrumentWithCategory[] {
   return instruments.filter(instrument => 
-    instrument.category_info?.display_name === categoryName || 
-    instrument.category === categoryName
+    instrument.category_info?.display_name === categoryName
   );
 }
 
 export function getCategories(instruments: InstrumentWithCategory[]): string[] {
   const categories = new Set<string>();
   instruments.forEach(instrument => {
-    const categoryName = instrument.category_info?.display_name || instrument.category;
+    const categoryName = instrument.category_info?.display_name;
     if (categoryName) {
       categories.add(categoryName);
     }

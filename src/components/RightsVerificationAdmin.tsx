@@ -347,17 +347,17 @@ export function RightsVerificationAdmin() {
   };
 
   const filteredRightsHolders = rightsHolders.filter(rh => {
-    const matchesSearch = rh.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rh.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         rh.rights_holder_type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (rh.company_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (rh.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (rh.rights_holder_type?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || rh.verification_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const filteredRecordings = masterRecordings.filter(mr => {
-    const matchesSearch = mr.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         mr.artist.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         mr.genre.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (mr.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (mr.artist?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (mr.genre?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || mr.rights_verification_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
