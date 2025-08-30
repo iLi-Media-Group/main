@@ -695,16 +695,25 @@ export default function ApplicationsAdmin() {
 
   const handleRightsHolderQuickInvite = async (application: RightsHolderApplication) => {
     try {
-      // Use the new approval flow since accounts are created immediately
+      // APPROVE RIGHTS HOLDER - Account already exists, just needs approval
+      // This sets verification_status to 'verified' and application status to 'onboarded'
       await handleRightsHolderPasswordApproval(application);
     } catch (error) {
-      console.error('Rights holder quick invite error:', error);
+      console.error('Rights holder approval error:', error);
       alert('Failed to approve rights holder. Please try again.');
     }
   };
 
   const handleRightsHolderPasswordApproval = async (application: RightsHolderApplication) => {
     try {
+      // APPROVE RIGHTS HOLDER APPLICATION
+      // This function:
+      // 1. Updates profile.verification_status to 'verified'
+      // 2. Updates rights_holders.verification_status to 'verified' and is_active to true
+      // 3. Updates rights_holder_applications.status to 'onboarded'
+      // 4. Sends approval email
+      // 5. User can now log in and access dashboard immediately
+      
       // Generate rights holder number
       const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
       const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
@@ -1071,10 +1080,10 @@ export default function ApplicationsAdmin() {
                           <Button
                             onClick={() => handleRightsHolderQuickInvite(app as RightsHolderApplication)}
                             size="sm"
-                            className="bg-purple-600 hover:bg-purple-700"
-                            title="Quick Invite Rights Holder"
+                            className="bg-green-600 hover:bg-green-700"
+                            title="Approve Rights Holder (Account Already Created)"
                           >
-                            <UserPlus className="w-4 h-4" />
+                            <CheckCircle className="w-4 h-4" />
                           </Button>
                         )}
                         {app.status === 'new' && (
