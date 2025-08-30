@@ -898,6 +898,13 @@ const App = () => {
             </LayoutWrapper>
           </ProtectedRoute>
         } />
+        <Route path="/agent/custom-sync-request-subs" element={
+          <ProtectedRoute requiresAgent>
+            <LayoutWrapper>
+              <CustomSyncRequestSubs />
+            </LayoutWrapper>
+          </ProtectedRoute>
+        } />
 
         {/* Profile Route */}
         <Route path="/profile" element={

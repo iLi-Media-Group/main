@@ -303,11 +303,11 @@ export function AgentDashboard() {
                   </Link>
 
                   <Link
-                    to="/agent/custom-sync-requests"
+                    to="/agent/custom-sync-request-subs"
                     className="flex items-center p-3 bg-purple-600/20 hover:bg-purple-600/30 rounded-lg transition-colors group"
                   >
                     <BarChart3 className="w-5 h-5 text-purple-400 mr-3" />
-                    <span className="text-white">View All Requests</span>
+                    <span className="text-white">View Submissions</span>
                     <ArrowRight className="w-4 h-4 text-gray-400 ml-auto group-hover:translate-x-1 transition-transform" />
                   </Link>
 

@@ -118,7 +118,12 @@ export default function CustomSyncRequest() {
       setSuccess(true);
       setTimeout(() => {
         setSuccess(false);
-        navigate('/dashboard');
+        // Redirect agents to their submissions page, clients to dashboard
+        if (isAgent) {
+          navigate('/agent/custom-sync-request-subs');
+        } else {
+          navigate('/dashboard');
+        }
         // Reset form
         setProjectTitle('');
         setProjectDescription('');
