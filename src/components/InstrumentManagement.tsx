@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabase';
 interface Instrument {
   id: string;
   name: string;
-  category: string;
+  display_name: string;
+  category_id: string;
   created_at: string;
   updated_at: string;
 }
@@ -59,9 +60,9 @@ export function InstrumentManagement() {
           .from('instruments')
           .select(`
             *,
-            instrument_categories(name)
+            instrument_categories!instruments_category_id_fkey(name)
           `)
-          .order('category, name');
+          .order('category_id, name');
         
         instrumentsData = data || [];
         instrumentsError = error;
@@ -71,7 +72,7 @@ export function InstrumentManagement() {
         const { data, error } = await supabase
           .from('instruments')
           .select('*')
-          .order('category, name');
+          .order('category_id, name');
         
         instrumentsData = data || [];
         instrumentsError = error;
@@ -82,7 +83,7 @@ export function InstrumentManagement() {
       // Transform the data to include category name
       const instrumentsWithCategory = (instrumentsData || []).map(instrument => ({
         ...instrument,
-        category_name: instrument.instrument_categories?.name || instrument.category || 'Unknown'
+        category_name: instrument.instrument_categories?.name || 'Unknown'
       }));
       
       setInstruments(instrumentsWithCategory);
@@ -137,7 +138,8 @@ export function InstrumentManagement() {
         .from('instruments')
         .insert({
           name: newInstrument.name.toLowerCase().replace(/\s+/g, '_'),
-          category: categoryValue
+          display_name: newInstrument.name,
+          category_id: categoryValue
         });
 
       if (error) throw error;
@@ -197,7 +199,8 @@ export function InstrumentManagement() {
         .from('instruments')
         .update({
           name: instrument.name.toLowerCase().replace(/\s+/g, '_'),
-          category: category.id,
+          display_name: instrument.name,
+          category_id: category.id,
           updated_at: new Date().toISOString()
         })
         .eq('id', instrument.id);
