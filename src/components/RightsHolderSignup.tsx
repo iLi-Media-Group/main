@@ -105,6 +105,19 @@ export function RightsHolderSignup() {
       return 'Password must be at least 8 characters long';
     }
 
+    // Check for password complexity requirements
+    if (!/(?=.*[a-z])/.test(formData.password)) {
+      return 'Password must contain at least one lowercase letter';
+    }
+    
+    if (!/(?=.*[A-Z])/.test(formData.password)) {
+      return 'Password must contain at least one uppercase letter';
+    }
+    
+    if (!/(?=.*\d)/.test(formData.password)) {
+      return 'Password must contain at least one number';
+    }
+
     if (formData.password !== formData.confirmPassword) {
       return 'Passwords do not match';
     }
@@ -192,7 +205,7 @@ export function RightsHolderSignup() {
 
        console.log('✅ Auth user created:', authData.user.id);
 
-       // Create profile with pending status
+       // Create profile with pending status and rights holder information
        const { error: profileError } = await supabase
          .from('profiles')
          .upsert({
@@ -202,6 +215,23 @@ export function RightsHolderSignup() {
            last_name: formData.companyName.split(' ').slice(1).join(' ') || '',
            account_type: 'rights_holder',
            verification_status: 'pending', // This will block access until approved
+           // Rights holder specific fields
+           rights_holder_type: formData.rightsHolderType,
+           company_name: formData.companyName,
+           legal_entity_name: formData.legalEntityName,
+           business_structure: formData.businessStructure,
+           phone: formData.phone,
+           website: formData.website || null,
+           address_line_1: formData.addressLine1,
+           city: formData.city,
+           state: formData.state,
+           postal_code: formData.postalCode,
+           country: formData.country,
+           is_active: false, // Inactive until approved
+           terms_accepted: true,
+           terms_accepted_at: new Date().toISOString(),
+           rights_authority_declaration_accepted: true,
+           rights_authority_declaration_accepted_at: new Date().toISOString(),
            created_at: new Date().toISOString(),
            updated_at: new Date().toISOString()
          }, {
@@ -214,38 +244,9 @@ export function RightsHolderSignup() {
          return;
        }
 
-       // Create rights holder record with pending status
-       const { error: rightsHolderError } = await supabase
-         .from('rights_holders')
-         .insert({
-           id: authData.user.id,
-           email: formData.email,
-           rights_holder_type: formData.rightsHolderType,
-           company_name: formData.companyName,
-           legal_entity_name: formData.legalEntityName,
-           business_structure: formData.businessStructure,
-           phone: formData.phone,
-           website: formData.website || null,
-           address_line_1: formData.addressLine1,
-           city: formData.city,
-           state: formData.state,
-           postal_code: formData.postalCode,
-           country: formData.country,
-           verification_status: 'pending', // This will block access until approved
-           is_active: false, // Inactive until approved
-           terms_accepted: true,
-           terms_accepted_at: new Date().toISOString(),
-           rights_authority_declaration_accepted: true,
-           rights_authority_declaration_accepted_at: new Date().toISOString(),
-           created_at: new Date().toISOString(),
-           updated_at: new Date().toISOString()
-         });
-
-       if (rightsHolderError) {
-         console.error('❌ Rights holder creation error:', rightsHolderError);
-         setError('Account created but rights holder setup failed. Please contact support.');
-         return;
-       }
+       // Note: rights_holders table will be created separately
+       // For now, we'll just create the profile and application
+       console.log('📋 Rights holder record creation skipped - table will be created separately');
 
        // Map form data to rights_holder_applications table structure
        const applicationData = {
