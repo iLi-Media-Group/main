@@ -786,64 +786,7 @@ export default function ApplicationsAdmin() {
     }
   };
 
-  const handleRightsHolderInvitationApproval = async (application: RightsHolderApplication) => {
-    try {
-      // Generate rights holder number using the function
-      const { data: nextRightsHolderNumber } = await supabase.rpc('get_next_rights_holder_number');
-      const rightsHolderNumber = nextRightsHolderNumber || 'mbfr-001';
 
-      // Generate invitation code
-      const invitationCode = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-
-      // Create invitation
-      const { error: insertError } = await supabase
-        .from('rights_holder_invitations')
-        .insert({
-          email: application.email,
-          company_name: application.company_name,
-          contact_first_name: application.contact_first_name,
-          contact_last_name: application.contact_last_name,
-          invitation_code: invitationCode,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-          rights_holder_number: rightsHolderNumber
-        });
-
-      if (insertError) throw insertError;
-
-      // Send email
-      const { error: emailError } = await supabase.functions.invoke('send-rights-holder-invitation', {
-        body: {
-          email: application.email,
-          companyName: application.company_name,
-          contactFirstName: application.contact_first_name,
-          contactLastName: application.contact_last_name,
-          rightsHolderNumber,
-          invitationCode
-        }
-      });
-
-      if (emailError) throw emailError;
-
-      // Update application status
-      await supabase
-        .from('rights_holder_applications')
-        .update({ 
-          status: 'invited',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', application.id);
-
-      // Refresh the applications list
-      fetchApplications();
-
-      // Show success message
-      alert(`Rights Holder ${application.company_name} has been invited successfully! Rights Holder Number: ${rightsHolderNumber}`);
-
-    } catch (error) {
-      console.error('Rights holder invitation approval error:', error);
-      throw error;
-    }
-  };
 
   const getApplicationTypeBadge = (app: ProducerApplication | ArtistApplication | RightsHolderApplication) => {
     if ('daws_used' in app) {
