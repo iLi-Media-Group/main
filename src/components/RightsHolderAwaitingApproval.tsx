@@ -1,16 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Clock, Building2, CheckCircle, AlertCircle, Mail, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 export function RightsHolderAwaitingApproval() {
   const { user, profile, signOut, fetchProfile } = useUnifiedAuth();
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [applicationDetails, setApplicationDetails] = useState<any>(null);
 
   const handleSignOut = () => {
     signOut();
     navigate('/');
+  };
+
+  const fetchApplicationStatus = async () => {
+    if (!user?.email) return;
+    
+    try {
+      // Fetch the rights holder application status
+      const { data: applicationData, error } = await supabase
+        .from('rights_holder_applications')
+        .select('*')
+        .eq('email', user.email)
+        .single();
+
+      if (error) {
+        console.error('Error fetching application status:', error);
+        return;
+      }
+
+      setApplicationDetails(applicationData);
+      setApplicationStatus(applicationData.status);
+    } catch (error) {
+      console.error('Error fetching application status:', error);
+    }
   };
 
   const handleRefreshStatus = async () => {
@@ -19,6 +45,7 @@ export function RightsHolderAwaitingApproval() {
     setIsRefreshing(true);
     try {
       await fetchProfile(user.id, user.email || '');
+      await fetchApplicationStatus();
       console.log('Profile refreshed, verification status:', profile?.verification_status);
     } catch (error) {
       console.error('Error refreshing profile:', error);
@@ -26,6 +53,58 @@ export function RightsHolderAwaitingApproval() {
       setIsRefreshing(false);
     }
   };
+
+  // Fetch application status on component mount
+  useEffect(() => {
+    fetchApplicationStatus();
+  }, [user?.email]);
+
+  // Get status display based on application status and profile verification
+  const getStatusDisplay = () => {
+    if (profile?.verification_status === 'verified') {
+      return {
+        currentStep: 'approved',
+        steps: [
+          { status: 'completed', text: 'Application Submitted', icon: 'check' },
+          { status: 'completed', text: 'Under Review', icon: 'check' },
+          { status: 'current', text: 'Approved', icon: 'check' }
+        ]
+      };
+    }
+
+    switch (applicationStatus) {
+      case 'manual_review':
+      case 'save_for_later':
+        return {
+          currentStep: 'review',
+          steps: [
+            { status: 'completed', text: 'Application Submitted', icon: 'check' },
+            { status: 'current', text: 'Under Review', icon: 'clock' },
+            { status: 'pending', text: 'Approved', icon: 'check' }
+          ]
+        };
+      case 'onboarded':
+        return {
+          currentStep: 'approved',
+          steps: [
+            { status: 'completed', text: 'Application Submitted', icon: 'check' },
+            { status: 'completed', text: 'Under Review', icon: 'check' },
+            { status: 'current', text: 'Approved', icon: 'check' }
+          ]
+        };
+      default:
+        return {
+          currentStep: 'submitted',
+          steps: [
+            { status: 'current', text: 'Application Submitted', icon: 'check' },
+            { status: 'pending', text: 'Under Review', icon: 'clock' },
+            { status: 'pending', text: 'Approved', icon: 'check' }
+          ]
+        };
+    }
+  };
+
+  const statusDisplay = getStatusDisplay();
 
   return (
     <div className="min-h-screen bg-blue-900/90 text-white p-8">
@@ -52,25 +131,39 @@ export function RightsHolderAwaitingApproval() {
           </div>
           
           <div className="space-y-4">
-            <div className="flex items-center p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-              <CheckCircle className="w-5 h-5 text-yellow-400 mr-3" />
-              <span className="text-yellow-300">Application Submitted</span>
-            </div>
-            
-            <div className="flex items-center p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg">
-              <Clock className="w-5 h-5 text-gray-400 mr-3" />
-              <span className="text-gray-300">Under Review</span>
-            </div>
-            
-            <div className="flex items-center p-4 bg-gray-500/10 border border-gray-500/20 rounded-lg opacity-50">
-              <CheckCircle className="w-5 h-5 text-gray-400 mr-3" />
-              <span className="text-gray-300">Approved (Pending)</span>
-            </div>
+            {statusDisplay.steps.map((step, index) => (
+              <div 
+                key={index}
+                className={`flex items-center p-4 rounded-lg border ${
+                  step.status === 'completed' 
+                    ? 'bg-green-500/10 border-green-500/20' 
+                    : step.status === 'current'
+                    ? 'bg-yellow-500/10 border-yellow-500/20'
+                    : 'bg-gray-500/10 border-gray-500/20 opacity-50'
+                }`}
+              >
+                {step.icon === 'check' ? (
+                  <CheckCircle className={`w-5 h-5 mr-3 ${
+                    step.status === 'completed' ? 'text-green-400' : 'text-gray-400'
+                  }`} />
+                ) : (
+                  <Clock className={`w-5 h-5 mr-3 ${
+                    step.status === 'current' ? 'text-yellow-400' : 'text-gray-400'
+                  }`} />
+                )}
+                <span className={
+                  step.status === 'completed' ? 'text-green-300' :
+                  step.status === 'current' ? 'text-yellow-300' : 'text-gray-300'
+                }>
+                  {step.text}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Application Details */}
-        {profile && (
+        {applicationDetails && (
           <div className="bg-blue-900/90 backdrop-blur-lg rounded-xl p-8 border border-white/20 mb-8">
             <div className="flex items-center mb-6">
               <Building2 className="w-8 h-8 text-blue-400 mr-3" />
@@ -83,18 +176,18 @@ export function RightsHolderAwaitingApproval() {
                 <div className="space-y-3">
                   <div>
                     <span className="text-gray-400 text-sm">Company Name:</span>
-                    <p className="text-white font-medium">{profile.company_name || 'Not provided'}</p>
+                    <p className="text-white font-medium">{applicationDetails.company_name || 'Not provided'}</p>
                   </div>
                   <div>
                     <span className="text-gray-400 text-sm">Rights Holder Type:</span>
                     <p className="text-white font-medium capitalize">
-                      {profile.rights_holder_type?.replace('_', ' ') || 'Not specified'}
+                      {applicationDetails.rights_holder_type?.replace('_', ' ') || 'Not specified'}
                     </p>
                   </div>
                   <div>
                     <span className="text-gray-400 text-sm">Business Structure:</span>
                     <p className="text-white font-medium capitalize">
-                      {profile.business_structure?.replace('_', ' ') || 'Not specified'}
+                      {applicationDetails.business_structure?.replace('_', ' ') || 'Not specified'}
                     </p>
                   </div>
                 </div>
@@ -107,19 +200,19 @@ export function RightsHolderAwaitingApproval() {
                     <Mail className="w-4 h-4 text-gray-400 mr-2" />
                     <span className="text-white">{user?.email}</span>
                   </div>
-                  {profile.phone && (
+                  {applicationDetails.phone && (
                     <div className="flex items-center">
                       <Phone className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-white">{profile.phone}</span>
+                      <span className="text-white">{applicationDetails.phone}</span>
                     </div>
                   )}
-                  {profile.address_line_1 && (
+                  {applicationDetails.address_line_1 && (
                     <div className="flex items-center">
                       <MapPin className="w-4 h-4 text-gray-400 mr-2" />
                       <span className="text-white">
-                        {profile.address_line_1}
-                        {profile.city && `, ${profile.city}`}
-                        {profile.state && `, ${profile.state}`}
+                        {applicationDetails.address_line_1}
+                        {applicationDetails.city && `, ${applicationDetails.city}`}
+                        {applicationDetails.state && `, ${applicationDetails.state}`}
                       </span>
                     </div>
                   )}
