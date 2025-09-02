@@ -220,7 +220,7 @@ export function ProposalHistoryDialog({
                       </p>
                       <div className="flex items-center mt-1 text-sm text-gray-400">
                         <span>
-                          by {entry.changed_by.first_name} {entry.changed_by.last_name}
+                          by {entry.changed_by?.first_name || 'Unknown'} {entry.changed_by?.last_name || 'User'}
                         </span>
                         <span className="mx-2">•</span>
                         <span>
@@ -245,7 +245,7 @@ export function ProposalHistoryDialog({
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm text-gray-400">
-                          {msg.sender.first_name} {msg.sender.last_name}
+                          {msg.sender?.first_name || 'Unknown'} {msg.sender?.last_name || 'User'}
                         </span>
                         <span className="text-xs text-gray-500">
                           {new Date(msg.created_at).toLocaleString()}
@@ -281,7 +281,7 @@ export function ProposalHistoryDialog({
                     >
                       <div className="flex justify-between items-start mb-2">
                         <span className="text-sm text-gray-400">
-                          {file.uploader.first_name} {file.uploader.last_name}
+                          {file.uploader?.first_name || 'Unknown'} {file.uploader?.last_name || 'User'}
                         </span>
                         <span className="text-xs text-gray-500">
                           {new Date(file.created_at).toLocaleString()}
