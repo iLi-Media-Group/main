@@ -527,7 +527,7 @@ export function CatalogPage() {
 
         // Format tracks for display
         const formattedTracks = paginatedTracks.map(track => {
-          const producer = Array.isArray(track.producer) ? track.producer[0] : track.producer;
+          const producer = Array.isArray(track.profiles) ? track.profiles[0] : track.profiles;
             return {
               id: track.id,
               title: track.title || 'Untitled',
