@@ -357,6 +357,13 @@ function SignupFormContent({ onClose }: SignupFormProps) {
            navigate('/dashboard');
            return;
          }
+         
+         // For artist accounts, go to artist dashboard
+         if (accountType === 'artist_band') {
+           console.log('Navigating to artist dashboard');
+           navigate('/artist/dashboard');
+           return;
+         }
         
         // For producer accounts, go directly to dashboard
         console.log('Navigating to producer dashboard');
