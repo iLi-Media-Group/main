@@ -399,7 +399,7 @@ export function CatalogPage() {
           contains_samples,
           contains_splice_loops,
           samples_cleared,
-           profiles(
+           producer:profiles(
             id,
             first_name,
             last_name,
@@ -529,16 +529,7 @@ export function CatalogPage() {
 
         // Format tracks for display
         const formattedTracks = paginatedTracks.map(track => {
-          console.log('🎵 Processing track:', {
-            id: track.id,
-            title: track.title,
-            track_producer_id: track.track_producer_id,
-            profiles: track.profiles,
-            profilesType: typeof track.profiles,
-            profilesIsArray: Array.isArray(track.profiles)
-          });
-          const producer = Array.isArray(track.profiles) ? track.profiles[0] : track.profiles;
-          console.log('🎵 Producer data:', producer);
+          const producer = track.producer;
             return {
               id: track.id,
               title: track.title || 'Untitled',
