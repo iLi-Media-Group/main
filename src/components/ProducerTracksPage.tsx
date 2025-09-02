@@ -86,7 +86,7 @@ export function ProducerTracksPage() {
           mp3_url,
           trackouts_url,
           track_producer_id,
-          producer:profiles!track_producer_id (
+          producer:profiles(
             id,
             first_name,
             last_name,

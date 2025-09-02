@@ -399,13 +399,12 @@ export function CatalogPage() {
           contains_samples,
           contains_splice_loops,
           samples_cleared,
-           producer:profiles!track_producer_id (
-             id,
-             first_name,
-             last_name,
-             email,
-             avatar_path
-           )
+           profiles(
+            id,
+            first_name,
+            last_name,
+            email
+          )
          `)
          .is('deleted_at', null);
 

@@ -326,7 +326,7 @@ export class PlaylistService {
           has_vocals,
           is_sync_only,
           track_producer_id,
-          producer:profiles!tracks_track_producer_id_fkey (
+          producer:profiles(
             id,
             first_name,
             last_name,
@@ -424,7 +424,7 @@ export class PlaylistService {
         has_vocals,
         is_sync_only,
         track_producer_id,
-        producer:profiles!tracks_track_producer_id_fkey (
+        producer:profiles(
           id,
           first_name,
           last_name,
@@ -432,8 +432,8 @@ export class PlaylistService {
           avatar_path
         )
       `)
-      .eq('track_producer_id', user.id)
-      .is('deleted_at', null)
+            .eq('track_producer_id', user.id)
+        .is('deleted_at', null)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
