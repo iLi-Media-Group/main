@@ -675,7 +675,7 @@ const getPlanLevel = (plan: string): number => {
             split_sheet_url,
             stems_url,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
+            producer:profiles(
               id,
               first_name,
               last_name,
@@ -756,7 +756,7 @@ const getPlanLevel = (plan: string): number => {
             vocals_usage_type,
             sub_genres,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
+            producer:profiles(
               id,
               first_name,
               last_name,
@@ -831,7 +831,7 @@ const getPlanLevel = (plan: string): number => {
           trackouts_url,
           split_sheet_url,
           track_producer_id,
-          producer:profiles!tracks_track_producer_id_fkey (
+          producer:profiles(
             id,
             first_name,
             last_name,
@@ -1061,7 +1061,7 @@ const getPlanLevel = (plan: string): number => {
           client_contract_signed_by,
           client_contract_signed_url,
           client_contract_signed_filename,
-          client:profiles!sync_proposals_client_id_fkey(
+          client:profiles(
             id,
             first_name,
             last_name,
@@ -1078,7 +1078,7 @@ const getPlanLevel = (plan: string): number => {
             trackouts_url,
             split_sheet_url,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey(
+            producer:profiles(
               id,
               first_name,
               last_name,
