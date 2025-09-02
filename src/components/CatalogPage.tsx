@@ -485,7 +485,9 @@ export function CatalogPage() {
             sub_genres: t.sub_genres,
             moods: t.moods,
             instruments: t.instruments,
-            media_usage: t.media_usage
+            media_usage: t.media_usage,
+            track_producer_id: t.track_producer_id,
+            profiles: t.profiles
           })));
         }
 
@@ -527,7 +529,16 @@ export function CatalogPage() {
 
         // Format tracks for display
         const formattedTracks = paginatedTracks.map(track => {
+          console.log('🎵 Processing track:', {
+            id: track.id,
+            title: track.title,
+            track_producer_id: track.track_producer_id,
+            profiles: track.profiles,
+            profilesType: typeof track.profiles,
+            profilesIsArray: Array.isArray(track.profiles)
+          });
           const producer = Array.isArray(track.profiles) ? track.profiles[0] : track.profiles;
+          console.log('🎵 Producer data:', producer);
             return {
               id: track.id,
               title: track.title || 'Untitled',
