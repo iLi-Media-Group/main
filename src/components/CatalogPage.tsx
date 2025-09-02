@@ -487,7 +487,7 @@ export function CatalogPage() {
             instruments: t.instruments,
             media_usage: t.media_usage,
             track_producer_id: t.track_producer_id,
-            profiles: t.profiles
+            producer: t.producer
           })));
         }
 
@@ -529,6 +529,14 @@ export function CatalogPage() {
 
         // Format tracks for display
         const formattedTracks = paginatedTracks.map(track => {
+          console.log('🎵 Raw track data:', {
+            id: track.id,
+            title: track.title,
+            track_producer_id: track.track_producer_id,
+            producer: track.producer,
+            producerType: typeof track.producer,
+            producerKeys: track.producer ? Object.keys(track.producer) : null
+          });
           const producer = track.producer;
             return {
               id: track.id,
