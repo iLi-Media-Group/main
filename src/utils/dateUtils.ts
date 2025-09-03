@@ -50,6 +50,12 @@ export function formatDuration(duration: string | number): string {
         const finalSeconds = totalSeconds % 60;
         return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
       }
+    } else if (parts.length === 2) {
+      // MM:SS format - validate and return as is
+      const [minutes, seconds] = parts.map(Number);
+      if (!isNaN(minutes) && !isNaN(seconds) && seconds < 60) {
+        return durationStr; // Already in correct MM:SS format
+      }
     }
   }
   
