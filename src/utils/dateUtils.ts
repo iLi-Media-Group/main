@@ -50,13 +50,10 @@ export function formatDuration(duration: string | number): string {
   if (typeof duration === 'string' && duration.includes(':')) {
     const parts = duration.split(':');
     if (parts.length === 3) {
-      // HH:MM:SS format - convert to MM:SS
-      const [hours, minutes, seconds] = parts.map(Number);
-      if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
-        const totalMinutes = (hours * 60) + minutes;
-        const finalMinutes = totalMinutes;
-        const finalSeconds = seconds;
-        return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
+      // MM:SS:00 format - convert to MM:SS (first part is minutes, second is seconds, third is always 00)
+      const [minutes, seconds, zero] = parts.map(Number);
+      if (!isNaN(minutes) && !isNaN(seconds) && zero === 0) {
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
       }
     } else if (parts.length === 2) {
       // MM:SS format - validate and return as is (this is already correct)
