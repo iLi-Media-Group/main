@@ -328,8 +328,26 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
         // Skip if duration is already correct (not 3:30 or 0:00)
         if (track.duration && track.duration !== '3:30' && track.duration !== '0:00') {
-          setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
-          continue;
+          // Check if this duration needs formatting (like "182:00" or raw numbers)
+          const durationStr = String(track.duration);
+          const durationNum = Number(track.duration);
+          
+          // If it's already in proper MM:SS format, skip it
+          if (durationStr.match(/^\d{1,2}:\d{2}$/)) {
+            const [minutes, seconds] = durationStr.split(':').map(Number);
+            if (minutes >= 0 && seconds >= 0 && seconds < 60 && minutes < 60) {
+              setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+              continue;
+            }
+          }
+          
+          // If it's a raw number under 61 seconds, skip it (probably already correct)
+          if (!isNaN(durationNum) && durationNum <= 61) {
+            setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+            continue;
+          }
+          
+          // Otherwise, process it (it might need formatting)
         }
 
         // Get signed URL for the audio file
