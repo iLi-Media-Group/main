@@ -160,21 +160,58 @@ const ArtistApplicationForm: React.FC = () => {
   const calculateQuizScore = (data: typeof formData): number => {
     let score = 0;
     
+    console.log('Quiz answers received:', {
+      q1: data.quiz_question_1,
+      q2: data.quiz_question_2,
+      q3: data.quiz_question_3,
+      q4: data.quiz_question_4,
+      q5: data.quiz_question_5
+    });
+    
+    // Check if all quiz questions are answered
+    const allQuestionsAnswered = data.quiz_question_1 && data.quiz_question_2 && 
+                                data.quiz_question_3 && data.quiz_question_4 && data.quiz_question_5;
+    
+    if (!allQuestionsAnswered) {
+      console.log('Not all quiz questions answered, score: 0');
+      return 0;
+    }
+    
     // Question 1: One-stop definition
-    if (data.quiz_question_1 === 'C') score += 1;
+    if (data.quiz_question_1 === 'C') {
+      score += 1;
+      console.log('Q1 correct: +1 point');
+    }
     
     // Question 2: Sync license definition
-    if (data.quiz_question_2 === 'B') score += 1;
+    if (data.quiz_question_2 === 'B') {
+      score += 1;
+      console.log('Q2 correct: +1 point');
+    }
     
-    // Question 3: Multiple choice - both B and C
-    if (data.quiz_question_3 && data.quiz_question_3.includes('B') && data.quiz_question_3.includes('C')) score += 1;
+    // Question 3: Multiple choice - both B and C (fix the logic)
+    if (data.quiz_question_3) {
+      const answers = data.quiz_question_3.split(',').map(a => a.trim()).filter(Boolean);
+      console.log('Q3 answers:', answers);
+      if (answers.includes('B') && answers.includes('C')) {
+        score += 1;
+        console.log('Q3 correct: +1 point');
+      }
+    }
     
     // Question 4: Master vs sync license
-    if (data.quiz_question_4 === 'C') score += 1;
+    if (data.quiz_question_4 === 'C') {
+      score += 1;
+      console.log('Q4 correct: +1 point');
+    }
     
     // Question 5: What's NOT included in sync license
-    if (data.quiz_question_5 === 'B') score += 1;
+    if (data.quiz_question_5 === 'B') {
+      score += 1;
+      console.log('Q5 correct: +1 point');
+    }
     
+    console.log('Final quiz score:', score);
     return score;
   };
 
