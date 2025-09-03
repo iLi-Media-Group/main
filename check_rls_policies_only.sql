@@ -1,85 +1,130 @@
--- Check RLS Policies Only
-SELECT '=== TRACKS TABLE RLS POLICIES ===' as section;
-SELECT policyname, permissive, roles, cmd, qual FROM pg_policies WHERE tablename = 'tracks' ORDER BY policyname;
+-- Check RLS Policies for Track Duration Updates
+-- This script identifies the exact RLS policies that control who can update track durations
 
-SELECT '=== PROFILES TABLE RLS POLICIES ===' as section;
-SELECT policyname, permissive, roles, cmd, qual FROM pg_policies WHERE tablename = 'profiles' ORDER BY policyname;
+SELECT '=== TRACKS TABLE RLS POLICIES ===' as section;
+SELECT 
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual as policy_condition
+FROM pg_policies 
+WHERE tablename = 'tracks' 
+ORDER BY policyname;
 
 SELECT '=== RLS STATUS ===' as section;
-SELECT tablename, rowsecurity as rls_enabled FROM pg_tables WHERE tablename IN ('tracks', 'profiles') ORDER BY tablename;
-
--- ============================================
--- INVESTIGATE TRACK DURATION ISSUE
--- ============================================
-
-SELECT '=== TRACKS TABLE SCHEMA ===' as section;
 SELECT 
-  column_name,
-  data_type,
-  is_nullable,
-  column_default
-FROM information_schema.columns 
-WHERE table_name = 'tracks' 
-  AND column_name = 'duration'
-ORDER BY column_name;
-
-SELECT '=== SAMPLE TRACK DURATIONS ===' as section;
-SELECT 
-  id,
-  title,
-  duration,
-  audio_url,
-  created_at,
-  updated_at
-FROM tracks 
-WHERE audio_url IS NOT NULL 
-  AND audio_url != ''
-ORDER BY updated_at DESC 
-LIMIT 10;
-
-SELECT '=== TRACKS WITH DEFAULT DURATION ===' as section;
-SELECT 
-  id,
-  title,
-  duration,
-  audio_url,
-  updated_at
-FROM tracks 
-WHERE duration = '3:30' 
-  OR duration = '0:00'
-  OR duration IS NULL
-ORDER BY updated_at DESC 
-LIMIT 10;
-
-SELECT '=== TRACKS WITH VALID DURATIONS ===' as section;
-SELECT 
-  id,
-  title,
-  duration,
-  audio_url,
-  updated_at
-FROM tracks 
-WHERE duration IS NOT NULL 
-  AND duration != '3:30' 
-  AND duration != '0:00'
-ORDER BY updated_at DESC 
-LIMIT 10;
-
-SELECT '=== DURATION FORMAT ANALYSIS ===' as section;
-SELECT 
-  duration,
-  COUNT(*) as count,
+  tablename, 
+  rowsecurity as rls_enabled,
   CASE 
-    WHEN duration IS NULL THEN 'NULL'
-    WHEN duration = '3:30' THEN 'Default 3:30'
-    WHEN duration = '0:00' THEN 'Default 0:00'
-    WHEN EXTRACT(EPOCH FROM duration) < 3600 THEN 'Less than 1 hour'
-    WHEN EXTRACT(EPOCH FROM duration) >= 3600 THEN '1 hour or more'
-    ELSE 'Other interval'
-  END as format_type,
-  EXTRACT(EPOCH FROM duration) as duration_seconds
-FROM tracks 
-WHERE duration IS NOT NULL
-GROUP BY duration
-ORDER BY count DESC
-LIMIT 20;
+    WHEN rowsecurity THEN 'RLS is ENABLED - policies control access'
+    ELSE 'RLS is DISABLED - no access control'
+  END as status
+FROM pg_tables 
+WHERE tablename = 'tracks';
+
+SELECT '=== TRACKS TABLE OWNERSHIP ===' as section;
+SELECT 
+  schemaname,
+  tablename,
+  tableowner
+FROM pg_tables 
+WHERE tablename = 'tracks';
+
+SELECT '=== CURRENT USER CONTEXT ===' as section;
+SELECT 
+  current_user as current_user,
+  session_user as session_user,
+  current_setting('role') as current_role;
+
+-- Check if there are any specific policies for duration updates
+SELECT '=== POLICIES ALLOWING DURATION UPDATES ===' as section;
+SELECT 
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual as policy_condition,
+  CASE 
+    WHEN cmd = 'UPDATE' THEN '✅ Allows updates'
+    WHEN cmd = 'SELECT' THEN '📖 Read only'
+    WHEN cmd = 'INSERT' THEN '➕ Insert only'
+    WHEN cmd = 'DELETE' THEN '🗑️ Delete only'
+    ELSE '❓ Unknown command'
+  END as access_type
+FROM pg_policies 
+WHERE tablename = 'tracks' 
+  AND cmd = 'UPDATE'
+ORDER BY policyname;
+
+-- ============================================
+-- CREATE ADMIN OVERRIDE POLICY FOR DURATION UPDATES
+-- ============================================
+
+-- First, check if the admin policy already exists
+SELECT '=== CHECKING FOR EXISTING ADMIN POLICY ===' as section;
+SELECT 
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual as policy_condition
+FROM pg_policies 
+WHERE tablename = 'tracks' 
+  AND policyname LIKE '%admin%'
+ORDER BY policyname;
+
+-- Create admin override policy for track duration updates
+-- This allows admin and admin,producer accounts to update any track duration
+SELECT '=== CREATING ADMIN OVERRIDE POLICY ===' as section;
+
+-- Drop existing admin policy if it exists
+DROP POLICY IF EXISTS "Admin can update track durations" ON tracks;
+
+-- Create new admin policy for duration updates
+CREATE POLICY "Admin can update track durations" ON tracks
+FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.id = auth.uid() 
+    AND (
+      profiles.account_type = 'admin' 
+      OR profiles.account_type = 'admin,producer'
+      OR profiles.account_type LIKE '%admin%'
+    )
+  )
+);
+
+-- Verify the new policy was created
+SELECT '=== VERIFYING NEW ADMIN POLICY ===' as section;
+SELECT 
+  policyname,
+  permissive,
+  roles,
+  cmd,
+  qual as policy_condition,
+  CASE 
+    WHEN cmd = 'UPDATE' THEN '✅ Allows updates'
+    WHEN cmd = 'SELECT' THEN '📖 Read only'
+    WHEN cmd = 'INSERT' THEN '➕ Insert only'
+    WHEN cmd = 'DELETE' THEN '🗑️ Delete only'
+    ELSE '❓ Unknown command'
+  END as access_type
+FROM pg_policies 
+WHERE tablename = 'tracks' 
+  AND cmd = 'UPDATE'
+ORDER BY policyname;
+
+-- Test the policy by checking if your account type is recognized
+SELECT '=== TESTING ADMIN POLICY ===' as section;
+SELECT 
+  id,
+  email,
+  account_type,
+  CASE 
+    WHEN account_type = 'admin' OR account_type = 'admin,producer' OR account_type LIKE '%admin%'
+    THEN '✅ Has admin access for duration updates'
+    ELSE '❌ No admin access for duration updates'
+  END as admin_status
+FROM profiles 
+WHERE email = 'knockriobeats@gmail.com';

@@ -88,21 +88,40 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
       if (trackId) {
         query = query.eq('id', trackId);
-      } else {
-        // Get tracks with missing or default duration
-        query = query.or('duration.is.null,duration.eq.3:30,duration.eq.0:00');
       }
+      // Remove restrictive filter to get all tracks, then filter in JavaScript
 
       const { data, error } = await query;
 
       if (error) throw error;
 
-      const tracksWithUrls = data?.map(track => ({
+      // Filter tracks that need duration updates or formatting
+      const tracksNeedingUpdates = data?.filter(track => {
+        // Tracks with missing or default durations
+        if (!track.duration || track.duration === '3:30' || track.duration === '0:00') {
+          return true;
+        }
+        
+        // Tracks with durations over 61 seconds that need MM:SS formatting
+        const durationNum = Number(track.duration);
+        if (!isNaN(durationNum) && durationNum > 61) {
+          return true;
+        }
+        
+        // Tracks that are already in MM:SS format (skip these)
+        if (typeof track.duration === 'string' && track.duration.includes(':') && track.duration.split(':').length === 2) {
+          return false;
+        }
+        
+        return false;
+      }) || [];
+
+      const tracksWithUrls = tracksNeedingUpdates.map(track => ({
         id: track.id,
         title: track.title,
         audioUrl: track.audio_url,
         duration: track.duration || '3:30'
-      })) || [];
+      }));
 
       setTracks(tracksWithUrls);
     } catch (error) {
@@ -138,6 +157,28 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       setProgress(((i + 1) / tracks.length) * 100);
 
       try {
+        let newDuration: string;
+
+        // Check if track just needs formatting (seconds to MM:SS)
+        const durationNum = Number(track.duration);
+        if (!isNaN(durationNum) && durationNum > 61) {
+          // Convert seconds to MM:SS format
+          const minutes = Math.floor(durationNum / 60);
+          const seconds = durationNum % 60;
+          newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          // Update database with formatted duration
+          await updateTrackDuration(track.id, newDuration);
+          setResults(prev => ({ ...prev, success: prev.success + 1 }));
+          
+          // Update local state
+          setTracks(prev => prev.map(t => 
+            t.id === track.id ? { ...t, duration: newDuration } : t
+          ));
+          
+          continue; // Skip to next track
+        }
+
         // Skip if duration is already correct (not 3:30 or 0:00)
         if (track.duration && track.duration !== '3:30' && track.duration !== '0:00') {
           setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
@@ -154,7 +195,7 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         }
 
         // Calculate duration from audio file using signed URL
-        const newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
+        newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
         
         // Update database
         await updateTrackDuration(track.id, newDuration);
@@ -189,6 +230,27 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
     try {
       setCurrentTrack(track.title);
       
+      let newDuration: string;
+
+      // Check if track just needs formatting (seconds to MM:SS)
+      const durationNum = Number(track.duration);
+      if (!isNaN(durationNum) && durationNum > 61) {
+        // Convert seconds to MM:SS format
+        const minutes = Math.floor(durationNum / 60);
+        const seconds = durationNum % 60;
+        newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        // Update database with formatted duration
+        await updateTrackDuration(track.id, newDuration);
+        
+        setTracks(prev => prev.map(t => 
+          t.id === track.id ? { ...t, duration: newDuration } : t
+        ));
+        
+        setResults(prev => ({ ...prev, success: prev.success + 1 }));
+        return; // Exit early
+      }
+
       // Get signed URL for the audio file
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('track-audio')
@@ -199,7 +261,7 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       }
 
       // Calculate duration from audio file using signed URL
-      const newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
+      newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
       await updateTrackDuration(track.id, newDuration);
       
       setTracks(prev => prev.map(t => 
@@ -392,6 +454,68 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           disabled={loading}
           className="btn-secondary"
         >
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          Smart Refresh
+        </button>
+
+        <button
+          onClick={fetchTracks}
+          disabled={updating}
+          className="btn-secondary"
+        >
+          Refresh List
+        </button>
+      </div>
+
+      {/* Tracks List */}
+      {tracks.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-white font-semibold">Tracks to Update:</h4>
+          <div className="max-h-96 overflow-y-auto space-y-2">
+            {tracks.map((track) => (
+              <div 
+                key={track.id} 
+                className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg"
+              >
+                <div className="flex-1">
+                  <div className="text-white font-medium">{track.title}</div>
+                  <div className="text-gray-400 text-sm">
+                    Current: {track.duration || 'Not set'}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => updateSingleTrackDuration(track)}
+                    disabled={updating}
+                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Update
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tracks.length === 0 && !loading && (
+        <div className="text-center py-8 text-gray-400">
+          <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+          <p>No tracks found that need duration updates.</p>
+          <p className="text-sm mt-2">
+            Tracks with missing, default (3:30), or zero (0:00) durations will appear here.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
           {loading ? (
             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
           ) : (
