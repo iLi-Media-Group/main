@@ -220,6 +220,72 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
     }
   };
 
+  // Smart refresh that preserves already updated durations
+  const smartRefresh = async () => {
+    setLoading(true);
+    try {
+      // Get current tracks from database to see what still needs updating
+      let query = supabase
+        .from('tracks')
+        .select('id, title, audio_url, duration')
+        .not('audio_url', 'is', null)
+        .not('audio_url', 'eq', '');
+
+      if (trackId) {
+        query = query.eq('id', trackId);
+      } else {
+        // Get tracks with missing or default duration
+        query = query.or('duration.is.null,duration.eq.3:30,duration.eq.0:00');
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      // Merge with existing tracks to preserve updated durations
+      const newTracksWithUrls = data?.map(track => ({
+        id: track.id,
+        title: track.title,
+        audioUrl: track.audio_url,
+        duration: track.duration || '3:30'
+      })) || [];
+
+      // Update tracks list, preserving any durations that were already updated
+      setTracks(prev => {
+        const updatedTracks = [...prev];
+        
+        newTracksWithUrls.forEach(newTrack => {
+          const existingIndex = updatedTracks.findIndex(t => t.id === newTrack.id);
+          if (existingIndex >= 0) {
+            // Keep existing track if it has a valid duration, otherwise update
+            const existingTrack = updatedTracks[existingIndex];
+            if (existingTrack.duration && 
+                existingTrack.duration !== '3:30' && 
+                existingTrack.duration !== '0:00') {
+              // Keep the updated duration
+              updatedTracks[existingIndex] = {
+                ...newTrack,
+                duration: existingTrack.duration
+              };
+            } else {
+              // Update with new data
+              updatedTracks[existingIndex] = newTrack;
+            }
+          } else {
+            // Add new track
+            updatedTracks.push(newTrack);
+          }
+        });
+        
+        return updatedTracks;
+      });
+    } catch (error) {
+      console.error('Error refreshing tracks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchTracks();
   }, [trackId]);
@@ -321,6 +387,19 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           )}
         </button>
         
+        <button
+          onClick={smartRefresh}
+          disabled={loading}
+          className="btn-secondary"
+        >
+          {loading ? (
+            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          Smart Refresh
+        </button>
+
         <button
           onClick={fetchTracks}
           disabled={updating}

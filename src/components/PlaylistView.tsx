@@ -417,7 +417,7 @@ export function PlaylistView() {
 
                         {/* Track Duration */}
                         <div className="text-gray-400 text-sm">
-                          {track.duration || '3:30'}
+                          {formatDuration(track.duration || '3:30')}
                         </div>
 
                         {/* Action Buttons */}

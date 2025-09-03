@@ -387,7 +387,7 @@ export function CatalogBrowserModal({
                       </div>
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-gray-400 text-xs">
-                          {track.duration || '--:--'}
+                          {formatDuration(track.duration || '--:--')}
                         </span>
                         <button
                           onClick={() => handleAddTrack(track.id)}

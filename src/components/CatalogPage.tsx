@@ -12,6 +12,7 @@ import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { useServiceLevel } from '../hooks/useServiceLevel';
 import { logSearchFromFilters } from '../lib/searchLogger';
 import { useSynonyms } from '../hooks/useSynonyms';
+import { formatDuration } from '../utils/dateUtils';
 
 const TRACKS_PER_PAGE = 20;
 
@@ -547,7 +548,7 @@ export function CatalogPage() {
               moods: parseArrayField(track.moods),
             instruments: parseArrayField(track.instruments),
             mediaUsage: parseArrayField(track.media_usage),
-              duration: track.duration || '3:30',
+              duration: formatDuration(track.duration || '3:30'),
               bpm: track.bpm,
               audioUrl: track.audio_url,
             image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',

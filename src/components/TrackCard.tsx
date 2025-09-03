@@ -9,6 +9,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
 import { TrackClearanceBadges } from './TrackClearanceBadges';
+import { formatDuration } from '../utils/dateUtils';
 
 interface TrackCardProps {
   track: Track;
@@ -239,7 +240,7 @@ export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
           <div className="flex items-center justify-between text-xs text-gray-400">
             <div className="flex items-center">
               <Clock className="w-3 h-3 mr-1" />
-              {track.duration}
+              {formatDuration(track.duration)}
             </div>
             <div className="flex items-center">
               <Hash className="w-3 h-3 mr-1" />
