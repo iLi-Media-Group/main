@@ -120,6 +120,14 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           return true;
         }
         
+        // Check for tracks with "00" seconds (like "2:00", "3:00") - these likely need recalculation
+        if (typeof track.duration === 'string' && track.duration.includes(':') && track.duration.endsWith(':00')) {
+          const [minutes] = track.duration.split(':').map(Number);
+          if (!isNaN(minutes) && minutes > 0) {
+            return true; // This has "00" seconds and needs recalculation
+          }
+        }
+        
         // Check if the duration looks like it might be wrong
         // Look for durations that are suspiciously short (under 30 seconds) or very long
         if (typeof track.duration === 'string' && track.duration.includes(':')) {
