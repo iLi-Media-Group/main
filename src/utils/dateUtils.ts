@@ -13,17 +13,14 @@ export function calculateTimeRemaining(expiryDate: string): string {
 }
 
 export function formatDuration(duration: string): string {
-  // If duration is in PostgreSQL interval format (e.g. "00:03:30"), return formatted string
+  // If duration is in PostgreSQL interval format (e.g. "00:03:30"), convert to MM:SS
   if (duration.includes(':')) {
     const parts = duration.split(':');
     if (parts.length === 3) {
-      // HH:MM:SS format
+      // HH:MM:SS format - convert to total minutes and seconds
       const [hours, minutes, seconds] = parts.map(Number);
-      if (hours === 0) {
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-      } else {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-      }
+      const totalMinutes = (hours * 60) + minutes;
+      return `${totalMinutes}:${seconds.toString().padStart(2, '0')}`;
     } else if (parts.length === 2) {
       // MM:SS format - return as is
       return duration;
