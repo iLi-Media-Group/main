@@ -191,7 +191,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'moods' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges' | 'rights_verification' | 'artists' | 'drip_emails' | 'track_durations'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'artists' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'moods' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges' | 'rights_verification' | 'artists' | 'drip_emails' | 'track_durations'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1532,6 +1532,7 @@ if (subscription.price_id) {
             { id: 'analytics', label: 'Analytics', icon: null },
             { id: 'advanced_analytics', label: 'Advanced Analytics', icon: <BarChart3 className="w-4 h-4 mr-2" />, featureFlag: 'advanced_analytics' },
             { id: 'producers', label: 'Producers', icon: null },
+            { id: 'artists', label: 'Artists', icon: <Users className="w-4 h-4 mr-2" /> },
             { id: 'clients', label: 'Clients', icon: null },
             { id: 'announcements', label: 'Announcements', icon: <Bell className="w-4 h-4 mr-2" /> },
             { id: 'compensation', label: 'Compensation', icon: <Percent className="w-4 h-4 mr-2" /> },
