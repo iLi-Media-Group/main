@@ -139,8 +139,8 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           }
         }
         
-        // Include tracks that don't match expected patterns
-        return true;
+        // Only include tracks that actually need updates
+        return false;
       }) || [];
 
       const tracksWithUrls = tracksNeedingUpdates.map(track => ({
