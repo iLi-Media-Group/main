@@ -44,6 +44,3 @@ export function formatDuration(duration: string | number): string {
   // If duration is already formatted or unknown, return as is
   return String(duration);
 }
-
-  return String(duration);
-}
