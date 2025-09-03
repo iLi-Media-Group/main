@@ -8,6 +8,7 @@ import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
 import { TrackClearanceBadges } from './TrackClearanceBadges';
 import { AddToPlaylistModal } from './AddToPlaylistModal';
+import { formatDuration } from '../utils/dateUtils';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
