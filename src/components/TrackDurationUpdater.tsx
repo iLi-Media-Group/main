@@ -126,110 +126,45 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       setTracks(tracksWithUrls);
     } catch (error) {
       console.error('Error fetching tracks:', error);
+      setResults(prev => ({
+        ...prev,
+        errors: [...prev.errors, `Failed to fetch tracks: ${error}`]
+      }));
     } finally {
       setLoading(false);
     }
   };
 
-  // Update track duration in database
-  const updateTrackDuration = async (trackId: string, newDuration: string) => {
-    const { error } = await supabase
-      .from('tracks')
-      .update({ duration: newDuration })
-      .eq('id', trackId);
-
-    if (error) {
-      throw error;
+  // Smart refresh that preserves updated durations
+  const smartRefresh = async () => {
+    setLoading(true);
+    try {
+      // Get current tracks with their updated durations
+      const currentTracks = [...tracks];
+      
+      // Fetch fresh data from database
+      await fetchTracks();
+      
+      // Merge with current data to preserve updates
+      setTracks(prev => prev.map(newTrack => {
+        const existingTrack = currentTracks.find(t => t.id === newTrack.id);
+        if (existingTrack && existingTrack.duration !== '3:30' && existingTrack.duration !== '0:00') {
+          return existingTrack; // Keep the updated duration
+        }
+        return newTrack; // Use new data for unchanged tracks
+      }));
+    } catch (error) {
+      console.error('Error during smart refresh:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Process all tracks
-  const updateAllDurations = async () => {
-    if (tracks.length === 0) return;
-
-    setUpdating(true);
-    setProgress(0);
-    setResults({ success: 0, failed: 0, skipped: 0, errors: [] });
-
-    for (let i = 0; i < tracks.length; i++) {
-      const track = tracks[i];
-      setCurrentTrack(track.title);
-      setProgress(((i + 1) / tracks.length) * 100);
-
-      try {
-        let newDuration: string;
-
-        // Check if track just needs formatting (seconds to MM:SS)
-        const durationNum = Number(track.duration);
-        if (!isNaN(durationNum) && durationNum > 61) {
-          // Convert seconds to MM:SS format
-          const minutes = Math.floor(durationNum / 60);
-          const seconds = durationNum % 60;
-          newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          
-          // Update database with formatted duration
-          await updateTrackDuration(track.id, newDuration);
-          setResults(prev => ({ ...prev, success: prev.success + 1 }));
-          
-          // Update local state
-          setTracks(prev => prev.map(t => 
-            t.id === track.id ? { ...t, duration: newDuration } : t
-          ));
-          
-          continue; // Skip to next track
-        }
-
-        // Skip if duration is already correct (not 3:30 or 0:00)
-        if (track.duration && track.duration !== '3:30' && track.duration !== '0:00') {
-          setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
-          continue;
-        }
-
-        // Get signed URL for the audio file
-        const { data: signedUrlData, error: urlError } = await supabase.storage
-          .from('track-audio')
-          .createSignedUrl(track.audioUrl, 3600); // 1 hour expiry
-
-        if (urlError || !signedUrlData?.signedUrl) {
-          throw new Error(`Failed to get signed URL: ${urlError?.message || 'No signed URL returned'}`);
-        }
-
-        // Calculate duration from audio file using signed URL
-        newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
-        
-        // Update database
-        await updateTrackDuration(track.id, newDuration);
-        
-        setResults(prev => ({ ...prev, success: prev.success + 1 }));
-        
-        // Update local state
-        setTracks(prev => prev.map(t => 
-          t.id === track.id ? { ...t, duration: newDuration } : t
-        ));
-
-      } catch (error) {
-        console.error(`Error updating track ${track.title}:`, error);
-        setResults(prev => ({
-          ...prev,
-          failed: prev.failed + 1,
-          errors: [...prev.errors, `${track.title}: ${error instanceof Error ? error.message : 'Unknown error'}`]
-        }));
-      }
-
-      // Small delay to prevent overwhelming the server
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-
-    setUpdating(false);
-    setCurrentTrack('');
-    if (onComplete) onComplete();
-  };
-
-  // Update single track duration
+  // Update duration for a single track
   const updateSingleTrackDuration = async (track: Track) => {
     try {
       setCurrentTrack(track.title);
-      
+
       let newDuration: string;
 
       // Check if track just needs formatting (seconds to MM:SS)
@@ -254,148 +189,156 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       // Get signed URL for the audio file
       const { data: signedUrlData, error: urlError } = await supabase.storage
         .from('track-audio')
-        .createSignedUrl(track.audioUrl, 3600); // 1 hour expiry
+        .createSignedUrl(track.audioUrl, 3600);
 
-      if (urlError || !signedUrlData?.signedUrl) {
-        throw new Error(`Failed to get signed URL: ${urlError?.message || 'No signed URL returned'}`);
+      if (urlError || !signedUrlData) {
+        throw new Error(`Failed to get signed URL: ${urlError?.message}`);
       }
 
       // Calculate duration from audio file using signed URL
       newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
       await updateTrackDuration(track.id, newDuration);
-      
-      setTracks(prev => prev.map(t => 
+
+      setTracks(prev => prev.map(t =>
         t.id === track.id ? { ...t, duration: newDuration } : t
       ));
-      
+
       setResults(prev => ({ ...prev, success: prev.success + 1 }));
-      
     } catch (error) {
-      console.error(`Error updating track ${track.title}:`, error);
+      console.error(`Error updating duration for ${track.title}:`, error);
       setResults(prev => ({
         ...prev,
         failed: prev.failed + 1,
-        errors: [...prev.errors, `${track.title}: ${error instanceof Error ? error.message : 'Unknown error'}`]
+        errors: [...prev.errors, `${track.title}: ${error}`]
       }));
     } finally {
       setCurrentTrack('');
     }
   };
 
-  // Smart refresh that preserves already updated durations
-  const smartRefresh = async () => {
-    setLoading(true);
-    try {
-      // Get current tracks from database to see what still needs updating
-      let query = supabase
-        .from('tracks')
-        .select('id, title, audio_url, duration')
-        .not('audio_url', 'is', null)
-        .not('audio_url', 'eq', '');
+  // Update all track durations
+  const updateAllDurations = async () => {
+    if (tracks.length === 0) return;
 
-      if (trackId) {
-        query = query.eq('id', trackId);
-      } else {
-        // Get tracks with missing or default duration
-        query = query.or('duration.is.null,duration.eq.3:30,duration.eq.0:00');
+    setUpdating(true);
+    setProgress(0);
+    setResults({ success: 0, failed: 0, skipped: 0, errors: [] });
+
+    for (let i = 0; i < tracks.length; i++) {
+      const track = tracks[i];
+      setCurrentTrack(track.title);
+      setProgress(((i + 1) / tracks.length) * 100);
+
+      try {
+        let newDuration: string;
+
+        // Check if track just needs formatting (seconds to MM:SS)
+        const durationNum = Number(track.duration);
+        if (!isNaN(durationNum) && durationNum > 61) {
+          // Convert seconds to MM:SS format
+          const minutes = Math.floor(durationNum / 60);
+          const seconds = durationNum % 60;
+          newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+          // Update database with formatted duration
+          await updateTrackDuration(track.id, newDuration);
+          setResults(prev => ({ ...prev, success: prev.success + 1 }));
+
+          // Update local state
+          setTracks(prev => prev.map(t => 
+            t.id === track.id ? { ...t, duration: newDuration } : t
+          ));
+
+          continue; // Skip to next track
+        }
+
+        // Skip if duration is already correct (not 3:30 or 0:00)
+        if (track.duration && track.duration !== '3:30' && track.duration !== '0:00') {
+          setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
+          continue;
+        }
+
+        // Get signed URL for the audio file
+        const { data: signedUrlData, error: urlError } = await supabase.storage
+          .from('track-audio')
+          .createSignedUrl(track.audioUrl, 3600);
+
+        if (urlError || !signedUrlData) {
+          throw new Error(`Failed to get signed URL: ${urlError?.message}`);
+        }
+
+        // Calculate duration from audio file using signed URL
+        newDuration = await calculateAudioDuration(signedUrlData.signedUrl);
+
+        // Update database
+        await updateTrackDuration(track.id, newDuration);
+
+        // Update local state
+        setTracks(prev => prev.map(t =>
+          t.id === track.id ? { ...t, duration: newDuration } : t
+        ));
+
+        setResults(prev => ({ ...prev, success: prev.success + 1 }));
+      } catch (error) {
+        console.error(`Error updating duration for ${track.title}:`, error);
+        setResults(prev => ({
+          ...prev,
+          failed: prev.failed + 1,
+          errors: [...prev.errors, `${track.title}: ${error}`]
+        }));
       }
+    }
 
-      const { data, error } = await query;
+    setUpdating(false);
+    setCurrentTrack('');
+    setProgress(0);
 
-      if (error) throw error;
-
-      // Merge with existing tracks to preserve updated durations
-      const newTracksWithUrls = data?.map(track => ({
-        id: track.id,
-        title: track.title,
-        audioUrl: track.audio_url,
-        duration: track.duration || '3:30'
-      })) || [];
-
-      // Update tracks list, preserving any durations that were already updated
-      setTracks(prev => {
-        const updatedTracks = [...prev];
-        
-        newTracksWithUrls.forEach(newTrack => {
-          const existingIndex = updatedTracks.findIndex(t => t.id === newTrack.id);
-          if (existingIndex >= 0) {
-            // Keep existing track if it has a valid duration, otherwise update
-            const existingTrack = updatedTracks[existingIndex];
-            if (existingTrack.duration && 
-                existingTrack.duration !== '3:30' && 
-                existingTrack.duration !== '0:00') {
-              // Keep the updated duration
-              updatedTracks[existingIndex] = {
-                ...newTrack,
-                duration: existingTrack.duration
-              };
-            } else {
-              // Update with new data
-              updatedTracks[existingIndex] = newTrack;
-            }
-          } else {
-            // Add new track
-            updatedTracks.push(newTrack);
-          }
-        });
-        
-        return updatedTracks;
-      });
-    } catch (error) {
-      console.error('Error refreshing tracks:', error);
-    } finally {
-      setLoading(false);
+    if (onComplete) {
+      onComplete();
     }
   };
 
+  // Update track duration in database
+  const updateTrackDuration = async (trackId: string, duration: string) => {
+    const { error } = await supabase
+      .from('tracks')
+      .update({ duration })
+      .eq('id', trackId);
+
+    if (error) {
+      throw new Error(`Database update failed: ${error.message}`);
+    }
+  };
+
+  // Load tracks on component mount
   useEffect(() => {
     fetchTracks();
   }, [trackId]);
 
-  if (loading) {
-    return (
-      <div className="p-6 bg-blue-950/80 border border-blue-500/40 rounded-xl">
-        <div className="flex items-center justify-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500 mr-3"></div>
-          <span className="text-blue-200">Loading tracks...</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Clock className="w-6 h-6 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">
-            Track Duration Updater
-          </h3>
-        </div>
-        <div className="text-sm text-gray-400">
-          {tracks.length} tracks found
-        </div>
+    <div className="space-y-6 p-6 bg-gray-900/50 rounded-lg border border-gray-700">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-white mb-2">
+          Track Duration Updater
+        </h2>
+        <p className="text-gray-300">
+          Update track durations from audio files or format existing durations
+        </p>
       </div>
 
       {/* Progress Bar */}
       {updating && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-blue-200">Updating durations...</span>
-            <span className="text-gray-400">{Math.round(progress)}%</span>
+          <div className="flex justify-between text-sm text-gray-300">
+            <span>Updating: {currentTrack}</span>
+            <span>{Math.round(progress)}%</span>
           </div>
           <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${progress}%` }}
             ></div>
           </div>
-          {currentTrack && (
-            <div className="text-sm text-gray-400">
-              Processing: {currentTrack}
-            </div>
-          )}
         </div>
       )}
 
@@ -454,68 +397,6 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           disabled={loading}
           className="btn-secondary"
         >
-          {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          Smart Refresh
-        </button>
-
-        <button
-          onClick={fetchTracks}
-          disabled={updating}
-          className="btn-secondary"
-        >
-          Refresh List
-        </button>
-      </div>
-
-      {/* Tracks List */}
-      {tracks.length > 0 && (
-        <div className="space-y-2">
-          <h4 className="text-white font-semibold">Tracks to Update:</h4>
-          <div className="max-h-96 overflow-y-auto space-y-2">
-            {tracks.map((track) => (
-              <div 
-                key={track.id} 
-                className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg"
-              >
-                <div className="flex-1">
-                  <div className="text-white font-medium">{track.title}</div>
-                  <div className="text-gray-400 text-sm">
-                    Current: {track.duration || 'Not set'}
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => updateSingleTrackDuration(track)}
-                    disabled={updating}
-                    className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    Update
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {tracks.length === 0 && !loading && (
-        <div className="text-center py-8 text-gray-400">
-          <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No tracks found that need duration updates.</p>
-          <p className="text-sm mt-2">
-            Tracks with missing, default (3:30), or zero (0:00) durations will appear here.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
           {loading ? (
             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
           ) : (
