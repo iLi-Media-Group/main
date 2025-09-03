@@ -16,9 +16,12 @@ export function formatDuration(duration: string | number): string {
   // Handle null/undefined
   if (!duration) return '0:00';
   
-  // If duration is a number (seconds), convert to MM:SS
-  if (typeof duration === 'number' || !isNaN(Number(duration))) {
-    const totalSeconds = Math.floor(Number(duration));
+  // Convert to number first to handle string numbers like "182"
+  const durationNum = Number(duration);
+  
+  // If it's a valid number, treat it as total seconds and convert to MM:SS
+  if (!isNaN(durationNum) && isFinite(durationNum)) {
+    const totalSeconds = Math.floor(durationNum);
     const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
