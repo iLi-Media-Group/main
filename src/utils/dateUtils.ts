@@ -16,6 +16,9 @@ export function formatDuration(duration: string | number): string {
   // Handle null/undefined
   if (!duration) return '0:00';
   
+  // Debug logging
+  console.log(`formatDuration input: "${duration}" (type: ${typeof duration})`);
+  
   // Convert to string first to handle all cases
   const durationStr = String(duration);
   
@@ -23,6 +26,7 @@ export function formatDuration(duration: string | number): string {
   if (durationStr.match(/^\d{1,2}:\d{2}$/)) {
     const [minutes, seconds] = durationStr.split(':').map(Number);
     if (minutes >= 0 && seconds >= 0 && seconds < 60) {
+      console.log(`  -> Already properly formatted MM:SS: ${durationStr}`);
       return durationStr; // Already properly formatted
     }
   }
@@ -34,7 +38,9 @@ export function formatDuration(duration: string | number): string {
     if (!isNaN(totalSeconds) && totalSeconds > 0) {
       const minutes = Math.floor(totalSeconds / 60);
       const remainingSeconds = totalSeconds % 60;
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      const result = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+      console.log(`  -> "182:00" format detected: ${totalSeconds}s = ${result}`);
+      return result;
     }
   }
   
@@ -46,7 +52,9 @@ export function formatDuration(duration: string | number): string {
     const totalSeconds = Math.floor(durationNum);
     const minutes = Math.floor(totalSeconds / 60);
     const remainingSeconds = totalSeconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    const result = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    console.log(`  -> Raw number converted: ${durationNum} = ${totalSeconds}s = ${result}`);
+    return result;
   }
   
   // If duration is a string with colons, parse it
@@ -57,17 +65,21 @@ export function formatDuration(duration: string | number): string {
       const [hours, minutes, seconds] = parts.map(Number);
       if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
         const totalMinutes = (hours * 60) + minutes;
-        return `${totalMinutes}:${seconds.toString().padStart(2, '0')}`;
+        const result = `${totalMinutes}:${seconds.toString().padStart(2, '0')}`;
+        console.log(`  -> HH:MM:SS format: ${hours}:${minutes}:${seconds} = ${result}`);
+        return result;
       }
     } else if (parts.length === 2) {
       // MM:SS format - validate and return
       const [minutes, seconds] = parts.map(Number);
       if (!isNaN(minutes) && !isNaN(seconds) && seconds < 60) {
+        console.log(`  -> Valid MM:SS format: ${durationStr}`);
         return durationStr;
       }
     }
   }
   
+  console.log(`  -> Fallback: returning as string: ${String(duration)}`);
   // If duration is already formatted or unknown, return as is
   return String(duration);
 }
