@@ -1246,21 +1246,11 @@ export default function ApplicationsAdmin() {
                      <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
                      <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
                      <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                     {(selectedApplication as ArtistApplication).quiz_question_1 && (
-                       <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1}</p>
-                     )}
-                     {(selectedApplication as ArtistApplication).quiz_question_2 && (
-                       <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2}</p>
-                     )}
-                     {(selectedApplication as ArtistApplication).quiz_question_3 && (
-                       <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3}</p>
-                     )}
-                     {(selectedApplication as ArtistApplication).quiz_question_4 && (
-                       <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4}</p>
-                     )}
-                     {(selectedApplication as ArtistApplication).quiz_question_5 && (
-                       <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5}</p>
-                     )}
+                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1 || 'N/A'}</p>
+                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2 || 'N/A'}</p>
+                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3 || 'N/A'}</p>
+                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4 || 'N/A'}</p>
+                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5 || 'N/A'}</p>
                    </div>
 
                    <div>
