@@ -1194,33 +1194,99 @@ export default function ApplicationsAdmin() {
                    )}
                  </>
                ) : selectedType === 'artist' ? (
-                 <div>
-                   <h3 className="text-white font-semibold mb-2">Artist Details</h3>
-                   <p className="text-gray-300">Artist Type: {(selectedApplication as ArtistApplication).artist_type}</p>
-                   <p className="text-gray-300">Primary Genre: {(selectedApplication as ArtistApplication).primary_genre}</p>
-                   <p className="text-gray-300">Stage Name: {(selectedApplication as ArtistApplication).stage_name}</p>
-                   <p className="text-gray-300">Music Producer: {(selectedApplication as ArtistApplication).music_producer}</p>
-                   
-                   <h3 className="text-white font-semibold mb-2 mt-4">Sync Licensing & Quiz</h3>
-                   <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
-                   <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
-                   <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                   {(selectedApplication as ArtistApplication).quiz_question_1 && (
-                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1}</p>
+                 <>
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Artist Details</h3>
+                     <p className="text-gray-300">Artist Type: {(selectedApplication as ArtistApplication).artist_type}</p>
+                     <p className="text-gray-300">Primary Genre: {(selectedApplication as ArtistApplication).primary_genre}</p>
+                     <p className="text-gray-300">Stage Name: {(selectedApplication as ArtistApplication).stage_name}</p>
+                     <p className="text-gray-300">Music Producer: {(selectedApplication as ArtistApplication).music_producer}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Production & Creation</h3>
+                     <p className="text-gray-300">Production Method: {(selectedApplication as ArtistApplication).production_method}</p>
+                     <p className="text-gray-300">Uses Premade Tracks: {(selectedApplication as ArtistApplication).uses_premade_tracks}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Ownership & Rights</h3>
+                     <p className="text-gray-300">Master Rights Owner: {(selectedApplication as ArtistApplication).master_rights_owner}</p>
+                     <p className="text-gray-300">Publishing Rights Owner: {(selectedApplication as ArtistApplication).publishing_rights_owner}</p>
+                     <p className="text-gray-300">Shares Ownership: {(selectedApplication as ArtistApplication).shares_ownership}</p>
+                     {(selectedApplication as ArtistApplication).ownership_explanation && (
+                       <p className="text-gray-300">Ownership Explanation: {(selectedApplication as ArtistApplication).ownership_explanation}</p>
+                     )}
+                     <p className="text-gray-300">Is One-Stop: {(selectedApplication as ArtistApplication).is_one_stop}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Releases & Catalog</h3>
+                     <p className="text-gray-300">Has Streaming Releases: {(selectedApplication as ArtistApplication).has_streaming_releases}</p>
+                     {(selectedApplication as ArtistApplication).streaming_links && (
+                       <p className="text-gray-300">Streaming Links: {(selectedApplication as ArtistApplication).streaming_links}</p>
+                     )}
+                     <p className="text-gray-300">Catalog Track Count: {(selectedApplication as ArtistApplication).catalog_track_count}</p>
+                     <p className="text-gray-300">Has Instrumentals: {(selectedApplication as ArtistApplication).has_instrumentals}</p>
+                     <p className="text-gray-300">Has Stems: {(selectedApplication as ArtistApplication).has_stems}</p>
+                     <p className="text-gray-300">Has Sync Licenses: {(selectedApplication as ArtistApplication).has_sync_licenses}</p>
+                     <p className="text-gray-300">Understands Rights Requirement: {(selectedApplication as ArtistApplication).understands_rights_requirement}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Account Management</h3>
+                     <p className="text-gray-300">Account Manager Name: {(selectedApplication as ArtistApplication).account_manager_name}</p>
+                     <p className="text-gray-300">Account Manager Email: {(selectedApplication as ArtistApplication).account_manager_email}</p>
+                     <p className="text-gray-300">Account Manager Phone: {(selectedApplication as ArtistApplication).account_manager_phone}</p>
+                     <p className="text-gray-300">Account Manager Authority: {(selectedApplication as ArtistApplication).account_manager_authority}</p>
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
+                     <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
+                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
+                     <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as ArtistApplication).quiz_question_1 && (
+                       <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1}</p>
+                     )}
+                     {(selectedApplication as ArtistApplication).quiz_question_2 && (
+                       <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2}</p>
+                     )}
+                     {(selectedApplication as ArtistApplication).quiz_question_3 && (
+                       <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3}</p>
+                     )}
+                     {(selectedApplication as ArtistApplication).quiz_question_4 && (
+                       <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4}</p>
+                     )}
+                     {(selectedApplication as ArtistApplication).quiz_question_5 && (
+                       <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5}</p>
+                     )}
+                   </div>
+
+                   <div>
+                     <h3 className="text-white font-semibold mb-2">Application Scoring & Status</h3>
+                     <p className="text-gray-300">Application Score: {(selectedApplication as ArtistApplication).application_score || 0} points</p>
+                     <p className="text-gray-300">Auto-Disqualified: {(selectedApplication as ArtistApplication).auto_disqualified ? 'Yes' : 'No'}</p>
+                     {(selectedApplication as ArtistApplication).rejection_reason && (
+                       <p className="text-red-300">Rejection Reason: {(selectedApplication as ArtistApplication).rejection_reason}</p>
+                     )}
+                     {(selectedApplication as ArtistApplication).score_breakdown && (
+                       <div>
+                         <p className="text-gray-300 font-medium">Score Breakdown:</p>
+                         <pre className="text-gray-300 text-xs bg-gray-700 p-2 rounded mt-1 overflow-x-auto">
+                           {JSON.stringify((selectedApplication as ArtistApplication).score_breakdown, null, 2)}
+                         </pre>
+                       </div>
+                     )}
+                   </div>
+
+                   {(selectedApplication as ArtistApplication).additional_info && (
+                     <div>
+                       <h3 className="text-white font-semibold mb-2">Additional Information</h3>
+                       <p className="text-gray-300 whitespace-pre-wrap">{(selectedApplication as ArtistApplication).additional_info}</p>
+                     </div>
                    )}
-                   {(selectedApplication as ArtistApplication).quiz_question_2 && (
-                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2}</p>
-                   )}
-                   {(selectedApplication as ArtistApplication).quiz_question_3 && (
-                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3}</p>
-                   )}
-                   {(selectedApplication as ArtistApplication).quiz_question_4 && (
-                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4}</p>
-                   )}
-                   {(selectedApplication as ArtistApplication).quiz_question_5 && (
-                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5}</p>
-                   )}
-                 </div>
+                 </>
                ) : (
                  <>
                    <div>
