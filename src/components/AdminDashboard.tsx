@@ -185,9 +185,12 @@ function AdminDashboard() {
   });
   const [showLogoUpload, setShowLogoUpload] = useState(false);
   const [producers, setProducers] = useState<UserDetails[]>([]);
+  const [artists, setArtists] = useState<UserDetails[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('first_name');
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [artistSortField, setArtistSortField] = useState<keyof UserDetails>('first_name');
+  const [artistSortOrder, setArtistSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
