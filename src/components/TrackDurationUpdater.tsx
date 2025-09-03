@@ -233,6 +233,30 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         let newDuration: string;
 
         // Check if track just needs formatting (seconds to MM:SS)
+        const durationStr = String(track.duration);
+        
+        // Handle "182:00" format (total seconds followed by ":00")
+        if (durationStr.includes(':') && durationStr.endsWith(':00')) {
+          const secondsPart = durationStr.split(':')[0];
+          const totalSeconds = Number(secondsPart);
+          if (!isNaN(totalSeconds) && totalSeconds > 0) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update database with formatted duration
+            await updateTrackDuration(track.id, newDuration);
+            setResults(prev => ({ ...prev, success: prev.success + 1 }));
+
+            // Update local state
+            setTracks(prev => prev.map(t => 
+              t.id === track.id ? { ...t, duration: newDuration } : t
+            ));
+
+            continue; // Skip to next track
+          }
+        }
+        
         const durationNum = Number(track.duration);
         if (!isNaN(durationNum) && durationNum > 61) {
           // Convert seconds to MM:SS format

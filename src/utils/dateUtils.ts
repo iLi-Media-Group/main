@@ -16,7 +16,21 @@ export function formatDuration(duration: string | number): string {
   // Handle null/undefined
   if (!duration) return '0:00';
   
-  // Convert to number first to handle string numbers like "182"
+  // Convert to string first to handle all cases
+  const durationStr = String(duration);
+  
+  // Handle "182:00" format (total seconds followed by ":00")
+  if (durationStr.includes(':') && durationStr.endsWith(':00')) {
+    const secondsPart = durationStr.split(':')[0];
+    const totalSeconds = Number(secondsPart);
+    if (!isNaN(totalSeconds) && totalSeconds > 0) {
+      const minutes = Math.floor(totalSeconds / 60);
+      const remainingSeconds = totalSeconds % 60;
+      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+  }
+  
+  // Convert to number to handle string numbers like "182"
   const durationNum = Number(duration);
   
   // If it's a valid number, treat it as total seconds and convert to MM:SS
