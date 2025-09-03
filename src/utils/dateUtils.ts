@@ -50,12 +50,12 @@ export function formatDuration(duration: string | number): string {
   if (typeof duration === 'string' && duration.includes(':')) {
     const parts = duration.split(':');
     if (parts.length === 3) {
-      // HH:MM:SS format - convert to total seconds, then to MM:SS
+      // HH:MM:SS format - convert to MM:SS
       const [hours, minutes, seconds] = parts.map(Number);
       if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
-        const totalSeconds = (hours * 3600) + (minutes * 60) + seconds;
-        const finalMinutes = Math.floor(totalSeconds / 60);
-        const finalSeconds = totalSeconds % 60;
+        const totalMinutes = (hours * 60) + minutes;
+        const finalMinutes = totalMinutes;
+        const finalSeconds = seconds;
         return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
       }
     } else if (parts.length === 2) {
