@@ -19,6 +19,14 @@ export function formatDuration(duration: string | number): string {
   // Convert to string first to handle all cases
   const durationStr = String(duration);
   
+  // If it's already in proper MM:SS format, return as is
+  if (durationStr.match(/^\d{1,2}:\d{2}$/)) {
+    const [minutes, seconds] = durationStr.split(':').map(Number);
+    if (minutes >= 0 && seconds >= 0 && seconds < 60) {
+      return durationStr; // Already properly formatted MM:SS
+    }
+  }
+  
   // Handle "182:00" format (total seconds followed by ":00")
   if (durationStr.includes(':') && durationStr.endsWith(':00')) {
     const secondsPart = durationStr.split(':')[0];
@@ -41,12 +49,6 @@ export function formatDuration(duration: string | number): string {
         const finalMinutes = Math.floor(totalSeconds / 60);
         const finalSeconds = totalSeconds % 60;
         return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
-      }
-    } else if (parts.length === 2) {
-      // MM:SS format - validate and return as is (this is already correct)
-      const [minutes, seconds] = parts.map(Number);
-      if (!isNaN(minutes) && !isNaN(seconds) && seconds < 60) {
-        return durationStr; // Already in correct MM:SS format
       }
     }
   }
