@@ -95,26 +95,66 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
       if (error) throw error;
 
+      // Debug: Log what we found
+      console.log('Raw tracks from database:', data);
+      
       // Filter tracks that need duration updates or formatting
       const tracksNeedingUpdates = data?.filter(track => {
+        console.log(`Checking track "${track.title}": duration = "${track.duration}" (type: ${typeof track.duration})`);
+        
         // Tracks with missing or default durations
         if (!track.duration || track.duration === '3:30' || track.duration === '0:00') {
+          console.log(`  -> INCLUDED: missing/default duration`);
           return true;
         }
         
-        // Tracks with durations over 61 seconds that need MM:SS formatting
+        // Tracks with durations that need MM:SS formatting
+        const durationStr = String(track.duration);
+        
+        // Handle "182:00" format (total seconds followed by ":00")
+        if (durationStr.includes(':') && durationStr.endsWith(':00')) {
+          const secondsPart = durationStr.split(':')[0];
+          const totalSeconds = Number(secondsPart);
+          if (!isNaN(totalSeconds) && totalSeconds > 0) {
+            console.log(`  -> INCLUDED: "182:00" format detected`);
+            return true; // This needs formatting
+          }
+        }
+        
+        // Tracks with raw numbers over 61 seconds
         const durationNum = Number(track.duration);
         if (!isNaN(durationNum) && durationNum > 61) {
+          console.log(`  -> INCLUDED: raw number > 61 seconds`);
           return true;
         }
         
-        // Tracks that are already in MM:SS format (skip these)
-        if (typeof track.duration === 'string' && track.duration.includes(':') && track.duration.split(':').length === 2) {
-          return false;
+        // Check if the duration looks like it might be wrong
+        // Look for durations that are suspiciously short (under 30 seconds) or very long
+        if (typeof track.duration === 'string' && track.duration.includes(':')) {
+          const parts = track.duration.split(':');
+          if (parts.length === 2) {
+            const [minutes, seconds] = parts.map(Number);
+            if (!isNaN(minutes) && !isNaN(seconds)) {
+              // If it's less than 30 seconds total, it's probably wrong
+              if (minutes === 0 && seconds < 30) {
+                console.log(`  -> INCLUDED: suspiciously short duration (${minutes}:${seconds})`);
+                return true; // Suspiciously short duration
+              }
+              // If it's more than 20 minutes, it might be wrong
+              if (minutes > 20) {
+                console.log(`  -> INCLUDED: suspiciously long duration (${minutes}:${seconds})`);
+                return true; // Suspiciously long duration
+              }
+            }
+          }
         }
         
-        return false;
+        console.log(`  -> INCLUDED: doesn't match expected patterns`);
+        // Include tracks that don't match expected patterns
+        return true;
       }) || [];
+
+      console.log('Tracks needing updates:', tracksNeedingUpdates);
 
       const tracksWithUrls = tracksNeedingUpdates.map(track => ({
         id: track.id,
