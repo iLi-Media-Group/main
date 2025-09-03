@@ -53,11 +53,14 @@ export function formatDuration(duration: string | number): string {
   if (typeof duration === 'string' && duration.includes(':')) {
     const parts = duration.split(':');
     if (parts.length === 3) {
-      // HH:MM:SS format - convert to total minutes and seconds
+      // HH:MM:SS format - convert to MM:SS
       const [hours, minutes, seconds] = parts.map(Number);
       if (!isNaN(hours) && !isNaN(minutes) && !isNaN(seconds)) {
         const totalMinutes = (hours * 60) + minutes;
-        return `${totalMinutes}:${seconds.toString().padStart(2, '0')}`;
+        const totalSeconds = (totalMinutes * 60) + seconds;
+        const finalMinutes = Math.floor(totalSeconds / 60);
+        const finalSeconds = totalSeconds % 60;
+        return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
       }
     } else if (parts.length === 2) {
       // MM:SS format - validate and return
