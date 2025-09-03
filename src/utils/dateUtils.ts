@@ -12,9 +12,20 @@ export function calculateTimeRemaining(expiryDate: string): string {
   return `${days}d ${hours}h ${minutes}m`;
 }
 
-export function formatDuration(duration: string): string {
-  // If duration is in PostgreSQL interval format (e.g. "00:03:30"), convert to MM:SS
-  if (duration.includes(':')) {
+export function formatDuration(duration: string | number): string {
+  // Handle null/undefined
+  if (!duration) return '0:00';
+  
+  // If duration is a number (seconds), convert to MM:SS
+  if (typeof duration === 'number' || !isNaN(Number(duration))) {
+    const totalSeconds = Math.floor(Number(duration));
+    const minutes = Math.floor(totalSeconds / 60);
+    const remainingSeconds = totalSeconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+  
+  // If duration is a string with colons, parse it
+  if (typeof duration === 'string' && duration.includes(':')) {
     const parts = duration.split(':');
     if (parts.length === 3) {
       // HH:MM:SS format - convert to total minutes and seconds
@@ -27,14 +38,6 @@ export function formatDuration(duration: string): string {
     }
   }
   
-  // If duration is a number (seconds), convert to MM:SS
-  if (!isNaN(Number(duration))) {
-    const seconds = parseInt(duration);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  }
-  
-  // If duration is already formatted, return as is
-  return duration;
+  // If duration is already formatted or unknown, return as is
+  return String(duration);
 }
