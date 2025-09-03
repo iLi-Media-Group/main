@@ -63,7 +63,7 @@ interface UserDetails {
   email: string;
   first_name: string | null;
   last_name: string | null;
-  account_type: 'client' | 'producer';
+  account_type: 'client' | 'producer' | 'artist_band';
   created_at: string;
   producer_number?: string | null;
   total_tracks?: number;
@@ -785,6 +785,33 @@ if (subscription.price_id) {
         });
 
         setProducers(transformedProducers);
+
+        // Process artist data
+        const artistUsers = userData.filter(u => u.account_type === 'artist_band');
+        
+        // Transform artist users to include their analytics
+        const transformedArtists = artistUsers.map(artist => {
+          const analytics = producerAnalyticsMap[artist.id] || {
+            total_tracks: 0,
+            total_sales: 0,
+            total_revenue: 0
+          };
+          
+          return {
+            id: artist.id,
+            email: artist.email,
+            first_name: artist.first_name,
+            last_name: artist.last_name,
+            account_type: 'artist_band' as const,
+            created_at: artist.created_at,
+            producer_number: artist.producer_number,
+            total_tracks: analytics.total_tracks,
+            total_sales: analytics.total_sales,
+            total_revenue: analytics.total_revenue
+          };
+        });
+
+        setArtists(transformedArtists);
       }
 
     } catch (err) {
