@@ -95,17 +95,10 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
       if (error) throw error;
 
-      // Debug: Log what we found
-      console.log('Raw tracks from database:', data);
-      console.log('Number of tracks found:', data?.length || 0);
-      
       // Filter tracks that need duration updates or formatting
       const tracksNeedingUpdates = data?.filter(track => {
-        console.log(`Checking track "${track.title}": duration = "${track.duration}" (type: ${typeof track.duration})`);
-        
         // Tracks with missing or default durations
         if (!track.duration || track.duration === '3:30' || track.duration === '0:00') {
-          console.log(`  -> INCLUDED: missing/default duration`);
           return true;
         }
         
@@ -117,7 +110,6 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           const secondsPart = durationStr.split(':')[0];
           const totalSeconds = Number(secondsPart);
           if (!isNaN(totalSeconds) && totalSeconds > 0) {
-            console.log(`  -> INCLUDED: "182:00" format detected`);
             return true; // This needs formatting
           }
         }
@@ -125,7 +117,6 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         // Tracks with raw numbers over 61 seconds
         const durationNum = Number(track.duration);
         if (!isNaN(durationNum) && durationNum > 61) {
-          console.log(`  -> INCLUDED: raw number > 61 seconds`);
           return true;
         }
         
@@ -133,7 +124,6 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         if (typeof track.duration === 'string' && track.duration.includes(':') && track.duration.endsWith(':00')) {
           const [minutes] = track.duration.split(':').map(Number);
           if (!isNaN(minutes) && minutes > 0) {
-            console.log(`  -> INCLUDED: "00" seconds detected`);
             return true; // This has "00" seconds and needs recalculation
           }
         }
@@ -147,25 +137,19 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
             if (!isNaN(minutes) && !isNaN(seconds)) {
               // If it's less than 30 seconds total, it's probably wrong
               if (minutes === 0 && seconds < 30) {
-                console.log(`  -> INCLUDED: suspiciously short duration (${minutes}:${seconds})`);
                 return true; // Suspiciously short duration
               }
               // If it's more than 20 minutes, it might be wrong
               if (minutes > 20) {
-                console.log(`  -> INCLUDED: suspiciously long duration (${minutes}:${seconds})`);
                 return true; // Suspiciously long duration
               }
             }
           }
         }
         
-        console.log(`  -> INCLUDED: fallback inclusion`);
         // For now, include ALL tracks to see what's happening
         return true;
       }) || [];
-
-      console.log('Tracks needing updates:', tracksNeedingUpdates);
-      console.log('Number of tracks needing updates:', tracksNeedingUpdates.length);
 
       const tracksWithUrls = tracksNeedingUpdates.map(track => ({
         id: track.id,
