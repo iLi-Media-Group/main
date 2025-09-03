@@ -19,10 +19,18 @@ export function formatDuration(duration: string | number): string {
   // Convert to string first to handle all cases
   const durationStr = String(duration);
   
+  // Temporary debugging for the specific issue
+  if (durationStr === '3:42') {
+    console.log('DEBUG: Processing duration "3:42"');
+  }
+  
   // If it's already in proper MM:SS format, return as is
   if (durationStr.match(/^\d{1,2}:\d{2}$/)) {
+    console.log('DEBUG: MM:SS format detected for:', durationStr);
     const [minutes, seconds] = durationStr.split(':').map(Number);
+    console.log('DEBUG: Parsed as minutes:', minutes, 'seconds:', seconds);
     if (minutes >= 0 && seconds >= 0 && seconds < 60) {
+      console.log('DEBUG: Returning as-is:', durationStr);
       return durationStr; // Already properly formatted MM:SS
     }
   }
@@ -51,9 +59,12 @@ export function formatDuration(duration: string | number): string {
         return `${finalMinutes}:${finalSeconds.toString().padStart(2, '0')}`;
       }
     } else if (parts.length === 2) {
-      // MM:SS format - validate and return as is
+      // MM:SS format - validate and return as is (this is already correct)
+      console.log('DEBUG: 2-part format detected for:', durationStr);
       const [minutes, seconds] = parts.map(Number);
+      console.log('DEBUG: 2-part parsed as minutes:', minutes, 'seconds:', seconds);
       if (!isNaN(minutes) && !isNaN(seconds) && seconds < 60) {
+        console.log('DEBUG: 2-part returning as-is:', durationStr);
         return durationStr; // Already in correct MM:SS format
       }
     }
@@ -70,6 +81,7 @@ export function formatDuration(duration: string | number): string {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
   
+  console.log('DEBUG: Fallback returning:', String(duration));
   // If duration is already formatted or unknown, return as is
   return String(duration);
 }
