@@ -986,6 +986,15 @@ if (subscription.price_id) {
     }
   };
 
+  const handleArtistSort = (field: keyof UserDetails) => {
+    if (artistSortField === field) {
+      setArtistSortOrder(artistSortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setArtistSortField(field);
+      setArtistSortOrder('asc');
+    }
+  };
+
   const handleDeleteProducer = async () => {
     if (!producerToDelete) return;
 
