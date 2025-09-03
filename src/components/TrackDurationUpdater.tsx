@@ -400,9 +400,24 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
   // Update track duration in database
   const updateTrackDuration = async (trackId: string, duration: string) => {
+    // Convert MM:SS format to PostgreSQL interval format
+    // "4:05" -> "4 minutes 5 seconds"
+    let intervalDuration: string;
+    
+    if (duration.includes(':')) {
+      const [minutes, seconds] = duration.split(':').map(Number);
+      if (!isNaN(minutes) && !isNaN(seconds)) {
+        intervalDuration = `${minutes} minutes ${seconds} seconds`;
+      } else {
+        intervalDuration = duration; // fallback
+      }
+    } else {
+      intervalDuration = duration; // fallback
+    }
+
     const { error } = await supabase
       .from('tracks')
-      .update({ duration })
+      .update({ duration: intervalDuration })
       .eq('id', trackId);
 
     if (error) {
