@@ -1769,6 +1769,167 @@ if (subscription.price_id) {
           </div>
         )}
 
+        {/* Artists List */}
+        {activeTab === 'artists' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-green-500/20 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Artist Analytics</h2>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search artists..."
+                    className="pl-10 pr-4 py-2 bg-white/5 border border-green-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-green-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-black/20">
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('first_name')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Artist
+                        {artistSortField === 'first_name' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('producer_number')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        ID
+                        {artistSortField === 'producer_number' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('total_tracks')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        <Music className="w-4 h-4 mr-2" />
+                        Tracks
+                        {artistSortField === 'total_tracks' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('total_sales')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Sales
+                        {artistSortField === 'total_sales' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('total_revenue')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Revenue
+                        {artistSortField === 'total_revenue' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <button
+                        onClick={() => handleArtistSort('created_at')}
+                        className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
+                      >
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Joined
+                        {artistSortField === 'created_at' && (
+                          <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
+                        )}
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-green-500/10">
+                  {artists
+                    .filter(artist => {
+                      if (!searchQuery) return true;
+                      const searchLower = searchQuery.toLowerCase();
+                      return (
+                        artist.email.toLowerCase().includes(searchLower) ||
+                        (artist.first_name?.toLowerCase() || '').includes(searchLower) ||
+                        (artist.last_name?.toLowerCase() || '').includes(searchLower) ||
+                        (artist.producer_number?.toLowerCase() || '').includes(searchLower)
+                      );
+                    })
+                    .sort((a, b) => {
+                      const aValue = a[artistSortField];
+                      const bValue = b[artistSortField];
+                      const modifier = artistSortOrder === 'asc' ? 1 : -1;
+
+                      if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        return aValue.localeCompare(bValue) * modifier;
+                      }
+                      if (typeof aValue === 'number' && typeof bValue === 'number') {
+                        return (aValue - bValue) * modifier;
+                      }
+                      return 0;
+                    })
+                    .map((artist) => (
+                      <tr key={artist.id} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center mr-3">
+                              <Users className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">
+                                {artist.first_name && artist.last_name 
+                                  ? `${artist.first_name} ${artist.last_name}`
+                                  : artist.email}
+                              </p>
+                              <p className="text-sm text-gray-400">{artist.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          {artist.producer_number || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          {artist.total_tracks || 0}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          {artist.total_sales || 0}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          ${(artist.total_revenue || 0).toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-gray-300">
+                          {new Date(artist.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Client List section */}
         {activeTab === 'clients' && (
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
