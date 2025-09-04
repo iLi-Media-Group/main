@@ -81,6 +81,7 @@ import ProducerResourcesPage from './components/ProducerResourcesPage';
 import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import { TrackDurationAdminPage } from './pages/TrackDurationAdminPage';
+import { WelcomePDFTestPage } from './pages/WelcomePDFTestPage';
 
 import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
@@ -328,6 +329,7 @@ const App = () => {
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />
         <Route path="/test-welcome-email" element={<WelcomeEmailTest />} />
+        <Route path="/test-welcome-pdf" element={<WelcomePDFTestPage />} />
         <Route path="/drip-email-preview" element={<DripEmailPreview />} />
 
         <Route path="/upgrade" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
