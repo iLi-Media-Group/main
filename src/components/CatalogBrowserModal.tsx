@@ -6,6 +6,7 @@ import { parseArrayField } from '../lib/utils';
 import { AudioPlayer } from './AudioPlayer';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { formatDuration } from '../utils/dateUtils';
 
 interface CatalogBrowserModalProps {
   isOpen: boolean;

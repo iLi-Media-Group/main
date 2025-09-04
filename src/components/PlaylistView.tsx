@@ -19,6 +19,7 @@ import { parseArrayField } from '../lib/utils';
 import { LoginModal } from './LoginModal';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { supabase } from '../lib/supabase';
+import { formatDuration } from '../utils/dateUtils';
 
 // Component to handle signed URL generation for track audio
 function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: string }) {
