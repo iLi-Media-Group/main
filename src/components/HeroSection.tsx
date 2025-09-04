@@ -64,10 +64,18 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
   ];
 
   // Use custom backgrounds if available, otherwise use fallback
+  // Construct public URLs from file paths for background assets
+  const constructPublicUrl = (url: string, bucket: string) => {
+    if (url?.startsWith('https://')) {
+      return url;
+    }
+    return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/${bucket}/${url}`;
+  };
+
   const videoOptions = backgroundAssets.length > 0 
     ? backgroundAssets.map(asset => ({
-        url: asset.url,
-        fallback: asset.url // For now, use the same URL as fallback
+        url: asset.type === 'video' ? constructPublicUrl(asset.url, 'background-videos') : asset.url,
+        fallback: asset.type === 'image' ? constructPublicUrl(asset.url, 'background-images') : asset.url
       }))
     : fallbackVideoOptions;
 
