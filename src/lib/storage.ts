@@ -62,10 +62,10 @@ export async function uploadFile(
         
         console.log('File overwritten successfully');
         
-        // For track-images bucket, return file path (public bucket)
+        // For public buckets (track-images, services-images), return file path
         // For other buckets, generate signed URL
-        if (bucket === 'track-images') {
-          console.log('Track image uploaded, returning file path for public access');
+        if (bucket === 'track-images' || bucket === 'services-images') {
+          console.log(`${bucket} uploaded, returning file path for public access`);
           return filePath;
         }
         
@@ -89,10 +89,10 @@ export async function uploadFile(
     console.log('Upload successful!');
     console.log('Upload result:', data);
     
-    // For track-images bucket, return file path (public bucket)
+    // For public buckets (track-images, services-images), return file path
     // For other buckets, generate signed URL
-    if (bucket === 'track-images') {
-      console.log('Track image uploaded, returning file path for public access');
+    if (bucket === 'track-images' || bucket === 'services-images') {
+      console.log(`${bucket} uploaded, returning file path for public access`);
       console.log('=== UPLOAD DEBUG END ===');
       return filePath;
     }
