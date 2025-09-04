@@ -1,158 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Search, ArrowRight, Music, Video, Mic, Building2, UserPlus, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { VideoBackground } from './VideoBackground';
 
 interface HeroSectionProps {
   onSearch?: (filters: any) => void;
 }
 
-interface BackgroundAsset {
-  id: string;
-  name: string;
-  url: string;
-  type: 'video' | 'image';
-  page: string;
-  isActive: boolean;
-  created_at: string;
-  file_size: number;
-}
-
 export function HeroSection({ onSearch }: HeroSectionProps) {
   const navigate = useNavigate();
-  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isVideoError, setIsVideoError] = useState(false);
-  const [backgroundAssets, setBackgroundAssets] = useState<BackgroundAsset[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch active background assets for hero section
-  useEffect(() => {
-    const fetchBackgroundAssets = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('background_assets')
-          .select('*')
-          .eq('page', 'hero')
-          .eq('isActive', true)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error fetching background assets:', error);
-        } else {
-          console.log('Background assets fetched:', data);
-          setBackgroundAssets(data || []);
-        }
-      } catch (err) {
-        console.error('Error fetching background assets:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBackgroundAssets();
-  }, []);
-
-  // Fallback video options if no custom backgrounds are set
-  const fallbackVideoOptions = [
-    {
-      url: 'https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761',
-      fallback: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
-    },
-    {
-      url: 'https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761',
-      fallback: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?auto=format&fit=crop&w=1920&q=80'
-    }
-  ];
-
-  // Use custom backgrounds if available, otherwise use fallback
-  const videoOptions = backgroundAssets.length > 0 
-    ? backgroundAssets.map(asset => ({
-        url: asset.url,
-        fallback: asset.type === 'video' 
-          ? 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
-          : asset.url
-      }))
-    : fallbackVideoOptions;
-
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
-
-  console.log('Video options constructed:', videoOptions);
-  console.log('Current video index:', currentVideoIndex);
-
-  // Debug video rendering
-  useEffect(() => {
-    console.log('Video rendering debug:', {
-      backgroundAssetsLength: backgroundAssets.length,
-      videoOptionsLength: videoOptions.length,
-      currentVideoUrl: videoOptions[currentVideoIndex]?.url,
-      isVideoError,
-      loading
-    });
-  }, [backgroundAssets.length, videoOptions.length, currentVideoIndex, isVideoError, loading]);
-
-  useEffect(() => {
-    // Only cycle through videos if we have multiple options
-    if (videoOptions.length > 1) {
-      const interval = setInterval(() => {
-        setCurrentVideoIndex((prev) => (prev + 1) % videoOptions.length);
-      }, 15000);
-
-      return () => clearInterval(interval);
-    }
-  }, [videoOptions.length]);
-
-  const handleVideoLoad = () => {
-    setIsVideoLoaded(true);
-  };
-
-  const handleVideoError = () => {
-    setIsVideoError(true);
-  };
-
-  // Show loading state while fetching backgrounds
-  if (loading) {
-    return (
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 w-full h-full bg-gray-900">
-          <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Video */}
-      <div className="absolute inset-0 w-full h-full">
-        {!isVideoError && videoOptions.length > 0 ? (
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-            onLoadedData={handleVideoLoad}
-            onError={handleVideoError}
-            style={{ opacity: isVideoLoaded ? 1 : 0, transition: 'opacity 1.5s ease-in-out' }}
-          >
-            <source src={videoOptions[currentVideoIndex].url} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-        ) : (
-          <div 
-            className="w-full h-full bg-cover bg-center"
-            style={{
-              backgroundImage: `url(${videoOptions[currentVideoIndex]?.fallback || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'})`
-            }}
-          />
-        )}
-        
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
-      </div>
+      <VideoBackground 
+        videoUrl=""
+        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        page="hero"
+      />
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-6xl mx-auto">
@@ -195,22 +60,22 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
 
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-                     <button 
-             onClick={() => navigate('/pricing')}
-             className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
-           >
-             <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
-             Create Free Client Account
-             <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
-           </button>
+          <button 
+            onClick={() => navigate('/pricing')}
+            className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out transform hover:scale-105 hover:shadow-2xl shadow-lg flex items-center"
+          >
+            <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
+            Create Free Client Account
+            <ArrowRight className="w-5 h-5 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+          </button>
           
-                     <button 
-             onClick={() => navigate('/catalog')}
-             className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center"
-           >
-             <Search className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
-             Browse Catalog
-           </button>
+          <button 
+            onClick={() => navigate('/catalog')}
+            className="group bg-white/10 hover:bg-white/20 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out border border-white/20 hover:border-white/40 backdrop-blur-sm flex items-center"
+          >
+            <Search className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
+            Browse Catalog
+          </button>
         </div>
 
         {/* Rights Holders Section */}
