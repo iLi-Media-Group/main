@@ -58,7 +58,9 @@ function TrackImage({ track }: { track: Track }) {
   }
 
   // For file paths, construct public URL directly since bucket is public
-  const publicUrl = `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}`;
+  // Add cache-busting with updated_at timestamp to force browser to re-fetch
+  const cacheBuster = track.updated_at ? new Date(track.updated_at).getTime() : Date.now();
+  const publicUrl = `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}?v=${cacheBuster}`;
 
   // Show the image with error handling
   return (
@@ -68,8 +70,10 @@ function TrackImage({ track }: { track: Track }) {
       className="w-full h-full object-cover"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
-        // Show fallback if image fails to load
-        target.src = 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg';
+        // Only show fallback if we're not already showing it
+        if (target.src !== 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg') {
+          target.src = 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg';
+        }
       }}
     />
   );
