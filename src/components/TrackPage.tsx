@@ -40,7 +40,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
   );
 }
 
-// Component to handle signed URL generation for track images
+// Component to handle track images using public URLs
 function TrackImage({ track }: { track: Track }) {
   // If it's already a public URL (like Unsplash), use it directly
   if (track.image && track.image.startsWith('https://')) {
@@ -57,45 +57,18 @@ function TrackImage({ track }: { track: Track }) {
     );
   }
 
-  // For file paths, use signed URL with enhanced retry logic
-  const { signedUrl, loading, error, refresh } = useSignedUrl('track-images', track.image, {
-    maxRetries: 5, // More retries for critical images
-    refreshInterval: 240000 // Refresh every 4 minutes
-  });
+  // For file paths, construct public URL directly since bucket is public
+  const publicUrl = `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}`;
 
-  // Show loading state while generating URL or retrying
-  if (loading) {
-    return (
-      <div className="w-full h-full bg-white/5 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // Only show fallback if we've exhausted all retries and still have no URL
-  if (error && !signedUrl) {
-    return (
-      <div className="w-full h-full bg-white/5 flex flex-col items-center justify-center">
-        <div className="text-red-400 text-sm mb-2">Image failed to load</div>
-        <button 
-          onClick={refresh}
-          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  // Show the actual image with error handling
+  // Show the image with error handling
   return (
     <img
-      src={signedUrl}
+      src={publicUrl}
       alt={track.title}
       className="w-full h-full object-cover"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
-        // Only show fallback if we can't load the image at all
+        // Show fallback if image fails to load
         target.src = 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg';
       }}
     />
