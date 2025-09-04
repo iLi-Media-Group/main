@@ -551,7 +551,7 @@ export function CatalogPage() {
               duration: formatDuration(track.duration || '3:30'),
               bpm: track.bpm,
               audioUrl: track.audio_url,
-            image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+            image_url: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
               hasStingEnding: track.has_sting_ending,
               isOneStop: track.is_one_stop,
               mp3Url: track.mp3_url,
