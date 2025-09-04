@@ -200,9 +200,11 @@ export default function ServicesPage() {
           filteredServices.map((service) => (
             <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center">
               <img
-                src={service.image?.startsWith("https://") 
-                  ? service.image 
-                  : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image}`}
+                src={service.image?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                  ? service.image.replace('/object/sign/', '/object/public/').split('?')[0]
+                  : service.image?.startsWith("https://") 
+                    ? service.image 
+                    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image}`}
                 alt={service.name}
                 className="w-24 h-24 object-cover rounded-full mb-4 border-4 border-blue-500/20"
               />
@@ -245,18 +247,22 @@ export default function ServicesPage() {
                 <div className="flex gap-2 mt-4">
                   {service.image2 && (
                     <img 
-                      src={service.image2?.startsWith("https://") 
-                        ? service.image2 
-                        : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image2}`}
+                      src={service.image2?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                        ? service.image2.replace('/object/sign/', '/object/public/').split('?')[0]
+                        : service.image2?.startsWith("https://") 
+                          ? service.image2 
+                          : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image2}`}
                       alt="Additional 1" 
                       className="h-20 rounded border border-blue-500/20" 
                     />
                   )}
                   {service.image3 && (
                     <img 
-                      src={service.image3?.startsWith("https://") 
-                        ? service.image3 
-                        : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image3}`}
+                      src={service.image2?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                        ? service.image3.replace('/object/sign/', '/object/public/').split('?')[0]
+                        : service.image3?.startsWith("https://") 
+                          ? service.image3 
+                          : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image3}`}
                       alt="Additional 2" 
                       className="h-20 rounded border border-blue-500/20" 
                     />

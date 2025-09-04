@@ -8,3 +8,10 @@
 [33m2feeee3[m Add comprehensive form persistence for track upload forms
 [33m8dd8498[m Move audio upload section below cover art on track upload page
 [33m70d1f14[m Remove Spotify-related fields from database query to fix 400 error
+[33mcommit 3148e32266eaecd901a045ad7afc83e83af21a27[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: MyBeatFi Admin <theilimediagroup@gmail.com>
+Date:   Thu Sep 4 12:30:57 2025 -0300
+
+    Fix track image mapping to use image_url field to match Track interface
+
+src/components/CatalogPage.tsx
