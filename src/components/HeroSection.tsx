@@ -39,6 +39,7 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
         if (error) {
           console.error('Error fetching background assets:', error);
         } else {
+          console.log('Background assets fetched:', data);
           setBackgroundAssets(data || []);
         }
       } catch (err) {
@@ -67,11 +68,27 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
   const videoOptions = backgroundAssets.length > 0 
     ? backgroundAssets.map(asset => ({
         url: asset.url,
-        fallback: asset.url
+        fallback: asset.type === 'video' 
+          ? 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
+          : asset.url
       }))
     : fallbackVideoOptions;
 
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+  console.log('Video options constructed:', videoOptions);
+  console.log('Current video index:', currentVideoIndex);
+
+  // Debug video rendering
+  useEffect(() => {
+    console.log('Video rendering debug:', {
+      backgroundAssetsLength: backgroundAssets.length,
+      videoOptionsLength: videoOptions.length,
+      currentVideoUrl: videoOptions[currentVideoIndex]?.url,
+      isVideoError,
+      loading
+    });
+  }, [backgroundAssets.length, videoOptions.length, currentVideoIndex, isVideoError, loading]);
 
   useEffect(() => {
     // Only cycle through videos if we have multiple options
