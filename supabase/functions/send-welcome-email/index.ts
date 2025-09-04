@@ -73,15 +73,70 @@ async function generateWelcomePDF(firstName: string, accountType: string) {
       y = 780;
     }
 
-    page.drawText(text, {
-      x: header ? 50 : 65,
-      y,
-      size,
-      font,
-      color: rgb(color[0], color[1], color[2]),
-    });
+    // Calculate available width for text (page width minus margins)
+    const leftMargin = header ? 50 : 65;
+    const rightMargin = 50;
+    const availableWidth = width - leftMargin - rightMargin;
 
-    y -= header ? 20 : 15;
+    // Check if text needs to be wrapped
+    const textWidth = font.widthOfTextAtSize(text, size);
+    
+    if (textWidth <= availableWidth) {
+      // Text fits on one line
+      page.drawText(text, {
+        x: leftMargin,
+        y,
+        size,
+        font,
+        color: rgb(color[0], color[1], color[2]),
+      });
+      y -= header ? 20 : 15;
+    } else {
+      // Text needs to be wrapped - split into multiple lines
+      const words = text.split(' ');
+      let currentLine = '';
+      let lines: string[] = [];
+      
+      for (const word of words) {
+        const testLine = currentLine + (currentLine ? ' ' : '') + word;
+        const testWidth = font.widthOfTextAtSize(testLine, size);
+        
+        if (testWidth <= availableWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = word;
+          } else {
+            // Single word is too long, force it on its own line
+            lines.push(word);
+          }
+        }
+      }
+      
+      // Add the last line
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      
+      // Draw all lines
+      for (const line of lines) {
+        if (y < 80) {
+          page = pdfDoc.addPage([595, 842]);
+          pages.push(page);
+          y = 780;
+        }
+        
+        page.drawText(line, {
+          x: leftMargin,
+          y,
+          size,
+          font,
+          color: rgb(color[0], color[1], color[2]),
+        });
+        y -= header ? 20 : 15;
+      }
+    }
   }
 
   // === 3. Guide Content ===
