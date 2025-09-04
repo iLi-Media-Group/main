@@ -11,7 +11,8 @@ export function useSignedUrl(
   path: string | null, 
   options: UseSignedUrlOptions = {}
 ) {
-  const { expiresIn = 3600, refreshInterval = 5 * 60 * 1000 } = options;
+  const { expiresIn = 3600, refreshInterval = 300000 } = options; // 1 hour default, 5 min refresh
+  
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,8 +64,8 @@ export function useSignedUrl(
 
     generateSignedUrl();
 
-    // Set up refresh interval to regenerate URL before it expires
-    const refreshTime = Math.max(expiresIn * 1000 - refreshInterval, 60000); // At least 1 minute
+    // More frequent refresh to prevent expiry - refresh every 4 minutes instead of 5
+    const refreshTime = Math.max(expiresIn * 1000 - (refreshInterval * 1.2), 240000); // 4 minutes minimum
     const refreshTimer = setTimeout(generateSignedUrl, refreshTime);
 
     return () => clearTimeout(refreshTimer);

@@ -19,6 +19,9 @@ interface TrackCardProps {
 
 // Component to handle signed URL generation for track images
 function TrackImage({ track }: { track: Track }) {
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Limit retries to avoid infinite loops
+
   // If it's already a public URL (like Unsplash), use it directly
   if (track.image && track.image.startsWith('https://')) {
     return (
@@ -26,12 +29,27 @@ function TrackImage({ track }: { track: Track }) {
         src={track.image}
         alt={track.title}
         className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
 
   // For file paths, use signed URL
   const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+
+  // Retry logic for failed signed URLs
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount]);
 
   if (loading) {
     return (
@@ -47,6 +65,10 @@ function TrackImage({ track }: { track: Track }) {
         src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
         alt={track.title}
         className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
@@ -56,6 +78,10 @@ function TrackImage({ track }: { track: Track }) {
       src={signedUrl}
       alt={track.title}
       className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+      }}
     />
   );
 }

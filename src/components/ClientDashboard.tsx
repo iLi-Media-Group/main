@@ -35,6 +35,9 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   className: string; 
   onClick?: () => void;
 }) => {
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Limit retries to avoid infinite loops
+
   // If it's already a public URL (like Unsplash), use it directly
   if (imageUrl && imageUrl.startsWith('https://')) {
     return (
@@ -54,6 +57,17 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   // For file paths, use signed URL with hardcoded bucket name
   const { signedUrl, loading, error } = useSignedUrl('track-images', imageUrl);
 
+  // Retry logic for failed signed URLs
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount]);
+
   if (loading) {
     return (
       <div className={`${className} bg-white/5 flex items-center justify-center`}>
@@ -69,6 +83,10 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
         alt={title}
         className={className}
         onClick={onClick}
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
