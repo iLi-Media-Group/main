@@ -809,7 +809,6 @@ if (subscription.price_id) {
         const artistUsers = userData.filter(u => u.account_type === 'artist_band');
         
         // Transform artist users to include their analytics
-        console.log('Raw artist users from DB:', artistUsers);
         const transformedArtists = artistUsers.map(artist => {
           const analytics = producerAnalyticsMap[artist.id] || {
             total_tracks: 0,
@@ -817,20 +816,18 @@ if (subscription.price_id) {
             total_revenue: 0
           };
           
-          const transformed = {
+          return {
             id: artist.id,
             email: artist.email,
             first_name: artist.first_name,
             last_name: artist.last_name,
             account_type: 'artist_band' as const,
             created_at: artist.created_at,
-            producer_number: artist.producer_number,
+            producer_number: artist.artist_number,
             total_tracks: analytics.total_tracks,
             total_sales: analytics.total_sales,
             total_revenue: analytics.total_revenue
           };
-          console.log('Transformed artist:', transformed);
-          return transformed;
         });
 
         setArtists(transformedArtists);
