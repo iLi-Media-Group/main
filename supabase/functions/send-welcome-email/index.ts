@@ -461,7 +461,36 @@ serve(async (req) => {
       });
     }
 
-    const { email, first_name, account_type = 'client' } = await req.json();
+    // Handle POST requests (including test PDF generation)
+    if (req.method === 'POST') {
+      const body = await req.json();
+      const { email, first_name, account_type = 'client', isTest } = body;
+
+      // If this is a test request, just return the PDF data
+      if (isTest) {
+        console.log('Test PDF generation request for:', account_type);
+        
+        const pdfBytes = await generateWelcomePDF(first_name || 'Test User', account_type);
+        const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+        
+        return new Response(JSON.stringify({
+          success: true,
+          pdfBase64: pdfBase64,
+          message: 'PDF generated successfully'
+        }), { 
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Regular email sending logic
+      if (!email) {
+        console.error('Email is required');
+        return new Response("Email is required", { 
+          status: 400,
+          headers: corsHeaders
+        });
+      }
     
     console.log('Welcome email request received:', { email, first_name, account_type });
     
