@@ -198,7 +198,7 @@ function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [producerSortField, setProducerSortField] = useState<keyof UserDetails>('first_name');
   const [producerSortOrder, setProducerSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [artistSortField, setArtistSortField] = useState<keyof UserDetails>('first_name');
+  const [artistSortField, setArtistSortField] = useState<keyof UserDetails>('producer_number');
   const [artistSortOrder, setArtistSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
@@ -1908,11 +1908,11 @@ if (subscription.price_id) {
                     </th>
                     <th className="px-6 py-3 text-left">
                       <button
-                        onClick={() => handleArtistSort('id')}
+                        onClick={() => handleArtistSort('producer_number')}
                         className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
                       >
                         ID
-                        {artistSortField === 'id' && (
+                        {artistSortField === 'producer_number' && (
                           <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </button>
@@ -1986,7 +1986,7 @@ if (subscription.price_id) {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-gray-300">
-                        {artist.id || 'N/A'}
+                        {artist.producer_number || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-gray-300">
                         {artist.total_tracks || 0}
