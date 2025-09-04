@@ -110,52 +110,8 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   };
 
   // Use database asset if available, otherwise use provided props
-  // For background-videos (private bucket), construct signed URL from file path
-  // For background-images (private bucket), construct signed URL from file path
-  const constructSignedUrl = async (filePath: string, bucket: string) => {
-    if (filePath?.startsWith('https://')) {
-      return filePath; // Already a full URL
-    }
-    
-    try {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
-      
-      if (error) {
-        console.error('Error generating signed URL:', error);
-        return filePath; // Fallback to file path
-      }
-      
-      return data.signedUrl;
-    } catch (err) {
-      console.error('Error generating signed URL:', err);
-      return filePath; // Fallback to file path
-    }
-  };
-
-  const [finalVideoUrl, setFinalVideoUrl] = useState<string>(videoUrl);
-  const [finalFallbackImage, setFinalFallbackImage] = useState<string>(fallbackImage);
-
-  useEffect(() => {
-    const updateUrls = async () => {
-      if (backgroundAsset?.type === 'video') {
-        const signedUrl = await constructSignedUrl(backgroundAsset.url, 'background-videos');
-        setFinalVideoUrl(signedUrl);
-      } else {
-        setFinalVideoUrl(videoUrl);
-      }
-      
-      if (backgroundAsset?.type === 'image') {
-        const signedUrl = await constructSignedUrl(backgroundAsset.url, 'background-images');
-        setFinalFallbackImage(signedUrl);
-      } else {
-        setFinalFallbackImage(fallbackImage);
-      }
-    };
-
-    updateUrls();
-  }, [backgroundAsset, videoUrl, fallbackImage]);
+  const finalVideoUrl = backgroundAsset?.type === 'video' ? backgroundAsset.url : videoUrl;
+  const finalFallbackImage = backgroundAsset?.type === 'image' ? backgroundAsset.url : fallbackImage;
   
   // For signup page, always use fallback image to ensure reliability
   const shouldUseFallback = page === 'signup' || !finalVideoUrl || finalVideoUrl.includes('vimeo.com');

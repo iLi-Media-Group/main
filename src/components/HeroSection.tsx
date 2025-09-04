@@ -64,46 +64,12 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
   ];
 
   // Use custom backgrounds if available, otherwise use fallback
-  // For background-videos (private bucket), construct signed URLs from file paths
-  // For background-images (private bucket), construct signed URLs from file paths
-  const [videoOptions, setVideoOptions] = useState(fallbackVideoOptions);
-
-  useEffect(() => {
-    const updateVideoOptions = async () => {
-      if (backgroundAssets.length > 0) {
-        const options = await Promise.all(
-          backgroundAssets.map(async (asset) => {
-            let url = asset.url;
-            let fallback = asset.url;
-            
-            // Generate signed URLs for file paths
-            if (!asset.url.startsWith('https://')) {
-              try {
-                const bucket = asset.type === 'video' ? 'background-videos' : 'background-images';
-                const { data, error } = await supabase.storage
-                  .from(bucket)
-                  .createSignedUrl(asset.url, 60 * 60 * 24 * 365); // 1 year expiry
-                
-                if (!error && data) {
-                  url = data.signedUrl;
-                  fallback = data.signedUrl;
-                }
-              } catch (err) {
-                console.error('Error generating signed URL:', err);
-              }
-            }
-            
-            return { url, fallback };
-          })
-        );
-        setVideoOptions(options);
-      } else {
-        setVideoOptions(fallbackVideoOptions);
-      }
-    };
-
-    updateVideoOptions();
-  }, [backgroundAssets, fallbackVideoOptions]);
+  const videoOptions = backgroundAssets.length > 0 
+    ? backgroundAssets.map(asset => ({
+        url: asset.url,
+        fallback: asset.url
+      }))
+    : fallbackVideoOptions;
 
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
 
