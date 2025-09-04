@@ -110,19 +110,13 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   };
 
   // Use database asset if available, otherwise use provided props
-  // Construct public URLs from file paths for background assets
-  const constructPublicUrl = (url: string, bucket: string) => {
-    if (url?.startsWith('https://')) {
-      return url;
-    }
-    return `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/${bucket}/${url}`;
-  };
-
+  // For background-videos (private bucket), use signed URLs
+  // For background-images (private bucket), use signed URLs
   const finalVideoUrl = backgroundAsset?.type === 'video' 
-    ? constructPublicUrl(backgroundAsset.url, 'background-videos')
+    ? backgroundAsset.url
     : videoUrl;
   const finalFallbackImage = backgroundAsset?.type === 'image' 
-    ? constructPublicUrl(backgroundAsset.url, 'background-images')
+    ? backgroundAsset.url
     : fallbackImage;
   
   // For signup page, always use fallback image to ensure reliability
