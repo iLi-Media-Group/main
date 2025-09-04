@@ -62,7 +62,14 @@ export async function uploadFile(
         
         console.log('File overwritten successfully');
         
-        // Generate signed URL for the overwritten file
+        // For track-images bucket, return file path (public bucket)
+        // For other buckets, generate signed URL
+        if (bucket === 'track-images') {
+          console.log('Track image uploaded, returning file path for public access');
+          return filePath;
+        }
+        
+        // Generate signed URL for other buckets
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from(bucket)
           .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
@@ -82,7 +89,15 @@ export async function uploadFile(
     console.log('Upload successful!');
     console.log('Upload result:', data);
     
-    // Generate signed URL for the uploaded file
+    // For track-images bucket, return file path (public bucket)
+    // For other buckets, generate signed URL
+    if (bucket === 'track-images') {
+      console.log('Track image uploaded, returning file path for public access');
+      console.log('=== UPLOAD DEBUG END ===');
+      return filePath;
+    }
+    
+    // Generate signed URL for other buckets
     console.log('Generating signed URL for uploaded file...');
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(bucket)
