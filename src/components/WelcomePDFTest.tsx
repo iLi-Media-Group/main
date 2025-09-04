@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
+import { supabase } from '../lib/supabase';
 
 export function WelcomePDFTest() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -11,23 +12,33 @@ export function WelcomePDFTest() {
     setError(null);
     
     try {
-      // Call the Supabase function to generate the PDF
-      const response = await fetch('/api/test-welcome-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      // Call the Supabase Edge Function to generate the PDF
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
           firstName: 'Test User',
-          accountType: accountType
-        })
+          accountType: accountType,
+          email: 'test@example.com',
+          isTest: true
+        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+      if (error) {
+        throw new Error(error.message || 'Failed to generate PDF');
       }
 
-      const blob = await response.blob();
+      if (!data || !data.pdfBase64) {
+        throw new Error('No PDF data received');
+      }
+
+      // Convert base64 to blob
+      const byteCharacters = atob(data.pdfBase64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      
       const url = URL.createObjectURL(blob);
       setPdfUrl(url);
     } catch (err) {
