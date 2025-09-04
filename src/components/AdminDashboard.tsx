@@ -1862,11 +1862,11 @@ if (subscription.price_id) {
                     </th>
                     <th className="px-6 py-3 text-left">
                       <button
-                        onClick={() => handleArtistSort('producer_number')}
+                        onClick={() => handleArtistSort('id')}
                         className="flex items-center text-sm font-semibold text-gray-300 hover:text-white"
                       >
                         ID
-                        {artistSortField === 'producer_number' && (
+                        {artistSortField === 'id' && (
                           <span className="ml-1">{artistSortOrder === 'asc' ? '↑' : '↓'}</span>
                         )}
                       </button>
@@ -1940,7 +1940,7 @@ if (subscription.price_id) {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-gray-300">
-                        {artist.producer_number || 'N/A'}
+                        {artist.id || 'N/A'}
                       </td>
                       <td className="px-6 py-4 text-gray-300">
                         {artist.total_tracks || 0}
