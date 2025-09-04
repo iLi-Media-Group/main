@@ -5,42 +5,48 @@
 SELECT 
   id,
   title,
-  image,
+  image_url,
   CASE
-    WHEN image LIKE '%/object/sign/track-images/%' THEN 'SIGNED_URL'
-    WHEN image LIKE '%/object/public/track-images/%' THEN 'PUBLIC_URL'
-    WHEN image LIKE '%/%' AND image NOT LIKE 'https://%' THEN 'FILE_PATH'
-    WHEN image LIKE 'https://images.unsplash.com%' THEN 'UNSPLASH_DEFAULT'
-    WHEN image IS NULL OR image = '' THEN 'NULL_OR_EMPTY'
+    WHEN image_url LIKE '%/object/sign/track-images/%' THEN 'SIGNED_URL'
+    WHEN image_url LIKE '%/object/public/track-images/%' THEN 'PUBLIC_URL'
+    WHEN image_url LIKE '%?token=%' THEN 'TRUNCATED_SIGNED_URL'
+    WHEN image_url LIKE '%/%' AND image_url NOT LIKE 'https://%' AND image_url NOT LIKE '%?token=%' THEN 'FILE_PATH'
+    WHEN image_url LIKE 'https://images.unsplash.com%' THEN 'UNSPLASH_DEFAULT'
+    WHEN image_url IS NULL OR image_url = '' THEN 'NULL_OR_EMPTY'
     ELSE 'OTHER'
   END as image_type
 FROM tracks
-WHERE image IS NOT NULL AND image != ''
+WHERE image_url IS NOT NULL AND image_url != ''
 ORDER BY image_type, title;
 
 -- Convert signed URLs to file paths
 UPDATE tracks
-SET image = regexp_replace(image, '^https://[^/]+/storage/v1/object/sign/track-images/', '')
-WHERE image LIKE '%/object/sign/track-images/%';
+SET image_url = regexp_replace(image_url, '^https://[^/]+/storage/v1/object/sign/track-images/', '')
+WHERE image_url LIKE '%/object/sign/track-images/%';
+
+-- Convert truncated signed URLs (path + token) to clean file paths
+UPDATE tracks
+SET image_url = regexp_replace(image_url, '\?token=.*$', '')
+WHERE image_url LIKE '%?token=%';
 
 -- Convert public URLs to file paths (optional cleanup)
 UPDATE tracks
-SET image = regexp_replace(image, '^https://[^/]+/storage/v1/object/public/track-images/', '')
-WHERE image LIKE '%/object/public/track-images/%';
+SET image_url = regexp_replace(image_url, '^https://[^/]+/storage/v1/object/public/track-images/', '')
+WHERE image_url LIKE '%/object/public/track-images/%';
 
 -- Verify the changes
 SELECT 
   id,
   title,
-  image,
+  image_url,
   CASE
-    WHEN image LIKE '%/%' AND image NOT LIKE 'https://%' THEN 'FILE_PATH'
-    WHEN image LIKE 'https://images.unsplash.com%' THEN 'UNSPLASH_DEFAULT'
-    WHEN image IS NULL OR image = '' THEN 'NULL_OR_EMPTY'
+    WHEN image_url LIKE '%/%' AND image_url NOT LIKE 'https://%' AND image_url NOT LIKE '%?token=%' THEN 'FILE_PATH'
+    WHEN image_url LIKE 'https://images.unsplash.com%' THEN 'UNSPLASH_DEFAULT'
+    WHEN image_url IS NULL OR image_url = '' THEN 'NULL_OR_EMPTY'
     ELSE 'OTHER'
   END as image_type
 FROM tracks
-WHERE image IS NOT NULL AND image != ''
+WHERE image_url IS NOT NULL AND image_url != ''
 ORDER BY image_type, title;
 
 -- Example of what a track should look like after the fix:
