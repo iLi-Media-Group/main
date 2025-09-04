@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useState, useEffect, useCallback } from 'react';
-import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video, Clock } from 'lucide-react';
+import { Users, BarChart3, DollarSign, Calendar, Music, Search, Plus, Edit, Trash2, Eye, Download, Percent, Shield, Settings, Palette, Upload, PieChart, Bell, Globe, X, FileText, Mail, User, RefreshCw, AlertTriangle, Video, Clock, Building2 } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { useAdminRealTime } from '../hooks/useRealTimeUpdates';
@@ -35,6 +35,9 @@ import { RightsVerificationAdmin } from './RightsVerificationAdmin';
 interface UserStats {
   total_clients: number;
   total_producers: number;
+  total_artists: number;
+  total_record_labels: number;
+  total_publishers: number;
   total_sales: number;
   total_revenue: number;
   track_sales_count: number;
@@ -137,6 +140,9 @@ function AdminDashboard() {
   const [stats, setStats] = useState<{
     total_clients: number;
     total_producers: number;
+    total_artists: number;
+    total_record_labels: number;
+    total_publishers: number;
     total_sales: number;
     total_revenue: number;
     track_sales_count: number;
@@ -161,6 +167,9 @@ function AdminDashboard() {
   }>({
     total_clients: 0,
     total_producers: 0,
+    total_artists: 0,
+    total_record_labels: 0,
+    total_publishers: 0,
     total_sales: 0,
     total_revenue: 0,
     track_sales_count: 0,
@@ -229,7 +238,7 @@ function AdminDashboard() {
 
   // Debug logging for producer applications tab
   useEffect(() => {
-    console.log('AdminDashboard: producerOnboardingEnabled =', producerOnboardingEnabled);
+    console.log('AdminDashboard: producerOnboardingEnabled =', producerOnboardingEnabled.isEnabled);
     console.log('AdminDashboard: user email =', user?.email);
   }, [producerOnboardingEnabled, user]);
 
@@ -351,12 +360,19 @@ function AdminDashboard() {
         u.account_type === 'producer' || 
         ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com'].includes(u.email)
       );
+      const artistUsers = userData.filter(u => u.account_type === 'artist_band');
+      const rightsHolderUsers = userData.filter(u => u.account_type === 'rights_holder');
+      const recordLabelUsers = rightsHolderUsers.filter(u => u.rights_holder_type === 'record_label');
+      const publisherUsers = rightsHolderUsers.filter(u => u.rights_holder_type === 'publisher');
 
       // Update stats with user counts
       setStats((prev) => ({
         ...prev,
         total_clients: clients.length,
-        total_producers: producerUsers.length
+        total_producers: producerUsers.length,
+        total_artists: artistUsers.length,
+        total_record_labels: recordLabelUsers.length,
+        total_publishers: publisherUsers.length
       }));
 
       // Fetch sales analytics
@@ -1449,6 +1465,36 @@ if (subscription.price_id) {
                 <p className="text-3xl font-bold text-white">{stats.total_producers}</p>
               </div>
               <Users className="w-12 h-12 text-blue-500" />
+            </div>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">Total Artists</p>
+                <p className="text-3xl font-bold text-white">{stats.total_artists}</p>
+              </div>
+              <Music className="w-12 h-12 text-purple-500" />
+            </div>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">Total Record Labels</p>
+                <p className="text-3xl font-bold text-white">{stats.total_record_labels}</p>
+              </div>
+              <Building2 className="w-12 h-12 text-orange-500" />
+            </div>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-400">Total Publishers</p>
+                <p className="text-3xl font-bold text-white">{stats.total_publishers}</p>
+              </div>
+              <FileText className="w-12 h-12 text-green-500" />
             </div>
           </div>
 

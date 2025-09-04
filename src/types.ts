@@ -15,7 +15,7 @@ export interface Track {
   hasStingEnding: boolean;
   isOneStop: boolean;
   audioUrl: string;
-  image: string;
+  image_url: string;
   mp3Url?: string;
   trackoutsUrl?: string;
   stemsUrl?: string;

@@ -4,7 +4,7 @@ import { WhiteLabelFeatureFlagsContext } from '../contexts/WhiteLabelFeatureFlag
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 
-export function useFeatureFlag(featureName: string): boolean {
+export function useFeatureFlag(featureName: string): { isEnabled: boolean; loading: boolean } {
   const flags = useContext(WhiteLabelFeatureFlagsContext);
   const { user } = useUnifiedAuth();
   const [isEnabled, setIsEnabled] = useState(false);

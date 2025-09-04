@@ -25,11 +25,11 @@ function TrackImage({ track }: { track: Track }) {
 
   // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
   // This ensures the cache key only changes when the image path actually changes
-  const cacheKey = track.image ? track.image.length : 0;
+  const cacheKey = track.image_url ? track.image_url.length : 0;
 
-  const publicUrl = track.image?.startsWith("https://")
-    ? track.image
-    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}?v=${cacheKey}`;
+  const publicUrl = track.image_url?.startsWith("https://")
+    ? track.image_url
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image_url}?v=${cacheKey}`;
 
   const [src, setSrc] = useState(publicUrl);
 
