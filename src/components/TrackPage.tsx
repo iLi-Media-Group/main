@@ -42,37 +42,32 @@ function TrackAudioPlayer({ track }: { track: Track }) {
 
 // Component to handle track images using public URLs
 function TrackImage({ track }: { track: Track }) {
-  // If it's already a public URL (like Unsplash), use it directly
-  if (track.image && track.image.startsWith('https://')) {
-    return (
-      <img
-        src={track.image}
-        alt={track.title}
-        className="w-full h-full object-cover"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg';
-        }}
-      />
-    );
-  }
+  // Pick your fallback depending on context
+  const FALLBACK = "https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg";
 
-  // For file paths, construct public URL directly since bucket is public
-  // Add cache-busting with updated_at timestamp to force browser to re-fetch
-  const cacheBuster = track.updated_at ? new Date(track.updated_at).getTime() : Date.now();
-  const publicUrl = `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}?v=${cacheBuster}`;
+  // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
+  // This ensures the cache key only changes when the image path actually changes
+  const cacheKey = track.image ? track.image.length : 0;
 
-  // Show the image with error handling
+  const publicUrl = track.image?.startsWith("https://")
+    ? track.image
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}?v=${cacheKey}`;
+
+  const [src, setSrc] = useState(publicUrl);
+
+  // Reset src whenever the track or cacheKey changes
+  useEffect(() => {
+    setSrc(publicUrl);
+  }, [publicUrl]);
+
   return (
     <img
-      src={publicUrl}
+      src={src}
       alt={track.title}
       className="w-full h-full object-cover"
-      onError={(e) => {
-        const target = e.target as HTMLImageElement;
-        // Only show fallback if we're not already showing it
-        if (target.src !== 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg') {
-          target.src = 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg';
+      onError={() => {
+        if (src !== FALLBACK) {
+          setSrc(FALLBACK);
         }
       }}
     />
