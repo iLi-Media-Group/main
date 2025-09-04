@@ -19,9 +19,6 @@ interface TrackCardProps {
 
 // Component to handle signed URL generation for track images
 function TrackImage({ track }: { track: Track }) {
-  const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 2; // Limit retries to avoid infinite loops
-
   // If it's already a public URL (like Unsplash), use it directly
   if (track.image && track.image.startsWith('https://')) {
     return (
@@ -37,20 +34,13 @@ function TrackImage({ track }: { track: Track }) {
     );
   }
 
-  // For file paths, use signed URL
-  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+  // For file paths, use signed URL with enhanced retry logic
+  const { signedUrl, loading, error, refresh } = useSignedUrl('track-images', track.image, {
+    maxRetries: 5, // More retries for critical images
+    refreshInterval: 240000 // Refresh every 4 minutes
+  });
 
-  // Retry logic for failed signed URLs
-  useEffect(() => {
-    if (error && retryCount < maxRetries) {
-      const timer = setTimeout(() => {
-        setRetryCount(prev => prev + 1);
-      }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
-      
-      return () => clearTimeout(timer);
-    }
-  }, [error, retryCount]);
-
+  // Show loading state while generating URL or retrying
   if (loading) {
     return (
       <div className="w-full h-full bg-white/5 flex items-center justify-center">
@@ -59,20 +49,22 @@ function TrackImage({ track }: { track: Track }) {
     );
   }
 
-  if (error || !signedUrl) {
+  // Only show fallback if we've exhausted all retries and still have no URL
+  if (error && !signedUrl) {
     return (
-      <img
-        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
-        alt={track.title}
-        className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-        onError={(e) => {
-          const target = e.target as HTMLImageElement;
-          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
-        }}
-      />
+      <div className="w-full h-full bg-white/5 flex flex-col items-center justify-center">
+        <div className="text-red-400 text-xs mb-1">Image failed</div>
+        <button 
+          onClick={refresh}
+          className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+        >
+          Retry
+        </button>
+      </div>
     );
   }
 
+  // Show the actual image with error handling
   return (
     <img
       src={signedUrl}
@@ -80,6 +72,7 @@ function TrackImage({ track }: { track: Track }) {
       className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
       onError={(e) => {
         const target = e.target as HTMLImageElement;
+        // Only show fallback if we can't load the image at all
         target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
       }}
     />
