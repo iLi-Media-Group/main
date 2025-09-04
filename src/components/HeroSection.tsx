@@ -1,23 +1,143 @@
 import React, { useState, useEffect } from 'react';
 import { Play, Search, ArrowRight, Music, Video, Mic, Building2, UserPlus, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { VideoBackground } from './VideoBackground';
+import { supabase } from '../lib/supabase';
 
 interface HeroSectionProps {
   onSearch?: (filters: any) => void;
 }
 
+interface BackgroundAsset {
+  id: string;
+  name: string;
+  url: string;
+  type: 'video' | 'image';
+  page: string;
+  isActive: boolean;
+  created_at: string;
+  file_size: number;
+}
+
 export function HeroSection({ onSearch }: HeroSectionProps) {
   const navigate = useNavigate();
+  const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isVideoError, setIsVideoError] = useState(false);
+  const [backgroundAssets, setBackgroundAssets] = useState<BackgroundAsset[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch active background assets for hero section
+  useEffect(() => {
+    const fetchBackgroundAssets = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('background_assets')
+          .select('*')
+          .eq('page', 'hero')
+          .eq('isActive', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching background assets:', error);
+        } else {
+          setBackgroundAssets(data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching background assets:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBackgroundAssets();
+  }, []);
+
+  // Fallback video options if no custom backgrounds are set
+  const fallbackVideoOptions = [
+    {
+      url: 'https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761',
+      fallback: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
+    },
+    {
+      url: 'https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761',
+      fallback: 'https://images.unsplash.com/photo-1598653222000-6b7b7a552625?auto=format&fit=crop&w=1920&q=80'
+    }
+  ];
+
+  // Use custom backgrounds if available, otherwise use fallback
+  const videoOptions = backgroundAssets.length > 0 
+    ? backgroundAssets.map(asset => ({
+        url: asset.url,
+        fallback: asset.type === 'video' 
+          ? 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'
+          : asset.url
+      }))
+    : fallbackVideoOptions;
+
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+
+  useEffect(() => {
+    // Only cycle through videos if we have multiple options
+    if (videoOptions.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentVideoIndex((prev) => (prev + 1) % videoOptions.length);
+      }, 15000);
+
+      return () => clearInterval(interval);
+    }
+  }, [videoOptions.length]);
+
+  const handleVideoLoad = () => {
+    setIsVideoLoaded(true);
+  };
+
+  const handleVideoError = () => {
+    setIsVideoError(true);
+  };
+
+  // Show loading state while fetching backgrounds
+  if (loading) {
+    return (
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 w-full h-full bg-gray-900">
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Video */}
-      <VideoBackground 
-        videoUrl=""
-        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
-        page="hero"
-      />
+      <div className="absolute inset-0 w-full h-full">
+        {!isVideoError && videoOptions.length > 0 ? (
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+            onLoadedData={handleVideoLoad}
+            onError={handleVideoError}
+            style={{ opacity: isVideoLoaded ? 1 : 0, transition: 'opacity 1.5s ease-in-out' }}
+          >
+            <source src={videoOptions[currentVideoIndex].url} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        ) : (
+          <div 
+            className="w-full h-full bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${videoOptions[currentVideoIndex]?.fallback || 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80'})`
+            }}
+          />
+        )}
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40"></div>
+      </div>
 
       {/* Content */}
       <div className="relative z-10 text-center px-4 max-w-6xl mx-auto">
