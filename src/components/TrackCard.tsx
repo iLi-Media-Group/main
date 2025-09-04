@@ -4,6 +4,7 @@ import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, 
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
+import { useSignedUrl } from '../hooks/useSignedUrl';
 
 import { AudioPlayer } from './AudioPlayer';
 import { ProducerProfileDialog } from './ProducerProfileDialog';
