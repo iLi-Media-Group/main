@@ -47,7 +47,7 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
       // Check if user is authenticated before making database queries
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        console.log('No authenticated session, skipping background asset fetch');
+        setError('You must be logged in to view background assets');
         setLoading(false);
         return;
       }
@@ -312,6 +312,17 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
           </div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-400">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+            {error}
+            <button 
+              onClick={fetchAssets}
+              className="block mx-auto mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         ) : filteredAssets.length === 0 ? (
           <div className="text-center py-8 text-gray-400">
             No background assets found for this page.
@@ -394,6 +405,15 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
                   src={previewAsset.url}
                   controls
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Video preview error:', e);
+                    const target = e.target as HTMLVideoElement;
+                    target.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'w-full h-full flex items-center justify-center text-red-400';
+                    errorDiv.innerHTML = '<div class="text-center"><AlertCircle className="w-12 h-12 mx-auto mb-2" /><p>Video failed to load</p><p class="text-sm text-gray-500 mt-1">Check if the signed URL is valid</p></div>';
+                    target.parentNode?.appendChild(errorDiv);
+                  }}
                 >
                   Your browser does not support the video tag.
                 </video>
@@ -402,6 +422,14 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
                   src={previewAsset.url}
                   alt={previewAsset.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error('Image preview error:', e);
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.innerHTML = '<div class="text-center"><AlertCircle className="w-12 h-12 mx-auto mb-2" /><p>Image failed to load</p><p class="text-sm text-gray-500 mt-1">Check if the signed URL is valid</p></div>';
+                    target.parentNode?.appendChild(errorDiv);
+                  }}
                 />
               )}
             </div>
