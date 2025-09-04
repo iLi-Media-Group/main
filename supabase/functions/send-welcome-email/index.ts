@@ -75,7 +75,7 @@ async function generateWelcomePDF(firstName: string, accountType: string) {
 
     // Calculate available width for text (page width minus margins)
     const leftMargin = header ? 50 : 65;
-    const rightMargin = 50;
+    const rightMargin = 80; // Increased right margin to prevent text from running off
     const availableWidth = width - leftMargin - rightMargin;
 
     // Check if text needs to be wrapped
@@ -113,6 +113,39 @@ async function generateWelcomePDF(firstName: string, accountType: string) {
           }
         }
       }
+      
+      // Additional safety check: if any line is still too long, break it further
+      const finalLines: string[] = [];
+      for (const line of lines) {
+        const lineWidth = font.widthOfTextAtSize(line, size);
+        if (lineWidth <= availableWidth) {
+          finalLines.push(line);
+        } else {
+          // Break this line into smaller chunks
+          const words = line.split(' ');
+          let currentChunk = '';
+          for (const word of words) {
+            const testChunk = currentChunk + (currentChunk ? ' ' : '') + word;
+            const testWidth = font.widthOfTextAtSize(testChunk, size);
+            if (testWidth <= availableWidth) {
+              currentChunk = testChunk;
+            } else {
+              if (currentChunk) {
+                finalLines.push(currentChunk);
+                currentChunk = word;
+              } else {
+                finalLines.push(word);
+              }
+            }
+          }
+          if (currentChunk) {
+            finalLines.push(currentChunk);
+          }
+        }
+      }
+      
+      // Replace lines with finalLines
+      lines = finalLines;
       
       // Add the last line
       if (currentLine) {
