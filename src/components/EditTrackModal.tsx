@@ -9,6 +9,7 @@ import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { uploadFile } from '../lib/storage';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { OptimizedImageUpload } from './OptimizedImageUpload';
 
 interface EditTrackModalProps {
   isOpen: boolean;
@@ -766,12 +767,23 @@ export function EditTrackModal({ isOpen, onClose, track, onUpdate }: EditTrackMo
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Cover Image {imageUrl && !imageFile && <span className="text-green-400">(Current: ✓)</span>}
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={e => setImageFile(e.target.files?.[0] || null)}
-              className="w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            <OptimizedImageUpload
+              onImageSelect={(file, previewUrl) => {
+                setImageFile(file);
+                // Store preview URL for display
+                if (previewUrl) {
+                  const img = new Image();
+                  img.onload = () => {
+                    // Preview is ready
+                  };
+                  img.src = previewUrl;
+                }
+              }}
+              useCase="cover"
+              maxFileSize={2 * 1024 * 1024} // 2MB
+              className="w-full"
               disabled={loading || uploadingFiles}
+              placeholder="Click to upload cover image"
             />
             {imageFile && (
               <p className="text-green-400 text-sm mt-1">✓ {imageFile.name} selected (will replace existing)</p>
