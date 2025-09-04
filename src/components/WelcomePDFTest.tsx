@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
-import { supabase } from '../lib/supabase';
+import jsPDF from 'jspdf';
 
 export function WelcomePDFTest() {
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -12,34 +12,84 @@ export function WelcomePDFTest() {
     setError(null);
     
     try {
-      // Call the Supabase Edge Function to generate the PDF
-      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
-        body: {
-          firstName: 'Test User',
-          accountType: accountType,
-          email: 'test@example.com',
-          isTest: true
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to generate PDF');
-      }
-
-      if (!data || !data.pdfBase64) {
-        throw new Error('No PDF data received');
-      }
-
-      // Convert base64 to blob
-      const byteCharacters = atob(data.pdfBase64);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      // Create PDF locally using jsPDF
+      const doc = new jsPDF();
       
-      const url = URL.createObjectURL(blob);
+      // Set margins
+      const leftMargin = 20;
+      const rightMargin = 20;
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const availableWidth = pageWidth - leftMargin - rightMargin;
+      
+      let y = 20;
+      
+      // Helper function to add text with wrapping
+      const addText = (text: string, options: { size?: number; bold?: boolean } = {}) => {
+        const { size = 12, bold = false } = options;
+        
+        if (y > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        // Check if text needs wrapping
+        const textWidth = doc.getTextWidth(text);
+        if (textWidth <= availableWidth) {
+          doc.setFontSize(size);
+          doc.setFont('helvetica', bold ? 'bold' : 'normal');
+          doc.text(text, leftMargin, y);
+          y += size + 2;
+        } else {
+          // Wrap text
+          const lines = doc.splitTextToSize(text, availableWidth);
+          doc.setFontSize(size);
+          doc.setFont('helvetica', bold ? 'bold' : 'normal');
+          doc.text(lines, leftMargin, y);
+          y += (size + 2) * lines.length;
+        }
+      };
+      
+      // Add content based on account type
+      if (accountType === 'client') {
+        addText('Welcome to MyBeatFi!', { size: 18, bold: true });
+        addText('Thank you for joining the MyBeatFi community. We built MyBeatFi to make music licensing simple, legal, and inspiring for filmmakers, advertisers, podcasters, and creators.');
+        
+        addText('Quick Start Checklist', { size: 14, bold: true });
+        addText('1. Browse the catalog and explore music by genre or mood.');
+        addText('2. Favorite tracks you love for easy access later.');
+        addText('3. Build a playlist to organize tracks for a project.');
+        addText('4. License a track instantly or submit a Sync Proposal.');
+        addText('5. Use your dashboard to track activity and spending.');
+        
+        addText('Licensing Options', { size: 14, bold: true });
+        addText('• Instant Licensing – License a track in just a few clicks. Perfect for quick projects like YouTube videos or podcasts.');
+        addText('• Sync Proposals – Some tracks are "Sync Only." Submit your project, chat with the producer, negotiate, and license securely.');
+        addText('• Custom Sync Requests – Need something unique? Post a request and get custom tracks from producers worldwide.');
+      } else if (accountType === 'producer') {
+        addText('Welcome to MyBeatFi Producer Network', { size: 18, bold: true });
+        addText('You\'re now part of a global community of music creators. MyBeatFi helps you upload, protect, and license your music worldwide.');
+        
+        addText('Quick Start Checklist', { size: 14, bold: true });
+        addText('1. Upload your first track (General Library or Sync-Only).');
+        addText('2. Complete your profile with a photo and bio.');
+        addText('3. Explore your dashboard.');
+        addText('4. Create a playlist to showcase your work.');
+        addText('5. Submit to a Custom Sync Request.');
+      } else if (accountType === 'rights_holder') {
+        addText('Welcome to MyBeatFi Rights Holder Network', { size: 18, bold: true });
+        addText('As a label, publisher, or catalog manager, MyBeatFi helps you manage catalogs, oversee your artist roster, and track revenues with full transparency.');
+        
+        addText('Quick Start Checklist', { size: 14, bold: true });
+        addText('1. Upload your catalog with metadata and ownership details.');
+        addText('2. Add roster artists and assign tracks.');
+        addText('3. Set licensing preferences (instant, sync-only, custom).');
+        addText('4. Track artist revenues and catalog performance.');
+        addText('5. Generate reports for accounting and audits.');
+      }
+      
+      // Generate PDF blob
+      const pdfBlob = doc.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
       setPdfUrl(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate PDF');
