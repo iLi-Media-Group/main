@@ -12,7 +12,7 @@ export interface Instrument {
   id: string;
   name: string;
   display_name: string;
-  category_id: string;
+  category: string;
   created_at: string;
   updated_at: string;
 }
@@ -28,33 +28,39 @@ export interface InstrumentsData {
 
 export async function fetchInstrumentsData(): Promise<InstrumentsData> {
   try {
-    // Fetch categories
-    const { data: categoriesData, error: categoriesError } = await supabase
-      .from('instrument_categories')
-      .select('*')
-      .order('display_name');
-
-    if (categoriesError) throw categoriesError;
+    // Use predefined categories since instrument_categories table doesn't exist in current schema
+    const predefinedCategories: InstrumentCategory[] = [
+      { id: 'strings', name: 'strings', display_name: 'Strings', created_at: '', updated_at: '' },
+      { id: 'keys', name: 'keys', display_name: 'Keys', created_at: '', updated_at: '' },
+      { id: 'drums-percussion', name: 'drums-percussion', display_name: 'Drums & Percussion', created_at: '', updated_at: '' },
+      { id: 'woodwinds-brass', name: 'woodwinds-brass', display_name: 'Woodwinds & Brass', created_at: '', updated_at: '' },
+      { id: 'orchestral-strings', name: 'orchestral-strings', display_name: 'Orchestral Strings', created_at: '', updated_at: '' },
+      { id: 'vocals', name: 'vocals', display_name: 'Vocals', created_at: '', updated_at: '' },
+      { id: 'bass', name: 'bass', display_name: 'Bass', created_at: '', updated_at: '' },
+      { id: 'atmosphere-texture', name: 'atmosphere-texture', display_name: 'Atmosphere & Texture', created_at: '', updated_at: '' },
+      { id: 'sound-effects', name: 'sound-effects', display_name: 'Sound Effects', created_at: '', updated_at: '' },
+      { id: 'samples-loops', name: 'samples-loops', display_name: 'Samples & Loops', created_at: '', updated_at: '' },
+      { id: 'other', name: 'other', display_name: 'Other', created_at: '', updated_at: '' }
+    ];
 
     // Fetch instruments with category info
     const { data: instrumentsData, error: instrumentsError } = await supabase
       .from('instruments')
       .select('*')
-      .order('display_name');
+      .order('category, display_name');
 
     if (instrumentsError) throw instrumentsError;
 
-    const categories = categoriesData || [];
     const instruments = instrumentsData || [];
 
     // Add category info to instruments
     const instrumentsWithCategory: InstrumentWithCategory[] = instruments.map(instrument => ({
       ...instrument,
-      category_info: categories.find(cat => cat.id === instrument.category_id)
+      category_info: predefinedCategories.find(cat => cat.name === instrument.category)
     }));
 
     return {
-      categories,
+      categories: predefinedCategories,
       instruments: instrumentsWithCategory
     };
   } catch (error) {

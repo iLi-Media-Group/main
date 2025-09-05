@@ -26,7 +26,7 @@ export interface InstrumentCategory {
 export interface Instrument {
   id: string;
   name: string;
-  category_id: string;
+  category: string;
   category_name: string;
 }
 
@@ -85,17 +85,22 @@ export async function fetchMoods(): Promise<Mood[]> {
 
 // Fetch all instrument categories
 export async function fetchInstrumentCategories(): Promise<InstrumentCategory[]> {
-  const { data, error } = await supabase
-    .from('instrument_categories')
-    .select('id, name')
-    .order('name');
+  // Use predefined categories since instrument_categories table doesn't exist in current schema
+  const predefinedCategories: InstrumentCategory[] = [
+    { id: 'strings', name: 'Strings' },
+    { id: 'keys', name: 'Keys' },
+    { id: 'drums-percussion', name: 'Drums & Percussion' },
+    { id: 'woodwinds-brass', name: 'Woodwinds & Brass' },
+    { id: 'orchestral-strings', name: 'Orchestral Strings' },
+    { id: 'vocals', name: 'Vocals' },
+    { id: 'bass', name: 'Bass' },
+    { id: 'atmosphere-texture', name: 'Atmosphere & Texture' },
+    { id: 'sound-effects', name: 'Sound Effects' },
+    { id: 'samples-loops', name: 'Samples & Loops' },
+    { id: 'other', name: 'Other' }
+  ];
   
-  if (error) {
-    console.error('Error fetching instrument categories:', error);
-    return [];
-  }
-  
-  return data || [];
+  return predefinedCategories;
 }
 
 // Fetch all instruments with their categories
@@ -105,10 +110,10 @@ export async function fetchInstruments(): Promise<Instrument[]> {
     .select(`
       id,
       name,
-      category_id,
-      instrument_categories!inner(name)
+      category,
+      display_name
     `)
-    .order('instrument_categories(name), name');
+    .order('category, display_name');
   
   if (error) {
     console.error('Error fetching instruments:', error);
@@ -118,8 +123,8 @@ export async function fetchInstruments(): Promise<Instrument[]> {
   return (data || []).map(instrument => ({
     id: instrument.id,
     name: instrument.name,
-    category_id: instrument.category_id,
-    category_name: instrument.instrument_categories.name
+    category: instrument.category,
+    category_name: instrument.category || 'Unknown'
   }));
 }
 
