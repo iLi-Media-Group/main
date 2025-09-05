@@ -6,7 +6,7 @@ interface Instrument {
   id: string;
   name: string;
   display_name: string;
-  category_id: string;
+  category: string;
   created_at: string;
   updated_at: string;
 }
@@ -56,34 +56,26 @@ export function InstrumentManagement() {
       let instrumentsError = null;
       
       try {
+        // Fetch instruments with their category info (using the current schema)
         const { data, error } = await supabase
           .from('instruments')
-          .select(`
-            *,
-            instrument_categories!instruments_category_id_fkey(name)
-          `)
-          .order('category_id, name');
+          .select('*')
+          .order('category, display_name');
         
         instrumentsData = data || [];
         instrumentsError = error;
       } catch (err) {
-        console.log('Failed to fetch with categories, trying simple query');
-        // If the join fails, try a simple query
-        const { data, error } = await supabase
-          .from('instruments')
-          .select('*')
-          .order('category_id, name');
-        
-        instrumentsData = data || [];
-        instrumentsError = error;
+        console.log('Failed to fetch instruments:', err);
+        instrumentsData = [];
+        instrumentsError = err;
       }
 
       if (instrumentsError) throw instrumentsError;
       
-      // Transform the data to include category name
+      // Transform the data to include category name (category is already a text field)
       const instrumentsWithCategory = (instrumentsData || []).map(instrument => ({
         ...instrument,
-        category_name: instrument.instrument_categories?.name || 'Unknown'
+        category_name: instrument.category || 'Unknown'
       }));
       
       setInstruments(instrumentsWithCategory);
@@ -96,22 +88,21 @@ export function InstrumentManagement() {
   };
 
   const fetchCategories = async () => {
-    try {
-      const { data: categoriesData, error: categoriesError } = await supabase
-        .from('instrument_categories')
-        .select('*')
-        .order('name');
-
-      if (categoriesError) {
-        console.log('Categories table may not exist, using empty array');
-        setCategories([]);
-        return;
-      }
-      setCategories(categoriesData || []);
-    } catch (err) {
-      console.log('Error fetching categories, using empty array:', err);
-      setCategories([]);
-    }
+    // Use predefined categories since instrument_categories table doesn't exist in current schema
+    const predefinedCategories = [
+      { id: 'strings', name: 'Strings' },
+      { id: 'keys', name: 'Keys' },
+      { id: 'drums-percussion', name: 'Drums & Percussion' },
+      { id: 'woodwinds-brass', name: 'Woodwinds & Brass' },
+      { id: 'orchestral-strings', name: 'Orchestral Strings' },
+      { id: 'vocals', name: 'Vocals' },
+      { id: 'bass', name: 'Bass' },
+      { id: 'atmosphere-texture', name: 'Atmosphere & Texture' },
+      { id: 'sound-effects', name: 'Sound Effects' },
+      { id: 'samples-loops', name: 'Samples & Loops' },
+      { id: 'other', name: 'Other' }
+    ];
+    setCategories(predefinedCategories);
   };
 
   const createInstrument = async () => {
@@ -121,25 +112,12 @@ export function InstrumentManagement() {
         return;
       }
 
-      let categoryValue = newInstrument.category;
-      
-      // If categories exist, try to find the category ID
-      if (categories.length > 0 && newInstrument.category.trim()) {
-        const category = categories.find(cat => cat.name === newInstrument.category);
-        if (category) {
-          categoryValue = category.id;
-        } else {
-          setError('Selected category not found');
-          return;
-        }
-      }
-
       const { error } = await supabase
         .from('instruments')
         .insert({
           name: newInstrument.name.toLowerCase().replace(/\s+/g, '_'),
           display_name: newInstrument.name,
-          category_id: categoryValue
+          category: newInstrument.category
         });
 
       if (error) throw error;
@@ -154,31 +132,7 @@ export function InstrumentManagement() {
   };
 
   const createCategory = async () => {
-    try {
-      if (!newCategory.name.trim()) {
-        setError('Please fill in the category name');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('instrument_categories')
-        .insert({
-          name: newCategory.name
-        });
-
-      if (error) {
-        console.error('Error creating category:', error);
-        setError('Failed to create category. The categories table may not exist.');
-        return;
-      }
-
-      setNewCategory({ name: '' });
-      setShowAddCategoryModal(false);
-      fetchCategories();
-    } catch (err) {
-      console.error('Error creating category:', err);
-      setError('Failed to create category. The categories table may not exist.');
-    }
+    setError('Category management is not available with the current database schema. Categories are predefined.');
   };
 
   const updateInstrument = async (instrument: Instrument) => {
@@ -188,19 +142,12 @@ export function InstrumentManagement() {
         return;
       }
 
-      // Find the category ID
-      const category = categories.find(cat => cat.name === instrument.category);
-      if (!category) {
-        setError('Selected category not found');
-        return;
-      }
-
       const { error } = await supabase
         .from('instruments')
         .update({
           name: instrument.name.toLowerCase().replace(/\s+/g, '_'),
           display_name: instrument.name,
-          category_id: category.id,
+          category: instrument.category,
           updated_at: new Date().toISOString()
         })
         .eq('id', instrument.id);
@@ -216,28 +163,7 @@ export function InstrumentManagement() {
   };
 
   const updateCategory = async (category: InstrumentCategory) => {
-    try {
-      if (!category.name.trim()) {
-        setError('Please fill in the category name');
-        return;
-      }
-
-      const { error } = await supabase
-        .from('instrument_categories')
-        .update({
-          name: category.name,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', category.id);
-
-      if (error) throw error;
-
-      setEditingCategory(null);
-      fetchCategories();
-    } catch (err) {
-      console.error('Error updating category:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update category');
-    }
+    setError('Category management is not available with the current database schema. Categories are predefined.');
   };
 
   const deleteInstrument = async (instrumentId: string) => {
@@ -261,24 +187,7 @@ export function InstrumentManagement() {
   };
 
   const deleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category? This will also delete all instruments in this category.')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('instrument_categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) throw error;
-
-      fetchCategories();
-      fetchInstruments();
-    } catch (err) {
-      console.error('Error deleting category:', err);
-      setError(err instanceof Error ? err.message : 'Failed to delete category');
-    }
+    setError('Category management is not available with the current database schema. Categories are predefined.');
   };
 
   if (loading) {
