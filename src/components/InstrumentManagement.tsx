@@ -269,7 +269,6 @@ export function InstrumentManagement() {
               <div>
                 <p className="text-white font-medium">{instrument.name}</p>
                 <p className="text-sm text-gray-400">Category: {instrument.category_name}</p>
-                <p className="text-sm text-gray-400">ID: {instrument.id}</p>
               </div>
               <div className="flex space-x-2">
                 <button
