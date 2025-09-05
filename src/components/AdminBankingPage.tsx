@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Search, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface Withdrawal {
   id: string;
@@ -171,7 +171,7 @@ function WithdrawalDetail({ isOpen, onClose, withdrawal, onApprove, onReject }: 
 }
 
 export function AdminBankingPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

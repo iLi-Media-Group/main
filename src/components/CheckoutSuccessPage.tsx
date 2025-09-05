@@ -4,12 +4,12 @@ import { CheckCircle, ArrowRight, Music, Calendar, CreditCard } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import { getUserSubscription, getUserOrders, formatCurrency, formatDate, getMembershipPlanFromPriceId } from '../lib/stripe'; 
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 export function CheckoutSuccessPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user, refreshMembership } = useAuth();
+  const { user, refreshMembership } = useUnifiedAuth();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<any>(null);
   const [order, setOrder] = useState<any>(null);
@@ -33,7 +33,7 @@ export function CheckoutSuccessPage() {
           setLoading(false);
           // Redirect to dashboard if not already there
           if (window.location.pathname !== '/dashboard') {
-            window.location.href = '/dashboard';
+            navigate('/dashboard');
           }
           return;
         }

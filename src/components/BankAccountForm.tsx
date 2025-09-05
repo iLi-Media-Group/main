@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Building, Hash, CreditCard } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface BankAccountFormProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface BankAccountFormProps {
 }
 
 export function BankAccountForm({ isOpen, onClose, onSave, existingAccounts }: BankAccountFormProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [routingNumber, setRoutingNumber] = useState('');

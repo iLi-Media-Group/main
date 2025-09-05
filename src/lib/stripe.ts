@@ -13,7 +13,76 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
     let checkoutMetadata = customData || {};
     if (trackId) {
       checkoutMetadata.track_id = trackId;
-      checkoutMetadata.track_id = trackId;
+    }
+
+    // Extract custom_amount from customData if it exists
+    const customAmount = customData?.amount;
+    
+    // Remove amount from metadata to avoid duplication
+    if (checkoutMetadata.amount) {
+      delete checkoutMetadata.amount;
+    }
+
+    const requestBody: any = {
+      price_id: priceId,
+      success_url: customSuccessUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${window.location.origin}/pricing`,
+      mode,
+      metadata: checkoutMetadata,
+      payment_method_types: ['card', 'us_bank_account', 'customer_balance']
+    };
+
+    // Only add custom_amount if it exists and price_id is 'price_custom'
+    if (customAmount && priceId === 'price_custom') {
+      requestBody.custom_amount = customAmount;
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to create checkout session');
+    }
+
+    const { url } = await response.json();
+    return url;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    throw error;
+  }
+}
+
+// Add the missing createStripeCheckout function that uses our Edge Function
+export async function createStripeCheckout({
+  productId,
+  name,
+  description,
+  price,
+  successUrl,
+  cancelUrl,
+  metadata
+}: {
+  productId: string;
+  name: string;
+  description: string;
+  price: number;
+  successUrl: string;
+  cancelUrl: string;
+  metadata?: any;
+}) {
+  try {
+    // Get the current session - this implicitly handles refresh
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to make a purchase');
     }
 
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
@@ -23,13 +92,17 @@ export async function createCheckoutSession(priceId: string, mode: 'payment' | '
         'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
-        price_id: priceId,
-        success_url: customSuccessUrl || `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${window.location.origin}/pricing`,
-        mode,
-        metadata: checkoutMetadata,
-        payment_method_types: ['card', 'us_bank_account', 'customer_balance'],
-        custom_amount: customData?.amount
+        price_id: 'price_custom',
+        custom_amount: Math.round(price * 100), // Convert to cents
+        mode: 'payment',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        metadata: {
+          product_id: productId,
+          name,
+          description,
+          ...metadata
+        }
       }),
     });
 
@@ -107,6 +180,31 @@ export async function cancelUserSubscription() {
   }
 }
 
+export async function resumeUserSubscription() {
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      throw new Error('You must be logged in to resume your subscription');
+    }
+    const baseUrl = import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, '');
+    const response = await fetch(`${baseUrl}/functions/v1/resume-stripe-subscription`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Failed to resume subscription');
+    }
+    return result;
+  } catch (error) {
+    console.error('Error resuming subscription:', error);
+    throw error;
+  }
+}
+
 export function formatCurrency(amount: number, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -120,13 +218,13 @@ export function formatDate(timestamp: number) {
 
 export function getMembershipPlanFromPriceId(priceId: string) {
   switch (priceId) {
-    case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
+    case 'price_1RvLLRA4Yw5viczUCAGuLpKh':
       return 'Ultimate Access';
-    case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
+    case 'price_1RvLKcA4Yw5viczUItn56P2m':
       return 'Platinum Access';
-    case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
+    case 'price_1RvLJyA4Yw5viczUwdHhIYAQ':
       return 'Gold Access';
-    case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
+    case 'price_1RvLJCA4Yw5viczUrWeCZjom':
       return 'Single Track';
     default:
       return 'Unknown Plan';

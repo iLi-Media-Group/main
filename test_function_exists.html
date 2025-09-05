@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Function Exists</title>
+</head>
+<body>
+    <h1>Test Function Exists</h1>
+    <button onclick="testFunctionExists()">Test if Function Exists</button>
+    <div id="result"></div>
+
+    <script>
+        async function testFunctionExists() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Try a simple GET request to see if the function exists
+                const response = await fetch('https://yciqkebqlajqbpwlujma.supabase.co/functions/v1/send-email-resend', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                resultDiv.innerHTML = `<pre>Status: ${response.status}
+Response: ${response.statusText}
+Function exists: ${response.status !== 404}</pre>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<pre>Error: ${error.message}
+This means the function is not deployed or not accessible.</pre>`;
+            }
+        }
+    </script>
+</body>
+</html>

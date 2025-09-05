@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Sliders } from 'lucide-react';
-import { GENRES, MOODS } from '../types';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { useServiceLevel } from '../hooks/useServiceLevel';
 
 interface SearchBoxProps {
   onSearch: (filters: SearchFilters) => void;
@@ -9,23 +10,87 @@ interface SearchBoxProps {
 export interface SearchFilters {
   query: string;
   genres: string[];
+  subGenres: string[];
   moods: string[];
+  instruments: string[];
+  mediaTypes: string[];
+  syncOnly?: boolean;
+  hasVocals?: boolean;
+  excludeUnclearedSamples?: boolean;
   minBpm: number;
   maxBpm: number;
 }
 
 export function SearchBox({ onSearch }: SearchBoxProps) {
+  const { genres, subGenres, moods, instruments, mediaTypes, loading: dataLoading, error: dataError } = useDynamicSearchData();
+  const { level, hasAISearch, hasDeepMedia, hasProducerOnboarding, isProLevel, isEnterpriseLevel } = useServiceLevel();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>({
     query: '',
     genres: [],
+    subGenres: [],
     moods: [],
+    instruments: [],
+    mediaTypes: [],
+    syncOnly: undefined,
+    hasVocals: undefined,
+    excludeUnclearedSamples: undefined,
     minBpm: 0,
-    maxBpm: 300,
+    maxBpm: 200
   });
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target;
+    setFilters(prev => ({ ...prev, query: value }));
+    
+    // Auto-detect genres, moods, and instruments from text input
+    const detectedGenres: string[] = [];
+    const detectedMoods: string[] = [];
+    const detectedInstruments: string[] = [];
+    const detectedMediaTypes: string[] = [];
+    
+    const lowerValue = value.toLowerCase();
+    
+    // Detect genres
+    genres.forEach(genre => {
+      if (lowerValue.includes(genre.name.toLowerCase()) || lowerValue.includes(genre.display_name.toLowerCase())) {
+        detectedGenres.push(genre.name);
+      }
+    });
+    
+    // Detect moods
+    moods.forEach(mood => {
+      if (lowerValue.includes(mood.name.toLowerCase()) || lowerValue.includes(mood.display_name.toLowerCase())) {
+        detectedMoods.push(mood.name);
+      }
+    });
+    
+    // Detect instruments
+    instruments.forEach(instrument => {
+      if (lowerValue.includes(instrument.name.toLowerCase()) || lowerValue.includes(instrument.display_name.toLowerCase())) {
+        detectedInstruments.push(instrument.name);
+      }
+    });
+    
+    // Detect media types
+    mediaTypes.forEach(mediaType => {
+      if (lowerValue.includes(mediaType.name.toLowerCase())) {
+        detectedMediaTypes.push(mediaType.name);
+      }
+    });
+    
+    setFilters(prev => ({
+      ...prev,
+      query: value,
+      genres: detectedGenres,
+      moods: detectedMoods,
+      instruments: detectedInstruments,
+      mediaTypes: detectedMediaTypes
+    }));
+  };
+
+  const handleFilterChange = (filterType: keyof SearchFilters, value: any) => {
+    setFilters(prev => ({ ...prev, [filterType]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,147 +98,414 @@ export function SearchBox({ onSearch }: SearchBoxProps) {
     onSearch(filters);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      onSearch(filters);
-    }
+  const clearFilters = () => {
+    setFilters({
+      query: '',
+      genres: [],
+      subGenres: [],
+      moods: [],
+      instruments: [],
+      mediaTypes: [],
+      syncOnly: undefined,
+      hasVocals: undefined,
+      excludeUnclearedSamples: undefined,
+      minBpm: 0,
+      maxBpm: 200
+    });
+    onSearch({
+      query: '',
+      genres: [],
+      subGenres: [],
+      moods: [],
+      instruments: [],
+      mediaTypes: [],
+      minBpm: 0,
+      maxBpm: 200
+    });
   };
 
-  const getPlaceholderText = () => {
-    const examples = [
-      'hip hop energetic',
-      'electronic peaceful',
-      'pop uplifting',
-      'jazz romantic',
-      'rock powerful'
-    ];
-    return `Search by title, genre, or mood (e.g., "${examples[Math.floor(Math.random() * examples.length)]}")`;
-  };
+  // Group media types by category
+  const mediaTypesByCategory = mediaTypes.reduce((acc, mediaType) => {
+    if (!acc[mediaType.category]) {
+      acc[mediaType.category] = [];
+    }
+    acc[mediaType.category].push(mediaType);
+    return acc;
+  }, {} as Record<string, typeof mediaTypes>);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="glass-card rounded-lg p-6 mb-8 hover:border-blue-500/40 transition-colors">
+      {/* Service Level Indicator */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-300">Service Level:</span>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            isEnterpriseLevel 
+              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+              : isProLevel 
+              ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+              : 'bg-gray-500/20 text-gray-300 border border-gray-500/30'
+          }`}>
+            {isEnterpriseLevel ? 'Enterprise' : isProLevel ? 'Pro' : 'Starter'}
+          </span>
+        </div>
+        <div className="flex items-center space-x-1">
+          {hasAISearch && (
+            <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-300 border border-green-500/30">
+              AI Search
+            </span>
+          )}
+          {hasDeepMedia && (
+            <span className="px-2 py-1 rounded-full text-xs bg-orange-500/20 text-orange-300 border border-orange-500/30">
+              Deep Media
+            </span>
+          )}
+          {hasProducerOnboarding && (
+            <span className="px-2 py-1 rounded-full text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Producer Onboarding
+            </span>
+          )}
+        </div>
+      </div>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              placeholder={getPlaceholderText()}
-              value={filters.query}
-              onChange={(e) => handleFilterChange('query', e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="w-full pl-4 pr-12 py-3 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
-            />
-            <button
-              type="submit"
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-            >
-              <Search className="w-5 h-5" />
-            </button>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            className="p-3 bg-white/5 border border-blue-500/20 rounded-lg text-white hover:bg-white/10 transition-colors"
-            aria-label="Toggle filters"
-          >
-            <Sliders className="w-5 h-5" />
-          </button>
+        {/* Search Input */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            value={filters.query}
+            onChange={handleInputChange}
+            placeholder={
+              level === 'normal' 
+                ? "Search tracks, artists, genres, or moods..."
+                : level === 'ai_search'
+                ? "Search tracks, artists, genres, moods, sub-genres, or instruments..."
+                : level === 'deep_media'
+                ? "Search tracks, artists, genres, moods, or media types..."
+                : "Search tracks, artists, genres, moods, sub-genres, instruments, or media types..."
+            }
+            className="w-full pl-10 pr-4 py-3 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+          />
         </div>
 
+        {/* Filters Toggle and Sample Clearance Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              type="button"
+              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              className="flex items-center space-x-2 text-white hover:text-blue-300 transition-colors"
+            >
+              <Sliders className="w-5 h-5" />
+              <span>Advanced Filters</span>
+            </button>
+            
+            {/* Exclude Uncleared Samples/Loops Toggle */}
+            <label className="flex items-center space-x-2 text-white hover:text-blue-300 transition-colors cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.excludeUnclearedSamples === true}
+                onChange={(e) => handleFilterChange('excludeUnclearedSamples', e.target.checked ? true : undefined)}
+                className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm">Exclude Uncleared Samples/Loops</span>
+            </label>
+          </div>
+          
+          <div className="flex space-x-2">
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={dataLoading}
+            >
+              {dataLoading ? 'Loading...' : 'Search'}
+            </button>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="btn-secondary"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Advanced Filters */}
         {isFiltersOpen && (
-          <div className="glass-card p-6 rounded-lg space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-white/20">
+            {/* Genres - Always Available */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Genres</h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {genres.map(genre => (
+                  <label key={genre.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.genres.includes(genre.name)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleFilterChange('genres', [...filters.genres, genre.name]);
+                        } else {
+                          handleFilterChange('genres', filters.genres.filter(g => g !== genre.name));
+                        }
+                      }}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">{genre.display_name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Sub Genres - AI Search Only */}
+            {hasAISearch && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Genres
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {GENRES.map((genre) => (
-                    <label key={genre} className="flex items-center space-x-2">
+                <h3 className="text-white font-semibold mb-3">Sub Genres</h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {subGenres.map(subGenre => (
+                    <label key={subGenre.id} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={filters.genres.includes(genre)}
+                        checked={filters.subGenres.includes(subGenre.name)}
                         onChange={(e) => {
-                          const newGenres = e.target.checked
-                            ? [...filters.genres, genre]
-                            : filters.genres.filter(g => g !== genre);
-                          handleFilterChange('genres', newGenres);
+                          if (e.target.checked) {
+                            handleFilterChange('subGenres', [...filters.subGenres, subGenre.name]);
+                          } else {
+                            handleFilterChange('subGenres', filters.subGenres.filter(sg => sg !== subGenre.name));
+                          }
                         }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
                       />
-                      <span className="text-gray-300">{genre}</span>
+                      <span className="text-white text-sm">{subGenre.display_name}</span>
                     </label>
                   ))}
                 </div>
               </div>
+            )}
 
+            {/* Moods - Always Available */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Moods</h3>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {moods.map(mood => (
+                  <label key={mood.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.moods.includes(mood.name)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          handleFilterChange('moods', [...filters.moods, mood.name]);
+                        } else {
+                          handleFilterChange('moods', filters.moods.filter(m => m !== mood.name));
+                        }
+                      }}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">{mood.display_name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Instruments - AI Search Only */}
+            {hasAISearch && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Moods
-                </label>
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {MOODS.map((mood) => (
-                    <label key={mood} className="flex items-center space-x-2">
+                <h3 className="text-white font-semibold mb-3">Instruments</h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {instruments.map(instrument => (
+                    <label key={instrument.id} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={filters.moods.includes(mood)}
+                        checked={filters.instruments.includes(instrument.name)}
                         onChange={(e) => {
-                          const newMoods = e.target.checked
-                            ? [...filters.moods, mood]
-                            : filters.moods.filter(m => m !== mood);
-                          handleFilterChange('moods', newMoods);
+                          if (e.target.checked) {
+                            handleFilterChange('instruments', [...filters.instruments, instrument.name]);
+                          } else {
+                            handleFilterChange('instruments', filters.instruments.filter(i => i !== instrument.name));
+                          }
                         }}
-                        className="rounded border-gray-600 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
                       />
-                      <span className="text-gray-300">{mood}</span>
+                      <span className="text-white text-sm">{instrument.display_name}</span>
                     </label>
                   ))}
                 </div>
               </div>
+            )}
 
+            {/* Media Types - Deep Media Search Only */}
+            {hasDeepMedia && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Tempo Range (BPM)
-                </label>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm text-gray-400">Min BPM</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max={filters.maxBpm}
-                      value={filters.minBpm}
-                      onChange={(e) => handleFilterChange('minBpm', parseInt(e.target.value))}
-                      className="mt-1 block w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm text-gray-400">Max BPM</label>
-                    <input
-                      type="number"
-                      min={filters.minBpm}
-                      max="300"
-                      value={filters.maxBpm}
-                      onChange={(e) => handleFilterChange('maxBpm', parseInt(e.target.value))}
-                      className="mt-1 block w-full"
-                    />
-                  </div>
+                <h3 className="text-white font-semibold mb-3">Media Types</h3>
+                <div className="space-y-4 max-h-40 overflow-y-auto">
+                  {Object.entries(mediaTypesByCategory).map(([category, types]) => (
+                    <div key={category}>
+                      <h4 className="text-white/80 text-xs font-medium mb-2">{category}</h4>
+                      <div className="space-y-1">
+                        {types.map(mediaType => (
+                          <label key={mediaType.id} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              checked={filters.mediaTypes.includes(mediaType.name)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  handleFilterChange('mediaTypes', [...filters.mediaTypes, mediaType.name]);
+                                } else {
+                                  handleFilterChange('mediaTypes', filters.mediaTypes.filter(mt => mt !== mediaType.name));
+                                }
+                              }}
+                              className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-white text-xs">{mediaType.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* BPM Range */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">BPM Range</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-white text-sm">Min BPM</label>
+                  <input
+                    type="number"
+                    value={filters.minBpm}
+                    onChange={(e) => handleFilterChange('minBpm', parseInt(e.target.value) || 0)}
+                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded text-white text-sm transition-colors"
+                    min="0"
+                    max="300"
+                  />
+                </div>
+                <div>
+                  <label className="text-white text-sm">Max BPM</label>
+                  <input
+                    type="number"
+                    value={filters.maxBpm}
+                    onChange={(e) => handleFilterChange('maxBpm', parseInt(e.target.value) || 200)}
+                    className="w-full mt-1 px-3 py-2 bg-white/10 border border-blue-500/20 hover:border-blue-500/40 rounded text-white text-sm transition-colors"
+                    min="0"
+                    max="300"
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="btn-primary"
-              >
-                Apply Filters
-              </button>
+            {/* Track Options */}
+            <div>
+              <h3 className="text-white font-semibold mb-3">Track Options</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.syncOnly === true}
+                      onChange={(e) => handleFilterChange('syncOnly', e.target.checked ? true : undefined)}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">Sync Only Tracks</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={filters.hasVocals === true}
+                      onChange={(e) => handleFilterChange('hasVocals', e.target.checked ? true : undefined)}
+                      className="rounded border-white/20 text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-white text-sm">Tracks with Vocals</span>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
         )}
       </form>
+
+      {/* Active Search Filters Display */}
+      {(filters.query || filters.genres.length > 0 || filters.subGenres.length > 0 || 
+        filters.moods.length > 0 || filters.instruments.length > 0 || filters.mediaTypes.length > 0 ||
+        filters.syncOnly !== undefined || filters.hasVocals !== undefined || 
+        filters.excludeUnclearedSamples !== undefined || filters.minBpm > 0 || filters.maxBpm < 200) && (
+        <div className="mt-4 pt-4 border-t border-white/20">
+          <h4 className="text-white font-medium mb-3">Active Filters:</h4>
+          <div className="flex flex-wrap gap-2">
+            {/* Search Query */}
+            {filters.query && (
+              <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm border border-blue-500/30">
+                Search: "{filters.query}"
+              </span>
+            )}
+            
+            {/* Genres */}
+            {filters.genres.map(genre => (
+              <span key={genre} className="px-3 py-1 bg-green-500/20 text-green-300 rounded-full text-sm border border-green-500/30">
+                Genre: {genre}
+              </span>
+            ))}
+            
+            {/* Sub Genres */}
+            {filters.subGenres.map(subGenre => (
+              <span key={subGenre} className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm border border-purple-500/30">
+                Sub-Genre: {subGenre}
+              </span>
+            ))}
+            
+            {/* Moods */}
+            {filters.moods.map(mood => (
+              <span key={mood} className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm border border-orange-500/30">
+                Mood: {mood}
+              </span>
+            ))}
+            
+            {/* Instruments */}
+            {filters.instruments.map(instrument => (
+              <span key={instrument} className="px-3 py-1 bg-yellow-500/20 text-yellow-300 rounded-full text-sm border border-yellow-500/30">
+                Instrument: {instrument}
+              </span>
+            ))}
+            
+            {/* Media Types */}
+            {filters.mediaTypes.map(mediaType => (
+              <span key={mediaType} className="px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full text-sm border border-indigo-500/30">
+                Media: {mediaType}
+              </span>
+            ))}
+            
+            {/* Track Options */}
+            {filters.syncOnly && (
+              <span className="px-3 py-1 bg-red-500/20 text-red-300 rounded-full text-sm border border-red-500/30">
+                Sync Only
+              </span>
+            )}
+            
+            {filters.hasVocals && (
+              <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-full text-sm border border-pink-500/30">
+                With Vocals
+              </span>
+            )}
+            
+            {filters.excludeUnclearedSamples && (
+              <span className="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm border border-amber-500/30">
+                Exclude Uncleared Samples/Loops
+              </span>
+            )}
+            
+            {/* BPM Range */}
+            {(filters.minBpm > 0 || filters.maxBpm < 200) && (
+              <span className="px-3 py-1 bg-teal-500/20 text-teal-300 rounded-full text-sm border border-teal-500/30">
+                BPM: {filters.minBpm}-{filters.maxBpm}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

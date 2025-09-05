@@ -1,0 +1,17 @@
+[33md4ebbf0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m Transform AI search assistant into truly intelligent system - add learning capabilities, natural language processing, context awareness, personalized suggestions, and transparent AI explanations
+[33m95b50cc[m Make search more fluid and user-friendly - remove overly restrictive filtering, add intelligent text parsing, and allow flexible search combinations
+[33m5a84050[m Fix AI search assistant to properly handle genre filtering and priority-based search - include subGenres in URL params and improve genre detection accuracy
+[33m984402a[m Add MP3 Only indicator to track cards and track pages - shows when MP3 exists but no trackouts/stems are available
+[33m3d23cc1[m Fix genre search case sensitivity and update GENRES array to lowercase - database stores genres in lowercase, so UI and search logic now match
+[33mfe75b83[m Fix search logic to properly handle genre filtering - restructure search conditions to use single .or() call instead of separate calls
+[33m7fa2728[m 🔒 Fix authentication security: Add profile deletion trigger and user management
+[33m2feeee3[m Add comprehensive form persistence for track upload forms
+[33m8dd8498[m Move audio upload section below cover art on track upload page
+[33m70d1f14[m Remove Spotify-related fields from database query to fix 400 error
+[33mcommit 3148e32266eaecd901a045ad7afc83e83af21a27[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m
+Author: MyBeatFi Admin <theilimediagroup@gmail.com>
+Date:   Thu Sep 4 12:30:57 2025 -0300
+
+    Fix track image mapping to use image_url field to match Track interface
+
+src/components/CatalogPage.tsx
