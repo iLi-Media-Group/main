@@ -45,6 +45,71 @@ import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { uploadFile } from '../lib/storage';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 import { TrackAnalyticsModal } from './TrackAnalyticsModal';
+import { useSignedUrl } from '../hooks/useSignedUrl';
+
+// Component to handle signed URL generation for track images
+function TrackImage({ track }: { track: Track }) {
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Limit retries to avoid infinite loops
+
+  // If it's already a public URL (like Unsplash), use it directly
+  if (track.image_url && track.image_url.startsWith('https://')) {
+    return (
+      <img
+        src={track.image_url}
+        alt={track.title}
+        className="w-full h-48 object-cover rounded-lg"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
+      />
+    );
+  }
+
+  // For file paths, use signed URL
+  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image_url);
+
+  // Retry logic for failed signed URLs
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000 * (retryCount + 1)); // Exponential backoff
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount, maxRetries]);
+
+  if (loading) {
+    return (
+      <div className="w-full h-48 bg-gray-700 rounded-lg flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <img
+        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
+        alt={track.title}
+        className="w-full h-48 object-cover rounded-lg"
+      />
+    );
+  }
+
+  return (
+    <img
+      src={signedUrl}
+      alt={track.title}
+      className="w-full h-48 object-cover rounded-lg"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+      }}
+    />
+  );
+}
 
 interface Track {
   id: string;
@@ -647,11 +712,7 @@ export function RightsHolderRecordings() {
                 <div key={recording.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
                   {/* Track Image */}
                   <div className="relative mb-4">
-                    <img
-                      src={recording.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                      alt={recording.title}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
+                    <TrackImage track={recording} />
                     <div className="absolute top-2 right-2">
                       <span className={`px-2 py-1 text-xs rounded-full ${
                         recording.status === 'active' ? 'bg-green-600' :
