@@ -74,7 +74,14 @@ export async function getTopTracksThisMonth() {
       .from('track_plays')
       .select(`
         track_id,
-        tracks!inner(title)
+        tracks!inner(
+          title,
+          artist,
+          producer:producer_id(
+            first_name,
+            last_name
+          )
+        )
       `)
       .gte('played_at', startOfMonth.toISOString());
 
@@ -84,13 +91,19 @@ export async function getTopTracksThisMonth() {
     }
 
     // Count plays per track
-    const trackPlays: { [key: string]: { title: string; plays: number } } = {};
+    const trackPlays: { [key: string]: { title: string; artist?: string; producer?: { firstName: string; lastName: string }; plays: number } } = {};
     data?.forEach(play => {
       const trackId = play.track_id;
-      const title = (play.tracks as any)?.title || 'Unknown Track';
+      const track = (play.tracks as any);
+      const title = track?.title || 'Unknown Track';
+      const artist = track?.artist;
+      const producer = track?.producer ? {
+        firstName: track.producer.first_name,
+        lastName: track.producer.last_name
+      } : undefined;
       
       if (!trackPlays[trackId]) {
-        trackPlays[trackId] = { title, plays: 0 };
+        trackPlays[trackId] = { title, artist, producer, plays: 0 };
       }
       trackPlays[trackId].plays++;
     });

@@ -9,6 +9,11 @@ interface TrackAnalyticsModalProps {
     id: string;
     title: string;
     play_count: number;
+    artist?: string;
+    producer?: {
+      firstName: string;
+      lastName: string;
+    };
   };
 }
 
@@ -20,6 +25,11 @@ interface AnalyticsData {
   }>;
   topTracksThisMonth: Array<{
     title: string;
+    artist?: string;
+    producer?: {
+      firstName: string;
+      lastName: string;
+    };
     plays: number;
   }>;
 }
@@ -153,7 +163,12 @@ export function TrackAnalyticsModal({ isOpen, onClose, track }: TrackAnalyticsMo
                         <span className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
                           {index + 1}
                         </span>
-                        <span className="text-white">{track.title}</span>
+                        <div className="flex flex-col">
+                          <span className="text-white font-medium">{track.title}</span>
+                          <span className="text-gray-400 text-sm">
+                            {track.artist || (track.producer ? `${track.producer.firstName} ${track.producer.lastName}` : 'Unknown Artist')}
+                          </span>
+                        </div>
                       </div>
                       <span className="text-purple-400 font-semibold">
                         {track.plays.toLocaleString()} plays
