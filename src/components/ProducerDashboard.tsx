@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { parseArrayField } from '../lib/utils';
@@ -15,6 +15,7 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
+import { TrackAnalyticsModal } from './TrackAnalyticsModal';
 
 import { respondRenewalRequest } from '../api/renewal';
 import { AudioPlayer } from './AudioPlayer';
@@ -139,6 +140,7 @@ interface Track {
   audio_url?: string;
   sales_count: number;
   revenue: number;
+  play_count: number;
 }
 
 interface Proposal {
@@ -260,6 +262,7 @@ export function ProducerDashboard() {
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'paid' | 'declined'>('pending');
   const [openSyncRequests, setOpenSyncRequests] = useState<any[]>([]);
   const [loadingSyncRequests, setLoadingSyncRequests] = useState(true);
@@ -450,7 +453,8 @@ export function ProducerDashboard() {
           stems_url,
           split_sheet_url,
           mp3_url,
-          trackouts_url
+          trackouts_url,
+          play_count
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)
@@ -536,7 +540,8 @@ export function ProducerDashboard() {
         mediaUsage: parseArrayField(track.media_usage),
         bpm: track.bpm,
         sales_count: trackSalesMap[track.id] || 0,
-        revenue: trackRevenueMap[track.id] || 0
+        revenue: trackRevenueMap[track.id] || 0,
+        play_count: track.play_count || 0
       })) || [];
 
       setTracks(tracksWithSales);
@@ -1366,6 +1371,17 @@ export function ProducerDashboard() {
                                   <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
                                   {track.sales_count} sales
                                 </span>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTrack(track);
+                                    setShowAnalyticsModal(true);
+                                  }}
+                                  className="flex items-center hover:text-blue-300 transition-colors"
+                                  title="View Play Analytics"
+                                >
+                                  <Play className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.play_count || 0} plays
+                                </button>
                                 {track.has_vocals && (
                                   <span className="flex items-center">
                                     <Mic className="w-4 h-4 mr-1 text-purple-400" />
@@ -1470,6 +1486,17 @@ export function ProducerDashboard() {
                                   <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
                                   {track.sales_count} sales
                                 </span>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTrack(track);
+                                    setShowAnalyticsModal(true);
+                                  }}
+                                  className="flex items-center hover:text-blue-300 transition-colors"
+                                  title="View Play Analytics"
+                                >
+                                  <Play className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.play_count || 0} plays
+                                </button>
                                 {track.has_vocals && (
                                   <span className="flex items-center">
                                     <Mic className="w-4 h-4 mr-1 text-purple-400" />
@@ -1982,6 +2009,17 @@ export function ProducerDashboard() {
           }}
           track={selectedTrack}
           onUpdate={fetchDashboardData}
+        />
+      )}
+
+      {selectedTrack && showAnalyticsModal && (
+        <TrackAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => {
+            setShowAnalyticsModal(false);
+            setSelectedTrack(null);
+          }}
+          track={selectedTrack}
         />
       )}
 
