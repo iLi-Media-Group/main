@@ -66,7 +66,6 @@ export async function getDailyPlaysForTrack(trackId: string) {
  */
 export async function getTopTracksThisMonth() {
   try {
-    // First try to get data from track_plays table if it exists
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -78,7 +77,7 @@ export async function getTopTracksThisMonth() {
         tracks!inner(
           title,
           artist,
-          producer:producer_id(
+          producer:track_producer_id(
             first_name,
             last_name
           )
@@ -87,14 +86,13 @@ export async function getTopTracksThisMonth() {
       .gte('played_at', startOfMonth.toISOString());
 
     if (error) {
-      console.log('track_plays table not available yet, using fallback:', error.message);
-      // Fallback: get top tracks by play_count from tracks table
-      return await getTopTracksFallback();
+      console.error('Error fetching top tracks:', error);
+      return [];
     }
 
     if (!data || data.length === 0) {
-      console.log('No track_plays data yet, using fallback');
-      return await getTopTracksFallback();
+      console.log('No track_plays data found');
+      return [];
     }
 
     // Count plays per track
@@ -121,44 +119,7 @@ export async function getTopTracksThisMonth() {
       .slice(0, 10);
   } catch (err) {
     console.error('Error processing top tracks:', err);
-    return await getTopTracksFallback();
-  }
-}
-
-// Fallback function when track_plays table doesn't exist yet
-async function getTopTracksFallback() {
-  try {
-    const { data, error } = await supabase
-      .from('tracks')
-      .select(`
-        id,
-        title,
-        artist,
-        play_count,
-        producer:producer_id(
-          first_name,
-          last_name
-        )
-      `)
-      .order('play_count', { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error('Error fetching fallback top tracks:', error);
-      return [];
-    }
-
-    return data?.map(track => ({
-      title: track.title,
-      artist: track.artist,
-      producer: track.producer ? {
-        firstName: track.producer.first_name,
-        lastName: track.producer.last_name
-      } : undefined,
-      plays: track.play_count || 0
-    })) || [];
-  } catch (err) {
-    console.error('Error in fallback top tracks:', err);
     return [];
   }
 }
+
