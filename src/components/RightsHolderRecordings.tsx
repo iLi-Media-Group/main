@@ -44,6 +44,7 @@ import { useCurrentPlan } from '../hooks/useCurrentPlan';
 import { PremiumFeatureNotice } from './PremiumFeatureNotice';
 import { uploadFile } from '../lib/storage';
 import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { TrackAnalyticsModal } from './TrackAnalyticsModal';
 
 interface Track {
   id: string;
@@ -74,6 +75,7 @@ interface Track {
   mp3_url?: string;
   trackouts_url?: string;
   deleted_at?: string;
+  play_count?: number;
 }
 
 interface EditFormData {
@@ -104,6 +106,7 @@ export function RightsHolderRecordings() {
   });
   const [saving, setSaving] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
 
   // Robust edit state
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -678,6 +681,18 @@ export function RightsHolderRecordings() {
                       {recording.duration && <span>{formatDuration(recording.duration)}</span>}
               </div>
 
+                    <button
+                      onClick={() => {
+                        setSelectedRecording(recording);
+                        setShowAnalyticsModal(true);
+                      }}
+                      className="flex items-center text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                      title="View Play Analytics"
+                    >
+                      <Play className="w-4 h-4 mr-1" />
+                      {recording.play_count || 0} plays
+                    </button>
+
                     <div className="text-sm text-gray-400">
                       <p><strong>Genres:</strong> {formatGenresForDisplay(recording.genres)}</p>
                       <p><strong>Moods:</strong> {formatMoodsForDisplay(recording.moods)}</p>
@@ -1180,6 +1195,17 @@ export function RightsHolderRecordings() {
               </div>
             </div>
           </div>
+        )}
+
+        {selectedRecording && showAnalyticsModal && (
+          <TrackAnalyticsModal
+            isOpen={showAnalyticsModal}
+            onClose={() => {
+              setShowAnalyticsModal(false);
+              setSelectedRecording(null);
+            }}
+            track={selectedRecording}
+          />
         )}
       </div>
     </div>
