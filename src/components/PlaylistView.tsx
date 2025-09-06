@@ -47,6 +47,7 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
       title={track.title}
       audioId={audioId}
       size="md"
+      trackId={track.id}
     />
   );
 }

@@ -361,7 +361,7 @@ export default function RightsHolderCustomSyncSubs() {
 
                           {submission.track_url && (
                             <div className="mb-3">
-                              <AudioPlayer audioUrl={submission.track_url} />
+                              <AudioPlayer src={submission.track_url} title={submission.track_name || 'Track'} trackId={submission.track_id} />
                             </div>
                           )}
 

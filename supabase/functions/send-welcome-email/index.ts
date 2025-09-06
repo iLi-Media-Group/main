@@ -18,10 +18,10 @@ async function getWelcomePDF() {
   }
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  };
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -64,13 +64,13 @@ serve(async (req) => {
       }
 
       // Regular email sending logic
-      if (!email) {
-        console.error('Email is required');
-        return new Response("Email is required", { 
-          status: 400,
-          headers: corsHeaders
-        });
-      }
+    if (!email) {
+      console.error('Email is required');
+      return new Response("Email is required", { 
+        status: 400,
+        headers: corsHeaders
+      });
+    }
     
       console.log('Welcome email request received:', { email, first_name, account_type });
       
@@ -78,22 +78,22 @@ serve(async (req) => {
       const pdfBytes = await getWelcomePDF();
       const pdfBase64 = btoa(String.fromCharCode(...pdfBytes));
 
-      // Customize email content based on account type
-      let subject = `Welcome to MyBeatFi, ${first_name || 'there'}!`;
-      let welcomeMessage = "Thanks for signing up. You're now part of a global community of creatives ready to license, sync, and discover incredible music.";
-      
-      if (account_type === 'producer') {
-        subject = `Welcome to MyBeatFi Producer Network, ${first_name || 'there'}!`;
-        welcomeMessage = "Congratulations on joining the MyBeatFi Producer Network! You're now part of an exclusive community of talented producers ready to license your music worldwide.";
-      } else if (account_type === 'artist_band') {
-        subject = `Welcome to MyBeatFi Artist Network, ${first_name || 'there'}!`;
-        welcomeMessage = "Welcome to the MyBeatFi Artist Network! You're now part of a community of artists and bands ready to license your music for sync opportunities.";
-      } else if (account_type === 'rights_holder') {
-        subject = `Welcome to MyBeatFi Rights Holder Network, ${first_name || 'there'}!`;
-        welcomeMessage = "Welcome to the MyBeatFi Rights Holder Network! You're now part of a community of record labels and publishers managing music licensing.";
-      }
+    // Customize email content based on account type
+    let subject = `Welcome to MyBeatFi, ${first_name || 'there'}!`;
+    let welcomeMessage = "Thanks for signing up. You're now part of a global community of creatives ready to license, sync, and discover incredible music.";
+    
+    if (account_type === 'producer') {
+      subject = `Welcome to MyBeatFi Producer Network, ${first_name || 'there'}!`;
+      welcomeMessage = "Congratulations on joining the MyBeatFi Producer Network! You're now part of an exclusive community of talented producers ready to license your music worldwide.";
+    } else if (account_type === 'artist_band') {
+      subject = `Welcome to MyBeatFi Artist Network, ${first_name || 'there'}!`;
+      welcomeMessage = "Welcome to the MyBeatFi Artist Network! You're now part of a community of artists and bands ready to license your music for sync opportunities.";
+    } else if (account_type === 'rights_holder') {
+      subject = `Welcome to MyBeatFi Rights Holder Network, ${first_name || 'there'}!`;
+      welcomeMessage = "Welcome to the MyBeatFi Rights Holder Network! You're now part of a community of record labels and publishers managing music licensing.";
+    }
 
-      const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
   <head>
     <style>
@@ -149,10 +149,10 @@ serve(async (req) => {
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <img class="logo" src="https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/logos/logo-1753301925481" alt="MyBeatFi Logo" />
-        <div class="title">Welcome to MyBeatFi.io, ${first_name || 'there'}!</div>
-      </div>
+             <div class="header">
+         <img class="logo" src="https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/logos/logo-1753301925481" alt="MyBeatFi Logo" />
+         <div class="title">Welcome to MyBeatFi.io, ${first_name || 'there'}!</div>
+       </div>
       <div class="body-text">
         ${welcomeMessage}
         <br /><br />
@@ -177,44 +177,44 @@ serve(async (req) => {
   </body>
 </html>`;
 
-      console.log('Sending email via Resend...');
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "MyBeatFi <welcome@mybeatfi.io>",
-          to: email,
-          subject: subject,
-          html,
-          attachments: [
-            {
-              filename: "Welcome-Guide.pdf",
-              content: pdfBase64,
-              type: "application/pdf",
-            },
-          ],
-          tags: [{ name: "signup", value: "new_user" }, { name: "account_type", value: account_type }]
-        }),
-      });
+    console.log('Sending email via Resend...');
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Deno.env.get("RESEND_API_KEY")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "MyBeatFi <welcome@mybeatfi.io>",
+        to: email,
+        subject: subject,
+        html,
+        attachments: [
+          {
+            filename: "Welcome-Guide.pdf",
+            content: pdfBase64,
+            type: "application/pdf",
+          },
+        ],
+        tags: [{ name: "signup", value: "new_user" }, { name: "account_type", value: account_type }]
+      }),
+    });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Email send failed:", errorText);
-        return new Response(`Failed to send welcome email: ${errorText}`, { 
-          status: 500,
-          headers: corsHeaders
-        });
-      }
-
-      const result = await response.json();
-      console.log('Email sent successfully:', result);
-      return new Response("Welcome email sent!", { 
-        status: 200,
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Email send failed:", errorText);
+      return new Response(`Failed to send welcome email: ${errorText}`, { 
+        status: 500,
         headers: corsHeaders
       });
+    }
+
+    const result = await response.json();
+    console.log('Email sent successfully:', result);
+    return new Response("Welcome email sent!", { 
+      status: 200,
+      headers: corsHeaders
+    });
     }
 
     // Handle GET requests

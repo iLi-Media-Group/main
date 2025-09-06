@@ -22,6 +22,7 @@ export interface Track {
   splitSheetUrl?: string;
   hasVocals?: boolean; // Boolean: true if track has vocals
   isSyncOnly?: boolean; // Boolean: true if track is sync-only (not available for regular licensing)
+  play_count?: number; // Number of times this track has been played
   producerId: string; // Added explicit producerId field
   producer?: {
     id: string;

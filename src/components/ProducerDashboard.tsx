@@ -47,6 +47,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
       title={track.title}
       size="md"
       audioId={`track-${track.id}`}
+      trackId={track.id}
     />
   );
 }

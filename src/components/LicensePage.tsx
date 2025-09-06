@@ -175,7 +175,7 @@ export function LicensePage() {
               <p className="text-gray-400 mb-4">{track.artist}</p>
 
               <div className="mb-6">
-                <AudioPlayer src={track.audioUrl} title={track.title} audioId={`track-${track.id}`} />
+                <AudioPlayer src={track.audioUrl} title={track.title} audioId={`track-${track.id}`} trackId={track.id} />
               </div>
 
               <div className="space-y-4">

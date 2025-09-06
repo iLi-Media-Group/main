@@ -162,6 +162,7 @@ const AudioPlayerWithSignedUrl = ({
       onToggle={onToggle}
       size={size}
       audioId={audioId}
+      trackId={track?.id}
     />
   );
 };

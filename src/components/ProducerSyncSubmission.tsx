@@ -616,7 +616,7 @@ export default function ProducerSyncSubmission() {
                     {/* Audio player for the submission */}
                     {sub.track_url && (
                       <div className="mt-2">
-                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" audioId={`submission-${sub.id}`} />
+                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" audioId={`submission-${sub.id}`} trackId={sub.track_id} />
                       </div>
                     )}
                     {favoritedIds.has(sub.id) && (

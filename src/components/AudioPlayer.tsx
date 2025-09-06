@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useGlobalAudioManager } from '../hooks/useGlobalAudioManager';
+import { logTrackPlay } from '../lib/trackPlays';
 
 interface AudioPlayerProps {
   src: string;
@@ -12,6 +13,7 @@ interface AudioPlayerProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   audioId?: string; // Unique identifier for this audio player
+  trackId?: string; // Track ID for play counting
 }
 
 export function AudioPlayer({ 
@@ -23,7 +25,8 @@ export function AudioPlayer({
   onToggle,
   className = '',
   size = 'md',
-  audioId
+  audioId,
+  trackId
 }: AudioPlayerProps) {
   console.log('🎵 AudioPlayer component rendered with src:', src, 'title:', title, 'audioId:', audioId);
   const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
@@ -152,6 +155,12 @@ export function AudioPlayer({
         // Use global audio manager to play
         play(uniqueAudioId, audioRef.current);
         setInternalIsPlaying(true);
+        
+        // Log the track play if trackId is provided
+        if (trackId) {
+          logTrackPlay(trackId);
+        }
+        
         if (onPlay) onPlay();
       }
     }

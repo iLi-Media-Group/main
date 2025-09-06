@@ -217,6 +217,7 @@ export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
                 title={track.title}
                 size="sm"
                 audioId={`track-${track.id}`}
+                trackId={track.id}
               />
             </div>
           </div>
