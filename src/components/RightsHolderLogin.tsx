@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, Building2, Mail, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { VideoBackground } from './VideoBackground';
 
 export function RightsHolderLogin() {
   const navigate = useNavigate();
@@ -58,8 +59,17 @@ export function RightsHolderLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-900/90 flex items-center justify-center p-4">
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      {/* Rights Holder Business Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1920&q=80"
+        page="rights-holder-login"
+        alt="Rights holder business background"
+      />
+      
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-card p-8 rounded-xl backdrop-blur-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Building2 className="w-8 h-8 text-blue-400 mr-2" />
@@ -183,6 +193,7 @@ export function RightsHolderLogin() {
             </Link>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );

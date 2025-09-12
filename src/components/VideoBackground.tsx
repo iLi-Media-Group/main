@@ -62,7 +62,10 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
       }
 
       // Check if user is authenticated using unified auth
-      if (!user) {
+      // For login and signup pages, always try to show video background regardless of auth status
+      const isLoginPage = page && (page.includes('login') || page.includes('signin'));
+      const isSignupPage = page === 'signup';
+      if (!user && !isLoginPage && !isSignupPage) {
         console.log('No authenticated user, using default background');
         setBackgroundAsset(null);
         setLoading(false);
@@ -113,12 +116,15 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   const finalVideoUrl = backgroundAsset?.type === 'video' ? backgroundAsset.url : videoUrl;
   const finalFallbackImage = backgroundAsset?.type === 'image' ? backgroundAsset.url : fallbackImage;
   
-  // For signup page, always use fallback image to ensure reliability
-  const shouldUseFallback = page === 'signup' || !finalVideoUrl || finalVideoUrl.includes('vimeo.com');
+  // For login pages, prefer video background unless there's an error or it's a Vimeo URL
+  // For signup page, allow background management but prefer reliability
+  const isLoginPage = page && (page.includes('login') || page.includes('signin'));
+  const isSignupPage = page === 'signup';
+  const shouldUseFallback = (!isLoginPage && !isSignupPage && !finalVideoUrl) || finalVideoUrl.includes('vimeo.com');
 
   return (
     <div className="absolute inset-0 w-full h-full">
-      {backgroundAsset?.type === 'video' && !isVideoError && !loading && !shouldUseFallback ? (
+      {((backgroundAsset?.type === 'video') || ((isLoginPage || isSignupPage) && finalVideoUrl && !finalVideoUrl.includes('vimeo.com'))) && !isVideoError && !loading && !shouldUseFallback ? (
         <video
           autoPlay
           muted

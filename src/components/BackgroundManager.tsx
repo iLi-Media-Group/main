@@ -35,6 +35,8 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
     { id: 'hero', name: 'Hero Section' },
     { id: 'client-login', name: 'Client Login' },
     { id: 'producer-login', name: 'Producer Login' },
+    { id: 'artist-login', name: 'Artist/Band Login' },
+    { id: 'rights-holder-login', name: 'Rights Holder Login' },
     { id: 'white-label-login', name: 'White Label Login' },
     { id: 'signup', name: 'Create Account' },
     { id: 'about', name: 'About Us' },

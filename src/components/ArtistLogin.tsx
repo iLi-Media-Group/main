@@ -3,6 +3,7 @@ import { Mail, Lock, Music, AlertCircle } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { VideoBackground } from './VideoBackground';
 
 const ArtistLogin: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -45,8 +46,17 @@ const ArtistLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-blue-500/20">
+    <div className="relative min-h-screen flex items-center justify-center px-4 overflow-hidden">
+      {/* Artist/Band Music Production Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=1920&q=80"
+        page="artist-login"
+        alt="Artist music production background"
+      />
+      
+      <div className="relative z-10 w-full max-w-md">
+        <div className="glass-card p-8 rounded-xl backdrop-blur-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <Music className="w-12 h-12 text-blue-400" />
@@ -129,6 +139,7 @@ const ArtistLogin: React.FC = () => {
           >
             Forgot your password?
           </a>
+        </div>
         </div>
       </div>
     </div>
