@@ -159,60 +159,29 @@ const ArtistApplicationForm: React.FC = () => {
 
   const calculateQuizScore = (data: typeof formData): number => {
     let score = 0;
-    
-    console.log('Quiz answers received:', {
-      q1: data.quiz_question_1,
-      q2: data.quiz_question_2,
-      q3: data.quiz_question_3,
-      q4: data.quiz_question_4,
-      q5: data.quiz_question_5
-    });
-    
-    // Check if all quiz questions are answered
-    const allQuestionsAnswered = data.quiz_question_1 && data.quiz_question_2 && 
-                                data.quiz_question_3 && data.quiz_question_4 && data.quiz_question_5;
-    
-    if (!allQuestionsAnswered) {
-      console.log('Not all quiz questions answered, score: 0');
-      return 0;
-    }
-    
-    // Question 1: One-stop definition
-    if (data.quiz_question_1 === 'C') {
-      score += 1;
-      console.log('Q1 correct: +1 point');
-    }
-    
-    // Question 2: Sync license definition
-    if (data.quiz_question_2 === 'B') {
-      score += 1;
-      console.log('Q2 correct: +1 point');
-    }
-    
-    // Question 3: Multiple choice - both B and C (fix the logic)
-    if (data.quiz_question_3) {
-      const answers = data.quiz_question_3.split(',').map(a => a.trim()).filter(Boolean);
-      console.log('Q3 answers:', answers);
-      if (answers.includes('B') && answers.includes('C')) {
-        score += 1;
-        console.log('Q3 correct: +1 point');
+    const totalQuestions = quizQuestions.length;
+
+    quizQuestions.forEach((question, index) => {
+      const userAnswer = data[`quiz_question_${index + 1}` as keyof typeof data] as string;
+      
+      if (question.isMultipleChoice) {
+        // For multiple choice questions, check if user selected all correct answers
+        const userAnswers = userAnswer ? userAnswer.split(',').sort() : [];
+        const correctAnswers = question.correctAnswers ? question.correctAnswers.sort() : [];
+        
+        if (userAnswers.length === correctAnswers.length && 
+            userAnswers.every((answer, i) => answer === correctAnswers[i])) {
+          score++;
+        }
+      } else {
+        // For single choice questions
+        if (userAnswer === question.correctAnswer) {
+          score++;
+        }
       }
-    }
-    
-    // Question 4: Master vs sync license
-    if (data.quiz_question_4 === 'C') {
-      score += 1;
-      console.log('Q4 correct: +1 point');
-    }
-    
-    // Question 5: What's NOT included in sync license
-    if (data.quiz_question_5 === 'B') {
-      score += 1;
-      console.log('Q5 correct: +1 point');
-    }
-    
-    console.log('Final quiz score:', score);
-    return score;
+    });
+
+    return Math.round((score / totalQuestions) * 100);
   };
 
   const calculateScore = (data: typeof formData): number => {
@@ -274,16 +243,25 @@ const ArtistApplicationForm: React.FC = () => {
         accountManagement: 5
       };
 
+      const submissionData = {
+        ...formData,
+        // Ensure quiz fields are never null
+        quiz_question_1: formData.quiz_question_1 || '',
+        quiz_question_2: formData.quiz_question_2 || '',
+        quiz_question_3: formData.quiz_question_3 || '',
+        quiz_question_4: formData.quiz_question_4 || '',
+        quiz_question_5: formData.quiz_question_5 || '',
+        application_score: score,
+        quiz_score: quizScore,
+        quiz_completed: true,
+        quiz_total_questions: 5,
+        score_breakdown: scoreBreakdown,
+        status: 'new'
+      };
+
       const { error } = await supabase
         .from('artist_applications')
-        .insert({
-          ...formData,
-          application_score: score,
-          quiz_score: quizScore,
-          quiz_completed: true,
-          score_breakdown: scoreBreakdown,
-          status: 'new'
-        });
+        .insert(submissionData);
 
       if (error) throw error;
 

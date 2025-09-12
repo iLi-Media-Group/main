@@ -1727,13 +1727,13 @@ export default function ProducerApplicationsAdmin() {
                 <h3 className="text-lg font-semibold mb-3 text-white">Sync Licensing & Quiz</h3>
                 <div className="space-y-2 text-sm text-white">
                   <p><strong>Sync Licensing Course:</strong> {selectedApplication.sync_licensing_course || 'N/A'}</p>
-                  <p><strong>Quiz Score:</strong> {selectedApplication.quiz_score || 0}/{selectedApplication.quiz_total_questions || 5}</p>
+                  <p><strong>Quiz Score:</strong> {selectedApplication.quiz_score || 0}/100</p>
                   <p><strong>Quiz Completed:</strong> {selectedApplication.quiz_completed ? 'Yes' : 'No'}</p>
-                  <p><strong>Q1 Answer:</strong> {selectedApplication.quiz_question_1 || 'N/A'}</p>
-                  <p><strong>Q2 Answer:</strong> {selectedApplication.quiz_question_2 || 'N/A'}</p>
-                  <p><strong>Q3 Answer:</strong> {selectedApplication.quiz_question_3 || 'N/A'}</p>
-                  <p><strong>Q4 Answer:</strong> {selectedApplication.quiz_question_4 || 'N/A'}</p>
-                  <p><strong>Q5 Answer:</strong> {selectedApplication.quiz_question_5 || 'N/A'}</p>
+                  <p><strong>Q1 Answer:</strong> {selectedApplication.quiz_question_1 || '(empty)'}</p>
+                  <p><strong>Q2 Answer:</strong> {selectedApplication.quiz_question_2 || '(empty)'}</p>
+                  <p><strong>Q3 Answer:</strong> {selectedApplication.quiz_question_3 || '(empty)'}</p>
+                  <p><strong>Q4 Answer:</strong> {selectedApplication.quiz_question_4 || '(empty)'}</p>
+                  <p><strong>Q5 Answer:</strong> {selectedApplication.quiz_question_5 || '(empty)'}</p>
                 </div>
               </div>
               

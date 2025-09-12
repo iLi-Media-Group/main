@@ -1063,6 +1063,16 @@ export default function ApplicationsAdmin() {
                           </Button>
                         )}
                         {/* Buttons for applications in manual review */}
+                        {app.status === 'manual_review' && (
+                          <Button
+                            onClick={() => updateApplicationStatus(app.id, 'onboarded', selectedType)}
+                            size="sm"
+                            className="bg-purple-600 hover:bg-purple-700"
+                            title="Move to Onboarded"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+                        )}
                         {app.status === 'manual_review' && selectedType === 'rights_holder' && (
                           <Button
                             onClick={() => handleRightsHolderQuickInvite(app as RightsHolderApplication)}
@@ -1147,13 +1157,13 @@ export default function ApplicationsAdmin() {
                    <div>
                      <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
                      <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ProducerApplication).sync_licensing_course || 'N/A'}</p>
-                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ProducerApplication).quiz_score || 0}/{(selectedApplication as ProducerApplication).quiz_total_questions || 5}</p>
+                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ProducerApplication).quiz_score || 0}/100</p>
                      <p className="text-gray-300">Quiz Completed: {(selectedApplication as ProducerApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ProducerApplication).quiz_question_1 || 'N/A'}</p>
-                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ProducerApplication).quiz_question_2 || 'N/A'}</p>
-                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ProducerApplication).quiz_question_3 || 'N/A'}</p>
-                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ProducerApplication).quiz_question_4 || 'N/A'}</p>
-                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ProducerApplication).quiz_question_5 || 'N/A'}</p>
+                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ProducerApplication).quiz_question_1 || '(empty)'}</p>
+                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ProducerApplication).quiz_question_2 || '(empty)'}</p>
+                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ProducerApplication).quiz_question_3 || '(empty)'}</p>
+                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ProducerApplication).quiz_question_4 || '(empty)'}</p>
+                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ProducerApplication).quiz_question_5 || '(empty)'}</p>
                    </div>
 
                    <div>
@@ -1244,13 +1254,13 @@ export default function ApplicationsAdmin() {
                    <div>
                      <h3 className="text-white font-semibold mb-2">Sync Licensing & Quiz</h3>
                      <p className="text-gray-300">Sync Licensing Course: {(selectedApplication as ArtistApplication).sync_licensing_course || 'N/A'}</p>
-                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/{(selectedApplication as ArtistApplication).quiz_total_questions || 5}</p>
+                     <p className="text-gray-300">Quiz Score: {(selectedApplication as ArtistApplication).quiz_score || 0}/100</p>
                      <p className="text-gray-300">Quiz Completed: {(selectedApplication as ArtistApplication).quiz_completed ? 'Yes' : 'No'}</p>
-                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1 || 'N/A'}</p>
-                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2 || 'N/A'}</p>
-                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3 || 'N/A'}</p>
-                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4 || 'N/A'}</p>
-                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5 || 'N/A'}</p>
+                     <p className="text-gray-300">Q1 Answer: {(selectedApplication as ArtistApplication).quiz_question_1 || '(empty)'}</p>
+                     <p className="text-gray-300">Q2 Answer: {(selectedApplication as ArtistApplication).quiz_question_2 || '(empty)'}</p>
+                     <p className="text-gray-300">Q3 Answer: {(selectedApplication as ArtistApplication).quiz_question_3 || '(empty)'}</p>
+                     <p className="text-gray-300">Q4 Answer: {(selectedApplication as ArtistApplication).quiz_question_4 || '(empty)'}</p>
+                     <p className="text-gray-300">Q5 Answer: {(selectedApplication as ArtistApplication).quiz_question_5 || '(empty)'}</p>
                    </div>
 
                    <div>
@@ -1466,6 +1476,66 @@ export default function ApplicationsAdmin() {
                       >
                         <Clock className="w-4 h-4 mr-1" />
                         Manual Review
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          updateApplicationStatus(selectedApplication.id, 'save_for_later', selectedType);
+                          setShowApplicationModal(false);
+                        }}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                        size="sm"
+                      >
+                        <Save className="w-4 h-4 mr-1" />
+                        Save for Later
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          updateApplicationStatus(selectedApplication.id, 'declined', selectedType);
+                          setShowApplicationModal(false);
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        Decline
+                      </Button>
+                    </>
+                  )}
+
+                  {/* Manual Review Applications Actions */}
+                  {selectedApplication.status === 'manual_review' && (
+                    <>
+                      <Button
+                        onClick={() => {
+                          updateApplicationStatus(selectedApplication.id, 'onboarded', selectedType);
+                          setShowApplicationModal(false);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Onboarded
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          updateApplicationStatus(selectedApplication.id, 'invited', selectedType);
+                          setShowApplicationModal(false);
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        size="sm"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Move to Invited
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          updateApplicationStatus(selectedApplication.id, 'new', selectedType);
+                          setShowApplicationModal(false);
+                        }}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        size="sm"
+                      >
+                        Move to New
                       </Button>
                       <Button
                         onClick={() => {
