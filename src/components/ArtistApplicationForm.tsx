@@ -117,6 +117,13 @@ const ArtistApplicationForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // Debug error state changes
+  useEffect(() => {
+    if (error) {
+      console.log('Error state changed to:', error);
+    }
+  }, [error]);
   const [success, setSuccess] = useState(false);
 
   // Load saved form data on component mount
@@ -129,6 +136,9 @@ const ArtistApplicationForm: React.FC = () => {
         setFormData(JSON.parse(savedData));
       } catch (e) {
         console.error('Error parsing saved form data:', e);
+        // Clear corrupted data
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        localStorage.removeItem(FORM_STEP_KEY);
       }
     }
     
@@ -145,6 +155,14 @@ const ArtistApplicationForm: React.FC = () => {
     localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
     localStorage.setItem(FORM_STEP_KEY, currentStep.toString());
   }, [formData, currentStep]);
+
+  // Clear errors when reaching the quiz step
+  useEffect(() => {
+    if (currentStep === 7) { // Quiz step
+      setError('');
+      setLoading(false);
+    }
+  }, [currentStep]);
 
   // Prevent accidental page refresh
   useRefreshPrevention();
@@ -324,7 +342,9 @@ const ArtistApplicationForm: React.FC = () => {
       setLoading(false);
     } catch (err) {
       console.error('Error submitting application:', err);
-      setError(err instanceof Error ? err.message : 'Failed to submit application');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit application';
+      console.log('Setting error message:', errorMessage);
+      setError(errorMessage);
       setLoading(false);
     }
   };
