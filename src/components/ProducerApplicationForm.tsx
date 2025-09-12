@@ -257,8 +257,7 @@ const ProducerApplicationForm: React.FC = () => {
         break;
       
       case 6: // Quiz
-        // Make quiz validation less strict - allow submission even if some questions are missed
-        // This prevents users from getting stuck if they can't answer all questions
+        // Allow submission even if no quiz questions are answered - will auto-decline
         break;
       
       default:
@@ -316,6 +315,53 @@ const ProducerApplicationForm: React.FC = () => {
 
     setSubmitting(true);
     setError(null);
+    
+    // Check if any quiz questions are answered
+    const hasQuizAnswers = formData.quiz_question_1 || formData.quiz_question_2 || 
+                          formData.quiz_question_3 || formData.quiz_question_4 || 
+                          formData.quiz_question_5;
+    
+    // If no quiz questions are answered, auto-decline the application
+    if (!hasQuizAnswers) {
+      // Check if AI-generated music is "Yes" - this is a disqualifying factor
+      const isDisqualified = formData.ai_generated_music === 'Yes';
+      
+      const submissionData = {
+        ...formData,
+        // Ensure quiz fields are never null
+        quiz_question_1: formData.quiz_question_1 || '',
+        quiz_question_2: formData.quiz_question_2 || '',
+        quiz_question_3: formData.quiz_question_3 || '',
+        quiz_question_4: formData.quiz_question_4 || '',
+        quiz_question_5: formData.quiz_question_5 || '',
+        quiz_score: 0,
+        quiz_completed: false,
+        quiz_total_questions: 5,
+        auto_disqualified: isDisqualified,
+        status: 'declined',
+        rejection_reason: 'Application declined: No quiz questions answered',
+        is_auto_rejected: true,
+        // Ensure screening questions are never null
+        signed_to_label: formData.signed_to_label || '',
+        signed_to_publisher: formData.signed_to_publisher || '',
+        signed_to_manager: formData.signed_to_manager || '',
+        entity_collects_payment: formData.entity_collects_payment || '',
+        production_master_percentage: formData.production_master_percentage || 0
+      };
+      
+      console.log('Submitting declined application data:', submissionData);
+      
+      const { error } = await supabase.from('producer_applications').insert([submissionData]);
+      if (error) {
+        setError(error.message);
+      } else {
+        setSuccess(true);
+        setFormData(initialFormData);
+        clearSavedFormData(); // Clear saved data after successful submission
+      }
+      setSubmitting(false);
+      return;
+    }
     
     // Calculate quiz score
     const quizScore = calculateQuizScore();
@@ -1182,7 +1228,7 @@ const ProducerApplicationForm: React.FC = () => {
                               name={`quiz_question_${index + 1}`}
                               value={String.fromCharCode(65 + optionIndex)} // A, B, C, D
                               checked={question.isMultipleChoice 
-                                ? formData[`quiz_question_${index + 1}` as keyof typeof formData]?.includes(String.fromCharCode(65 + optionIndex))
+                                ? (formData[`quiz_question_${index + 1}` as keyof typeof formData] as string)?.includes(String.fromCharCode(65 + optionIndex))
                                 : formData[`quiz_question_${index + 1}` as keyof typeof formData] === String.fromCharCode(65 + optionIndex)
                               }
                               onChange={(e) => {

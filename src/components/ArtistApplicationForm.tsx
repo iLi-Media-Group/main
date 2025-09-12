@@ -232,6 +232,56 @@ const ArtistApplicationForm: React.FC = () => {
     setError('');
 
     try {
+      // Check if any quiz questions are answered
+      const hasQuizAnswers = formData.quiz_question_1 || formData.quiz_question_2 || 
+                            formData.quiz_question_3 || formData.quiz_question_4 || 
+                            formData.quiz_question_5;
+      
+      // If no quiz questions are answered, auto-decline the application
+      if (!hasQuizAnswers) {
+        const score = calculateScore(formData);
+        const scoreBreakdown = {
+          basicProfile: 20,
+          production: 15,
+          ownership: 25,
+          catalog: 20,
+          syncSuitability: 15,
+          accountManagement: 5
+        };
+
+        const submissionData = {
+          ...formData,
+          // Ensure quiz fields are never null
+          quiz_question_1: formData.quiz_question_1 || '',
+          quiz_question_2: formData.quiz_question_2 || '',
+          quiz_question_3: formData.quiz_question_3 || '',
+          quiz_question_4: formData.quiz_question_4 || '',
+          quiz_question_5: formData.quiz_question_5 || '',
+          application_score: score,
+          quiz_score: 0,
+          quiz_completed: false,
+          quiz_total_questions: 5,
+          score_breakdown: scoreBreakdown,
+          status: 'declined',
+          rejection_reason: 'Application declined: No quiz questions answered'
+        };
+
+        const { error } = await supabase
+          .from('artist_applications')
+          .insert(submissionData);
+
+        if (error) throw error;
+
+        // Clear saved form data
+        localStorage.removeItem(FORM_STORAGE_KEY);
+        localStorage.removeItem(FORM_STEP_KEY);
+        clearUnsavedChanges();
+
+        setSuccess(true);
+        setLoading(false);
+        return;
+      }
+
       const score = calculateScore(formData);
       const quizScore = calculateQuizScore(formData);
       const scoreBreakdown = {
