@@ -1213,6 +1213,11 @@ const ProducerApplicationForm: React.FC = () => {
                     <p className="text-gray-300 text-sm">
                       Please answer these questions about sync licensing. This helps us understand your knowledge level.
                     </p>
+                    <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                      <p className="text-yellow-200 text-sm font-medium">
+                        ⚠️ Completing this quiz is mandatory. Blank answers will auto-disqualify the applicant.
+                      </p>
+                    </div>
                   </div>
                   
                   {quizQuestions.map((question, index) => (
