@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Music, Star, Zap, Gift, PlayCircle, Video, Headphones, FileCheck, Loader2, Mail, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession } from '../lib/stripe';
 import { CryptoPaymentButton } from './CryptoPaymentButton';
@@ -115,7 +115,7 @@ function EmailCheckDialog({ isOpen, onClose, onContinue }: EmailCheckDialogProps
 }
 
 export function GoldAccessPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

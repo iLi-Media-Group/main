@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Percent, Plus, Edit, Trash2, Calendar, Tag, Save, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Percent, Plus, Edit, Trash2, Calendar, Tag, Save, X, Loader2, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Discount {
@@ -11,6 +11,15 @@ interface Discount {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  discount_type: 'automatic' | 'promotion_code';
+  promotion_code: string | null;
+  stripe_coupon_id: string | null;
+  stripe_coupon_created_at: string | null;
+  duration_type: 'once' | 'repeating' | 'forever';
+  duration_in_months: number | null;
+  max_redemptions: number | null;
+  max_redemptions_per_customer: number | null;
+  usage_restrictions: any | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +32,12 @@ interface DiscountFormData {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  discount_type: 'automatic' | 'promotion_code';
+  promotion_code: string;
+  duration_type: 'once' | 'repeating' | 'forever';
+  duration_in_months: number | null;
+  max_redemptions: number | null;
+  max_redemptions_per_customer: number | null;
 }
 
 const APPLICABLE_ITEMS = [
@@ -45,10 +60,10 @@ const APPLICABLE_ITEMS = [
 
 // Mapping of product names to Stripe price IDs for discount application
 const PRODUCT_PRICE_MAPPING = {
-  'single_track': 'price_1RdAeZR8RYA8TFzwVH3MHECa',
-  'gold_access': 'price_1RdAfER8RYA8TFzw7RrrNmtt',
-  'platinum_access': 'price_1RdAfXR8RYA8TFzwFZyaSREP',
-  'ultimate_access': 'price_1RdAfqR8RYA8TFzwKP7zrKsm',
+  'single_track': 'price_1RvLJCA4Yw5viczUrWeCZjom',
+  'gold_access': 'price_1RvLJyA4Yw5viczUwdHhIYAQ',
+  'platinum_access': 'price_1RvLKcA4Yw5viczUItn56P2m',
+  'ultimate_access': 'price_1RvLLRA4Yw5viczUCAGuLpKh',
   'starter': 'white_label_starter', // Custom pricing handled in white-label-checkout
   'pro': 'white_label_pro', // Custom pricing handled in white-label-checkout
   'enterprise': 'white_label_enterprise', // Custom pricing handled in white-label-checkout
@@ -74,7 +89,13 @@ export function DiscountManagement() {
     applies_to: [],
     start_date: '',
     end_date: '',
-    is_active: true
+    is_active: true,
+    discount_type: 'promotion_code',
+    promotion_code: '',
+    duration_type: 'once',
+    duration_in_months: null,
+    max_redemptions: null,
+    max_redemptions_per_customer: null,
   });
 
   useEffect(() => {
@@ -99,6 +120,49 @@ export function DiscountManagement() {
       setError('Failed to load discounts');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createStripeCoupon = async (discountId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-stripe-coupon`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+        body: JSON.stringify({ discount_id: discountId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create Stripe coupon');
+      }
+
+      const result = await response.json();
+      console.log('Stripe coupon created:', result);
+      return result;
+    } catch (error) {
+      console.error('Error creating Stripe coupon:', error);
+      throw error;
+    }
+  };
+
+  const createStripeCouponForExisting = async (discountId: string) => {
+    try {
+      setSaving(true);
+      setError(null);
+      
+      await createStripeCoupon(discountId);
+      setSuccess('Stripe coupon created successfully!');
+      fetchDiscounts(); // Refresh to show updated status
+      
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      console.error('Error creating Stripe coupon:', error);
+      setError('Failed to create Stripe coupon');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -131,7 +195,17 @@ export function DiscountManagement() {
             applies_to: formData.applies_to,
             start_date: formData.start_date,
             end_date: formData.end_date,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            discount_type: formData.discount_type,
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null,
+            duration_type: formData.duration_type,
+            duration_in_months: formData.duration_in_months,
+            max_redemptions: formData.max_redemptions,
+            max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            usage_restrictions: formData.duration_type === 'repeating' ? {
+              max_redemptions: formData.max_redemptions,
+              max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            } : null,
           })
           .eq('id', editingDiscount.id);
 
@@ -139,7 +213,7 @@ export function DiscountManagement() {
         setSuccess('Discount updated successfully');
       } else {
         // Create new discount
-        const { error } = await supabase
+        const { data: newDiscount, error } = await supabase
           .from('discounts')
           .insert({
             name: formData.name,
@@ -148,11 +222,35 @@ export function DiscountManagement() {
             applies_to: formData.applies_to,
             start_date: formData.start_date,
             end_date: formData.end_date,
-            is_active: formData.is_active
-          });
+            is_active: formData.is_active,
+            discount_type: formData.discount_type,
+            promotion_code: formData.discount_type === 'promotion_code' ? formData.promotion_code : null,
+            duration_type: formData.duration_type,
+            duration_in_months: formData.duration_in_months,
+            max_redemptions: formData.max_redemptions,
+            max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            usage_restrictions: formData.duration_type === 'repeating' ? {
+              max_redemptions: formData.max_redemptions,
+              max_redemptions_per_customer: formData.max_redemptions_per_customer,
+            } : null,
+          })
+          .select()
+          .single();
 
         if (error) throw error;
-        setSuccess('Discount created successfully');
+
+        // If this is a promotion code discount, create the Stripe coupon
+        if (formData.discount_type === 'promotion_code' && newDiscount) {
+          try {
+            await createStripeCoupon(newDiscount.id);
+            setSuccess('Discount created successfully and Stripe coupon created!');
+          } catch (stripeError) {
+            console.error('Failed to create Stripe coupon:', stripeError);
+            setSuccess('Discount created successfully, but failed to create Stripe coupon. Please try again.');
+          }
+        } else {
+          setSuccess('Discount created successfully');
+        }
       }
 
       // Reset form and refresh data
@@ -179,7 +277,13 @@ export function DiscountManagement() {
       applies_to: discount.applies_to,
       start_date: discount.start_date,
       end_date: discount.end_date,
-      is_active: discount.is_active
+      is_active: discount.is_active,
+      discount_type: (discount as any).discount_type || 'promotion_code',
+      promotion_code: (discount as any).promotion_code || '',
+      duration_type: (discount as any).duration_type || 'once',
+      duration_in_months: (discount as any).duration_in_months || null,
+      max_redemptions: (discount as any).max_redemptions || null,
+      max_redemptions_per_customer: (discount as any).max_redemptions_per_customer || null,
     });
     setShowForm(true);
   };
@@ -217,7 +321,13 @@ export function DiscountManagement() {
       applies_to: [],
       start_date: '',
       end_date: '',
-      is_active: true
+      is_active: true,
+      discount_type: 'promotion_code',
+      promotion_code: '',
+      duration_type: 'once',
+      duration_in_months: null,
+      max_redemptions: null,
+      max_redemptions_per_customer: null,
     });
     setEditingDiscount(null);
     setShowForm(false);
@@ -250,6 +360,36 @@ export function DiscountManagement() {
     return appliesTo.map(item => 
       APPLICABLE_ITEMS.find(option => option.value === item)?.label || item
     ).join(', ');
+  };
+
+  const getStripeCouponStatus = (discount: Discount) => {
+    if (discount.discount_type !== 'promotion_code') {
+      return null;
+    }
+
+    if (discount.stripe_coupon_id) {
+      return (
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Stripe Coupon Created
+        </span>
+      );
+    }
+
+    return (
+      <button
+        onClick={() => createStripeCouponForExisting(discount.id)}
+        disabled={saving}
+        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 hover:bg-yellow-200 disabled:opacity-50"
+      >
+        {saving ? (
+          <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+        ) : (
+          <AlertCircle className="w-3 h-3 mr-1" />
+        )}
+        Create Stripe Coupon
+      </button>
+    );
   };
 
   if (loading) {
@@ -358,6 +498,20 @@ export function DiscountManagement() {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
+                Promotion Code *
+              </label>
+              <input
+                type="text"
+                value={formData.promotion_code}
+                onChange={(e) => setFormData(prev => ({ ...prev, promotion_code: e.target.value.toUpperCase() }))}
+                className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                placeholder="e.g., WELCOME10, SUMMER20"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Applies To *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -415,6 +569,147 @@ export function DiscountManagement() {
                   className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white focus:border-blue-500 focus:ring focus:ring-blue-500/20"
                   required
                 />
+              </div>
+            </div>
+
+            {/* Duration and Usage Configuration */}
+            <div className="space-y-6">
+              <h4 className="text-lg font-semibold text-white border-b border-blue-500/20 pb-2">Duration & Usage Settings</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Duration Type *
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="once"
+                        checked={formData.duration_type === 'once'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Once (single use per customer)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Once */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Once (Single Use Per Customer)</div>
+                          <div className="space-y-2">
+                            <div>• Each customer can use this coupon <strong>only once</strong></div>
+                            <div>• Example: "WELCOME20" - customer uses it once, then can never use it again</div>
+                            <div>• End date: Coupon expires on the end date regardless of usage</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="repeating"
+                        checked={formData.duration_type === 'repeating'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Repeating (monthly for specified duration)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Repeating */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Repeating (Monthly for Specified Duration)</div>
+                          <div className="space-y-2">
+                            <div>• Customer can use this coupon <strong>every month</strong> for the specified duration</div>
+                            <div>• Example: "SUBSCRIPTION10" - customer gets 10% off every month for 6 months</div>
+                            <div>• End date: Coupon expires on the end date, but customer can use it multiple times before then</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2 text-gray-300 cursor-pointer group relative">
+                      <input
+                        type="radio"
+                        name="duration_type"
+                        value="forever"
+                        checked={formData.duration_type === 'forever'}
+                        onChange={(e) => setFormData(prev => ({ ...prev, duration_type: e.target.value as 'once' | 'repeating' | 'forever' }))}
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">Forever (unlimited duration)</span>
+                      <HelpCircle className="h-4 w-4 text-gray-400 ml-1" />
+                      
+                      {/* Tooltip for Forever */}
+                      <div className="absolute left-0 top-full mt-2 w-80 bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                        <div className="text-sm text-gray-200">
+                          <div className="font-semibold text-white mb-2">Forever (Unlimited Duration)</div>
+                          <div className="space-y-2">
+                            <div>• Customer can use this coupon <strong>unlimited times</strong> until the end date</div>
+                            <div>• Example: "LOYALTY15" - customer can use 15% off as many times as they want</div>
+                            <div>• End date: Coupon expires on the end date, but unlimited usage before then</div>
+                          </div>
+                        </div>
+                        <div className="absolute top-0 left-4 transform -translate-y-1/2 rotate-45 w-2 h-2 bg-gray-900 border-l border-t border-gray-700"></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {formData.duration_type === 'repeating' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Duration (Months)
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.duration_in_months || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, duration_in_months: e.target.value ? parseInt(e.target.value) : null }))}
+                      className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                      placeholder="12"
+                      min="1"
+                      max="60"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Max Redemptions (Total)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_redemptions || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, max_redemptions: e.target.value ? parseInt(e.target.value) : null }))}
+                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                    placeholder="Leave empty for unlimited"
+                    min="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited total redemptions</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    Max Redemptions Per Customer
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.max_redemptions_per_customer || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, max_redemptions_per_customer: e.target.value ? parseInt(e.target.value) : null }))}
+                    className="block w-full px-3 py-2 bg-white/5 border border-blue-500/20 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:ring focus:ring-blue-500/20"
+                    placeholder="Leave empty for unlimited"
+                    min="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited per customer</p>
+                </div>
               </div>
             </div>
 
@@ -484,6 +779,13 @@ export function DiscountManagement() {
                       <span className="text-gray-300">
                         {new Date(discount.start_date).toLocaleDateString()} - {new Date(discount.end_date).toLocaleDateString()}
                       </span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        (discount as any).discount_type === 'promotion_code' 
+                          ? 'bg-purple-500/20 text-purple-400' 
+                          : 'bg-green-500/20 text-green-400'
+                      }`}>
+                        {(discount as any).discount_type === 'promotion_code' ? 'Promotion Code' : 'Automatic'}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -514,6 +816,7 @@ export function DiscountManagement() {
                   </div>
                   <p className="text-sm text-gray-400">{getApplicableItemsText(discount.applies_to)}</p>
                 </div>
+                {getStripeCouponStatus(discount)}
               </div>
             ))}
           </div>

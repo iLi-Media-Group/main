@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Music, Download, Shield, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -17,7 +17,7 @@ interface UserStats {
 
 export function LicensePage() {
   const { trackId } = useParams();
-  const { user, membershipPlan, refreshMembership } = useAuth();
+  const { user, membershipPlan, refreshMembership } = useUnifiedAuth();
   const navigate = useNavigate();
   const [track, setTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,7 +175,7 @@ export function LicensePage() {
               <p className="text-gray-400 mb-4">{track.artist}</p>
 
               <div className="mb-6">
-                <AudioPlayer src={track.audioUrl} title={track.title} />
+                <AudioPlayer src={track.audioUrl} title={track.title} audioId={`track-${track.id}`} trackId={track.id} />
               </div>
 
               <div className="space-y-4">

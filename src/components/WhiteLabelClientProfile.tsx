@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
 import { Upload, Palette, Settings, Save, X, Globe, Image, ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface WhiteLabelClient {
   id: string;
@@ -18,7 +19,7 @@ interface WhiteLabelClient {
 }
 
 export function WhiteLabelClientProfile() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [client, setClient] = useState<WhiteLabelClient | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,12 +38,6 @@ export function WhiteLabelClientProfile() {
     producer_onboarding_enabled: false,
     deep_media_search_enabled: false
   });
-
-  useEffect(() => {
-    if (user) {
-      fetchClientData();
-    }
-  }, [user]);
 
   const fetchClientData = async () => {
     if (!user) return;
@@ -84,6 +79,13 @@ export function WhiteLabelClientProfile() {
       setLoading(false);
     }
   };
+
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchClientData,
+    [user],
+    () => !!user
+  );
 
   const handleLogoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

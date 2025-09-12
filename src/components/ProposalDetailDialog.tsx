@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, AlertCircle, MessageSquare, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface ProposalDetailDialogProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ export function ProposalDetailDialog({
   proposal,
   onAccept
 }: ProposalDetailDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [messages, setMessages] = useState<NegotiationMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

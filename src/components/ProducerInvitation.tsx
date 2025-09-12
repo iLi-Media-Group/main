@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Send, Loader2, Hash } from 'lucide-react';
+import { UserPlus, Send, Loader2, Hash, Mail, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 
 export function ProducerInvitation() {
-  const { user } = useAuth();
-  const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const { user } = useUnifiedAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get pre-filled data from URL parameters
+  const preFilledEmail = searchParams.get('email');
+  const preFilledFirstName = searchParams.get('firstName');
+  const preFilledLastName = searchParams.get('lastName');
+  const applicationId = searchParams.get('applicationId');
+  
+  const [email, setEmail] = useState(preFilledEmail || '');
+  const [firstName, setFirstName] = useState(preFilledFirstName || '');
+  const [lastName, setLastName] = useState(preFilledLastName || '');
   const [producerNumber, setProducerNumber] = useState('');
   const [nextNumber, setNextNumber] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  const [invitationSent, setInvitationSent] = useState(false);
+  const [invitationData, setInvitationData] = useState<any>(null);
 
   useEffect(() => {
     fetchNextProducerNumber();
@@ -131,10 +143,24 @@ export function ProducerInvitation() {
 
       if (insertError) throw insertError;
 
+      // Store invitation data for email sending
+      setInvitationData({
+        email,
+        firstName,
+        lastName,
+        producerNumber,
+        invitationCode
+      });
+      
       setSuccess('Producer invitation created successfully');
-      setEmail('');
-      setFirstName('');
-      setLastName('');
+      setInvitationSent(true);
+      
+      // Only clear form if not pre-filled from application
+      if (!preFilledEmail) {
+        setEmail('');
+        setFirstName('');
+        setLastName('');
+      }
       await fetchNextProducerNumber();
     } catch (err) {
       console.error('Error creating invitation:', err);
@@ -144,6 +170,83 @@ export function ProducerInvitation() {
     }
   };
 
+  const sendInvitationEmail = async () => {
+    if (!invitationData) return;
+    
+    setLoading(true);
+    try {
+      // Create email content
+      const emailSubject = `🎉 Congratulations! You've Been Accepted as a MyBeatFi Producer`;
+      const emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h1 style="color: #6366f1;">🎵 Welcome to MyBeatFi! 🎵</h1>
+          <h2>CONGRATULATIONS!</h2>
+          
+          <p>Dear ${invitationData.firstName} ${invitationData.lastName},</p>
+          
+          <p>We are thrilled to inform you that your producer application has been reviewed and <strong>ACCEPTED</strong>!</p>
+          
+          <div style="background: #f0f9ff; border: 1px solid #0ea5e9; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>📋 Your Producer Details:</h3>
+            <ul>
+              <li><strong>Producer Number:</strong> ${invitationData.producerNumber}</li>
+              <li><strong>Email:</strong> ${invitationData.email}</li>
+              <strong>Status:</strong> ACCEPTED</li>
+            </ul>
+          </div>
+          
+          <h3>🔑 Next Steps:</h3>
+          <ol>
+            <li>Use your Producer Number (${invitationData.producerNumber}) to sign up at: <a href="https://mybeatfi.io/signup">https://mybeatfi.io/signup</a></li>
+            <li>Complete your profile setup</li>
+            <li>Start uploading your tracks and connecting with clients</li>
+          </ol>
+          
+          <p><strong>🎯 Your Producer Number is your unique identifier - keep it safe!</strong></p>
+          
+          <p>Welcome to MyBeatFi!</p>
+          
+          <p>Best regards,<br>The MyBeatFi Team</p>
+        </div>
+      `;
+
+      // Send email using resend email function
+      const { error } = await supabase.functions.invoke('send-email-resend', {
+        body: {
+          to: invitationData.email,
+          subject: emailSubject,
+          html: emailHtml
+        }
+      });
+
+      if (error) throw error;
+
+      setSuccess('Producer invitation email sent successfully!');
+      
+      // Update application status if coming from application
+      if (applicationId) {
+        await supabase
+          .from('producer_applications')
+          .update({ 
+            status: 'invited',
+            review_tier: 'Tier 1',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', applicationId);
+      }
+      
+    } catch (err) {
+      console.error('Error sending invitation email:', err);
+      setError('Failed to send invitation email. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBackToApplications = () => {
+    navigate('/admin/producer-applications');
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
@@ -151,8 +254,16 @@ export function ProducerInvitation() {
           <div>
             <h1 className="text-3xl font-bold text-white">Invite Producer</h1>
             <p className="mt-2 text-gray-400">
-              Create an invitation for a new producer to join the platform
+              {applicationId ? 'Send invitation to accepted producer' : 'Create an invitation for a new producer to join the platform'}
             </p>
+            {applicationId && (
+              <button
+                onClick={handleBackToApplications}
+                className="mt-2 text-purple-400 hover:text-purple-300 text-sm"
+              >
+                ← Back to Applications
+              </button>
+            )}
           </div>
           <UserPlus className="w-12 h-12 text-purple-500" />
         </div>
@@ -256,6 +367,38 @@ export function ProducerInvitation() {
               )}
             </button>
           </form>
+
+          {/* Email Sending Section */}
+          {invitationSent && invitationData && (
+            <div className="mt-8 p-6 bg-green-500/10 border border-green-500/20 rounded-lg">
+              <h3 className="text-lg font-semibold text-green-400 mb-4 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Invitation Created Successfully!
+              </h3>
+              <div className="text-sm text-gray-300 mb-4">
+                <p><strong>Producer Number:</strong> {invitationData.producerNumber}</p>
+                <p><strong>Email:</strong> {invitationData.email}</p>
+                <p><strong>Name:</strong> {invitationData.firstName} {invitationData.lastName}</p>
+              </div>
+              <button
+                onClick={sendInvitationEmail}
+                disabled={loading}
+                className="w-full flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Sending Email...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="w-5 h-5 mr-2" />
+                    Send Congratulations Email
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

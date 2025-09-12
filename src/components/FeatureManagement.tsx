@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Users, ToggleLeft, ToggleRight, Save, Loader2, CheckCircle, AlertCircle, DollarSign, Crown, BarChart3 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface WhiteLabelClient {
   id: string;
@@ -21,7 +21,7 @@ interface FeatureStatus {
 }
 
 export function FeatureManagement() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [clients, setClients] = useState<WhiteLabelClient[]>([]);
   const [featureStatuses, setFeatureStatuses] = useState<Record<string, FeatureStatus>>({});
   const [loading, setLoading] = useState(true);

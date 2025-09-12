@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export function AdminLogin() {
@@ -8,7 +8,7 @@ export function AdminLogin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn } = useUnifiedAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,6 +60,7 @@ export function AdminLogin() {
                 className="mt-1 block w-full rounded-md bg-white/10 border border-gray-600 text-white px-4 py-2 focus:border-purple-500 focus:ring focus:ring-purple-500/20"
                 required
                 disabled={loading}
+                autoComplete="email"
               />
             </div>
             <div>
@@ -74,6 +75,7 @@ export function AdminLogin() {
                 className="mt-1 block w-full rounded-md bg-white/10 border border-gray-600 text-white px-4 py-2 focus:border-purple-500 focus:ring focus:ring-purple-500/20"
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
             <button

@@ -1,13 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, BadgeCheck, Hourglass, Star, Send, MessageCircle } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { Dialog } from './ui/dialog';
 import { AudioPlayer } from './AudioPlayer'; // Added import for AudioPlayer
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 
 export default function ProducerSyncSubmission() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const location = useLocation();
   const [mp3File, setMp3File] = useState<File | null>(null);
   const [hasStems, setHasStems] = useState(false);
@@ -158,10 +159,11 @@ export default function ProducerSyncSubmission() {
       const submissionIds = mySubmissions.map(sub => sub.id);
       if (submissionIds.length === 0) return;
       const { data, error } = await supabase
-        .from('sync_submission_favorites')
-        .select('sync_submission_id')
-        .in('sync_submission_id', submissionIds);
-      if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.sync_submission_id)));
+        .from('sync_submissions')
+        .select('id')
+        .in('id', submissionIds)
+        .eq('favorited', true);
+      if (!error && data) setFavoritedIds(new Set(data.map((f: any) => f.id)));
     };
     fetchFavorites();
   }, [mySubmissions, success, editModalOpen]);
@@ -475,8 +477,8 @@ export default function ProducerSyncSubmission() {
   };
 
   const TRACK_KEYS = [
-    'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
-    'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'
+    'C Major', 'C# Major', 'D Major', 'D# Major', 'E Major', 'F Major', 'F# Major', 'G Major', 'G# Major', 'A Major', 'A# Major', 'B Major',
+    'C Minor', 'C# Minor', 'D Minor', 'D# Minor', 'E Minor', 'F Minor', 'F# Minor', 'G Minor', 'G# Minor', 'A Minor', 'A# Minor', 'B Minor'
   ];
 
   // 2. Real-time chat subscription for both sender and recipient:
@@ -536,7 +538,7 @@ export default function ProducerSyncSubmission() {
                   <span><strong>Sync Fee:</strong> ${requestInfo.sync_fee?.toFixed(2)}</span>
                   <span><strong>End Date:</strong> {new Date(requestInfo.end_date).toLocaleDateString()}</span>
                   <span><strong>Genre:</strong> {requestInfo.genre}</span>
-                  <span><strong>Sub-genres:</strong> {Array.isArray(requestInfo.sub_genres) ? requestInfo.sub_genres.join(', ') : requestInfo.sub_genres}</span>
+                  <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(requestInfo.sub_genres)}</span>
                 </div>
               </div>
             ) : requestId ? (
@@ -614,10 +616,12 @@ export default function ProducerSyncSubmission() {
                     {/* Audio player for the submission */}
                     {sub.track_url && (
                       <div className="mt-2">
-                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" />
+                        <AudioPlayer src={sub.track_url} title={sub.track_name || 'Track'} size="sm" audioId={`submission-${sub.id}`} trackId={sub.track_id} />
                       </div>
                     )}
-                    <span className="mt-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1 w-max"><Hourglass className="w-3 h-3" /> In Consideration</span>
+                    {favoritedIds.has(sub.id) && (
+                      <span className="mt-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded-full text-xs flex items-center gap-1 w-max"><Hourglass className="w-3 h-3" /> In Consideration</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -701,8 +705,8 @@ export default function ProducerSyncSubmission() {
                 {editError && <div className="text-red-400 text-sm">{editError}</div>}
               </div>
               <div className="flex justify-end gap-4 mt-6">
-                <button onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
-                <button onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
+                <button type="button" onClick={() => setEditModalOpen(false)} className="px-4 py-2 rounded bg-blue-800 hover:bg-blue-700 text-white">Cancel</button>
+                <button type="button" onClick={() => setShowConfirm(true)} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Save Changes</button>
               </div>
             </div>
           </div>
@@ -715,8 +719,8 @@ export default function ProducerSyncSubmission() {
             <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Changes</h2>
             <p className="mb-6 text-gray-700">Are you sure you want to save these changes to your submission?</p>
             <div className="flex justify-end gap-4">
-              <button onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
-              <button onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Yes, Save</button>
+              <button type="button" onClick={() => setShowConfirm(false)} className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">Cancel</button>
+              <button type="button" onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold" disabled={editLoading}>Yes, Save</button>
             </div>
           </div>
         </div>
@@ -737,6 +741,7 @@ export default function ProducerSyncSubmission() {
                 </p>
               </div>
               <button
+                type="button"
                 onClick={handleCloseChat}
                 className="text-gray-400 hover:text-white transition-colors p-1"
               >
