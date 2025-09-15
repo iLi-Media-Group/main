@@ -87,7 +87,7 @@ export function PitchAuthModal({ isOpen, onClose, onLoginSuccess }: PitchAuthMod
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/producer-login?redirect=pitch');
+                    navigate('/producer/login?redirect=pitch');
                   }}
                   className="group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
                 >
@@ -103,7 +103,7 @@ export function PitchAuthModal({ isOpen, onClose, onLoginSuccess }: PitchAuthMod
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/artist-login?redirect=pitch');
+                    navigate('/artist/login?redirect=pitch');
                   }}
                   className="group bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
                 >
@@ -119,7 +119,7 @@ export function PitchAuthModal({ isOpen, onClose, onLoginSuccess }: PitchAuthMod
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/rights-holder-login?redirect=pitch');
+                    navigate('/rights-holder/login?redirect=pitch');
                   }}
                   className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
                 >
@@ -135,7 +135,7 @@ export function PitchAuthModal({ isOpen, onClose, onLoginSuccess }: PitchAuthMod
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/agent-login?redirect=pitch');
+                    navigate('/login?redirect=pitch');
                   }}
                   className="group bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
                 >
