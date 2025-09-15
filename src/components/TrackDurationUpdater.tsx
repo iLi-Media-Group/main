@@ -62,8 +62,13 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         
         const durationStr = String(track.duration);
         
+        // Debug: Log all durations to see what we're working with
+        console.log(`Track "${track.title}" has duration: "${durationStr}" (type: ${typeof track.duration})`);
+        
         // Tracks with short format like "0:03" (missing leading zero in minutes)
-        if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+        // More flexible pattern to catch variations
+        if (durationStr.match(/^\d{1,2}:\d{1,2}$/) && !durationStr.match(/^\d{2}:\d{2}$/)) {
+          console.log(`Found track with short format: "${durationStr}"`);
           return true;
         }
         
