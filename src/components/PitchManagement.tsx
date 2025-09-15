@@ -693,9 +693,10 @@ export function PitchManagement() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
-        )
+        )}
 
         {activeTab === 'playlists' && (
           <div className="space-y-4">
@@ -875,7 +876,6 @@ export function PitchManagement() {
           onSubmissionSent={fetchPitchData}
         />
       )}
-    </div>
     </div>
   );
 }
