@@ -344,7 +344,22 @@ export function PitchManagement() {
         </div>
         <div className="flex space-x-2">
           <button
-            onClick={() => setShowCreatePlaylist(true)}
+            onClick={() => {
+              if (opportunities.length === 0) {
+                alert('No opportunities available. Please create an opportunity first.');
+                return;
+              }
+              // For now, use the first opportunity as default
+              // In the future, we could show a selection modal
+              const firstOpportunity = opportunities[0];
+              setCreatePlaylistData({
+                opportunityId: firstOpportunity.id,
+                opportunityTitle: firstOpportunity.title,
+                clientName: firstOpportunity.client_name,
+                submissionEmail: firstOpportunity.submission_email
+              });
+              setShowCreatePlaylist(true);
+            }}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
