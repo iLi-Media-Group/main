@@ -6,6 +6,7 @@ import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { PitchCheckmark } from './PitchCheckmark';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -162,7 +163,10 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            Producer Profile
+            <PitchCheckmark userId={user?.id || ''} />
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"

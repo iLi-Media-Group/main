@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
 import { ProducerUsageBadges } from './ProducerUsageBadges';
 import { ProducerFollowButton } from './ProducerFollowButton';
+import { PitchCheckmark } from './PitchCheckmark';
 
 interface ProducerProfileDialogProps {
   isOpen: boolean;
@@ -136,8 +137,9 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               </div>
               
               <div className="flex-1">
-                <h3 className="text-2xl font-bold text-white">
+                <h3 className="text-2xl font-bold text-white flex items-center">
                   {profile.first_name} {profile.last_name}
+                  <PitchCheckmark userId={producerId} />
                 </h3>
                 {profile.company_name && (
                   <p className="text-gray-400">{profile.company_name}</p>

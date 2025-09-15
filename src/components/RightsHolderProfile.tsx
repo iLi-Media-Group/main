@@ -20,6 +20,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { PitchCheckmark } from './PitchCheckmark';
 
 interface RightsHolderProfileProps {
   onClose?: () => void;
@@ -184,7 +185,10 @@ export function RightsHolderProfile({ onClose, onProfileUpdated }: RightsHolderP
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back
           </button>
-          <h1 className="text-3xl font-bold">Rights Holder Profile</h1>
+          <h1 className="text-3xl font-bold flex items-center">
+            Rights Holder Profile
+            <PitchCheckmark userId={user?.id || ''} />
+          </h1>
         </div>
 
         {/* Success/Error Messages */}
