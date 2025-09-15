@@ -19,7 +19,7 @@ import { TrackAnalyticsModal } from './TrackAnalyticsModal';
 
 import { respondRenewalRequest } from '../api/renewal';
 import { AudioPlayer } from './AudioPlayer';
-import { showPitchBadgeIfActive } from '../lib/pitch';
+import { PitchCheckmark } from './PitchCheckmark';
 
 
 // Component to handle signed URL generation for track audio
@@ -315,10 +315,6 @@ export function ProducerDashboard() {
     if (user) {
       fetchDashboardData();
       
-      // Show PITCH badge if active (non-blocking)
-      setTimeout(() => {
-        showPitchBadgeIfActive();
-      }, 1000);
       
       // If coming from upload with refresh parameter, clear it from URL
       if (searchParams.get('refresh') === 'true') {
@@ -1060,10 +1056,7 @@ export function ProducerDashboard() {
             {profile && (
               <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
                 Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
-                {/* PITCH badge placeholder: visibility controlled by CSS variable or data attribute */}
-                <span id="pitch-badge" className="hidden items-center text-xs font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
-                  PITCH
-                </span>
+                <PitchCheckmark userId={user?.id || ''} />
               </p>
             )}
           </div>
