@@ -86,6 +86,54 @@ Deno.serve(async (req) => {
     created_at: new Date().toISOString()
   });
 
+  // --- Pitch Service Subscriptions ---
+  // Capture checkout completion for pitch subscriptions and set up pitch_subscriptions table
+  if (event.type === 'checkout.session.completed' && metadata.service === 'pitch') {
+    try {
+      const session = event.data.object as any;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string | undefined;
+      const priceId = session?.display_items?.[0]?.plan?.id || session?.line_items?.data?.[0]?.price?.id || undefined;
+
+      // Find user via stripe_customers
+      const { data: customerRecord } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+
+      if (customerRecord?.user_id) {
+        // Fetch full subscription for period timestamps
+        let currentPeriodStart: number | null = null;
+        let currentPeriodEnd: number | null = null;
+        if (subscriptionId) {
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          currentPeriodStart = sub.current_period_start ?? null;
+          currentPeriodEnd = sub.current_period_end ?? null;
+        }
+
+        // Upsert pitch_subscriptions
+        await supabase
+          .from('pitch_subscriptions')
+          .upsert({
+            user_id: customerRecord.user_id,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId ?? null,
+            price_id: priceId ?? null,
+            first_activated_at: new Date().toISOString(),
+            current_period_start: currentPeriodStart ?? null,
+            current_period_end: currentPeriodEnd ?? null,
+            status: 'active',
+            failed_renewal_attempts: 0,
+            is_active: true
+          }, { onConflict: 'user_id' });
+      }
+    } catch (err) {
+      console.error('Error handling pitch checkout completion:', err);
+    }
+    return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+  }
+
   // --- White Label Onboarding (from new handler) ---
   if (event.type === 'checkout.session.completed' && metadata.type === 'white_label_setup') {
     try {
@@ -668,6 +716,39 @@ Deno.serve(async (req) => {
             status: subscription.status,
           }, { onConflict: 'customer_id' });
 
+          // If this subscription is for the Pitch service, mirror to pitch_subscriptions table
+          try {
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              // Lookup user
+              const { data: customerRecord } = await supabase
+                .from('stripe_customers')
+                .select('user_id')
+                .eq('customer_id', customerId)
+                .maybeSingle();
+              if (customerRecord?.user_id) {
+                await supabase
+                  .from('pitch_subscriptions')
+                  .upsert({
+                    user_id: customerRecord.user_id,
+                    stripe_customer_id: customerId,
+                    stripe_subscription_id: subscription.id,
+                    price_id: priceId,
+                    // Preserve first_activated_at if exists
+                    first_activated_at: new Date(subscription.start_date * 1000).toISOString(),
+                    current_period_start: subscription.current_period_start,
+                    current_period_end: subscription.current_period_end,
+                    status: subscription.status,
+                    failed_renewal_attempts: subscription.status === 'past_due' ? 1 : 0,
+                    is_active: subscription.status === 'active' || subscription.status === 'trialing'
+                  }, { onConflict: 'user_id' });
+              }
+            }
+          } catch (pitchSyncErr) {
+            console.error('Error syncing pitch_subscriptions:', pitchSyncErr);
+          }
+
           // --- NEW: Update membership_plan in profiles ---
           // Map price_id to plan name
           let planName = 'Unknown';
@@ -779,6 +860,8 @@ Deno.serve(async (req) => {
       try {
         const stripeData = event.data.object as any;
         const customerId = stripeData.customer;
+        const priceId = stripeData.items?.data?.[0]?.price?.id as string | undefined;
+        const status = stripeData.status as string | undefined;
         const cancelAtPeriodEnd = stripeData.cancel_at_period_end;
         const currentPeriodEnd = stripeData.current_period_end;
         // Find user_id from stripe_customers
@@ -810,6 +893,29 @@ Deno.serve(async (req) => {
               })
               .eq('id', customerRecord.user_id);
           }
+
+          // Mirror pitch status if this is a Pitch price
+          try {
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              await supabase
+                .from('pitch_subscriptions')
+                .upsert({
+                  user_id: customerRecord.user_id,
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: stripeData.id,
+                  price_id: priceId,
+                  current_period_start: stripeData.current_period_start,
+                  current_period_end: stripeData.current_period_end,
+                  status: status || 'active',
+                  failed_renewal_attempts: status === 'past_due' ? 1 : 0,
+                  is_active: status === 'active' || status === 'trialing'
+                }, { onConflict: 'user_id' });
+            }
+          } catch (pitchUpdateErr) {
+            console.error('Error updating pitch_subscriptions (updated):', pitchUpdateErr);
+          }
         }
       } catch (error) {
         console.error('Error handling subscription update event:', error);
@@ -821,6 +927,7 @@ Deno.serve(async (req) => {
       try {
         const stripeData = event.data.object as any;
         const customerId = stripeData.customer;
+        const priceId = stripeData.items?.data?.[0]?.price?.id as string | undefined;
         // Find user_id from stripe_customers
         const { data: customerRecord, error: customerLookupError } = await supabase
           .from('stripe_customers')
@@ -844,6 +951,33 @@ Deno.serve(async (req) => {
             console.error('Error updating membership_plan to Single Track:', updateProfileError);
           } else {
             console.log(`Downgraded user ${customerRecord.user_id} to Single Track after subscription cancellation.`);
+          }
+
+          // If this was a Pitch subscription, mark inactive and increment failed attempts
+          try {
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              const { data: existing } = await supabase
+                .from('pitch_subscriptions')
+                .select('failed_renewal_attempts')
+                .eq('user_id', customerRecord.user_id)
+                .maybeSingle();
+              const attempts = (existing?.failed_renewal_attempts || 0) + 1;
+              await supabase
+                .from('pitch_subscriptions')
+                .upsert({
+                  user_id: customerRecord.user_id,
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: stripeData.id,
+                  price_id: priceId,
+                  status: 'canceled',
+                  is_active: false,
+                  failed_renewal_attempts: attempts
+                }, { onConflict: 'user_id' });
+            }
+          } catch (pitchCancelErr) {
+            console.error('Error canceling pitch_subscriptions:', pitchCancelErr);
           }
         }
       } catch (error) {

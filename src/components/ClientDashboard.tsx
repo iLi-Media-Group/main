@@ -429,6 +429,15 @@ const getPlanLevel = (plan: string): number => {
     export function ClientDashboard() {
   const { user, membershipPlan, refreshMembership, accountType, profile } = useUnifiedAuth();
   const navigate = useNavigate();
+  // Show PITCH badge if active (non-blocking)
+  useEffect(() => {
+    (async () => {
+      try {
+        const mod = await import('../lib/pitch');
+        mod.showPitchBadgeIfActive();
+      } catch {}
+    })();
+  }, []);
   
   // Redirect agents to agent dashboard
   useEffect(() => {
@@ -1582,8 +1591,12 @@ const getPlanLevel = (plan: string): number => {
           <div>
             <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
             {profile && (
-              <p className="text-xl text-gray-300 mt-2">
+              <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
                 Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
+                {/* PITCH badge placeholder: visibility controlled by CSS variable or data attribute */}
+                <span id="pitch-badge" className="hidden items-center text-xs font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
+                  PITCH
+                </span>
               </p>
             )}
           </div>

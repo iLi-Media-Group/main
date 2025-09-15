@@ -82,6 +82,8 @@ import AdminResourceManager from './components/AdminResourceManager';
 import { ProducerTracksPage } from './components/ProducerTracksPage';
 import { TrackDurationAdminPage } from './pages/TrackDurationAdminPage';
 import { WelcomePDFTestPage } from './pages/WelcomePDFTestPage';
+import PitchPage from './components/PitchPage';
+import PitchSuccessPage from './components/PitchSuccessPage';
 
 import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
@@ -344,6 +346,8 @@ const App = () => {
         <Route path="/announcements" element={<LayoutWrapper><AnnouncementsPage /></LayoutWrapper>} />
         <Route path="/checkout/success" element={<LayoutWrapper><CheckoutSuccessPage /></LayoutWrapper>} />
         <Route path="/sync-proposal/success" element={<LayoutWrapper><SyncProposalSuccessPage /></LayoutWrapper>} />
+        <Route path="/pitch" element={<LayoutWrapper><PitchPage /></LayoutWrapper>} />
+        <Route path="/pitch/success" element={<LayoutWrapper><PitchSuccessPage /></LayoutWrapper>} />
         <Route path="/welcome" element={<LayoutWrapper><WelcomePage /></LayoutWrapper>} />
         <Route path="/track/:trackId" element={<LayoutWrapper><TrackPage /></LayoutWrapper>} />
         <Route path="/test-playlist/*" element={<LayoutWrapper><PlaylistView /></LayoutWrapper>} />
