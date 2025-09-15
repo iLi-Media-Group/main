@@ -876,5 +876,6 @@ export function PitchManagement() {
         />
       )}
     </div>
+    </div>
   );
 }
