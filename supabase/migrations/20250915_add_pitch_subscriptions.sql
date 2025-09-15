@@ -25,11 +25,13 @@ create index if not exists idx_pitch_subscriptions_subscription on public.pitch_
 alter table public.pitch_subscriptions enable row level security;
 
 -- Policy: owners can read their own
-create policy if not exists "Pitch subscriptions are viewable by owner" on public.pitch_subscriptions
+drop policy if exists "Pitch subscriptions are viewable by owner" on public.pitch_subscriptions;
+create policy "Pitch subscriptions are viewable by owner" on public.pitch_subscriptions
   for select using (auth.uid() = user_id);
 
 -- Policy: owners can update their own (not inserts from client; inserts happen via webhook using service key)
-create policy if not exists "Pitch subscriptions updatable by owner" on public.pitch_subscriptions
+drop policy if exists "Pitch subscriptions updatable by owner" on public.pitch_subscriptions;
+create policy "Pitch subscriptions updatable by owner" on public.pitch_subscriptions
   for update using (auth.uid() = user_id);
 
 -- Trigger to keep updated_at
@@ -41,6 +43,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_pitch_subscriptions_updated_at on public.pitch_subscriptions;
 create trigger set_pitch_subscriptions_updated_at
 before update on public.pitch_subscriptions
 for each row execute function public.set_updated_at();

@@ -6,6 +6,7 @@ import { formatSubGenresForDisplay } from '../utils/genreUtils';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
+import { showPitchBadgeIfActive } from '../lib/pitch';
 import { 
   Building2, 
   Music, 
@@ -138,6 +139,11 @@ export function RightsHolderDashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      
+      // Show PITCH badge if active (non-blocking)
+      setTimeout(() => {
+        showPitchBadgeIfActive();
+      }, 1000);
     } else {
       // If no user, still set loading to false to show empty state
       setLoading(false);
@@ -678,11 +684,15 @@ export function RightsHolderDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div>
-                             <h1 className="text-3xl font-bold text-white">
-                 Welcome back, {profile?.company_name || profile?.first_name || user?.email || 'User'}
-               </h1>
-              <p className="text-gray-300 mt-1">
+              <h1 className="text-3xl font-bold text-white">
+                Welcome back, {profile?.company_name || profile?.first_name || user?.email || 'User'}
+              </h1>
+              <p className="text-gray-300 mt-1 flex items-center gap-2">
                 {profile?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard
+                {/* PITCH badge placeholder: visibility controlled by CSS variable or data attribute */}
+                <span id="pitch-badge" className="hidden items-center text-xs font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
+                  PITCH
+                </span>
               </p>
             </div>
             <div className="flex items-center space-x-4">
