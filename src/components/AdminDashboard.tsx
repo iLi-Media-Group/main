@@ -658,16 +658,16 @@ if (subscription.price_id) {
           membership_monthly_amount,
         }));
 
-        // Fetch producer analytics using the existing function
-        const { data: producerAnalyticsData, error: producerAnalyticsError } = await supabase
-          .rpc('get_producer_analytics');
+        // Fetch unified analytics for both producers and artists
+        const { data: userAnalyticsData, error: userAnalyticsError } = await supabase
+          .rpc('get_user_analytics');
 
-        if (producerAnalyticsError) {
-          console.error('Error fetching producer analytics:', producerAnalyticsError);
+        if (userAnalyticsError) {
+          console.error('Error fetching user analytics:', userAnalyticsError);
         }
 
-        // Create a map of producer analytics by producer_id - fixed duplicate declaration
-        const producerAnalyticsMap: Record<string, {
+        // Create a map of user analytics by user_id
+        const userAnalyticsMap: Record<string, {
           total_tracks: number;
           total_sales: number;
           total_revenue: number;
@@ -676,21 +676,21 @@ if (subscription.price_id) {
         // Initialize with data from initial map if available
         Object.keys(initialProducerAnalyticsMap).forEach(producerId => {
           const initialData = initialProducerAnalyticsMap[producerId];
-          producerAnalyticsMap[producerId] = {
+          userAnalyticsMap[producerId] = {
             total_tracks: initialData.track_count || 0,
             total_sales: initialData.producer_sales_count || 0,
             total_revenue: initialData.producer_revenue || 0
           };
         });
 
-        if (producerAnalyticsData) {
-          producerAnalyticsData.forEach((item: {
-            proposal_producer_id: string;
+        if (userAnalyticsData) {
+          userAnalyticsData.forEach((item: {
+            user_id: string;
             total_tracks: number;
             total_sales: number;
             total_revenue: number;
           }) => {
-            producerAnalyticsMap[item.proposal_producer_id] = {
+            userAnalyticsMap[item.user_id] = {
               total_tracks: item.total_tracks || 0,
               total_sales: item.total_sales || 0,
               total_revenue: item.total_revenue || 0
@@ -699,7 +699,7 @@ if (subscription.price_id) {
         }
 
         // For producers not in the analytics (like admin emails), fetch their data manually
-        const producersNotInAnalytics = producerUsers.filter(producer => !producerAnalyticsMap[producer.id]);
+        const producersNotInAnalytics = producerUsers.filter(producer => !userAnalyticsMap[producer.id]);
         
         if (producersNotInAnalytics.length > 0) {
           // Fetch tracks for these producers
@@ -770,7 +770,7 @@ if (subscription.price_id) {
             const producerSyncProposals = syncProposalsData.filter(sp => producerTrackIds.includes(sp.track_id));
             const producerCustomSyncRequests = customSyncRequestsData.filter(csr => csr.selected_producer_id === producer.id);
 
-            producerAnalyticsMap[producer.id] = {
+            userAnalyticsMap[producer.id] = {
               total_tracks: producerTracks.length,
               total_sales: producerSales.length + producerSyncProposals.length + producerCustomSyncRequests.length,
               total_revenue: 
@@ -783,7 +783,7 @@ if (subscription.price_id) {
 
         // Map producer users to include their analytics
         const transformedProducers = producerUsers.map(producer => {
-          const analytics = producerAnalyticsMap[producer.id] || {
+          const analytics = userAnalyticsMap[producer.id] || {
             total_tracks: 0,
             total_sales: 0,
             total_revenue: 0
@@ -810,7 +810,7 @@ if (subscription.price_id) {
         
         // Transform artist users to include their analytics
         const transformedArtists = artistUsers.map(artist => {
-          const analytics = producerAnalyticsMap[artist.id] || {
+          const analytics = userAnalyticsMap[artist.id] || {
             total_tracks: 0,
             total_sales: 0,
             total_revenue: 0
