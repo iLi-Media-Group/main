@@ -40,7 +40,8 @@ export function BackgroundManager({ onClose }: BackgroundManagerProps) {
     { id: 'white-label-login', name: 'White Label Login' },
     { id: 'signup', name: 'Create Account' },
     { id: 'about', name: 'About Us' },
-    { id: 'contact', name: 'Contact Us' }
+    { id: 'contact', name: 'Contact Us' },
+    { id: 'pitch', name: 'Pitch Service' }
   ];
 
   const fetchAssets = async () => {
