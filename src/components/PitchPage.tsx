@@ -75,7 +75,7 @@ export default function PitchPage() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
               <h2 className="text-2xl font-semibold text-white mb-4">Why Join the Pitch Service?</h2>
               <ul className="space-y-3 text-gray-200">
-                <li className="flex items-start"><CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 mr-2" /> Don’t miss opportunities – We track incoming sync briefs so you don’t have to.</li>
+                <li className="flex items-start"><CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 mr-2" /> Don't miss opportunities – We submit briefs to our industry contacts on your behalf.</li>
                 <li className="flex items-start"><CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 mr-2" /> Stay focused on creating – Concentrate on making music while we help with pitching.</li>
                 <li className="flex items-start"><CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 mr-2" /> Expand your reach – Have your work submitted to industry opportunities while you build your own pitch list and relationships.</li>
                 <li className="flex items-start"><CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 mr-2" /> Professional curation – Our team considers genre, mix quality, licensing readiness, and brief requirements to increase chances of success.</li>
