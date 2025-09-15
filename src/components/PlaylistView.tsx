@@ -252,8 +252,19 @@ export function PlaylistView() {
         duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
       }
       
-      // Parse MM:SS format
+      // Parse different duration formats
       if (typeof duration === 'string') {
+        // Handle PostgreSQL INTERVAL format: "4 minutes 5 seconds"
+        if (duration.includes('minutes') && duration.includes('seconds')) {
+          const minutesMatch = duration.match(/(\d+)\s*minutes?/);
+          const secondsMatch = duration.match(/(\d+)\s*seconds?/);
+          const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+          const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+          const trackSeconds = (minutes * 60) + seconds;
+          return total + trackSeconds;
+        }
+        
+        // Handle MM:SS format
         const parts = duration.split(':');
         if (parts.length === 2) {
           const minutes = parseInt(parts[0]) || 0;
