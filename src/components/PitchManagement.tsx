@@ -695,7 +695,7 @@ export function PitchManagement() {
               </table>
             </div>
           </div>
-        )}
+        )
 
         {activeTab === 'playlists' && (
           <div className="space-y-4">
