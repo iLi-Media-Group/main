@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Mail, Lock, User, X, Building2, Music, Info, UserPlus, Sparkles } from 'lucide-react';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -35,6 +35,15 @@ function SignupFormContent({ onClose }: SignupFormProps) {
   // Get redirect and product info from URL params
   const redirectTo = searchParams.get('redirect') || '';
   const productId = searchParams.get('product') || '';
+  const urlAccountType = searchParams.get('accountType') || '';
+
+  // Set initial account type and agent status based on URL params
+  useEffect(() => {
+    if (urlAccountType === 'agent') {
+      setIsAgent(true);
+      setAccountType('client'); // Default to client, but isAgent will override this
+    }
+  }, [urlAccountType]);
 
   const validatePassword = (password: string) => {
     const hasUpperCase = /[A-Z]/.test(password);

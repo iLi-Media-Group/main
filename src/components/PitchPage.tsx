@@ -4,11 +4,13 @@ import { CheckCircle2, Play, Loader2 } from 'lucide-react';
 import { VideoBackground } from './VideoBackground';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { createCheckoutSession } from '../lib/stripe';
+import { PitchAuthModal } from './PitchAuthModal';
 
 export default function PitchPage() {
   const navigate = useNavigate();
   const { user, accountType } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const isEligible = useMemo(() => {
     if (!user) return false;
     return accountType === 'artist_band' || accountType === 'producer' || accountType === 'rights_holder';
@@ -21,7 +23,7 @@ export default function PitchPage() {
     }
 
     if (!isEligible) {
-      alert('You must be an active artist, producer, or rights holder to subscribe.');
+      setShowAuthModal(true);
       return;
     }
 
@@ -134,6 +136,13 @@ export default function PitchPage() {
           </div>
         </div>
       </div>
+
+      {/* Authentication Modal */}
+      <PitchAuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={() => setShowAuthModal(false)}
+      />
     </div>
   );
 }
