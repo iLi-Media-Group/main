@@ -23,6 +23,7 @@ import { CreatePlaylistModal } from './CreatePlaylistModal';
 import { SendPlaylistEmailModal } from './SendPlaylistEmailModal';
 import { DealTrackingModal } from './DealTrackingModal';
 import { CreatePrivateBriefModal } from './CreatePrivateBriefModal';
+import { SubmitToBriefModal } from './SubmitToBriefModal';
 
 interface PitchOpportunity {
   id: string;
@@ -108,6 +109,8 @@ export function PitchManagement() {
   } | null>(null);
   const [showCreateBrief, setShowCreateBrief] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showSubmitToBrief, setShowSubmitToBrief] = useState(false);
+  const [selectedOpportunityForSubmission, setSelectedOpportunityForSubmission] = useState<PitchOpportunity | null>(null);
 
   // Filter opportunities based on search term
   const filteredOpportunities = opportunities.filter(opportunity =>
@@ -272,6 +275,11 @@ export function PitchManagement() {
       clientName: 'Client' // We'll need to get this from the opportunity
     });
     setShowDealTracking(true);
+  };
+
+  const handleSubmitToBrief = (opportunity: PitchOpportunity) => {
+    setSelectedOpportunityForSubmission(opportunity);
+    setShowSubmitToBrief(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -439,18 +447,27 @@ export function PitchManagement() {
                     </div>
                   </div>
 
-                  <div className="flex space-x-2">
+                  <div className="space-y-2">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => setSelectedOpportunity(opportunity)}
+                        className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                      >
+                        View Details
+                      </button>
+                      <button
+                        onClick={() => handleCreatePlaylist(opportunity.id)}
+                        className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors"
+                      >
+                        Create Playlist
+                      </button>
+                    </div>
                     <button
-                      onClick={() => setSelectedOpportunity(opportunity)}
-                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                      onClick={() => handleSubmitToBrief(opportunity)}
+                      className="w-full bg-purple-600 text-white px-3 py-2 rounded text-sm hover:bg-purple-700 transition-colors flex items-center justify-center"
                     >
-                      View Details
-                    </button>
-                    <button
-                      onClick={() => handleCreatePlaylist(opportunity.id)}
-                      className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors"
-                    >
-                      Create Playlist
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit to Brief
                     </button>
                   </div>
                 </div>
@@ -692,6 +709,18 @@ export function PitchManagement() {
           isOpen={showCreateBrief}
           onClose={() => setShowCreateBrief(false)}
           onBriefCreated={fetchPitchData}
+        />
+      )}
+
+      {showSubmitToBrief && selectedOpportunityForSubmission && (
+        <SubmitToBriefModal
+          isOpen={showSubmitToBrief}
+          onClose={() => {
+            setShowSubmitToBrief(false);
+            setSelectedOpportunityForSubmission(null);
+          }}
+          opportunity={selectedOpportunityForSubmission}
+          onSubmissionSent={fetchPitchData}
         />
       )}
     </div>
