@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { calculateAudioDuration, getAudioMetadata } from '../utils/audioUtils';
-import { useSignedUrl } from '../hooks/useSignedUrl';
-import { Clock, RefreshCw, CheckCircle, AlertCircle, Play, Pause } from 'lucide-react';
+import { calculateAudioDuration } from '../utils/audioUtils';
+import { Clock, RefreshCw } from 'lucide-react';
 
 interface Track {
   id: string;
@@ -16,47 +15,6 @@ interface TrackDurationUpdaterProps {
   onComplete?: () => void;
 }
 
-// Component to handle signed URL generation for track audio
-function TrackAudioProcessor({ track, onDurationCalculated }: { 
-  track: Track; 
-  onDurationCalculated: (duration: string) => void;
-}) {
-  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
-
-  useEffect(() => {
-    if (signedUrl && !loading && !error) {
-      // Calculate duration using the signed URL
-      calculateAudioDuration(signedUrl)
-        .then(duration => {
-          onDurationCalculated(duration);
-        })
-        .catch(error => {
-          console.error(`Error calculating duration for ${track.title}:`, error);
-          // Pass error through the callback
-          onDurationCalculated('error');
-        });
-    }
-  }, [signedUrl, loading, error, track.title, onDurationCalculated]);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-blue-500 mr-2"></div>
-        <span className="text-blue-200 text-sm">Loading audio...</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-400 text-sm p-2">
-        Audio unavailable: {error}
-      </div>
-    );
-  }
-
-  return null; // Component handles the processing internally
-}
 
 export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdaterProps) {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -102,16 +60,11 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           return true;
         }
         
-        // Tracks with durations that need MM:SS formatting
         const durationStr = String(track.duration);
         
-        // Handle "182:00" format (total seconds followed by ":00")
-        if (durationStr.includes(':') && durationStr.endsWith(':00')) {
-          const secondsPart = durationStr.split(':')[0];
-          const totalSeconds = Number(secondsPart);
-          if (!isNaN(totalSeconds) && totalSeconds > 0) {
-            return true; // This needs formatting
-          }
+        // Tracks with short format like "0:03" (missing leading zero in minutes)
+        if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+          return true;
         }
         
         // Tracks with raw numbers over 61 seconds
@@ -120,35 +73,16 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           return true;
         }
         
-        // Check for tracks with "00" seconds (like "2:00", "3:00") - these likely need recalculation
-        if (typeof track.duration === 'string' && track.duration.includes(':') && track.duration.endsWith(':00')) {
-          const [minutes] = track.duration.split(':').map(Number);
-          if (!isNaN(minutes) && minutes > 0) {
-            return true; // This has "00" seconds and needs recalculation
+        // Tracks with malformed durations like "182:00" (total seconds with :00)
+        if (durationStr.includes(':') && durationStr.endsWith(':00')) {
+          const secondsPart = durationStr.split(':')[0];
+          const totalSeconds = Number(secondsPart);
+          if (!isNaN(totalSeconds) && totalSeconds > 61) {
+            return true;
           }
         }
         
-        // Check if the duration looks like it might be wrong
-        // Look for durations that are suspiciously short (under 30 seconds) or very long
-        if (typeof track.duration === 'string' && track.duration.includes(':')) {
-          const parts = track.duration.split(':');
-          if (parts.length === 2) {
-            const [minutes, seconds] = parts.map(Number);
-            if (!isNaN(minutes) && !isNaN(seconds)) {
-              // If it's less than 30 seconds total, it's probably wrong
-              if (minutes === 0 && seconds < 30) {
-                return true; // Suspiciously short duration
-              }
-              // If it's more than 20 minutes, it might be wrong
-              if (minutes > 20) {
-                return true; // Suspiciously long duration
-              }
-            }
-          }
-        }
-        
-        // For now, include ALL tracks to see what's happening
-        return true;
+        return false;
       }) || [];
 
       const tracksWithUrls = tracksNeedingUpdates.map(track => ({
@@ -205,6 +139,24 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       // Check if track just needs formatting (seconds to MM:SS)
       const durationStr = String(track.duration);
       
+      // Handle "0:03" format (missing leading zero in minutes)
+      if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+        const [minutes, seconds] = durationStr.split(':').map(Number);
+        if (!isNaN(minutes) && !isNaN(seconds)) {
+          newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          
+          // Update database with formatted duration
+          await updateTrackDuration(track.id, newDuration);
+          
+          setTracks(prev => prev.map(t => 
+            t.id === track.id ? { ...t, duration: newDuration } : t
+          ));
+          
+          setResults(prev => ({ ...prev, success: prev.success + 1 }));
+          return; // Exit early
+        }
+      }
+      
       // Handle "182:00" format (total seconds followed by ":00")
       if (durationStr.includes(':') && durationStr.endsWith(':00')) {
         const secondsPart = durationStr.split(':')[0];
@@ -212,7 +164,7 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         if (!isNaN(totalSeconds) && totalSeconds > 0) {
           const minutes = Math.floor(totalSeconds / 60);
           const seconds = totalSeconds % 60;
-          newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
           
           // Update database with formatted duration
           await updateTrackDuration(track.id, newDuration);
@@ -293,6 +245,25 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         // Check if track just needs formatting (seconds to MM:SS)
         const durationStr = String(track.duration);
         
+        // Handle "0:03" format (missing leading zero in minutes)
+        if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+          const [minutes, seconds] = durationStr.split(':').map(Number);
+          if (!isNaN(minutes) && !isNaN(seconds)) {
+            newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            // Update database with formatted duration
+            await updateTrackDuration(track.id, newDuration);
+            setResults(prev => ({ ...prev, success: prev.success + 1 }));
+
+            // Update local state
+            setTracks(prev => prev.map(t => 
+              t.id === track.id ? { ...t, duration: newDuration } : t
+            ));
+
+            continue; // Skip to next track
+          }
+        }
+        
         // Handle "182:00" format (total seconds followed by ":00")
         if (durationStr.includes(':') && durationStr.endsWith(':00')) {
           const secondsPart = durationStr.split(':')[0];
@@ -300,7 +271,7 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           if (!isNaN(totalSeconds) && totalSeconds > 0) {
             const minutes = Math.floor(totalSeconds / 60);
             const seconds = totalSeconds % 60;
-            newDuration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
             // Update database with formatted duration
             await updateTrackDuration(track.id, newDuration);
@@ -340,8 +311,8 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
           const durationStr = String(track.duration);
           const durationNum = Number(track.duration);
           
-          // If it's already in proper MM:SS format, skip it
-          if (durationStr.match(/^\d{1,2}:\d{2}$/)) {
+          // If it's already in proper MM:SS format with leading zeros, skip it
+          if (durationStr.match(/^\d{2}:\d{2}$/)) {
             const [minutes, seconds] = durationStr.split(':').map(Number);
             if (minutes >= 0 && seconds >= 0 && seconds < 60 && minutes < 60) {
               setResults(prev => ({ ...prev, skipped: prev.skipped + 1 }));
