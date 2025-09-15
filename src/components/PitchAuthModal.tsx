@@ -78,19 +78,80 @@ export function PitchAuthModal({ isOpen, onClose, onLoginSuccess }: PitchAuthMod
           {isLoginMode ? (
             /* Login Section */
             <div className="space-y-4">
-              <div className="text-center">
+              <div className="text-center mb-6">
                 <p className="text-gray-300 mb-4">Already have an account? Sign in to continue.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Producer Login */}
                 <button
                   onClick={() => {
                     onClose();
-                    navigate('/login?redirect=pitch');
+                    navigate('/producer-login?redirect=pitch');
                   }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center"
+                  className="group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
                 >
-                  <User className="w-5 h-5 mr-2" />
-                  Sign In
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <Music className="w-6 h-6 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Producer Login</div>
+                    <div className="text-sm opacity-90">Sign in as producer</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto transition-transform duration-300 ease-out group-hover:translate-x-1" />
                 </button>
+
+                {/* Artist Login */}
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/artist-login?redirect=pitch');
+                  }}
+                  className="group bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+                >
+                  <Users className="w-6 h-6 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Artist Login</div>
+                    <div className="text-sm opacity-90">Sign in as artist</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                </button>
+
+                {/* Rights Holder Login */}
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/rights-holder-login?redirect=pitch');
+                  }}
+                  className="group bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+                >
+                  <Building2 className="w-6 h-6 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Record Label/Publisher Login</div>
+                    <div className="text-sm opacity-90">Sign in as rights holder</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                </button>
+
+                {/* Agent Login */}
+                <button
+                  onClick={() => {
+                    onClose();
+                    navigate('/agent-login?redirect=pitch');
+                  }}
+                  className="group bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white p-4 rounded-lg transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+                >
+                  <UserPlus className="w-6 h-6 mr-3" />
+                  <div className="text-left">
+                    <div className="font-semibold">Agent Login</div>
+                    <div className="text-sm opacity-90">Sign in as agent</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 ml-auto transition-transform duration-300 ease-out group-hover:translate-x-1" />
+                </button>
+              </div>
+
+              <div className="text-center mt-6">
+                <p className="text-sm text-gray-400">
+                  After signing in, you'll be able to subscribe to the Pitch Service.
+                </p>
               </div>
             </div>
           ) : (

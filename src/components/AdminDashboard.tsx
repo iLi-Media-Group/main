@@ -30,6 +30,7 @@ import { BackgroundManager } from './BackgroundManager';
 import { MediaTypeManagement } from './MediaTypeManagement';
 import { ProducerBadgeManager } from './ProducerBadgeManager';
 import { RightsVerificationAdmin } from './RightsVerificationAdmin';
+import { PitchManagement } from './PitchManagement';
 
 
 interface UserStats {
@@ -203,7 +204,7 @@ function AdminDashboard() {
   const [selectedProducer, setSelectedProducer] = useState<UserDetails | null>(null);
   const [producerToDelete, setProducerToDelete] = useState<UserDetails | null>(null);
   const [showRevenueBreakdown, setShowRevenueBreakdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'artists' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'moods' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges' | 'rights_verification' | 'artists' | 'drip_emails' | 'track_durations'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'advanced_analytics' | 'producers' | 'artists' | 'clients' | 'announcements' | 'compensation' | 'discounts' | 'white_label' | 'genres' | 'instruments' | 'moods' | 'contact_messages' | 'producer_applications' | 'services' | 'spotify_test' | 'synonyms' | 'backgrounds' | 'media_types' | 'producer_badges' | 'rights_verification' | 'artists' | 'drip_emails' | 'track_durations' | 'pitch_management'>('analytics');
   
   // White Label Admin State
   const [whiteLabelClients, setWhiteLabelClients] = useState<WhiteLabelClient[]>([]);
@@ -1652,6 +1653,7 @@ if (subscription.price_id) {
             { id: 'media_types', label: 'Media Types', icon: <Video className="w-4 h-4 mr-2" /> },
             { id: 'rights_verification', label: 'Rights Verification', icon: <Shield className="w-4 h-4 mr-2" /> },
             { id: 'track_durations', label: 'Track Durations', icon: <Clock className="w-4 h-4 mr-2" /> },
+            { id: 'pitch_management', label: 'Pitch Management', icon: <FileText className="w-4 h-4 mr-2" /> },
           ].filter(tab => {
             // Always show tabs without feature flags
             if (!tab.featureFlag) return true;
@@ -2504,6 +2506,13 @@ if (subscription.price_id) {
                 </ul>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Pitch Management */}
+        {activeTab === 'pitch_management' && (
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+            <PitchManagement />
           </div>
         )}
 
