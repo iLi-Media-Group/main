@@ -67,7 +67,7 @@ export default function PitchPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">MyBeatFi Pitch Service</h1>
-            <p className="text-lg text-gray-300">For just $10/month, get your music in front of music supervisors and decision-makers.</p>
+            <p className="text-lg text-gray-300">For just $19.99/month, get your music in front of music supervisors and decision-makers.</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
@@ -83,7 +83,7 @@ export default function PitchPage() {
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
               <h2 className="text-2xl font-semibold text-white mb-4">How It Works</h2>
               <ol className="list-decimal list-inside space-y-2 text-gray-200">
-                <li>Subscribe for $10/month or $89/year.</li>
+                <li>Subscribe for $19.99/month or $189/year.</li>
                 <li>Upload your music through your MyBeatFi Sync account.</li>
                 <li>When we receive sync briefs, our team selects tracks that best fit the opportunity.</li>
                 <li>Selected tracks are added to playlists and sent directly to the submission address.</li>
@@ -94,7 +94,7 @@ export default function PitchPage() {
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-10">
             <h2 className="text-2xl font-semibold text-white mb-4">Subscription & Service Terms</h2>
             <ul className="space-y-2 text-gray-200">
-              <li>Billing Cycle: The Pitch Service subscription is billed monthly at $10 or annually at $89.</li>
+              <li>Billing Cycle: The Pitch Service subscription is billed monthly at $19.99 or annually at $189.</li>
               <li>Auto-Renewal: Subscriptions automatically renew each term unless canceled.</li>
               <li>Cancellation: You may cancel at any time; access continues until end of term.</li>
               <li>No Refunds or Proration: Payments are non-refundable and not prorated.</li>
@@ -120,14 +120,14 @@ export default function PitchPage() {
                 className="px-8 py-4 rounded-lg font-semibold text-white bg-emerald-600 hover:bg-emerald-700 transition-colors flex items-center justify-center"
               >
                 {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Play className="w-5 h-5 mr-2" />}
-                Subscribe $10/month
+                Subscribe $19.99/month
               </button>
               <button
                 onClick={() => handleJoin('annual')}
                 disabled={loading}
                 className="px-8 py-4 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
               >
-                {loading ? 'Processing…' : 'Subscribe $89/year'}
+                {loading ? 'Processing…' : 'Subscribe $189/year'}
               </button>
             </div>
             {!user && (
