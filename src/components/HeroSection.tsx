@@ -198,14 +198,6 @@ export function HeroSection({ onSearch, onSignupClick }: HeroSectionProps) {
             Browse Catalog
           </button>
           
-          <button
-            onClick={() => navigate('/pitch')}
-            className="group bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-500 ease-out flex items-center border border-emerald-500/40"
-            title="MyBeatFi Pitch Service"
-          >
-            <Play className="w-5 h-5 mr-2 transition-transform duration-300 group-hover:scale-110" />
-            Pitch Service
-          </button>
         </div>
 
         {/* Rights Holders Section */}
@@ -243,13 +235,23 @@ export function HeroSection({ onSearch, onSignupClick }: HeroSectionProps) {
           {/* Agent Signup Section */}
           <div className="border-t border-white/20 pt-6 mt-6">
             <p className="text-gray-400 mb-4">Are you a Music Agent or Representative?</p>
-            <div className="flex justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
               <button 
                 onClick={onSignupClick}
                 className="group bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
               >
                 <UserPlus className="w-4 h-4 mr-2" />
                 Sign up as Agent
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+              </button>
+              
+              <button
+                onClick={() => navigate('/pitch')}
+                className="group bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+                title="MyBeatFi Pitch Service"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Pitch Service
                 <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
               </button>
             </div>
