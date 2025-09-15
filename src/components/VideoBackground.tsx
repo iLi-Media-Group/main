@@ -118,13 +118,15 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
   
   // For login pages, prefer video background unless there's an error or it's a Vimeo URL
   // For signup page, allow background management but prefer reliability
+  // For pitch page, allow video backgrounds including Vimeo URLs
   const isLoginPage = page && (page.includes('login') || page.includes('signin'));
   const isSignupPage = page === 'signup';
-  const shouldUseFallback = (!isLoginPage && !isSignupPage && !finalVideoUrl) || finalVideoUrl.includes('vimeo.com');
+  const isPitchPage = page === 'pitch';
+  const shouldUseFallback = (!isLoginPage && !isSignupPage && !isPitchPage && !finalVideoUrl) || (finalVideoUrl.includes('vimeo.com') && !isPitchPage);
 
   return (
     <div className="absolute inset-0 w-full h-full">
-      {((backgroundAsset?.type === 'video') || ((isLoginPage || isSignupPage) && finalVideoUrl && !finalVideoUrl.includes('vimeo.com'))) && !isVideoError && !loading && !shouldUseFallback ? (
+      {((backgroundAsset?.type === 'video') || ((isLoginPage || isSignupPage || isPitchPage) && finalVideoUrl && (!finalVideoUrl.includes('vimeo.com') || isPitchPage))) && !isVideoError && !loading && !shouldUseFallback ? (
         <video
           autoPlay
           muted

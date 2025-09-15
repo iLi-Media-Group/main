@@ -11,18 +11,15 @@ export default function PitchPage() {
   const { user, accountType } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [selectedBillingCycle, setSelectedBillingCycle] = useState<'monthly' | 'annual' | null>(null);
   const isEligible = useMemo(() => {
     if (!user) return false;
     return accountType === 'artist_band' || accountType === 'producer' || accountType === 'rights_holder';
   }, [user, accountType]);
 
   const handleJoin = useCallback(async (billingCycle: 'monthly' | 'annual') => {
-    if (!user) {
-      navigate('/login?redirect=pitch');
-      return;
-    }
-
-    if (!isEligible) {
+    if (!user || !isEligible) {
+      setSelectedBillingCycle(billingCycle);
       setShowAuthModal(true);
       return;
     }
@@ -54,6 +51,17 @@ export default function PitchPage() {
       setLoading(false);
     }
   }, [user, isEligible, navigate]);
+
+  const handleLoginSuccess = useCallback(async () => {
+    setShowAuthModal(false);
+    if (selectedBillingCycle) {
+      // Wait a moment for the auth state to update
+      setTimeout(() => {
+        handleJoin(selectedBillingCycle);
+      }, 500);
+    }
+    setSelectedBillingCycle(null);
+  }, [selectedBillingCycle, handleJoin]);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -142,7 +150,7 @@ export default function PitchPage() {
       <PitchAuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        onLoginSuccess={() => setShowAuthModal(false)}
+        onLoginSuccess={handleLoginSuccess}
       />
     </div>
   );
