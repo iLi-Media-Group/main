@@ -22,6 +22,7 @@ import {
 import { CreatePlaylistModal } from './CreatePlaylistModal';
 import { SendPlaylistEmailModal } from './SendPlaylistEmailModal';
 import { DealTrackingModal } from './DealTrackingModal';
+import { CreatePrivateBriefModal } from './CreatePrivateBriefModal';
 
 interface PitchOpportunity {
   id: string;
@@ -41,6 +42,8 @@ interface PitchOpportunity {
   total_submissions: number;
   selected_submissions: number;
   placed_submissions: number;
+  assigned_agent: string | null;
+  assigned_agent_name?: string;
 }
 
 interface PitchSubmission {
@@ -103,6 +106,16 @@ export function PitchManagement() {
     producerName: string;
     clientName: string;
   } | null>(null);
+  const [showCreateBrief, setShowCreateBrief] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter opportunities based on search term
+  const filteredOpportunities = opportunities.filter(opportunity =>
+    opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    opportunity.client_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (opportunity.client_company && opportunity.client_company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (opportunity.assigned_agent_name && opportunity.assigned_agent_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   // Fetch all pitch data
   const fetchPitchData = useCallback(async () => {
@@ -111,16 +124,33 @@ export function PitchManagement() {
     try {
       setLoading(true);
 
-      // Fetch opportunities with submission counts
+      // Fetch opportunities with submission counts and assigned agent info
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
         .from('active_pitch_opportunities')
-        .select('*')
+        .select(`
+          *,
+          assigned_agent_profile:assigned_agent (
+            display_name,
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) {
         console.error('Error fetching opportunities:', opportunitiesError);
       } else {
-        setOpportunities(opportunitiesData || []);
+        // Transform opportunities data to include assigned agent name
+        const transformedOpportunities = (opportunitiesData || []).map(opp => ({
+          ...opp,
+          assigned_agent_name: opp.assigned_agent_profile 
+            ? (opp.assigned_agent_profile.display_name || 
+               `${opp.assigned_agent_profile.first_name || ''} ${opp.assigned_agent_profile.last_name || ''}`.trim() || 
+               opp.assigned_agent_profile.email)
+            : null
+        }));
+        setOpportunities(transformedOpportunities);
       }
 
       // Fetch submissions with track and user details
@@ -331,8 +361,34 @@ export function PitchManagement() {
       <div className="mt-6">
         {activeTab === 'opportunities' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {opportunities.map((opportunity) => (
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h3 className="text-lg font-semibold text-white">Pitch Opportunities</h3>
+              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                <input
+                  type="text"
+                  placeholder="Search by title, client, or agent..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
+                />
+                <button
+                  onClick={() => setShowCreateBrief(true)}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Brief
+                </button>
+              </div>
+            </div>
+            {filteredOpportunities.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">
+                  {searchTerm ? `No opportunities found matching "${searchTerm}"` : 'No opportunities available'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredOpportunities.map((opportunity) => (
                 <div key={opportunity.id} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -360,6 +416,12 @@ export function PitchManagement() {
                       <Music className="w-4 h-4 mr-2" />
                       {opportunity.genre_requirements.join(', ')}
                     </div>
+                    {opportunity.assigned_agent_name && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Users className="w-4 h-4 mr-2" />
+                        Agent: {opportunity.assigned_agent_name}
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 mb-4">
@@ -392,8 +454,9 @@ export function PitchManagement() {
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -621,6 +684,14 @@ export function PitchManagement() {
           producerName={dealTrackingData.producerName}
           clientName={dealTrackingData.clientName}
           onDealUpdated={fetchPitchData}
+        />
+      )}
+
+      {showCreateBrief && (
+        <CreatePrivateBriefModal
+          isOpen={showCreateBrief}
+          onClose={() => setShowCreateBrief(false)}
+          onBriefCreated={fetchPitchData}
         />
       )}
     </div>
