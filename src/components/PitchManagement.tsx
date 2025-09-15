@@ -85,7 +85,7 @@ interface PitchPlaylist {
 
 export function PitchManagement() {
   const { user } = useUnifiedAuth();
-  const [activeTab, setActiveTab] = useState<'opportunities' | 'submissions' | 'playlists' | 'analytics'>('opportunities');
+  const [activeTab, setActiveTab] = useState<'opportunities' | 'track_submissions' | 'playlists' | 'analytics'>('opportunities');
   const [opportunities, setOpportunities] = useState<PitchOpportunity[]>([]);
   const [submissions, setSubmissions] = useState<PitchSubmission[]>([]);
   const [playlists, setPlaylists] = useState<PitchPlaylist[]>([]);
@@ -111,6 +111,7 @@ export function PitchManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSubmitToBrief, setShowSubmitToBrief] = useState(false);
   const [selectedOpportunityForSubmission, setSelectedOpportunityForSubmission] = useState<PitchOpportunity | null>(null);
+  const [selectedOpportunityForView, setSelectedOpportunityForView] = useState<PitchOpportunity | null>(null);
 
   // Filter opportunities based on search term
   const filteredOpportunities = opportunities.filter(opportunity =>
@@ -119,6 +120,15 @@ export function PitchManagement() {
     (opportunity.client_company && opportunity.client_company.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (opportunity.assigned_agent_name && opportunity.assigned_agent_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // Filter submissions and playlists by selected opportunity
+  const filteredSubmissions = selectedOpportunityForView 
+    ? submissions.filter(sub => sub.opportunity_id === selectedOpportunityForView.id)
+    : submissions;
+
+  const filteredPlaylists = selectedOpportunityForView
+    ? playlists.filter(playlist => playlist.opportunity_id === selectedOpportunityForView.id)
+    : playlists;
 
   // Fetch all pitch data
   const fetchPitchData = useCallback(async () => {
@@ -156,7 +166,7 @@ export function PitchManagement() {
         setOpportunities(transformedOpportunities);
       }
 
-      // Fetch submissions with track and user details
+      // Fetch submissions with track, user, and opportunity details
       const { data: submissionsData, error: submissionsError } = await supabase
         .from('pitch_submissions')
         .select(`
@@ -173,6 +183,10 @@ export function PitchManagement() {
           profiles!pitch_submissions_submitted_by_fkey (
             display_name,
             account_type
+          ),
+          pitch_opportunities!pitch_submissions_opportunity_id_fkey (
+            title,
+            client_name
           )
         `)
         .order('created_at', { ascending: false });
@@ -189,7 +203,9 @@ export function PitchManagement() {
           track_bpm: sub.tracks?.bpm || 0,
           track_duration: sub.tracks?.duration || 0,
           producer_name: sub.profiles?.display_name || 'Unknown',
-          artist_name: sub.profiles?.display_name || 'Unknown'
+          artist_name: sub.profiles?.display_name || 'Unknown',
+          opportunity_title: sub.pitch_opportunities?.title || 'Unknown Opportunity',
+          opportunity_client: sub.pitch_opportunities?.client_name || 'Unknown Client'
         }));
         setSubmissions(transformedSubmissions);
       }
@@ -342,7 +358,7 @@ export function PitchManagement() {
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'opportunities', label: 'Opportunities', icon: Calendar },
-            { id: 'submissions', label: 'Submissions', icon: Music },
+            { id: 'track_submissions', label: 'Track Submissions', icon: Music },
             { id: 'playlists', label: 'Playlists', icon: FileText },
             { id: 'analytics', label: 'Analytics', icon: TrendingUp }
           ].map((tab) => {
@@ -388,6 +404,119 @@ export function PitchManagement() {
                 </button>
               </div>
             </div>
+
+            {/* Selected Opportunity Details */}
+            {selectedOpportunity && (
+              <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="text-xl font-bold text-white">{selectedOpportunity.title}</h4>
+                    <p className="text-gray-300">{selectedOpportunity.client_name}</p>
+                    {selectedOpportunity.client_company && (
+                      <p className="text-gray-400">{selectedOpportunity.client_company}</p>
+                    )}
+                    {selectedOpportunity.assigned_agent_name && (
+                      <p className="text-gray-400">Agent: {selectedOpportunity.assigned_agent_name}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSelectedOpportunity(null)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">Track Submissions</h5>
+                    <div className="text-2xl font-bold text-white">
+                      {submissions.filter(sub => sub.opportunity_id === selectedOpportunity.id).length}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">Playlists Created</h5>
+                    <div className="text-2xl font-bold text-white">
+                      {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).length}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-gray-300 mb-2">Selected Tracks</h5>
+                    <div className="text-2xl font-bold text-green-400">
+                      {submissions.filter(sub => 
+                        sub.opportunity_id === selectedOpportunity.id && 
+                        sub.submission_status === 'selected'
+                      ).length}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Track Submissions for this Opportunity */}
+                <div className="mb-6">
+                  <h5 className="text-lg font-semibold text-white mb-3">Track Submissions</h5>
+                  {submissions.filter(sub => sub.opportunity_id === selectedOpportunity.id).length === 0 ? (
+                    <p className="text-gray-400">No track submissions yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {submissions.filter(sub => sub.opportunity_id === selectedOpportunity.id).map((submission) => (
+                        <div key={submission.id} className="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                          <div>
+                            <div className="font-medium text-white">{submission.track_title}</div>
+                            <div className="text-sm text-gray-400">
+                              {submission.track_genre} • {submission.track_bpm} BPM • {submission.producer_name}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(submission.submission_status)}`}>
+                              {submission.submission_status}
+                            </span>
+                            <select
+                              value={submission.submission_status}
+                              onChange={(e) => handleUpdateSubmissionStatus(submission.id, e.target.value)}
+                              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white"
+                            >
+                              <option value="submitted">Submitted</option>
+                              <option value="selected">Selected</option>
+                              <option value="placed">Placed</option>
+                              <option value="rejected">Rejected</option>
+                            </select>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Playlists for this Opportunity */}
+                <div>
+                  <h5 className="text-lg font-semibold text-white mb-3">Playlists</h5>
+                  {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).length === 0 ? (
+                    <p className="text-gray-400">No playlists created yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).map((playlist) => (
+                        <div key={playlist.id} className="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                          <div>
+                            <div className="font-medium text-white">{playlist.playlist_name}</div>
+                            <div className="text-sm text-gray-400">
+                              {playlist.tracks_included.length} tracks • {playlist.submission_status}
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleSendPlaylist(playlist.id)}
+                              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                            >
+                              Send Email
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {filteredOpportunities.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-400">
@@ -450,7 +579,11 @@ export function PitchManagement() {
                   <div className="space-y-2">
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => setSelectedOpportunity(opportunity)}
+                        onClick={() => {
+                          setSelectedOpportunity(opportunity);
+                          setSelectedOpportunityForView(opportunity);
+                          setActiveTab('track_submissions');
+                        }}
                         className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
                       >
                         View Details
@@ -477,9 +610,25 @@ export function PitchManagement() {
           </div>
         )}
 
-        {activeTab === 'submissions' && (
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+        {activeTab === 'track_submissions' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-white">Track Submissions</h3>
+              {selectedOpportunityForView && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-300">Filtered by:</span>
+                  <span className="text-sm font-medium text-white">{selectedOpportunityForView.title}</span>
+                  <button
+                    onClick={() => setSelectedOpportunityForView(null)}
+                    className="text-xs text-gray-400 hover:text-white"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -492,7 +641,7 @@ export function PitchManagement() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {submissions.map((submission) => (
+                  {filteredSubmissions.map((submission) => (
                     <tr key={submission.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -501,7 +650,10 @@ export function PitchManagement() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {submission.opportunity_id}
+                        <div>
+                          <div className="font-medium">{submission.opportunity_title}</div>
+                          <div className="text-gray-500">{submission.opportunity_client}</div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {submission.producer_name}
