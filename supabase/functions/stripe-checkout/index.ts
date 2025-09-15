@@ -56,20 +56,8 @@ Deno.serve(async (req) => {
 
     console.log(`Creating checkout session for price_id: ${price_id}, mode: ${mode}`);
 
-    // Create a test customer for testing purposes
-    const testCustomer = await stripe.customers.create({
-      email: 'test@example.com',
-      metadata: {
-        test: 'true',
-        timestamp: new Date().toISOString()
-      },
-    });
-
-    console.log(`Created test customer: ${testCustomer.id}`);
-
-    // Create the checkout session
+    // Create the checkout session without a customer (Stripe will create one during checkout)
     const session = await stripe.checkout.sessions.create({
-      customer: testCustomer.id,
       line_items: custom_amount ? [
         {
           price_data: {
@@ -91,9 +79,7 @@ Deno.serve(async (req) => {
       success_url,
       cancel_url,
       metadata: {
-        ...metadata,
-        test: 'true',
-        customer_id: testCustomer.id
+        ...metadata
       },
       allow_promotion_codes: true,
     });
@@ -102,9 +88,7 @@ Deno.serve(async (req) => {
 
     return corsResponse({ 
       sessionId: session.id, 
-      url: session.url,
-      customerId: testCustomer.id,
-      test: true
+      url: session.url
     });
 
   } catch (error: any) {

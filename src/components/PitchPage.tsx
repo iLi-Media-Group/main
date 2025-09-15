@@ -27,8 +27,9 @@ export default function PitchPage() {
       return;
     }
 
-    const monthlyPriceId = import.meta.env.VITE_PITCH_MONTHLY_PRICE_ID as string | undefined;
-    const annualPriceId = import.meta.env.VITE_PITCH_ANNUAL_PRICE_ID as string | undefined;
+    // TEMPORARY: Hardcode new price IDs until environment variables are working
+    const monthlyPriceId = 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+    const annualPriceId = 'price_1S7flBA4Yw5viczUFypZhfri';
     const priceId = billingCycle === 'monthly' ? monthlyPriceId : annualPriceId;
 
     if (!priceId) {

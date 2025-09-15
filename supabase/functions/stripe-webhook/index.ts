@@ -42,6 +42,7 @@ async function sendWelcomeEmail(to: string, name: string, company: string) {
 
 Deno.serve(async (req) => {
   // Debug: Log all incoming headers
+  // Updated: Force redeploy to pick up new PITCH price IDs
   console.log('Incoming request headers:', Object.fromEntries(req.headers.entries()));
   // CORS headers
   const corsHeaders = {
@@ -718,8 +719,9 @@ Deno.serve(async (req) => {
 
           // If this subscription is for the Pitch service, mirror to pitch_subscriptions table
           try {
-            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
-            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
             if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
               // Lookup user
               const { data: customerRecord } = await supabase
@@ -896,8 +898,9 @@ Deno.serve(async (req) => {
 
           // Mirror pitch status if this is a Pitch price
           try {
-            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
-            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
             if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
               await supabase
                 .from('pitch_subscriptions')
@@ -955,8 +958,9 @@ Deno.serve(async (req) => {
 
           // If this was a Pitch subscription, mark inactive and increment failed attempts
           try {
-            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID');
-            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID');
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
             if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
               const { data: existing } = await supabase
                 .from('pitch_subscriptions')
