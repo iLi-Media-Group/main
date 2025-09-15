@@ -262,7 +262,7 @@ const App = () => {
         <Routes>
         <Route path="/" element={
           <HomeLayoutWrapper>
-            <HeroSection onSearch={handleSearch} />
+            <HeroSection onSearch={handleSearch} onSignupClick={() => setIsSignupOpen(true)} />
 
             <section className="py-12 bg-black/20">
               <div className="container mx-auto px-4">

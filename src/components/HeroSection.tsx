@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 
 interface HeroSectionProps {
   onSearch?: (filters: any) => void;
+  onSignupClick?: () => void;
 }
 
 interface BackgroundAsset {
@@ -18,7 +19,7 @@ interface BackgroundAsset {
   file_size: number;
 }
 
-export function HeroSection({ onSearch }: HeroSectionProps) {
+export function HeroSection({ onSearch, onSignupClick }: HeroSectionProps) {
   const navigate = useNavigate();
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [isVideoError, setIsVideoError] = useState(false);
@@ -237,6 +238,21 @@ export function HeroSection({ onSearch }: HeroSectionProps) {
               Join as Artist
               <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
             </button>
+          </div>
+          
+          {/* Agent Signup Section */}
+          <div className="border-t border-white/20 pt-6 mt-6">
+            <p className="text-gray-400 mb-4">Are you a Music Agent or Representative?</p>
+            <div className="flex justify-center">
+              <button 
+                onClick={onSignupClick}
+                className="group bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform hover:scale-105 hover:shadow-xl shadow-lg flex items-center"
+              >
+                <UserPlus className="w-4 h-4 mr-2" />
+                Sign up as Agent
+                <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 ease-out group-hover:translate-x-1" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
