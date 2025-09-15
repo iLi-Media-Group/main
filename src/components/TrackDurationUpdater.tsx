@@ -55,19 +55,27 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
 
       // Filter tracks that need duration updates or formatting
       const tracksNeedingUpdates = data?.filter(track => {
-        // Tracks with missing or default durations
-        if (!track.duration || track.duration === '3:30' || track.duration === '0:00') {
-          return true;
-        }
-        
         const durationStr = String(track.duration);
         
         // Debug: Log all durations to see what we're working with
         console.log(`Track "${track.title}" has duration: "${durationStr}" (type: ${typeof track.duration})`);
         
+        // Tracks with missing durations
+        if (!track.duration) {
+          return true;
+        }
+        
+        // Tracks with default durations in various formats
+        if (durationStr === '3:30' || durationStr === '0:00' || 
+            durationStr === '03:30:00' || durationStr === '00:00:00' ||
+            durationStr === '03:30' || durationStr === '00:00') {
+          console.log(`Found track with default duration: "${durationStr}"`);
+          return true;
+        }
+        
         // Tracks with short format like "0:03" (missing leading zero in minutes)
         // More flexible pattern to catch variations
-        if (durationStr.match(/^\d{1,2}:\d{1,2}$/) && !durationStr.match(/^\d{2}:\d{2}$/)) {
+        if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
           console.log(`Found track with short format: "${durationStr}"`);
           return true;
         }
@@ -144,8 +152,14 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
       // Check if track just needs formatting (seconds to MM:SS)
       const durationStr = String(track.duration);
       
-      // Handle "0:03" format (missing leading zero in minutes)
-      if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+      // Handle default durations - these need to be replaced with actual duration from audio file
+      if (durationStr === '3:30' || durationStr === '0:00' || 
+          durationStr === '03:30:00' || durationStr === '00:00:00' ||
+          durationStr === '03:30' || durationStr === '00:00') {
+        // These are default durations, need to get actual duration from audio file
+        // Continue to audio processing below
+      } else if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+        // Handle "0:03" format (missing leading zero in minutes)
         const [minutes, seconds] = durationStr.split(':').map(Number);
         if (!isNaN(minutes) && !isNaN(seconds)) {
           newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -250,8 +264,14 @@ export function TrackDurationUpdater({ trackId, onComplete }: TrackDurationUpdat
         // Check if track just needs formatting (seconds to MM:SS)
         const durationStr = String(track.duration);
         
-        // Handle "0:03" format (missing leading zero in minutes)
-        if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+        // Handle default durations - these need to be replaced with actual duration from audio file
+        if (durationStr === '3:30' || durationStr === '0:00' || 
+            durationStr === '03:30:00' || durationStr === '00:00:00' ||
+            durationStr === '03:30' || durationStr === '00:00') {
+          // These are default durations, need to get actual duration from audio file
+          // Continue to audio processing below
+        } else if (durationStr.match(/^\d{1}:\d{1,2}$/)) {
+          // Handle "0:03" format (missing leading zero in minutes)
           const [minutes, seconds] = durationStr.split(':').map(Number);
           if (!isNaN(minutes) && !isNaN(seconds)) {
             newDuration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
