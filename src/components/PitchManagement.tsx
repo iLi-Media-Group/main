@@ -17,7 +17,8 @@ import {
   Clock,
   DollarSign,
   FileText,
-  Play
+  Play,
+  X
 } from 'lucide-react';
 import { CreatePlaylistModal } from './CreatePlaylistModal';
 import { SendPlaylistEmailModal } from './SendPlaylistEmailModal';
@@ -339,8 +340,8 @@ export function PitchManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Pitch Service Management</h2>
-          <p className="text-gray-600">Manage pitch opportunities, submissions, and playlists</p>
+          <h2 className="text-2xl font-bold text-white">Pitch Service Management</h2>
+          <p className="text-white">Manage pitch opportunities, submissions, and playlists</p>
         </div>
       </div>
 
@@ -360,8 +361,8 @@ export function PitchManagement() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-400'
+                    : 'border-transparent text-white hover:text-gray-300 hover:border-gray-300'
                 }`}
               >
                 <Icon className="w-4 h-4 mr-2" />
@@ -420,13 +421,13 @@ export function PitchManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="bg-white/5 rounded-lg p-4">
-                    <h5 className="text-sm font-medium text-gray-300 mb-2">Track Submissions</h5>
+                    <h5 className="text-sm font-medium text-white mb-2">Track Submissions</h5>
                     <div className="text-2xl font-bold text-white">
                       {submissions.filter(sub => sub.opportunity_id === selectedOpportunity.id).length}
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
-                    <h5 className="text-sm font-medium text-gray-300 mb-2">Playlists Created</h5>
+                    <h5 className="text-sm font-medium text-white mb-2">Playlists Created</h5>
                     <div className="text-2xl font-bold text-white">
                       {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).length}
                     </div>
@@ -642,8 +643,12 @@ export function PitchManagement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
-                          <div className="font-medium">{submission.opportunity_title}</div>
-                          <div className="text-gray-500">{submission.opportunity_client}</div>
+                          <div className="font-medium">
+                            {opportunities.find(opp => opp.id === submission.opportunity_id)?.title || 'Unknown Opportunity'}
+                          </div>
+                          <div className="text-gray-500">
+                            {opportunities.find(opp => opp.id === submission.opportunity_id)?.client_name || 'Unknown Client'}
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -782,8 +787,8 @@ export function PitchManagement() {
                   <FileText className="w-6 h-6 text-purple-600" />
                 </div>
                 <div className="ml-4">
-                  <div className="text-2xl font-bold text-gray-900">{playlists.length}</div>
-                  <div className="text-sm text-gray-500">Playlists Created</div>
+                  <div className="text-2xl font-bold text-white">{playlists.length}</div>
+                  <div className="text-sm text-white">Playlists Created</div>
                 </div>
               </div>
             </div>
