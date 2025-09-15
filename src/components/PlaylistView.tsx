@@ -52,6 +52,40 @@ function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: str
   );
 }
 
+// Component to handle track images using public URLs
+function TrackImage({ track }: { track: any }) {
+  // Pick your fallback depending on context
+  const FALLBACK = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop";
+
+  // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
+  // This ensures the cache key only changes when the image path actually changes
+  const cacheKey = track.image_url ? track.image_url.length : 0;
+
+  const publicUrl = track.image_url?.startsWith("https://")
+    ? track.image_url
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image_url}?v=${cacheKey}`;
+
+  const [src, setSrc] = useState(publicUrl);
+
+  // Reset src whenever the track or cacheKey changes
+  useEffect(() => {
+    setSrc(publicUrl);
+  }, [publicUrl]);
+
+  return (
+    <img
+      src={src}
+      alt={track.title}
+      className="w-16 h-16 object-cover rounded-lg"
+      onError={() => {
+        if (src !== FALLBACK) {
+          setSrc(FALLBACK);
+        }
+      }}
+    />
+  );
+}
+
 export function PlaylistView() {
   console.log('🎵 PlaylistView component is being rendered!');
   console.log('🔍 Current URL:', window.location.href);
@@ -384,11 +418,7 @@ export function PlaylistView() {
 
                                                  {/* Track Image */}
                          <div className="relative">
-                           <img
-                             src={track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop'}
-                             alt={track.title}
-                             className="w-16 h-16 object-cover rounded-lg"
-                           />
+                           <TrackImage track={track} />
                          </div>
 
                         {/* Track Info */}
