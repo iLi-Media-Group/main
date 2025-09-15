@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { useUnifiedAuth } from '../hooks/useUnifiedAuth';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { 
   Calendar, 
   Mail, 

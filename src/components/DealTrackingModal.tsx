@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useUnifiedAuth } from '../hooks/useUnifiedAuth';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { X, DollarSign, Calendar, FileText, Bell, CheckCircle, Clock, AlertTriangle, User, Mail } from 'lucide-react';
 
 interface Deal {

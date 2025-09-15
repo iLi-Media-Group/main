@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useUnifiedAuth } from '../hooks/useUnifiedAuth';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { X, Send, Mail, FileText, Clock, User, Play, Music } from 'lucide-react';
 
 interface Track {
