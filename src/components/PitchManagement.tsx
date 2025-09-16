@@ -566,6 +566,7 @@ export function PitchManagement() {
                               value={submission.submission_status}
                               onChange={(e) => handleUpdateSubmissionStatus(submission.id, e.target.value)}
                               className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-black"
+                              style={{ color: 'black' }}
                             >
                               <option value="submitted">Submitted</option>
                               <option value="selected">Selected</option>
@@ -779,6 +780,7 @@ export function PitchManagement() {
                             value={submission.submission_status}
                             onChange={(e) => handleUpdateSubmissionStatus(submission.id, e.target.value)}
                             className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-black"
+                            style={{ color: 'black' }}
                           >
                             <option value="submitted">Submitted</option>
                             <option value="selected">Selected</option>
