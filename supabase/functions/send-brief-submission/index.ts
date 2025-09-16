@@ -72,26 +72,7 @@ serve(async (req) => {
       // Get playlist details from main playlists table
       const { data: playlistData, error: playlistError } = await supabase
         .from('playlists')
-        .select(`
-          name,
-          description,
-          playlist_tracks (
-            track_id,
-            tracks (
-              id,
-              title,
-              genres,
-              moods,
-              duration,
-              audio_url,
-              profiles!tracks_track_producer_id_fkey (
-                display_name,
-                first_name,
-                last_name
-              )
-            )
-          )
-        `)
+        .select('name, description')
         .eq('id', playlist_id)
         .single()
 
@@ -100,8 +81,34 @@ serve(async (req) => {
         throw new Error('Failed to fetch playlist information')
       }
 
+      // Get playlist tracks separately
+      const { data: playlistTracksData, error: playlistTracksError } = await supabase
+        .from('playlist_tracks')
+        .select(`
+          track_id,
+          tracks (
+            id,
+            title,
+            genres,
+            moods,
+            duration,
+            audio_url,
+            profiles!tracks_track_producer_id_fkey (
+              display_name,
+              first_name,
+              last_name
+            )
+          )
+        `)
+        .eq('playlist_id', playlist_id)
+
+      if (playlistTracksError) {
+        console.error('Error fetching playlist tracks:', playlistTracksError)
+        throw new Error('Failed to fetch playlist tracks')
+      }
+
       submissionContent = `Playlist: ${playlistData.name}`
-      trackLinks = playlistData.playlist_tracks?.map((pt: any) => {
+      trackLinks = playlistTracksData?.map((pt: any) => {
         const track = pt.tracks
         if (!track) return ''
         const producerName = track.profiles?.display_name || 
