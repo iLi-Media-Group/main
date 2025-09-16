@@ -61,6 +61,7 @@ interface PitchSubmission {
   track_duration: number;
   producer_name: string;
   artist_name: string;
+  playlist_name?: string;
 }
 
 interface PitchPlaylist {
@@ -216,6 +217,18 @@ export function PitchManagement() {
                              track?.profiles?.email || 
                              'Unknown Producer';
           
+          // Determine if this track was submitted as part of a playlist
+          let playlistName = 'Individual Track';
+          if (sub.submission_notes && sub.submission_notes.includes('Playlist submission:')) {
+            // Extract playlist name from submission notes
+            const playlistMatch = sub.submission_notes.match(/Playlist submission: (.+?)(?:\n|$)/);
+            if (playlistMatch) {
+              playlistName = playlistMatch[1];
+            } else {
+              playlistName = 'Playlist Submission';
+            }
+          }
+          
           return {
             ...sub,
             track_title: track?.title || 'Unknown Track',
@@ -226,7 +239,8 @@ export function PitchManagement() {
             producer_name: producerName,
             artist_name: producerName,
             opportunity_title: opportunity?.title || 'Unknown Opportunity',
-            opportunity_client: opportunity?.client_name || 'Unknown Client'
+            opportunity_client: opportunity?.client_name || 'Unknown Client',
+            playlist_name: playlistName
           };
         });
         setSubmissions(transformedSubmissions);
@@ -667,6 +681,15 @@ export function PitchManagement() {
                       >
                         View Details
                       </button>
+                      <button
+                        onClick={() => {
+                          setSelectedOpportunityForView(opportunity);
+                          setActiveTab('track_submissions');
+                        }}
+                        className="flex-1 bg-green-600 text-white px-3 py-2 rounded text-sm hover:bg-green-700 transition-colors"
+                      >
+                        View Submissions
+                      </button>
                     </div>
                     <button
                       onClick={() => handleSubmitToBrief(opportunity)}
@@ -707,6 +730,7 @@ export function PitchManagement() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Track</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Opportunity</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Playlist</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted By</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
@@ -730,6 +754,11 @@ export function PitchManagement() {
                           <div className="text-gray-500">
                             {opportunities.find(opp => opp.id === submission.opportunity_id)?.client_name || 'Unknown Client'}
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="font-medium">
+                          {submission.playlist_name || 'Individual Track'}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
