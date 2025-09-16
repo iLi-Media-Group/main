@@ -121,25 +121,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       // Fetch available playlists (from main playlists table, not pitch-specific)
       const { data: playlistsData, error: playlistsError } = await supabase
         .from('playlists')
-        .select(`
-          id,
-          name,
-          tracks_included,
-          tracks:tracks_included (
-            id,
-            title,
-            genre,
-            mood,
-            duration,
-            audio_url,
-            track_producer_id,
-            profiles!tracks_track_producer_id_fkey (
-              display_name,
-              first_name,
-              last_name
-            )
-          )
-        `)
+        .select('id, name, tracks_included')
         .eq('created_by', user.id)
         .eq('is_active', true);
 
@@ -152,17 +134,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       const transformedPlaylists = (playlistsData || []).map(playlist => ({
         id: playlist.id,
         name: playlist.name,
-        tracks: (playlist.tracks || []).map((track: any) => ({
-          id: track.id,
-          title: track.title,
-          genre: track.genre,
-          mood: track.mood,
-          duration: track.duration,
-          audio_url: track.audio_url,
-          producer_name: track.profiles?.display_name || 
-                        `${track.profiles?.first_name || ''} ${track.profiles?.last_name || ''}`.trim() || 
-                        'Unknown'
-        }))
+        tracks: [] // Will be populated later if needed
       }));
 
       setAvailablePlaylists(transformedPlaylists);
@@ -170,20 +142,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       // Fetch available tracks (all tracks from users with pitch access)
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
-        .select(`
-          id,
-          title,
-          genre,
-          mood,
-          duration,
-          audio_url,
-          track_producer_id,
-          profiles!tracks_track_producer_id_fkey (
-            display_name,
-            first_name,
-            last_name
-          )
-        `)
+        .select('id, title, genre, mood, duration, audio_url, track_producer_id')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -198,9 +157,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
         mood: track.mood,
         duration: track.duration,
         audio_url: track.audio_url,
-        producer_name: track.profiles?.display_name || 
-                      `${track.profiles?.first_name || ''} ${track.profiles?.last_name || ''}`.trim() || 
-                      'Unknown'
+        producer_name: 'Unknown' // Will be populated later if needed
       }));
 
       setAvailableTracks(transformedTracks);
