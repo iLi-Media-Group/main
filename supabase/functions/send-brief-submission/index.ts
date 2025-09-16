@@ -12,7 +12,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
-  console.log('Edge function version: 4.0 - FIXED: Email formatting with MyBeatFi.io Pitch Service and playlist URL')
+  console.log('Edge function version: 5.0 - FIXED: Playlist URL using slug and debugging genres')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -78,7 +78,7 @@ serve(async (req) => {
       // Get playlist details from main playlists table
       const { data: playlistData, error: playlistError } = await supabase
         .from('playlists')
-        .select('name, description')
+        .select('name, description, slug')
         .eq('id', playlist_id)
         .single()
 
@@ -121,19 +121,33 @@ serve(async (req) => {
 
       submissionContent = `Playlist: ${playlistData.name}`
       
-      // Generate playlist URL (assuming you have a playlist view page)
-      playlistUrl = `https://mybeatfi.io/playlist/${playlist_id}`
+      // Generate playlist URL using the slug
+      playlistUrl = `https://mybeatfi.io/playlist-view/${playlistData.slug}`
       
       trackList = playlistTracksData?.map((pt: any) => {
         const track = pt.tracks
         if (!track) return ''
         
-        console.log('Track data:', { title: track.title, genres: track.genres, moods: track.moods })
+        console.log('Track data:', { 
+          title: track.title, 
+          genres: track.genres, 
+          genresType: typeof track.genres,
+          genresIsArray: Array.isArray(track.genres),
+          moods: track.moods 
+        })
         
         const producerName = track.profiles?.display_name || 
                            `${track.profiles?.first_name || ''} ${track.profiles?.last_name || ''}`.trim() || 
                            'Unknown'
-        const genre = Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown'
+        
+        let genre = 'Unknown'
+        if (Array.isArray(track.genres) && track.genres.length > 0) {
+          genre = track.genres[0]
+        } else if (typeof track.genres === 'string' && track.genres.trim()) {
+          genre = track.genres
+        }
+        
+        console.log('Genre processing:', { originalGenres: track.genres, finalGenre: genre })
         return `• ${track.title} - ${producerName} (${genre})`
       }).join('\n') || ''
       
