@@ -200,7 +200,7 @@ serve(async (req) => {
     <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
       <h3 style="margin-top: 0; color: #1e40af;">Brief: ${brief_title}</h3>
       <p><strong>Submitted by:</strong> MyBeatFi.io Pitch Service</p>
-      <p><strong>Agent Contact:</strong> ${submitterData?.display_name || submitterData?.first_name + ' ' + submitterData?.last_name || 'MyBeatFi Agent'} - ${submitterData?.email || 'mybeatfisync@gmail.com'}</p>
+      <p><strong>Agent Contact:</strong> ${submitterData?.first_name && submitterData?.last_name ? submitterData.first_name + ' ' + submitterData.last_name : submitterData?.display_name || 'MyBeatFi Agent'} - ${submitterData?.email || 'mybeatfisync@gmail.com'}</p>
       <p><strong>Submission:</strong> ${submissionContent}</p>
     </div>
 
@@ -236,7 +236,7 @@ serve(async (req) => {
 
     <div style="margin-top: 30px; padding: 20px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #2563eb;">
       <h3 style="margin-top: 0; color: #1e40af;">For Negotiations & Licensing:</h3>
-      <p style="margin: 10px 0;"><strong>Contact Agent:</strong> ${submitterData?.display_name || submitterData?.first_name + ' ' + submitterData?.last_name || 'MyBeatFi Agent'}</p>
+      <p style="margin: 10px 0;"><strong>Contact Agent:</strong> ${submitterData?.first_name && submitterData?.last_name ? submitterData.first_name + ' ' + submitterData.last_name : submitterData?.display_name || 'MyBeatFi Agent'}</p>
       <p style="margin: 10px 0;"><strong>Email:</strong> <a href="mailto:${submitterData?.email || 'mybeatfisync@gmail.com'}" style="color: #2563eb; text-decoration: none;">${submitterData?.email || 'mybeatfisync@gmail.com'}</a></p>
       <p style="margin: 15px 0; font-style: italic; color: #1e40af;">If interested in licensing one or more of these tracks, please contact me at <a href="mailto:${submitterData?.email || 'mybeatfisync@gmail.com'}" style="color: #2563eb; text-decoration: none;">${submitterData?.email || 'mybeatfisync@gmail.com'}</a>.</p>
       <p style="margin: 10px 0; color: #64748b; font-size: 14px;">This submission was sent via MyBeatFi Pitch Service.</p>
