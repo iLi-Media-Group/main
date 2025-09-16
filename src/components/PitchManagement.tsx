@@ -134,15 +134,7 @@ export function PitchManagement() {
       
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
         .from('pitch_opportunities')
-        .select(`
-          *,
-          assigned_agent_profile:profiles!assigned_agent (
-            display_name,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
@@ -151,14 +143,10 @@ export function PitchManagement() {
       if (opportunitiesError) {
         console.error('Error fetching opportunities:', opportunitiesError);
       } else {
-        // Transform opportunities data to include assigned agent name and submission counts
+        // Transform opportunities data to include submission counts
         const transformedOpportunities = (opportunitiesData || []).map(opp => ({
           ...opp,
-          assigned_agent_name: opp.assigned_agent_profile 
-            ? (opp.assigned_agent_profile.display_name || 
-               `${opp.assigned_agent_profile.first_name || ''} ${opp.assigned_agent_profile.last_name || ''}`.trim() || 
-               opp.assigned_agent_profile.email)
-            : null,
+          assigned_agent_name: null, // Will be populated later if needed
           // Add default submission counts since we're not using the view
           total_submissions: 0,
           selected_submissions: 0,
@@ -172,26 +160,7 @@ export function PitchManagement() {
       
       const { data: submissionsData, error: submissionsError } = await supabase
         .from('pitch_submissions')
-        .select(`
-          *,
-          tracks (
-            title,
-            genre,
-            mood,
-            bpm,
-            duration,
-            track_producer_id,
-            roster_entity_id
-          ),
-          profiles!pitch_submissions_submitted_by_fkey (
-            display_name,
-            account_type
-          ),
-          pitch_opportunities!pitch_submissions_opportunity_id_fkey (
-            title,
-            client_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       console.log('Submissions fetch result:', { submissionsData, submissionsError });
@@ -202,15 +171,15 @@ export function PitchManagement() {
         // Transform submissions data
         const transformedSubmissions = (submissionsData || []).map(sub => ({
           ...sub,
-          track_title: sub.tracks?.title || 'Unknown Track',
-          track_genre: sub.tracks?.genre || 'Unknown',
-          track_mood: sub.tracks?.mood || 'Unknown',
-          track_bpm: sub.tracks?.bpm || 0,
-          track_duration: sub.tracks?.duration || 0,
-          producer_name: sub.profiles?.display_name || 'Unknown',
-          artist_name: sub.profiles?.display_name || 'Unknown',
-          opportunity_title: sub.pitch_opportunities?.title || 'Unknown Opportunity',
-          opportunity_client: sub.pitch_opportunities?.client_name || 'Unknown Client'
+          track_title: 'Unknown Track', // Will be populated later if needed
+          track_genre: 'Unknown',
+          track_mood: 'Unknown',
+          track_bpm: 0,
+          track_duration: 0,
+          producer_name: 'Unknown',
+          artist_name: 'Unknown',
+          opportunity_title: 'Unknown Opportunity',
+          opportunity_client: 'Unknown Client'
         }));
         setSubmissions(transformedSubmissions);
       }
