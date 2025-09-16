@@ -12,7 +12,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
-  console.log('Edge function version: 3.0 - FIXED: Using main playlists table, not pitch_playlists')
+  console.log('Edge function version: 4.0 - FIXED: Email formatting with MyBeatFi.io Pitch Service and playlist URL')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -136,6 +136,8 @@ serve(async (req) => {
         const genre = Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown'
         return `• ${track.title} - ${producerName} (${genre})`
       }).join('\n') || ''
+      
+      console.log('Email variables:', { playlistUrl, trackList, submission_type })
 
     } else if (submission_type === 'track' && track_id) {
       // Get track details
