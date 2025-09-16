@@ -1,3 +1,4 @@
+// UPDATED VERSION - Uses main playlists table, not pitch_playlists
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -11,7 +12,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
-  console.log('Edge function version: 2.0 - Updated for playlists table')
+  console.log('Edge function version: 3.0 - FIXED: Using main playlists table, not pitch_playlists')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
