@@ -565,8 +565,7 @@ export function PitchManagement() {
                             <select
                               value={submission.submission_status}
                               onChange={(e) => handleUpdateSubmissionStatus(submission.id, e.target.value)}
-                              className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-black"
-                              style={{ color: 'black' }}
+                              className="text-xs border border-gray-300 rounded px-2 py-1 bg-blue-900/90 text-white"
                             >
                               <option value="submitted">Submitted</option>
                               <option value="selected">Selected</option>
@@ -735,7 +734,7 @@ export function PitchManagement() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Submitted By</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-blue-900/90">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -779,8 +778,7 @@ export function PitchManagement() {
                           <select
                             value={submission.submission_status}
                             onChange={(e) => handleUpdateSubmissionStatus(submission.id, e.target.value)}
-                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white text-black"
-                            style={{ color: 'black' }}
+                            className="text-xs border border-gray-300 rounded px-2 py-1 bg-blue-900/90 text-white"
                           >
                             <option value="submitted">Submitted</option>
                             <option value="selected">Selected</option>
