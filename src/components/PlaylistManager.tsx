@@ -479,7 +479,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                 </label>
               </div>
 
-              {(accountType === 'agent' || accountType === 'admin' || accountType === 'admin/producer') && (
+              {(accountType === 'agent' || accountType?.includes('admin') || accountType?.includes('agent')) && (
                 <div className="flex items-center space-x-2">
                   <input
                     type="checkbox"
