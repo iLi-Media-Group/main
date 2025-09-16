@@ -14,8 +14,14 @@ import {
   BarChart3,
   Calendar,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Music,
+  Send,
+  Plus,
+  Eye
 } from 'lucide-react';
+import { CreatePrivateBriefModal } from './CreatePrivateBriefModal';
+import { SubmitToBriefModal } from './SubmitToBriefModal';
 
 interface AgentEarnings {
   id: string;
@@ -39,6 +45,50 @@ interface AgentStats {
   averageCommission: number;
 }
 
+interface PitchOpportunity {
+  id: string;
+  title: string;
+  description: string;
+  client_name: string;
+  client_email: string;
+  client_company: string;
+  brief_type: string;
+  genre_requirements: string[];
+  mood_requirements: string[];
+  deadline: string;
+  submission_email: string;
+  submission_instructions?: string;
+  budget_range?: string;
+  status: string;
+  is_priority: boolean;
+  created_at: string;
+  total_submissions: number;
+  selected_submissions: number;
+  placed_submissions: number;
+  assigned_agent: string | null;
+  assigned_agent_name?: string;
+}
+
+interface PitchSubmission {
+  id: string;
+  opportunity_id: string;
+  track_id: string;
+  submitted_by: string;
+  submission_notes: string;
+  submission_status: string;
+  selection_notes: string;
+  created_at: string;
+  track_title: string;
+  track_genre: string;
+  track_mood: string;
+  track_bpm: number;
+  track_duration: number;
+  producer_name: string;
+  artist_name: string;
+  playlist_name?: string;
+  playlist_url?: string;
+}
+
 export function AgentDashboard() {
   const { user, profile } = useUnifiedAuth();
   const [earnings, setEarnings] = useState<AgentEarnings[]>([]);
@@ -50,13 +100,24 @@ export function AgentDashboard() {
     averageCommission: 0
   });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'deals'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'earnings' | 'deals' | 'pitch_management'>('overview');
+  
+  // Pitch management state
+  const [pitchOpportunities, setPitchOpportunities] = useState<PitchOpportunity[]>([]);
+  const [pitchSubmissions, setPitchSubmissions] = useState<PitchSubmission[]>([]);
+  const [showCreateBrief, setShowCreateBrief] = useState(false);
+  const [showSubmitToBrief, setShowSubmitToBrief] = useState(false);
+  const [selectedOpportunityForSubmission, setSelectedOpportunityForSubmission] = useState<PitchOpportunity | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (user) {
       fetchAgentData();
+      if (activeTab === 'pitch_management') {
+        fetchPitchData();
+      }
     }
-  }, [user]);
+  }, [user, activeTab]);
 
   const fetchAgentData = async () => {
     if (!user) return;
@@ -113,6 +174,118 @@ export function AgentDashboard() {
 
     } catch (error) {
       console.error('Error fetching agent data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPitchData = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+
+      // Fetch pitch opportunities created by this agent or assigned to this agent
+      const { data: opportunitiesData, error: opportunitiesError } = await supabase
+        .from('pitch_opportunities')
+        .select(`
+          *,
+          profiles!pitch_opportunities_assigned_agent_fkey (
+            first_name,
+            last_name,
+            company_name
+          )
+        `)
+        .or(`created_by.eq.${user.id},assigned_agent.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (opportunitiesError) throw opportunitiesError;
+
+      // Fetch pitch submissions for opportunities created by this agent
+      const { data: submissionsData, error: submissionsError } = await supabase
+        .from('pitch_submissions')
+        .select(`
+          *,
+          tracks (
+            title,
+            genres,
+            moods,
+            bpm,
+            duration,
+            profiles!tracks_producer_id_fkey (
+              first_name,
+              last_name,
+              company_name
+            )
+          ),
+          pitch_opportunities (
+            title,
+            client_name
+          )
+        `)
+        .in('opportunity_id', opportunitiesData?.map(opp => opp.id) || [])
+        .order('created_at', { ascending: false });
+
+      if (submissionsError) throw submissionsError;
+
+      // Transform opportunities data
+      const transformedOpportunities = opportunitiesData?.map(opp => ({
+        ...opp,
+        assigned_agent_name: opp.profiles ? 
+          (opp.profiles.first_name && opp.profiles.last_name ? 
+            `${opp.profiles.first_name} ${opp.profiles.last_name}` : 
+            opp.profiles.company_name) : null
+      })) || [];
+
+      // Transform submissions data
+      const transformedSubmissions = submissionsData?.map(sub => {
+        const track = sub.tracks;
+        const producer = track?.profiles;
+        const opportunity = sub.pitch_opportunities;
+        
+        // Extract playlist info from submission notes
+        let playlistName = 'Individual Track';
+        let playlistUrl = null;
+        if (sub.submission_notes && sub.submission_notes.includes('Playlist submission:')) {
+          const playlistMatch = sub.submission_notes.match(/Playlist submission: (.+?) - /);
+          if (playlistMatch) {
+            playlistName = playlistMatch[1];
+          } else {
+            playlistName = 'Playlist Submission';
+          }
+          const urlMatch = sub.submission_notes.match(/URL: (.+?)(?:\s|$)/);
+          if (urlMatch) {
+            playlistUrl = urlMatch[1];
+          }
+        }
+
+        return {
+          ...sub,
+          track_title: track?.title || 'Unknown Track',
+          track_genre: track?.genres?.[0] || 'Unknown',
+          track_mood: track?.moods?.[0] || 'Unknown',
+          track_bpm: track?.bpm || 0,
+          track_duration: track?.duration || 0,
+          producer_name: producer ? 
+            (producer.first_name && producer.last_name ? 
+              `${producer.first_name} ${producer.last_name}` : 
+              producer.company_name) : 'Unknown Producer',
+          artist_name: producer ? 
+            (producer.first_name && producer.last_name ? 
+              `${producer.first_name} ${producer.last_name}` : 
+              producer.company_name) : 'Unknown Artist',
+          opportunity_title: opportunity?.title || 'Unknown Opportunity',
+          opportunity_client: opportunity?.client_name || 'Unknown Client',
+          playlist_name: playlistName,
+          playlist_url: playlistUrl
+        };
+      }) || [];
+
+      setPitchOpportunities(transformedOpportunities);
+      setPitchSubmissions(transformedSubmissions);
+
+    } catch (error) {
+      console.error('Error fetching pitch data:', error);
     } finally {
       setLoading(false);
     }
@@ -283,6 +456,17 @@ export function AgentDashboard() {
           >
             Deals ({stats.totalDeals})
           </button>
+          <button
+            onClick={() => setActiveTab('pitch_management')}
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeTab === 'pitch_management'
+                ? 'bg-emerald-600 text-white'
+                : 'text-gray-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            <Music className="w-4 h-4 inline mr-2" />
+            Pitch Service
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -431,8 +615,214 @@ export function AgentDashboard() {
               {/* TODO: Add deals list when we have the data */}
             </div>
           )}
+
+          {activeTab === 'pitch_management' && (
+            <div className="space-y-6">
+              {/* Pitch Opportunities Section */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                  <h3 className="text-lg font-semibold text-white">Your Pitch Briefs</h3>
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <input
+                      type="text"
+                      placeholder="Search briefs..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64"
+                    />
+                    <button
+                      onClick={() => setShowCreateBrief(true)}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors flex items-center justify-center"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Brief
+                    </button>
+                  </div>
+                </div>
+
+                {pitchOpportunities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-4">No pitch briefs created yet</p>
+                    <button
+                      onClick={() => setShowCreateBrief(true)}
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition-colors"
+                    >
+                      Create Your First Brief
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pitchOpportunities
+                      .filter(opportunity =>
+                        opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        opportunity.client_name.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((opportunity) => (
+                        <div key={opportunity.id} className="bg-white/5 rounded-lg p-4 border border-white/10">
+                          <div className="flex items-start justify-between mb-3">
+                            <h4 className="text-white font-semibold text-sm">{opportunity.title}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              opportunity.status === 'active' ? 'bg-green-500/20 text-green-400' :
+                              opportunity.status === 'closed' ? 'bg-red-500/20 text-red-400' :
+                              'bg-gray-500/20 text-gray-400'
+                            }`}>
+                              {opportunity.status}
+                            </span>
+                          </div>
+                          
+                          <div className="space-y-2 mb-4">
+                            <div className="flex items-center text-gray-300 text-sm">
+                              <Users className="w-4 h-4 mr-2" />
+                              {opportunity.client_name}
+                            </div>
+                            {opportunity.deadline && (
+                              <div className="flex items-center text-gray-300 text-sm">
+                                <Calendar className="w-4 h-4 mr-2" />
+                                {new Date(opportunity.deadline).toLocaleDateString()}
+                              </div>
+                            )}
+                            {opportunity.budget_range && (
+                              <div className="flex items-center text-gray-300 text-sm">
+                                <DollarSign className="w-4 h-4 mr-2" />
+                                {opportunity.budget_range}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 mb-4">
+                            <div className="text-center">
+                              <div className="text-lg font-semibold text-white">
+                                {pitchSubmissions.filter(sub => sub.opportunity_id === opportunity.id).length}
+                              </div>
+                              <div className="text-xs text-gray-500">Submissions</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-lg font-semibold text-white">
+                                {pitchSubmissions.filter(sub => sub.opportunity_id === opportunity.id && sub.submission_status === 'selected').length}
+                              </div>
+                              <div className="text-xs text-gray-500">Selected</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-lg font-semibold text-white">
+                                {pitchSubmissions.filter(sub => sub.opportunity_id === opportunity.id && sub.submission_status === 'placed').length}
+                              </div>
+                              <div className="text-xs text-gray-500">Placed</div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setSelectedOpportunityForSubmission(opportunity);
+                                setShowSubmitToBrief(true);
+                              }}
+                              className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                            >
+                              <Send className="w-4 h-4 inline mr-1" />
+                              Submit
+                            </button>
+                            <button
+                              onClick={() => {
+                                // TODO: Add view submissions functionality
+                              }}
+                              className="flex-1 bg-gray-600 text-white px-3 py-2 rounded text-sm hover:bg-gray-700 transition-colors"
+                            >
+                              <Eye className="w-4 h-4 inline mr-1" />
+                              View
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Submissions Section */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold text-white mb-6">Recent Submissions</h3>
+                {pitchSubmissions.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Send className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-400">No submissions yet</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-white/10">
+                      <thead>
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Track</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producer</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brief</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/10">
+                        {pitchSubmissions.slice(0, 10).map((submission) => (
+                          <tr key={submission.id}>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-white">{submission.track_title}</div>
+                              <div className="text-sm text-gray-400">{submission.track_genre} • {submission.track_bpm} BPM</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {submission.producer_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {submission.opportunity_title}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                submission.submission_status === 'submitted' ? 'bg-blue-500/20 text-blue-400' :
+                                submission.submission_status === 'selected' ? 'bg-green-500/20 text-green-400' :
+                                submission.submission_status === 'placed' ? 'bg-purple-500/20 text-purple-400' :
+                                'bg-red-500/20 text-red-400'
+                              }`}>
+                                {submission.submission_status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                              {formatDate(submission.created_at)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Modals */}
+      {showCreateBrief && (
+        <CreatePrivateBriefModal
+          isOpen={showCreateBrief}
+          onClose={() => setShowCreateBrief(false)}
+          onBriefCreated={() => {
+            fetchPitchData();
+            setShowCreateBrief(false);
+          }}
+        />
+      )}
+
+      {showSubmitToBrief && selectedOpportunityForSubmission && (
+        <SubmitToBriefModal
+          isOpen={showSubmitToBrief}
+          onClose={() => {
+            setShowSubmitToBrief(false);
+            setSelectedOpportunityForSubmission(null);
+          }}
+          opportunity={selectedOpportunityForSubmission}
+          onSubmissionSent={() => {
+            fetchPitchData();
+            setShowSubmitToBrief(false);
+            setSelectedOpportunityForSubmission(null);
+          }}
+        />
+      )}
     </div>
   );
 }
