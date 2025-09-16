@@ -46,6 +46,8 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
   const [message, setMessage] = useState('');
   const [playlistSearch, setPlaylistSearch] = useState<string>('');
   const [showPlaylistDropdown, setShowPlaylistDropdown] = useState<boolean>(false);
+  const [trackSearch, setTrackSearch] = useState<string>('');
+  const [showTrackDropdown, setShowTrackDropdown] = useState<boolean>(false);
   
   // Data
   const [availablePlaylists, setAvailablePlaylists] = useState<Playlist[]>([]);
@@ -57,8 +59,19 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
     playlist.name.toLowerCase().includes(playlistSearch.toLowerCase())
   );
 
+  // Filter tracks based on search
+  const filteredTracks = availableTracks.filter(track =>
+    track.title.toLowerCase().includes(trackSearch.toLowerCase()) ||
+    track.genre.toLowerCase().includes(trackSearch.toLowerCase()) ||
+    track.mood.toLowerCase().includes(trackSearch.toLowerCase()) ||
+    track.producer_name.toLowerCase().includes(trackSearch.toLowerCase())
+  );
+
   // Get selected playlist name for display
   const selectedPlaylistName = availablePlaylists.find(p => p.id === selectedPlaylist)?.name || '';
+  
+  // Get selected track name for display
+  const selectedTrackName = availableTracks.find(t => t.id === selectedTrack)?.title || '';
 
   useEffect(() => {
     if (isOpen && user) {
@@ -71,6 +84,8 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       setMessage('');
       setPlaylistSearch('');
       setShowPlaylistDropdown(false);
+      setTrackSearch('');
+      setShowTrackDropdown(false);
       setError(null);
       setSuccess(false);
     }
@@ -79,17 +94,20 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showPlaylistDropdown) {
-        const target = event.target as Element;
-        if (!target.closest('.playlist-dropdown-container')) {
-          setShowPlaylistDropdown(false);
-        }
+      const target = event.target as Element;
+      
+      if (showPlaylistDropdown && !target.closest('.playlist-dropdown-container')) {
+        setShowPlaylistDropdown(false);
+      }
+      
+      if (showTrackDropdown && !target.closest('.track-dropdown-container')) {
+        setShowTrackDropdown(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showPlaylistDropdown]);
+  }, [showPlaylistDropdown, showTrackDropdown]);
 
   const checkAuthorization = async () => {
     if (!user) return;
@@ -139,11 +157,24 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
 
       setAvailablePlaylists(transformedPlaylists);
 
-      // Fetch available tracks (all tracks from users with pitch access)
+      // Fetch available tracks (only from producers with pitch access - admin,producer account type)
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
-        .select('id, title, genre, mood, duration, audio_url, track_producer_id')
+        .select(`
+          id, 
+          title, 
+          genre, 
+          mood, 
+          duration, 
+          audio_url, 
+          track_producer_id,
+          profiles!tracks_track_producer_id_fkey (
+            display_name,
+            account_type
+          )
+        `)
         .eq('is_active', true)
+        .eq('profiles.account_type', 'admin,producer')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -157,7 +188,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
         mood: track.mood,
         duration: track.duration,
         audio_url: track.audio_url,
-        producer_name: 'Unknown' // Will be populated later if needed
+        producer_name: track.profiles?.display_name || 'Unknown Producer'
       }));
 
       setAvailableTracks(transformedTracks);
@@ -385,19 +416,47 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
                   Loading tracks...
                 </div>
               ) : (
-                <select
-                  value={selectedTrack}
-                  onChange={(e) => setSelectedTrack(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select a track</option>
-                  {availableTracks.map((track) => (
-                    <option key={track.id} value={track.id}>
-                      {track.title} - {track.producer_name} ({track.genre})
-                    </option>
-                  ))}
-                </select>
+                <div className="track-dropdown-container relative">
+                  <input
+                    type="text"
+                    value={selectedTrackName || trackSearch}
+                    onChange={(e) => {
+                      setTrackSearch(e.target.value);
+                      setShowTrackDropdown(true);
+                      if (!e.target.value) {
+                        setSelectedTrack('');
+                      }
+                    }}
+                    onFocus={() => setShowTrackDropdown(true)}
+                    placeholder="Search tracks..."
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                  {showTrackDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredTracks.length === 0 ? (
+                        <div className="px-3 py-2 text-gray-400">No tracks found</div>
+                      ) : (
+                        filteredTracks.map((track) => (
+                          <div
+                            key={track.id}
+                            onClick={() => {
+                              setSelectedTrack(track.id);
+                              setTrackSearch('');
+                              setShowTrackDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-white/10 cursor-pointer text-white border-b border-white/10 last:border-b-0"
+                          >
+                            <div className="font-medium">{track.title}</div>
+                            <div className="text-sm text-gray-400">
+                              {track.producer_name} • {track.genre} • {track.mood}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
