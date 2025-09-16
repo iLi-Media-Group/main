@@ -136,7 +136,7 @@ export function PitchManagement() {
         .from('pitch_opportunities')
         .select(`
           *,
-          assigned_agent_profile:assigned_agent (
+          assigned_agent_profile:profiles!assigned_agent (
             display_name,
             first_name,
             last_name,
