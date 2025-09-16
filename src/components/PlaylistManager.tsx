@@ -49,6 +49,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
     photo_url: '',
     is_public: true
   });
+  const [isPitchService, setIsPitchService] = useState(false);
 
   // Get the appropriate title based on account type
   const getTitle = () => {
@@ -125,8 +126,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
 
     try {
       setError('');
-      // Create pitch service playlist if accountType is agent, admin, or admin/producer
-      const isPitchService = accountType === 'agent' || accountType === 'admin' || accountType === 'admin/producer';
+      // Use the checkbox value to determine if this is a pitch service playlist
       const newPlaylist = await PlaylistService.createPlaylist(formData, accountType, isPitchService);
       setPlaylists(prev => [newPlaylist, ...prev]);
       setShowCreateModal(false);
@@ -138,6 +138,7 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
         photo_url: '',
         is_public: true
       });
+      setIsPitchService(false);
       onPlaylistCreated?.(newPlaylist);
     } catch (err) {
       setError('Failed to create playlist');
@@ -477,6 +478,24 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
                   Make playlist public
                 </label>
               </div>
+
+              {(accountType === 'agent' || accountType === 'admin' || accountType === 'admin/producer') && (
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="is-pitch-service"
+                    checked={isPitchService}
+                    onChange={(e) => setIsPitchService(e.target.checked)}
+                    className="rounded border-gray-600 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="is-pitch-service" className="text-sm text-gray-300">
+                    <span className="font-medium text-emerald-400">Pitch Service Playlist</span>
+                    <span className="block text-xs text-gray-400 mt-1">
+                      Show your contact information instead of login options
+                    </span>
+                  </label>
+                </div>
+              )}
 
               <div className="flex items-center space-x-3 pt-4">
                 <button

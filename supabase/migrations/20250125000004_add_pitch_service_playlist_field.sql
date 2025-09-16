@@ -7,7 +7,7 @@ ADD COLUMN IF NOT EXISTS is_pitch_service BOOLEAN DEFAULT false;
 
 -- Add pitch_service_agent_id field to store the agent who created the pitch service playlist
 ALTER TABLE playlists 
-ADD COLUMN IF NOT EXISTS pitch_service_agent_id UUID REFERENCES auth.users(id);
+ADD COLUMN IF NOT EXISTS pitch_service_agent_id UUID REFERENCES profiles(id) ON DELETE SET NULL;
 
 -- Add index for better performance when querying pitch service playlists
 CREATE INDEX IF NOT EXISTS idx_playlists_pitch_service ON playlists(is_pitch_service) WHERE is_pitch_service = true;
