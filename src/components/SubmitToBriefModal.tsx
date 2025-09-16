@@ -118,12 +118,12 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
     try {
       setLoading(true);
 
-      // Fetch available playlists for this opportunity
+      // Fetch available playlists (from main playlists table, not pitch-specific)
       const { data: playlistsData, error: playlistsError } = await supabase
-        .from('pitch_playlists')
+        .from('playlists')
         .select(`
           id,
-          playlist_name,
+          name,
           tracks_included,
           tracks:tracks_included (
             id,
@@ -140,15 +140,18 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
             )
           )
         `)
-        .eq('opportunity_id', opportunity.id)
-        .eq('submission_status', 'draft');
+        .eq('created_by', user.id)
+        .eq('is_active', true);
 
-      if (playlistsError) throw playlistsError;
+      if (playlistsError) {
+        console.error('Error fetching playlists:', playlistsError);
+        throw playlistsError;
+      }
 
       // Transform playlists data
       const transformedPlaylists = (playlistsData || []).map(playlist => ({
         id: playlist.id,
-        name: playlist.playlist_name,
+        name: playlist.name,
         tracks: (playlist.tracks || []).map((track: any) => ({
           id: track.id,
           title: track.title,
