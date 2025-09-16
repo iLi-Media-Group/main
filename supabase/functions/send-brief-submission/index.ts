@@ -11,6 +11,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
+  console.log('Edge function version: 2.0 - Updated for playlists table')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {

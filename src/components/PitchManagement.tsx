@@ -184,16 +184,16 @@ export function PitchManagement() {
         setSubmissions(transformedSubmissions);
       }
 
-      // Fetch playlists with opportunity details
+      // Fetch playlists with opportunity details (from main playlists table)
       const { data: playlistsData, error: playlistsError } = await supabase
-        .from('pitch_playlists')
+        .from('playlists')
         .select(`
-          *,
-          pitch_opportunities (
-            title,
-            client_name
-          )
+          id,
+          name,
+          description,
+          created_at
         `)
+        .eq('producer_id', user.id)
         .order('created_at', { ascending: false });
 
       if (playlistsError) {
@@ -202,8 +202,8 @@ export function PitchManagement() {
         // Transform playlists data
         const transformedPlaylists = (playlistsData || []).map(playlist => ({
           ...playlist,
-          opportunity_title: playlist.pitch_opportunities?.title || 'Unknown Opportunity',
-          client_name: playlist.pitch_opportunities?.client_name || 'Unknown Client'
+          opportunity_title: 'General Playlist', // These are general playlists, not opportunity-specific
+          client_name: 'N/A'
         }));
         setPlaylists(transformedPlaylists);
       }
