@@ -291,7 +291,14 @@ serve(async (req) => {
         }
       } else if (submission_type === 'playlist' && playlist_id) {
         // For playlist submissions, we need to record each track in the playlist
-        // First, get all tracks in the playlist
+        // First, get the playlist name
+        const { data: playlistInfo, error: playlistInfoError } = await supabase
+          .from('playlists')
+          .select('name')
+          .eq('id', playlist_id)
+          .single()
+
+        // Then get all tracks in the playlist
         const { data: playlistTracks, error: playlistTracksError } = await supabase
           .from('playlist_tracks')
           .select('track_id')
@@ -305,7 +312,7 @@ serve(async (req) => {
             opportunity_id: opportunity_id,
             track_id: pt.track_id,
             submitted_by: submitted_by,
-            submission_notes: `Playlist submission: ${message}`,
+            submission_notes: `Playlist submission: ${playlistInfo?.name || 'Unknown Playlist'} - ${message}`,
             submission_status: 'submitted'
           }))
 

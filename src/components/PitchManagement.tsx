@@ -221,7 +221,7 @@ export function PitchManagement() {
           let playlistName = 'Individual Track';
           if (sub.submission_notes && sub.submission_notes.includes('Playlist submission:')) {
             // Extract playlist name from submission notes
-            const playlistMatch = sub.submission_notes.match(/Playlist submission: (.+?)(?:\n|$)/);
+            const playlistMatch = sub.submission_notes.match(/Playlist submission: (.+?) - /);
             if (playlistMatch) {
               playlistName = playlistMatch[1];
             } else {
