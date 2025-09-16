@@ -638,15 +638,21 @@ export function PitchManagement() {
 
                   <div className="grid grid-cols-3 gap-2 mb-4">
                     <div className="text-center">
-                      <div className="text-lg font-semibold text-gray-900">{opportunity.total_submissions}</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {submissions.filter(sub => sub.opportunity_id === opportunity.id).length}
+                      </div>
                       <div className="text-xs text-gray-500">Submissions</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-semibold text-blue-600">{opportunity.selected_submissions}</div>
+                      <div className="text-lg font-semibold text-blue-600">
+                        {submissions.filter(sub => sub.opportunity_id === opportunity.id && sub.submission_status === 'selected').length}
+                      </div>
                       <div className="text-xs text-gray-500">Selected</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-lg font-semibold text-green-600">{opportunity.placed_submissions}</div>
+                      <div className="text-lg font-semibold text-green-600">
+                        {submissions.filter(sub => sub.opportunity_id === opportunity.id && sub.submission_status === 'placed').length}
+                      </div>
                       <div className="text-xs text-gray-500">Placed</div>
                     </div>
                   </div>
