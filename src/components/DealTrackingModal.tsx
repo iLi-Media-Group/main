@@ -326,6 +326,41 @@ export function DealTrackingModal({
                 </div>
               </div>
 
+              {/* Commission Breakdown */}
+              {dealValue && commissionRate && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="text-sm font-medium text-blue-900 mb-3">Commission Breakdown</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-blue-700">Agent Commission ({commissionRate}%)</span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {dealCurrency} {(parseFloat(dealValue) * (parseFloat(commissionRate) / 100)).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-blue-700">MyBeatFi.io Commission (10%)</span>
+                      <span className="text-sm font-medium text-blue-900">
+                        {dealCurrency} {(parseFloat(dealValue) * 0.10).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="border-t border-blue-300 pt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-semibold text-blue-900">Total Commissions</span>
+                        <span className="text-sm font-bold text-blue-900">
+                          {dealCurrency} {((parseFloat(dealValue) * (parseFloat(commissionRate) / 100)) + (parseFloat(dealValue) * 0.10)).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mt-1">
+                        <span className="text-sm font-semibold text-green-700">Producer/Artist Net</span>
+                        <span className="text-sm font-bold text-green-700">
+                          {dealCurrency} {(parseFloat(dealValue) - ((parseFloat(dealValue) * (parseFloat(commissionRate) / 100)) + (parseFloat(dealValue) * 0.10))).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Dates */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
