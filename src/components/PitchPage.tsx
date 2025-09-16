@@ -101,6 +101,40 @@ export default function PitchPage() {
           </div>
 
           <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-10">
+            <h2 className="text-2xl font-semibold text-white mb-4">Commission Structure</h2>
+            <p className="text-gray-200 mb-4">When your music gets placed through our pitch service, here's how the commissions work:</p>
+            
+            <div className="bg-blue-900/30 border border-blue-400/30 rounded-lg p-4 mb-4">
+              <h3 className="text-lg font-semibold text-white mb-3">Example: $1,000 Deal</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-200">Agent Commission (15%)</span>
+                  <span className="text-sm font-medium text-white">$150.00</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-blue-200">MyBeatFi.io Commission (10%)</span>
+                  <span className="text-sm font-medium text-white">$100.00</span>
+                </div>
+                <div className="border-t border-blue-400/30 pt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-blue-200">Total Commissions</span>
+                    <span className="text-sm font-bold text-white">$250.00</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-sm font-semibold text-emerald-300">Your Net Earnings</span>
+                    <span className="text-sm font-bold text-emerald-300">$750.00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-sm text-gray-300">
+              <strong>Transparent Fees:</strong> You'll always know exactly what commissions are being taken from your deals. 
+              The agent commission varies by opportunity, but MyBeatFi.io always takes a flat 10% commission.
+            </p>
+          </div>
+
+          <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6 mb-10">
             <h2 className="text-2xl font-semibold text-white mb-4">Subscription & Service Terms</h2>
             <ul className="space-y-2 text-gray-200">
               <li>Billing Cycle: The Pitch Service subscription is billed monthly at $19.99 or annually at $189.</li>
