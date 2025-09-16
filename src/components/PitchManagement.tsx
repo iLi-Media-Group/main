@@ -130,6 +130,8 @@ export function PitchManagement() {
       setLoading(true);
 
       // Fetch opportunities with submission counts and assigned agent info
+      console.log('Fetching opportunities for user:', user.id);
+      
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
         .from('pitch_opportunities')
         .select(`
@@ -143,6 +145,8 @@ export function PitchManagement() {
         `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
+
+      console.log('Opportunities fetch result:', { opportunitiesData, opportunitiesError });
 
       if (opportunitiesError) {
         console.error('Error fetching opportunities:', opportunitiesError);
@@ -164,6 +168,8 @@ export function PitchManagement() {
       }
 
       // Fetch submissions with track, user, and opportunity details
+      console.log('Fetching submissions...');
+      
       const { data: submissionsData, error: submissionsError } = await supabase
         .from('pitch_submissions')
         .select(`
@@ -187,6 +193,8 @@ export function PitchManagement() {
           )
         `)
         .order('created_at', { ascending: false });
+
+      console.log('Submissions fetch result:', { submissionsData, submissionsError });
 
       if (submissionsError) {
         console.error('Error fetching submissions:', submissionsError);
