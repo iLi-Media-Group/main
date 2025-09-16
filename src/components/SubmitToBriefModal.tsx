@@ -44,11 +44,21 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>('');
   const [selectedTrack, setSelectedTrack] = useState<string>('');
   const [message, setMessage] = useState('');
+  const [playlistSearch, setPlaylistSearch] = useState<string>('');
+  const [showPlaylistDropdown, setShowPlaylistDropdown] = useState<boolean>(false);
   
   // Data
   const [availablePlaylists, setAvailablePlaylists] = useState<Playlist[]>([]);
   const [availableTracks, setAvailableTracks] = useState<Track[]>([]);
   const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Filter playlists based on search
+  const filteredPlaylists = availablePlaylists.filter(playlist =>
+    playlist.name.toLowerCase().includes(playlistSearch.toLowerCase())
+  );
+
+  // Get selected playlist name for display
+  const selectedPlaylistName = availablePlaylists.find(p => p.id === selectedPlaylist)?.name || '';
 
   useEffect(() => {
     if (isOpen && user) {
@@ -59,10 +69,27 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       setSelectedPlaylist('');
       setSelectedTrack('');
       setMessage('');
+      setPlaylistSearch('');
+      setShowPlaylistDropdown(false);
       setError(null);
       setSuccess(false);
     }
   }, [isOpen, user, opportunity]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showPlaylistDropdown) {
+        const target = event.target as Element;
+        if (!target.closest('.playlist-dropdown-container')) {
+          setShowPlaylistDropdown(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showPlaylistDropdown]);
 
   const checkAuthorization = async () => {
     if (!user) return;
@@ -328,7 +355,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
 
           {/* Playlist Selection */}
           {submissionType === 'playlist' && (
-            <div>
+            <div className="relative playlist-dropdown-container">
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Select Playlist
               </label>
@@ -337,19 +364,52 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
                   Loading playlists...
                 </div>
               ) : (
-                <select
-                  value={selectedPlaylist}
-                  onChange={(e) => setSelectedPlaylist(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select a playlist</option>
-                  {availablePlaylists.map((playlist) => (
-                    <option key={playlist.id} value={playlist.id}>
-                      {playlist.name} ({playlist.tracks.length} tracks)
-                    </option>
-                  ))}
-                </select>
+                <>
+                  <input
+                    type="text"
+                    value={playlistSearch}
+                    onChange={(e) => {
+                      setPlaylistSearch(e.target.value);
+                      setShowPlaylistDropdown(true);
+                    }}
+                    onFocus={() => setShowPlaylistDropdown(true)}
+                    placeholder="Search playlists by name..."
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  
+                  {showPlaylistDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white/95 backdrop-blur-sm border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredPlaylists.length === 0 ? (
+                        <div className="px-3 py-2 text-gray-500 text-sm">
+                          {playlistSearch ? 'No playlists found matching your search' : 'No playlists available'}
+                        </div>
+                      ) : (
+                        filteredPlaylists.map((playlist) => (
+                          <button
+                            key={playlist.id}
+                            onClick={() => {
+                              setSelectedPlaylist(playlist.id);
+                              setPlaylistSearch(playlist.name);
+                              setShowPlaylistDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left text-gray-900 hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+                          >
+                            <div className="font-medium">{playlist.name}</div>
+                            <div className="text-sm text-gray-500">{playlist.tracks.length} tracks</div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  
+                  {selectedPlaylist && (
+                    <div className="mt-2 p-2 bg-green-100 border border-green-200 rounded-lg">
+                      <div className="text-sm text-green-800">
+                        <strong>Selected:</strong> {selectedPlaylistName}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}

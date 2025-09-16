@@ -64,12 +64,31 @@ interface PitchSubmission {
   artist_name: string;
 }
 
+interface PitchPlaylist {
+  id: string;
+  opportunity_id: string;
+  playlist_name: string;
+  submission_email: string;
+  submission_instructions: string;
+  tracks_included: string[];
+  submission_status: string;
+  sent_at: string;
+  delivered_at: string;
+  opened_at: string;
+  response_received: boolean;
+  response_notes: string;
+  created_at: string;
+  opportunity_title: string;
+  client_name: string;
+}
+
 
 export function PitchManagement() {
   const { user } = useUnifiedAuth();
-  const [activeTab, setActiveTab] = useState<'opportunities' | 'track_submissions' | 'analytics'>('opportunities');
+  const [activeTab, setActiveTab] = useState<'opportunities' | 'track_submissions' | 'playlists' | 'analytics'>('opportunities');
   const [opportunities, setOpportunities] = useState<PitchOpportunity[]>([]);
   const [submissions, setSubmissions] = useState<PitchSubmission[]>([]);
+  const [playlists, setPlaylists] = useState<PitchPlaylist[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState<PitchOpportunity | null>(null);
   const [showDealTracking, setShowDealTracking] = useState(false);
@@ -93,10 +112,14 @@ export function PitchManagement() {
     (opportunity.assigned_agent_name && opportunity.assigned_agent_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Filter submissions by selected opportunity
+  // Filter submissions and playlists by selected opportunity
   const filteredSubmissions = selectedOpportunityForView 
     ? submissions.filter(sub => sub.opportunity_id === selectedOpportunityForView.id)
     : submissions;
+
+  const filteredPlaylists = selectedOpportunityForView
+    ? playlists.filter(playlist => playlist.opportunity_id === selectedOpportunityForView.id)
+    : playlists;
 
 
   // Fetch all pitch data
@@ -184,6 +207,29 @@ export function PitchManagement() {
         setSubmissions(transformedSubmissions);
       }
 
+      // Fetch playlists with opportunity details
+      const { data: playlistsData, error: playlistsError } = await supabase
+        .from('pitch_playlists')
+        .select(`
+          *,
+          pitch_opportunities (
+            title,
+            client_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (playlistsError) {
+        console.error('Error fetching playlists:', playlistsError);
+      } else {
+        // Transform playlists data
+        const transformedPlaylists = (playlistsData || []).map(playlist => ({
+          ...playlist,
+          opportunity_title: playlist.pitch_opportunities?.title || 'Unknown Opportunity',
+          client_name: playlist.pitch_opportunities?.client_name || 'Unknown Client'
+        }));
+        setPlaylists(transformedPlaylists);
+      }
 
     } catch (error) {
       console.error('Error fetching pitch data:', error);
@@ -281,6 +327,7 @@ export function PitchManagement() {
           {[
             { id: 'opportunities', label: 'Opportunities', icon: Calendar },
             { id: 'track_submissions', label: 'Track Submissions', icon: Music },
+            { id: 'playlists', label: 'Playlists', icon: FileText },
             { id: 'analytics', label: 'Analytics', icon: TrendingUp }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -428,11 +475,17 @@ export function PitchManagement() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                   <div className="bg-white/5 rounded-lg p-4">
                     <h5 className="text-sm font-medium text-white mb-2">Track Submissions</h5>
                     <div className="text-2xl font-bold text-white">
                       {submissions.filter(sub => sub.opportunity_id === selectedOpportunity.id).length}
+                    </div>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <h5 className="text-sm font-medium text-white mb-2">Playlists Created</h5>
+                    <div className="text-2xl font-bold text-white">
+                      {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).length}
                     </div>
                   </div>
                   <div className="bg-white/5 rounded-lg p-4">
@@ -482,6 +535,31 @@ export function PitchManagement() {
                   )}
                 </div>
 
+                {/* Playlists for this Opportunity */}
+                <div>
+                  <h5 className="text-lg font-semibold text-white mb-3">Playlists</h5>
+                  {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).length === 0 ? (
+                    <p className="text-gray-400">No playlists created yet</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {playlists.filter(playlist => playlist.opportunity_id === selectedOpportunity.id).map((playlist) => (
+                        <div key={playlist.id} className="bg-white/5 rounded-lg p-4 flex justify-between items-center">
+                          <div>
+                            <div className="font-medium text-white">{playlist.playlist_name}</div>
+                            <div className="text-sm text-gray-400">
+                              {playlist.tracks_included.length} tracks • {playlist.submission_status}
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                              Send Email
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {filteredOpportunities.length === 0 ? (
@@ -661,9 +739,63 @@ export function PitchManagement() {
           </div>
         )}
 
+        {activeTab === 'playlists' && (
+          <div className="space-y-4">
+            {playlists.map((playlist) => (
+              <div key={playlist.id} className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{playlist.playlist_name}</h3>
+                    <p className="text-sm text-gray-600">{playlist.opportunity_title}</p>
+                    <p className="text-sm text-gray-500">Client: {playlist.client_name}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(playlist.submission_status)}`}>
+                    {playlist.submission_status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <div className="text-sm text-gray-500">Tracks</div>
+                    <div className="text-lg font-semibold">{playlist.tracks_included.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Sent</div>
+                    <div className="text-lg font-semibold">
+                      {playlist.sent_at ? new Date(playlist.sent_at).toLocaleDateString() : 'Not sent'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Delivered</div>
+                    <div className="text-lg font-semibold">
+                      {playlist.delivered_at ? new Date(playlist.delivered_at).toLocaleDateString() : 'Not delivered'}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Opened</div>
+                    <div className="text-lg font-semibold">
+                      {playlist.opened_at ? new Date(playlist.opened_at).toLocaleDateString() : 'Not opened'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-2">
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors flex items-center">
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Email
+                  </button>
+                  <button className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 transition-colors flex items-center">
+                    <Eye className="w-4 h-4 mr-2" />
+                    View Details
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {activeTab === 'analytics' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -688,6 +820,17 @@ export function PitchManagement() {
               </div>
             </div>
 
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <FileText className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <div className="text-2xl font-bold text-gray-900">{playlists.length}</div>
+                  <div className="text-sm text-gray-500">Playlists Created</div>
+                </div>
+              </div>
+            </div>
 
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex items-center">
