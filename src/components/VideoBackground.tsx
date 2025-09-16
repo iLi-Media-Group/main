@@ -62,10 +62,11 @@ export function VideoBackground({ videoUrl, fallbackImage, page, alt = "Backgrou
       }
 
       // Check if user is authenticated using unified auth
-      // For login and signup pages, always try to show video background regardless of auth status
+      // For login, signup, and pitch pages, always try to show video background regardless of auth status
       const isLoginPage = page && (page.includes('login') || page.includes('signin'));
       const isSignupPage = page === 'signup';
-      if (!user && !isLoginPage && !isSignupPage) {
+      const isPitchPage = page === 'pitch';
+      if (!user && !isLoginPage && !isSignupPage && !isPitchPage) {
         console.log('No authenticated user, using default background');
         setBackgroundAsset(null);
         setLoading(false);
