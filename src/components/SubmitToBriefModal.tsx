@@ -139,9 +139,8 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       // Fetch available playlists (from main playlists table, not pitch-specific)
       const { data: playlistsData, error: playlistsError } = await supabase
         .from('playlists')
-        .select('id, name, tracks_included')
-        .eq('created_by', user.id)
-        .eq('is_active', true);
+        .select('id, name, description')
+        .eq('producer_id', user.id);
 
       if (playlistsError) {
         console.error('Error fetching playlists:', playlistsError);
@@ -162,7 +161,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
         .select('id, title, genre, mood, duration, audio_url, track_producer_id')
-        .eq('is_active', true)
+        .is('deleted_at', null)  // Only get non-deleted tracks
         .order('created_at', { ascending: false })
         .limit(100);
 
