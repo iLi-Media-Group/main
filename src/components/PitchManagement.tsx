@@ -62,6 +62,7 @@ interface PitchSubmission {
   producer_name: string;
   artist_name: string;
   playlist_name?: string;
+  playlist_url?: string;
 }
 
 interface PitchPlaylist {
@@ -219,6 +220,7 @@ export function PitchManagement() {
           
           // Determine if this track was submitted as part of a playlist
           let playlistName = 'Individual Track';
+          let playlistUrl = null;
           if (sub.submission_notes && sub.submission_notes.includes('Playlist submission:')) {
             // Extract playlist name from submission notes
             const playlistMatch = sub.submission_notes.match(/Playlist submission: (.+?) - /);
@@ -226,6 +228,12 @@ export function PitchManagement() {
               playlistName = playlistMatch[1];
             } else {
               playlistName = 'Playlist Submission';
+            }
+            
+            // Extract playlist URL from submission notes
+            const urlMatch = sub.submission_notes.match(/URL: (.+?)(?:\s|$)/);
+            if (urlMatch) {
+              playlistUrl = urlMatch[1];
             }
           }
           
@@ -240,7 +248,8 @@ export function PitchManagement() {
             artist_name: producerName,
             opportunity_title: opportunity?.title || 'Unknown Opportunity',
             opportunity_client: opportunity?.client_name || 'Unknown Client',
-            playlist_name: playlistName
+            playlist_name: playlistName,
+            playlist_url: playlistUrl
           };
         });
         setSubmissions(transformedSubmissions);
@@ -757,9 +766,18 @@ export function PitchManagement() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <div className="font-medium">
-                          {submission.playlist_name || 'Individual Track'}
-                        </div>
+                        {submission.playlist_url ? (
+                          <a 
+                            href={submission.playlist_url}
+                            className="text-blue-600 hover:text-blue-800 underline font-medium"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {submission.playlist_name}
+                          </a>
+                        ) : (
+                          <span className="text-gray-500">Individual Track</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {submission.producer_name}

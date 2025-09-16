@@ -294,7 +294,7 @@ serve(async (req) => {
         // First, get the playlist name
         const { data: playlistInfo, error: playlistInfoError } = await supabase
           .from('playlists')
-          .select('name')
+          .select('name, slug')
           .eq('id', playlist_id)
           .single()
 
@@ -312,7 +312,7 @@ serve(async (req) => {
             opportunity_id: opportunity_id,
             track_id: pt.track_id,
             submitted_by: submitted_by,
-            submission_notes: `Playlist submission: ${playlistInfo?.name || 'Unknown Playlist'} - ${message}`,
+            submission_notes: `Playlist submission: ${playlistInfo?.name || 'Unknown Playlist'} - ${message} | URL: https://mybeatfi.io/test-playlist/${playlistInfo?.slug || 'unknown'}`,
             submission_status: 'submitted'
           }))
 
