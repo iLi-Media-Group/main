@@ -174,27 +174,36 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
             first_name,
             last_name,
             email,
-            account_type,
-            pitch_subscriptions!inner (
-              is_active,
-              status
-            )
+            account_type
           )
         `)
         .is('deleted_at', null)  // Only get non-deleted tracks
         .eq('status', 'active')  // Only get active tracks
-        .eq('profiles.pitch_subscriptions.is_active', true)  // Only producers with active pitch subscriptions
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (tracksError) throw tracksError;
+
+      // Get list of producers with active pitch subscriptions
+      const { data: pitchSubscriptions, error: subscriptionsError } = await supabase
+        .from('pitch_subscriptions')
+        .select('user_id')
+        .eq('is_active', true);
+
+      if (subscriptionsError) {
+        console.error('Error fetching pitch subscriptions:', subscriptionsError);
+      }
+
+      const activePitchProducers = new Set(
+        (pitchSubscriptions || []).map(sub => sub.user_id)
+      );
 
       // Transform tracks data and filter for pitch-enabled producers
       const transformedTracks = (tracksData || [])
         .filter((track: any) => {
           // Include tracks from current user (admin,producer) or other producers with active pitch subscriptions
           return track.track_producer_id === user.id || 
-                 (track.profiles?.pitch_subscriptions?.is_active === true);
+                 activePitchProducers.has(track.track_producer_id);
         })
         .map((track: any) => ({
           id: track.id,
