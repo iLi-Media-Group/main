@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Search, ArrowRight, Music, Video, Mic, Building2, UserPlus, Users } from 'lucide-react';
+import { Play, Search, ArrowRight, Music, Video, Mic, Building2, UserPlus, Users, Youtube, Instagram } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
@@ -198,6 +198,33 @@ export function HeroSection({ onSearch, onSignupClick }: HeroSectionProps) {
             Browse Catalog
           </button>
           
+        </div>
+
+        {/* Social Media Links */}
+        <div className="flex justify-center items-center space-x-6 mb-8">
+          <a 
+            href="https://www.youtube.com/@MyBeatFiSyncLicensing" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="group flex items-center space-x-2 text-white/80 hover:text-white transition-all duration-300 hover:scale-110"
+          >
+            <div className="w-10 h-10 bg-red-600/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-red-500/30 group-hover:border-red-400/60 group-hover:bg-red-600/30 transition-all duration-300">
+              <Youtube className="w-5 h-5 text-red-400 group-hover:text-red-300" />
+            </div>
+            <span className="text-sm font-medium">YouTube</span>
+          </a>
+          
+          <a 
+            href="https://www.instagram.com/mybeatfi_sync/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="group flex items-center space-x-2 text-white/80 hover:text-white transition-all duration-300 hover:scale-110"
+          >
+            <div className="w-10 h-10 bg-pink-600/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-pink-500/30 group-hover:border-pink-400/60 group-hover:bg-pink-600/30 transition-all duration-300">
+              <Instagram className="w-5 h-5 text-pink-400 group-hover:text-pink-300" />
+            </div>
+            <span className="text-sm font-medium">Instagram</span>
+          </a>
         </div>
 
         {/* Rights Holders Section */}
