@@ -138,36 +138,32 @@ export function PitchManagement() {
     try {
       setLoading(true);
 
-      // Debug: Check user profile and account type
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, email, account_type')
-        .eq('id', user.id)
-        .single();
-
-      console.log('User profile data:', { profileData, profileError });
-      console.log('User account type:', profileData?.account_type);
-
       // Fetch opportunities with submission counts and assigned agent info
-      // Temporarily use the base table instead of the view to debug the issue
-      console.log('Fetching opportunities for user:', user.id);
-      
-      // Try a simple query first to see if RLS is blocking access
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
         .from('pitch_opportunities')
-        .select('*')
+        .select(`
+          *,
+          assigned_agent_profile:assigned_agent (
+            display_name,
+            first_name,
+            last_name,
+            email
+          )
+        `)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
-
-      console.log('Opportunities fetch result:', { opportunitiesData, opportunitiesError });
 
       if (opportunitiesError) {
         console.error('Error fetching opportunities:', opportunitiesError);
       } else {
-        // Transform opportunities data to include submission counts
+        // Transform opportunities data to include assigned agent name and submission counts
         const transformedOpportunities = (opportunitiesData || []).map(opp => ({
           ...opp,
-          assigned_agent_name: null, // Will be populated later if needed
+          assigned_agent_name: opp.assigned_agent_profile 
+            ? (opp.assigned_agent_profile.display_name || 
+               `${opp.assigned_agent_profile.first_name || ''} ${opp.assigned_agent_profile.last_name || ''}`.trim() || 
+               opp.assigned_agent_profile.email)
+            : null,
           // Add default submission counts since we're not using the view
           total_submissions: 0,
           selected_submissions: 0,
