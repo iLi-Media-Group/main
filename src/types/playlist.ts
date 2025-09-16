@@ -10,8 +10,17 @@ export interface Playlist {
   slug: string;
   created_at: string;
   updated_at: string;
+  is_pitch_service?: boolean;
+  pitch_service_agent_id?: string;
   // Joined fields
   producer?: {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email: string;
+    avatar_path?: string;
+  };
+  pitch_service_agent?: {
     id: string;
     first_name?: string;
     last_name?: string;

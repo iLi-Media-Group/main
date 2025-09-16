@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CreatePrivateBriefModal } from './CreatePrivateBriefModal';
 import { SubmitToBriefModal } from './SubmitToBriefModal';
+import { PlaylistManager } from './PlaylistManager';
 
 interface AgentEarnings {
   id: string;
@@ -790,6 +791,22 @@ export function AgentDashboard() {
                     </table>
                   </div>
                 )}
+              </div>
+
+              {/* Playlist Management Section */}
+              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold text-white mb-6">Create Pitch Service Playlists</h3>
+                <p className="text-gray-300 mb-6">
+                  Create playlists for pitch services. These playlists will show your contact information instead of login options.
+                </p>
+                <PlaylistManager 
+                  accountType="agent"
+                  title="Pitch Service Playlists"
+                  onPlaylistCreated={(playlist) => {
+                    // Refresh data after playlist creation
+                    fetchPitchData();
+                  }}
+                />
               </div>
             </div>
           )}

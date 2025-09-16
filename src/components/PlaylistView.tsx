@@ -9,7 +9,8 @@ import {
   Building,
   Music,
   Clock,
-  Star
+  Star,
+  Mail
 } from 'lucide-react';
 import { PlaylistService } from '../lib/playlistService';
 import { PlaylistWithTracks } from '../types/playlist';
@@ -503,34 +504,78 @@ export function PlaylistView() {
 
           {/* Call to Action Section */}
           <div className="mt-8 text-center">
-            <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-white/10">
-              <h3 className="text-2xl font-bold text-white mb-4">
-                Ready to License These Tracks?
-              </h3>
-              <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
-                Thank you for selecting tracks from {getProducerName()}. 
-                Log in or create a FREE account to license these tracks directly!
-              </p>
-              
-                             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                 <button
-                   onClick={() => setShowLoginModal(true)}
-                   className="btn-primary px-8 py-3 text-lg"
-                 >
-                   Log In to Your Account
-                 </button>
-                 <button
-                   onClick={() => setShowLoginModal(true)}
-                   className="btn-secondary px-8 py-3 text-lg"
-                 >
-                   Create FREE Account
-                 </button>
-               </div>
-              
-              <p className="text-sm text-gray-400 mt-4">
-                Join thousands of music supervisors and content creators who trust MyBeatFi for their music licensing needs.
-              </p>
-            </div>
+            {playlist?.is_pitch_service && playlist?.pitch_service_agent ? (
+              // Pitch Service Contact Section
+              <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 rounded-2xl p-8 border border-white/10">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Ready to License These Tracks?
+                </h3>
+                <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                  This playlist was curated by MyBeatFi Pitch Service for your project.
+                </p>
+                
+                <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Contact for Licensing</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center text-gray-300">
+                      <User className="w-5 h-5 mr-3 text-emerald-400" />
+                      <span className="font-medium">
+                        {playlist.pitch_service_agent.first_name && playlist.pitch_service_agent.last_name 
+                          ? `${playlist.pitch_service_agent.first_name} ${playlist.pitch_service_agent.last_name}`
+                          : playlist.pitch_service_agent.email.split('@')[0]
+                        }
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center text-gray-300">
+                      <Mail className="w-5 h-5 mr-3 text-emerald-400" />
+                      <a 
+                        href={`mailto:${playlist.pitch_service_agent.email}`}
+                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        {playlist.pitch_service_agent.email}
+                      </a>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-4 italic">
+                    If interested in licensing one or more of these tracks, please contact me at {playlist.pitch_service_agent.email}.
+                  </p>
+                </div>
+                
+                <p className="text-sm text-gray-400">
+                  This playlist was created via MyBeatFi Pitch Service.
+                </p>
+              </div>
+            ) : (
+              // Regular Login/Create Account Section
+              <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-white/10">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Ready to License These Tracks?
+                </h3>
+                <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                  Thank you for selecting tracks from {getProducerName()}. 
+                  Log in or create a FREE account to license these tracks directly!
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="btn-primary px-8 py-3 text-lg"
+                  >
+                    Log In to Your Account
+                  </button>
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="btn-secondary px-8 py-3 text-lg"
+                  >
+                    Create FREE Account
+                  </button>
+                </div>
+                
+                <p className="text-sm text-gray-400 mt-4">
+                  Join thousands of music supervisors and content creators who trust MyBeatFi for their music licensing needs.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Footer */}

@@ -10,7 +10,7 @@ import {
 
 export class PlaylistService {
   // Create a new playlist for any account type
-  static async createPlaylist(data: CreatePlaylistData, accountType: string = 'producer'): Promise<Playlist> {
+  static async createPlaylist(data: CreatePlaylistData, accountType: string = 'producer', isPitchService: boolean = false): Promise<Playlist> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -28,11 +28,20 @@ export class PlaylistService {
         photo_url: data.photo_url,
         is_public: data.is_public ?? true,
         slug,
-        creator_type: accountType
+        creator_type: accountType,
+        is_pitch_service: isPitchService,
+        pitch_service_agent_id: isPitchService ? user.id : null
       })
       .select(`
         *,
         producer:profiles!playlists_producer_id_fkey (
+          id,
+          first_name,
+          last_name,
+          email,
+          avatar_path
+        ),
+        pitch_service_agent:profiles!playlists_pitch_service_agent_id_fkey (
           id,
           first_name,
           last_name,
@@ -165,6 +174,26 @@ export class PlaylistService {
       // Continue without creator info rather than failing
     }
 
+    // Get pitch service agent information if this is a pitch service playlist
+    let pitchServiceAgent = null;
+    if (playlist.is_pitch_service && playlist.pitch_service_agent_id) {
+      const { data: agent, error: agentError } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          email,
+          avatar_path
+        `)
+        .eq('id', playlist.pitch_service_agent_id)
+        .single();
+
+      if (!agentError) {
+        pitchServiceAgent = agent;
+      }
+    }
+
     // Get tracks for this playlist
     const { data: tracks, error: tracksError } = await supabase
       .from('playlist_tracks')
@@ -210,6 +239,7 @@ export class PlaylistService {
     const result = {
       ...playlist,
       producer: creator, // Add the creator profile info
+      pitch_service_agent: pitchServiceAgent, // Add the pitch service agent info
       tracks: tracks || []
     };
     
