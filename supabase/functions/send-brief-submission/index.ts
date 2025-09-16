@@ -238,6 +238,7 @@ serve(async (req) => {
       <h3 style="margin-top: 0; color: #1e40af;">For Negotiations & Licensing:</h3>
       <p style="margin: 10px 0;"><strong>Contact Agent:</strong> ${submitterData?.display_name || submitterData?.first_name + ' ' + submitterData?.last_name || 'MyBeatFi Agent'}</p>
       <p style="margin: 10px 0;"><strong>Email:</strong> <a href="mailto:${submitterData?.email || 'noreply@mybeatfi.io'}" style="color: #2563eb; text-decoration: none;">${submitterData?.email || 'noreply@mybeatfi.io'}</a></p>
+      <p style="margin: 15px 0; font-style: italic; color: #1e40af;">If interested in licensing one or more of these tracks, please contact me at <a href="mailto:${submitterData?.email || 'noreply@mybeatfi.io'}" style="color: #2563eb; text-decoration: none;">${submitterData?.email || 'noreply@mybeatfi.io'}</a>.</p>
       <p style="margin: 10px 0; color: #64748b; font-size: 14px;">This submission was sent via MyBeatFi Pitch Service.</p>
     </div>
   </div>
