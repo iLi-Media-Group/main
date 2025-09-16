@@ -12,7 +12,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
-  console.log('Edge function version: 6.0 - FIXED: Playlist URL using correct /test-playlist/ route')
+  console.log('Edge function version: 7.0 - FIXED: Record submissions in pitch_submissions table')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -269,6 +269,61 @@ serve(async (req) => {
 
     const emailResult = await emailResponse.json()
     console.log('Email sent successfully:', emailResult.id)
+
+    // Record the submission in pitch_submissions table
+    try {
+      if (submission_type === 'track' && track_id) {
+        // For track submissions, record each track individually
+        const { error: submissionError } = await supabase
+          .from('pitch_submissions')
+          .insert({
+            opportunity_id: opportunity_id,
+            track_id: track_id,
+            submitted_by: submitted_by,
+            submission_notes: message,
+            submission_status: 'submitted'
+          })
+        
+        if (submissionError) {
+          console.error('Error recording track submission:', submissionError)
+        } else {
+          console.log('Track submission recorded successfully')
+        }
+      } else if (submission_type === 'playlist' && playlist_id) {
+        // For playlist submissions, we need to record each track in the playlist
+        // First, get all tracks in the playlist
+        const { data: playlistTracks, error: playlistTracksError } = await supabase
+          .from('playlist_tracks')
+          .select('track_id')
+          .eq('playlist_id', playlist_id)
+
+        if (playlistTracksError) {
+          console.error('Error fetching playlist tracks for submission:', playlistTracksError)
+        } else if (playlistTracks && playlistTracks.length > 0) {
+          // Record each track in the playlist as a submission
+          const submissions = playlistTracks.map(pt => ({
+            opportunity_id: opportunity_id,
+            track_id: pt.track_id,
+            submitted_by: submitted_by,
+            submission_notes: `Playlist submission: ${message}`,
+            submission_status: 'submitted'
+          }))
+
+          const { error: submissionsError } = await supabase
+            .from('pitch_submissions')
+            .insert(submissions)
+          
+          if (submissionsError) {
+            console.error('Error recording playlist submissions:', submissionsError)
+          } else {
+            console.log(`Playlist submission recorded successfully for ${playlistTracks.length} tracks`)
+          }
+        }
+      }
+    } catch (submissionRecordError) {
+      console.error('Error recording submission:', submissionRecordError)
+      // Don't fail the whole request for submission recording errors
+    }
 
     // Log to pitch analytics
     try {
