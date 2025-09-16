@@ -388,13 +388,16 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
                 <>
                   <input
                     type="text"
-                    value={playlistSearch}
+                    value={selectedPlaylistName || playlistSearch}
                     onChange={(e) => {
                       setPlaylistSearch(e.target.value);
                       setShowPlaylistDropdown(true);
+                      if (!e.target.value) {
+                        setSelectedPlaylist('');
+                      }
                     }}
                     onFocus={() => setShowPlaylistDropdown(true)}
-                    placeholder="Search playlists by name..."
+                    placeholder={selectedPlaylistName ? selectedPlaylistName : "Search playlists by name..."}
                     className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   
@@ -458,8 +461,8 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
                       }
                     }}
                     onFocus={() => setShowTrackDropdown(true)}
-                    placeholder="Search tracks..."
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder={selectedTrackName ? selectedTrackName : "Search tracks by name, genre, mood, or producer..."}
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
                   {showTrackDropdown && (

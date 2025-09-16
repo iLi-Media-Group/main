@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { 
@@ -10,14 +10,11 @@ import {
   Send, 
   Plus, 
   Eye, 
-  Edit, 
-  Trash2,
   CheckCircle,
   XCircle,
   Clock,
   DollarSign,
   FileText,
-  Play,
   X
 } from 'lucide-react';
 import { DealTrackingModal } from './DealTrackingModal';
@@ -36,6 +33,8 @@ interface PitchOpportunity {
   mood_requirements: string[];
   deadline: string;
   submission_email: string;
+  submission_instructions?: string;
+  budget_range?: string;
   status: string;
   is_priority: boolean;
   created_at: string;
@@ -112,14 +111,10 @@ export function PitchManagement() {
     (opportunity.assigned_agent_name && opportunity.assigned_agent_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Filter submissions and playlists by selected opportunity
+  // Filter submissions by selected opportunity
   const filteredSubmissions = selectedOpportunityForView 
     ? submissions.filter(sub => sub.opportunity_id === selectedOpportunityForView.id)
     : submissions;
-
-  const filteredPlaylists = selectedOpportunityForView
-    ? playlists.filter(playlist => playlist.opportunity_id === selectedOpportunityForView.id)
-    : playlists;
 
 
   // Fetch all pitch data
@@ -160,7 +155,29 @@ export function PitchManagement() {
       
       const { data: submissionsData, error: submissionsError } = await supabase
         .from('pitch_submissions')
-        .select('*')
+        .select(`
+          *,
+          tracks (
+            id,
+            title,
+            genres,
+            moods,
+            bpm,
+            duration,
+            audio_url,
+            profiles!tracks_track_producer_id_fkey (
+              display_name,
+              first_name,
+              last_name,
+              email
+            )
+          ),
+          pitch_opportunities (
+            id,
+            title,
+            client_name
+          )
+        `)
         .order('created_at', { ascending: false });
 
       console.log('Submissions fetch result:', { submissionsData, submissionsError });
@@ -168,43 +185,79 @@ export function PitchManagement() {
       if (submissionsError) {
         console.error('Error fetching submissions:', submissionsError);
       } else {
-        // Transform submissions data
-        const transformedSubmissions = (submissionsData || []).map(sub => ({
-          ...sub,
-          track_title: 'Unknown Track', // Will be populated later if needed
-          track_genre: 'Unknown',
-          track_mood: 'Unknown',
-          track_bpm: 0,
-          track_duration: 0,
-          producer_name: 'Unknown',
-          artist_name: 'Unknown',
-          opportunity_title: 'Unknown Opportunity',
-          opportunity_client: 'Unknown Client'
-        }));
+        // Transform submissions data with actual track information
+        const transformedSubmissions = (submissionsData || []).map(sub => {
+          const track = sub.tracks;
+          const opportunity = sub.pitch_opportunities;
+          
+          // Handle genre - could be array or string
+          let genre = 'Unknown';
+          if (track?.genres) {
+            if (Array.isArray(track.genres) && track.genres.length > 0) {
+              genre = track.genres[0];
+            } else if (typeof track.genres === 'string' && track.genres.trim()) {
+              genre = track.genres;
+            }
+          }
+          
+          // Handle mood - could be array or string
+          let mood = 'Unknown';
+          if (track?.moods) {
+            if (Array.isArray(track.moods) && track.moods.length > 0) {
+              mood = track.moods[0];
+            } else if (typeof track.moods === 'string' && track.moods.trim()) {
+              mood = track.moods;
+            }
+          }
+          
+          // Get producer name
+          const producerName = track?.profiles?.display_name || 
+                             `${track?.profiles?.first_name || ''} ${track?.profiles?.last_name || ''}`.trim() || 
+                             track?.profiles?.email || 
+                             'Unknown Producer';
+          
+          return {
+            ...sub,
+            track_title: track?.title || 'Unknown Track',
+            track_genre: genre,
+            track_mood: mood,
+            track_bpm: track?.bpm || 0,
+            track_duration: track?.duration || 0,
+            producer_name: producerName,
+            artist_name: producerName,
+            opportunity_title: opportunity?.title || 'Unknown Opportunity',
+            opportunity_client: opportunity?.client_name || 'Unknown Client'
+          };
+        });
         setSubmissions(transformedSubmissions);
       }
 
-      // Fetch playlists with opportunity details (from main playlists table)
+      // Fetch playlists that have been submitted to opportunities (from pitch_playlists table)
       const { data: playlistsData, error: playlistsError } = await supabase
-        .from('playlists')
+        .from('pitch_playlists')
         .select(`
-          id,
-          name,
-          description,
-          created_at
+          *,
+          pitch_opportunities (
+            id,
+            title,
+            client_name
+          )
         `)
-        .eq('producer_id', user.id)
         .order('created_at', { ascending: false });
 
       if (playlistsError) {
         console.error('Error fetching playlists:', playlistsError);
       } else {
-        // Transform playlists data
-        const transformedPlaylists = (playlistsData || []).map(playlist => ({
-          ...playlist,
-          opportunity_title: 'General Playlist', // These are general playlists, not opportunity-specific
-          client_name: 'N/A'
-        }));
+        // Transform playlists data with opportunity information
+        const transformedPlaylists = (playlistsData || []).map(playlist => {
+          const opportunity = playlist.pitch_opportunities;
+          return {
+            ...playlist,
+            playlist_name: playlist.playlist_name,
+            opportunity_title: opportunity?.title || 'Unknown Opportunity',
+            client_name: opportunity?.client_name || 'Unknown Client'
+          };
+        });
         setPlaylists(transformedPlaylists);
       }
 
