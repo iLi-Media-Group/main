@@ -125,8 +125,8 @@ export function PlaylistManager({ onPlaylistCreated, accountType = 'producer', t
 
     try {
       setError('');
-      // Create pitch service playlist if accountType is agent
-      const isPitchService = accountType === 'agent';
+      // Create pitch service playlist if accountType is agent, admin, or admin/producer
+      const isPitchService = accountType === 'agent' || accountType === 'admin' || accountType === 'admin/producer';
       const newPlaylist = await PlaylistService.createPlaylist(formData, accountType, isPitchService);
       setPlaylists(prev => [newPlaylist, ...prev]);
       setShowCreateModal(false);
