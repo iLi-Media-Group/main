@@ -69,23 +69,26 @@ serve(async (req) => {
     let trackLinks = ''
 
     if (submission_type === 'playlist' && playlist_id) {
-      // Get playlist details
+      // Get playlist details from main playlists table
       const { data: playlistData, error: playlistError } = await supabase
-        .from('pitch_playlists')
+        .from('playlists')
         .select(`
-          playlist_name,
-          tracks_included,
-          tracks:tracks_included (
-            id,
-            title,
-            genre,
-            mood,
-            duration,
-            audio_url,
-            profiles!tracks_track_producer_id_fkey (
-              display_name,
-              first_name,
-              last_name
+          name,
+          description,
+          playlist_tracks (
+            track_id,
+            tracks (
+              id,
+              title,
+              genres,
+              moods,
+              duration,
+              audio_url,
+              profiles!tracks_track_producer_id_fkey (
+                display_name,
+                first_name,
+                last_name
+              )
             )
           )
         `)
@@ -97,12 +100,15 @@ serve(async (req) => {
         throw new Error('Failed to fetch playlist information')
       }
 
-      submissionContent = `Playlist: ${playlistData.playlist_name}`
-      trackLinks = playlistData.tracks?.map((track: any) => {
+      submissionContent = `Playlist: ${playlistData.name}`
+      trackLinks = playlistData.playlist_tracks?.map((pt: any) => {
+        const track = pt.tracks
+        if (!track) return ''
         const producerName = track.profiles?.display_name || 
                            `${track.profiles?.first_name || ''} ${track.profiles?.last_name || ''}`.trim() || 
                            'Unknown'
-        return `• ${track.title} - ${producerName} (${track.genre})`
+        const genre = Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown'
+        return `• ${track.title} - ${producerName} (${genre})`
       }).join('\n') || ''
 
     } else if (submission_type === 'track' && track_id) {
@@ -111,8 +117,8 @@ serve(async (req) => {
         .from('tracks')
         .select(`
           title,
-          genre,
-          mood,
+          genres,
+          moods,
           duration,
           audio_url,
           profiles!tracks_track_producer_id_fkey (
@@ -133,8 +139,10 @@ serve(async (req) => {
                          `${trackData.profiles?.first_name || ''} ${trackData.profiles?.last_name || ''}`.trim() || 
                          'Unknown'
 
+      const genre = Array.isArray(trackData.genres) ? trackData.genres[0] || 'Unknown' : 'Unknown'
+
       submissionContent = `Track: ${trackData.title} - ${producerName}`
-      trackLinks = `• ${trackData.title} - ${producerName} (${trackData.genre})`
+      trackLinks = `• ${trackData.title} - ${producerName} (${genre})`
     }
 
     // Prepare email content
