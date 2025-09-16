@@ -107,6 +107,8 @@ export function PlaylistView() {
   const [isFavorited, setIsFavorited] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [trackFavorites, setTrackFavorites] = useState<Record<string, boolean>>({});
+  const [trackFavoriteLoading, setTrackFavoriteLoading] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (slug) {
@@ -131,6 +133,9 @@ export function PlaylistView() {
       if (user) {
         const favorited = await PlaylistService.isFavorited(playlistData.id);
         setIsFavorited(favorited);
+        
+        // Check individual track favorites
+        await checkTrackFavorites(playlistData.tracks);
       }
       
       // Record the view
@@ -171,6 +176,72 @@ export function PlaylistView() {
       console.error('Failed to toggle favorite:', err);
     } finally {
       setFavoriteLoading(false);
+    }
+  };
+
+  const checkTrackFavorites = async (tracks: any[]) => {
+    if (!user || !tracks) return;
+    
+    try {
+      const trackIds = tracks.map(t => t.track?.id).filter(Boolean);
+      if (trackIds.length === 0) return;
+      
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('track_id')
+        .eq('user_id', user.id)
+        .in('track_id', trackIds);
+      
+      if (error) throw error;
+      
+      const favoriteMap: Record<string, boolean> = {};
+      trackIds.forEach(trackId => {
+        favoriteMap[trackId] = data?.some(fav => fav.track_id === trackId) || false;
+      });
+      
+      setTrackFavorites(favoriteMap);
+    } catch (err) {
+      console.error('Failed to check track favorites:', err);
+    }
+  };
+
+  const handleTrackToggleFavorite = async (trackId: string) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      setTrackFavoriteLoading(prev => ({ ...prev, [trackId]: true }));
+      
+      const isCurrentlyFavorited = trackFavorites[trackId];
+      
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('track_id', trackId);
+        
+        if (error) throw error;
+        setTrackFavorites(prev => ({ ...prev, [trackId]: false }));
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            track_id: trackId
+          });
+        
+        if (error) throw error;
+        setTrackFavorites(prev => ({ ...prev, [trackId]: true }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle track favorite:', err);
+    } finally {
+      setTrackFavoriteLoading(prev => ({ ...prev, [trackId]: false }));
     }
   };
 
@@ -474,15 +545,15 @@ export function PlaylistView() {
                             <ExternalLink className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={handleToggleFavorite}
+                            onClick={() => handleTrackToggleFavorite(track.id)}
                             className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Add to favorites"
-                            disabled={favoriteLoading}
+                            title={trackFavorites[track.id] ? "Remove from favorites" : "Add to favorites"}
+                            disabled={trackFavoriteLoading[track.id]}
                           >
-                            {favoriteLoading ? (
+                            {trackFavoriteLoading[track.id] ? (
                               <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
                             ) : (
-                              <Heart className={`w-4 h-4 ${isFavorited ? 'text-red-400' : 'text-gray-400'}`} />
+                              <Heart className={`w-4 h-4 ${trackFavorites[track.id] ? 'text-red-400 fill-current' : 'text-gray-400'}`} />
                             )}
                           </button>
                         </div>
