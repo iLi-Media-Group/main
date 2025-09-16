@@ -89,6 +89,7 @@ import { CustomSyncUploadPage } from './components/CustomSyncUploadPage';
 import { ProducerFileReleaseManager } from './components/ProducerFileReleaseManager';
 import { BusinessVerificationForm } from './components/BusinessVerificationForm';
 import { PlaylistManager } from './components/PlaylistManager';
+import { PlaylistManagerWrapper } from './components/PlaylistManagerWrapper';
 import { PlaylistView } from './components/PlaylistView';
 import { TestPlaylistView } from './components/TestPlaylistView';
 import { PlaylistAnalytics } from './components/PlaylistAnalytics';
@@ -535,7 +536,7 @@ const App = () => {
         <Route path="/producer/playlists" element={
           <ProtectedRoute requiresProducer>
             <LayoutWrapper>
-              <PlaylistManager accountType="producer" />
+              <PlaylistManagerWrapper />
             </LayoutWrapper>
           </ProtectedRoute>
         } />
