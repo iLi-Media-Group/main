@@ -157,7 +157,7 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       setAvailablePlaylists(transformedPlaylists);
       console.log('Loaded playlists:', transformedPlaylists.length);
 
-      // Fetch available tracks (from current user and other pitch-enabled producers)
+      // Fetch available tracks (from current user and other pitch-enabled producers with active subscriptions)
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
         .select(`
@@ -173,11 +173,17 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
             display_name,
             first_name,
             last_name,
-            email
+            email,
+            account_type,
+            pitch_subscriptions!inner (
+              is_active,
+              status
+            )
           )
         `)
         .is('deleted_at', null)  // Only get non-deleted tracks
         .eq('status', 'active')  // Only get active tracks
+        .eq('profiles.pitch_subscriptions.is_active', true)  // Only producers with active pitch subscriptions
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -186,9 +192,9 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       // Transform tracks data and filter for pitch-enabled producers
       const transformedTracks = (tracksData || [])
         .filter((track: any) => {
-          // Include tracks from current user (admin,producer) or other pitch-enabled producers
-          // For now, we'll include all tracks and let the user filter via search
-          return true;
+          // Include tracks from current user (admin,producer) or other producers with active pitch subscriptions
+          return track.track_producer_id === user.id || 
+                 (track.profiles?.pitch_subscriptions?.is_active === true);
         })
         .map((track: any) => ({
           id: track.id,
