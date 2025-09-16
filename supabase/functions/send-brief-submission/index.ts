@@ -69,6 +69,8 @@ serve(async (req) => {
 
     let submissionContent = ''
     let trackLinks = ''
+    let playlistUrl = ''
+    let trackList = ''
 
     if (submission_type === 'playlist' && playlist_id) {
       console.log('Fetching playlist data for playlist_id:', playlist_id)
@@ -120,9 +122,9 @@ serve(async (req) => {
       submissionContent = `Playlist: ${playlistData.name}`
       
       // Generate playlist URL (assuming you have a playlist view page)
-      const playlistUrl = `https://mybeatfi.io/playlist/${playlist_id}`
+      playlistUrl = `https://mybeatfi.io/playlist/${playlist_id}`
       
-      trackLinks = playlistTracksData?.map((pt: any) => {
+      trackList = playlistTracksData?.map((pt: any) => {
         const track = pt.tracks
         if (!track) return ''
         
@@ -134,9 +136,6 @@ serve(async (req) => {
         const genre = Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown'
         return `• ${track.title} - ${producerName} (${genre})`
       }).join('\n') || ''
-      
-      // Add playlist URL to trackLinks
-      trackLinks = `Playlist URL: ${playlistUrl}\n\nTracks:\n${trackLinks}`
 
     } else if (submission_type === 'track' && track_id) {
       // Get track details
@@ -184,16 +183,32 @@ serve(async (req) => {
     
     <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
       <h3 style="margin-top: 0; color: #1e40af;">Brief: ${brief_title}</h3>
-      <p><strong>Submitted by:</strong> ${submitterName}</p>
+      <p><strong>Submitted by:</strong> MyBeatFi.io Pitch Service</p>
       <p><strong>Submission:</strong> ${submissionContent}</p>
+    </div>
+
+    ${submission_type === 'playlist' ? `
+    <div style="margin: 20px 0;">
+      <h3 style="color: #1e40af;">Playlist URL:</h3>
+      <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px;">
+        <p style="margin: 0;"><a href="${playlistUrl}" style="color: #2563eb; text-decoration: none;">${playlistUrl}</a></p>
+      </div>
     </div>
 
     <div style="margin: 20px 0;">
       <h3 style="color: #1e40af;">Tracks Included:</h3>
       <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px;">
+        <pre style="white-space: pre-wrap; margin: 0; font-family: Arial, sans-serif;">${trackList}</pre>
+      </div>
+    </div>
+    ` : `
+    <div style="margin: 20px 0;">
+      <h3 style="color: #1e40af;">Track Details:</h3>
+      <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px;">
         <pre style="white-space: pre-wrap; margin: 0; font-family: Arial, sans-serif;">${trackLinks}</pre>
       </div>
     </div>
+    `}
 
     <div style="margin: 20px 0;">
       <h3 style="color: #1e40af;">Message:</h3>
