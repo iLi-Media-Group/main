@@ -405,7 +405,7 @@ export function PitchManagement() {
             {/* Selected Opportunity Details */}
             {selectedOpportunity && (
               <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-6">
                   <div>
                     <h4 className="text-xl font-bold text-white">{selectedOpportunity.title}</h4>
                     <p className="text-gray-300">{selectedOpportunity.client_name}</p>
@@ -422,6 +422,86 @@ export function PitchManagement() {
                   >
                     <X className="w-5 h-5" />
                   </button>
+                </div>
+
+                {/* Brief Details Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="text-sm font-medium text-white mb-2">Brief Description</h5>
+                      <p className="text-gray-300 text-sm">
+                        {selectedOpportunity.description || 'No description provided'}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <h5 className="text-sm font-medium text-white mb-2">Brief Type</h5>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {selectedOpportunity.brief_type}
+                      </span>
+                    </div>
+
+                    {selectedOpportunity.genre_requirements && selectedOpportunity.genre_requirements.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-medium text-white mb-2">Genre Requirements</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedOpportunity.genre_requirements.map((genre, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              {genre}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedOpportunity.mood_requirements && selectedOpportunity.mood_requirements.length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-medium text-white mb-2">Mood Requirements</h5>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedOpportunity.mood_requirements.map((mood, index) => (
+                            <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {mood}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedOpportunity.deadline && (
+                      <div>
+                        <h5 className="text-sm font-medium text-white mb-2">Deadline</h5>
+                        <p className="text-gray-300 text-sm">
+                          {new Date(selectedOpportunity.deadline).toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    )}
+
+                    <div>
+                      <h5 className="text-sm font-medium text-white mb-2">Submission Email</h5>
+                      <p className="text-gray-300 text-sm">{selectedOpportunity.submission_email}</p>
+                    </div>
+
+                    {selectedOpportunity.submission_instructions && (
+                      <div>
+                        <h5 className="text-sm font-medium text-white mb-2">Submission Instructions</h5>
+                        <p className="text-gray-300 text-sm">{selectedOpportunity.submission_instructions}</p>
+                      </div>
+                    )}
+
+                    {selectedOpportunity.budget_range && (
+                      <div>
+                        <h5 className="text-sm font-medium text-white mb-2">Budget Range</h5>
+                        <p className="text-gray-300 text-sm">{selectedOpportunity.budget_range}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -578,8 +658,6 @@ export function PitchManagement() {
                       <button
                         onClick={() => {
                           setSelectedOpportunity(opportunity);
-                          setSelectedOpportunityForView(opportunity);
-                          setActiveTab('track_submissions');
                         }}
                         className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
                       >
