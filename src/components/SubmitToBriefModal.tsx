@@ -160,8 +160,9 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       // Fetch available tracks (from current user and other pitch-enabled producers)
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
-        .select('id, title, genre, mood, duration, audio_url, track_producer_id')
+        .select('id, title, genres, moods, duration, audio_url, track_producer_id, status')
         .is('deleted_at', null)  // Only get non-deleted tracks
+        .eq('status', 'active')  // Only get active tracks
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -177,8 +178,8 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
         .map((track: any) => ({
           id: track.id,
           title: track.title,
-          genre: track.genre,
-          mood: track.mood,
+          genre: Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown',
+          mood: Array.isArray(track.moods) ? track.moods[0] || 'Unknown' : 'Unknown',
           duration: track.duration,
           audio_url: track.audio_url,
           producer_name: track.track_producer_id === user.id ? 'You' : 'Unknown Producer'
