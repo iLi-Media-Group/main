@@ -118,15 +118,25 @@ serve(async (req) => {
       }
 
       submissionContent = `Playlist: ${playlistData.name}`
+      
+      // Generate playlist URL (assuming you have a playlist view page)
+      const playlistUrl = `https://mybeatfi.io/playlist/${playlist_id}`
+      
       trackLinks = playlistTracksData?.map((pt: any) => {
         const track = pt.tracks
         if (!track) return ''
+        
+        console.log('Track data:', { title: track.title, genres: track.genres, moods: track.moods })
+        
         const producerName = track.profiles?.display_name || 
                            `${track.profiles?.first_name || ''} ${track.profiles?.last_name || ''}`.trim() || 
                            'Unknown'
         const genre = Array.isArray(track.genres) ? track.genres[0] || 'Unknown' : 'Unknown'
         return `• ${track.title} - ${producerName} (${genre})`
       }).join('\n') || ''
+      
+      // Add playlist URL to trackLinks
+      trackLinks = `Playlist URL: ${playlistUrl}\n\nTracks:\n${trackLinks}`
 
     } else if (submission_type === 'track' && track_id) {
       // Get track details
