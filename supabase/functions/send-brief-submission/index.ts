@@ -69,6 +69,8 @@ serve(async (req) => {
     let trackLinks = ''
 
     if (submission_type === 'playlist' && playlist_id) {
+      console.log('Fetching playlist data for playlist_id:', playlist_id)
+      
       // Get playlist details from main playlists table
       const { data: playlistData, error: playlistError } = await supabase
         .from('playlists')
@@ -76,12 +78,16 @@ serve(async (req) => {
         .eq('id', playlist_id)
         .single()
 
+      console.log('Playlist query result:', { playlistData, playlistError })
+
       if (playlistError) {
         console.error('Error fetching playlist data:', playlistError)
         throw new Error('Failed to fetch playlist information')
       }
 
       // Get playlist tracks separately
+      console.log('Fetching playlist tracks for playlist_id:', playlist_id)
+      
       const { data: playlistTracksData, error: playlistTracksError } = await supabase
         .from('playlist_tracks')
         .select(`
@@ -101,6 +107,8 @@ serve(async (req) => {
           )
         `)
         .eq('playlist_id', playlist_id)
+
+      console.log('Playlist tracks query result:', { playlistTracksData, playlistTracksError })
 
       if (playlistTracksError) {
         console.error('Error fetching playlist tracks:', playlistTracksError)
