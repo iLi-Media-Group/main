@@ -139,8 +139,9 @@ export function PitchManagement() {
       setLoading(true);
 
       // Fetch opportunities with submission counts and assigned agent info
+      // Temporarily use the base table instead of the view to debug the issue
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
-        .from('active_pitch_opportunities')
+        .from('pitch_opportunities')
         .select(`
           *,
           assigned_agent_profile:assigned_agent (
@@ -150,19 +151,24 @@ export function PitchManagement() {
             email
           )
         `)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (opportunitiesError) {
         console.error('Error fetching opportunities:', opportunitiesError);
       } else {
-        // Transform opportunities data to include assigned agent name
+        // Transform opportunities data to include assigned agent name and submission counts
         const transformedOpportunities = (opportunitiesData || []).map(opp => ({
           ...opp,
           assigned_agent_name: opp.assigned_agent_profile 
             ? (opp.assigned_agent_profile.display_name || 
                `${opp.assigned_agent_profile.first_name || ''} ${opp.assigned_agent_profile.last_name || ''}`.trim() || 
                opp.assigned_agent_profile.email)
-            : null
+            : null,
+          // Add default submission counts since we're not using the view
+          total_submissions: 0,
+          selected_submissions: 0,
+          placed_submissions: 0
         }));
         setOpportunities(transformedOpportunities);
       }
