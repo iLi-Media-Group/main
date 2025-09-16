@@ -12,7 +12,7 @@ const corsHeaders = {
 
 serve(async (req) => {
   console.log('Send brief submission function called with method:', req.method)
-  console.log('Edge function version: 5.0 - FIXED: Playlist URL using slug and debugging genres')
+  console.log('Edge function version: 6.0 - FIXED: Playlist URL using correct /test-playlist/ route')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
@@ -122,7 +122,7 @@ serve(async (req) => {
       submissionContent = `Playlist: ${playlistData.name}`
       
       // Generate playlist URL using the slug
-      playlistUrl = `https://mybeatfi.io/playlist-view/${playlistData.slug}`
+      playlistUrl = `https://mybeatfi.io/test-playlist/${playlistData.slug}`
       
       trackList = playlistTracksData?.map((pt: any) => {
         const track = pt.tracks
