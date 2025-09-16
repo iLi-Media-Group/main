@@ -258,7 +258,7 @@ export function DealTrackingModal({
                 <select
                   value={dealStatus}
                   onChange={(e) => setDealStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-900/90 text-white"
                 >
                   <option value="negotiating">Negotiating</option>
                   <option value="pending_approval">Pending Approval</option>
@@ -289,7 +289,7 @@ export function DealTrackingModal({
                   <select
                     value={dealCurrency}
                     onChange={(e) => setDealCurrency(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-blue-900/90 text-white"
                   >
                     <option value="USD">USD</option>
                     <option value="EUR">EUR</option>
