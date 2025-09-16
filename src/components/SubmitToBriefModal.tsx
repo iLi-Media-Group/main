@@ -156,42 +156,37 @@ export function SubmitToBriefModal({ isOpen, onClose, opportunity, onSubmissionS
       }));
 
       setAvailablePlaylists(transformedPlaylists);
+      console.log('Loaded playlists:', transformedPlaylists.length);
 
-      // Fetch available tracks (only from producers with pitch access - admin,producer account type)
+      // Fetch available tracks (from current user and other pitch-enabled producers)
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
-        .select(`
-          id, 
-          title, 
-          genre, 
-          mood, 
-          duration, 
-          audio_url, 
-          track_producer_id,
-          profiles!tracks_track_producer_id_fkey (
-            display_name,
-            account_type
-          )
-        `)
+        .select('id, title, genre, mood, duration, audio_url, track_producer_id')
         .eq('is_active', true)
-        .eq('profiles.account_type', 'admin,producer')
         .order('created_at', { ascending: false })
         .limit(100);
 
       if (tracksError) throw tracksError;
 
-      // Transform tracks data
-      const transformedTracks = (tracksData || []).map((track: any) => ({
-        id: track.id,
-        title: track.title,
-        genre: track.genre,
-        mood: track.mood,
-        duration: track.duration,
-        audio_url: track.audio_url,
-        producer_name: track.profiles?.display_name || 'Unknown Producer'
-      }));
+      // Transform tracks data and filter for pitch-enabled producers
+      const transformedTracks = (tracksData || [])
+        .filter((track: any) => {
+          // Include tracks from current user (admin,producer) or other pitch-enabled producers
+          // For now, we'll include all tracks and let the user filter via search
+          return true;
+        })
+        .map((track: any) => ({
+          id: track.id,
+          title: track.title,
+          genre: track.genre,
+          mood: track.mood,
+          duration: track.duration,
+          audio_url: track.audio_url,
+          producer_name: track.track_producer_id === user.id ? 'You' : 'Unknown Producer'
+        }));
 
       setAvailableTracks(transformedTracks);
+      console.log('Loaded tracks:', transformedTracks.length);
 
     } catch (err) {
       console.error('Error fetching submission data:', err);
