@@ -81,6 +81,16 @@ export function CreatePrivateBriefModal({ isOpen, onClose, onBriefCreated }: Cre
       setSaving(true);
       setError(null);
 
+      // Debug: Check user profile and account type
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, account_type')
+        .eq('id', user.id)
+        .single();
+
+      console.log('User profile data:', { profileData, profileError });
+      console.log('User account type:', profileData?.account_type);
+
       // Validate required fields
       if (!title.trim()) {
         setError('Title is required');
@@ -111,12 +121,22 @@ export function CreatePrivateBriefModal({ isOpen, onClose, onBriefCreated }: Cre
         status: 'active' as const
       };
 
-      const { error: insertError } = await supabase
+      console.log('Creating brief with data:', briefData);
+      console.log('Current user ID:', user.id);
+
+      const { data, error: insertError } = await supabase
         .from('pitch_opportunities')
-        .insert(briefData);
+        .insert(briefData)
+        .select();
 
-      if (insertError) throw insertError;
+      console.log('Insert result:', { data, error: insertError });
 
+      if (insertError) {
+        console.error('Database insert error:', insertError);
+        throw insertError;
+      }
+
+      console.log('Brief created successfully:', data);
       onBriefCreated();
       onClose();
     } catch (err) {
