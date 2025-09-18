@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Check, XCircle, DollarSign, Calendar, AlertTriangle, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface Proposal {
   id: string;
@@ -51,7 +52,7 @@ export function NegotiationAcceptanceDialog({
   const [acceptanceStatus, setAcceptanceStatus] = useState<AcceptanceStatus>('pending');
   const [waitingMessage, setWaitingMessage] = useState('');
   
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
 
   if (!isOpen) return null;
 
@@ -87,27 +88,56 @@ export function NegotiationAcceptanceDialog({
     customData?: any,
     customSuccessUrl?: string
   ): Promise<string> => {
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        price_id: priceId,
-        mode,
-        success_url: customSuccessUrl || `${window.location.origin}/dashboard`,
-        cancel_url: `${window.location.origin}/dashboard`,
-        metadata: customData
-      })
-    });
+    // For sync proposals, use stripe-invoice endpoint instead of stripe-checkout
+    if (customData?.proposal_id) {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          proposal_id: customData.proposal_id,
+          amount: customData.amount,
+          client_user_id: user?.id,
+          payment_terms: customData.payment_terms || 'immediate',
+          metadata: {
+            description: customData.description,
+            payment_terms: customData.payment_terms || 'immediate'
+          }
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to create checkout session');
+      if (!response.ok) {
+        throw new Error('Failed to create payment session');
+      }
+
+      const { url } = await response.json();
+      return url;
+    } else {
+      // For non-sync proposals, use the original stripe-checkout endpoint
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          price_id: priceId,
+          mode,
+          success_url: customSuccessUrl || `${window.location.origin}/dashboard`,
+          cancel_url: `${window.location.origin}/dashboard`,
+          metadata: customData
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const { url } = await response.json();
+      return url;
     }
-
-    const { url } = await response.json();
-    return url;
   };
 
   const createInvoice = async (
@@ -116,10 +146,14 @@ export function NegotiationAcceptanceDialog({
     paymentTerms: string,
     isSyncProposal: boolean
   ): Promise<any> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error('You must be logged in to make a payment');
+    }
+
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { DollarSign, CreditCard, Clock, Download, AlertCircle, CheckCircle, FileText, ChevronDown, ChevronUp, Filter, Calendar, ArrowUpDown, Loader2, Target, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { useProducerBalancesRealTime } from '../hooks/useRealTimeUpdates';
 import { BankAccountForm } from './BankAccountForm';
 import { WithdrawalRequestForm } from './WithdrawalRequestForm';
+import { Card, CardContent } from './ui/card';
+import { useSearchParams } from 'react-router-dom';
 
 interface Transaction {
   id: string;
@@ -33,7 +36,9 @@ interface BankAccount {
 }
 
 export function ProducerBankingPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
+  const [searchParams] = useSearchParams();
+  const dashboardType = searchParams.get('dashboardType');
   const [balance, setBalance] = useState(0);
   const [pendingBalance, setPendingBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -47,13 +52,36 @@ export function ProducerBankingPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'sales' | 'withdrawals' | 'adjustments'>('all');
   const [dateRange, setDateRange] = useState<'all' | '30days' | '90days' | 'year'>('30days');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
+  const [bucketPercentage, setBucketPercentage] = useState<{
+    totalLicenses: number;
+    producerLicenses: number;
+    percentage: number;
+    estimatedEarnings: number;
+  } | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<{
+    hasRecentUpload: boolean;
+    lastUploadDate: string | null;
+    totalTracks: number;
+    uploadStatus: string;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
       fetchData();
+      fetchBucketPercentage();
+      fetchUploadStatus();
     }
   }, [user, filterType, dateRange, sortField, sortOrder]);
+
+  // Set up real-time subscription for producer balances
+  const handleBalanceUpdate = useCallback((payload: any) => {
+    console.log('Producer balance real-time update:', payload);
+    fetchData();
+    fetchBucketPercentage();
+  }, []);
+
+  useProducerBalancesRealTime(handleBalanceUpdate);
 
   // Add manual refresh function
   const handleManualRefresh = async () => {
@@ -85,7 +113,7 @@ export function ProducerBankingPage() {
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, email')
+        .select('first_name, display_name, email')
         .eq('id', user?.id)
         .single();
 
@@ -200,6 +228,58 @@ export function ProducerBankingPage() {
     }
   };
 
+  // Add function to fetch bucket percentage
+  const fetchBucketPercentage = async () => {
+    try {
+      const { data, error } = await supabase
+        .rpc('get_producer_bucket_percentage', {
+          producer_id_input: user?.id,
+          month_input: new Date().toISOString().slice(0, 7) // YYYY-MM format
+        });
+
+      if (error) {
+        console.error('Error fetching bucket percentage:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        setBucketPercentage({
+          totalLicenses: data[0].total_licenses || 0,
+          producerLicenses: data[0].total_producer_licenses || 0,
+          percentage: data[0].bucket_percentage || 0,
+          estimatedEarnings: data[0].estimated_bucket_earnings || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching bucket percentage:', error);
+    }
+  };
+
+  const fetchUploadStatus = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_upload_status')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setUploadStatus({
+          hasRecentUpload: data.has_recent_upload,
+          lastUploadDate: data.last_upload_date,
+          totalTracks: data.total_tracks,
+          uploadStatus: data.upload_status
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching upload status:', error);
+    }
+  };
+
   const handleSort = (field: 'date' | 'amount' | 'type') => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -242,10 +322,12 @@ export function ProducerBankingPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Producer Banking</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {dashboardType === 'artist' ? 'Artist Banking' : 'Producer Banking'}
+            </h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>
@@ -265,105 +347,129 @@ export function ProducerBankingPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-green-500/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Available Balance</p>
-                <p className="text-3xl font-bold text-white">${balance.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Previous months (ready for payout)
-                </p>
+        {/* Balance Cards */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+          {/* Available Balance */}
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-400">Available Balance</p>
+                  <p className="text-2xl font-bold text-white">${balance.toFixed(2)}</p>
+                </div>
+                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-green-400" />
+                </div>
               </div>
-              <DollarSign className="w-12 h-12 text-green-500" />
-            </div>
-            <button
-              onClick={() => setShowWithdrawalForm(true)}
-              disabled={balance <= 0}
-              className="mt-4 w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <CreditCard className="w-4 h-4 mr-2" />
-              Request Withdrawal
-            </button>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-yellow-500/20">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Pending Balance</p>
-                <p className="text-3xl font-bold text-white">${pendingBalance.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Current month only
-                </p>
+          {/* Pending Balance */}
+          <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/10 border-yellow-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-400">Pending Balance</p>
+                  <p className="text-2xl font-bold text-white">${pendingBalance.toFixed(2)}</p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-yellow-400" />
+                </div>
               </div>
-              <Clock className="w-12 h-12 text-yellow-500" />
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-gray-400">
-                Current month (payout on 10th of next month)
-              </p>
-              <button
-                onClick={handleManualRefresh}
-                disabled={loading}
-                className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors flex items-center space-x-1"
-              >
-                <Loader2 className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                <span>Refresh</span>
-              </button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-xl font-bold text-white">Payout Methods</p>
-              <button
-                onClick={() => setShowBankForm(true)}
-                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                <CreditCard className="w-4 h-4" />
-              </button>
-            </div>
-            
-            {bankAccounts.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-gray-400">No payment methods added</p>
-                <button
-                  onClick={() => setShowBankForm(true)}
-                  className="mt-2 text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  Add payout method
-                </button>
+          {/* Membership Bucket Percentage */}
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-400">Membership Bucket</p>
+                  <p className="text-2xl font-bold text-white">{bucketPercentage?.percentage.toFixed(1) || '0.0'}%</p>
+                  <p className="text-xs text-purple-300">
+                    {bucketPercentage?.producerLicenses || 0} of {bucketPercentage?.totalLicenses || 0} licenses
+                  </p>
+                  {bucketPercentage && bucketPercentage.estimatedEarnings > 0 && (
+                    <p className="text-xs text-purple-300">
+                      Est: ${bucketPercentage.estimatedEarnings.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
+                  <Target className="w-6 h-6 text-purple-400" />
+                </div>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {bankAccounts.map((account) => (
-                  <div 
-                    key={account.id} 
-                    className={`p-3 rounded-lg ${account.is_primary ? 'bg-blue-900/20 border border-blue-500/20' : 'bg-white/5'}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-white font-medium">
-                          {account.account_type === 'bank' && account.account_details.bank_name}
-                          {account.account_type === 'crypto' && account.account_details.crypto_type}
-                        </p>
-                        <p className="text-sm text-gray-400">
-                          {account.account_type === 'bank' && `****${account.account_details.account_number?.slice(-4)}`}
-                          {account.account_type === 'crypto' && `${account.account_details.crypto_address?.slice(0, 6)}...${account.account_details.crypto_address?.slice(-4)}`}
-                        </p>
-                      </div>
-                      {account.is_primary && (
-                        <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full text-xs">
-                          Primary
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Membership Bucket Explanation */}
+        {bucketPercentage && (
+          <Card className="mb-8 bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                <Target className="w-5 h-5 text-blue-400 mr-2" />
+                Membership Revenue Sharing
+              </h3>
+              <div className="text-sm text-gray-300 space-y-2">
+                <p>
+                  <strong>Your Share:</strong> {bucketPercentage.percentage.toFixed(1)}% of the 45% bucket
+                </p>
+                <p>
+                  <strong>Based on:</strong> {bucketPercentage.producerLicenses} track licenses this month 
+                  (out of {bucketPercentage.totalLicenses} total licenses across all {dashboardType === 'artist' ? 'producer/artist' : 'producer'}s)
+                </p>
+                <p>
+                  <strong>Estimated Earnings:</strong> ${bucketPercentage.estimatedEarnings.toFixed(2)} from membership revenue sharing
+                </p>
+                <p className="text-xs text-gray-400 mt-3">
+                  The 45% bucket is distributed among all {dashboardType === 'artist' ? 'producer/artist' : 'producer'}s based on their track license activity. 
+                  More licenses = higher percentage of the membership revenue pool.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Upload Status Information */}
+        {uploadStatus && (
+          <Card className="mb-8 bg-gradient-to-br from-orange-500/10 to-orange-600/10 border-orange-500/20">
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold text-white mb-3 flex items-center">
+                <Upload className="w-5 h-5 text-orange-400 mr-2" />
+                90-Day Upload Requirement
+              </h3>
+              <div className="text-sm text-gray-300 space-y-2">
+                <div className="flex items-center space-x-2">
+                  {uploadStatus.hasRecentUpload ? (
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                  )}
+                  <span className={uploadStatus.hasRecentUpload ? 'text-green-400' : 'text-red-400'}>
+                    {uploadStatus.uploadStatus}
+                  </span>
+                </div>
+                <p>
+                  <strong>Total Tracks:</strong> {uploadStatus.totalTracks}
+                </p>
+                {uploadStatus.lastUploadDate && (
+                  <p>
+                    <strong>Last Upload:</strong> {new Date(uploadStatus.lastUploadDate).toLocaleDateString()}
+                  </p>
+                )}
+                <p className="text-xs text-gray-400 mt-3">
+                  To qualify for the 2% no-sales bucket, you must upload at least one track within the last 90 days. 
+                  {!uploadStatus.hasRecentUpload && (
+                    <span className="text-orange-400 font-medium">
+                      {' '}Upload a new track to regain eligibility.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6 mb-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">

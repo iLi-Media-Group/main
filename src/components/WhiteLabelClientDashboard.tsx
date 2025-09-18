@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Loader2, CheckCircle, Settings, Palette, Globe, Upload, Save, Check, X, Users, Brain, Search, Shield, DollarSign, BarChart3, Plus, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
@@ -27,7 +27,7 @@ interface WhiteLabelClient {
 }
 
 export default function WhiteLabelClientDashboard() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [client, setClient] = useState<WhiteLabelClient | null>(null);
   const [loading, setLoading] = useState(true);

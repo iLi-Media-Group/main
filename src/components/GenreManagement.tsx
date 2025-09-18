@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Music, X, Save, AlertCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Music, X, Save, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 interface Genre {
@@ -42,6 +42,9 @@ export function GenreManagement() {
     name: '',
     display_name: ''
   });
+  
+  // State for tracking expanded genres
+  const [expandedGenres, setExpandedGenres] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchGenres();
@@ -215,6 +218,17 @@ export function GenreManagement() {
     }
   };
 
+  // Toggle genre expansion
+  const toggleGenreExpansion = (genreId: string) => {
+    const newExpanded = new Set(expandedGenres);
+    if (newExpanded.has(genreId)) {
+      newExpanded.delete(genreId);
+    } else {
+      newExpanded.add(genreId);
+    }
+    setExpandedGenres(newExpanded);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -259,6 +273,17 @@ export function GenreManagement() {
           <div key={genre.id} className="bg-white/5 backdrop-blur-sm rounded-xl border border-blue-500/20 p-6">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center">
+                <button
+                  onClick={() => toggleGenreExpansion(genre.id)}
+                  className="p-1 text-gray-400 hover:text-white transition-colors mr-2"
+                  title={expandedGenres.has(genre.id) ? "Collapse" : "Expand"}
+                >
+                  {expandedGenres.has(genre.id) ? (
+                    <ChevronDown className="w-4 h-4" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4" />
+                  )}
+                </button>
                 <Music className="w-6 h-6 text-blue-500 mr-3" />
                 <div>
                   <h3 className="text-xl font-semibold text-white">{genre.display_name}</h3>
@@ -283,39 +308,41 @@ export function GenreManagement() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="text-lg font-medium text-gray-300">Sub-Genres ({genre.sub_genres.length})</h4>
-              {genre.sub_genres.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {genre.sub_genres.map((subGenre) => (
-                    <div key={subGenre.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
-                      <div>
-                        <p className="text-white font-medium">{subGenre.display_name}</p>
-                        <p className="text-sm text-gray-400">{subGenre.name}</p>
+            {expandedGenres.has(genre.id) && (
+              <div className="space-y-3">
+                <h4 className="text-lg font-medium text-gray-300">Sub-Genres ({genre.sub_genres.length})</h4>
+                {genre.sub_genres.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {genre.sub_genres.map((subGenre) => (
+                      <div key={subGenre.id} className="flex justify-between items-center p-3 bg-white/5 rounded-lg">
+                        <div>
+                          <p className="text-white font-medium">{subGenre.display_name}</p>
+                          <p className="text-sm text-gray-400">{subGenre.name}</p>
+                        </div>
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => setEditingSubGenre(subGenre)}
+                            className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
+                            title="Edit sub-genre"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => deleteSubGenre(subGenre.id)}
+                            className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
+                            title="Delete sub-genre"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex space-x-1">
-                        <button
-                          onClick={() => setEditingSubGenre(subGenre)}
-                          className="p-1 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded transition-colors"
-                          title="Edit sub-genre"
-                        >
-                          <Edit className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => deleteSubGenre(subGenre.id)}
-                          className="p-1 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded transition-colors"
-                          title="Delete sub-genre"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-400 text-sm">No sub-genres added yet</p>
-              )}
-            </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-400 text-sm">No sub-genres added yet</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
 

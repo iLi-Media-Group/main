@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic, Plus } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { AudioPlayer } from './AudioPlayer';
+import { TrackClearanceBadges } from './TrackClearanceBadges';
+import { AddToPlaylistModal } from './AddToPlaylistModal';
+import { formatDuration } from '../utils/dateUtils';
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
@@ -19,7 +22,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  if (error) {
+  if (error || !signedUrl) {
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
@@ -27,48 +30,47 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={track.title}
+      size="md"
+      audioId={`track-${track.id}`}
+      trackId={track.id}
+    />
+  );
 }
 
-// Component to handle signed URL generation for track images
+// Component to handle track images using public URLs
 function TrackImage({ track }: { track: Track }) {
-  // If it's already a public URL (like Unsplash), use it directly
-  if (track.image && track.image.startsWith('https://')) {
-    return (
-      <img
-        src={track.image}
-        alt={track.title}
-        className="w-full h-full object-cover"
-      />
-    );
-  }
+  // Pick your fallback depending on context
+  const FALLBACK = "https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg";
 
-  // For file paths, use signed URL
-  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+  // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
+  // This ensures the cache key only changes when the image path actually changes
+  const cacheKey = track.image ? track.image.length : 0;
 
-  if (loading) {
-    return (
-      <div className="w-full h-full bg-white/5 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const publicUrl = track.image?.startsWith("https://")
+    ? track.image
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image}?v=${cacheKey}`;
 
-  if (error || !signedUrl) {
-    return (
-      <img
-        src="https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg"
-        alt={track.title}
-        className="w-full h-full object-cover"
-      />
-    );
-  }
+  const [src, setSrc] = useState(publicUrl);
+
+  // Reset src whenever the track or cacheKey changes
+  useEffect(() => {
+    setSrc(publicUrl);
+  }, [publicUrl]);
 
   return (
     <img
-      src={signedUrl}
+      src={src}
       alt={track.title}
       className="w-full h-full object-cover"
+      onError={() => {
+        if (src !== FALLBACK) {
+          setSrc(FALLBACK);
+        }
+      }}
     />
   );
 }
@@ -77,6 +79,7 @@ import { ProducerProfileDialog } from './ProducerProfileDialog';
 import { SyncProposalDialog } from './SyncProposalDialog';
 import { createCheckoutSession } from '../lib/stripe';
 import { PRODUCTS } from '../stripe-config';
+import { formatGenresForDisplay, formatMoodsForDisplay } from '../utils/genreUtils';
 
 interface UserStats {
   membershipType: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access';
@@ -85,7 +88,7 @@ interface UserStats {
 
 export function TrackPage() {
   const { trackId } = useParams();
-  const { user, membershipPlan, refreshMembership } = useAuth();
+  const { user, membershipPlan, refreshMembership, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [track, setTrack] = useState<Track | null>(null);
   const [loading, setLoading] = useState(true);
@@ -98,8 +101,24 @@ export function TrackPage() {
   });
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [cleanVersion, setCleanVersion] = useState<Track | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAddToPlaylistModal, setShowAddToPlaylistModal] = useState(false);
+
+  // Fetch clean version if this is an explicit track
+  useEffect(() => {
+    if (track && track.explicit_lyrics && track.id) {
+      supabase
+        .from('tracks')
+        .select('*')
+        .eq('clean_version_of', track.id)
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) setCleanVersion(data[0]);
+        });
+    }
+  }, [track]);
 
   useEffect(() => {
     if (!trackId) {
@@ -117,6 +136,19 @@ export function TrackPage() {
     }
   }, [trackId, user, membershipPlan]);
 
+  const getRelationshipTypeLabel = (type: string) => {
+    const labels = {
+      'related': 'Related',
+      'radio_version': 'Radio Version',
+      'instrumental': 'Instrumental',
+      'vocal_version': 'Vocal Version',
+      'chorus_only': 'Chorus Only',
+      'clean_version': 'Clean Version',
+      'explicit_version': 'Explicit Version'
+    };
+    return labels[type as keyof typeof labels] || type;
+  };
+
   const fetchTrackData = async () => {
     try {
       setLoading(true);
@@ -127,16 +159,50 @@ export function TrackPage() {
         .from('tracks')
         .select(`
           *,
-          producer:profiles!track_producer_id (
+          producer:profiles(
             id,
             first_name,
             last_name,
+            display_name,
             email,
             avatar_path
           )
         `)
         .eq('id', trackId)
         .single();
+
+      if (trackError) throw trackError;
+
+      // Fetch related tracks
+      const { data: relatedTracksData, error: relatedTracksError } = await supabase
+        .from('related_tracks')
+        .select(`
+          id,
+          track_id,
+          related_track_id,
+          relationship_type,
+          created_at,
+          related_track:tracks!related_tracks_related_track_id_fkey (
+            id,
+            title,
+            artist,
+            duration,
+            bpm,
+            key,
+            genres,
+            moods,
+            has_vocals,
+            is_sync_only,
+            explicit_lyrics
+          )
+        `)
+        .eq('track_id', trackId);
+
+      console.log('Related tracks query result:', { relatedTracksData, relatedTracksError, trackId });
+
+      if (relatedTracksError) {
+        console.error('Error fetching related tracks:', relatedTracksError);
+      }
 
       if (trackError) throw trackError;
       
@@ -152,7 +218,7 @@ export function TrackPage() {
           title: trackData.title,
           genres: genres,
           subGenres: subGenres,
-          artist: trackData.producer ? `${trackData.producer.first_name} ${trackData.producer.last_name}`.trim() : 'Unknown Artist',
+          artist: trackData.producer ? (trackData.producer.display_name || `${trackData.producer.first_name || ''} ${trackData.producer.last_name || ''}`.trim()) : 'Unknown Artist',
           audioUrl: trackData.audio_url || '',
           image: trackData.image_url || 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg',
           bpm: trackData.bpm || 0,
@@ -160,7 +226,6 @@ export function TrackPage() {
           duration: trackData.duration || '',
           moods: moods,
           hasVocals: trackData.has_vocals || false,
-          vocalsUsageType: trackData.vocals_usage_type || 'normal',
           isSyncOnly: trackData.is_sync_only || false,
           isOneStop: trackData.is_one_stop || false,
           hasStingEnding: trackData.has_sting_ending || false,
@@ -170,8 +235,8 @@ export function TrackPage() {
           producerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
           producer: trackData.producer ? {
             id: trackData.producer.id,
-            firstName: trackData.producer.first_name || '',
-            lastName: trackData.producer.last_name || '',
+            firstName: trackData.producer.display_name || trackData.producer.first_name || '',
+            lastName: '',
             email: trackData.producer.email,
             avatarPath: trackData.producer.avatar_path
           } : undefined,
@@ -185,7 +250,23 @@ export function TrackPage() {
             stems: 0, 
             stemsWithVocals: 0 
           },
-          leaseAgreementUrl: ''
+          leaseAgreementUrl: '',
+          explicit_lyrics: trackData.explicit_lyrics || false,
+          // Sample clearance fields
+          containsLoops: trackData.contains_loops || false,
+          containsSamples: trackData.contains_samples || false,
+          containsSpliceLoops: trackData.contains_splice_loops || false,
+          samplesCleared: trackData.samples_cleared || false,
+          sampleClearanceNotes: trackData.sample_clearance_notes || null,
+          // Related tracks
+          relatedTracks: (relatedTracksData || []).map(rt => ({
+            id: rt.id,
+            trackId: rt.track_id,
+            relatedTrackId: rt.related_track_id,
+            relationshipType: rt.relationship_type,
+            relatedTrack: rt.related_track,
+            createdAt: rt.created_at
+          }))
         };
         
         setTrack(mappedTrack);
@@ -272,6 +353,12 @@ export function TrackPage() {
       return;
     }
 
+    // Check if user is a producer and prevent licensing
+    if (accountType && (accountType === 'producer' || accountType === 'admin,producer')) {
+      alert('Producers cannot license tracks. Please use a client account to license tracks.');
+      return;
+    }
+
     if (!track) return;
 
     // For sync-only tracks (with or without vocals), show the proposal dialog
@@ -316,8 +403,8 @@ export function TrackPage() {
   }
 
   // Determine button type based on track properties
-  const isSyncOnlyTrack = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
-  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly && track.vocalsUsageType !== 'sync_only';
+  const isSyncOnlyTrack = track.isSyncOnly;
+  const hasVocalsOnly = track.hasVocals && !track.isSyncOnly;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -348,6 +435,19 @@ export function TrackPage() {
             {/* Middle Column - Track Details */}
             <div className="md:col-span-2">
               <h1 className="text-3xl font-bold text-white mb-2">{track.title}</h1>
+              {/* Clean version link */}
+              {track.explicit_lyrics && cleanVersion && (
+                <div className="mb-4">
+                  <span className="text-red-400 font-semibold mr-2">Explicit</span>
+                  <span className="text-gray-300">A clean version is available: </span>
+                  <a
+                    href={`/track/${cleanVersion.id}`}
+                    className="text-green-400 underline hover:text-green-300"
+                  >
+                    {cleanVersion.title}
+                  </a>
+                </div>
+              )}
               
               {track.producer && (
                 <button
@@ -356,7 +456,7 @@ export function TrackPage() {
                 >
                   <User className="w-4 h-4 mr-2" />
                   <span>
-                    {track.producer.firstName} {track.producer.lastName}
+                    {track.producer.firstName || 'Unknown Producer'}
                   </span>
                 </button>
               )}
@@ -371,11 +471,48 @@ export function TrackPage() {
                 <TrackAudioPlayer track={track} />
               </div>
 
+              {/* Related Tracks Section */}
+              {track.relatedTracks && track.relatedTracks.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                    <Music className="w-5 h-5 text-blue-400" />
+                    Related Tracks
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {track.relatedTracks.map((relatedTrack) => (
+                      <div
+                        key={relatedTrack.id}
+                        className="p-3 bg-gray-800/50 rounded-lg border border-gray-600 hover:border-blue-500/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <a
+                              href={`/track/${relatedTrack.relatedTrack?.id}`}
+                              className="text-white font-medium hover:text-blue-400 transition-colors block"
+                            >
+                              {relatedTrack.relatedTrack?.title}
+                            </a>
+                            <p className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.artist}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs">
+                                {getRelationshipTypeLabel(relatedTrack.relationshipType)}
+                              </span>
+                              <span className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.duration}</span>
+                              <span className="text-gray-400 text-sm">{relatedTrack.relatedTrack?.bpm} BPM</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="space-y-3">
                   <div className="flex items-center text-gray-300">
                     <Tag className="w-5 h-5 mr-2 text-blue-400" />
-                    <span>Genres: {track.genres.join(', ')}</span>
+                    <span>Genres: {formatGenresForDisplay(track.genres)}</span>
                   </div>
                   
                   <div className="flex items-center text-gray-300">
@@ -387,6 +524,104 @@ export function TrackPage() {
                     <div className="flex items-center text-gray-300">
                       <Music className="w-5 h-5 mr-2 text-blue-400" />
                       <span>Key: {track.key}</span>
+                    </div>
+                  )}
+                  
+                  {track.duration && (
+                    <div className="flex items-center text-gray-300">
+                      <Clock className="w-5 h-5 mr-2 text-blue-400" />
+                      <span>Duration: {formatDuration(track.duration)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Track Clearance Badges */}
+                  <TrackClearanceBadges 
+                    containsLoops={track.containsLoops || false}
+                    containsSamples={track.containsSamples || false}
+                    containsSpliceLoops={track.containsSpliceLoops || false}
+                    samplesCleared={track.samplesCleared || false}
+                    className="mt-4"
+                  />
+
+                  {/* Sample Clearance Information */}
+                  {(track.containsLoops || track.containsSamples || track.containsSpliceLoops) && (
+                    <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-blue-300 mb-2">
+                            Sample Clearance Information
+                          </h4>
+                          <div className="space-y-1 text-sm text-blue-200/90">
+                            {track.containsLoops && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains loops
+                              </div>
+                            )}
+                            {track.containsSamples && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains samples {track.samplesCleared && <span className="text-green-400 ml-1">(Cleared)</span>}
+                              </div>
+                            )}
+                            {track.containsSpliceLoops && (
+                              <div className="flex items-center">
+                                <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
+                                Contains Splice loops
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Sample Clearance Notes */}
+                  {track.sampleClearanceNotes && (
+                    <div className="mt-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-yellow-300 mb-1">
+                            Sample Clearance Notes
+                          </h4>
+                          <p className="text-sm text-yellow-200/90 whitespace-pre-wrap">
+                            {track.sampleClearanceNotes}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Work for Hire Contracts */}
+                  {track.workForHireContracts && track.workForHireContracts.length > 0 && (
+                    <div className="mt-4 p-3 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                      <div className="flex items-start">
+                        <div className="flex-shrink-0 mt-0.5">
+                          <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                        </div>
+                        <div className="ml-3">
+                          <h4 className="text-sm font-medium text-indigo-300 mb-2">
+                            Work for Hire Contracts Available
+                          </h4>
+                          <div className="space-y-1">
+                            {track.workForHireContracts.map((contract, index) => (
+                              <div key={index} className="flex items-center text-sm text-indigo-200/90">
+                                <FileText className="w-4 h-4 mr-2" />
+                                <span>Work for Hire Contract {index + 1}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-indigo-200/70 mt-2">
+                            These contracts will be available for download after licensing this track.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -408,6 +643,38 @@ export function TrackPage() {
                     </div>
                   )}
                   
+                  {/* MP3 Only Indicator */}
+                  {track.audioUrl && !track.trackoutsUrl && !track.stemsUrl && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-yellow-400" />
+                      <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded-full text-xs">
+                        MP3 Only
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* MP3 + Trackouts Indicator */}
+                  {track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
+                    <div className="flex items-center text-gray-300">
+                      <FileMusic className="w-5 h-5 mr-2 text-green-400" />
+                      <span>MP3 + Trackouts Available</span>
+                    </div>
+                  )}
+                  
+                  {/* Trackouts Only Indicator */}
+                  {!track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
+                    <div className="flex items-center text-gray-300">
+                      <Layers className="w-5 h-5 mr-2 text-blue-400" />
+                      <span>Trackouts Available</span>
+                    </div>
+                  )}
+                  
+                  {track.explicit_lyrics && (
+                    <div className="flex items-center text-red-400">
+                      <span className="font-bold mr-1">E</span>
+                      <span>Explicit Lyrics</span>
+                    </div>
+                  )}
                   {track.hasStingEnding && (
                     <div className="flex items-center text-gray-300">
                       <Music className="w-5 h-5 mr-2 text-blue-400" />
@@ -428,7 +695,7 @@ export function TrackPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold text-white mb-3">Moods</h3>
                   <div className="flex flex-wrap gap-2">
-                    {track.moods.map((mood) => (
+                    {formatMoodsForDisplay(track.moods).split(', ').map((mood) => (
                       <span 
                         key={mood}
                         className="px-3 py-1 bg-white/10 rounded-full text-sm text-gray-300"
@@ -468,6 +735,16 @@ export function TrackPage() {
                     </>
                   )}
                 </button>
+
+                {user && (
+                  <button
+                    onClick={() => setShowAddToPlaylistModal(true)}
+                    className="py-3 px-6 rounded-lg text-white font-semibold transition-colors flex items-center bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Add to Playlist
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -501,6 +778,14 @@ export function TrackPage() {
               producerId={track.producer.id}
             />
           )}
+
+          <AddToPlaylistModal
+            isOpen={showAddToPlaylistModal}
+            onClose={() => setShowAddToPlaylistModal(false)}
+            trackId={track.id}
+            trackTitle={track.title}
+            accountType={accountType}
+          />
         </>
       )}
     </div>

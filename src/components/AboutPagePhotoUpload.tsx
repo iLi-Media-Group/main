@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Loader2, User, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 interface AboutPagePhotoUploadProps {
   photoId: string;
@@ -24,7 +24,7 @@ export function AboutPagePhotoUpload({
   size = 'md', 
   onPhotoUpdate 
 }: AboutPagePhotoUploadProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);

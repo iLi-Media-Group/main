@@ -42,6 +42,7 @@ async function sendWelcomeEmail(to: string, name: string, company: string) {
 
 Deno.serve(async (req) => {
   // Debug: Log all incoming headers
+  // Updated: Force redeploy to pick up new PITCH price IDs
   console.log('Incoming request headers:', Object.fromEntries(req.headers.entries()));
   // CORS headers
   const corsHeaders = {
@@ -85,6 +86,54 @@ Deno.serve(async (req) => {
     status: 'received',
     created_at: new Date().toISOString()
   });
+
+  // --- Pitch Service Subscriptions ---
+  // Capture checkout completion for pitch subscriptions and set up pitch_subscriptions table
+  if (event.type === 'checkout.session.completed' && metadata.service === 'pitch') {
+    try {
+      const session = event.data.object as any;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string | undefined;
+      const priceId = session?.display_items?.[0]?.plan?.id || session?.line_items?.data?.[0]?.price?.id || undefined;
+
+      // Find user via stripe_customers
+      const { data: customerRecord } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+
+      if (customerRecord?.user_id) {
+        // Fetch full subscription for period timestamps
+        let currentPeriodStart: number | null = null;
+        let currentPeriodEnd: number | null = null;
+        if (subscriptionId) {
+          const sub = await stripe.subscriptions.retrieve(subscriptionId);
+          currentPeriodStart = sub.current_period_start ?? null;
+          currentPeriodEnd = sub.current_period_end ?? null;
+        }
+
+        // Upsert pitch_subscriptions
+        await supabase
+          .from('pitch_subscriptions')
+          .upsert({
+            user_id: customerRecord.user_id,
+            stripe_customer_id: customerId,
+            stripe_subscription_id: subscriptionId ?? null,
+            price_id: priceId ?? null,
+            first_activated_at: new Date().toISOString(),
+            current_period_start: currentPeriodStart ?? null,
+            current_period_end: currentPeriodEnd ?? null,
+            status: 'active',
+            failed_renewal_attempts: 0,
+            is_active: true
+          }, { onConflict: 'user_id' });
+      }
+    } catch (err) {
+      console.error('Error handling pitch checkout completion:', err);
+    }
+    return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
+  }
 
   // --- White Label Onboarding (from new handler) ---
   if (event.type === 'checkout.session.completed' && metadata.type === 'white_label_setup') {
@@ -344,6 +393,57 @@ Deno.serve(async (req) => {
                 console.error('Error sending payment notification:', notifyError);
               }
               
+              // Create producer transaction record for sync proposal payment
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('sync_fee_rate')
+                  .single();
+
+                const syncFeeRate = compensationSettings?.sync_fee_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (syncFeeRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: proposalData.track.track_producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: proposalData.track.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Sync Proposal: ${proposalData.track.title}`,
+                    track_title: proposalData.track.title,
+                    reference_id: metadata.proposal_id,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for sync proposal: ${metadata.proposal_id}`);
+                }
+              } catch (syncError) {
+                console.error('Error creating producer transaction for sync proposal:', syncError);
+              }
+              
               // Return after processing sync proposal payment
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
@@ -355,12 +455,38 @@ Deno.serve(async (req) => {
               const clientId = metadata.client_id;
               
               try {
-                // Update custom sync request status and payment info
+                // First, get the selected submission to ensure we have the correct producer_id
+                const { data: selectedSubmission, error: selectionError } = await supabase
+                  .from('sync_request_selections')
+                  .select('selected_submission_id')
+                  .eq('sync_request_id', syncRequestId)
+                  .eq('client_id', clientId)
+                  .single();
+                
+                if (selectionError) {
+                  console.error('Error fetching selected submission:', selectionError);
+                  return new Response('Error fetching selected submission', { status: 500, headers: corsHeaders });
+                }
+                
+                // Get the submission details to get the producer_id
+                const { data: submissionData, error: submissionError } = await supabase
+                  .from('sync_submissions')
+                  .select('producer_id')
+                  .eq('id', selectedSubmission.selected_submission_id)
+                  .single();
+                
+                if (submissionError) {
+                  console.error('Error fetching submission data:', submissionError);
+                  return new Response('Error fetching submission data', { status: 500, headers: corsHeaders });
+                }
+                
+                // Update custom sync request status and payment info with the correct selected_producer_id
                 const { error: requestError } = await supabase
                   .from('custom_sync_requests')
                   .update({
                     status: 'completed',
                     payment_status: 'paid',
+                    selected_producer_id: submissionData.producer_id,
                     stripe_invoice_id: payment_intent,
                     final_amount: (amount_total / 100).toString(),
                     updated_at: new Date().toISOString()
@@ -371,10 +497,56 @@ Deno.serve(async (req) => {
                   console.error('Error updating sync request:', requestError);
                   return new Response('Error updating sync request', { status: 500, headers: corsHeaders });
                 }
+
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('custom_sync_rate')
+                  .single();
+
+                const customSyncRate = compensationSettings?.custom_sync_rate || 90; // Default to 90%
+                const producerAmount = (amount_total / 100) * (customSyncRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: submissionData.producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                  return new Response('Error updating producer balance', { status: 500, headers: corsHeaders });
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: submissionData.producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Custom Sync: ${metadata.project_title || 'Custom Sync Request'}`,
+                    track_title: metadata.project_title || 'Custom Sync Request',
+                    reference_id: syncRequestId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                  return new Response('Error creating transaction record', { status: 500, headers: corsHeaders });
+                }
                 
                 // (Optional) Add any other logic for notifications, etc.
                 
-                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId}`);
+                console.log(`Successfully processed sync payment: ${payment_intent} for request ${syncRequestId} with producer ${submissionData.producer_id}`);
                 return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
               } catch (syncError) {
                 console.error('Error processing sync payment:', syncError);
@@ -456,6 +628,58 @@ Deno.serve(async (req) => {
               } catch (emailError) {
                 console.error('Error sending license email:', emailError);
               }
+              
+              // Create producer transaction record for single track sale
+              try {
+                // Get compensation settings for producer share calculation
+                const { data: compensationSettings } = await supabase
+                  .from('compensation_settings')
+                  .select('standard_rate')
+                  .single();
+
+                const standardRate = compensationSettings?.standard_rate || 70; // Default to 70%
+                const producerAmount = (amount_total / 100) * (standardRate / 100);
+
+                // Update producer balance - only update lifetime_earnings, pending_balance will be calculated by trigger
+                const { error: balanceError } = await supabase
+                  .from('producer_balances')
+                  .upsert({
+                    balance_producer_id: trackData.track_producer_id,
+                    pending_balance: 0, // Don't set pending_balance here, let trigger calculate it
+                    available_balance: 0,
+                    lifetime_earnings: producerAmount
+                  }, {
+                    onConflict: 'balance_producer_id',
+                    ignoreDuplicates: false
+                  });
+
+                if (balanceError) {
+                  console.error('Error updating producer balance:', balanceError);
+                }
+
+                // Create transaction record for producer banking
+                const { error: transactionError } = await supabase
+                  .from('producer_transactions')
+                  .insert({
+                    transaction_producer_id: trackData.track_producer_id,
+                    amount: producerAmount,
+                    type: 'sale',
+                    status: 'pending',
+                    description: `Single Track License: ${trackData.id}`,
+                    track_title: trackData.id,
+                    reference_id: trackId,
+                    created_at: new Date().toISOString()
+                  });
+
+                if (transactionError) {
+                  console.error('Error creating transaction record:', transactionError);
+                } else {
+                  console.log(`Created producer transaction for single track sale: ${trackId}`);
+                }
+              } catch (saleError) {
+                console.error('Error creating producer transaction for single track sale:', saleError);
+              }
+              
               return new Response(JSON.stringify({ received: true }), { status: 200, headers: corsHeaders });
             }
           } catch (error) {
@@ -493,23 +717,57 @@ Deno.serve(async (req) => {
             status: subscription.status,
           }, { onConflict: 'customer_id' });
 
+          // If this subscription is for the Pitch service, mirror to pitch_subscriptions table
+          try {
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              // Lookup user
+              const { data: customerRecord } = await supabase
+                .from('stripe_customers')
+                .select('user_id')
+                .eq('customer_id', customerId)
+                .maybeSingle();
+              if (customerRecord?.user_id) {
+                await supabase
+                  .from('pitch_subscriptions')
+                  .upsert({
+                    user_id: customerRecord.user_id,
+                    stripe_customer_id: customerId,
+                    stripe_subscription_id: subscription.id,
+                    price_id: priceId,
+                    // Preserve first_activated_at if exists
+                    first_activated_at: new Date(subscription.start_date * 1000).toISOString(),
+                    current_period_start: subscription.current_period_start,
+                    current_period_end: subscription.current_period_end,
+                    status: subscription.status,
+                    failed_renewal_attempts: subscription.status === 'past_due' ? 1 : 0,
+                    is_active: subscription.status === 'active' || subscription.status === 'trialing'
+                  }, { onConflict: 'user_id' });
+              }
+            }
+          } catch (pitchSyncErr) {
+            console.error('Error syncing pitch_subscriptions:', pitchSyncErr);
+          }
+
           // --- NEW: Update membership_plan in profiles ---
           // Map price_id to plan name
           let planName = 'Unknown';
           console.log('Processing subscription with price_id:', priceId);
           switch (priceId) {
-            case 'price_1RdAfqR8RYA8TFzwKP7zrKsm':
-              planName = 'Ultimate Access';
-              break;
-            case 'price_1RdAfXR8RYA8TFzwFZyaSREP':
-              planName = 'Platinum Access';
-              break;
-            case 'price_1RdAfER8RYA8TFzw7RrrNmtt':
-              planName = 'Gold Access';
-              break;
-            case 'price_1RdAeZR8RYA8TFzwVH3MHECa':
-              planName = 'Single Track';
-              break;
+                  case 'price_1RvLLRA4Yw5viczUCAGuLpKh':
+        planName = 'Ultimate Access';
+        break;
+      case 'price_1RvLKcA4Yw5viczUItn56P2m':
+        planName = 'Platinum Access';
+        break;
+      case 'price_1RvLJyA4Yw5viczUwdHhIYAQ':
+        planName = 'Gold Access';
+        break;
+      case 'price_1RvLJCA4Yw5viczUrWeCZjom':
+        planName = 'Single Track';
+        break;
             default:
               planName = 'Unknown';
               console.log('Unknown price_id:', priceId);
@@ -604,6 +862,8 @@ Deno.serve(async (req) => {
       try {
         const stripeData = event.data.object as any;
         const customerId = stripeData.customer;
+        const priceId = stripeData.items?.data?.[0]?.price?.id as string | undefined;
+        const status = stripeData.status as string | undefined;
         const cancelAtPeriodEnd = stripeData.cancel_at_period_end;
         const currentPeriodEnd = stripeData.current_period_end;
         // Find user_id from stripe_customers
@@ -635,6 +895,30 @@ Deno.serve(async (req) => {
               })
               .eq('id', customerRecord.user_id);
           }
+
+          // Mirror pitch status if this is a Pitch price
+          try {
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              await supabase
+                .from('pitch_subscriptions')
+                .upsert({
+                  user_id: customerRecord.user_id,
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: stripeData.id,
+                  price_id: priceId,
+                  current_period_start: stripeData.current_period_start,
+                  current_period_end: stripeData.current_period_end,
+                  status: status || 'active',
+                  failed_renewal_attempts: status === 'past_due' ? 1 : 0,
+                  is_active: status === 'active' || status === 'trialing'
+                }, { onConflict: 'user_id' });
+            }
+          } catch (pitchUpdateErr) {
+            console.error('Error updating pitch_subscriptions (updated):', pitchUpdateErr);
+          }
         }
       } catch (error) {
         console.error('Error handling subscription update event:', error);
@@ -646,6 +930,7 @@ Deno.serve(async (req) => {
       try {
         const stripeData = event.data.object as any;
         const customerId = stripeData.customer;
+        const priceId = stripeData.items?.data?.[0]?.price?.id as string | undefined;
         // Find user_id from stripe_customers
         const { data: customerRecord, error: customerLookupError } = await supabase
           .from('stripe_customers')
@@ -669,6 +954,34 @@ Deno.serve(async (req) => {
             console.error('Error updating membership_plan to Single Track:', updateProfileError);
           } else {
             console.log(`Downgraded user ${customerRecord.user_id} to Single Track after subscription cancellation.`);
+          }
+
+          // If this was a Pitch subscription, mark inactive and increment failed attempts
+          try {
+            // TEMPORARY: Hardcode new price IDs until env vars are fixed
+            const pitchMonthly = Deno.env.get('PITCH_MONTHLY_PRICE_ID') || 'price_1S7fiJA4Yw5viczUpcdvr4Zs';
+            const pitchAnnual = Deno.env.get('PITCH_ANNUAL_PRICE_ID') || 'price_1S7flBA4Yw5viczUFypZhfri';
+            if (priceId && (priceId === pitchMonthly || priceId === pitchAnnual)) {
+              const { data: existing } = await supabase
+                .from('pitch_subscriptions')
+                .select('failed_renewal_attempts')
+                .eq('user_id', customerRecord.user_id)
+                .maybeSingle();
+              const attempts = (existing?.failed_renewal_attempts || 0) + 1;
+              await supabase
+                .from('pitch_subscriptions')
+                .upsert({
+                  user_id: customerRecord.user_id,
+                  stripe_customer_id: customerId,
+                  stripe_subscription_id: stripeData.id,
+                  price_id: priceId,
+                  status: 'canceled',
+                  is_active: false,
+                  failed_renewal_attempts: attempts
+                }, { onConflict: 'user_id' });
+            }
+          } catch (pitchCancelErr) {
+            console.error('Error canceling pitch_subscriptions:', pitchCancelErr);
           }
         }
       } catch (error) {

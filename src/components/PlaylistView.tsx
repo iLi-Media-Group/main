@@ -1,0 +1,667 @@
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Play, 
+  Pause, 
+  Heart, 
+  ExternalLink, 
+  User, 
+  Building,
+  Music,
+  Clock,
+  Star,
+  Mail
+} from 'lucide-react';
+import { PlaylistService } from '../lib/playlistService';
+import { PlaylistWithTracks } from '../types/playlist';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { AudioPlayer } from './AudioPlayer';
+import { parseArrayField } from '../lib/utils';
+import { LoginModal } from './LoginModal';
+import { useSignedUrl } from '../hooks/useSignedUrl';
+import { supabase } from '../lib/supabase';
+import { formatDuration } from '../utils/dateUtils';
+
+// Component to handle signed URL generation for track audio
+function PlaylistTrackAudioPlayer({ track, audioId }: { track: any; audioId: string }) {
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.mp3_url || track.audio_url);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-white/5 rounded-lg">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !signedUrl) {
+    return (
+      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
+        <p className="text-red-400 text-sm">Audio unavailable</p>
+      </div>
+    );
+  }
+
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={track.title}
+      audioId={audioId}
+      size="md"
+      trackId={track.id}
+    />
+  );
+}
+
+// Component to handle track images using public URLs
+function TrackImage({ track }: { track: any }) {
+  // Pick your fallback depending on context
+  const FALLBACK = "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop";
+
+  // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
+  // This ensures the cache key only changes when the image path actually changes
+  const cacheKey = track.image_url ? track.image_url.length : 0;
+
+  const publicUrl = track.image_url?.startsWith("https://")
+    ? track.image_url
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image_url}?v=${cacheKey}`;
+
+  const [src, setSrc] = useState(publicUrl);
+
+  // Reset src whenever the track or cacheKey changes
+  useEffect(() => {
+    setSrc(publicUrl);
+  }, [publicUrl]);
+
+  return (
+    <img
+      src={src}
+      alt={track.title}
+      className="w-16 h-16 object-cover rounded-lg"
+      onError={() => {
+        if (src !== FALLBACK) {
+          setSrc(FALLBACK);
+        }
+      }}
+    />
+  );
+}
+
+export function PlaylistView() {
+  console.log('🎵 PlaylistView component is being rendered!');
+  console.log('🔍 Current URL:', window.location.href);
+  console.log('🔍 Pathname:', window.location.pathname);
+  
+  const location = useLocation();
+  const slug = location.pathname.replace('/test-playlist/', '');
+  console.log('📋 Slug from pathname:', slug);
+  console.log('📋 Slug type:', typeof slug);
+  console.log('📋 Slug length:', slug?.length);
+  
+  const navigate = useNavigate();
+  const { user } = useUnifiedAuth();
+  const [playlist, setPlaylist] = useState<PlaylistWithTracks | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [trackFavorites, setTrackFavorites] = useState<Record<string, boolean>>({});
+  const [trackFavoriteLoading, setTrackFavoriteLoading] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (slug) {
+      loadPlaylist();
+    }
+  }, [slug]);
+
+  const loadPlaylist = async () => {
+    try {
+      setLoading(true);
+      if (!slug) return;
+
+      const playlistData = await PlaylistService.getPlaylist(slug);
+      if (!playlistData) {
+        setError('Playlist not found');
+        return;
+      }
+
+      setPlaylist(playlistData);
+      
+      // Check if playlist is favorited by current user
+      if (user) {
+        const favorited = await PlaylistService.isFavorited(playlistData.id);
+        setIsFavorited(favorited);
+        
+        // Check individual track favorites
+        await checkTrackFavorites(playlistData.tracks);
+      }
+      
+      // Record the view
+      await PlaylistService.recordPlaylistView(playlistData.id);
+    } catch (err) {
+      setError('Failed to load playlist');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  const handleTrackClick = (trackId: string) => {
+    if (user) {
+      // User is logged in, navigate directly to track page
+      navigate(`/track/${trackId}`);
+    } else {
+      // User is not logged in, show login/register modal
+      // This will be handled by the track card component
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    if (!playlist) return;
+
+    try {
+      setFavoriteLoading(true);
+      const newFavorited = await PlaylistService.toggleFavorite(playlist.id);
+      setIsFavorited(newFavorited);
+    } catch (err) {
+      console.error('Failed to toggle favorite:', err);
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  const checkTrackFavorites = async (tracks: any[]) => {
+    if (!user || !tracks) return;
+    
+    try {
+      const trackIds = tracks.map(t => t.track?.id).filter(Boolean);
+      if (trackIds.length === 0) return;
+      
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('track_id')
+        .eq('user_id', user.id)
+        .in('track_id', trackIds);
+      
+      if (error) throw error;
+      
+      const favoriteMap: Record<string, boolean> = {};
+      trackIds.forEach(trackId => {
+        favoriteMap[trackId] = data?.some(fav => fav.track_id === trackId) || false;
+      });
+      
+      setTrackFavorites(favoriteMap);
+    } catch (err) {
+      console.error('Failed to check track favorites:', err);
+    }
+  };
+
+  const handleTrackToggleFavorite = async (trackId: string) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    try {
+      setTrackFavoriteLoading(prev => ({ ...prev, [trackId]: true }));
+      
+      const isCurrentlyFavorited = trackFavorites[trackId];
+      
+      if (isCurrentlyFavorited) {
+        // Remove from favorites
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('track_id', trackId);
+        
+        if (error) throw error;
+        setTrackFavorites(prev => ({ ...prev, [trackId]: false }));
+      } else {
+        // Add to favorites
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            track_id: trackId
+          });
+        
+        if (error) throw error;
+        setTrackFavorites(prev => ({ ...prev, [trackId]: true }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle track favorite:', err);
+    } finally {
+      setTrackFavoriteLoading(prev => ({ ...prev, [trackId]: false }));
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    // Refresh the page to update the user state and favorite status
+    window.location.reload();
+  };
+
+  const getProducerName = () => {
+    if (!playlist?.producer) return 'Unknown Producer';
+    
+    const { first_name, last_name, email } = playlist.producer;
+    if (first_name && last_name) {
+      return `${first_name} ${last_name}`;
+    } else if (first_name) {
+      return first_name;
+    } else {
+      return email.split('@')[0];
+    }
+  };
+
+  const getProducerImage = () => {
+    if (!playlist?.producer) return null;
+    
+    // First try to use the producer's avatar_path
+    if (playlist.producer.avatar_path) {
+      // If it's a full URL, use it directly
+      if (playlist.producer.avatar_path.startsWith('http')) {
+        return playlist.producer.avatar_path;
+      }
+      
+      // If it's a path, use the same approach as ProfilePhotoUpload
+      try {
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(playlist.producer.avatar_path.replace('profile-photos/', ''));
+        return publicUrl;
+      } catch (error) {
+        console.error('Error getting producer image URL:', error);
+      }
+    }
+    
+    // Then try to use the playlist's photo_url (which might be the producer's photo)
+    if (playlist.photo_url) {
+      // If it's a full URL, use it directly
+      if (playlist.photo_url.startsWith('http')) {
+        return playlist.photo_url;
+      }
+      
+      // If it's a path, use the same approach as ProfilePhotoUpload
+      try {
+        const { data: { publicUrl } } = supabase.storage
+          .from('profile-photos')
+          .getPublicUrl(playlist.photo_url.replace('profile-photos/', ''));
+        return publicUrl;
+      } catch (error) {
+        console.error('Error getting playlist photo URL:', error);
+      }
+    }
+    
+    return null;
+  };
+
+  const getTotalDuration = () => {
+    if (!playlist?.tracks) return '0:00';
+    
+    const totalSeconds = playlist.tracks.reduce((total, playlistTrack) => {
+      const track = playlistTrack.track;
+      if (!track?.duration) {
+        return total;
+      }
+      
+      // Handle different duration formats
+      let duration = track.duration;
+      
+      // If duration is in seconds (number), convert to MM:SS format
+      if (typeof duration === 'number') {
+        const minutes = Math.floor(duration / 60);
+        const seconds = duration % 60;
+        duration = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+      }
+      
+      // Parse different duration formats
+      if (typeof duration === 'string') {
+        // Handle PostgreSQL INTERVAL format: "4 minutes 5 seconds"
+        if (duration.includes('minutes') && duration.includes('seconds')) {
+          const minutesMatch = duration.match(/(\d+)\s*minutes?/);
+          const secondsMatch = duration.match(/(\d+)\s*seconds?/);
+          const minutes = minutesMatch ? parseInt(minutesMatch[1]) : 0;
+          const seconds = secondsMatch ? parseInt(secondsMatch[1]) : 0;
+          const trackSeconds = (minutes * 60) + seconds;
+          return total + trackSeconds;
+        }
+        
+        // Handle MM:SS format
+        const parts = duration.split(':');
+        if (parts.length === 2) {
+          const minutes = parseInt(parts[0]) || 0;
+          const seconds = parseInt(parts[1]) || 0;
+          const trackSeconds = (minutes * 60) + seconds;
+          return total + trackSeconds;
+        } else if (parts.length === 1) {
+          // If it's just seconds
+          const seconds = parseInt(parts[0]) || 0;
+          return total + seconds;
+        }
+      }
+      
+      return total;
+    }, 0);
+    
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-white">Loading playlist...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !playlist) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-white mb-2">Playlist Not Found</h1>
+          <p className="text-gray-400">This playlist may be private or no longer available.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      {/* Header Section */}
+      <div className="relative overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
+        
+        <div className="relative z-10 container mx-auto px-4 py-12">
+          {/* Producer Info */}
+          <div className="flex items-center space-x-6 mb-8">
+            <div className="relative">
+                             {getProducerImage() ? (
+                 <img
+                   src={getProducerImage()!}
+                   alt={getProducerName()}
+                   className="w-24 h-24 rounded-full object-cover border-4 border-white/20"
+                   onError={(e) => {
+                     e.currentTarget.style.display = 'none';
+                     e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                   }}
+                 />
+               ) : null}
+               <div className={`w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center border-4 border-white/20 ${getProducerImage() ? 'hidden' : ''}`}>
+                 <User className="w-12 h-12 text-white" />
+               </div>
+              {playlist.logo_url && (
+                <img
+                  src={playlist.logo_url}
+                  alt="Company Logo"
+                  className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full object-cover border-2 border-white"
+                />
+              )}
+            </div>
+            
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">{getProducerName()}</h1>
+              {playlist.company_name && (
+                <div className="flex items-center space-x-2 text-gray-300 mb-2">
+                  <Building className="w-4 h-4" />
+                  <span>{playlist.company_name}</span>
+                </div>
+              )}
+              <div className="flex items-center space-x-4 text-sm text-gray-400">
+                <span className="flex items-center space-x-1">
+                  <Music className="w-4 h-4" />
+                  <span>{playlist.tracks.length} tracks</span>
+                </span>
+                <span className="flex items-center space-x-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{getTotalDuration()}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Playlist Info */}
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center space-x-4 mb-4">
+              <h2 className="text-5xl font-bold text-white">{playlist.name}</h2>
+              {user && (
+                <button
+                  onClick={handleToggleFavorite}
+                  className="p-3 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors"
+                  title={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                  disabled={favoriteLoading}
+                >
+                  {favoriteLoading ? (
+                    <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-red-400"></div>
+                  ) : (
+                    <Heart className={`w-6 h-6 ${isFavorited ? 'text-red-400 fill-current' : 'text-gray-400'}`} />
+                  )}
+                </button>
+              )}
+            </div>
+            {playlist.description && (
+              <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                {playlist.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Tracks Section */}
+      <div className="container mx-auto px-4 pb-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
+            {/* Tracks Header */}
+            <div className="bg-white/10 px-6 py-4 border-b border-white/10">
+              <h3 className="text-xl font-semibold text-white">Track List</h3>
+            </div>
+
+            {/* Tracks List */}
+            <div className="divide-y divide-white/10">
+              {playlist.tracks.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No tracks in this playlist yet.</p>
+                </div>
+              ) : (
+                playlist.tracks.map((playlistTrack, index) => {
+                  const track = playlistTrack.track;
+                  if (!track) return null;
+
+                  const genres = parseArrayField(track.genres);
+                  const moods = parseArrayField(track.moods);
+
+                  return (
+                    <div key={playlistTrack.id} className="p-6 hover:bg-white/5 transition-colors">
+                      <div className="flex items-center space-x-4">
+                        {/* Track Number */}
+                        <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-medium text-white">
+                          {index + 1}
+                        </div>
+
+                                                 {/* Track Image */}
+                         <div className="relative">
+                           <TrackImage track={track} />
+                         </div>
+
+                        {/* Track Info */}
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-lg font-semibold text-white truncate">{track.title}</h4>
+                          <p className="text-gray-400 truncate">{track.artist}</p>
+                          
+                          {/* Tags */}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {genres.slice(0, 2).map((genre, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded-full"
+                              >
+                                {genre}
+                              </span>
+                            ))}
+                            {moods.slice(0, 2).map((mood, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-purple-500/20 text-purple-300 text-xs rounded-full"
+                              >
+                                {mood}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Track Duration */}
+                        <div className="text-gray-400 text-sm">
+                          {formatDuration(track.duration || '3:30')}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleTrackClick(track.id)}
+                            className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                            title="View track details"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleTrackToggleFavorite(track.id)}
+                            className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                            title={trackFavorites[track.id] ? "Remove from favorites" : "Add to favorites"}
+                            disabled={trackFavoriteLoading[track.id]}
+                          >
+                            {trackFavoriteLoading[track.id] ? (
+                              <div className="animate-spin h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
+                            ) : (
+                              <Heart className={`w-4 h-4 ${trackFavorites[track.id] ? 'text-red-400 fill-current' : 'text-gray-400'}`} />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                                             {/* Audio Player */}
+                       <div className="mt-4 p-4 bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border border-white/20 backdrop-blur-sm">
+                         <PlaylistTrackAudioPlayer 
+                           track={track}
+                           audioId={`playlist-track-${track.id}`}
+                         />
+                       </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Call to Action Section */}
+          <div className="mt-8 text-center">
+            {playlist?.is_pitch_service && playlist?.pitch_service_agent ? (
+              // Pitch Service Contact Section
+              <div className="bg-gradient-to-r from-emerald-600/20 to-blue-600/20 rounded-2xl p-8 border border-white/10">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Ready to License These Tracks?
+                </h3>
+                <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                  This playlist was curated by MyBeatFi Pitch Service for your project.
+                </p>
+                
+                <div className="bg-white/5 rounded-xl p-6 mb-6 border border-white/10">
+                  <h4 className="text-lg font-semibold text-white mb-4">Contact for Licensing</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-center text-gray-300">
+                      <User className="w-5 h-5 mr-3 text-emerald-400" />
+                      <span className="font-medium">
+                        {playlist.pitch_service_agent.first_name && playlist.pitch_service_agent.last_name 
+                          ? `${playlist.pitch_service_agent.first_name} ${playlist.pitch_service_agent.last_name}`
+                          : playlist.pitch_service_agent.email.split('@')[0]
+                        }
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-center text-gray-300">
+                      <Mail className="w-5 h-5 mr-3 text-emerald-400" />
+                      <a 
+                        href={`mailto:${playlist.pitch_service_agent.email}`}
+                        className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                      >
+                        {playlist.pitch_service_agent.email}
+                      </a>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-4 italic">
+                    If interested in licensing one or more of these tracks, please contact me at {playlist.pitch_service_agent.email}.
+                  </p>
+                </div>
+                
+                <p className="text-sm text-gray-400">
+                  This playlist was created via MyBeatFi Pitch Service.
+                </p>
+              </div>
+            ) : (
+              // Regular Login/Create Account Section
+              <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 border border-white/10">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Ready to License These Tracks?
+                </h3>
+                <p className="text-gray-300 mb-6 max-w-2xl mx-auto">
+                  Thank you for selecting tracks from {getProducerName()}. 
+                  Log in or create a FREE account to license these tracks directly!
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="btn-primary px-8 py-3 text-lg"
+                  >
+                    Log In to Your Account
+                  </button>
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="btn-secondary px-8 py-3 text-lg"
+                  >
+                    Create FREE Account
+                  </button>
+                </div>
+                
+                <p className="text-sm text-gray-400 mt-4">
+                  Join thousands of music supervisors and content creators who trust MyBeatFi for their music licensing needs.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-12 text-center text-gray-400 text-sm">
+            <p>Powered by MyBeatFi • Professional Music Licensing Platform</p>
+                     </div>
+         </div>
+       </div>
+
+       {/* Login Modal */}
+       <LoginModal
+         isOpen={showLoginModal}
+         onClose={() => setShowLoginModal(false)}
+         onLoginSuccess={handleLoginSuccess}
+       />
+     </div>
+   );
+ }

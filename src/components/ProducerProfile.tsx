@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet } from 'lucide-react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
+import { User, Mail, X, Phone, MapPin, Building2, Hash, Music, Info, Wallet, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
+import { ProducerUsageBadges } from './ProducerUsageBadges';
+import { ChangePasswordModal } from './ChangePasswordModal';
+import { PitchCheckmark } from './PitchCheckmark';
 
 interface ProducerProfileProps {
   isOpen: boolean;
@@ -11,9 +15,10 @@ interface ProducerProfileProps {
 }
 
 export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerProfileProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [producerNumber, setProducerNumber] = useState('');
@@ -34,12 +39,12 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [bio, setBio] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  
+  // Usage badges state
+  const [usesLoops, setUsesLoops] = useState(false);
+  const [usesSamples, setUsesSamples] = useState(false);
+  const [usesSplice, setUsesSplice] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -55,6 +60,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
+        setDisplayName(data.display_name || '');
         setEmail(data.email || '');
         setCompanyName(data.company_name || '');
         setProducerNumber(data.producer_number || '');
@@ -71,6 +77,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         setBusinessStructure(data.business_structure || '');
         setBio(data.bio || '');
         setAvatarPath(data.avatar_path);
+        
+        // Load usage badge fields
+        setUsesLoops(data.uses_loops || false);
+        setUsesSamples(data.uses_samples || false);
+        setUsesSplice(data.uses_splice || false);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
@@ -79,6 +90,13 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
       setLoading(false);
     }
   };
+
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
 
   const handlePhotoUpdate = (newAvatarPath: string) => {
     setAvatarPath(newAvatarPath);
@@ -101,6 +119,7 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          display_name: displayName.trim() || null,
           company_name: companyName.trim() || null,
           phone_number: phoneNumber.trim() || null,
           street_address: streetAddress.trim() || null,
@@ -114,6 +133,9 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           ein: ein.trim() || null,
           business_structure: businessStructure || null,
           bio: bio.trim() || null,
+          
+          // Note: Production tool badges are managed by admin, not editable by producers
+          
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -141,7 +163,10 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-blue-900/90 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Producer Profile</h2>
+          <h2 className="text-2xl font-bold text-white flex items-center">
+            Producer Profile
+            <PitchCheckmark userId={user?.id || ''} />
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -178,6 +203,17 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               />
             </div>
 
+            {/* Producer Credit Name */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Producer Credit Name
+              </label>
+              <div className="flex items-center space-x-2 bg-blue-950/60 border border-blue-700 text-white rounded-lg px-4 py-2">
+                <User className="w-5 h-5 text-gray-400" />
+                <span className="font-semibold text-lg">{firstName} {lastName}</span>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -208,6 +244,24 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowChangePassword(true);
+                }}
+                className="w-full flex items-center justify-center px-4 py-2 bg-blue-950/60 border border-blue-700 hover:bg-blue-900 text-white rounded-lg transition-colors"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -242,6 +296,25 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
                   />
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Name (Artist Name)
+              </label>
+              <div className="relative">
+                <Music className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full pl-10 bg-blue-950/60 border border-blue-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Your artist name or stage name"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                This will be used in welcome messages and can be your artist/stage name
+              </p>
             </div>
 
             <div>
@@ -456,6 +529,25 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
               <div className="text-xs text-gray-400 text-right mt-1">{bio.length}/800</div>
             </div>
 
+            {/* Production Tools Badges (Admin Controlled) */}
+            <div>
+              <h3 className="text-lg font-medium text-white mb-4">Production Tools</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Your verified production tools (managed by admin)
+              </p>
+              
+              <div className="p-4 bg-blue-950/20 rounded-lg border border-blue-700/30">
+                <ProducerUsageBadges 
+                  usesLoops={usesLoops}
+                  usesSamples={usesSamples}
+                  usesSplice={usesSplice}
+                />
+                {!usesLoops && !usesSamples && !usesSplice && (
+                  <p className="text-sm text-gray-500 mt-2">No production tools verified yet</p>
+                )}
+              </div>
+            </div>
+
             <button
               type="submit"
               className="w-full py-3 px-6 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
@@ -466,6 +558,11 @@ export function ProducerProfile({ isOpen, onClose, onProfileUpdated }: ProducerP
           </form>
         )}
       </div>
+      
+      <ChangePasswordModal 
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }

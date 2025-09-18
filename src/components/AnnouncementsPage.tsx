@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Youtube, Sparkles, Bell, ExternalLink, ArrowRight, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Link } from 'react-router-dom';
+import { sanitizeHtml } from '../utils/sanitize';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface Announcement {
   id: string;
@@ -93,7 +95,7 @@ const YouTubeThumbnail = ({ url, title, className = "" }: { url: string; title: 
 };
 
 function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -111,7 +113,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
       .eq('id', user.id)
       .single();
       
-    if (data && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(data.email)) {
+    if (data && isAdminEmail(data.email)) {
       setIsAdmin(true);
     }
   };
@@ -163,7 +165,7 @@ function AnnouncementDetail({ announcement, onClose }: AnnouncementDetailProps) 
 
         <div 
           className="prose prose-invert max-w-none mb-6"
-          dangerouslySetInnerHTML={{ __html: announcement.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.content) }}
         />
 
         <div className="flex justify-between items-center">
@@ -206,7 +208,8 @@ export function AnnouncementsPage() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'feature' | 'event' | 'youtube'>('all');
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
-  const { user } = useAuth();
+
+  const { user } = useUnifiedAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -225,7 +228,7 @@ export function AnnouncementsPage() {
       .eq('id', user.id)
       .single();
       
-    if (data && ['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(data.email)) {
+    if (data && isAdminEmail(data.email)) {
       setIsAdmin(true);
     }
   };
@@ -347,7 +350,7 @@ export function AnnouncementsPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAnnouncements.map((announcement) => (
             <div
               key={announcement.id}
@@ -355,60 +358,61 @@ export function AnnouncementsPage() {
                 announcement.is_featured
                   ? 'border-purple-500/40'
                   : 'border-blue-500/20'
-              } p-6 cursor-pointer hover:bg-white/10 transition-colors`}
+              } p-4 cursor-pointer hover:bg-white/10 transition-colors flex flex-col h-full`}
               onClick={() => setSelectedAnnouncement(announcement)}
             >
-              <div className="flex items-start space-x-4">
+              <div className="flex items-center justify-between mb-3">
                 {getAnnouncementIcon(announcement.type)}
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-semibold text-white">
-                      {announcement.title}
-                    </h2>
-                    <span className="text-sm text-gray-400">
-                      {new Date(announcement.published_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  
-                  {/* Show YouTube thumbnail for YouTube announcements */}
-                  {announcement.type === 'youtube' && announcement.external_url && (
-                    <div className="mb-4">
-                      <YouTubeThumbnail 
-                        url={announcement.external_url} 
-                        title={announcement.title}
-                        className="w-full h-56"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Show regular image for non-YouTube announcements */}
-                  {announcement.type !== 'youtube' && announcement.image_url && (
-                    <div className="mb-4">
-                      <img
-                        src={announcement.image_url}
-                        alt={announcement.title}
-                        className="w-full h-auto max-h-80 object-cover rounded-lg bg-black"
-                      />
-                    </div>
-                  )}
-
-                  <div 
-                    className="prose prose-invert max-w-none line-clamp-3"
-                    dangerouslySetInnerHTML={{ __html: announcement.content }}
+                <span className="text-sm text-gray-400">
+                  {new Date(announcement.published_at).toLocaleDateString()}
+                </span>
+              </div>
+              
+              <h2 className="text-lg font-semibold text-white mb-3 line-clamp-2">
+                {announcement.title}
+              </h2>
+              
+              {/* Show YouTube thumbnail for YouTube announcements */}
+              {announcement.type === 'youtube' && announcement.external_url && (
+                <div className="mb-4 flex-shrink-0">
+                  <YouTubeThumbnail 
+                    url={announcement.external_url} 
+                    title={announcement.title}
+                    className="w-full h-40"
                   />
-
-                  <button
-                    className="inline-flex items-center mt-4 text-purple-400 hover:text-purple-300 transition-colors"
+                </div>
+              )}
+              
+              {/* Show regular image for non-YouTube announcements */}
+              {announcement.type !== 'youtube' && announcement.image_url && (
+                <div className="mb-4 flex-shrink-0">
+                  <img
+                    src={announcement.image_url}
+                    alt={announcement.title}
+                    className="w-full h-40 object-cover rounded-lg bg-black cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedAnnouncement(announcement);
                     }}
-                  >
-                    Read More
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </button>
+                  />
                 </div>
-              </div>
+              )}
+
+              <div 
+                className="prose prose-invert max-w-none line-clamp-3 flex-grow"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.content) }}
+              />
+
+              <button
+                className="inline-flex items-center mt-4 text-purple-400 hover:text-purple-300 transition-colors self-start"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedAnnouncement(announcement);
+                }}
+              >
+                Read More
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </button>
             </div>
           ))}
 
@@ -427,6 +431,8 @@ export function AnnouncementsPage() {
           onClose={() => setSelectedAnnouncement(null)}
         />
       )}
+
+
     </div>
   );
 }

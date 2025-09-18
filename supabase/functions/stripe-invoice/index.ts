@@ -53,6 +53,26 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Authenticate user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log('Missing authorization header');
+      return new Response(JSON.stringify({ error: 'Missing authorization header' }), { 
+        headers: corsHeaders, 
+        status: 401 
+      });
+    }
+    
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      console.log('Unauthorized user');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { 
+        headers: corsHeaders, 
+        status: 401 
+      });
+    }
     const stripe = new Stripe(stripeSecret, {
       appInfo: {
         name: 'MyBeatFi',

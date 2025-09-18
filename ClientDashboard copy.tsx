@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Track } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { calculateTimeRemaining } from '../utils/dateUtils';
@@ -258,7 +258,7 @@ const getExpiryStatus = (expiryDate: string): 'expired' | 'expiring-soon' | 'act
 };
 
 export function ClientDashboard() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);

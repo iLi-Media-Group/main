@@ -77,7 +77,7 @@ export function ProposalHistoryDialog({
           previous_status,
           new_status,
           changed_at,
-          changed_by:profiles!proposal_history_changed_by_fkey (
+          changed_by:profiles(
             first_name,
             last_name,
             email
@@ -100,7 +100,7 @@ export function ProposalHistoryDialog({
           counter_offer,
           counter_terms,
           created_at,
-          sender:profiles!proposal_negotiations_sender_id_fkey (
+          sender:profiles(
             first_name,
             last_name,
             email
@@ -124,7 +124,7 @@ export function ProposalHistoryDialog({
           file_type,
           file_size,
           created_at,
-          uploader:profiles!proposal_files_uploader_id_fkey (
+          uploader:profiles(
             first_name,
             last_name,
             email

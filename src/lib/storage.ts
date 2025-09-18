@@ -25,28 +25,6 @@ export async function uploadFile(
     
     console.log('Generated file path:', filePath);
 
-    // Try to list buckets for debugging only (don't use for validation)
-    console.log('Attempting to list buckets...');
-    const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-    if (bucketError) {
-      console.warn('Could not list buckets (this is expected on the client):', bucketError.message);
-    } else if (buckets) {
-      console.log('Successfully listed buckets:', buckets.map(b => b.name));
-      const bucketExists = buckets.some(b => b.name === bucket);
-      console.log(`Bucket '${bucket}' exists in list:`, bucketExists);
-      
-      // Debug: Log bucket details if found
-      const bucketDetails = buckets.find(b => b.name === bucket);
-      if (bucketDetails) {
-        console.log('Bucket details:', {
-          name: bucketDetails.name,
-          public: bucketDetails.public,
-          fileSizeLimit: bucketDetails.file_size_limit,
-          allowedMimeTypes: bucketDetails.allowed_mime_types
-        });
-      }
-    }
-
     // Upload file (don't check bucket existence - proceed with upload)
     console.log('Starting file upload to bucket:', bucket);
     console.log('Upload path:', filePath);
@@ -84,7 +62,14 @@ export async function uploadFile(
         
         console.log('File overwritten successfully');
         
-        // Generate signed URL for the overwritten file
+        // For public buckets (track-images, services-images), return file path
+        // For private buckets (background-videos, background-images), generate signed URL
+        if (bucket === 'track-images' || bucket === 'services-images') {
+          console.log(`${bucket} uploaded, returning file path for public access`);
+          return filePath;
+        }
+        
+        // Generate signed URL for other buckets
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from(bucket)
           .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year expiry
@@ -104,7 +89,15 @@ export async function uploadFile(
     console.log('Upload successful!');
     console.log('Upload result:', data);
     
-    // Generate signed URL for the uploaded file
+    // For public buckets (track-images, services-images), return file path
+    // For private buckets (background-videos, background-images), generate signed URL
+    if (bucket === 'track-images' || bucket === 'services-images') {
+      console.log(`${bucket} uploaded, returning file path for public access`);
+      console.log('=== UPLOAD DEBUG END ===');
+      return filePath;
+    }
+    
+    // Generate signed URL for other buckets
     console.log('Generating signed URL for uploaded file...');
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(bucket)
