@@ -1055,7 +1055,7 @@ export function ProducerDashboard() {
             </h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
-                Welcome {profile.display_name || 'Producer'}
+                Welcome {profile.display_name || profile.email.split('@')[0]}
                 <PitchCheckmark userId={user?.id || ''} />
               </p>
             )}

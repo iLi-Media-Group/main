@@ -1414,7 +1414,7 @@ if (subscription.price_id) {
             <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.display_name || 'Admin'}
+                Welcome {profile.display_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>

@@ -681,7 +681,7 @@ export function RightsHolderDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Welcome back, {profile?.display_name || 'User'}
+                Welcome back, {profile?.display_name || profile?.email?.split('@')[0] || 'User'}
               </h1>
               <p className="text-gray-300 mt-1 flex items-center gap-2">
                 {profile?.rights_holder_type === 'record_label' ? 'Record Label' : 'Publisher'} Dashboard

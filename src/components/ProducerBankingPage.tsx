@@ -327,7 +327,7 @@ export function ProducerBankingPage() {
             </h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.display_name || 'Producer'}
+                Welcome {profile.display_name || profile.email.split('@')[0]}
               </p>
             )}
           </div>
