@@ -236,7 +236,7 @@ export function TrackPage() {
           producer: trackData.producer ? {
             id: trackData.producer.id,
             firstName: trackData.producer.display_name || trackData.producer.first_name || '',
-            lastName: trackData.producer.last_name || '',
+            lastName: '',
             email: trackData.producer.email,
             avatarPath: trackData.producer.avatar_path
           } : undefined,
@@ -456,7 +456,7 @@ export function TrackPage() {
                 >
                   <User className="w-4 h-4 mr-2" />
                   <span>
-                    {track.producer.firstName || track.producer.lastName ? `${track.producer.firstName || ''} ${track.producer.lastName || ''}`.trim() : 'Unknown Producer'}
+                    {track.producer.firstName || 'Unknown Producer'}
                   </span>
                 </button>
               )}

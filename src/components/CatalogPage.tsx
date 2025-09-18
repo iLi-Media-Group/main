@@ -564,7 +564,7 @@ export function CatalogPage() {
             producer: producer ? {
               id: producer.id,
               firstName: producer.display_name || producer.first_name || '',
-              lastName: producer.last_name || '',
+              lastName: '',
               email: producer.email || '',
               } : undefined,
               fileFormats: {

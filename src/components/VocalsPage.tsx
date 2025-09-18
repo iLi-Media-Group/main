@@ -288,7 +288,7 @@ export function VocalsPage() {
           producer: track.producer ? {
             id: track.producer.id,
             firstName: track.producer.display_name || track.producer.first_name || '',
-            lastName: track.producer.last_name || '',
+            lastName: '',
             email: track.producer.email
           } : undefined,
           fileFormats: {
