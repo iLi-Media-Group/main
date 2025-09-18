@@ -404,6 +404,7 @@ export function CatalogPage() {
             id,
             first_name,
             last_name,
+            display_name,
             email
           )
          `)
@@ -542,7 +543,7 @@ export function CatalogPage() {
             return {
               id: track.id,
               title: track.title || 'Untitled',
-            artist: producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
+            artist: producer?.display_name || producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
               genres: parseArrayField(track.genres),
               subGenres: parseArrayField(track.sub_genres),
               moods: parseArrayField(track.moods),
@@ -562,7 +563,7 @@ export function CatalogPage() {
               producerId: track.track_producer_id || '',
             producer: producer ? {
               id: producer.id,
-              firstName: producer.first_name || '',
+              firstName: producer.display_name || producer.first_name || '',
               lastName: producer.last_name || '',
               email: producer.email || '',
               } : undefined,

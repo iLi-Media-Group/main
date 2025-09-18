@@ -163,6 +163,7 @@ export function TrackPage() {
             id,
             first_name,
             last_name,
+            display_name,
             email,
             avatar_path
           )
@@ -217,7 +218,7 @@ export function TrackPage() {
           title: trackData.title,
           genres: genres,
           subGenres: subGenres,
-          artist: trackData.producer ? `${trackData.producer.first_name} ${trackData.producer.last_name}`.trim() : 'Unknown Artist',
+          artist: trackData.producer ? (trackData.producer.display_name || `${trackData.producer.first_name || ''} ${trackData.producer.last_name || ''}`.trim()) : 'Unknown Artist',
           audioUrl: trackData.audio_url || '',
           image: trackData.image_url || 'https://images.pexels.com/photos/1626481/pexels-photo-1626481.jpeg',
           bpm: trackData.bpm || 0,
@@ -234,7 +235,7 @@ export function TrackPage() {
           producerId: trackData.track_producer_id, // Add track_producer_id to the mapped track
           producer: trackData.producer ? {
             id: trackData.producer.id,
-            firstName: trackData.producer.first_name || '',
+            firstName: trackData.producer.display_name || trackData.producer.first_name || '',
             lastName: trackData.producer.last_name || '',
             email: trackData.producer.email,
             avatarPath: trackData.producer.avatar_path
@@ -455,7 +456,7 @@ export function TrackPage() {
                 >
                   <User className="w-4 h-4 mr-2" />
                   <span>
-                    {track.producer.firstName} {track.producer.lastName}
+                    {track.producer.firstName || track.producer.lastName ? `${track.producer.firstName || ''} ${track.producer.lastName || ''}`.trim() : 'Unknown Producer'}
                   </span>
                 </button>
               )}

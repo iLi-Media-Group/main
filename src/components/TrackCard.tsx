@@ -342,7 +342,7 @@ export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
                 className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center"
               >
                 <User className="w-3 h-3 mr-1" />
-                {track.producer.firstName} {track.producer.lastName}
+                {track.producer.firstName || track.producer.lastName ? `${track.producer.firstName || ''} ${track.producer.lastName || ''}`.trim() : 'Unknown Producer'}
               </button>
             )}
           </div>
