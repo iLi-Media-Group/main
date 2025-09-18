@@ -138,7 +138,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               
               <div className="flex-1">
                 <h3 className="text-2xl font-bold text-white flex items-center">
-                  {profile.first_name} {profile.last_name}
+                  {profile.display_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Producer'}
                   <PitchCheckmark userId={producerId} />
                 </h3>
                 {profile.company_name && (
@@ -160,7 +160,7 @@ export function ProducerProfileDialog({ isOpen, onClose, producerId }: ProducerP
               <div className="flex-shrink-0">
                 <ProducerFollowButton
                   producerId={producerId}
-                  producerName={`${profile.first_name} ${profile.last_name}`.trim() || 'Producer'}
+                  producerName={profile.display_name || `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Producer'}
                 />
               </div>
             </div>

@@ -50,6 +50,7 @@ export function VocalsPage() {
             id,
             first_name,
             last_name,
+            display_name,
             email,
             avatar_path
           )
@@ -263,7 +264,7 @@ export function VocalsPage() {
         const formattedTracks = validTracks.map(track => ({
           id: track.id,
           title: track.title,
-          artist: track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
+          artist: track.producer?.display_name || track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
           genres: Array.isArray(track.genres)
             ? track.genres
             : track.genres?.split(',').map((g: string) => g.trim()) || [],
@@ -286,7 +287,7 @@ export function VocalsPage() {
           producerId: track.track_producer_id || '',
           producer: track.producer ? {
             id: track.producer.id,
-            firstName: track.producer.first_name || '',
+            firstName: track.producer.display_name || track.producer.first_name || '',
             lastName: track.producer.last_name || '',
             email: track.producer.email
           } : undefined,

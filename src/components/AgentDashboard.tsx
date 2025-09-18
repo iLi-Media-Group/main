@@ -345,7 +345,7 @@ export function AgentDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-white">
-                Welcome back, {profile?.first_name || profile?.company_name || user?.email || 'Agent'}
+                Welcome back, {profile?.display_name || profile?.first_name || profile?.company_name || user?.email || 'Agent'}
               </h1>
               <p className="text-gray-300 mt-1">
                 Agent Dashboard
