@@ -2523,9 +2523,10 @@ if (subscription.price_id) {
           onClose={() => setSelectedProducer(null)}
           producerId={selectedProducer.id}
           producerName={
-            selectedProducer.first_name && selectedProducer.last_name
+            selectedProducer.display_name || 
+            (selectedProducer.first_name && selectedProducer.last_name
               ? `${selectedProducer.first_name} ${selectedProducer.last_name}`
-              : selectedProducer.email.split('@')[0]
+              : selectedProducer.email.split('@')[0])
           }
         />
       )}
