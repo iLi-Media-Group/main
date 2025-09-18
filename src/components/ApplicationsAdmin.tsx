@@ -208,6 +208,24 @@ export default function ApplicationsAdmin() {
     fetchApplications();
   }, []);
 
+  // Calculate rankings for producer applications
+  const calculateRankings = (apps: ProducerApplication[]): ProducerApplication[] => {
+    return apps.map(app => {
+      const criteria = applicationToRankingCriteria(app);
+      const ranking = calculateRankingScore(criteria);
+      
+      const updatedApp = {
+        ...app,
+        ranking_score: ranking.totalScore,
+        ranking_breakdown: ranking.breakdown,
+        is_auto_rejected: ranking.isAutoRejected,
+        rejection_reason: ranking.rejectionReason
+      };
+
+      return updatedApp;
+    });
+  };
+
   const fetchApplications = async () => {
     setLoading(true);
     try {
@@ -235,12 +253,15 @@ export default function ApplicationsAdmin() {
 
       if (rightsHolderError) throw rightsHolderError;
 
-      setProducerApplications(producerData || []);
+      // Calculate ranking scores for producer applications
+      const producerAppsWithRankings = calculateRankings(producerData || []);
+
+      setProducerApplications(producerAppsWithRankings);
       setArtistApplications(artistData || []);
       setRightsHolderApplications(rightsHolderData || []);
 
       // Calculate tab counts
-      updateTabCounts([...(producerData || []), ...(artistData || []), ...(rightsHolderData || [])]);
+      updateTabCounts([...producerAppsWithRankings, ...(artistData || []), ...(rightsHolderData || [])]);
 
     } catch (error) {
       console.error('Error fetching applications:', error);
