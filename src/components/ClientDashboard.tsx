@@ -1592,7 +1592,7 @@ const getPlanLevel = (plan: string): number => {
             <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
-                Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || 'Client'}
                 {/* PITCH badge placeholder: visibility controlled by CSS variable or data attribute */}
                 <span id="pitch-badge" className="hidden items-center text-xs font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
                   PITCH

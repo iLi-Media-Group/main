@@ -383,7 +383,7 @@ export function RightsHolderBankingPage() {
             <h1 className="text-3xl font-bold text-white">Rights Holder Banking</h1>
             {profile && (
               <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.display_name || profile.first_name || profile.email.split('@')[0]}
+                Welcome {profile.display_name || 'Rights Holder'}
               </p>
             )}
           </div>
