@@ -36,6 +36,7 @@ type ProducerApplication = {
   instrument_four_proficiency: string;
   records_artists: string;
   artist_example_link: string;
+  social_media: string;
   sync_licensing_course: string;
   quiz_question_1: string;
   quiz_question_2: string;
@@ -1145,6 +1146,13 @@ export default function ApplicationsAdmin() {
                      <p className="text-gray-300">Splice Use: {(selectedApplication as ProducerApplication).splice_use}</p>
                      <p className="text-gray-300">Loop Use: {(selectedApplication as ProducerApplication).loop_use}</p>
                      <p className="text-gray-300">AI-Generated Music: {(selectedApplication as ProducerApplication).ai_generated_music ? 'Yes' : 'No'}</p>
+                     <p className="text-gray-300">Records Artists: {(selectedApplication as ProducerApplication).records_artists || 'N/A'}</p>
+                     {(selectedApplication as ProducerApplication).artist_example_link && (
+                       <p className="text-gray-300">Artist Example Link: <a href={(selectedApplication as ProducerApplication).artist_example_link} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">{(selectedApplication as ProducerApplication).artist_example_link}</a></p>
+                     )}
+                     {(selectedApplication as ProducerApplication).social_media && (
+                       <p className="text-gray-300">Where to hear their music: <a href={(selectedApplication as ProducerApplication).social_media} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">{(selectedApplication as ProducerApplication).social_media}</a></p>
+                     )}
                    </div>
 
                    <div>

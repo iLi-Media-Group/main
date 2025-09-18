@@ -114,6 +114,7 @@ const initialFormData = {
   instrument_four_proficiency: '',
   records_artists: '',
   artist_example_link: '',
+  social_media: '',
   // Sync licensing and quiz fields
   sync_licensing_course: '',
   quiz_question_1: '',
@@ -843,6 +844,23 @@ const ProducerApplicationForm: React.FC = () => {
                         />
                       </div>
                     )}
+
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Where can we hear your music? (Optional)
+                      </label>
+                      <input 
+                        name="social_media" 
+                        type="url"
+                        value={formData.social_media} 
+                        onChange={handleChange} 
+                        className="w-full px-4 py-2 bg-white/10 border border-blue-500/20 rounded-lg text-white"
+                        placeholder="https://soundcloud.com/yourname, https://spotify.com/artist/yourname, etc."
+                      />
+                      <p className="text-gray-400 text-sm mt-1">
+                        Share a link to your SoundCloud, Spotify, YouTube, or other platform where we can hear your current music
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
