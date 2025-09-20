@@ -69,6 +69,21 @@ export function VideoCarousel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-rotation effect
+  useEffect(() => {
+    if (allItems.length <= 1 || isPaused) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = prevIndex + 1;
+        return nextIndex >= allItems.length ? 0 : nextIndex;
+      });
+    }, 5000); // Rotate every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [allItems.length, isPaused]);
 
   useEffect(() => {
     let mounted = true;
@@ -131,6 +146,7 @@ export function VideoCarousel() {
   }, [videos]);
 
   const nextSlide = () => {
+    setIsPaused(true); // Pause auto-rotation when user navigates
     setCurrentIndex((prevIndex) => {
       const nextIndex = prevIndex + 1;
       return nextIndex >= allItems.length ? 0 : nextIndex;
@@ -138,6 +154,7 @@ export function VideoCarousel() {
   };
 
   const prevSlide = () => {
+    setIsPaused(true); // Pause auto-rotation when user navigates
     setCurrentIndex((prevIndex) => {
       const prevIndexNew = prevIndex - 1;
       return prevIndexNew < 0 ? Math.max(0, allItems.length - 1) : prevIndexNew;
@@ -209,7 +226,11 @@ export function VideoCarousel() {
         </div>
       )}
 
-      <div className="relative">
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         <div className="overflow-hidden rounded-lg">
           <div 
             className="flex transition-transform duration-500 ease-in-out"
@@ -328,7 +349,10 @@ export function VideoCarousel() {
             {allItems.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => {
+                  setIsPaused(true); // Pause auto-rotation when user clicks dot
+                  setCurrentIndex(index);
+                }}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   index === currentIndex ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
                 }`}
