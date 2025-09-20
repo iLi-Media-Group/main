@@ -15,44 +15,56 @@ interface MediaVideo {
   updated_at: string;
 }
 
+// Static image items for the carousel
+const STATIC_ITEMS = [
+  {
+    id: 'static-tv',
+    title: 'Television Shows',
+    description: 'Professional music for television programming',
+    image_url: 'https://images.unsplash.com/photo-1579165466741-7f35e4755660?auto=format&fit=crop&w=800&q=80',
+    media_type: 'television' as const,
+    display_order: 1,
+    is_static: true
+  },
+  {
+    id: 'static-podcast',
+    title: 'Podcasts',
+    description: 'Perfect background music for podcast episodes',
+    image_url: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80',
+    media_type: 'podcast' as const,
+    display_order: 2,
+    is_static: true
+  },
+  {
+    id: 'static-youtube',
+    title: 'YouTube Videos',
+    description: 'Engaging music for YouTube content creators',
+    image_url: 'https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=800&q=80',
+    media_type: 'youtube' as const,
+    display_order: 3,
+    is_static: true
+  }
+];
+
 const DEMO_VIDEOS: MediaVideo[] = [
   {
-    id: '1',
-    title: 'Television Show Example',
-    description: 'Example of our music being used in television programming',
+    id: 'demo-1',
+    title: 'Demo Video Example',
+    description: 'Example of our music being used in media',
     youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    media_type: 'television',
-    display_order: 1,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: '2',
-    title: 'Podcast Feature',
-    description: 'Our music featured in a popular podcast',
-    youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    media_type: 'podcast',
-    display_order: 2,
-    is_active: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: '3',
-    title: 'YouTube Creator',
-    description: 'Content creator using our music in their videos',
-    youtube_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    media_type: 'youtube',
-    display_order: 3,
+    media_type: 'other',
+    display_order: 4,
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }
 ];
 
+type CarouselItem = MediaVideo | (typeof STATIC_ITEMS)[0];
+
 export function VideoCarousel() {
   const [videos, setVideos] = useState<MediaVideo[]>(DEMO_VIDEOS);
+  const [allItems, setAllItems] = useState<CarouselItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,12 +120,28 @@ export function VideoCarousel() {
     };
   }, []);
 
+  // Combine static items with admin videos
+  useEffect(() => {
+    const combinedItems: CarouselItem[] = [
+      ...STATIC_ITEMS,
+      ...videos
+    ].sort((a, b) => a.display_order - b.display_order);
+    
+    setAllItems(combinedItems);
+  }, [videos]);
+
   const nextSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % videos.length);
+    setCurrentIndex((prevIndex) => {
+      const nextIndex = prevIndex + 3;
+      return nextIndex >= allItems.length ? 0 : nextIndex;
+    });
   };
 
   const prevSlide = () => {
-    setCurrentIndex((prevIndex) => (prevIndex - 1 + videos.length) % videos.length);
+    setCurrentIndex((prevIndex) => {
+      const prevIndexNew = prevIndex - 3;
+      return prevIndexNew < 0 ? Math.max(0, allItems.length - 3) : prevIndexNew;
+    });
   };
 
   const getYouTubeVideoId = (url: string): string | null => {
@@ -165,10 +193,10 @@ export function VideoCarousel() {
     );
   }
 
-  if (videos.length === 0) {
+  if (allItems.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-400">No videos available at the moment.</p>
+        <p className="text-gray-400">No content available at the moment.</p>
       </div>
     );
   }
@@ -184,75 +212,113 @@ export function VideoCarousel() {
       <div className="relative overflow-hidden rounded-lg">
         <div 
           className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          style={{ transform: `translateX(-${currentIndex * 33.333}%)` }}
         >
-          {videos.map((video) => {
-            const videoId = getYouTubeVideoId(video.youtube_url);
-            const thumbnail = getYouTubeThumbnail(video.youtube_url);
-            const isPlaying = playingVideo === video.id;
-
-            return (
-              <div key={video.id} className="w-full flex-shrink-0">
-                <div className="relative group">
-                  {/* Video Container */}
-                  <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                    {isPlaying && videoId ? (
-                      <iframe
-                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
-                        title={video.title}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
+          {allItems.map((item) => {
+            const isStatic = 'is_static' in item && item.is_static;
+            const isVideo = !isStatic;
+            
+            if (isStatic) {
+              // Render static image item
+              return (
+                <div key={item.id} className="w-1/3 flex-shrink-0 px-2">
+                  <div className="relative group">
+                    <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
                       />
-                    ) : (
-                      <>
-                        {/* Thumbnail */}
-                        <img
-                          src={thumbnail || video.thumbnail_url || '/placeholder-video.jpg'}
-                          alt={video.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = '/placeholder-video.jpg';
-                          }}
-                        />
-                        
-                        {/* Play Button Overlay */}
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                          <button
-                            onClick={() => handleVideoClick(video.id)}
-                            className="bg-red-600 hover:bg-red-700 text-white rounded-full p-4 transition-all duration-300 transform hover:scale-110"
-                          >
-                            <Play className="w-8 h-8 ml-1" />
-                          </button>
-                        </div>
+                      
+                      {/* Media Type Badge */}
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                          <span>{getMediaTypeIcon(item.media_type)}</span>
+                          {getMediaTypeLabel(item.media_type)}
+                        </span>
+                      </div>
+                    </div>
 
-                        {/* Media Type Badge */}
-                        <div className="absolute top-4 left-4">
-                          <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                            <span>{getMediaTypeIcon(video.media_type)}</span>
-                            {getMediaTypeLabel(video.media_type)}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Video Info */}
-                  <div className="mt-4">
-                    <h3 className="text-xl font-bold text-white mb-2">{video.title}</h3>
-                    {video.description && (
-                      <p className="text-gray-300 text-sm">{video.description}</p>
-                    )}
+                    {/* Item Info */}
+                    <div className="mt-4">
+                      <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+                      {item.description && (
+                        <p className="text-gray-300 text-sm">{item.description}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
+              );
+            } else {
+              // Render video item
+              const video = item as MediaVideo;
+              const videoId = getYouTubeVideoId(video.youtube_url);
+              const thumbnail = getYouTubeThumbnail(video.youtube_url);
+              const isPlaying = playingVideo === video.id;
+
+              return (
+                <div key={video.id} className="w-1/3 flex-shrink-0 px-2">
+                  <div className="relative group">
+                    {/* Video Container */}
+                    <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
+                      {isPlaying && videoId ? (
+                        <iframe
+                          src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0`}
+                          title={video.title}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <>
+                          {/* Thumbnail */}
+                          <img
+                            src={thumbnail || video.thumbnail_url || '/placeholder-video.jpg'}
+                            alt={video.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/placeholder-video.jpg';
+                            }}
+                          />
+                          
+                          {/* Play Button Overlay */}
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                            <button
+                              onClick={() => handleVideoClick(video.id)}
+                              className="bg-red-600 hover:bg-red-700 text-white rounded-full p-4 transition-all duration-300 transform hover:scale-110"
+                            >
+                              <Play className="w-8 h-8 ml-1" />
+                            </button>
+                          </div>
+
+                          {/* Media Type Badge */}
+                          <div className="absolute top-4 left-4">
+                            <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                              <span>{getMediaTypeIcon(video.media_type)}</span>
+                              {getMediaTypeLabel(video.media_type)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Video Info */}
+                    <div className="mt-4">
+                      <h3 className="text-xl font-bold text-white mb-2">{video.title}</h3>
+                      {video.description && (
+                        <p className="text-gray-300 text-sm">{video.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
           })}
         </div>
 
         {/* Navigation Arrows */}
-        {videos.length > 1 && (
+        {allItems.length > 3 && (
           <>
             <button
               onClick={prevSlide}
@@ -270,14 +336,14 @@ export function VideoCarousel() {
         )}
 
         {/* Dots Indicator */}
-        {videos.length > 1 && (
+        {allItems.length > 3 && (
           <div className="flex justify-center mt-6 space-x-2">
-            {videos.map((_, index) => (
+            {Array.from({ length: Math.ceil(allItems.length / 3) }).map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => setCurrentIndex(index * 3)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentIndex ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
+                  Math.floor(currentIndex / 3) === index ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
                 }`}
               />
             ))}
