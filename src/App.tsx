@@ -21,6 +21,7 @@ import { Layout } from './components/Layout';
 import { PricingCarousel } from './components/PricingCarousel';
 import { ClientsCarousel } from './components/ClientsCarousel';
 import { VideoCarousel } from './components/VideoCarousel';
+import { YouTubeVisualizersPage } from './components/YouTubeVisualizersPage';
 import { HeroSection } from './components/HeroSection';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
@@ -300,6 +301,7 @@ const App = () => {
         <Route path="/catalog" element={<LayoutWrapper><CatalogPage /></LayoutWrapper>} />
         <Route path="/vocals" element={<LayoutWrapper><VocalsPage /></LayoutWrapper>} />
         <Route path="/sync-only" element={<LayoutWrapper><SyncOnlyPage /></LayoutWrapper>} />
+        <Route path="/youtube-visualizers" element={<LayoutWrapper><YouTubeVisualizersPage /></LayoutWrapper>} />
         <Route path="/pricing" element={<LayoutWrapper><PricingPage /></LayoutWrapper>} />
         <Route path="/reset-password" element={<LayoutWrapper><ResetPassword /></LayoutWrapper>} />
         <Route path="/test-upload" element={<LayoutWrapper><TestUpload /></LayoutWrapper>} />

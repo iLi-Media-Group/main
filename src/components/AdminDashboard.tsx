@@ -31,6 +31,7 @@ import { MediaTypeManagement } from './MediaTypeManagement';
 import { ProducerBadgeManager } from './ProducerBadgeManager';
 import { RightsVerificationAdmin } from './RightsVerificationAdmin';
 import { MediaVideosManagement } from './MediaVideosManagement';
+import { YouTubeVisualizersManagement } from './YouTubeVisualizersManagement';
 import { PitchManagement } from './PitchManagement';
 
 
@@ -1645,6 +1646,7 @@ if (subscription.price_id) {
             { id: 'instruments', label: 'Instruments', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'moods', label: 'Moods', icon: <Music className="w-4 h-4 mr-2" /> },
             { id: 'media_videos', label: 'Media Videos', icon: <Video className="w-4 h-4 mr-2" /> },
+            { id: 'youtube_visualizers', label: 'YouTube Visualizers', icon: <Video className="w-4 h-4 mr-2" /> },
             { id: 'contact_messages', label: 'Contact Messages', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'drip_emails', label: 'Drip Email Preview', icon: <Mail className="w-4 h-4 mr-2" /> },
             { id: 'producer_applications', label: 'Applications', icon: <User className="w-4 h-4 mr-2" />, featureFlag: 'producer_onboarding' },
@@ -2223,6 +2225,10 @@ if (subscription.price_id) {
         {/* Media Videos Management */}
         {activeTab === 'media_videos' && (
           <MediaVideosManagement />
+        )}
+
+        {activeTab === 'youtube_visualizers' && (
+          <YouTubeVisualizersManagement />
         )}
 
         {activeTab === 'contact_messages' && (
