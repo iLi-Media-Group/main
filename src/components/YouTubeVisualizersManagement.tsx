@@ -57,22 +57,6 @@ export function YouTubeVisualizersManagement() {
   useEffect(() => {
     fetchVisualizers();
     fetchTracks();
-    
-    // Test simple track fetch
-    const testTracks = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('tracks')
-          .select('id, title')
-          .limit(5);
-        
-        console.log('Test tracks fetch:', { data, error });
-      } catch (err) {
-        console.error('Test tracks error:', err);
-      }
-    };
-    
-    testTracks();
   }, []);
 
   useEffect(() => {
@@ -162,14 +146,14 @@ export function YouTubeVisualizersManagement() {
         .select(`
           id,
           title,
-          producer:profiles(
-            id,
+          profiles!tracks_track_producer_id_fkey (
+            display_name,
             first_name,
-            last_name,
-            display_name
+            last_name
           )
         `)
-        .eq('is_active', true)
+        .is('deleted_at', null)  // Only get non-deleted tracks
+        .eq('status', 'active')  // Only get active tracks
         .order('title', { ascending: true });
 
       if (error) {
@@ -182,7 +166,7 @@ export function YouTubeVisualizersManagement() {
         id: track.id,
         title: track.title,
         producer: {
-          firstName: track.producer?.display_name || track.producer?.first_name || 'Unknown Producer'
+          firstName: track.profiles?.display_name || track.profiles?.first_name || 'Unknown Producer'
         }
       })) || [];
 
