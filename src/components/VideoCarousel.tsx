@@ -73,7 +73,7 @@ export function VideoCarousel() {
 
   // Auto-rotation effect
   useEffect(() => {
-    if (allItems.length <= 1 || isPaused) return;
+    if (allItems.length <= 1 || isPaused || playingVideo) return;
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
@@ -83,7 +83,7 @@ export function VideoCarousel() {
     }, 5000); // Rotate every 5 seconds
 
     return () => clearInterval(interval);
-  }, [allItems.length, isPaused]);
+  }, [allItems.length, isPaused, playingVideo]);
 
   useEffect(() => {
     let mounted = true;
