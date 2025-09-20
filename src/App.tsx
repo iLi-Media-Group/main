@@ -20,6 +20,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import { PricingCarousel } from './components/PricingCarousel';
 import { ClientsCarousel } from './components/ClientsCarousel';
+import { VideoCarousel } from './components/VideoCarousel';
 import { HeroSection } from './components/HeroSection';
 import { PricingPage } from './components/PricingPage';
 import { ResetPassword } from './components/ResetPassword';
@@ -274,37 +275,8 @@ const App = () => {
             <section className="py-20">
               <div className="container mx-auto px-4">
                 <h2 className="text-3xl font-bold text-center mb-12">Perfect for Your Media</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1579165466741-7f35e4755660?auto=format&fit=crop&w=800&q=80"
-                      alt="Television Production"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">Television Shows</h3>
-                    </div>
-                  </div>
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1590602847861-f357a9332bbc?auto=format&fit=crop&w=800&q=80"
-                      alt="Podcast Recording"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">Podcasts</h3>
-                    </div>
-                  </div>
-                  <div className="relative group">
-                    <img
-                      src="https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=800&q=80"
-                      alt="YouTube Content Creation"
-                      className="w-full h-64 object-cover rounded-lg"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent rounded-lg flex items-end p-6">
-                      <h3 className="text-xl font-bold text-white">YouTube Videos</h3>
-                    </div>
-                  </div>
+                <div className="max-w-4xl mx-auto">
+                  <VideoCarousel />
                 </div>
               </div>
             </section>
