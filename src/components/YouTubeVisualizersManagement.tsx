@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Edit, Trash2, Save, X, ExternalLink, Search, Filter } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -48,10 +48,41 @@ export function YouTubeVisualizersManagement() {
     display_order: 0,
     is_active: true
   });
+  const [trackSearchTerm, setTrackSearchTerm] = useState('');
+  const [filteredTracks, setFilteredTracks] = useState<Track[]>([]);
+  const [showTrackDropdown, setShowTrackDropdown] = useState(false);
+  const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
+  const trackDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchVisualizers();
     fetchTracks();
+  }, []);
+
+  useEffect(() => {
+    if (trackSearchTerm.trim() === '') {
+      setFilteredTracks([]);
+    } else {
+      const filtered = tracks.filter(track =>
+        track.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
+        track.producer.firstName.toLowerCase().includes(trackSearchTerm.toLowerCase())
+      );
+      setFilteredTracks(filtered.slice(0, 10)); // Limit to 10 results
+    }
+  }, [trackSearchTerm, tracks]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (trackDropdownRef.current && !trackDropdownRef.current.contains(event.target as Node)) {
+        setShowTrackDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const fetchVisualizers = async () => {
@@ -201,7 +232,35 @@ export function YouTubeVisualizersManagement() {
       display_order: visualizer.display_order,
       is_active: visualizer.is_active
     });
+    
+    // Set the selected track if it exists
+    if (visualizer.track) {
+      setSelectedTrack(visualizer.track);
+      setTrackSearchTerm(`${visualizer.track.title} - ${visualizer.track.producer.firstName}`);
+    } else {
+      setSelectedTrack(null);
+      setTrackSearchTerm('');
+    }
+    
     setShowForm(true);
+  };
+
+  const handleTrackSelect = (track: Track) => {
+    setSelectedTrack(track);
+    setFormData({ ...formData, track_id: track.id });
+    setTrackSearchTerm(`${track.title} - ${track.producer.firstName}`);
+    setShowTrackDropdown(false);
+  };
+
+  const handleTrackSearchChange = (value: string) => {
+    setTrackSearchTerm(value);
+    setShowTrackDropdown(true);
+    
+    // If user clears the search, clear the selection
+    if (value.trim() === '') {
+      setSelectedTrack(null);
+      setFormData({ ...formData, track_id: '' });
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -232,6 +291,9 @@ export function YouTubeVisualizersManagement() {
     });
     setEditingVisualizer(null);
     setShowForm(false);
+    setSelectedTrack(null);
+    setTrackSearchTerm('');
+    setShowTrackDropdown(false);
   };
 
   const filteredVisualizers = visualizers.filter(visualizer => {
@@ -365,22 +427,61 @@ export function YouTubeVisualizersManagement() {
                 )}
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Linked Track
                 </label>
-                <select
-                  value={formData.track_id}
-                  onChange={(e) => setFormData({ ...formData, track_id: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">No track linked</option>
-                  {tracks.map((track) => (
-                    <option key={track.id} value={track.id}>
-                      {track.title} - {track.producer.firstName}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative" ref={trackDropdownRef}>
+                  <input
+                    type="text"
+                    value={trackSearchTerm}
+                    onChange={(e) => handleTrackSearchChange(e.target.value)}
+                    onFocus={() => setShowTrackDropdown(true)}
+                    placeholder="Search for a track..."
+                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  
+                  {/* Track dropdown */}
+                  {showTrackDropdown && filteredTracks.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredTracks.map((track) => (
+                        <button
+                          key={track.id}
+                          type="button"
+                          onClick={() => handleTrackSelect(track)}
+                          className="w-full px-3 py-2 text-left text-white hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                        >
+                          <div className="font-medium">{track.title}</div>
+                          <div className="text-sm text-gray-400">by {track.producer.firstName}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Clear selection button */}
+                  {selectedTrack && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedTrack(null);
+                        setTrackSearchTerm('');
+                        setFormData({ ...formData, track_id: '' });
+                        setShowTrackDropdown(false);
+                      }}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Selected track display */}
+                {selectedTrack && (
+                  <div className="mt-2 p-2 bg-blue-500/20 border border-blue-500/30 rounded text-sm">
+                    <div className="text-blue-300 font-medium">Selected: {selectedTrack.title}</div>
+                    <div className="text-blue-400">by {selectedTrack.producer.firstName}</div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
