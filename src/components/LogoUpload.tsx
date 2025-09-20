@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-export function LogoUpload() {
+interface LogoUploadProps {
+  onLogoUpdate?: () => void;
+}
+
+export function LogoUpload({ onLogoUpdate }: LogoUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,8 +53,12 @@ export function LogoUpload() {
 
       if (updateError) throw updateError;
 
-      // Reload the page to show the new logo
-      window.location.reload();
+      // Trigger logo refresh in parent component
+      if (onLogoUpdate) {
+        onLogoUpdate();
+      }
+      
+      setUploading(false);
     } catch (err) {
       console.error('Upload error:', err);
       setError('Failed to upload logo. Please try again.');

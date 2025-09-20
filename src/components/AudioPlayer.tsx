@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { useGlobalAudioManager } from '../hooks/useGlobalAudioManager';
+import { logTrackPlay } from '../lib/trackPlays';
 
 interface AudioPlayerProps {
   src: string;
@@ -10,6 +12,8 @@ interface AudioPlayerProps {
   onToggle?: () => void;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
+  audioId?: string; // Unique identifier for this audio player
+  trackId?: string; // Track ID for play counting
 }
 
 export function AudioPlayer({ 
@@ -20,13 +24,37 @@ export function AudioPlayer({
   onPause, 
   onToggle,
   className = '',
-  size = 'md'
+  size = 'md',
+  audioId,
+  trackId
 }: AudioPlayerProps) {
+  console.log('🎵 AudioPlayer component rendered with src:', src, 'title:', title, 'audioId:', audioId);
   const [internalIsPlaying, setInternalIsPlaying] = useState(isPlaying);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const { play, stop, isPlaying: isGlobalPlaying } = useGlobalAudioManager();
+  
+  // Generate a unique ID if not provided
+  const uniqueAudioId = audioId || `audio-${src}-${Date.now()}`;
+
+  // Validate audio source when it changes
+  useEffect(() => {
+    if (!src || src.trim() === '') {
+      setError('No audio source available');
+      return;
+    }
+    
+    // Clear any previous errors when source changes
+    setError(null);
+    
+    // Test if the audio can be loaded
+    const audio = audioRef.current;
+    if (audio) {
+      audio.load();
+    }
+  }, [src]);
 
   // Sync internal state with external control
   useEffect(() => {
@@ -44,6 +72,14 @@ export function AudioPlayer({
     }
   }, [isPlaying]);
 
+  // Check if this player is currently playing globally
+  useEffect(() => {
+    const isCurrentlyPlaying = isGlobalPlaying(uniqueAudioId);
+    if (!isCurrentlyPlaying && internalIsPlaying) {
+      setInternalIsPlaying(false);
+    }
+  }, [isGlobalPlaying, uniqueAudioId, internalIsPlaying]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -53,12 +89,31 @@ export function AudioPlayer({
       setProgress(isNaN(value) ? 0 : value);
     };
 
-    const handleError = () => {
+    const handleError = (e: Event) => {
+      console.error('Audio error:', e);
+      const audio = e.target as HTMLAudioElement;
+      console.error('Audio error details:', {
+        error: audio.error,
+        src: audio.src,
+        networkState: audio.networkState,
+        readyState: audio.readyState
+      });
       setError('Failed to load audio');
       setInternalIsPlaying(false);
     };
 
     const handleEnded = () => {
+      setInternalIsPlaying(false);
+      stop(uniqueAudioId);
+      if (onPause) onPause();
+    };
+
+    const handlePlay = () => {
+      setInternalIsPlaying(true);
+      if (onPlay) onPlay();
+    };
+
+    const handlePause = () => {
       setInternalIsPlaying(false);
       if (onPause) onPause();
     };
@@ -66,13 +121,17 @@ export function AudioPlayer({
     audio.addEventListener('timeupdate', updateProgress);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress);
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [uniqueAudioId]);
 
   const togglePlay = () => {
     if (onToggle) {
@@ -80,21 +139,29 @@ export function AudioPlayer({
       return;
     }
 
+    if (!src || src.trim() === '') {
+      console.error('No audio source provided');
+      setError('No audio source available');
+      return;
+    }
+
     if (audioRef.current) {
       if (internalIsPlaying) {
         audioRef.current.pause();
         setInternalIsPlaying(false);
+        stop(uniqueAudioId);
         if (onPause) onPause();
       } else {
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(err => {
-            console.error('Playback error:', err);
-            setError('Failed to play audio');
-          });
-          setInternalIsPlaying(true);
-          if (onPlay) onPlay();
+        // Use global audio manager to play
+        play(uniqueAudioId, audioRef.current);
+        setInternalIsPlaying(true);
+        
+        // Log the track play if trackId is provided
+        if (trackId) {
+          logTrackPlay(trackId);
         }
+        
+        if (onPlay) onPlay();
       }
     }
   };

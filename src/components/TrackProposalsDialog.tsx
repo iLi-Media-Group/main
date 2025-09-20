@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Clock, DollarSign, Calendar, CheckCircle, XCircle, AlertCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
@@ -34,7 +34,7 @@ export function TrackProposalsDialog({
   trackId,
   trackTitle
 }: TrackProposalsDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [proposals, setProposals] = useState<SyncProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

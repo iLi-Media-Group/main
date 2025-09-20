@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload } from 'lucide-react';
+import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, X, Calendar, ArrowUpDown, AlertCircle, DollarSign, Edit, Check, Trash2, Plus, UserCog, Loader2, BarChart3, FileText, MessageSquare, Eye, Upload, AlertTriangle, Play } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { parseArrayField } from '../lib/utils';
+import { formatSubGenresForDisplay } from '../utils/genreUtils';
 import { useSignedUrl } from '../hooks/useSignedUrl';
-import { AudioPlayer } from './AudioPlayer';
+import { useTracksRealTime, useProducerProposalsRealTime, useProducerCustomSyncRealTime } from '../hooks/useRealTimeUpdates';
 import { DeleteTrackDialog } from './DeleteTrackDialog';
 import { TrackProposalsDialog } from './TrackProposalsDialog';
 import { RevenueBreakdownDialog } from './RevenueBreakdownDialog';
@@ -14,12 +15,16 @@ import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { ProposalConfirmDialog } from './ProposalConfirmDialog';
 import { ProducerProfile } from './ProducerProfile';
 import { EditTrackModal } from './EditTrackModal';
-import { CustomSyncTrackUploadForm } from './CustomSyncTrackUploadForm';
+import { TrackAnalyticsModal } from './TrackAnalyticsModal';
+
 import { respondRenewalRequest } from '../api/renewal';
+import { AudioPlayer } from './AudioPlayer';
+import { PitchCheckmark } from './PitchCheckmark';
+
 
 // Component to handle signed URL generation for track audio
 function TrackAudioPlayer({ track }: { track: Track }) {
-  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audio_url);
+  const { signedUrl, loading, error } = useSignedUrl('track-audio', track.audioUrl);
 
   if (loading) {
     return (
@@ -29,7 +34,7 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  if (error) {
+  if (error || !signedUrl) {
     return (
       <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
         <p className="text-red-400 text-sm">Audio unavailable</p>
@@ -37,11 +42,22 @@ function TrackAudioPlayer({ track }: { track: Track }) {
     );
   }
 
-  return <AudioPlayer src={signedUrl || ''} title={track.title} />;
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={track.title}
+      size="md"
+      audioId={`track-${track.id}`}
+      trackId={track.id}
+    />
+  );
 }
 
 // Component to handle signed URL generation for track images
 function TrackImage({ track }: { track: Track }) {
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Limit retries to avoid infinite loops
+
   // If it's already a public URL (like Unsplash), use it directly
   if (track.image_url && track.image_url.startsWith('https://')) {
     return (
@@ -49,12 +65,27 @@ function TrackImage({ track }: { track: Track }) {
         src={track.image_url}
         alt={track.title}
         className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
 
   // For file paths, use signed URL
   const { signedUrl, loading, error } = useSignedUrl('track-images', track.image_url);
+
+  // Retry logic for failed signed URLs
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount]);
 
   if (loading) {
     return (
@@ -70,6 +101,10 @@ function TrackImage({ track }: { track: Track }) {
         src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
         alt={track.title}
         className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
@@ -79,6 +114,10 @@ function TrackImage({ track }: { track: Track }) {
       src={signedUrl}
       alt={track.title}
       className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+      onError={(e) => {
+        const target = e.target as HTMLImageElement;
+        target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+      }}
     />
   );
 }
@@ -90,13 +129,20 @@ interface Track {
   moods?: string[];
   mediaUsage?: string[];
   bpm: number;
-  audio_url: string;
+  audioUrl: string;
   image_url: string;
   created_at: string;
   has_vocals: boolean;
   vocals_usage_type: string | null;
+  is_sync_only?: boolean;
+  stems_url?: string;
+  split_sheet_url?: string;
+  mp3_url?: string;
+  trackouts_url?: string;
+  audio_url?: string;
   sales_count: number;
   revenue: number;
+  play_count: number;
 }
 
 interface Proposal {
@@ -187,9 +233,11 @@ const getPaymentTermsDisplay = (paymentTerms: string): string => {
 };
 
 export function ProducerDashboard() {
-  const { user } = useAuth();
+  console.log('🎵 ProducerDashboard component loaded');
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const dashboardType = searchParams.get('dashboardType');
   const [tracks, setTracks] = useState<Track[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [pendingProposals, setPendingProposals] = useState<Proposal[]>([]);
@@ -198,7 +246,7 @@ export function ProducerDashboard() {
   const [sortField, setSortField] = useState<'created_at' | 'title' | 'bpm'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
+  const [profile, setProfile] = useState<{ first_name?: string, display_name?: string, email: string } | null>(null);
   const [stats, setStats] = useState({
     totalTracks: 0,
     totalSales: 0,
@@ -216,12 +264,14 @@ export function ProducerDashboard() {
   const [confirmAction, setConfirmAction] = useState<'accept' | 'reject'>('accept');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [showEditTrackModal, setShowEditTrackModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [proposalsTab, setProposalsTab] = useState<'pending' | 'accepted' | 'paid' | 'declined'>('pending');
   const [openSyncRequests, setOpenSyncRequests] = useState<any[]>([]);
   const [loadingSyncRequests, setLoadingSyncRequests] = useState(true);
   const [syncRequestsError, setSyncRequestsError] = useState<string | null>(null);
   const [showCustomSyncUpload, setShowCustomSyncUpload] = useState<{ open: boolean, request: any | null }>({ open: false, request: null });
   const [completedCustomSyncRequests, setCompletedCustomSyncRequests] = useState<any[]>([]);
+
   // Add state for tab selection
   const [customSyncTab, setCustomSyncTab] = useState<'open' | 'completed'>('open');
   // Add state for pagination and search
@@ -232,10 +282,39 @@ export function ProducerDashboard() {
   const [renewalRequests, setRenewalRequests] = useState<Proposal[]>([]);
   const [renewalLoadingId, setRenewalLoadingId] = useState<string | null>(null);
   const [renewalFeedback, setRenewalFeedback] = useState<{ [id: string]: string }>({});
+  
+  // Add state for track tabs and deleted tracks
+  const [trackTab, setTrackTab] = useState<'active' | 'deleted'>('active');
+  const [deletedTracks, setDeletedTracks] = useState<Track[]>([]);
+  const [showPermanentDeleteDialog, setShowPermanentDeleteDialog] = useState(false);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  // Add debounce mechanism to prevent multiple rapid calls
+  const [isFetching, setIsFetching] = useState(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced fetch function
+  const debouncedFetchDashboardData = useCallback(() => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    fetchTimeoutRef.current = setTimeout(() => {
+      if (!isFetching) {
+        fetchDashboardData();
+      }
+    }, 500); // 500ms debounce
+  }, [isFetching]);
+
+  // Reset page when switching tabs
+  useEffect(() => {
+    setTrackPage(1);
+  }, [trackTab]);
 
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      
       
       // If coming from upload with refresh parameter, clear it from URL
       if (searchParams.get('refresh') === 'true') {
@@ -244,20 +323,39 @@ export function ProducerDashboard() {
     }
   }, [user, searchParams]);
 
-  // Refresh data when component comes into focus (e.g., after upload)
+  // Set up real-time subscriptions with debounced updates
+  const handleTracksUpdate = useCallback((payload: any) => {
+    console.log('Tracks real-time update:', payload);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
+
+  const handleProposalsUpdate = useCallback((payload: any) => {
+    console.log('Proposals real-time update:', payload);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
+
+  const handleCustomSyncUpdate = useCallback((payload: any) => {
+    console.log('Custom sync real-time update:', payload);
+    debouncedFetchDashboardData();
+  }, [debouncedFetchDashboardData]);
+
+  // Initialize real-time subscriptions
+  useTracksRealTime(handleTracksUpdate);
+  useProducerProposalsRealTime(handleProposalsUpdate);
+  useProducerCustomSyncRealTime(handleCustomSyncUpdate);
+
+  // Cleanup timeout on unmount
   useEffect(() => {
-    const handleFocus = () => {
-      if (user) {
-        fetchDashboardData();
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
     };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     const fetchOpenSyncRequests = async () => {
+      if (!user) return;
       setLoadingSyncRequests(true);
       setSyncRequestsError(null);
       const { data, error } = await supabase
@@ -265,13 +363,14 @@ export function ProducerDashboard() {
         .select('*')
         .eq('status', 'open')
         .gte('end_date', new Date().toISOString())
+        .or(`selected_producer_id.eq.${user.id},selected_producer_id.is.null`)
         .order('created_at', { ascending: false });
       if (error) setSyncRequestsError(error.message);
       else setOpenSyncRequests(data || []);
       setLoadingSyncRequests(false);
     };
     fetchOpenSyncRequests();
-  }, []);
+  }, [user]);
 
   // Fetch renewal requests
   useEffect(() => {
@@ -318,16 +417,17 @@ export function ProducerDashboard() {
   };
 
   const fetchDashboardData = async () => {
-    if (!user) return;
+    if (!user || isFetching) return;
     
     try {
+      setIsFetching(true);
       setLoading(true);
       setError('');
 
       // Fetch profile data
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email')
+        .select('first_name, last_name, display_name, email')
         .eq('id', user.id)
         .single();
 
@@ -337,6 +437,7 @@ export function ProducerDashboard() {
       }
 
       // Fetch tracks with sales data
+      console.log('🔍 Fetching tracks for user:', user.id);
       const { data: tracksData, error: tracksError } = await supabase
         .from('tracks')
         .select(`
@@ -350,13 +451,48 @@ export function ProducerDashboard() {
           image_url,
           created_at,
           has_vocals,
-          vocals_usage_type
+          vocals_usage_type,
+          is_sync_only,
+          stems_url,
+          split_sheet_url,
+          mp3_url,
+          trackouts_url,
+          play_count
         `)
         .eq('track_producer_id', user.id)
         .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
+      console.log('📊 Tracks query result:', { tracksData, tracksError });
       if (tracksError) throw tracksError;
+
+      // Fetch deleted tracks
+      const { data: deletedTracksData, error: deletedTracksError } = await supabase
+        .from('tracks')
+        .select(`
+          id,
+          title,
+          genres,
+          moods,
+          media_usage,
+          bpm,
+          audio_url,
+          image_url,
+          created_at,
+          has_vocals,
+          vocals_usage_type,
+          is_sync_only,
+          stems_url,
+          split_sheet_url,
+          mp3_url,
+          trackouts_url,
+          deleted_at
+        `)
+        .eq('track_producer_id', user.id)
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (deletedTracksError) throw deletedTracksError;
 
       // Fetch sales data for each track
       const trackIds = tracksData?.map(track => track.id) || [];
@@ -389,15 +525,55 @@ export function ProducerDashboard() {
 
       // Add sales data to tracks
       const tracksWithSales = tracksData?.map(track => ({
-        ...track,
+        id: track.id,
+        title: track.title,
+        audioUrl: track.audio_url, // Map audio_url to audioUrl for interface compatibility
+        image_url: track.image_url,
+        created_at: track.created_at,
+        has_vocals: track.has_vocals,
+        vocals_usage_type: track.vocals_usage_type,
+        is_sync_only: track.is_sync_only,
+        stems_url: track.stems_url,
+        split_sheet_url: track.split_sheet_url,
+        mp3_url: track.mp3_url,
+        trackouts_url: track.trackouts_url,
+        audio_url: track.audio_url,
         genres: parseArrayField(track.genres),
         moods: parseArrayField(track.moods),
         mediaUsage: parseArrayField(track.media_usage),
+        bpm: track.bpm,
         sales_count: trackSalesMap[track.id] || 0,
-        revenue: trackRevenueMap[track.id] || 0
+        revenue: trackRevenueMap[track.id] || 0,
+        play_count: track.play_count || 0
       })) || [];
 
       setTracks(tracksWithSales);
+
+      // Process deleted tracks data
+      const deletedTracksWithSales = deletedTracksData?.map(track => ({
+        id: track.id,
+        title: track.title,
+        audioUrl: track.audio_url,
+        image_url: track.image_url,
+        created_at: track.created_at,
+        has_vocals: track.has_vocals,
+        vocals_usage_type: track.vocals_usage_type,
+        is_sync_only: track.is_sync_only,
+        stems_url: track.stems_url,
+        split_sheet_url: track.split_sheet_url,
+        mp3_url: track.mp3_url,
+        trackouts_url: track.trackouts_url,
+        audio_url: track.audio_url,
+        genres: parseArrayField(track.genres),
+        moods: parseArrayField(track.moods),
+        mediaUsage: parseArrayField(track.media_usage),
+        bpm: track.bpm,
+        sales_count: trackSalesMap[track.id] || 0,
+        revenue: trackRevenueMap[track.id] || 0,
+        deleted_at: track.deleted_at
+      })) || [];
+
+      setDeletedTracks(deletedTracksWithSales);
 
       // Calculate total stats from track sales only
       const totalTracks = tracksWithSales.length;
@@ -414,12 +590,20 @@ export function ProducerDashboard() {
 
       if (syncProposalsError) throw syncProposalsError;
 
-      // Fetch completed custom sync requests where this producer is the selected producer
+      // Fetch completed custom sync requests where this producer is the selected producer or open to all
       const { data: completedCustomSyncRequestsData, error: customSyncError } = await supabase
         .from('custom_sync_requests')
-        .select('*')
-        .eq('selected_producer_id', user.id)
-        .eq('payment_status', 'paid');
+        .select(`
+          *,
+          client:profiles!client_id (
+            first_name,
+            last_name,
+            email
+          )
+        `)
+        .or(`selected_producer_id.eq.${user.id},selected_producer_id.is.null`)
+        .eq('payment_status', 'paid')
+        .order('updated_at', { ascending: false });
 
       if (customSyncError) throw customSyncError;
 
@@ -549,13 +733,19 @@ export function ProducerDashboard() {
         pendingProposals: pendingProposalsCount
       });
 
-      setCompletedCustomSyncRequests(completedCustomSyncRequestsData || []);
+      // Flatten client data for easier access
+      const flattenedCustomSyncs = (completedCustomSyncRequestsData || []).map((req: any) => ({
+        ...req,
+        client: Array.isArray(req.client) ? req.client[0] : req.client,
+      }));
+      setCompletedCustomSyncRequests(flattenedCustomSyncs);
 
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
+      setIsFetching(false);
     }
   };
 
@@ -582,13 +772,116 @@ export function ProducerDashboard() {
 
       if (error) throw error;
 
-      // Update local state
+      // Move track from active to deleted list
       setTracks(tracks.filter(track => track.id !== selectedTrack.id));
+      setDeletedTracks(prev => [selectedTrack, ...prev]);
       setShowDeleteDialog(false);
       setSelectedTrack(null);
     } catch (err) {
       console.error('Error deleting track:', err);
       setError('Failed to delete track');
+    }
+  };
+
+  const confirmPermanentDeleteTrack = async () => {
+    if (!selectedTrack) return;
+
+    try {
+      // Check if track has any licenses
+      const { data: licenses, error: licensesError } = await supabase
+        .from('sales')
+        .select('id')
+        .eq('track_id', selectedTrack.id)
+        .is('deleted_at', null);
+
+      if (licensesError) throw licensesError;
+
+      if (licenses && licenses.length > 0) {
+        setError('Cannot permanently delete track with active licenses. Please contact support.');
+        setShowPermanentDeleteDialog(false);
+        setSelectedTrack(null);
+        return;
+      }
+
+      // Delete all storage files associated with the track using Edge Function
+      await deleteTrackStorageFiles(selectedTrack);
+
+      // Permanently delete the track from database
+      const { error } = await supabase
+        .from('tracks')
+        .delete()
+        .eq('id', selectedTrack.id);
+
+      if (error) throw error;
+
+      // Remove track from deleted list
+      setDeletedTracks(prev => prev.filter(track => track.id !== selectedTrack.id));
+      setShowPermanentDeleteDialog(false);
+      setSelectedTrack(null);
+    } catch (err) {
+      console.error('Error permanently deleting track:', err);
+      setError('Failed to permanently delete track');
+    }
+  };
+
+  // Function to delete all storage files associated with a track using Edge Function
+  const deleteTrackStorageFiles = async (track: any) => {
+    try {
+      console.log('🗑️ Deleting storage files for track:', track.title);
+      
+      // Call the Edge Function to handle storage deletion server-side
+      const { data, error } = await supabase.functions.invoke('delete-track-storage', {
+        body: {
+          trackId: track.id,
+          trackData: track
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error calling delete-track-storage function:', error);
+        throw error;
+      }
+
+      if (data.success) {
+        console.log(`✅ Storage cleanup completed for track:`, {
+          deletedFiles: data.deletedFiles,
+          failedFiles: data.failedFiles,
+          totalFiles: data.totalFiles,
+          deletedCount: data.deletedCount,
+          failedCount: data.failedCount
+        });
+      } else {
+        console.error('❌ Storage cleanup failed for track:', track.title, data.error);
+      }
+      
+    } catch (error) {
+      console.error('❌ Error during storage cleanup:', error);
+      // Don't throw here - we want to continue with database deletion even if storage cleanup fails
+    }
+  };
+
+  const confirmRestoreTrack = async () => {
+    if (!selectedTrack) return;
+
+    try {
+      // Restore the track by removing deleted_at
+      const { error } = await supabase
+        .from('tracks')
+        .update({
+          deleted_at: null
+        })
+        .eq('id', selectedTrack.id);
+
+      if (error) throw error;
+
+      // Move track from deleted to active list
+      setDeletedTracks(prev => prev.filter(track => track.id !== selectedTrack.id));
+      setTracks(prev => [selectedTrack, ...prev]);
+      setShowRestoreDialog(false);
+      setSelectedTrack(null);
+    } catch (err) {
+      console.error('Error restoring track:', err);
+      setError('Failed to restore track');
     }
   };
 
@@ -708,8 +1001,13 @@ export function ProducerDashboard() {
 
   // Tab filter logic for proposals
   const filteredPendingProposals = proposals.filter(p => 
+    // Include proposals that are pending or where only one party has accepted
     (p.status === 'pending' || 
-    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected')) &&
+    (p.producer_status !== 'accepted' && p.producer_status !== 'rejected') ||
+    (p.client_status !== 'accepted' && p.client_status !== 'rejected')) &&
+    // Exclude proposals where both parties have accepted (these go to Accepted tab)
+    !(p.producer_status === 'accepted' && p.client_status === 'accepted') &&
+    // Exclude proposals where either party has rejected
     p.producer_status !== 'rejected' && 
     p.client_status !== 'rejected'
   );
@@ -740,7 +1038,8 @@ export function ProducerDashboard() {
   }
 
   // Filter and paginate tracks
-  const filteredTracks = tracks.filter(track =>
+  const currentTracks = trackTab === 'active' ? tracks : deletedTracks;
+  const filteredTracks = currentTracks.filter(track =>
     track.title.toLowerCase().includes(trackSearch.toLowerCase())
   );
   const totalTrackPages = Math.ceil(filteredTracks.length / tracksPerPage);
@@ -751,10 +1050,13 @@ export function ProducerDashboard() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white">Producer Dashboard</h1>
+            <h1 className="text-3xl font-bold text-white">
+              {dashboardType === 'artist' ? 'Artist Dashboard' : 'Producer Dashboard'}
+            </h1>
             {profile && (
-              <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+              <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
+                Welcome {profile.display_name || profile.email.split('@')[0]}
+                <PitchCheckmark userId={user?.id || ''} />
               </p>
             )}
           </div>
@@ -780,6 +1082,20 @@ export function ProducerDashboard() {
               <Plus className="w-5 h-5 mr-2" />
               Upload Track
             </Link>
+            <Link
+              to="/producer/resources"
+              className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+            >
+              <FileText className="w-5 h-5 mr-2" />
+              Resources
+            </Link>
+            <Link
+              to="/producer/playlists"
+              className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+            >
+              <Music className="w-5 h-5 mr-2" />
+              Playlists
+            </Link>
           </div>
         </div>
 
@@ -789,8 +1105,10 @@ export function ProducerDashboard() {
           </div>
         )}
 
+
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Tracks</p>
@@ -800,7 +1118,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Sales</p>
@@ -810,7 +1128,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 cursor-pointer" onClick={() => setShowRevenueBreakdown(true)}>
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors cursor-pointer" onClick={() => setShowRevenueBreakdown(true)}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Total Revenue</p>
@@ -820,7 +1138,7 @@ export function ProducerDashboard() {
             </div>
           </div>
 
-          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20">
+          <div className="bg-white/5 backdrop-blur-sm p-6 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-400">Pending Proposals</p>
@@ -831,7 +1149,7 @@ export function ProducerDashboard() {
           </div>
         </div>
 
-        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
+        <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 hover:border-purple-500/40 transition-colors p-6">
   <div className="flex items-center mb-6">
     <button
       className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${customSyncTab === 'open' ? 'bg-blue-700 text-white' : 'bg-white/10 text-blue-200 hover:bg-blue-800'}`}
@@ -865,7 +1183,7 @@ export function ProducerDashboard() {
                   <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
                   <span><strong>End Date:</strong> {new Date(req.end_date).toLocaleDateString()}</span>
                   <span><strong>Genre:</strong> {req.genre}</span>
-                  <span><strong>Sub-genres:</strong> {Array.isArray(req.sub_genres) ? req.sub_genres.join(', ') : req.sub_genres}</span>
+                  <span><strong>Sub-genres:</strong> {formatSubGenresForDisplay(req.sub_genres)}</span>
                 </div>
               </div>
               <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0">
@@ -887,31 +1205,73 @@ export function ProducerDashboard() {
         <div className="space-y-4">
           {completedCustomSyncRequests.map((req) => {
             const allFilesUploaded = req.mp3_url && req.trackouts_url && req.stems_url && req.split_sheet_url;
+            const client = req.client;
+            const clientName = client ? `${client.first_name || ''} ${client.last_name || ''}`.trim() || client.email : 'Unknown Client';
+            
             return (
-              <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
-                  <div className="text-gray-300 mb-1">{req.project_description}</div>
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
-                    <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
-                    <span><strong>Genre:</strong> {req.genre}</span>
-                    <span><strong>Status:</strong> {req.status}</span>
+              <div key={req.id} className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <div className="font-semibold text-white text-lg mb-1">{req.project_title}</div>
+                    <div className="text-gray-300 mb-1">{req.project_description}</div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-300 mb-1">
+                      <span><strong>Client:</strong> {clientName}</span>
+                      <span><strong>Sync Fee:</strong> ${req.sync_fee?.toFixed(2)}</span>
+                      <span><strong>Final Amount:</strong> ${req.final_amount?.toFixed(2) || req.sync_fee?.toFixed(2)}</span>
+                      <span><strong>Genre:</strong> {req.genre}</span>
+                      <span><strong>Status:</strong> {req.status}</span>
+                      <span><strong>Payment Status:</strong> <span className="text-green-400">{req.payment_status}</span></span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      <span><strong>Completed:</strong> {new Date(req.updated_at || req.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
+                    <div className="flex flex-col gap-2">
+                      <div className="space-y-1">
+                        {req.mp3_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>MP3 File</span>
+                          </div>
+                        )}
+                        {req.trackouts_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Trackouts ZIP</span>
+                          </div>
+                        )}
+                        {req.stems_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Stems ZIP</span>
+                          </div>
+                        )}
+                        {req.split_sheet_url && (
+                          <div className="flex items-center text-green-400 text-sm">
+                            <Check className="w-4 h-4 mr-2" />
+                            <span>Split Sheet PDF</span>
+                          </div>
+                        )}
+                        {!req.mp3_url && !req.trackouts_url && !req.stems_url && !req.split_sheet_url && (
+                          <div className="flex items-center text-gray-400 text-sm">
+                            <AlertCircle className="w-4 h-4 mr-2" />
+                            <span>No files uploaded</span>
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => navigate(`/producer/custom-sync-upload?requestId=${req.id}`)}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center"
+                      >
+                        <Upload className="w-5 h-5 mr-2" />
+                        {allFilesUploaded ? 'Re-upload Files' : 'Upload Files'}
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-4 md:mt-0 md:ml-6 flex-shrink-0 flex flex-col gap-2">
-                  {!allFilesUploaded && (
-                    <button
-                      onClick={() => setShowCustomSyncUpload({ open: true, request: req })}
-                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors flex items-center"
-                    >
-                      <Upload className="w-5 h-5 mr-2" />
-                      Upload Files
-                    </button>
-                  )}
-                  {allFilesUploaded && (
-                    <span className="text-green-400 font-semibold">All files uploaded</span>
-                  )}
-                </div>
+                
+
               </div>
             );
           })}
@@ -920,16 +1280,6 @@ export function ProducerDashboard() {
     )}
   </div>
 </div>
-{showCustomSyncUpload.open && showCustomSyncUpload.request && (
-  <CustomSyncTrackUploadForm
-    request={showCustomSyncUpload.request}
-    onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
-    onUploaded={() => {
-      setShowCustomSyncUpload({ open: false, request: null });
-      fetchDashboardData();
-    }}
-  />
-)}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
@@ -963,6 +1313,30 @@ export function ProducerDashboard() {
               </div>
             </div>
 
+            {/* Track Tabs */}
+            <div className="flex space-x-1 mb-4 bg-white/5 rounded-lg p-1">
+              <button
+                onClick={() => setTrackTab('active')}
+                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  trackTab === 'active'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Active Tracks ({tracks.length})
+              </button>
+              <button
+                onClick={() => setTrackTab('deleted')}
+                className={`flex-1 px-4 py-2 rounded-md font-medium transition-colors ${
+                  trackTab === 'deleted'
+                    ? 'bg-red-600 text-white'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                Deleted Tracks ({deletedTracks.length})
+              </button>
+            </div>
+
             <input
               type="text"
               placeholder="Search tracks..."
@@ -972,108 +1346,209 @@ export function ProducerDashboard() {
               style={{ minWidth: 200 }}
             />
 
-            {paginatedTracks.length === 0 ? (
-              <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No tracks found.</p>
-              </div>
-            ) : (
-              <div>
-                {paginatedTracks.map((track) => (
-                  <div
-                    key={track.id}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20"
-                  >
-                    <div className="flex items-start space-x-4">
-                      <TrackImage track={track} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col">
-                          <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
-                          <div className="text-sm text-gray-400 space-y-1">
-                            <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
-                            <div className="flex items-center space-x-4">
-                              <span className="flex items-center">
-                                <DollarSign className="w-4 h-4 mr-1 text-green-400" />
-                                ${track.revenue.toFixed(2)}
-                              </span>
-                              <span className="flex items-center">
-                                <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
-                                {track.sales_count} sales
-                              </span>
-                              {track.has_vocals && (
+            {trackTab === 'active' ? (
+              paginatedTracks.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No active tracks found.</p>
+                </div>
+              ) : (
+                <div>
+                  {paginatedTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <TrackImage track={track} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                              <div className="flex items-center space-x-4">
                                 <span className="flex items-center">
-                                  <Mic className="w-4 h-4 mr-1 text-purple-400" />
-                                  {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                                  ${track.revenue.toFixed(2)}
                                 </span>
-                              )}
+                                <span className="flex items-center">
+                                  <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.sales_count} sales
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTrack(track);
+                                    setShowAnalyticsModal(true);
+                                  }}
+                                  className="flex items-center hover:text-blue-300 transition-colors"
+                                  title="View Play Analytics"
+                                >
+                                  <Play className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.play_count || 0} plays
+                                </button>
+                                {track.has_vocals && (
+                                  <span className="flex items-center">
+                                    <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                    {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowEditTrackModal(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                                title="Edit Track"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowTrackProposalsDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
+                                title="View Proposals"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowDeleteDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
+                                title="Delete Track"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2 mt-3">
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowEditTrackModal(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                              title="Edit Track"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowTrackProposalsDialog(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/10"
-                              title="View Proposals"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTrack(track);
-                                setShowDeleteDialog(true);
-                              }}
-                              className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
-                              title="Delete Track"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                      <div className="w-64 flex-shrink-0">
-                        <div className="mb-3">
-                            {/* Audio Player with debug warning if audio_url is missing or incorrect */}
-                            {(!track.audio_url || !track.audio_url.endsWith('audio.mp3')) && (
+                        <div className="w-64 flex-shrink-0">
+                          <div className="mb-3">
+                            {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+                            {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
                               <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
                                 Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
                               </div>
                             )}
                             <TrackAudioPlayer track={track} />
                           </div>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                  <div className="flex justify-center items-center mt-4 gap-2">
+                    <button
+                      onClick={() => setTrackPage(p => Math.max(1, p - 1))}
+                      disabled={trackPage === 1}
+                      className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                    >
+                      Previous
+                    </button>
+                    <span className="text-white">Page {trackPage} of {totalTrackPages}</span>
+                    <button
+                      onClick={() => setTrackPage(p => Math.min(totalTrackPages, p + 1))}
+                      disabled={trackPage === totalTrackPages}
+                      className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
+                    >
+                      Next
+                    </button>
                   </div>
-                ))}
-                <div className="flex justify-center items-center mt-4 gap-2">
-                  <button
-                    onClick={() => setTrackPage(p => Math.max(1, p - 1))}
-                    disabled={trackPage === 1}
-                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-white">Page {trackPage} of {totalTrackPages}</span>
-                  <button
-                    onClick={() => setTrackPage(p => Math.min(totalTrackPages, p + 1))}
-                    disabled={trackPage === totalTrackPages}
-                    className="px-3 py-1 bg-blue-700 text-white rounded disabled:opacity-50"
-                  >
-                    Next
-                  </button>
                 </div>
-              </div>
+              )
+            ) : (
+              deletedTracks.length === 0 ? (
+                <div className="text-center py-12 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20">
+                  <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No deleted tracks found.</p>
+                </div>
+              ) : (
+                <div>
+                  {deletedTracks.map((track) => (
+                    <div
+                      key={track.id}
+                      className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20 hover:border-red-500/40 transition-colors"
+                    >
+                      <div className="flex items-start space-x-4">
+                        <TrackImage track={track} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col">
+                            <h3 className="text-lg font-semibold text-white mb-1">{track.title}</h3>
+                            <div className="text-sm text-gray-400 space-y-1">
+                              <p>{track.genres.join(', ')} • {track.bpm} BPM</p>
+                              <div className="flex items-center space-x-4">
+                                <span className="flex items-center">
+                                  <DollarSign className="w-4 h-4 mr-1 text-green-400" />
+                                  ${track.revenue.toFixed(2)}
+                                </span>
+                                <span className="flex items-center">
+                                  <BarChart3 className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.sales_count} sales
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTrack(track);
+                                    setShowAnalyticsModal(true);
+                                  }}
+                                  className="flex items-center hover:text-blue-300 transition-colors"
+                                  title="View Play Analytics"
+                                >
+                                  <Play className="w-4 h-4 mr-1 text-blue-400" />
+                                  {track.play_count || 0} plays
+                                </button>
+                                {track.has_vocals && (
+                                  <span className="flex items-center">
+                                    <Mic className="w-4 h-4 mr-1 text-purple-400" />
+                                    {track.vocals_usage_type === 'sync_only' ? 'Sync Only' : 'Vocals'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 mt-3">
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowRestoreDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-green-400 transition-colors rounded-lg hover:bg-green-400/10"
+                                title="Restore Track"
+                              >
+                                <ArrowUpDown className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedTrack(track);
+                                  setShowPermanentDeleteDialog(true);
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-400/10"
+                                title="Permanently Delete Track"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="w-64 flex-shrink-0">
+                          <div className="mb-3">
+                            {/* Audio Player with debug warning if audioUrl is missing or incorrect */}
+                            {(!track.audioUrl || !track.audioUrl.endsWith('audio.mp3')) && (
+                              <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
+                                Warning: Audio file path is missing or does not match expected pattern. Please check upload logic and database.
+                              </div>
+                            )}
+                            <TrackAudioPlayer track={track} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
             )}
           </div>
 
@@ -1085,11 +1560,11 @@ export function ProducerDashboard() {
                   Sync Proposals
                 </h3>
                 <Link
-                  to="/producer/banking"
+                  to={`/producer/banking${dashboardType === 'artist' ? '?dashboardType=artist' : ''}`}
                   className="text-blue-400 hover:text-blue-300 transition-colors flex items-center text-sm"
                 >
                   <DollarSign className="w-4 h-4 mr-1" />
-                  View Earnings
+                  {dashboardType === 'artist' ? 'Artist Banking' : 'View Earnings'}
                 </Link>
               </div>
               
@@ -1149,7 +1624,7 @@ export function ProducerDashboard() {
                       {filteredPendingProposals.map((proposal: Proposal) => (
                         <div
                           key={proposal.id}
-                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 relative"
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors relative"
                         >
                           {/* Notification Badge */}
                           {user && hasPendingAction(proposal, user.id) && (
@@ -1157,6 +1632,15 @@ export function ProducerDashboard() {
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                               <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
                             </span>
+                          )}
+                          
+                          {/* Urgent Badge */}
+                          {proposal.is_urgent && (
+                            <div className="absolute bottom-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                ⚡ URGENT
+                              </span>
+                            </div>
                           )}
                           <div className="flex items-start justify-between mb-2">
                             <div>
@@ -1230,13 +1714,22 @@ export function ProducerDashboard() {
                         return (
                           <div
                             key={proposal.id}
-                            className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 relative"
+                            className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-green-500/20 hover:border-green-500/40 transition-colors relative"
                           >
                             {/* Payment Pending Badge - moved to bottom */}
                             {isPaymentPending && (
-                              <div className="absolute bottom-2 right-2">
+                              <div className="absolute bottom-2 left-2">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                                   Payment Pending
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Urgent Badge */}
+                            {proposal.is_urgent && (
+                              <div className="absolute bottom-2 right-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                  ⚡ URGENT
                                 </span>
                               </div>
                             )}
@@ -1301,7 +1794,7 @@ export function ProducerDashboard() {
                       {filteredPaidProposals.map((proposal: Proposal) => (
                         <div
                           key={proposal.id}
-                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 relative"
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-purple-500/20 hover:border-purple-500/40 transition-colors relative"
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div>
@@ -1345,7 +1838,7 @@ export function ProducerDashboard() {
                       {filteredDeclinedProposals.map((proposal: Proposal) => (
                       <div
                         key={proposal.id}
-                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20"
+                        className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-red-500/20 hover:border-red-500/40 transition-colors"
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -1386,7 +1879,7 @@ export function ProducerDashboard() {
                 <BarChart3 className="w-5 h-5 mr-2 text-blue-500" />
                 Sales Overview
               </h3>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20">
+              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-sm mb-1">
@@ -1523,15 +2016,77 @@ export function ProducerDashboard() {
         />
       )}
 
-      {showCustomSyncUpload.open && showCustomSyncUpload.request && (
-        <CustomSyncTrackUploadForm
-          request={showCustomSyncUpload.request}
-          onClose={() => setShowCustomSyncUpload({ open: false, request: null })}
-          onUploaded={() => {
-            setShowCustomSyncUpload({ open: false, request: null });
-            fetchDashboardData();
+      {selectedTrack && showAnalyticsModal && (
+        <TrackAnalyticsModal
+          isOpen={showAnalyticsModal}
+          onClose={() => {
+            setShowAnalyticsModal(false);
+            setSelectedTrack(null);
           }}
+          track={selectedTrack}
         />
+      )}
+
+
+
+      {selectedTrack && showRestoreDialog && (
+        <DeleteTrackDialog
+          isOpen={showRestoreDialog}
+          onClose={() => {
+            setShowRestoreDialog(false);
+            setSelectedTrack(null);
+          }}
+          trackTitle={selectedTrack.title}
+          onConfirm={confirmRestoreTrack}
+          isRestore={true}
+        />
+      )}
+
+      {selectedTrack && showPermanentDeleteDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-red-500/20 w-full max-w-md">
+            <h3 className="text-xl font-bold text-white mb-4">Permanently Delete Track</h3>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
+            <div className="mb-6">
+              <p className="text-gray-300 mb-4">
+                Are you sure you want to permanently delete "{selectedTrack.title}"? This action cannot be undone and will remove the track from the database.
+              </p>
+              
+              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                <div className="flex items-start space-x-2">
+                  <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-red-400 text-sm">
+                    This will permanently delete the track from the database. If the track has any active licenses, it cannot be permanently deleted.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => {
+                  setShowPermanentDeleteDialog(false);
+                  setSelectedTrack(null);
+                }}
+                className="px-4 py-2 text-gray-300 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPermanentDeleteTrack}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+              >
+                Permanently Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

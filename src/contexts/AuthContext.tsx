@@ -2,15 +2,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { getUserSubscription, getMembershipPlanFromPriceId } from '../lib/stripe';
+import { isAdminEmail } from '../lib/adminConfig';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  accountType: 'client' | 'producer' | 'admin' | 'white_label' | null;
+  accountType: 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | 'rights_holder' | 'artist_band' | null;
   membershipPlan: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null;
   needsPasswordSetup: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<{ requiresEmailConfirmation: boolean }>;
   signOut: () => Promise<void>;
   refreshMembership: () => Promise<void>;
 }
@@ -19,7 +20,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | null>(null);
+  const [accountType, setAccountType] = useState<'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer' | 'artist_band' | null>(null);
   const [membershipPlan, setMembershipPlan] = useState<'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null>(null);
   const [needsPasswordSetup, setNeedsPasswordSetup] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,8 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchAccountType = async (userId: string, email: string) => {
     try {
       // Check if user is an admin
-      if (['knockriobeats@gmail.com', 'info@mybeatfi.io', 'derykbanks@yahoo.com', 'knockriobeats2@gmail.com'].includes(email.toLowerCase())) {
-        setAccountType('admin');
+      if (isAdminEmail(email)) {
+        // Special handling for knockriobeats@gmail.com - dual admin/producer role
+        if (email.toLowerCase() === 'knockriobeats@gmail.com') {
+          setAccountType('admin,producer');
+        } else {
+          setAccountType('admin');
+        }
         setNeedsPasswordSetup(false);
         return;
       }
@@ -68,28 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create one
-          const { error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: userId,
-              email: email,
-              account_type: 'client', // Default to client
-              membership_plan: 'Single Track'
-            });
-            
-          if (insertError) {
-            console.error('Error creating profile:', {
-              message: (insertError as any)?.message,
-              details: (insertError as any)?.details,
-              hint: (insertError as any)?.hint,
-              error: insertError
-            });
-            setAccountType('client');
-            setNeedsPasswordSetup(false);
-            return;
-          }
-          
+          // Profile doesn't exist - don't create one automatically
+          // Let the signup form handle profile creation
+          console.log('Profile doesn\'t exist, but not creating automatically');
           setAccountType('client');
           setMembershipPlan('Single Track');
           setNeedsPasswordSetup(false);
@@ -109,7 +96,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (data) {
-        setAccountType(data.account_type as 'client' | 'producer' | 'white_label');
+        // Handle dual roles properly
+        let accountType = data.account_type as 'client' | 'producer' | 'admin' | 'white_label' | 'admin,producer';
+        
+        // If the account_type includes multiple roles, use the first one for compatibility
+        if (accountType && accountType.includes(',')) {
+          accountType = accountType.split(',')[0] as 'client' | 'producer' | 'admin' | 'white_label';
+        }
+        
+        setAccountType(accountType);
         setMembershipPlan(data.membership_plan as 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access' | null);
         setNeedsPasswordSetup(false);
         
@@ -349,29 +344,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('An account with this email already exists');
     }
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
     if (error) throw error;
     
-    if (data.user) {
-      try {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: data.user.email,
-            account_type: 'client', // Default to client for new signups
-            membership_plan: 'Single Track' // Default membership plan
-          });
-
-        if (profileError) throw profileError;
-        setAccountType('client');
-        setMembershipPlan('Single Track');
-      } catch (err) {
-        // If profile creation fails, clean up by deleting the auth user
-        await supabase.auth.admin.deleteUser(data.user.id);
-        throw err;
-      }
+    // Check if email confirmation is required
+    if (data.user && !data.user.email_confirmed_at) {
+      // Email verification required - don't create profile yet
+      // The profile will be created after email verification
+      return { requiresEmailConfirmation: true };
     }
+    
+    // Don't create profile here - let SignupForm handle it
+    // This prevents the duplicate email constraint violation
+    return { requiresEmailConfirmation: false };
   };
 
   const signOut = async () => {

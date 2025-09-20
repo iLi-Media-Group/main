@@ -9,7 +9,7 @@
 
   /* Modern Glassmorphism */
   .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-blue-500/20 shadow-xl;
+    @apply bg-white/10 backdrop-blur-md border border-blue-500/20 shadow-xl;
   }
 
   /* Animated Gradient Background */
@@ -98,6 +98,28 @@
     @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
            bg-white/10 backdrop-blur-sm border border-blue-500/20
            transition-all hover:bg-white/20;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   /* Gradient Text */

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Mail, X, MapPin, Upload, Loader2, Building2 } from 'lucide-react';
+import { useStableDataFetch } from '../hooks/useStableEffect';
+import { User, Mail, X, MapPin, Upload, Loader2, Building2, Lock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { ProfilePhotoUpload } from './ProfilePhotoUpload';
+import { ChangePasswordModal } from './ChangePasswordModal';
 
 interface ClientProfileProps {
   onClose: () => void;
@@ -10,9 +12,10 @@ interface ClientProfileProps {
 }
 
 export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [streetAddress, setStreetAddress] = useState('');
@@ -27,12 +30,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
   const [success, setSuccess] = useState(false);
   const [ein, setEin] = useState('');
   const [businessStructure, setBusinessStructure] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -53,6 +51,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
       if (data) {
         setFirstName(data.first_name || '');
         setLastName(data.last_name || '');
+        setDisplayName(data.display_name || '');
         setEmail(data.email || '');
         setCompanyName(data.company_name || '');
         setStreetAddress(data.street_address || '');
@@ -80,6 +79,13 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
     }
   };
 
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    fetchProfile,
+    [user],
+    () => !!user
+  );
+
   // Add handler for photo update
   const handlePhotoUpdate = (newAvatarPath: string) => {
     setAvatarPath(newAvatarPath);
@@ -101,6 +107,7 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
         .update({
           first_name: firstName.trim(),
           last_name: lastName.trim(),
+          display_name: displayName.trim() || null,
           company_name: companyName.trim() || null,
           street_address: streetAddress.trim() || null,
           city: city.trim() || null,
@@ -190,6 +197,24 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowChangePassword(true);
+                }}
+                className="w-full flex items-center justify-center px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Change Password
+              </button>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 First Name
               </label>
               <div className="relative">
@@ -218,6 +243,25 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Name (Optional)
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full pl-10"
+                  placeholder="Your preferred display name"
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                This will be used in welcome messages (defaults to first name if not set)
+              </p>
             </div>
 
             <div>
@@ -355,6 +399,11 @@ export function ClientProfile({ onClose, onUpdate }: ClientProfileProps) {
           </form>
         )}
       </div>
+      
+      <ChangePasswordModal 
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }

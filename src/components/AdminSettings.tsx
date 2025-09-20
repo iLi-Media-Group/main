@@ -1,3 +1,4 @@
+import React from 'react';
 import { ReportBackgroundPicker } from './ReportBackgroundPicker';
 import { supabase } from '../lib/supabase';
 import { useEffect, useState } from 'react';

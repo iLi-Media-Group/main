@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Clock, CheckCircle, AlertCircle, DollarSign, Calendar, Loader2 } from 'lucide-react';
 
 interface Withdrawal {
@@ -15,7 +15,7 @@ interface Withdrawal {
 }
 
 export function ProducerWithdrawalsPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

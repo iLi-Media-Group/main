@@ -7,29 +7,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-// Create a single client instance to prevent multiple GoTrueClient instances
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storageKey: 'mybeatfi-auth' // Add a unique storage key
+    storageKey: 'mybeatfi-auth-token', // Custom storage key for better persistence
+  },
+  // Remove cache-busting headers that cause unnecessary refetches
+  global: {
+    headers: {
+      'X-Client-Info': 'mybeatfi-web'
+    }
   }
 });
 
-// Create admin client only when needed, with different storage key
-export const createAdminClient = () => {
-  const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseServiceKey) {
-    throw new Error('Missing Supabase service role key');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      storageKey: 'mybeatfi-admin-auth' // Different storage key for admin
-    }
-  });
-};
+// Note: Admin client should only be used in edge functions, not in frontend
+// Service role key should never be exposed to the browser

@@ -5,15 +5,17 @@ import { supabase } from '../lib/supabase';
 import { Track } from '../types';
 import { TrackCard } from './TrackCard';
 import { SearchBox } from './SearchBox';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { SyncProposalDialog } from './SyncProposalDialog';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 export function VocalsPage() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { genres, subGenres, moods } = useDynamicSearchData();
   const [selectedTrack, setSelectedTrack] = useState<Track | null>(null);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
 
@@ -42,51 +44,212 @@ export function VocalsPage() {
           mp3_url,
           trackouts_url,
           has_vocals,
-          vocals_usage_type,
+          is_sync_only,
+          track_producer_id,
           producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
-            email
+            display_name,
+            email,
+            avatar_path
           )
         `)
         .eq('has_vocals', true);
 
-      // Apply search filters if provided
-      if (filters) {
-        const conditions = [];
+      // If a specific track ID is provided, fetch only that track
+      if (filters?.trackId) {
+        query = query.eq('id', filters.trackId);
+      } else {
+        // Build search conditions - make it more precise and require ALL conditions
+        const searchConditions = [];
 
-        if (filters.query) {
-          conditions.push(`title.ilike.%${filters.query}%`);
-          conditions.push(`artist.ilike.%${filters.query}%`);
-        }
-
-        // Genre filters
-        if (filters.genres?.length > 0) {
-          const genreConditions = filters.genres.map((genre: string) => 
-            `genres.cs.{"${genre.toLowerCase()}"}`
-          );
-          conditions.push(genreConditions.join(','));
-        }
-
-        // Mood filters
-        if (filters.moods?.length > 0) {
-          const moodConditions = filters.moods.map((mood: string) => 
-            `moods.cs.{"${mood.toLowerCase()}"}`
-          );
-          conditions.push(moodConditions.join(','));
-        }
-
-        // Apply all conditions
-        if (conditions.length > 0) {
-          query = query.or(conditions.join(','));
-        }
-
-        if (filters.minBpm) {
+        // Apply BPM filters first (these are always applied)
+        if (filters?.minBpm !== undefined) {
           query = query.gte('bpm', filters.minBpm);
         }
-        if (filters.maxBpm) {
+        if (filters?.maxBpm !== undefined) {
           query = query.lte('bpm', filters.maxBpm);
+        }
+
+        // Text search in title and artist - this should always work
+        if (filters?.query) {
+          searchConditions.push(`title.ilike.%${filters.query}%`);
+          searchConditions.push(`artist.ilike.%${filters.query}%`);
+          searchConditions.push(`genres.ilike.%${filters.query}%`);
+          searchConditions.push(`sub_genres.ilike.%${filters.query}%`);
+          searchConditions.push(`moods.ilike.%${filters.query}%`);
+        }
+
+        // Genre filtering - if genres are selected, use OR logic with flexible matching
+        if (filters?.genres?.length > 0) {
+          const genreConditions: string[] = [];
+          
+          // Create dynamic genre variations from database data
+          const genreVariations: { [key: string]: string[] } = {};
+          genres.forEach(genre => {
+            const variations = [
+              genre.name.toLowerCase(),
+              genre.display_name.toLowerCase(),
+              genre.name.toLowerCase().replace(/\s+/g, ''),
+              genre.name.toLowerCase().replace(/\s+/g, '-'),
+              genre.name.toLowerCase().replace(/\s+/g, '_'),
+              genre.display_name.toLowerCase().replace(/\s+/g, ''),
+              genre.display_name.toLowerCase().replace(/\s+/g, '-'),
+              genre.display_name.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add common variations for specific genres
+            if (genre.name.toLowerCase().includes('hip_hop_rap')) {
+              variations.push(
+                'hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'grime',
+                'hip hop music', 'hip-hop music', 'hiphop music', 'hip hop rap',
+                'hip-hop rap', 'hiphop rap', 'rap music', 'trap music', 'drill music'
+              );
+            }
+            if (genre.name.toLowerCase().includes('rnb_soul')) {
+              variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
+            }
+            if (genre.name.toLowerCase().includes('electronic_dance')) {
+              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music');
+            }
+            if (genre.name.toLowerCase().includes('jazz')) {
+              variations.push('jazzy', 'jazz music', 'smooth jazz', 'bebop', 'fusion');
+            }
+            if (genre.name.toLowerCase().includes('classical_orchestral')) {
+              variations.push('orchestral', 'symphony', 'chamber', 'classical music', 'orchestra');
+            }
+            if (genre.name.toLowerCase().includes('world_global')) {
+              variations.push('ethnic', 'cultural', 'traditional', 'world music');
+            }
+            if (genre.name.toLowerCase().includes('religious_inspirational')) {
+              variations.push('gospel', 'spiritual', 'worship', 'religious music');
+            }
+            if (genre.name.toLowerCase().includes('childrens_family')) {
+              variations.push('kids', 'children', 'nursery', 'childrens music', 'kids music');
+            }
+            if (genre.name.toLowerCase().includes('country_folk_americana')) {
+              variations.push('country western', 'bluegrass', 'americana', 'country music');
+            }
+            
+            genreVariations[genre.name] = [...new Set(variations)];
+          });
+
+          filters.genres.forEach((genre: string) => {
+            const variations = genreVariations[genre.toLowerCase()] || [];
+            const allVariations = [
+              genre.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              genre.toLowerCase().replace(/\s+/g, ''),
+              genre.toLowerCase().replace(/\s+/g, '-'),
+              genre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add partial match variations
+            const genreWords = genre.toLowerCase().split(/[\s_-]+/);
+            genreWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
+            
+            const uniqueVariations = [...new Set(allVariations)];
+            uniqueVariations.forEach(variation => {
+              genreConditions.push(`genres.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(genreConditions.join(','));
+        }
+
+        // Subgenre filtering - if subgenres are selected, use OR logic with flexible matching
+        if (filters?.subGenres?.length > 0) {
+          const subGenreConditions: string[] = [];
+          filters.subGenres.forEach((subGenre: string) => {
+            // Create multiple variations for each subgenre
+            const variations = [
+              subGenre.toLowerCase(),
+              subGenre.toLowerCase().replace(/\s+/g, ''),
+              subGenre.toLowerCase().replace(/\s+/g, '-'),
+              subGenre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              subGenreConditions.push(`sub_genres.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(subGenreConditions.join(','));
+        }
+
+        // Mood filtering - if moods are selected, use OR logic with flexible matching
+        if (filters?.moods?.length > 0) {
+          const moodConditions: string[] = [];
+          
+          // Create dynamic mood variations from database data
+          const moodVariations: { [key: string]: string[] } = {};
+          moods.forEach(mood => {
+            const variations = [
+              mood.name.toLowerCase(),
+              mood.display_name.toLowerCase()
+            ];
+            
+            // Add common synonyms for moods
+            if (mood.name.toLowerCase().includes('energetic')) {
+              variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
+            }
+            if (mood.name.toLowerCase().includes('peaceful')) {
+              variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
+            }
+            if (mood.name.toLowerCase().includes('uplifting')) {
+              variations.push('inspiring', 'motivational', 'positive', 'encouraging');
+            }
+            if (mood.name.toLowerCase().includes('dramatic')) {
+              variations.push('intense', 'emotional', 'powerful', 'epic');
+            }
+            if (mood.name.toLowerCase().includes('romantic')) {
+              variations.push('love', 'passionate', 'intimate', 'sweet');
+            }
+            if (mood.name.toLowerCase().includes('mysterious')) {
+              variations.push('dark', 'moody', 'atmospheric', 'haunting');
+            }
+            if (mood.name.toLowerCase().includes('funky')) {
+              variations.push('groovy', 'rhythmic', 'danceable');
+            }
+            if (mood.name.toLowerCase().includes('melancholic')) {
+              variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
+            }
+            
+            moodVariations[mood.name] = [...new Set(variations)];
+          });
+
+          filters.moods.forEach((mood: string) => {
+            const variations = moodVariations[mood.toLowerCase()] || [];
+            const allVariations = [
+              mood.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              mood.toLowerCase().replace(/\s+/g, ''),
+              mood.toLowerCase().replace(/\s+/g, '-'),
+              mood.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add partial match variations
+            const moodWords = mood.toLowerCase().split(/[\s_-]+/);
+            moodWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
+            
+            const uniqueVariations = [...new Set(allVariations)];
+            uniqueVariations.forEach(variation => {
+              moodConditions.push(`moods.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(moodConditions.join(','));
+        }
+
+        // Apply text search conditions with OR logic only for text search
+        if (searchConditions.length > 0) {
+          query = query.or(searchConditions.join(','));
         }
       }
 
@@ -101,32 +264,44 @@ export function VocalsPage() {
         const formattedTracks = validTracks.map(track => ({
           id: track.id,
           title: track.title,
-          artist: track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
+          artist: track.producer?.display_name || track.producer?.first_name || track.producer?.email?.split('@')[0] || 'Unknown Artist',
           genres: Array.isArray(track.genres)
             ? track.genres
-            : track.genres?.split(',').map(g => g.trim()) || [],
+            : track.genres?.split(',').map((g: string) => g.trim()) || [],
           subGenres: Array.isArray(track.sub_genres)
             ? track.sub_genres
-            : track.sub_genres?.split(',').map(g => g.trim()) || [],
+            : track.sub_genres?.split(',').map((g: string) => g.trim()) || [],
           moods: Array.isArray(track.moods)
             ? track.moods
-            : track.moods?.split(',').map(m => m.trim()) || [],
+            : track.moods?.split(',').map((m: string) => m.trim()) || [],
           duration: track.duration || '3:30',
           bpm: track.bpm,
           audioUrl: track.audio_url,
-          image: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+                      image_url: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
           hasStingEnding: track.has_sting_ending,
           isOneStop: track.is_one_stop,
           mp3Url: track.mp3_url,
           trackoutsUrl: track.trackouts_url,
-          hasVocals: track.has_vocals,
-          vocalsUsageType: track.vocals_usage_type,
+          hasVocals: track.has_vocals || false,
+          isSyncOnly: track.is_sync_only || false,
+          producerId: track.track_producer_id || '',
           producer: track.producer ? {
             id: track.producer.id,
-            firstName: track.producer.first_name || '',
-            lastName: track.producer.last_name || '',
+            firstName: track.producer.display_name || track.producer.first_name || '',
+            lastName: '',
             email: track.producer.email
-          } : undefined
+          } : undefined,
+          fileFormats: {
+            stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
+            stems: { format: ['WAV'], url: track.trackouts_url || '' },
+            stemsWithVocals: { format: ['WAV'], url: track.trackouts_url || '' }
+          },
+          pricing: {
+            stereoMp3: 0,
+            stems: 0,
+            stemsWithVocals: 0
+          },
+          leaseAgreementUrl: ''
         }));
         setTracks(formattedTracks);
       }
@@ -139,7 +314,16 @@ export function VocalsPage() {
   };
 
   const handleSearch = (filters: any) => {
-    fetchTracks(filters);
+    // Convert search terms to lowercase and remove extra spaces
+    const normalizedFilters = {
+      ...filters,
+      query: filters.query?.toLowerCase().trim(),
+      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
+      moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
+    };
+    
+    fetchTracks(normalizedFilters);
   };
 
   const handleTrackSelect = (track: Track) => {
@@ -148,7 +332,7 @@ export function VocalsPage() {
       return;
     }
 
-    if (track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only')) {
+    if (track.isSyncOnly) {
       setSelectedTrack(track);
       setShowProposalDialog(true);
     } else {
@@ -167,26 +351,13 @@ export function VocalsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-4 flex items-center">
+        <h1 className="text-3xl font-bold text-white mb-2 flex items-center">
           <Mic className="w-8 h-8 mr-3" />
           Licensable Full Tracks with Vocals
         </h1>
-        <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <Info className="w-5 h-5 text-blue-400 flex-shrink-0 mt-1" />
-            <div>
-              <p className="text-gray-300">
-                Browse our collection of full tracks featuring vocals. Perfect for:
-              </p>
-              <ul className="list-disc list-inside mt-2 text-gray-300 space-y-1">
-                <li>TV shows and films</li>
-                <li>Advertising campaigns</li>
-                <li>Video game soundtracks</li>
-                <li>Corporate videos</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        <p className="text-gray-300 mb-6 text-lg">
+          Browse our collection of full tracks featuring vocals. Perfect for TV shows and films, advertising campaigns, video game soundtracks, and corporate videos.
+        </p>
         <SearchBox onSearch={handleSearch} />
       </div>
 

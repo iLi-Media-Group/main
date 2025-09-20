@@ -1,0 +1,1 @@
+supabase functions deploy send-producer-track-notification

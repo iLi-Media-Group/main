@@ -24,48 +24,22 @@ const ProducerLandingPage = () => {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section with Studio Background */}
-      <div 
-        className="relative bg-cover bg-center bg-no-repeat min-h-screen flex items-center"
-        style={{
-          backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`
-        }}
-      >
-        {/* Header */}
-        <header className="absolute top-0 left-0 right-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 py-6 flex justify-between items-center">
-            {/* Logo Container - fills header height and flexes with screen size */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                <div className="h-12 sm:h-14 md:h-16 lg:h-20 w-auto overflow-hidden rounded-lg border border-blue-500/20 bg-white/10 backdrop-blur-sm p-2 transition-all hover:bg-white/20 hover:border-blue-400/40 shadow-lg">
-                  {logoUrl ? (
-                    <img 
-                      src={logoUrl} 
-                      alt="MyBeatFi Sync" 
-                      className="h-full w-auto object-contain"
-                    />
-                  ) : (
-                    <div className="h-full w-auto flex items-center justify-center">
-                      <Music className="w-full h-full text-blue-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="ml-3 hidden sm:block">
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">
-                    MyBeatFi <span className="text-blue-400">Sync</span>
-                  </h1>
-                </div>
-              </Link>
-            </div>
-            
-            <Link
-              to="/producer-application"
-              className="bg-blue-600 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
-            >
-              Apply Now
-            </Link>
-          </div>
-        </header>
+             {/* Hero Section with Studio Background */}
+       <div 
+         className="relative bg-cover bg-center bg-no-repeat min-h-screen flex items-center"
+         style={{
+           backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1598653222000-6b7b7a552625?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')`
+         }}
+       >
+         {/* Apply Now Button - positioned in top right */}
+         <div className="absolute top-4 right-4 z-10">
+           <Link
+             to="/producer-application"
+             className="bg-blue-600 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium text-sm sm:text-base shadow-lg hover:shadow-xl"
+           >
+             Apply Now
+           </Link>
+         </div>
 
         {/* Hero Content */}
         <div className="max-w-7xl mx-auto px-4 text-center text-white relative z-10">
@@ -104,10 +78,10 @@ const ProducerLandingPage = () => {
                   <span className="text-green-400 mr-3 text-xl">✅</span>
                   Get paid for every sync license sold
                 </li>
-                <li className="flex items-center">
-                  <span className="text-green-400 mr-3 text-xl">✅</span>
-                  Automated payouts (Stripe + USDC Crypto)
-                </li>
+                                 <li className="flex items-center">
+                   <span className="text-green-400 mr-3 text-xl">✅</span>
+                   Automated payouts (Stripe)
+                 </li>
                 <li className="flex items-center">
                   <span className="text-green-400 mr-3 text-xl">✅</span>
                   Detailed monthly reporting

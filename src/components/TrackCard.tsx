@@ -1,70 +1,69 @@
 import React, { useState, useEffect } from 'react';
-import { AudioPlayer } from './AudioPlayer';
-import { Track } from '../types';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { Music, Download, Shield, Loader2, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, User, DollarSign, ListMusic } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
+import { supabase } from '../lib/supabase';
+import { Track } from '../types';
 import { useSignedUrl } from '../hooks/useSignedUrl';
+import { AudioPlayer } from './AudioPlayer';
+import { ProducerProfileDialog } from './ProducerProfileDialog';
+import { ProducerUsageBadges } from './ProducerUsageBadges';
+import { TrackClearanceBadges } from './TrackClearanceBadges';
+import { formatDuration } from '../utils/dateUtils';
 
 interface TrackCardProps {
   track: Track;
   onSelect: (track: Track) => void;
+  searchCategory?: 'exact' | 'partial' | 'other';
 }
 
-// Component to handle signed URL generation for track images
+// Component to handle track images using public URLs
 function TrackImage({ track }: { track: Track }) {
-  // If it's already a public URL (like Unsplash), use it directly
-  if (track.image && track.image.startsWith('https://')) {
-    return (
-      <img
-        src={track.image}
-        alt={track.title}
-        className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-      />
-    );
-  }
+  // Pick your fallback depending on context
+  const FALLBACK =
+    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop";
 
-  // For file paths, use signed URL
-  const { signedUrl, loading, error } = useSignedUrl('track-images', track.image);
+  // Stable cache key - since Track interface doesn't have updated_at, use a hash of the image path
+  // This ensures the cache key only changes when the image path actually changes
+  const cacheKey = track.image_url ? track.image_url.length : 0;
 
-  if (loading) {
-    return (
-      <div className="w-full h-full bg-white/5 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
+  const publicUrl = track.image_url?.startsWith("https://")
+    ? track.image_url
+    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/track-images/${track.image_url}?v=${cacheKey}`;
 
-  if (error || !signedUrl) {
-    return (
-      <img
-        src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop"
-        alt={track.title}
-        className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
-      />
-    );
-  }
+  const [src, setSrc] = useState(publicUrl);
+
+  // Reset src whenever the track or cacheKey changes
+  useEffect(() => {
+    setSrc(publicUrl);
+  }, [publicUrl]);
 
   return (
     <img
-      src={signedUrl}
+      src={src}
       alt={track.title}
       className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110"
+      onError={() => {
+        if (src !== FALLBACK) {
+          setSrc(FALLBACK);
+        }
+      }}
     />
   );
 }
 
-export function TrackCard({ track, onSelect }: TrackCardProps) {
-  const { user } = useAuth();
+export function TrackCard({ track, onSelect, searchCategory }: TrackCardProps) {
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [isFavorite, setIsFavorite] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [audioRef, setAudioRef] = useState<HTMLAudioElement | null>(null);
   const [showProducerProfile, setShowProducerProfile] = useState(false);
-  const isSyncOnly = track.isSyncOnly || (track.hasVocals && track.vocalsUsageType === 'sync_only');
+  const [producerUsage, setProducerUsage] = useState<{
+    uses_loops?: boolean;
+    uses_samples?: boolean;
+    uses_splice?: boolean;
+  } | null>(null);
+  const isSyncOnly = track.isSyncOnly;
 
   // Get signed URL for audio
   const { signedUrl: audioSignedUrl, loading: audioLoading, error: audioError } = useSignedUrl('track-audio', track.audioUrl);
@@ -73,19 +72,28 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     if (user && track?.id) {
       checkFavoriteStatus();
     }
-    
-    // Create audio element with signed URL
-    if (audioSignedUrl) {
-      const audio = new Audio(audioSignedUrl);
-      audio.addEventListener('ended', () => setIsPlaying(false));
-      setAudioRef(audio);
+  }, [user, track?.id]);
 
-      return () => {
-        audio.pause();
-        audio.removeEventListener('ended', () => setIsPlaying(false));
-      };
+  useEffect(() => {
+    if (track?.producer?.id) {
+      fetchProducerUsage();
     }
-  }, [user, track?.id, audioSignedUrl]);
+  }, [track?.producer?.id]);
+
+  const fetchProducerUsage = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('uses_loops, uses_samples, uses_splice')
+        .eq('id', track.producer?.id)
+        .single();
+
+      if (error) throw error;
+      setProducerUsage(data);
+    } catch (error) {
+      console.error('Error fetching producer usage:', error);
+    }
+  };
 
   const checkFavoriteStatus = async () => {
     try {
@@ -139,21 +147,7 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     }
   };
 
-  const togglePlay = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
 
-    if (!audioRef || audioLoading || !!audioError) return;
-
-    if (isPlaying) {
-      audioRef.pause();
-    } else {
-      audioRef.play().catch(error => {
-        console.error('Error playing audio:', error);
-      });
-    }
-    setIsPlaying(!isPlaying);
-  };
 
   const handleProducerClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -168,10 +162,24 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
     navigate(`/track/${track.id}`);
   };
 
+  // Get border color based on search category
+  const getBorderColor = () => {
+    switch (searchCategory) {
+      case 'exact':
+        return 'border-green-500/40 hover:border-green-500/60';
+      case 'partial':
+        return 'border-yellow-500/40 hover:border-yellow-500/60';
+      case 'other':
+        return 'border-red-500/40 hover:border-red-500/60';
+      default:
+        return 'border-blue-500/20 hover:border-blue-500/40';
+    }
+  };
+
   return (
     <>
       <div 
-        className="group relative bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/20 overflow-hidden transition-all duration-300 hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10 cursor-pointer"
+        className={`group relative bg-white/5 backdrop-blur-sm rounded-lg border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer ${getBorderColor()}`}
         onClick={handleCardClick}
       >
         {/* Image Section */}
@@ -195,47 +203,37 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             </button>
           )}
 
-          {/* Play Button */}
-          <button
-            onClick={togglePlay}
-            disabled={audioLoading || !!audioError}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10 disabled:opacity-50"
+          {/* Audio Player */}
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
           >
             <div className="p-3 rounded-full bg-blue-600/90 hover:bg-blue-600 transform transition-transform duration-300 hover:scale-110">
-              {audioLoading ? (
-                <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white"></div>
-              ) : !!audioError ? (
-                <span className="text-white text-xs">Error</span>
-              ) : (
-                <>
-                  <Play className={`w-6 h-6 text-white ${isPlaying ? 'hidden' : ''}`} />
-                  {isPlaying && <span className="block w-4 h-4 bg-white"></span>}
-                </>
-              )}
+              <AudioPlayer
+                src={audioSignedUrl || ''}
+                title={track.title}
+                size="sm"
+                audioId={`track-${track.id}`}
+                trackId={track.id}
+              />
             </div>
-          </button>
+          </div>
         </div>
 
         {/* Content Section */}
         <div className="p-3 space-y-2">
           <div>
             <h3 className="text-sm font-bold text-white mb-0.5 truncate">{track.title}</h3>
-            {track.producer && (
-              <button
-                onClick={handleProducerClick}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center"
-              >
-                <User className="w-3 h-3 mr-1" />
-                {track.producer.firstName} {track.producer.lastName}
-              </button>
-            )}
           </div>
 
           {/* Track Details */}
           <div className="flex items-center justify-between text-xs text-gray-400">
             <div className="flex items-center">
               <Clock className="w-3 h-3 mr-1" />
-              {track.duration}
+              {formatDuration(track.duration)}
             </div>
             <div className="flex items-center">
               <Hash className="w-3 h-3 mr-1" />
@@ -261,8 +259,26 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
               </div>
             )}
             
-            {/* MP3 Badge */}
-            {track.mp3Url && (
+            {/* Explicit Lyrics Badge */}
+            {track.explicit_lyrics && (
+              <div className="flex items-center text-red-400 bg-red-500/20 px-2 py-0.5 rounded-full">
+                <span className="font-bold mr-1">E</span>
+                <span>Explicit</span>
+              </div>
+            )}
+            
+            {/* MP3 Only Badge - Show when MP3 exists but no trackouts/stems */}
+            {track.audioUrl && !track.trackoutsUrl && !track.stemsUrl && (
+              <div className="flex items-center text-yellow-400 bg-yellow-500/20 px-2 py-0.5 rounded-full">
+                <FileMusic className="w-3 h-3 mr-0.5" />
+                <span>MP3 Only</span>
+              </div>
+            )}
+            
+
+            
+            {/* MP3 Badge - Show when MP3 exists and trackouts also exist */}
+            {track.audioUrl && (track.trackoutsUrl || track.stemsUrl) && (
               <div className="flex items-center text-green-400">
                 <FileMusic className="w-3 h-3 mr-0.5" />
                 <span>MP3</span>
@@ -286,12 +302,28 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             )}
           </div>
 
+          {/* Track Clearance Badges */}
+          <TrackClearanceBadges 
+            containsLoops={track.containsLoops || false}
+            containsSamples={track.containsSamples || false}
+            containsSpliceLoops={track.containsSpliceLoops || false}
+            samplesCleared={track.samplesCleared || false}
+            className="text-xs"
+          />
+
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-2">
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                
+                // Check if user is a producer and prevent licensing
+                if (accountType && (accountType === 'producer' || accountType === 'admin,producer')) {
+                  alert('Producers cannot license tracks. Please use a client account to license tracks.');
+                  return;
+                }
+                
                 navigate(`/track/${track.id}`);
               }}
               className={`py-1.5 px-3 rounded text-xs font-medium transition-all duration-300 ${
@@ -302,7 +334,30 @@ export function TrackCard({ track, onSelect }: TrackCardProps) {
             >
               {isSyncOnly ? 'Submit Proposal' : 'License Track'}
             </button>
+            
+            {/* Producer Name in Bottom Right */}
+            {track.producer && (
+              <button
+                onClick={handleProducerClick}
+                className="text-xs text-blue-400 hover:text-blue-300 transition-colors flex items-center"
+              >
+                <User className="w-3 h-3 mr-1" />
+                {track.producer.firstName || 'Unknown Producer'}
+              </button>
+            )}
           </div>
+
+          {/* Producer Usage Badges */}
+          {producerUsage && (producerUsage.uses_loops || producerUsage.uses_samples || producerUsage.uses_splice) && (
+            <div className="pt-1">
+              <ProducerUsageBadges 
+                usesLoops={producerUsage.uses_loops || false}
+                usesSamples={producerUsage.uses_samples || false}
+                usesSplice={producerUsage.uses_splice || false}
+                className="text-xs"
+              />
+            </div>
+          )}
         </div>
       </div>
 

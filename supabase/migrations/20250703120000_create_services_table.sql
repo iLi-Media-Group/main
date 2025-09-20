@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS services (
   contact text,
   website text,
   image text,
+  image2 text,
+  image3 text,
   subgenres text[],
   tier text,
   style_tags text[],

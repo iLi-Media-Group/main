@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Music, Zap, Brain, Globe, Shield, DollarSign, Mail, User, MessageSquare, Wallet, Check, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { WhiteLabelCalculator } from './WhiteLabelCalculator';
 import { WhiteLabelFeatureFlagsProvider, useWhiteLabelFeatureFlags } from '../contexts/WhiteLabelFeatureFlagsContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 
-const clientId = process.env.REACT_APP_WHITE_LABEL_CLIENT_ID || '';
+const clientId = import.meta.env.VITE_WHITE_LABEL_CLIENT_ID || '';
 
 export function WhiteLabelPage() {
   const [formData, setFormData] = useState({

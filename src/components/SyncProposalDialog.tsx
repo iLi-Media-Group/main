@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Clock, DollarSign, Calendar } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { Track } from '../types';
 
 
@@ -13,7 +14,8 @@ interface SyncProposalDialogProps {
 }
 
 export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncProposalDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
+  const navigate = useNavigate();
   const [projectType, setProjectType] = useState('');
   const [duration, setDuration] = useState('');
   const [isExclusive, setIsExclusive] = useState(false);
@@ -21,6 +23,7 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
   const [paymentTerms, setPaymentTerms] = useState<'immediate' | 'net30' | 'net60' | 'net90'>('immediate');
   const [expirationDate, setExpirationDate] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
+  const [useClientContract, setUseClientContract] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -84,6 +87,7 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
           payment_terms: paymentTerms,
           expiration_date: new Date(expirationDate).toISOString(),
           is_urgent: isUrgent,
+          use_client_contract: useClientContract,
           status: 'pending',
           client_status: 'pending',
           producer_status: 'pending',
@@ -113,6 +117,12 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
 
       setSuccess(true);
       if (onSuccess) onSuccess();
+      
+      // Automatically redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        onClose();
+        navigate('/dashboard');
+      }, 3000);
     } catch (err) {
       console.error('Error submitting proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to submit proposal');
@@ -126,17 +136,6 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-blue-900/90 backdrop-blur-md p-8 rounded-xl border border-purple-500/20 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        {/* Track and Terms Header */}
-        <div className="mb-6 p-4 bg-white/10 rounded-lg">
-          <div className="text-lg font-bold text-white mb-1">{track.title}</div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-200 text-sm">
-            <div><span className="font-medium">Sync Fee:</span> ${track.sync_fee ? track.sync_fee : 'N/A'}</div>
-            <div><span className="font-medium">Payment Terms:</span> {track.payment_terms ? track.payment_terms : 'N/A'}</div>
-            <div><span className="font-medium">Exclusivity:</span> {track.is_exclusive ? 'Exclusive' : 'Non-exclusive'}</div>
-          </div>
-        </div>
-        {/* End Track and Terms Header */}
-
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Submit Sync Proposal</h2>
           <button
@@ -163,10 +162,13 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
             <h3 className="text-2xl font-bold text-white mb-4">Your Sync Proposal Has Been Submitted Successfully</h3>
             <p className="text-gray-300 mb-6">Monitor your dashboard for updates and responses from the producer.</p>
             <button
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                navigate('/dashboard');
+              }}
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
-              Close
+              Go to Dashboard
             </button>
           </div>
         ) : (
@@ -293,6 +295,27 @@ export function SyncProposalDialog({ isOpen, onClose, track, onSuccess }: SyncPr
               Urgent Proposal (Response within 48 hours)
             </label>
           </div>
+
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={useClientContract}
+              onChange={(e) => setUseClientContract(e.target.checked)}
+              className="rounded border-gray-600 text-purple-600 focus:ring-purple-500"
+            />
+            <label className="text-gray-300">
+              I will provide my own contract with terms for this sync
+            </label>
+          </div>
+          
+          {useClientContract && (
+            <div className="p-4 bg-blue-800/50 border border-blue-600/30 rounded-lg">
+              <p className="text-blue-200 text-sm">
+                <strong>Note:</strong> If your proposal is accepted, you will be able to upload your contract PDF. 
+                The producer/artist will need to sign your contract before files are made available.
+              </p>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-4">
             <button

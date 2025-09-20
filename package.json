@@ -4,10 +4,28 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "dev:stable": "vite --host 0.0.0.0 --port 5173 --force",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "security:audit": "npm audit",
+    "security:fix": "npm audit fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "test:watch": "vitest --watch",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headed": "cypress run --headed",
+    "cypress:run:chrome": "cypress run --browser chrome",
+    "cypress:run:firefox": "cypress run --browser firefox",
+    "cypress:run:edge": "cypress run --browser edge",
+    "cypress:run:record": "cypress run --record --key YOUR_RECORD_KEY",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open",
+    "test:all": "npm run test:run && npm run test:e2e"
   },
   "dependencies": {
     "@heliofi/react": "^1.1.0",
@@ -15,12 +33,14 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@react-pdf/renderer": "^3.4.5",
     "@supabase/supabase-js": "^2.39.7",
+    "@types/dompurify": "^3.0.5",
     "@types/file-saver": "^2.0.7",
     "bs58": "^6.0.0",
     "chart.js": "^4.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^0.2.1",
+    "dompurify": "^3.2.6",
     "file-saver": "^2.0.5",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
@@ -28,34 +48,111 @@
     "react": "^18.2.0",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18.2.0",
+    "react-google-recaptcha-v3": "^1.11.0",
     "react-hot-toast": "^2.5.2",
     "react-router-dom": "^6.30.1",
-    "recharts": "^3.0.1",
+    "recharts": "^3.1.2",
     "sonner": "^2.0.5",
     "stripe": "^14.12.1",
     "tailwind-merge": "^2.2.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@cypress/vite-dev-server": "^7.0.0",
     "@eslint/js": "^8.56.0",
     "@iconify-json/ph": "^1.2.2",
     "@iconify-json/simple-icons": "^1.2.38",
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
+    "@testing-library/user-event": "^14.5.2",
     "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.8",
     "@unocss/preset-icons": "^66.2.0",
     "@unocss/preset-uno": "^66.2.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-v8": "^1.3.1",
+    "@vitest/ui": "^1.3.1",
     "autoprefixer": "^10.4.18",
+    "cypress": "^15.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "globals": "^15.9.0",
+    "jsdom": "^24.0.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^7.1.1",
     "unocss": "^66.2.0",
-    "vite": "^5.1.4"
+    "vite": "^5.1.4",
+    "vitest": "^1.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "security": {
+    "csp": {
+      "default-src": [
+        "'self'"
+      ],
+      "script-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        "https://www.google.com/recaptcha/",
+        "https://www.gstatic.com/recaptcha/",
+        "https://js.stripe.com",
+        "https://checkout.stripe.com",
+        "https://maps.googleapis.com"
+      ],
+      "style-src": [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      "font-src": [
+        "'self'",
+        "https://fonts.gstatic.com"
+      ],
+      "img-src": [
+        "'self'",
+        "data:",
+        "https:",
+        "blob:",
+        "https://*.stripe.com",
+        "https://maps.googleapis.com",
+        "https://maps.gstatic.com"
+      ],
+      "connect-src": [
+        "'self'",
+        "https://*.supabase.co",
+        "https://api.stripe.com",
+        "https://checkout.stripe.com",
+        "https://maps.googleapis.com",
+        "wss://*.supabase.co"
+      ],
+      "frame-src": [
+        "'self'",
+        "https://js.stripe.com",
+        "https://checkout.stripe.com",
+        "https://www.google.com/recaptcha/"
+      ],
+      "object-src": [
+        "'none'"
+      ],
+      "base-uri": [
+        "'self'"
+      ],
+      "form-action": [
+        "'self'",
+        "https://checkout.stripe.com"
+      ],
+      "frame-ancestors": [
+        "'none'"
+      ],
+      "upgrade-insecure-requests": []
+    }
   }
 }

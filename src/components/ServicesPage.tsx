@@ -1,6 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
+// Utility function to truncate long URLs for display
+const truncateUrl = (url: string, maxLength: number = 30): string => {
+  if (!url) return '';
+  
+  // Remove protocol
+  let cleanUrl = url.replace(/^https?:\/\//, '');
+  
+  // If URL is already short enough, return it
+  if (cleanUrl.length <= maxLength) {
+    return cleanUrl;
+  }
+  
+  // Truncate and add ellipsis
+  return cleanUrl.substring(0, maxLength) + '...';
+};
+
 const SERVICE_TYPES = [
   { key: 'studios', label: 'Recording Studios' },
   { key: 'engineers', label: 'Recording Engineers' },
@@ -69,6 +85,8 @@ interface Service {
   contact: string;
   website: string;
   image: string;
+  image2?: string;
+  image3?: string;
   subgenres?: string[];
   tier?: string;
   style_tags?: string[];
@@ -116,7 +134,7 @@ export default function ServicesPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`px-5 py-2 rounded-full text-sm font-semibold transition-all relative
                 ${activeTab === tab.key
-                  ? 'bg-gradient-to-tr from-blue-500 via-purple-500 to-blue-400 text-white shadow-md'
+                  ? 'bg-blue-600 text-white shadow-md'
                   : 'text-gray-300 hover:text-white hover:bg-white/10'}
               `}
             >
@@ -180,9 +198,13 @@ export default function ServicesPage() {
           <p className="col-span-full text-center text-gray-400">No services found.</p>
         ) : (
           filteredServices.map((service) => (
-            <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center animated-border">
+            <div key={service.id} className="bg-white/5 rounded-xl shadow-xl p-6 flex flex-col items-center">
               <img
-                src={service.image}
+                src={service.image?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                  ? service.image.replace('/object/sign/', '/object/public/').split('?')[0]
+                  : service.image?.startsWith("https://") 
+                    ? service.image 
+                    : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image}`}
                 alt={service.name}
                 className="w-24 h-24 object-cover rounded-full mb-4 border-4 border-blue-500/20"
               />
@@ -199,8 +221,9 @@ export default function ServicesPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:underline text-sm"
+                title={service.website} // Show full URL on hover
               >
-                {service.website.replace(/^https?:\/\//, '')}
+                {truncateUrl(service.website)}
               </a>
               {service.subgenres && service.subgenres.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-2">
@@ -217,6 +240,33 @@ export default function ServicesPage() {
                   {service.style_tags.map((tag) => (
                     <span key={tag} className="bg-purple-500/20 text-purple-300 text-xs px-2 py-1 rounded-full">{tag}</span>
                   ))}
+                </div>
+              )}
+              {/* Display additional images at the bottom */}
+              {(service.image2 || service.image3) && (
+                <div className="flex gap-2 mt-4">
+                  {service.image2 && (
+                    <img 
+                      src={service.image2?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                        ? service.image2.replace('/object/sign/', '/object/public/').split('?')[0]
+                        : service.image2?.startsWith("https://") 
+                          ? service.image2 
+                          : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image2}`}
+                      alt="Additional 1" 
+                      className="h-20 rounded border border-blue-500/20" 
+                    />
+                  )}
+                  {service.image3 && (
+                    <img 
+                      src={service.image2?.startsWith("https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/sign/") 
+                        ? service.image3.replace('/object/sign/', '/object/public/').split('?')[0]
+                        : service.image3?.startsWith("https://") 
+                          ? service.image3 
+                          : `https://yciqkebqlajqbpwlujma.supabase.co/storage/v1/object/public/services-images/${service.image3}`}
+                      alt="Additional 2" 
+                      className="h-20 rounded border border-blue-500/20" 
+                    />
+                  )}
                 </div>
               )}
             </div>

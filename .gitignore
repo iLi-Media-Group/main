@@ -22,4 +22,53 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files - NEVER commit these!
 .env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.*.local
+.env.*.development
+.env.*.test
+.env.*.production
+.env.*.staging
+
+# Supabase environment files
+supabase/.env
+supabase/.env.local
+supabase/.env.development
+supabase/.env.test
+supabase/.env.production
+supabase/.env.staging
+
+# API Keys and secrets
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+secrets.yaml
+secrets.yml
+
+# Configuration files that might contain secrets
+config/secrets.json
+config/secrets.yaml
+config/secrets.yml
+config/local.json
+config/local.yaml
+config/local.yml
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/

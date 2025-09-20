@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download, FileText, Loader2 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useSiteBranding } from '../contexts/SiteBrandingContext';
 import { supabase } from '../lib/supabase';
 import { pdf } from '@react-pdf/renderer';
@@ -18,11 +18,17 @@ interface LicenseDetails {
   licenseType: 'Single Track' | 'Gold Access' | 'Platinum Access' | 'Ultimate Access';
   purchaseDate: string;
   price: number;
+  // Sample clearance fields
+  containsLoops?: boolean;
+  containsSamples?: boolean;
+  containsSpliceLoops?: boolean;
+  samplesCleared?: boolean;
+  sampleClearanceNotes?: string;
 }
 
 export function LicenseAgreement() {
   const { licenseId } = useParams();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [license, setLicense] = useState<LicenseDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +64,7 @@ export function LicenseAgreement() {
         if (data && data.track_id) {
           const { data: track, error: trackError } = await supabase
             .from('tracks')
-            .select('title, track_producer_id')
+            .select('title, track_producer_id, contains_loops, contains_samples, contains_splice_loops, samples_cleared, sample_clearance_notes')
             .eq('id', data.track_id)
             .single();
           if (trackError) throw trackError;
@@ -97,7 +103,13 @@ export function LicenseAgreement() {
             },
             licenseType: data.license_type,
             purchaseDate: data.created_at,
-            price: data.amount
+            price: data.amount,
+            // Sample clearance fields
+            containsLoops: trackData.contains_loops || false,
+            containsSamples: trackData.contains_samples || false,
+            containsSpliceLoops: trackData.contains_splice_loops || false,
+            samplesCleared: trackData.samples_cleared || false,
+            sampleClearanceNotes: trackData.sample_clearance_notes || null
           });
         }
       } catch (err) {
@@ -284,6 +296,29 @@ export function LicenseAgreement() {
             <li>Use the Music in a manner that is defamatory, obscene, or illegal</li>
             <li>Register the Music with any content identification system (e.g., YouTube Content ID)</li>
           </ul>
+
+          {/* Sample Clearance Disclaimer */}
+          {(license.containsLoops || license.containsSamples || license.containsSpliceLoops) && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6 my-8">
+              <h2 className="text-xl font-bold text-yellow-300 mb-4">⚠️ SAMPLE AND LOOP CLEARANCE NOTICE</h2>
+              <p className="text-yellow-200 mb-4">
+                <strong>IMPORTANT:</strong> This track contains {[
+                  license.containsLoops && 'loops',
+                  license.containsSamples && 'samples',
+                  license.containsSpliceLoops && 'Splice loops'
+                ].filter(Boolean).join(', ')} that may require additional rights clearance.
+              </p>
+              <p className="text-yellow-200 mb-4">
+                <strong>Usage of a track with uncleared samples or loops can result in copyright claims, strikes and even litigation. Please be sure to clear any uncleared samples and/or loops before use of this track. This license does not constitute clearance.</strong>
+              </p>
+              {license.sampleClearanceNotes && (
+                <div className="mt-4 p-3 bg-yellow-500/20 rounded-lg">
+                  <h3 className="text-sm font-medium text-yellow-300 mb-2">Sample Clearance Notes:</h3>
+                  <p className="text-sm text-yellow-200 whitespace-pre-wrap">{license.sampleClearanceNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <h2 className="text-xl font-bold text-white mt-8">5. COMPENSATION</h2>
           <p className="text-gray-300">

@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Tag, Clock, Hash, FileMusic, Layers, Mic, Star, Play, User, ListMusic, Search, Filter, Plus } from 'lucide-react';
+import { Search, Sliders, Plus } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { SearchBox } from './SearchBox';
+import { TrackCard } from './TrackCard';
 import { Track } from '../types';
 import { parseArrayField } from '../lib/utils';
-import { TrackCard } from './TrackCard';
-import { SearchBox } from './SearchBox';
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
 
 const TRACKS_PER_PAGE = 20;
 
 export function SyncOnlyPage() {
-  const { user, membershipPlan, accountType } = useAuth();
+  const { user, membershipPlan, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
-  const [currentFilters, setCurrentFilters] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [membershipActive, setMembershipActive] = useState(false);
+  const [currentFilters, setCurrentFilters] = useState<any>(null);
+  const { genres, subGenres, moods } = useDynamicSearchData();
 
   useEffect(() => {
     if (user && accountType === 'client') {
@@ -56,38 +59,213 @@ export function SyncOnlyPage() {
         .from('tracks')
         .select(`
           *,
-          track_producer_id:profiles!track_producer_id (
+          producer:profiles!track_producer_id (
             id,
             first_name,
             last_name,
-            email
+            display_name,
+            email,
+            avatar_path
           )
         `)
         .eq('is_sync_only', true)
         .order('created_at', { ascending: false })
         .range((currentPage - 1) * TRACKS_PER_PAGE, currentPage * TRACKS_PER_PAGE - 1);
 
-      // Apply search filters
-      if (filters?.query) {
-        query = query.ilike('title', `%${filters.query}%`);
-      }
+      // If a specific track ID is provided, fetch only that track
+      if (filters?.trackId) {
+        query = query.eq('id', filters.trackId);
+      } else {
+        // Build search conditions - make it more precise and require ALL conditions
+        const searchConditions = [];
 
-      if (filters?.genres?.length) {
-        const genreConditions = filters.genres.map((genre: string) => `genres.ilike.%${genre}%`);
-        query = query.or(genreConditions.join(','));
-      }
+        // Apply BPM filters first (these are always applied)
+        if (filters?.minBpm !== undefined) {
+          query = query.gte('bpm', filters.minBpm);
+        }
+        if (filters?.maxBpm !== undefined) {
+          query = query.lte('bpm', filters.maxBpm);
+        }
 
-      if (filters?.moods?.length) {
-        const moodConditions = filters.moods.map((mood: string) => `moods.ilike.%${mood}%`);
-        query = query.or(moodConditions.join(','));
-      }
+        // Text search in title and artist - this should always work
+        if (filters?.query) {
+          searchConditions.push(`title.ilike.%${filters.query}%`);
+          searchConditions.push(`artist.ilike.%${filters.query}%`);
+          searchConditions.push(`genres.ilike.%${filters.query}%`);
+          searchConditions.push(`sub_genres.ilike.%${filters.query}%`);
+          searchConditions.push(`moods.ilike.%${filters.query}%`);
+        }
 
-      if (filters?.minBpm) {
-        query = query.gte('bpm', filters.minBpm);
-      }
+        // Genre filtering - if genres are selected, use OR logic with flexible matching
+        if (filters?.genres?.length > 0) {
+          const genreConditions: string[] = [];
+          
+          // Create dynamic genre variations from database data
+          const genreVariations: { [key: string]: string[] } = {};
+          genres.forEach(genre => {
+            const variations = [
+              genre.name.toLowerCase(),
+              genre.display_name.toLowerCase(),
+              genre.name.toLowerCase().replace(/\s+/g, ''),
+              genre.name.toLowerCase().replace(/\s+/g, '-'),
+              genre.name.toLowerCase().replace(/\s+/g, '_'),
+              genre.display_name.toLowerCase().replace(/\s+/g, ''),
+              genre.display_name.toLowerCase().replace(/\s+/g, '-'),
+              genre.display_name.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add common variations for specific genres
+            if (genre.name.toLowerCase().includes('hip_hop_rap')) {
+              variations.push(
+                'hip hop', 'hip-hop', 'hiphop', 'rap', 'trap', 'drill', 'grime',
+                'hip hop music', 'hip-hop music', 'hiphop music', 'hip hop rap',
+                'hip-hop rap', 'hiphop rap', 'rap music', 'trap music', 'drill music'
+              );
+            }
+            if (genre.name.toLowerCase().includes('rnb_soul')) {
+              variations.push('r&b', 'rnb', 'rhythm and blues', 'soul', 'neo soul');
+            }
+            if (genre.name.toLowerCase().includes('electronic_dance')) {
+              variations.push('edm', 'electronic dance', 'techno', 'house', 'trance', 'electronic music', 'edm music');
+            }
+            if (genre.name.toLowerCase().includes('jazz')) {
+              variations.push('jazzy', 'jazz music', 'smooth jazz', 'bebop', 'fusion');
+            }
+            if (genre.name.toLowerCase().includes('classical_orchestral')) {
+              variations.push('orchestral', 'symphony', 'chamber', 'classical music', 'orchestra');
+            }
+            if (genre.name.toLowerCase().includes('world_global')) {
+              variations.push('ethnic', 'cultural', 'traditional', 'world music');
+            }
+            if (genre.name.toLowerCase().includes('religious_inspirational')) {
+              variations.push('gospel', 'spiritual', 'worship', 'religious music');
+            }
+            if (genre.name.toLowerCase().includes('childrens_family')) {
+              variations.push('kids', 'children', 'nursery', 'childrens music', 'kids music');
+            }
+            if (genre.name.toLowerCase().includes('country_folk_americana')) {
+              variations.push('country western', 'bluegrass', 'americana', 'country music');
+            }
+            
+            genreVariations[genre.name] = [...new Set(variations)];
+          });
 
-      if (filters?.maxBpm) {
-        query = query.lte('bpm', filters.maxBpm);
+          filters.genres.forEach((genre: string) => {
+            const variations = genreVariations[genre.toLowerCase()] || [];
+            const allVariations = [
+              genre.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              genre.toLowerCase().replace(/\s+/g, ''),
+              genre.toLowerCase().replace(/\s+/g, '-'),
+              genre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add partial match variations
+            const genreWords = genre.toLowerCase().split(/[\s_-]+/);
+            genreWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
+            
+            const uniqueVariations = [...new Set(allVariations)];
+            uniqueVariations.forEach(variation => {
+              genreConditions.push(`genres.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(genreConditions.join(','));
+        }
+
+        // Subgenre filtering - if subgenres are selected, use OR logic with flexible matching
+        if (filters?.subGenres?.length > 0) {
+          const subGenreConditions: string[] = [];
+          filters.subGenres.forEach((subGenre: string) => {
+            // Create multiple variations for each subgenre
+            const variations = [
+              subGenre.toLowerCase(),
+              subGenre.toLowerCase().replace(/\s+/g, ''),
+              subGenre.toLowerCase().replace(/\s+/g, '-'),
+              subGenre.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            variations.forEach(variation => {
+              subGenreConditions.push(`sub_genres.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(subGenreConditions.join(','));
+        }
+
+        // Mood filtering - if moods are selected, use OR logic with flexible matching
+        if (filters?.moods?.length > 0) {
+          const moodConditions: string[] = [];
+          
+          // Create dynamic mood variations from database data
+          const moodVariations: { [key: string]: string[] } = {};
+          moods.forEach(mood => {
+            const variations = [
+              mood.name.toLowerCase(),
+              mood.display_name.toLowerCase()
+            ];
+            
+            // Add common synonyms for moods
+            if (mood.name.toLowerCase().includes('energetic')) {
+              variations.push('upbeat', 'high energy', 'powerful', 'intense', 'dynamic');
+            }
+            if (mood.name.toLowerCase().includes('peaceful')) {
+              variations.push('calm', 'relaxing', 'serene', 'tranquil', 'soothing');
+            }
+            if (mood.name.toLowerCase().includes('uplifting')) {
+              variations.push('inspiring', 'motivational', 'positive', 'encouraging');
+            }
+            if (mood.name.toLowerCase().includes('dramatic')) {
+              variations.push('intense', 'emotional', 'powerful', 'epic');
+            }
+            if (mood.name.toLowerCase().includes('romantic')) {
+              variations.push('love', 'passionate', 'intimate', 'sweet');
+            }
+            if (mood.name.toLowerCase().includes('mysterious')) {
+              variations.push('dark', 'moody', 'atmospheric', 'haunting');
+            }
+            if (mood.name.toLowerCase().includes('funky')) {
+              variations.push('groovy', 'rhythmic', 'danceable');
+            }
+            if (mood.name.toLowerCase().includes('melancholic')) {
+              variations.push('sad', 'melancholy', 'sorrowful', 'emotional');
+            }
+            
+            moodVariations[mood.name] = [...new Set(variations)];
+          });
+
+          filters.moods.forEach((mood: string) => {
+            const variations = moodVariations[mood.toLowerCase()] || [];
+            const allVariations = [
+              mood.toLowerCase(),
+              ...variations.map(v => v.toLowerCase()),
+              mood.toLowerCase().replace(/\s+/g, ''),
+              mood.toLowerCase().replace(/\s+/g, '-'),
+              mood.toLowerCase().replace(/\s+/g, '_')
+            ];
+            
+            // Add partial match variations
+            const moodWords = mood.toLowerCase().split(/[\s_-]+/);
+            moodWords.forEach(word => {
+              if (word.length >= 3) { // Only add meaningful partial matches
+                allVariations.push(word);
+              }
+            });
+            
+            const uniqueVariations = [...new Set(allVariations)];
+            uniqueVariations.forEach(variation => {
+              moodConditions.push(`moods.ilike.%${variation}%`);
+            });
+          });
+          query = query.or(moodConditions.join(','));
+        }
+
+        // Apply text search conditions with OR logic only for text search
+        if (searchConditions.length > 0) {
+          query = query.or(searchConditions.join(','));
+        }
       }
 
       const { data, error } = await query;
@@ -101,8 +279,9 @@ export function SyncOnlyPage() {
             id: track.id,
             title: track.title || 'Untitled',
             artist:
-              track.track_producer_id?.first_name ||
-              track.track_producer_id?.email?.split('@')[0] ||
+              track.producer?.display_name ||
+              track.producer?.first_name ||
+              track.producer?.email?.split('@')[0] ||
               'Unknown Artist',
             genres: parseArrayField(track.genres),
             subGenres: parseArrayField(track.sub_genres),
@@ -110,22 +289,21 @@ export function SyncOnlyPage() {
             duration: track.duration || '3:30',
             bpm: track.bpm,
             audioUrl: track.audio_url,
-            image:
+            image_url:
               track.image_url ||
               'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
             hasStingEnding: track.has_sting_ending,
             isOneStop: track.is_one_stop,
             mp3Url: track.mp3_url,
             trackoutsUrl: track.trackouts_url,
-            hasVocals: track.has_vocals,
-            vocalsUsageType: track.vocals_usage_type,
+            hasVocals: track.has_vocals || false,
             isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id?.id || '',
-            producer: track.track_producer_id ? {
-              id: track.track_producer_id.id,
-              firstName: track.track_producer_id.first_name || '',
-              lastName: track.track_producer_id.last_name || '',
-              email: track.track_producer_id.email
+            producerId: track.track_producer_id || '',
+            producer: track.producer ? {
+              id: track.producer.id,
+              firstName: track.producer.display_name || track.producer.first_name || '',
+              lastName: '',
+              email: track.producer.email
             } : undefined,
             fileFormats: {
               stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
@@ -158,11 +336,12 @@ export function SyncOnlyPage() {
   };
 
   const handleSearch = async (filters: any) => {
-    // Convert all search terms to lowercase and remove extra spaces
+    // Convert search terms to lowercase and remove extra spaces
     const normalizedFilters = {
       ...filters,
       query: filters.query?.toLowerCase().trim(),
-      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()),
+      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()), // Convert to lowercase for database
+      subGenres: filters.subGenres?.map((sg: string) => sg.toLowerCase().trim()), // Convert to lowercase for database
       moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
     };
 
@@ -285,4 +464,4 @@ export function SyncOnlyPage() {
       )}
     </div>
   );
-} 
+}

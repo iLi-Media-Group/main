@@ -1,22 +1,316 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Sliders, Plus } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { SearchBox } from './SearchBox';
 import { TrackCard } from './TrackCard';
-import { Track, GENRES, MOODS } from '../types';
+import { Track } from '../types';
 import { parseArrayField } from '../lib/utils';
 import AIRecommendationWidget from './AIRecommendationWidget';
-
-// Inside your page component:
-<AIRecommendationWidget />
-
+import { useDynamicSearchData } from '../hooks/useDynamicSearchData';
+import { useServiceLevel } from '../hooks/useServiceLevel';
+import { logSearchFromFilters } from '../lib/searchLogger';
+import { useSynonyms } from '../hooks/useSynonyms';
+import { formatDuration } from '../utils/dateUtils';
 
 const TRACKS_PER_PAGE = 20;
 
+// World-class comprehensive search system
+interface SearchResult {
+  track: any;
+  score: number;
+  exactMatches: string[];
+  partialMatches: string[];
+  fuzzyMatches: string[];
+}
+
+function comprehensiveSearch(
+  tracks: any[], 
+  searchQuery: string, 
+  genres: string[], 
+  subGenres: string[],
+  moods: string[], 
+  subMoods: string[],
+  instruments: string[], 
+  subInstruments: string[],
+  mediaTypes: string[],
+  subMediaTypes: string[],
+  synonymsMap: any
+): SearchResult[] {
+  console.log('🔍 Comprehensive Search - Query:', searchQuery);
+  console.log('🔍 Filters - Genres:', genres, 'SubGenres:', subGenres, 'Moods:', moods, 'SubMoods:', subMoods);
+  console.log('🔍 Filters - Instruments:', instruments, 'SubInstruments:', subInstruments);
+  console.log('🔍 Filters - MediaTypes:', mediaTypes, 'SubMediaTypes:', subMediaTypes);
+  console.log('🔍 Total tracks to search:', tracks.length);
+
+  // If no search criteria, return all tracks with score 0
+  const hasSearchCriteria = searchQuery?.trim() || 
+    genres?.length || subGenres?.length || 
+    moods?.length || subMoods?.length || 
+    instruments?.length || subInstruments?.length || 
+    mediaTypes?.length || subMediaTypes?.length;
+
+  if (!hasSearchCriteria) {
+    console.log('🔍 No search criteria, returning all tracks with score 0');
+    return tracks.map(track => ({
+      track,
+      score: 0,
+      exactMatches: [],
+      partialMatches: [],
+      fuzzyMatches: []
+    }));
+  }
+
+  const query = searchQuery?.toLowerCase().trim() || '';
+
+  // Expand search terms with synonyms
+  let expandedTerms = new Set<string>();
+  
+  // Add the main query if it exists
+  if (query) {
+    expandedTerms.add(query);
+  }
+  
+  // Add all filter terms
+  [...genres, ...subGenres, ...moods, ...subMoods, ...instruments, ...subInstruments, ...mediaTypes, ...subMediaTypes]
+    .forEach(term => {
+      if (term) expandedTerms.add(term.toLowerCase());
+    });
+
+  // Add synonyms from our dictionary
+  for (let [term, syns] of Object.entries(synonymsMap || {})) {
+    const synonyms = syns as string[];
+    if (query && query.includes(term.toLowerCase())) {
+      synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
+    }
+    if (query && synonyms.some((s: string) => query.includes(s.toLowerCase()))) {
+      expandedTerms.add(term.toLowerCase());
+      synonyms.forEach((s: string) => expandedTerms.add(s.toLowerCase()));
+    }
+  }
+
+  const expandedTermsArray = Array.from(expandedTerms);
+  console.log('🔍 Expanded Terms:', expandedTermsArray);
+
+  // Fuzzy match helper (Levenshtein distance)
+  function levenshtein(a: string, b: string): number {
+    const matrix = [];
+    let i;
+    for (i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
+    }
+    let j;
+    for (j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    for (i = 1; i <= b.length; i++) {
+      for (j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            Math.min(
+              matrix[i][j - 1] + 1,   // insertion
+              matrix[i - 1][j] + 1    // deletion
+            )
+          );
+        }
+      }
+    }
+    return matrix[b.length][a.length];
+  }
+
+  function isFuzzyMatch(str: string, term: string): boolean {
+    return levenshtein(str.toLowerCase(), term.toLowerCase()) <= 2; // allow 2 edits
+  }
+
+  // Score and categorize tracks
+  const results: SearchResult[] = tracks.map(track => {
+  let score = 0;
+    const exactMatches: string[] = [];
+    const partialMatches: string[] = [];
+    const fuzzyMatches: string[] = [];
+
+    // Create searchable text from all track fields
+    const searchableText = [
+      track.title,
+      track.artist,
+      track.genres,
+      track.sub_genres,
+      Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+      Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+      Array.isArray(track.media_usage) ? track.media_usage.join(" ") : track.media_usage
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    // Check each expanded term against the track
+    for (let term of expandedTermsArray) {
+      // Check sub-genres (highest priority - 20 points)
+      if (track.sub_genres && track.sub_genres.toLowerCase().includes(term)) {
+        score += 20;
+        exactMatches.push(`sub-genre: ${term}`);
+      }
+      // Check media usage (high priority - 12 points)
+      else if (Array.isArray(track.media_usage) && track.media_usage.some((mu: string) => mu.toLowerCase().includes(term))) {
+        score += 12;
+        exactMatches.push(`media-usage: ${term}`);
+      }
+      // Check genres (medium priority - 6 points)
+      else if (track.genres && track.genres.toLowerCase().includes(term)) {
+        score += 6;
+        exactMatches.push(`genre: ${term}`);
+      }
+      // Check moods (medium priority - 6 points)
+      else if (Array.isArray(track.moods) && track.moods.some((m: string) => m.toLowerCase().includes(term))) {
+        score += 6;
+        exactMatches.push(`mood: ${term}`);
+      }
+      // Check instruments (medium priority - 6 points)
+      else if (Array.isArray(track.instruments) && track.instruments.some((i: string) => i.toLowerCase().includes(term))) {
+        score += 6;
+        exactMatches.push(`instrument: ${term}`);
+      }
+      // Check other fields (lower priority - 3 points)
+      else if (searchableText.includes(term)) {
+        score += 3;
+        exactMatches.push(`other: ${term}`);
+      }
+      // Check partial matches (lower priority - 2 points)
+      else if (searchableText.split(" ").some(word => word.startsWith(term))) {
+        score += 2;
+        partialMatches.push(term);
+      }
+      // Check fuzzy matches (lowest priority - 1 point)
+      else if (searchableText.split(" ").some(word => isFuzzyMatch(word, term))) {
+        score += 1;
+        fuzzyMatches.push(term);
+      }
+    }
+
+    return {
+      track,
+      score,
+      exactMatches,
+      partialMatches,
+      fuzzyMatches
+    };
+  });
+
+  // Sort by score (highest first)
+  results.sort((a, b) => b.score - a.score);
+
+  console.log('🔍 Search Results - Total:', results.length);
+  console.log('🔍 Top 3 results:', results.slice(0, 3).map(r => ({
+    title: r.track.title,
+    score: r.score,
+    exactMatches: r.exactMatches.length,
+    partialMatches: r.partialMatches.length,
+    fuzzyMatches: r.fuzzyMatches.length
+  })));
+
+  return results;
+}
+
+// Simple search function for testing
+function simpleSearch(tracks: any[], searchQuery: string): any[] {
+  if (!searchQuery || !searchQuery.trim()) {
+    return tracks;
+  }
+
+  const query = searchQuery.toLowerCase().trim();
+  console.log('🔍 Simple Search - Query:', query);
+  console.log('🔍 Total tracks to search:', tracks.length);
+
+  const results = tracks.filter(track => {
+    // Create searchable text from all track fields
+    const searchableText = [
+      track.title,
+      track.artist,
+      track.genres,
+      track.sub_genres,
+      Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+      Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+      Array.isArray(track.media_usage) ? track.media_usage.join(" ") : track.media_usage
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    return searchableText.includes(query);
+  });
+
+  console.log('🔍 Simple Search Results - Found:', results.length);
+  console.log('🔍 Sample results:', results.slice(0, 3).map(t => ({ title: t.title, genres: t.genres, sub_genres: t.sub_genres })));
+
+  return results;
+}
+
+// Categorize tracks into Exact / Partial / Other based on search results
+function categorizeTracks(searchResults: SearchResult[]): {
+  exact: any[];
+  partial: any[];
+  other: any[];
+} {
+  const exact: any[] = [];
+  const partial: any[] = [];
+  const other: any[] = [];
+
+  searchResults.forEach(result => {
+    const track = result.track;
+    
+    // Exact matches: High score with exact matches
+    if (result.score >= 10 && result.exactMatches.length > 0) {
+      exact.push(track);
+    }
+    // Partial matches: Medium score with partial or fuzzy matches
+    else if (result.score >= 3 && (result.partialMatches.length > 0 || result.fuzzyMatches.length > 0)) {
+      partial.push(track);
+    }
+    // Other: Low score or no specific matches
+    else {
+      other.push(track);
+    }
+  });
+
+  console.log('📊 Categorization Results:', {
+    exact: exact.length,
+    partial: partial.length,
+    other: other.length,
+    total: searchResults.length
+  });
+
+  return { exact, partial, other };
+}
+
+
+
+// Helper function to get persistent filter preferences
+const getPersistentFilters = (): any => {
+  try {
+    const stored = localStorage.getItem('mybeatfi_search_filters');
+    return stored ? JSON.parse(stored) : {
+      excludeUnclearedSamples: false,
+      syncOnly: undefined,
+      hasVocals: undefined
+    };
+  } catch {
+    return {
+      excludeUnclearedSamples: false,
+      syncOnly: undefined,
+      hasVocals: undefined
+    };
+  }
+};
+
+// Helper function to save persistent filter preferences
+const savePersistentFilters = (filters: any): void => {
+  try {
+    localStorage.setItem('mybeatfi_search_filters', JSON.stringify(filters));
+  } catch (error) {
+    console.error('Failed to save filter preferences:', error);
+  }
+};
+
 export function CatalogPage() {
-  const { user, accountType } = useAuth();
+  const { user, accountType } = useUnifiedAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -24,39 +318,51 @@ export function CatalogPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState<any>(null);
   const [membershipActive, setMembershipActive] = useState(true);
   const [currentFilters, setCurrentFilters] = useState<any>(null);
 
-  useEffect(() => {
-    // Get search params
-    const query = searchParams.get('q')?.toLowerCase().trim() || '';
-    const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
-    const moods = searchParams.get('moods')?.split(',').filter(Boolean) || [];
-    const minBpm = searchParams.get('minBpm');
-    const maxBpm = searchParams.get('maxBpm');
-    const trackId = searchParams.get('track');
 
-    // Create filters object
-    const filters = {
-      query,
-      genres,
-      moods,
-      minBpm: minBpm ? parseInt(minBpm) : undefined,
-      maxBpm: maxBpm ? parseInt(maxBpm) : undefined,
-      trackId
+  const { synonyms: synonymsMap, loading: synonymsLoading } = useSynonyms();
+
+     useEffect(() => {
+     // Get search params
+     const query = searchParams.get('q')?.toLowerCase().trim() || '';
+    const genresParam = searchParams.get('genres')?.split(',').filter(Boolean) || [];
+    const subGenresParam = searchParams.get('subGenres')?.split(',').filter(Boolean) || [];
+    const moodsParam = searchParams.get('moods')?.split(',').filter(Boolean) || [];
+    const instrumentsParam = searchParams.get('instruments')?.split(',').filter(Boolean) || [];
+    const mediaTypesParam = searchParams.get('mediaTypes')?.split(',').filter(Boolean) || [];
+    const syncOnlyParam = searchParams.get('syncOnly');
+    const hasVocalsParam = searchParams.get('hasVocals');
+    const excludeUnclearedSamplesParam = searchParams.get('excludeUnclearedSamples');
+    const minBpmParam = searchParams.get('minBpm');
+    const maxBpmParam = searchParams.get('maxBpm');
+
+    // Get persistent filters
+    const persistentFilters = getPersistentFilters();
+
+    // Combine URL params with persistent filters
+    const combinedFilters = {
+       query,
+      genres: genresParam,
+      subGenres: subGenresParam,
+      moods: moodsParam,
+      instruments: instrumentsParam,
+      mediaTypes: mediaTypesParam,
+      syncOnly: syncOnlyParam !== null ? syncOnlyParam === 'true' : persistentFilters.syncOnly,
+      hasVocals: hasVocalsParam !== null ? hasVocalsParam === 'true' : persistentFilters.hasVocals,
+      excludeUnclearedSamples: excludeUnclearedSamplesParam !== null ? excludeUnclearedSamplesParam === 'true' : persistentFilters.excludeUnclearedSamples,
+      minBpm: minBpmParam ? parseInt(minBpmParam) : undefined,
+      maxBpm: maxBpmParam ? parseInt(maxBpmParam) : undefined
     };
 
-    // Reset page and tracks when filters change
-    setPage(1);
-    setTracks([]);
-    setHasMore(true);
-    setCurrentFilters(filters);
-
-    // Fetch tracks with filters
-    fetchTracks(filters, 1);
-  }, [searchParams]);
+    setCurrentFilters(combinedFilters);
+    fetchTracks(combinedFilters, 1);
+  }, [searchParams, synonymsLoading]);
 
   const fetchTracks = async (filters?: any, currentPage: number = 1) => {
+    console.log('🎵 fetchTracks called with filters:', filters);
     try {
       if (currentPage === 1) {
         setLoading(true);
@@ -64,138 +370,226 @@ export function CatalogPage() {
         setLoadingMore(true);
       }
 
-      let query = supabase
-        .from('tracks')
-        .select(`
-          id,
-          title,
-          artist,
-          genres,
-          sub_genres,
-          moods,
-          bpm,
-          audio_url,
-          image_url,
-          has_sting_ending,
-          is_one_stop,
-          duration,
-          mp3_url,
-          trackouts_url,
-          has_vocals,
-          vocals_usage_type,
-          is_sync_only,
-          track_producer_id:profiles!track_producer_id (
+      // UNIFIED PIPELINE: Always fetch tracks with basic constraints
+             let query = supabase
+         .from('tracks')
+         .select(`
+           id,
+           title,
+           artist,
+           genres,
+           sub_genres,
+           moods,
+           instruments,
+           media_usage,
+           bpm,
+           audio_url,
+           image_url,
+           has_sting_ending,
+           is_one_stop,
+           duration,
+           mp3_url,
+           trackouts_url,
+           stems_url,
+           has_vocals,
+           vocals_usage_type,
+           is_sync_only,
+           track_producer_id,
+          created_at,
+          contains_loops,
+          contains_samples,
+          contains_splice_loops,
+          samples_cleared,
+           producer:profiles(
             id,
             first_name,
             last_name,
+            display_name,
             email
           )
-        `)
-        .is('deleted_at', null);
+         `)
+         .is('deleted_at', null);
 
-      // If a specific track ID is provided, fetch only that track
-      if (filters?.trackId) {
-        query = query.eq('id', filters.trackId);
-      } else {
-        // Build search conditions
-        const searchConditions = [];
-
-        if (filters?.query) {
-          // Text search
-          searchConditions.push(`title.ilike.%${filters.query}%`);
-          searchConditions.push(`artist.ilike.%${filters.query}%`);
-          
-          // Search in comma-separated strings
-          searchConditions.push(`genres.ilike.%${filters.query}%`);
-          searchConditions.push(`moods.ilike.%${filters.query}%`);
-        }
-
-        // Genre filters
-        if (filters?.genres?.length > 0) {
-          filters.genres.forEach((genre: string) => {
-            searchConditions.push(`genres.ilike.%${genre}%`);
-          });
-        }
-
-        // Mood filters
-        if (filters?.moods?.length > 0) {
-          filters.moods.forEach((mood: string) => {
-            searchConditions.push(`moods.ilike.%${mood}%`);
-          });
-        }
-
-        // Apply search conditions
-        if (searchConditions.length > 0) {
-          query = query.or(searchConditions.join(','));
-        }
-
-        // Apply BPM filters
-        if (filters?.minBpm !== undefined) {
-          query = query.gte('bpm', filters.minBpm);
-        }
-        if (filters?.maxBpm !== undefined) {
-          query = query.lte('bpm', filters.maxBpm);
-        }
-
-        // Add pagination
-        const from = (currentPage - 1) * TRACKS_PER_PAGE;
-        const to = from + TRACKS_PER_PAGE - 1;
-        query = query.range(from, to);
-
-        // Order by most recent first
-        query = query.order('created_at', { ascending: false });
+      // Apply basic filters (always applied)
+         if (filters?.syncOnly === true) {
+           query = query.eq('is_sync_only', true);
+         }
+         
+         if (filters?.hasVocals === true) {
+           query = query.eq('has_vocals', true);
       }
 
-      const { data, error } = await query;
+      if (filters?.excludeUnclearedSamples === true) {
+        // Exclude tracks that contain uncleared samples, loops, or Splice loops
+        query = query.eq('contains_samples', false)
+                    .eq('contains_loops', false)
+                    .eq('contains_splice_loops', false);
+      }
 
-      if (error) throw error;
+      if (filters?.minBpm !== undefined) {
+        query = query.gte('bpm', filters.minBpm);
+      }
+      if (filters?.maxBpm !== undefined) {
+        query = query.lte('bpm', filters.maxBpm);
+      }
 
-      if (data) {
-        const formattedTracks = data
-          .filter(track => track && track.id)
-          .map(track => ({
+      // Get ALL tracks that match basic filters
+           const { data: allTracks, error } = await query;
+
+      console.log('🎵 Supabase query result:', {
+        dataCount: allTracks?.length || 0,
+        error: error?.message,
+        hasData: !!allTracks,
+        firstTrack: allTracks?.[0] ? {
+          id: allTracks[0].id,
+          title: allTracks[0].title,
+          genres: allTracks[0].genres
+        } : null
+      });
+
+      if (error) {
+        console.error('🎵 Supabase query error:', error);
+        throw error;
+      }
+
+           if (allTracks) {
+        // COMPREHENSIVE SEARCH: Process through world-class search system
+        const searchQuery = filters?.query || '';
+        const genres = filters?.genres || [];
+        const subGenres = filters?.subGenres || [];
+        const moods = filters?.moods || [];
+        const subMoods: string[] = []; // TODO: Add sub-moods support
+        const instruments = filters?.instruments || [];
+        const subInstruments: string[] = []; // TODO: Add sub-instruments support
+        const mediaTypes = filters?.mediaTypes || [];
+        const subMediaTypes: string[] = []; // TODO: Add sub-media-types support
+
+        console.log('🎵 About to call comprehensiveSearch with:', {
+          allTracksCount: allTracks.length,
+          searchQuery,
+          genres,
+          subGenres,
+          moods,
+          subMoods,
+          instruments,
+          subInstruments,
+          mediaTypes,
+          subMediaTypes,
+          synonymsMapKeys: Object.keys(synonymsMap || {})
+        });
+
+        // Debug: Show some sample tracks
+        if (allTracks.length > 0) {
+          console.log('🎵 Sample tracks:', allTracks.slice(0, 3).map(t => ({
+            id: t.id,
+            title: t.title,
+            genres: t.genres,
+            sub_genres: t.sub_genres,
+            moods: t.moods,
+            instruments: t.instruments,
+            media_usage: t.media_usage,
+            track_producer_id: t.track_producer_id,
+            producer: t.producer
+          })));
+        }
+
+        // Apply comprehensive search
+        const searchResults = comprehensiveSearch(
+          allTracks,
+          searchQuery,
+          genres,
+          subGenres,
+          moods,
+          subMoods,
+          instruments,
+          subInstruments,
+          mediaTypes,
+          subMediaTypes,
+          synonymsMap || {}
+        );
+
+        // Create a map of track IDs to search results for easy lookup
+        const searchResultMap = new Map();
+        searchResults.forEach(result => {
+          searchResultMap.set(result.track.id, result);
+        });
+
+        // Extract tracks and sort by score (already sorted by comprehensiveSearch)
+        let processedTracks = searchResults.map(result => result.track);
+
+        // If no search criteria, sort by date (newest first)
+        if (!searchQuery?.trim() && !genres?.length && !subGenres?.length && 
+            !moods?.length && !subMoods?.length && !instruments?.length && 
+            !subInstruments?.length && !mediaTypes?.length && !subMediaTypes?.length) {
+          processedTracks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        }
+
+        // Apply pagination AFTER processing
+        const startIndex = (currentPage - 1) * TRACKS_PER_PAGE;
+        const endIndex = startIndex + TRACKS_PER_PAGE;
+        const paginatedTracks = processedTracks.slice(startIndex, endIndex);
+
+        // Format tracks for display
+        const formattedTracks = paginatedTracks.map(track => {
+          console.log('🎵 Raw track data:', {
             id: track.id,
-            title: track.title || 'Untitled',
-            artist:
-              track.track_producer_id?.first_name ||
-              track.track_producer_id?.email?.split('@')[0] ||
-              'Unknown Artist',
-            genres: parseArrayField(track.genres),
-            subGenres: parseArrayField(track.sub_genres),
-            moods: parseArrayField(track.moods),
-            duration: track.duration || '3:30',
-            bpm: track.bpm,
-            audioUrl: track.audio_url,
-            image:
-              track.image_url ||
-              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
-            hasStingEnding: track.has_sting_ending,
-            isOneStop: track.is_one_stop,
-            mp3Url: track.mp3_url,
-            trackoutsUrl: track.trackouts_url,
-            hasVocals: track.has_vocals,
-            vocalsUsageType: track.vocals_usage_type,
-            isSyncOnly: track.is_sync_only || false,
-            producerId: track.track_producer_id?.id || '',
-            producer: track.track_producer_id ? {
-              id: track.track_producer_id.id,
-              firstName: track.track_producer_id.first_name || '',
-              lastName: track.track_producer_id.last_name || '',
-              email: track.track_producer_id.email
-            } : undefined,
-            fileFormats: {
-              stereoMp3: { format: ['MP3'], url: track.mp3_url || '' },
-              trackouts: { format: ['WAV'], url: track.trackouts_url || '' },
-              stems: { format: ['WAV'], url: track.stems_url || '' },
-              stemsWithVocals: { format: ['WAV'], url: track.stems_url || '' }
-            },
-            pricing: {
-              stereoMp3: 0,
-              stems: 0,
-              stemsWithVocals: 0
-            },
-            leaseAgreementUrl: ''
-          }));
+            title: track.title,
+            track_producer_id: track.track_producer_id,
+            producer: track.producer,
+            producerType: typeof track.producer,
+            producerKeys: track.producer ? Object.keys(track.producer) : null
+          });
+          const producer = track.producer;
+            return {
+              id: track.id,
+              title: track.title || 'Untitled',
+            artist: producer?.display_name || producer?.first_name || producer?.email?.split('@')[0] || 'Unknown Artist',
+              genres: parseArrayField(track.genres),
+              subGenres: parseArrayField(track.sub_genres),
+              moods: parseArrayField(track.moods),
+            instruments: parseArrayField(track.instruments),
+            mediaUsage: parseArrayField(track.media_usage),
+              duration: formatDuration(track.duration || '3:30'),
+              bpm: track.bpm,
+              audioUrl: track.audio_url,
+            image_url: track.image_url || 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop',
+              hasStingEnding: track.has_sting_ending,
+              isOneStop: track.is_one_stop,
+              mp3Url: track.mp3_url,
+              trackoutsUrl: track.trackouts_url,
+              stemsUrl: track.stems_url,
+              hasVocals: track.has_vocals || false,
+              isSyncOnly: track.is_sync_only || false,
+              producerId: track.track_producer_id || '',
+            producer: producer ? {
+              id: producer.id,
+              firstName: producer.display_name || producer.first_name || '',
+              lastName: '',
+              email: producer.email || '',
+              } : undefined,
+              fileFormats: {
+              stereoMp3: {
+                format: ['mp3'],
+                url: track.mp3_url || ''
+              },
+              stems: {
+                format: ['wav', 'aiff'],
+                url: track.trackouts_url || ''
+              },
+              stemsWithVocals: {
+                format: ['wav', 'aiff'],
+                url: track.stems_url || ''
+              }
+              },
+              pricing: {
+                stereoMp3: 0,
+                stems: 0,
+                stemsWithVocals: 0
+              },
+            leaseAgreementUrl: '',
+            searchScore: searchResultMap.get(track.id)?.score || 0
+            };
+          });
 
         if (currentPage === 1) {
           setTracks(formattedTracks);
@@ -204,11 +598,6 @@ export function CatalogPage() {
         }
 
         setHasMore(formattedTracks.length === TRACKS_PER_PAGE);
-        
-        // If we're looking for a specific track and found it, navigate to its page
-        if (filters?.trackId && formattedTracks.length === 1) {
-          navigate(`/track/${filters.trackId}`);
-        }
       }
     } catch (error) {
       console.error('Error fetching tracks:', error);
@@ -218,26 +607,60 @@ export function CatalogPage() {
     }
   };
 
-  const handleSearch = async (filters: any) => {
-    // Convert all search terms to lowercase and remove extra spaces
-    const normalizedFilters = {
-      ...filters,
-      query: filters.query?.toLowerCase().trim(),
-      genres: filters.genres?.map((g: string) => g.toLowerCase().trim()),
-      moods: filters.moods?.map((m: string) => m.toLowerCase().trim())
-    };
+     const handleSearch = async (searchFilters: any) => {
+    console.log('🚀 handleSearch called with:', searchFilters);
+    
+     // Convert search terms to lowercase and remove extra spaces
+           const normalizedFilters = {
+        ...searchFilters,
+        query: searchFilters.query?.toLowerCase().trim(),
+      genres: searchFilters.genres?.map((g: string) => g.toLowerCase().trim()),
+      subGenres: searchFilters.subGenres?.map((sg: string) => sg.toLowerCase().trim()),
+        moods: searchFilters.moods?.map((m: string) => m.toLowerCase().trim()),
+        instruments: searchFilters.instruments?.map((i: string) => i.toLowerCase().trim()),
+        mediaTypes: searchFilters.mediaTypes?.map((mt: string) => mt.toLowerCase().trim()),
+        syncOnly: searchFilters.syncOnly,
+        hasVocals: searchFilters.hasVocals,
+        excludeUnclearedSamples: searchFilters.excludeUnclearedSamples
+      };
 
-    // Update URL with search params
-    const params = new URLSearchParams();
-    if (normalizedFilters.query) params.set('q', normalizedFilters.query);
-    if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
-    if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
-    if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
-    if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+    console.log('🚀 Normalized filters:', normalizedFilters);
 
-    // Update URL without reloading the page
-    navigate(`/catalog?${params.toString()}`, { replace: true });
-  };
+    // Save persistent filters
+    savePersistentFilters({
+      excludeUnclearedSamples: normalizedFilters.excludeUnclearedSamples,
+      syncOnly: normalizedFilters.syncOnly,
+      hasVocals: normalizedFilters.hasVocals
+    });
+
+    // Set filters for categorization
+    setFilters(normalizedFilters);
+    setCurrentFilters(normalizedFilters);
+
+         // Update URL with search params
+     const params = new URLSearchParams();
+     if (normalizedFilters.query) params.set('q', normalizedFilters.query);
+     if (normalizedFilters.genres?.length) params.set('genres', normalizedFilters.genres.join(','));
+     if (normalizedFilters.subGenres?.length) params.set('subGenres', normalizedFilters.subGenres.join(','));
+     if (normalizedFilters.moods?.length) params.set('moods', normalizedFilters.moods.join(','));
+     if (normalizedFilters.instruments?.length) params.set('instruments', normalizedFilters.instruments.join(','));
+     if (normalizedFilters.mediaTypes?.length) params.set('mediaTypes', normalizedFilters.mediaTypes.join(','));
+           if (normalizedFilters.syncOnly !== undefined) params.set('syncOnly', normalizedFilters.syncOnly.toString());
+      if (normalizedFilters.hasVocals !== undefined) params.set('hasVocals', normalizedFilters.hasVocals.toString());
+      if (normalizedFilters.excludeUnclearedSamples !== undefined) params.set('excludeUnclearedSamples', normalizedFilters.excludeUnclearedSamples.toString());
+      if (normalizedFilters.minBpm) params.set('minBpm', normalizedFilters.minBpm.toString());
+      if (normalizedFilters.maxBpm) params.set('maxBpm', normalizedFilters.maxBpm.toString());
+
+         // Update URL without reloading the page
+     navigate(`/catalog?${params.toString()}`, { replace: true });
+    
+    // IMMEDIATELY fetch tracks with the new filters
+    console.log('🚀 Calling fetchTracks immediately with:', normalizedFilters);
+    await fetchTracks(normalizedFilters, 1);
+     
+     // Log the search query to the database
+     await logSearchFromFilters(normalizedFilters);
+   };
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
@@ -246,6 +669,8 @@ export function CatalogPage() {
       fetchTracks(currentFilters, nextPage);
     }
   };
+
+
 
   const handleTrackSelect = (track: Track) => {
     navigate(`/track/${track.id}`);
@@ -304,42 +729,169 @@ export function CatalogPage() {
       )}
 
       {tracks.length === 0 ? (
-        <div className="text-center py-12 glass-card rounded-lg">
-          <p className="text-gray-400 text-lg">No tracks found matching your search criteria.</p>
+        <div className="text-center py-12">
+          <p className="text-white text-lg mb-4">No tracks found matching your criteria.</p>
+          <p className="text-gray-400">Try adjusting your search terms or filters.</p>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {tracks.map((track) =>
-              track && track.id ? (
-                <TrackCard
-                  key={track.id}
-                  track={track}
-                  onSelect={() => handleTrackSelect(track)}
-                />
-              ) : null
-            )}
-          </div>
+             <div className="space-y-8">
+               {(() => {
+            // Categorize tracks based on search criteria
+            const hasSearchCriteria = currentFilters?.query || currentFilters?.genres?.length > 0 || currentFilters?.subGenres?.length > 0 || 
+              currentFilters?.moods?.length > 0 || currentFilters?.instruments?.length > 0 || currentFilters?.mediaTypes?.length > 0;
+            
+            if (hasSearchCriteria) {
+              // When searching, categorize based on how many search terms match
+              const searchTerms = [
+                ...(currentFilters?.query ? currentFilters.query.toLowerCase().split(/\s+/) : []),
+                ...(currentFilters?.genres || []),
+                ...(currentFilters?.subGenres || []),
+                ...(currentFilters?.moods || []),
+                ...(currentFilters?.instruments || []),
+                ...(currentFilters?.mediaTypes || [])
+              ].filter(term => term.trim().length > 0);
+              
+              const exact = tracks.filter(track => {
+                // For exact match, ALL search terms must be found in the track
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                return searchTerms.every(term => trackText.includes(term.toLowerCase()));
+              });
+              
+              const partial = tracks.filter(track => {
+                // For partial match, at least one search term must match but not all
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                const matchingTerms = searchTerms.filter(term => trackText.includes(term.toLowerCase()));
+                return matchingTerms.length > 0 && matchingTerms.length < searchTerms.length;
+              });
+              
+              const other = tracks.filter(track => {
+                // Other tracks have no search term matches
+                const trackText = [
+                  track.title,
+                  track.artist,
+                  track.genres,
+                  track.subGenres,
+                  Array.isArray(track.moods) ? track.moods.join(" ") : track.moods,
+                  Array.isArray(track.instruments) ? track.instruments.join(" ") : track.instruments,
+                  Array.isArray(track.mediaUsage) ? track.mediaUsage.join(" ") : track.mediaUsage
+                ].filter(Boolean).join(" ").toLowerCase();
+                
+                return !searchTerms.some(term => trackText.includes(term.toLowerCase()));
+              });
+                 
+                 return (
+                   <>
+                     {/* Exact Matches */}
+                 {exact.length > 0 && (
+                       <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Exact Matches</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {exact.map((track: any) => (
+                                 <TrackCard
+                           key={track.id}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                           searchCategory="exact"
+                                 />
+                       ))}
+                               </div>
+                   </div>
+                 )}
+
+                 {/* No Exact Matches Message */}
+                 {exact.length === 0 && (partial.length > 0 || other.length > 0) && (
+                   <div className="mb-6 p-4 glass-card rounded-lg">
+                     <p className="text-yellow-400 text-lg font-medium">
+                       No exact matches found for your search criteria, but here are some related tracks:
+                     </p>
+                       </div>
+                     )}
+
+                     {/* Partial Matches */}
+                 {partial.length > 0 && (
+                       <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Related Tracks</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {partial.map((track: any) => (
+                                 <TrackCard
+                           key={track.id}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                           searchCategory="partial"
+                                 />
+                       ))}
+                         </div>
+                       </div>
+                     )}
+
+                     {/* Other Tracks */}
+                 {other.length > 0 && (
+                       <div>
+                     <h2 className="text-2xl font-bold text-white mb-4">Other Tracks</h2>
+                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                       {other.map((track: any) => (
+                                 <TrackCard
+                           key={track.id}
+                                   track={track}
+                                   onSelect={() => handleTrackSelect(track)}
+                           searchCategory="other"
+                                 />
+                       ))}
+                         </div>
+                       </div>
+                     )}
+                   </>
+                 );
+            } else {
+              // When not searching, all tracks go to "other" (latest tracks)
+              return (
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-4">Latest Tracks</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {tracks.map((track: any) => (
+                       <TrackCard
+                        key={track.id}
+                         track={track}
+                         onSelect={() => handleTrackSelect(track)}
+                        searchCategory="other"
+                       />
+                    ))}
+                     </div>
+                </div>
+              );
+            }
+          })()}
+               </div>
+           )}
 
           {hasMore && (
-            <div className="mt-8 text-center">
+        <div className="text-center mt-8">
               <button
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="btn-primary flex items-center justify-center mx-auto"
-              >
-                {loadingMore ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                ) : (
-                  <>
-                    <Plus className="w-5 h-5 mr-2" />
-                    Load More Tracks
-                  </>
-                )}
+            className="btn-primary"
+          >
+            {loadingMore ? 'Loading...' : 'Load More'}
               </button>
             </div>
-          )}
-        </>
       )}
     </div>
   );

@@ -35,10 +35,8 @@ export function ProducerSearch({ value, onChange, disabled = false, required = f
         return fullName.includes(searchLower) || producer.email.toLowerCase().includes(searchLower);
       });
       setFilteredProducers(filtered);
-      setShowDropdown(true);
     } else {
-      setFilteredProducers([]);
-      setShowDropdown(false);
+      setFilteredProducers(producers);
     }
   }, [searchTerm, producers]);
 
@@ -100,6 +98,7 @@ export function ProducerSearch({ value, onChange, disabled = false, required = f
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
           className="w-full pl-10 pr-10"
           placeholder="Search producers..."
           disabled={disabled}
@@ -116,8 +115,8 @@ export function ProducerSearch({ value, onChange, disabled = false, required = f
         )}
       </div>
 
-      {showDropdown && filteredProducers.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+      {showDropdown && (
+        <div className="absolute z-[9999] w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredProducers.map((producer) => (
             <button
               key={producer.id}

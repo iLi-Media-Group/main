@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Globe, Award, Users, Music, Star, Zap, Heart, Shield, Target, TrendingUp, CheckCircle, Clock, DollarSign, Users as TeamIcon } from 'lucide-react';
 import { AboutPagePhotoUpload } from './AboutPagePhotoUpload';
 import { supabase } from '../lib/supabase';
+import { VideoBackground } from './VideoBackground';
 
 interface TeamMember {
   id: string;
@@ -63,8 +64,17 @@ export function AboutPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen">
+      {/* Video Background */}
+      <VideoBackground 
+        videoUrl="https://player.vimeo.com/external/434045526.sd.mp4?s=c27eecc69a27dbc4ff2b87d38afc35f1a9e7c02d&profile_id=164&oauth2_token_id=57447761"
+        fallbackImage="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=1920&q=80"
+        page="about"
+        alt="About us background"
+      />
+      
+      <div className="relative z-10 container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-4">About MyBeatFi Sync</h1>
           <p className="text-xl text-gray-300">
@@ -158,5 +168,6 @@ export function AboutPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

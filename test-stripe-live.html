@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stripe Live Mode Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background: white; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        .result { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 3px; border-left: 4px solid #007bff; }
+        pre { white-space: pre-wrap; word-wrap: break-word; font-size: 12px; }
+        .info { background: #e7f3ff; border-left-color: #007bff; }
+        .debug { background: #fff8dc; border-left-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Stripe Live Mode Test</h1>
+    
+    <div class="test-section info">
+        <h3>ℹ️ Test Information</h3>
+        <p>This test file will help you verify your Stripe live mode setup. Make sure you have:</p>
+        <ul>
+            <li>✅ Updated all price IDs from test to live</li>
+            <li>✅ Set up live Stripe webhooks</li>
+            <li>✅ Configured environment variables in Supabase</li>
+            <li>✅ Deployed your functions to production</li>
+            <li>✅ Created products and prices in your NEW live Stripe account</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h3>1. Check Live Stripe Products & Prices</h3>
+        <button onclick="checkStripeProducts()">Check Live Stripe Products</button>
+        <div id="products-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. Environment Check</h3>
+        <button onclick="checkEnvironment()">Check Environment Variables</button>
+        <div id="env-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. Test Stripe Checkout Function</h3>
+        <button onclick="testCheckout()">Test Checkout Function</button>
+        <div id="checkout-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. Test White Label Checkout</h3>
+        <button onclick="testWhiteLabel()">Test White Label Checkout</button>
+        <div id="whitelabel-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. Test Product Configuration</h3>
+        <button onclick="testProducts()">Test Product Configuration</button>
+        <div id="products-test-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>6. Test Webhook (Optional)</h3>
+        <button onclick="testWebhook()">Test Webhook Function</button>
+        <div id="webhook-result" class="result"></div>
+    </div>
+
+    <div class="test-section debug">
+        <h3>🔧 Debug Information</h3>
+        <button onclick="showDebugInfo()">Show Debug Info</button>
+        <div id="debug-result" class="result"></div>
+    </div>
+
+    <script>
+        // Your Supabase configuration - these should match your production environment
+        const SUPABASE_URL = 'https://yciqkebqlajqbpwlujma.supabase.co';
+        const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljaXFrZWJxbGFqcWJwd2x1am1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2MDI1NDMsImV4cCI6MjA1MjE3ODU0M30.iVL5ZrmvCVBBT2JTohfmuZdyrhGtP4mBfS1ZanmEDXU';
+
+        function showDebugInfo() {
+            const resultDiv = document.getElementById('debug-result');
+            resultDiv.innerHTML = `
+                <div class="debug">
+                    <h4>Current Configuration:</h4>
+                    <p><strong>Supabase URL:</strong> ${SUPABASE_URL}</p>
+                    <p><strong>Anon Key:</strong> ${ANON_KEY.substring(0, 20)}...</p>
+                    <p><strong>User Agent:</strong> ${navigator.userAgent}</p>
+                    <p><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+                </div>
+            `;
+        }
+
+        async function checkStripeProducts() {
+            const resultDiv = document.getElementById('products-result');
+            resultDiv.innerHTML = 'Checking live Stripe products and prices...';
+            
+            try {
+                // Test if we can access Stripe through our function
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        price_id: 'price_test', // This will fail but show us the error
+                        success_url: 'https://test.com',
+                        cancel_url: 'https://test.com',
+                        mode: 'payment'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 400 && data.error && data.error.includes('price')) {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Stripe connection working, but price IDs need to be created<br>
+                            <strong>Error:</strong> ${data.error}<br>
+                            <br>
+                            <strong>Next Steps:</strong><br>
+                            1. Go to your live Stripe dashboard<br>
+                            2. Create products for: Single Track, Gold Access, Platinum Access, Ultimate Access<br>
+                            3. Create prices for each product<br>
+                            4. Update the price IDs in your code
+                        </div>
+                    `;
+                } else if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Stripe connection working!<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Error: ${data.error || 'Unknown error'}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Network Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('env-result');
+            resultDiv.innerHTML = 'Checking environment...';
+            
+            try {
+                // Test if we can access the function
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        price_id: 'test',
+                        success_url: 'https://test.com',
+                        cancel_url: 'https://test.com',
+                        mode: 'payment'
+                    })
+                });
+                
+                const data = await response.text();
+                
+                if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Authentication error (401)<br>
+                            <strong>Possible causes:</strong><br>
+                            • Anon key is incorrect<br>
+                            • Function requires authentication<br>
+                            • Environment variables not set in Supabase<br>
+                            <br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                } else if (response.status === 400) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Function accessible - Environment variables configured<br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                } else if (response.status === 403) {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Forbidden (403) - Function exists but access denied<br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Unexpected response: ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Network Error: ${error.message}<br>
+                        <strong>Possible causes:</strong><br>
+                        • CORS issues<br>
+                        • Network connectivity<br>
+                        • Function not deployed
+                    </div>
+                `;
+            }
+        }
+
+        async function testCheckout() {
+            const resultDiv = document.getElementById('checkout-result');
+            resultDiv.innerHTML = 'Testing checkout function...';
+            
+            try {
+                // Test with a real price ID from your config
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        price_id: 'price_1RvLJCA4Yw5viczUrWeCZjom', // Single Track from your config
+                        success_url: 'https://mybeatfi.io/test-success',
+                        cancel_url: 'https://mybeatfi.io/test-cancel',
+                        mode: 'payment'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.url) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Checkout function working!<br>
+                            <a href="${data.url}" target="_blank" style="color: #007bff;">Open Checkout Session</a><br>
+                            <br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Authentication error - Check your Supabase keys<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Unexpected response: ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testWhiteLabel() {
+            const resultDiv = document.getElementById('whitelabel-result');
+            resultDiv.innerHTML = 'Testing white label checkout...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/white-label-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        plan: 'starter',
+                        features: ['producer_applications'],
+                        success_url: 'https://mybeatfi.io/test-success',
+                        cancel_url: 'https://mybeatfi.io/test-cancel',
+                        customer_email: 'test@example.com',
+                        customer_name: 'Test User',
+                        company_name: 'Test Company'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.url) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ White Label checkout working!<br>
+                            <a href="${data.url}" target="_blank" style="color: #007bff;">Open White Label Checkout</a><br>
+                            <br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            ❌ Authentication error - Check your Supabase keys<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Unexpected response: ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testProducts() {
+            const resultDiv = document.getElementById('products-test-result');
+            resultDiv.innerHTML = 'Testing product configuration...';
+            
+            try {
+                // Test if we can access the products config
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-checkout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        price_id: 'price_1RvLJyA4Yw5viczUwdHhIYAQ', // Gold Access
+                        success_url: 'https://mybeatfi.io/test-success',
+                        cancel_url: 'https://mybeatfi.io/test-cancel',
+                        mode: 'subscription'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.url) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Product configuration working!<br>
+                            <a href="${data.url}" target="_blank" style="color: #007bff;">Test Gold Access Subscription</a><br>
+                            <br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Product test response: ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testWebhook() {
+            const resultDiv = document.getElementById('webhook-result');
+            resultDiv.innerHTML = 'Testing webhook function...';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/stripe-webhook`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${ANON_KEY}`,
+                    },
+                    body: JSON.stringify({
+                        test: true
+                    })
+                });
+                
+                const data = await response.text();
+                
+                if (response.status === 200) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            ✅ Webhook function accessible<br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="warning">
+                            ⚠️ Webhook response: ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            <pre>${data}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        ❌ Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -16,7 +16,14 @@ interface SyncBrief {
   submission_instructions: string;
   submission_email: string;
   created_at: string;
+  agent_commission_percentage?: number;
+  agent_id?: string;
   client: {
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  agent?: {
     first_name: string;
     last_name: string;
     email: string;
@@ -68,6 +75,18 @@ function BriefDetails({ brief, onClose }: BriefDetailsProps) {
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-1">Sub-Genres</h4>
                 <p className="text-white">{brief.sub_genres.join(', ')}</p>
+              </div>
+            )}
+
+            {brief.agent_commission_percentage && brief.agent_commission_percentage > 0 && (
+              <div className="md:col-span-2">
+                <h4 className="text-sm font-medium text-orange-400 mb-1">Agent Commission</h4>
+                <p className="text-lg font-semibold text-orange-400">{brief.agent_commission_percentage}%</p>
+                {brief.agent && (
+                  <p className="text-sm text-gray-400">
+                    Agent: {brief.agent.first_name} {brief.agent.last_name}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -140,6 +159,11 @@ export function OpenSyncBriefs() {
         .select(`
           *,
           client:profiles!client_id (
+            first_name,
+            last_name,
+            email
+          ),
+          agent:profiles!agent_id (
             first_name,
             last_name,
             email
@@ -297,6 +321,11 @@ export function OpenSyncBriefs() {
                     <p className="text-2xl font-bold text-white">
                       ${brief.sync_fee.toFixed(2)}
                     </p>
+                    {brief.agent_commission_percentage && brief.agent_commission_percentage > 0 && (
+                      <p className="text-sm text-orange-400 font-medium">
+                        Agent Commission: {brief.agent_commission_percentage}%
+                      </p>
+                    )}
                     <p className="text-sm text-gray-400">
                       Due {new Date(brief.end_date).toLocaleDateString()}
                     </p>

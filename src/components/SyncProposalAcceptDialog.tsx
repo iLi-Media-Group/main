@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Check, AlertTriangle, DollarSign, Calendar, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { createCheckoutSession } from '../lib/stripe';
 
 interface SyncProposalAcceptDialogProps {
@@ -17,7 +17,7 @@ export function SyncProposalAcceptDialog({
   proposal,
   onAccept
 }: SyncProposalAcceptDialogProps) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [waitingMessage, setWaitingMessage] = useState<string | null>(null);
@@ -52,26 +52,36 @@ export function SyncProposalAcceptDialog({
 
       // Only redirect to Stripe if both parties have accepted
       if (updatedProposal.status === 'accepted') {
-        // Create a checkout session for the sync fee
-        const checkoutUrl = await createCheckoutSession(
-          'price_custom',
-          'payment',
-          undefined,
-          {
+        // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
             proposal_id: proposal.id,
             amount: Math.round(proposal.sync_fee * 100),
-            description: `Sync license for "${proposal.track.title}"`,
-            payment_terms: proposal.payment_terms || 'immediate'
-          },
-          `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
-        );
-        // Redirect to checkout
-        window.location.href = checkoutUrl;
+            client_user_id: user?.id,
+            payment_terms: proposal.payment_terms || 'immediate',
+            metadata: {
+              description: `Sync license for "${proposal.track.title}"`,
+              payment_terms: proposal.payment_terms || 'immediate'
+            }
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create payment session');
+        }
+
+        const { url } = await response.json();
+        window.location.href = url;
       } else {
         // Show waiting message
         setWaitingMessage('Your acceptance has been recorded. Waiting for the producer to accept the proposal. You will be notified when payment is ready.');
-        // Fallback: reload the page to ensure UI is up to date
-        setTimeout(() => window.location.reload(), 1500);
+        // Update UI state instead of reloading
+        onAccept();
       }
     } catch (err) {
       console.error('Error accepting proposal:', err);
@@ -141,8 +151,8 @@ export function SyncProposalAcceptDialog({
       });
 
       onClose();
-      // Fallback: reload the page to ensure UI is up to date after decline
-      setTimeout(() => window.location.reload(), 1500);
+      // Update UI state instead of reloading
+      onAccept();
     } catch (err) {
       console.error('Error declining proposal:', err);
       setError(err instanceof Error ? err.message : 'Failed to decline proposal');

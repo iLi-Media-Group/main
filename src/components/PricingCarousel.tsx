@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, CreditCard, Loader2, Mail, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../stripe-config';
 import { createCheckoutSession, getUserSubscription, cancelUserSubscription } from '../lib/stripe';
@@ -114,7 +114,7 @@ function EmailCheckDialog({ isOpen, onClose, onContinue, product }: EmailCheckDi
 
 export function PricingCarousel() {
   const navigate = useNavigate();
-  const { user, refreshMembership, membershipPlan } = useAuth();
+  const { user, refreshMembership, membershipPlan } = useUnifiedAuth();
   const [loading, setLoading] = useState(false);
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);

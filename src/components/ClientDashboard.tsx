@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useStableDataFetch } from '../hooks/useStableEffect';
+import { DollarSign, BarChart3, Calendar, Music, Mic, Users, Plus, Search, Filter, Download, Eye, Edit, Trash2, Clock, FileMusic, Mic as MicIcon, Star, TrendingUp, AlertCircle, Loader2, UserCog, Check, FileText, ArrowUpDown, Tag, Layers, Hash, X, CreditCard, Layout } from 'lucide-react';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSalesRealTime, useSyncProposalsRealTime, useCustomSyncRequestsRealTime, useProfileRealTime } from '../hooks/useRealTimeUpdates';
 import { Dialog, DialogContent, DialogOverlay, DialogPortal } from './ui/dialog';
-import { createCheckoutSession, cancelUserSubscription } from '../lib/stripe';
+import { createCheckoutSession, cancelUserSubscription, resumeUserSubscription } from '../lib/stripe';
 
 import { Track } from '../types';
-import { AudioPlayer } from './AudioPlayer';
 import { calculateTimeRemaining } from '../utils/dateUtils';
+import { formatGenresForDisplay } from '../utils/genreUtils';
 import { ClientProfile } from './ClientProfile';
 import { DeleteLicenseDialog } from './DeleteLicenseDialog';
 import { EditRequestDialog } from './EditRequestDialog';
@@ -21,6 +23,10 @@ import { ProposalNegotiationDialog } from './ProposalNegotiationDialog';
 import { ProposalHistoryDialog } from './ProposalHistoryDialog';
 import { useSignedUrl } from '../hooks/useSignedUrl';
 import { requestLicenseRenewal, completeRenewal } from '../api/renewal';
+import DiscountCodesSection from './DiscountCodesSection';
+import { AudioPlayer } from './AudioPlayer';
+import { FavoritedPlaylists } from './FavoritedPlaylists';
+import { Following } from './Following';
 
 // Track Image Component with Signed URL
 const TrackImage = ({ imageUrl, title, className, onClick }: { 
@@ -29,6 +35,9 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   className: string; 
   onClick?: () => void;
 }) => {
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 2; // Limit retries to avoid infinite loops
+
   // If it's already a public URL (like Unsplash), use it directly
   if (imageUrl && imageUrl.startsWith('https://')) {
     return (
@@ -48,6 +57,17 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   // For file paths, use signed URL with hardcoded bucket name
   const { signedUrl, loading, error } = useSignedUrl('track-images', imageUrl);
 
+  // Retry logic for failed signed URLs
+  useEffect(() => {
+    if (error && retryCount < maxRetries) {
+      const timer = setTimeout(() => {
+        setRetryCount(prev => prev + 1);
+      }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+      
+      return () => clearTimeout(timer);
+    }
+  }, [error, retryCount]);
+
   if (loading) {
     return (
       <div className={`${className} bg-white/5 flex items-center justify-center`}>
@@ -63,6 +83,10 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
         alt={title}
         className={className}
         onClick={onClick}
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&auto=format&fit=crop';
+        }}
       />
     );
   }
@@ -81,19 +105,21 @@ const TrackImage = ({ imageUrl, title, className, onClick }: {
   );
 };
 
-// Audio Player Component with Signed URL
+// Audio Player Component with Signed URL and Spotify support
 const AudioPlayerWithSignedUrl = ({ 
   audioUrl, 
   title, 
   isPlaying, 
   onToggle, 
-  size = "md" 
+  size = "md",
+  track
 }: { 
   audioUrl: string; 
   title: string; 
   isPlaying: boolean; 
   onToggle: () => void; 
   size?: "sm" | "md" | "lg";
+  track?: any;
 }) => {
   // Add defensive checks for props
   if (!audioUrl || !title || typeof onToggle !== 'function') {
@@ -103,28 +129,6 @@ const AudioPlayerWithSignedUrl = ({
         <p className="text-red-400 text-sm">Audio unavailable</p>
       </div>
     );
-  }
-
-  // If it's already a public URL, use it directly
-  if (audioUrl && audioUrl.startsWith('https://')) {
-    try {
-      return (
-        <AudioPlayer
-          src={audioUrl}
-          title={title}
-          isPlaying={isPlaying}
-          onToggle={onToggle}
-          size={size}
-        />
-      );
-    } catch (error) {
-      console.error('Error rendering AudioPlayer with public URL:', error);
-      return (
-        <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
-          <p className="text-red-400 text-sm">Audio unavailable</p>
-        </div>
-      );
-    }
   }
 
   // For file paths, use signed URL with hardcoded bucket name
@@ -147,24 +151,20 @@ const AudioPlayerWithSignedUrl = ({
     );
   }
 
-  try {
-    return (
-      <AudioPlayer
-        src={signedUrl}
-        title={title}
-        isPlaying={isPlaying}
-        onToggle={onToggle}
-        size={size}
-      />
-    );
-  } catch (error) {
-    console.error('Error rendering AudioPlayer with signed URL:', error);
-    return (
-      <div className="flex items-center justify-center h-16 bg-red-500/10 rounded-lg">
-        <p className="text-red-400 text-sm">Audio unavailable</p>
-      </div>
-    );
-  }
+  // Generate a unique audioId for this player
+  const audioId = track ? `track-${track.id}` : `temp-${Date.now()}`;
+
+  return (
+    <AudioPlayer
+      src={signedUrl}
+      title={title}
+      isPlaying={isPlaying}
+      onToggle={onToggle}
+      size={size}
+      audioId={audioId}
+      trackId={track?.id}
+    />
+  );
 };
 
 interface License {
@@ -315,15 +315,47 @@ function hasPendingAction(proposal: SyncProposal, userId: string): boolean {
 // Add this function near the other handlers
 const handleDownloadSupabase = async (bucket: string, path: string, filename: string) => {
   try {
-    const decodedPath = decodeURIComponent(path);
-    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(decodedPath, 60);
+    // Clean the path to remove any URL encoding or full URLs
+    let cleanPath = path;
+    
+    // Remove full URLs and extract just the path
+    if (path.includes('http')) {
+      cleanPath = path.replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '');
+      cleanPath = cleanPath.replace(/\?.*$/, ''); // Remove query parameters
+    }
+    
+    // Remove bucket prefix if present
+    cleanPath = cleanPath.replace(new RegExp(`^${bucket}/`), '');
+    
+    // Decode URI components
+    cleanPath = decodeURIComponent(cleanPath);
+    
+    console.log('Downloading from bucket:', bucket, 'path:', cleanPath);
+    
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(cleanPath, 60);
     if (data?.signedUrl) {
-      const link = document.createElement('a');
-      link.href = data.signedUrl;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // For MP3 files, use fetch to force download instead of letting browser play
+      if (filename.toLowerCase().endsWith('.mp3')) {
+        const response = await fetch(data.signedUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } else {
+        // For other files, use the original method
+        const link = document.createElement('a');
+        link.href = data.signedUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } else {
       console.error('Download failed. Error:', error);
       alert('Download failed. Please check your license or contact support.');
@@ -395,8 +427,24 @@ const getPlanLevel = (plan: string): number => {
   };
 
     export function ClientDashboard() {
-  const { user, membershipPlan, refreshMembership } = useAuth();
+  const { user, membershipPlan, refreshMembership, accountType, profile } = useUnifiedAuth();
   const navigate = useNavigate();
+  // Show PITCH badge if active (non-blocking)
+  useEffect(() => {
+    (async () => {
+      try {
+        const mod = await import('../lib/pitch');
+        mod.showPitchBadgeIfActive();
+      } catch {}
+    })();
+  }, []);
+  
+  // Redirect agents to agent dashboard
+  useEffect(() => {
+    if (accountType === 'agent') {
+      navigate('/agent/dashboard', { replace: true });
+    }
+  }, [accountType, navigate]);
   const [searchParams] = useSearchParams();
   const [licenses, setLicenses] = useState<License[]>([]);
   const [favorites, setFavorites] = useState<Track[]>([]);
@@ -407,7 +455,6 @@ const getPlanLevel = (plan: string): number => {
   const [sortField, setSortField] = useState<'renewal' | 'title' | 'genre' | 'bpm'>('renewal');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedGenre, setSelectedGenre] = useState('');
-  const [profile, setProfile] = useState<{ first_name?: string, email: string } | null>(null);
   const [userStats, setUserStats] = useState<UserStats>({
     totalLicenses: 0,
     remainingLicenses: 0,
@@ -457,28 +504,49 @@ const getPlanLevel = (plan: string): number => {
   // Add state for payment loading and error
   const [paymentLoadingId, setPaymentLoadingId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [cancelDowngradeLoading, setCancelDowngradeLoading] = useState(false);
+  const [cancelDowngradeError, setCancelDowngradeError] = useState<string | null>(null);
+  const [cancelDowngradeSuccess, setCancelDowngradeSuccess] = useState(false);
 
-  useEffect(() => {
-    if (user) {
+  // Use stable effect to prevent unwanted refreshes
+  useStableDataFetch(
+    async () => {
       // Refresh membership info first to ensure we have the latest data
-      refreshMembership().then(() => {
-        fetchDashboardData();
-        fetchSyncProposals();
-      });
-    }
-  }, [user]);
-
-  // Periodic refresh of membership plan (every 30 seconds)
-  useEffect(() => {
-    if (!user) return;
-
-    const interval = setInterval(async () => {
-      console.log('Performing periodic membership refresh...');
       await refreshMembership();
-    }, 30000); // 30 seconds
+      fetchDashboardData();
+      fetchSyncProposals();
+    },
+    [user],
+    () => !!user
+  );
 
-    return () => clearInterval(interval);
-  }, [user]);
+  // Set up real-time subscriptions
+  const handleSalesUpdate = useCallback((payload: any) => {
+    console.log('Sales real-time update:', payload);
+    fetchDashboardData();
+  }, []);
+
+  const handleSyncProposalsUpdate = useCallback((payload: any) => {
+    console.log('Sync proposals real-time update:', payload);
+    fetchSyncProposals();
+  }, []);
+
+  const handleCustomSyncUpdate = useCallback((payload: any) => {
+    console.log('Custom sync real-time update:', payload);
+    fetchDashboardData();
+  }, []);
+
+  const handleProfileUpdate = useCallback((payload: any) => {
+    console.log('Profile real-time update:', payload);
+    refreshMembership();
+    fetchDashboardData();
+  }, []);
+
+  // Initialize real-time subscriptions
+  useSalesRealTime(handleSalesUpdate);
+  useSyncProposalsRealTime(handleSyncProposalsUpdate);
+  useCustomSyncRequestsRealTime(handleCustomSyncUpdate);
+  useProfileRealTime(handleProfileUpdate);
 
   // Handle plan update success message
   useEffect(() => {
@@ -514,7 +582,15 @@ const getPlanLevel = (plan: string): number => {
     }
   }, [searchParams, user, refreshMembership]);
 
-
+  // Auto-clear cancel downgrade success message after 5 seconds
+  useEffect(() => {
+    if (cancelDowngradeSuccess) {
+      const timer = setTimeout(() => {
+        setCancelDowngradeSuccess(false);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [cancelDowngradeSuccess]);
 
   // Handle plan upgrade - direct to Stripe
   const handlePlanUpgrade = async (targetPlan: string) => {
@@ -526,13 +602,13 @@ const getPlanLevel = (plan: string): number => {
       let priceId = '';
       switch (targetPlan) {
         case 'Gold Access':
-          priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+          priceId = 'price_1RvLJyA4Yw5viczUwdHhIYAQ';
           break;
         case 'Platinum Access':
-          priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+          priceId = 'price_1RvLKcA4Yw5viczUItn56P2m';
           break;
         case 'Ultimate Access':
-          priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+          priceId = 'price_1RvLLRA4Yw5viczUCAGuLpKh';
           break;
         default:
           throw new Error('Invalid plan selected');
@@ -599,12 +675,11 @@ const getPlanLevel = (plan: string): number => {
       // Fetch profile with downgrade info
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('first_name, email, membership_plan, subscription_cancel_at_period_end, subscription_current_period_end')
+        .select('first_name, display_name, email, membership_plan, subscription_cancel_at_period_end, subscription_current_period_end')
         .eq('id', user.id)
         .single();
 
       if (profileData) {
-        setProfile(profileData);
         setPendingDowngrade(!!profileData.subscription_cancel_at_period_end);
         setDowngradeEffectiveDate(profileData.subscription_current_period_end || null);
       }
@@ -628,7 +703,7 @@ const getPlanLevel = (plan: string): number => {
             split_sheet_url,
             stems_url,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
+            producer:profiles(
               id,
               first_name,
               last_name,
@@ -655,7 +730,7 @@ const getPlanLevel = (plan: string): number => {
             duration: !Array.isArray(license.track) ? (license.track as any)?.duration || '3:30' : '3:30',
             hasStingEnding: !Array.isArray(license.track) ? (license.track as any)?.has_sting_ending || false : false,
             isOneStop: !Array.isArray(license.track) ? (license.track as any)?.is_one_stop || false : false,
-            mp3Url: !Array.isArray(license.track) ? (license.track as any)?.mp3_url || '' : '',
+            mp3Url: !Array.isArray(license.track) ? (license.track as any)?.mp3_url || (license.track as any)?.audio_url || '' : '',
             trackoutsUrl: !Array.isArray(license.track) ? (license.track as any)?.trackouts_url || '' : '',
             splitSheetUrl: !Array.isArray(license.track) ? (license.track as any)?.split_sheet_url || '' : '',
             hasVocals: !Array.isArray(license.track) ? (license.track as any)?.has_vocals : undefined,
@@ -675,6 +750,15 @@ const getPlanLevel = (plan: string): number => {
             stemsUrl: !Array.isArray(license.track) ? ((license.track as any)?.stems_url || '') : '',
           }
         }));
+        
+        // Debug logging for MP3 URLs
+        console.log('Formatted licenses with MP3 URLs:', formattedLicenses.map(license => ({
+          title: license.track.title,
+          mp3Url: license.track.mp3Url,
+          audioUrl: license.track.audioUrl,
+          hasMp3Url: !!license.track.mp3Url
+        })));
+        
         setLicenses(formattedLicenses);
       }
 
@@ -700,7 +784,7 @@ const getPlanLevel = (plan: string): number => {
             vocals_usage_type,
             sub_genres,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey (
+            producer:profiles(
               id,
               first_name,
               last_name,
@@ -708,7 +792,7 @@ const getPlanLevel = (plan: string): number => {
             )
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user?.id);
 
       if (favoritesData) {
         const formattedFavorites = favoritesData.map(f => {
@@ -775,7 +859,7 @@ const getPlanLevel = (plan: string): number => {
           trackouts_url,
           split_sheet_url,
           track_producer_id,
-          producer:profiles!tracks_track_producer_id_fkey (
+          producer:profiles(
             id,
             first_name,
             last_name,
@@ -877,22 +961,50 @@ const getPlanLevel = (plan: string): number => {
         // Fetch the selected submission for this sync request
         let mp3Url = sync.mp3_url || '';
         try {
-          const { data: selectedSub } = await supabase
-            .from('sync_submissions')
-            .select('track_url, producer_id')
+          // First try to get from sync_request_selections (more reliable)
+          const { data: selectionData } = await supabase
+            .from('sync_request_selections')
+            .select('selected_submission_id')
             .eq('sync_request_id', sync.id)
-            .eq('selected', true)
+            .eq('client_id', user.id)
             .maybeSingle();
+          
+          let selectedSub = null;
+          if (selectionData) {
+            // Get the submission details
+            const { data: subData } = await supabase
+              .from('sync_submissions')
+              .select('track_url, producer_id')
+              .eq('id', selectionData.selected_submission_id)
+              .maybeSingle();
+            selectedSub = subData;
+          } else {
+            // Fallback to sync_submissions with selected = true
+            const { data: subData } = await supabase
+              .from('sync_submissions')
+              .select('track_url, producer_id')
+              .eq('sync_request_id', sync.id)
+              .eq('selected', true)
+              .maybeSingle();
+            selectedSub = subData;
+          }
+          
           if (selectedSub && selectedSub.track_url) {
             mp3Url = selectedSub.track_url;
-            // Only update selected_producer_id if selectedSub is defined
-            await supabase
-              .from('custom_sync_requests')
-              .update({ selected_producer_id: selectedSub.producer_id })
-              .eq('id', sync.id);
+            // Update selected_producer_id if it's missing or different
+            if (sync.selected_producer_id !== selectedSub.producer_id) {
+              await supabase
+                .from('custom_sync_requests')
+                .update({ 
+                  selected_producer_id: selectedSub.producer_id,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', sync.id);
+            }
           }
         } catch (e) {
           // Ignore errors, fallback to sync.mp3_url
+          console.error('Error fetching selected submission for sync request:', sync.id, e);
         }
         formattedCustomSyncs.push({
           id: sync.id,
@@ -967,7 +1079,17 @@ const getPlanLevel = (plan: string): number => {
           last_message_at,
           client_terms_accepted,
           producer_terms_accepted,
-          client:profiles!sync_proposals_client_id_fkey(
+          use_client_contract,
+          client_contract_uploaded,
+          client_contract_url,
+          client_contract_filename,
+          client_contract_uploaded_at,
+          client_contract_signed,
+          client_contract_signed_at,
+          client_contract_signed_by,
+          client_contract_signed_url,
+          client_contract_signed_filename,
+          client:profiles(
             id,
             first_name,
             last_name,
@@ -984,7 +1106,7 @@ const getPlanLevel = (plan: string): number => {
             trackouts_url,
             split_sheet_url,
             track_producer_id,
-            producer:profiles!tracks_track_producer_id_fkey(
+            producer:profiles(
               id,
               first_name,
               last_name,
@@ -1022,6 +1144,15 @@ const getPlanLevel = (plan: string): number => {
       setSyncProposalSortField(field);
       setSyncProposalSortOrder('desc');
     }
+  };
+
+  const handleDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleRemoveFavorite = async (trackId: string) => {
@@ -1198,62 +1329,39 @@ const getPlanLevel = (plan: string): number => {
       }
       const paymentTerms = proposal.final_payment_terms || proposal.negotiated_payment_terms || proposal.payment_terms || 'immediate';
       const amount = proposal.final_amount || proposal.sync_fee;
-      // For all payment terms, redirect to Stripe checkout to pay the invoice
-      const checkoutUrl = await createCheckoutSession(
-        'price_custom',
-        'payment',
-        undefined,
-        {
+      
+      // Use stripe-invoice endpoint for sync proposal payments (handles real customers)
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           proposal_id: proposal.id,
           amount: Math.round(amount * 100),
-          description: `Sync license for "${proposal.track?.title}"`,
-          payment_terms: paymentTerms
-        },
-        `${window.location.origin}/sync-proposal/success?session_id={CHECKOUT_SESSION_ID}&proposal_id=${proposal.id}`
-      );
-      window.open(checkoutUrl, '_self');
+          client_user_id: user?.id,
+          payment_terms: paymentTerms,
+          metadata: {
+            description: `Sync license for "${proposal.track?.title}"`,
+            payment_terms: paymentTerms
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create payment session');
+      }
+
+      const { url } = await response.json();
+      window.open(url, '_self');
     } catch (err) {
       console.error('Error initiating payment:', err);
       alert('Failed to initiate payment. Please try again.');
     }
   };
 
-  // New secure download handler using Edge Function streaming
-  const handleDownload = async (trackId: string, filename: string, fileType: string = "mp3", boomBoxUrl?: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const jwt = session?.access_token;
-      if (!jwt) {
-        alert("You must be logged in to download.");
-        return;
-      }
-      let shareId = trackId;
-      if (boomBoxUrl && boomBoxUrl.includes('app.boombox.io/app/shares/')) {
-        shareId = boomBoxUrl.split('app.boombox.io/app/shares/')[1];
-      }
-      const projectRef = 'yciqkebqlajqbpwlujma';
-      const url = `https://${projectRef}.functions.supabase.co/secure-download?trackId=${encodeURIComponent(trackId)}&shareId=${encodeURIComponent(shareId)}&filename=${encodeURIComponent(filename)}&fileType=${encodeURIComponent(fileType)}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${jwt}` }
-      });
-      if (!res.ok) {
-        alert("Download failed. Please check your license or contact support.");
-        return;
-      }
-      const blob = await res.blob();
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = filename;
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-    } catch (error) {
-      alert("Download failed. Please contact support.");
-    }
-  };
+
 
 
 
@@ -1425,13 +1533,13 @@ const getPlanLevel = (plan: string): number => {
       // Find the priceId for this license type
       let priceId = '';
       if (license.license_type === 'Single Track') {
-        priceId = 'price_1RdAeZR8RYA8TFzwVH3MHECa';
+        priceId = 'price_1RvLJCA4Yw5viczUrWeCZjom';
       } else if (license.license_type === 'Gold Access') {
-        priceId = 'price_1RdAfER8RYA8TFzw7RrrNmtt';
+        priceId = 'price_1RvLJyA4Yw5viczUwdHhIYAQ';
       } else if (license.license_type === 'Platinum Access') {
-        priceId = 'price_1RdAfXR8RYA8TFzwFZyaSREP';
+        priceId = 'price_1RvLKcA4Yw5viczUItn56P2m';
       } else if (license.license_type === 'Ultimate Access') {
-        priceId = 'price_1RdAfqR8RYA8TFzwKP7zrKsm';
+        priceId = 'price_1RvLLRA4Yw5viczUCAGuLpKh';
       }
       if (!priceId) throw new Error('Unknown license type');
       const url = await createCheckoutSession(priceId, 'payment', license.track.id, { renewal: true, licenseId: license.id });
@@ -1464,10 +1572,17 @@ const getPlanLevel = (plan: string): number => {
     // In real app, get new expiry from backend or payment confirmation
     const newExpiry = new Date();
     newExpiry.setFullYear(newExpiry.getFullYear() + 1);
-    await completeRenewal({ licenseType: 'regular', licenseId: license.id, userId: user.id, newExpiryDate: newExpiry.toISOString() });
+    await completeRenewal({ licenseType: 'regular', licenseId: license.id, userId: user?.id || '', newExpiryDate: newExpiry.toISOString() });
     setShowPaymentDialog(null);
     fetchDashboardData();
   };
+
+  // Debug: Log stemsUrl for each licensed track before rendering
+  console.log('DEBUG LICENSE TRACKS:', sortedAndFilteredLicenses.map(l => ({
+    id: l.track.id,
+    title: l.track.title,
+    stemsUrl: l.track.stemsUrl
+  })));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900">
@@ -1476,12 +1591,23 @@ const getPlanLevel = (plan: string): number => {
           <div>
             <h1 className="text-3xl font-bold text-white">Your Client Dashboard</h1>
             {profile && (
-              <p className="text-xl text-gray-300 mt-2">
-                Welcome {profile.first_name || profile.email.split('@')[0]}
+              <p className="text-xl text-gray-300 mt-2 flex items-center gap-2">
+                Welcome {profile.display_name || profile.email.split('@')[0]}
+                {/* PITCH badge placeholder: visibility controlled by CSS variable or data attribute */}
+                <span id="pitch-badge" className="hidden items-center text-xs font-semibold px-2 py-0.5 rounded bg-emerald-600 text-white">
+                  PITCH
+                </span>
               </p>
             )}
           </div>
           <div className="flex items-center space-x-4">
+            <Link
+              to="/client/playlists"
+              className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+            >
+              <Music className="w-5 h-5 mr-2" />
+              Playlists
+            </Link>
             <button
               onClick={() => setShowProfileDialog(true)}
               className="flex items-center px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
@@ -1496,49 +1622,82 @@ const getPlanLevel = (plan: string): number => {
               <CreditCard className="w-5 h-5 mr-2" />
               Manage Plan
             </button>
-
-
           </div>
         </div>
 
-        <div className="mb-8 p-6 glass-card rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xl font-bold text-white">License Usage</h2>
-              </div>
-              <p className="text-gray-300">
-                <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
-                <br />
-                {membershipPlan === 'Gold Access' ? (
-                  <>
-                    You have used {userStats.totalLicenses} of your 10 monthly licenses
-                    ({userStats.remainingLicenses} remaining)
-                  </>
-                ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
-                  'You have unlimited licenses available'
-                ) : (
-                  'Single track license'
-                )}
-              </p>
-              {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
-                <p className="text-sm text-gray-400 mt-2">
-                  Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
-                  {userStats.daysUntilReset !== null && (
-                    <span className="ml-2">
-                      ({userStats.daysUntilReset} days until reset)
-                    </span>
+
+
+        {/* License Usage and Discount Codes - Side by Side */}
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-10 gap-6">
+          {/* License Usage Section - 40% less wide */}
+          <div className="lg:col-span-4 p-6 glass-card rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-bold text-white">License Usage</h2>
+                </div>
+                <p className="text-gray-300">
+                  <span className="font-semibold text-white">Current Plan: {membershipPlan}</span>
+                  <br />
+                  {membershipPlan === 'Gold Access' ? (
+                    <>
+                      You have used {userStats.totalLicenses} of your 10 monthly licenses
+                      ({userStats.remainingLicenses} remaining)
+                    </>
+                  ) : membershipPlan === 'Platinum Access' || membershipPlan === 'Ultimate Access' ? (
+                    'You have unlimited licenses available'
+                  ) : (
+                    'Single track license'
                   )}
                 </p>
-              )}
+                {userStats.currentPeriodStart && userStats.currentPeriodEnd && (
+                  <p className="text-sm text-gray-400 mt-2">
+                    Current period: {userStats.currentPeriodStart.toLocaleDateString()} - {userStats.currentPeriodEnd.toLocaleDateString()}
+                    {userStats.daysUntilReset !== null && (
+                      <span className="ml-2">
+                        ({userStats.daysUntilReset} days until reset)
+                      </span>
+                    )}
+                  </p>
+                )}
               {pendingDowngrade && downgradeEffectiveDate && (
-                <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center">
-                  <AlertCircle className="w-5 h-5 mr-2" />
-                  <span>
-                    Your account will be downgraded to <b>Single Track</b> on{' '}
-                    <b>{new Date(new Date(downgradeEffectiveDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</b>. You will retain your current plan until then.
-                  </span>
+                <div className="mt-2 p-3 bg-yellow-900/80 text-yellow-200 rounded-lg flex items-center justify-between">
+                  <div className="flex items-center">
+                    <AlertCircle className="w-5 h-5 mr-2" />
+                    <span>
+                      Your account will be downgraded to <b>Single Track</b> on{' '}
+                      <b>{new Date(new Date(downgradeEffectiveDate).getTime() + 24 * 60 * 60 * 1000).toLocaleDateString()}</b>. You will retain your current plan until then.
+                    </span>
+                  </div>
+                  <button
+                    className="ml-4 px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded transition-colors text-sm font-semibold disabled:opacity-50"
+                    disabled={cancelDowngradeLoading}
+                    onClick={async () => {
+                      if (!window.confirm('Are you sure you want to cancel your scheduled downgrade and keep your current subscription?')) return;
+                      setCancelDowngradeLoading(true);
+                      setCancelDowngradeError(null);
+                      setCancelDowngradeSuccess(false);
+                      try {
+                        await resumeUserSubscription();
+                        await refreshMembership();
+                        setPendingDowngrade(false);
+                        setCancelDowngradeSuccess(true);
+                      } catch (err: any) {
+                        setCancelDowngradeError(err.message || 'Failed to cancel downgrade.');
+                      } finally {
+                        setCancelDowngradeLoading(false);
+                      }
+                    }}
+                  >
+                    {cancelDowngradeLoading ? 'Processing...' : 'Cancel Downgrade'}
+                  </button>
                 </div>
+              )}
+              {cancelDowngradeError && (
+                <div className="mt-2 p-2 bg-red-500/10 text-red-400 rounded text-sm">{cancelDowngradeError}</div>
+              )}
+              {cancelDowngradeSuccess && (
+                <div className="mt-2 p-2 bg-green-500/10 text-green-400 rounded text-sm">Your downgrade has been canceled. Your subscription will continue as normal.</div>
               )}
             </div>
             {membershipPlan === 'Gold Access' && userStats.remainingLicenses < 3 && (
@@ -1558,6 +1717,14 @@ const getPlanLevel = (plan: string): number => {
           )}
         </div>
 
+          {/* Discount Codes Section - Side by Side */}
+          <div className="lg:col-span-6">
+            <DiscountCodesSection />
+          </div>
+        </div>
+
+
+
 
         {/* Custom Sync Requests Section */}
         <div className="mb-8 bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
@@ -1571,7 +1738,7 @@ const getPlanLevel = (plan: string): number => {
                 See Submissions
               </Link>
               <Link
-                to="/custom-sync-request"
+                to="/client/custom-sync-request"
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -1622,16 +1789,18 @@ const getPlanLevel = (plan: string): number => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRequest(request);
-                          setShowEditDialog(true);
-                        }}
-                        className="p-2 text-gray-400 hover:text-white transition-colors"
-                        title="Edit request"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
+                      {request.payment_status !== 'paid' && (
+                        <button
+                          onClick={() => {
+                            setSelectedRequest(request);
+                            setShowEditDialog(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-white transition-colors"
+                          title="Edit request"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
                       {request.status !== 'completed' && (
                         <button
                           onClick={() => handleUpdateRequest(request.id, { status: 'completed' })}
@@ -1641,25 +1810,44 @@ const getPlanLevel = (plan: string): number => {
                           <Check className="w-4 h-4" />
                         </button>
                       )}
-                      <button
-                        onClick={() => handleDeleteRequest(request.id)}
-                        className="p-2 text-gray-400 hover:text-red-400 transition-colors"
-                        title="Delete request"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {request.payment_status !== 'paid' && (
+                        <button
+                          onClick={() => handleDeleteRequest(request.id)}
+                          className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Delete request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   {request.payment_status === 'paid' && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {request.mp3_url && (
-                        <button
-                          onClick={() => handleDownloadSupabase('sync-submissions', request.mp3_url || '', `${request.project_title}_MP3.mp3`)}
-                          className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-                        >
-                          Download MP3
-                        </button>
-                      )}
+                      {/* MP3 Download - Use producer's uploaded file from sync_submissions */}
+                      {(() => {
+                        // Find the selected submission for this request
+                        const selectedSub = customSyncLicenses.find(license => 
+                          license.type === 'custom_sync' && license.data.id === request.id
+                        );
+                        
+                        if (selectedSub?.track?.mp3Url) {
+                          return (
+                            <button
+                              onClick={() => {
+                                const match = selectedSub.track.mp3Url.match(/sync-submissions\/(.+)$/);
+                                const filePath = match ? match[1] : selectedSub.track.mp3Url;
+                                handleDownloadSupabase('sync-submissions', filePath, `${request.project_title}_MP3.mp3`);
+                              }}
+                              className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+                            >
+                              Download MP3
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                      
+                      {/* Additional files - these would be uploaded separately by producer if needed */}
                       {request.trackouts_url && (
                         <button
                           onClick={() => handleDownloadSupabase('trackouts', request.trackouts_url || '', `${request.project_title}_Trackouts.zip`)}
@@ -1831,6 +2019,15 @@ const getPlanLevel = (plan: string): number => {
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
                       </span>
                     )}
+                    
+                    {/* Urgent Badge */}
+                    {proposal.is_urgent && (
+                      <div className="absolute bottom-2 right-2">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                          ⚡ URGENT
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h4 className="text-white font-medium">{proposal.track?.title || 'Untitled Track'}</h4>
@@ -1849,6 +2046,43 @@ const getPlanLevel = (plan: string): number => {
                       </div>
                     </div>
                     
+                    {/* Contract Information */}
+                    {proposal.use_client_contract && (
+                      <div className="mt-3 p-3 bg-blue-900/30 border border-blue-600/30 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center">
+                            <FileText className="w-4 h-4 text-blue-400 mr-2" />
+                            <span className="text-blue-200 text-sm font-medium">Client Contract</span>
+                          </div>
+                          {proposal.client_contract_uploaded ? (
+                            <div className="flex items-center space-x-2">
+                              {proposal.client_contract_signed ? (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-400 border border-green-500/30">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Signed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
+                                  <AlertCircle className="w-3 h-3 mr-1" />
+                                  Pending Signature
+                                </span>
+                              )}
+                              <button
+                                onClick={() => handleDownload(proposal.client_contract_url, proposal.client_contract_filename)}
+                                className="text-blue-400 hover:text-blue-300 text-xs"
+                              >
+                                <Download className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-500/20 text-gray-400 border border-gray-500/30">
+                              Not Uploaded
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap gap-2 mt-4">
                       <button
                         onClick={() => handleShowHistory(proposal)}
@@ -1888,12 +2122,20 @@ const getPlanLevel = (plan: string): number => {
                 </div>
               ) : (
                 sortedPaymentPendingProposals.map((proposal) => (
-                  <div
-                    key={proposal.id}
-                    className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
-                  >
-                    {/* Payment Pending Badge */}
-                    <div className="absolute bottom-2 right-2">
+                                          <div
+                          key={proposal.id}
+                          className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-yellow-500/20 relative"
+                        >
+                                                    {/* Urgent Badge */}
+                          {proposal.is_urgent && (
+                            <div className="absolute bottom-2 right-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-400 border border-red-500/30 animate-pulse">
+                                ⚡ URGENT
+                              </span>
+                            </div>
+                          )}
+                      {/* Payment Pending Badge */}
+                      <div className="absolute bottom-2 left-2">
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">
                         Payment Pending
                       </span>
@@ -2119,6 +2361,51 @@ const getPlanLevel = (plan: string): number => {
                       >
                         History
                       </button>
+                      
+                      {/* Download buttons for paid proposals */}
+                      {proposal.payment_status === 'paid' && proposal.track?.mp3_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm flex items-center"
+                          title="Download MP3"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download MP3
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.trackouts_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center"
+                          title="Download Trackouts"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Trackouts
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.stems_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
+                          className="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm flex items-center"
+                          title="Download Stems"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Stems
+                        </button>
+                      )}
+                      
+                      {proposal.payment_status === 'paid' && proposal.track?.split_sheet_url && (
+                        <button
+                          onClick={() => handleDownloadSupabase('split-sheets', proposal.track.split_sheet_url, `${proposal.track.title}_SplitSheet.pdf`)}
+                          className="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm flex items-center"
+                          title="Download Split Sheet"
+                        >
+                          <Download className="w-3 h-3 mr-1" />
+                          Download Split Sheet
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))
@@ -2320,7 +2607,7 @@ const getPlanLevel = (plan: string): number => {
                                   <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
                                     <span className="flex items-center">
                                       <Tag className="w-4 h-4 mr-1" />
-                                      {Array.isArray(license.track.genres) ? license.track.genres.join(', ') : license.track.genres || 'Unknown'}
+                                      {formatGenresForDisplay(license.track.genres)}
                                     </span>
                                     <span className="flex items-center">
                                       <Hash className="w-4 h-4 mr-1" />
@@ -2412,7 +2699,14 @@ const getPlanLevel = (plan: string): number => {
                                 )}
                                 {license.track.splitSheetUrl && (
                                   <button
-                                    onClick={() => handleDownloadSupabase('split-sheets', license.track.splitSheetUrl, `${license.track.title}_Splitsheets.zip`)}
+                                    onClick={() => {
+                                      // Clean the path to remove any double encoding or URL issues
+                                      const cleanPath = license.track.splitSheetUrl
+                                        .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                        .replace(/\?.*$/, '')
+                                        .replace(/^split-sheets\//, '');
+                                      handleDownloadSupabase('split-sheets', cleanPath, `${license.track.title}_SplitSheet.pdf`);
+                                    }}
                                     className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Split Sheet"
                                   >
@@ -2420,13 +2714,30 @@ const getPlanLevel = (plan: string): number => {
                                     Download Split Sheet
                                   </button>
                                 )}
-                                {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (
-                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
-                                )}
-                                {license.track.splitSheetUrl && !license.track.splitSheetUrl.endsWith('split_sheet.pdf') && (
-                                  <div className="mb-2 p-2 bg-yellow-900/80 text-yellow-200 rounded text-xs">
-                                    Warning: Split sheet path does not match expected pattern. Please check upload logic and database.
+                                {license.track.workForHireContracts && license.track.workForHireContracts.length > 0 && (
+                                  <div className="flex flex-col space-y-1">
+                                    {license.track.workForHireContracts.map((contractUrl, index) => (
+                                      <button
+                                        key={index}
+                                        onClick={() => {
+                                          // Clean the path to remove any double encoding or URL issues
+                                          const cleanPath = contractUrl
+                                            .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                            .replace(/\?.*$/, '')
+                                            .replace(/^work-for-hire-contracts\//, '');
+                                          handleDownloadSupabase('work-for-hire-contracts', cleanPath, `${license.track.title}_WorkForHire_${index + 1}.pdf`);
+                                        }}
+                                        className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                                        title={`Download Work for Hire Contract ${index + 1}`}
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Work for Hire {index + 1}
+                                      </button>
+                                    ))}
                                   </div>
+                                )}
+                                {!license.track.mp3Url && !license.track.trackoutsUrl && !license.track.splitSheetUrl && (!license.track.workForHireContracts || license.track.workForHireContracts.length === 0) && (
+                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
                                 )}
                               </div>
                               <button
@@ -2472,7 +2783,7 @@ const getPlanLevel = (plan: string): number => {
                                   <div className="flex items-center space-x-4 text-sm text-gray-400 mb-2">
                                     <span className="flex items-center">
                                       <Tag className="w-4 h-4 mr-1" />
-                                      {Array.isArray(proposal.track.genres) ? proposal.track.genres.join(', ') : proposal.track.genres || 'Unknown'}
+                                      {formatGenresForDisplay(proposal.track.genres)}
                                     </span>
                                     <span className="flex items-center">
                                       <Hash className="w-4 h-4 mr-1" />
@@ -2537,9 +2848,9 @@ const getPlanLevel = (plan: string): number => {
                                   <FileText className="w-4 h-4 mr-2" />
                                   History
                                 </button>
-                                {proposal.payment_status === 'paid' && proposal.track.mp3_url && (
+                                {(proposal.track.mp3_url || proposal.track.audio_url) && (
                                   <button
-                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url, `${proposal.track.title}_MP3.mp3`)}
+                                    onClick={() => handleDownloadSupabase('track-audio', proposal.track.mp3_url || proposal.track.audio_url, `${proposal.track.title}_MP3.mp3`)}
                                     className="flex items-center px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download MP3"
                                   >
@@ -2547,7 +2858,7 @@ const getPlanLevel = (plan: string): number => {
                                     Download MP3
                                   </button>
                                 )}
-                                {proposal.payment_status === 'paid' && proposal.track.trackouts_url && (
+                                {proposal.track.trackouts_url && (
                                   <button
                                     onClick={() => handleDownloadSupabase('trackouts', proposal.track.trackouts_url, `${proposal.track.title}_Trackouts.zip`)}
                                     className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
@@ -2557,15 +2868,57 @@ const getPlanLevel = (plan: string): number => {
                                     Download Trackouts
                                   </button>
                                 )}
-                                {proposal.payment_status === 'paid' && proposal.track.stemsUrl && (
+                                {proposal.track.stems_url && (
                                   <button
-                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stemsUrl, `${proposal.track.title}_Stems.zip`)}
+                                    onClick={() => handleDownloadSupabase('stems', proposal.track.stems_url, `${proposal.track.title}_Stems.zip`)}
                                     className="flex items-center px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
                                     title="Download Stems"
                                   >
                                     <Download className="w-4 h-4 mr-2" />
                                     Download Stems
                                   </button>
+                                )}
+                                {proposal.track.split_sheet_url && (
+                                  <button
+                                    onClick={() => {
+                                      // Clean the path to remove any double encoding or URL issues
+                                      const cleanPath = proposal.track.split_sheet_url
+                                        .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                        .replace(/\?.*$/, '')
+                                        .replace(/^split-sheets\//, '');
+                                      handleDownloadSupabase('split-sheets', cleanPath, `${proposal.track.title}_SplitSheet.pdf`);
+                                    }}
+                                    className="flex items-center px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded-lg transition-colors"
+                                    title="Download Split Sheet"
+                                  >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Download Split Sheet
+                                  </button>
+                                )}
+                                {proposal.track.work_for_hire_contracts && proposal.track.work_for_hire_contracts.length > 0 && (
+                                  <div className="flex flex-col space-y-1">
+                                    {proposal.track.work_for_hire_contracts.map((contractUrl, index) => (
+                                      <button
+                                        key={index}
+                                        onClick={() => {
+                                          // Clean the path to remove any double encoding or URL issues
+                                          const cleanPath = contractUrl
+                                            .replace(/^https?:\/\/[^\/]+\/storage\/v1\/object\/sign\/[^\/]+\//, '')
+                                            .replace(/\?.*$/, '')
+                                            .replace(/^work-for-hire-contracts\//, '');
+                                          handleDownloadSupabase('work-for-hire-contracts', cleanPath, `${proposal.track.title}_WorkForHire_${index + 1}.pdf`);
+                                        }}
+                                        className="flex items-center px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg transition-colors"
+                                        title={`Download Work for Hire Contract ${index + 1}`}
+                                      >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Work for Hire {index + 1}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                                {!proposal.track.mp3_url && !proposal.track.audio_url && !proposal.track.trackouts_url && !proposal.track.stems_url && !proposal.track.split_sheet_url && (!proposal.track.work_for_hire_contracts || proposal.track.work_for_hire_contracts.length === 0) && (
+                                  <span className="text-sm text-gray-400 italic">No files available for download</span>
                                 )}
                               </div>
                             </div>
@@ -2621,8 +2974,14 @@ const getPlanLevel = (plan: string): number => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                          >
+                            View Track
+                          </button>
                           {track.audioUrl && (
-                            <div className="w-32">
+                            <div className="w-8 h-8 flex items-center justify-center -ml-[45px]">
                               <AudioPlayerWithSignedUrl
                                 audioUrl={track.audioUrl}
                                 title={track.title}
@@ -2632,12 +2991,6 @@ const getPlanLevel = (plan: string): number => {
                               />
                             </div>
                           )}
-                          <button
-                            onClick={() => navigate(`/track/${track.id}`)}
-                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            View Track
-                          </button>
                           <button
                             onClick={() => handleRemoveFavorite(track.id)}
                             disabled={removingFavorite === track.id}
@@ -2664,6 +3017,10 @@ const getPlanLevel = (plan: string): number => {
                 </div>
               )}
             </div>
+
+            <FavoritedPlaylists />
+
+            <Following />
 
             <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-purple-500/20 p-6">
               <h3 className="text-xl font-bold text-white mb-4">New Tracks</h3>
@@ -2700,8 +3057,14 @@ const getPlanLevel = (plan: string): number => {
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => navigate(`/track/${track.id}`)}
+                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                          >
+                            View Track
+                          </button>
                           {track.audioUrl && (
-                            <div className="w-32">
+                            <div className="w-8 h-8 flex items-center justify-center -ml-[45px]">
                               <AudioPlayerWithSignedUrl
                                 audioUrl={track.audioUrl}
                                 title={track.title}
@@ -2711,12 +3074,6 @@ const getPlanLevel = (plan: string): number => {
                               />
                             </div>
                           )}
-                          <button
-                            onClick={() => navigate(`/track/${track.id}`)}
-                            className="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                          >
-                            View Track
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -2840,10 +3197,10 @@ const getPlanLevel = (plan: string): number => {
 
       {/* Membership Management Dialog */}
       {showMembershipDialog && (
-        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-purple-500/20 w-full max-w-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-white">Manage Your Membership</h3>
+        <div className="fixed inset-0 bg-blue-900/90 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white/5 backdrop-blur-md p-4 sm:p-6 rounded-xl border border-purple-500/20 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[95vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h3 className="text-lg sm:text-xl font-bold text-white">Manage Your Membership</h3>
               <button
                 onClick={() => setShowMembershipDialog(false)}
                 className="text-gray-400 hover:text-white transition-colors"
@@ -2852,7 +3209,7 @@ const getPlanLevel = (plan: string): number => {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Error Display */}
               {membershipError && (
                 <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-4">
@@ -2882,12 +3239,12 @@ const getPlanLevel = (plan: string): number => {
               {/* Available Plans */}
               <div>
                 <h4 className="text-lg font-semibold text-white mb-4">Available Plans</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {/* Gold Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Gold Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Gold Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$34.99<span className="text-sm text-gray-400">/month</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Gold Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Gold Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$34.99<span className="text-xs sm:text-sm text-gray-400">/month</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• 10 track downloads per month</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -2922,10 +3279,10 @@ const getPlanLevel = (plan: string): number => {
                   </div>
 
                   {/* Platinum Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Platinum Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Platinum Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$59.99<span className="text-sm text-gray-400">/month</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Platinum Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Platinum Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$59.99<span className="text-xs sm:text-sm text-gray-400">/month</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• Unlimited track downloads</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -2961,10 +3318,10 @@ const getPlanLevel = (plan: string): number => {
                   </div>
 
                   {/* Ultimate Access */}
-                  <div className={`bg-white/5 rounded-lg p-4 border-2 ${membershipPlan === 'Ultimate Access' ? 'border-purple-500' : 'border-transparent'}`}>
-                    <h5 className="text-lg font-semibold text-white mb-2">Ultimate Access</h5>
-                    <p className="text-3xl font-bold text-purple-400 mb-2">$499.99<span className="text-sm text-gray-400">/year</span></p>
-                    <ul className="text-sm text-gray-300 space-y-1 mb-4">
+                  <div className={`bg-white/5 rounded-lg p-3 sm:p-4 border-2 ${membershipPlan === 'Ultimate Access' ? 'border-purple-500' : 'border-transparent'}`}>
+                    <h5 className="text-base sm:text-lg font-semibold text-white mb-2">Ultimate Access</h5>
+                    <p className="text-2xl sm:text-3xl font-bold text-purple-400 mb-2">$499.99<span className="text-xs sm:text-sm text-gray-400">/year</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-300 space-y-1 mb-3 sm:mb-4">
                       <li>• Unlimited track downloads</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>
@@ -3003,15 +3360,15 @@ const getPlanLevel = (plan: string): number => {
               </div>
 
               {/* Single Track - Pay As You Go */}
-              <div className="bg-gray-900/20 border border-gray-500/20 rounded-lg p-4">
-                <h4 className="text-lg font-semibold text-white mb-2">Single Track - Pay As You Go</h4>
-                <p className="text-gray-300 text-sm mb-4">
+              <div className="bg-gray-900/20 border border-gray-500/20 rounded-lg p-3 sm:p-4">
+                <h4 className="text-base sm:text-lg font-semibold text-white mb-2">Single Track - Pay As You Go</h4>
+                <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">
                   Perfect for one-off projects. Pay only for the tracks you need.
                 </p>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
                   <div>
-                    <p className="text-2xl font-bold text-gray-400">$9.99<span className="text-sm text-gray-500">/track</span></p>
-                    <ul className="text-sm text-gray-400 space-y-1 mt-2">
+                    <p className="text-xl sm:text-2xl font-bold text-gray-400">$9.99<span className="text-xs sm:text-sm text-gray-500">/track</span></p>
+                    <ul className="text-xs sm:text-sm text-gray-400 space-y-1 mt-2">
                       <li>• Single track download</li>
                       <li>• Non-exclusive license</li>
                       <li>• Commercial use</li>

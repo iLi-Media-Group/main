@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './AuthContext';
+import { useUnifiedAuth } from './UnifiedAuthContext';
 import { supabase } from '../lib/supabase';
 
 const SiteBrandingContext = createContext<{ siteName: string | null }>({ siteName: null });
 
 export function SiteBrandingProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [siteName, setSiteName] = useState<string | null>(null);
 
   useEffect(() => {

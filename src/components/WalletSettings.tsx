@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 
 export function WalletSettings() {
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const [walletAddress, setWalletAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

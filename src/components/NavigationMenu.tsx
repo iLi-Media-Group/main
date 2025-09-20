@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Home, ShoppingCart, User, Plus, Settings, Bell } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useEffect, useRef } from 'react';
 import { fetchNotifications } from '../api/renewal';
 import { supabase } from '../lib/supabase';
 
 export function NavigationMenu() {
-  const { accountType, user } = useAuth();
+  const { accountType, user } = useUnifiedAuth();
+  const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -68,16 +69,16 @@ export function NavigationMenu() {
       case 'renewal_rejected':
       case 'renewal_complete':
         if (notification.data && notification.data.licenseId) {
-          window.location.href = `/license-agreement/${notification.data.licenseId}`;
+          navigate(`/license-agreement/${notification.data.licenseId}`);
         }
         break;
       case 'proposal_update':
         if (notification.data && notification.data.proposalId) {
-          window.location.href = `/sync-proposal/${notification.data.proposalId}`;
+          navigate(`/sync-proposal/${notification.data.proposalId}`);
         }
         break;
       case 'payout':
-        window.location.href = '/payouts';
+        navigate('/payouts');
         break;
       // Add more types as needed
       default:
@@ -91,7 +92,7 @@ export function NavigationMenu() {
       <div className="flex flex-col space-y-6">
         <div className="relative flex items-center justify-between mb-4">
           <span className="text-lg font-bold text-white">Menu</span>
-          <button className="relative" onClick={handleBellClick}>
+          <button type="button" className="relative" onClick={handleBellClick}>
             <Bell className="w-6 h-6 text-gray-300 hover:text-white transition-colors" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5">{unreadCount}</span>
@@ -166,6 +167,16 @@ export function NavigationMenu() {
         >
           <User className="w-5 h-5" />
           <span>Profile</span>
+        </Link>
+      </div>
+      {/* Add Services Directory link at the very bottom */}
+      <div className="mt-10 pt-4 border-t border-gray-800">
+        <Link 
+          to="/services" 
+          className="flex items-center space-x-3 text-purple-400 hover:text-white transition-colors font-semibold"
+        >
+          <Settings className="w-5 h-5" />
+          <span>Services Directory</span>
         </Link>
       </div>
     </nav>

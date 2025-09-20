@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Download } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useUnifiedAuth } from '../contexts/UnifiedAuthContext';
 import { useSiteBranding } from '../contexts/SiteBrandingContext';
 import { supabase } from '../lib/supabase';
 import { pdf } from '@react-pdf/renderer';
@@ -21,11 +21,17 @@ interface SyncProposalLicenseDetails {
   paymentDate: string;
   expirationDate: string;
   paymentTerms: string;
+  // Sample clearance fields
+  containsLoops?: boolean;
+  containsSamples?: boolean;
+  containsSpliceLoops?: boolean;
+  samplesCleared?: boolean;
+  sampleClearanceNotes?: string;
 }
 
 export function SyncProposalLicenseAgreement() {
   const { proposalId } = useParams();
-  const { user } = useAuth();
+  const { user } = useUnifiedAuth();
   const navigate = useNavigate();
   const [proposal, setProposal] = useState<SyncProposalLicenseDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,6 +67,11 @@ export function SyncProposalLicenseAgreement() {
             track:tracks(
               id,
               title,
+              contains_loops,
+              contains_samples,
+              contains_splice_loops,
+              samples_cleared,
+              sample_clearance_notes,
               producer:profiles!tracks_track_producer_id_fkey(
                 id,
                 first_name,
@@ -125,7 +136,13 @@ export function SyncProposalLicenseAgreement() {
             syncFee: amount,
             paymentDate: paymentDate,
             expirationDate: calculateExpirationDate(paymentDate, duration),
-            paymentTerms: paymentTerms
+            paymentTerms: paymentTerms,
+            // Sample clearance fields
+            containsLoops: data.track?.contains_loops || false,
+            containsSamples: data.track?.contains_samples || false,
+            containsSpliceLoops: data.track?.contains_splice_loops || false,
+            samplesCleared: data.track?.samples_cleared || false,
+            sampleClearanceNotes: data.track?.sample_clearance_notes || null
           });
           
           console.log('Expiration date calculation:', {
@@ -347,6 +364,29 @@ export function SyncProposalLicenseAgreement() {
             
             <p><strong>8. Indemnification:</strong> Licensee agrees to indemnify Licensor against any claims arising from Licensee's use of the composition.</p>
           </div>
+
+          {/* Sample Clearance Disclaimer */}
+          {(proposal.containsLoops || proposal.containsSamples || proposal.containsSpliceLoops) && (
+            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6 my-8">
+              <h2 className="text-xl font-bold text-yellow-300 mb-4">⚠️ SAMPLE AND LOOP CLEARANCE NOTICE</h2>
+              <p className="text-yellow-200 mb-4">
+                <strong>IMPORTANT:</strong> This track contains {[
+                  proposal.containsLoops && 'loops',
+                  proposal.containsSamples && 'samples',
+                  proposal.containsSpliceLoops && 'Splice loops'
+                ].filter(Boolean).join(', ')} that may require additional rights clearance.
+              </p>
+              <p className="text-yellow-200 mb-4">
+                <strong>Usage of a track with uncleared samples or loops can result in copyright claims, strikes and even litigation. Please be sure to clear any uncleared samples and/or loops before use of this track. This license does not constitute clearance.</strong>
+              </p>
+              {proposal.sampleClearanceNotes && (
+                <div className="mt-4 p-3 bg-yellow-500/20 rounded-lg">
+                  <h3 className="text-sm font-medium text-yellow-300 mb-2">Sample Clearance Notes:</h3>
+                  <p className="text-sm text-yellow-200 whitespace-pre-wrap">{proposal.sampleClearanceNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-8 p-4 border-t border-gray-600">
             <p><strong>Licensor:</strong> {proposal.producerName}</p>

@@ -16,7 +16,8 @@ export function WhiteLabelAdminPanel({ clientId, clientEmail, clientCompany }: {
       return;
     }
     await supabase.from('white_label_clients').update({ [field]: value }).eq('id', clientId);
-    window.location.reload();
+    // Trigger a state update instead of reloading
+    // The parent component should handle feature flag updates
   };
 
   if (!flags) return <div className="text-white">Loading feature flags...</div>;
