@@ -82,6 +82,12 @@ export function YouTubeVisualizersPage() {
       })) || [];
 
       setVisualizers(transformedData);
+      
+      // If no visualizers exist, redirect to home page
+      if (!transformedData || transformedData.length === 0) {
+        navigate('/');
+        return;
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {

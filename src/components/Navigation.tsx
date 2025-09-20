@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Guitar, 
@@ -24,6 +24,7 @@ import {
   Users,
   Video
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface NavigationProps {
   user: any;
@@ -43,6 +44,32 @@ const Navigation: React.FC<NavigationProps> = ({
   logoUrl 
 }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasVisualizers, setHasVisualizers] = useState(false);
+
+  useEffect(() => {
+    const checkVisualizers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('youtube_visualizers')
+          .select('id')
+          .eq('is_active', true)
+          .limit(1);
+
+        if (error) {
+          // If table doesn't exist or other error, don't show the link
+          setHasVisualizers(false);
+          return;
+        }
+
+        setHasVisualizers(data && data.length > 0);
+      } catch (err) {
+        // If any error occurs, don't show the link
+        setHasVisualizers(false);
+      }
+    };
+
+    checkVisualizers();
+  }, []);
 
   const getDashboardLink = () => {
     if (accountType === 'white_label') {
@@ -99,9 +126,11 @@ const Navigation: React.FC<NavigationProps> = ({
       <Link to="/sync-only" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
         <Music className="w-4 h-4 mr-2" />Sync Only Tracks
       </Link>
-      <Link to="/youtube-visualizers" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
-        <Video className="w-4 h-4 mr-2" />YouTube Visualizers
-      </Link>
+      {hasVisualizers && (
+        <Link to="/youtube-visualizers" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
+          <Video className="w-4 h-4 mr-2" />YouTube Visualizers
+        </Link>
+      )}
       <Link to="/pricing" className="flex items-center px-4 py-2 text-gray-300 hover:text-white hover:bg-blue-800/50" onClick={() => setIsMenuOpen(false)}>
         <CreditCard className="w-4 h-4 mr-2" />Pricing Plans
       </Link>
