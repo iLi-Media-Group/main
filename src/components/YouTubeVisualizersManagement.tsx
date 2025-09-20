@@ -60,6 +60,8 @@ export function YouTubeVisualizersManagement() {
   }, []);
 
   useEffect(() => {
+    console.log('Track search effect triggered:', { trackSearchTerm, tracksCount: tracks.length });
+    
     if (trackSearchTerm.trim() === '') {
       setFilteredTracks([]);
     } else {
@@ -67,6 +69,7 @@ export function YouTubeVisualizersManagement() {
         track.title.toLowerCase().includes(trackSearchTerm.toLowerCase()) ||
         track.producer.firstName.toLowerCase().includes(trackSearchTerm.toLowerCase())
       );
+      console.log('Filtered tracks:', filtered.length);
       setFilteredTracks(filtered.slice(0, 10)); // Limit to 10 results
     }
   }, [trackSearchTerm, tracks]);
@@ -163,6 +166,7 @@ export function YouTubeVisualizersManagement() {
         }
       })) || [];
 
+      console.log('Fetched tracks:', transformedData.length);
       setTracks(transformedData);
     } catch (err: any) {
       console.error('Error fetching tracks:', err);
@@ -429,7 +433,7 @@ export function YouTubeVisualizersManagement() {
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Linked Track
+                  Linked Track {tracks.length > 0 && <span className="text-xs text-gray-400">({tracks.length} tracks available)</span>}
                 </label>
                 <div className="relative" ref={trackDropdownRef}>
                   <input
@@ -442,19 +446,29 @@ export function YouTubeVisualizersManagement() {
                   />
                   
                   {/* Track dropdown */}
-                  {showTrackDropdown && filteredTracks.length > 0 && (
+                  {showTrackDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredTracks.map((track) => (
-                        <button
-                          key={track.id}
-                          type="button"
-                          onClick={() => handleTrackSelect(track)}
-                          className="w-full px-3 py-2 text-left text-white hover:bg-white/10 focus:bg-white/10 focus:outline-none"
-                        >
-                          <div className="font-medium">{track.title}</div>
-                          <div className="text-sm text-gray-400">by {track.producer.firstName}</div>
-                        </button>
-                      ))}
+                      {filteredTracks.length > 0 ? (
+                        filteredTracks.map((track) => (
+                          <button
+                            key={track.id}
+                            type="button"
+                            onClick={() => handleTrackSelect(track)}
+                            className="w-full px-3 py-2 text-left text-white hover:bg-white/10 focus:bg-white/10 focus:outline-none"
+                          >
+                            <div className="font-medium">{track.title}</div>
+                            <div className="text-sm text-gray-400">by {track.producer.firstName}</div>
+                          </button>
+                        ))
+                      ) : trackSearchTerm.trim() !== '' ? (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          No tracks found matching "{trackSearchTerm}"
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 text-gray-400 text-sm">
+                          Start typing to search tracks...
+                        </div>
+                      )}
                     </div>
                   )}
                   
