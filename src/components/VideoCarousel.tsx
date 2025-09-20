@@ -132,15 +132,15 @@ export function VideoCarousel() {
 
   const nextSlide = () => {
     setCurrentIndex((prevIndex) => {
-      const nextIndex = prevIndex + 3;
+      const nextIndex = prevIndex + 1;
       return nextIndex >= allItems.length ? 0 : nextIndex;
     });
   };
 
   const prevSlide = () => {
     setCurrentIndex((prevIndex) => {
-      const prevIndexNew = prevIndex - 3;
-      return prevIndexNew < 0 ? Math.max(0, allItems.length - 3) : prevIndexNew;
+      const prevIndexNew = prevIndex - 1;
+      return prevIndexNew < 0 ? Math.max(0, allItems.length - 1) : prevIndexNew;
     });
   };
 
@@ -212,7 +212,7 @@ export function VideoCarousel() {
       <div className="relative overflow-hidden rounded-lg">
         <div 
           className="flex transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${currentIndex * 33.333}%)` }}
+          style={{ transform: `translateX(-${currentIndex * 66.666}%)` }}
         >
           {allItems.map((item) => {
             const isStatic = 'is_static' in item && item.is_static;
@@ -221,7 +221,7 @@ export function VideoCarousel() {
             if (isStatic) {
               // Render static image item
               return (
-                <div key={item.id} className="w-1/3 flex-shrink-0 px-2">
+                <div key={item.id} className="w-2/3 flex-shrink-0 px-2">
                   <div className="relative group">
                     <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                       <img
@@ -229,14 +229,6 @@ export function VideoCarousel() {
                         alt={item.title}
                         className="w-full h-full object-cover"
                       />
-                      
-                      {/* Media Type Badge */}
-                      <div className="absolute top-4 left-4">
-                        <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                          <span>{getMediaTypeIcon(item.media_type)}</span>
-                          {getMediaTypeLabel(item.media_type)}
-                        </span>
-                      </div>
                     </div>
 
                     {/* Item Info */}
@@ -257,7 +249,7 @@ export function VideoCarousel() {
               const isPlaying = playingVideo === video.id;
 
               return (
-                <div key={video.id} className="w-1/3 flex-shrink-0 px-2">
+                <div key={video.id} className="w-2/3 flex-shrink-0 px-2">
                   <div className="relative group">
                     {/* Video Container */}
                     <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
@@ -292,13 +284,6 @@ export function VideoCarousel() {
                             </button>
                           </div>
 
-                          {/* Media Type Badge */}
-                          <div className="absolute top-4 left-4">
-                            <span className="bg-black/70 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                              <span>{getMediaTypeIcon(video.media_type)}</span>
-                              {getMediaTypeLabel(video.media_type)}
-                            </span>
-                          </div>
                         </>
                       )}
                     </div>
@@ -318,7 +303,7 @@ export function VideoCarousel() {
         </div>
 
         {/* Navigation Arrows */}
-        {allItems.length > 3 && (
+        {allItems.length > 1 && (
           <>
             <button
               onClick={prevSlide}
@@ -336,14 +321,14 @@ export function VideoCarousel() {
         )}
 
         {/* Dots Indicator */}
-        {allItems.length > 3 && (
+        {allItems.length > 1 && (
           <div className="flex justify-center mt-6 space-x-2">
-            {Array.from({ length: Math.ceil(allItems.length / 3) }).map((_, index) => (
+            {allItems.map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index * 3)}
+                onClick={() => setCurrentIndex(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  Math.floor(currentIndex / 3) === index ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
+                  index === currentIndex ? 'bg-blue-500' : 'bg-gray-600 hover:bg-gray-500'
                 }`}
               />
             ))}
