@@ -438,12 +438,7 @@ export function YouTubeVisualizersManagement() {
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Linked Track 
-                  {tracks.length > 0 ? (
-                    <span className="text-xs text-green-400">({tracks.length} tracks available)</span>
-                  ) : (
-                    <span className="text-xs text-yellow-400">(Loading tracks...)</span>
-                  )}
+                  Linked Track
                 </label>
                 <div className="relative" ref={trackDropdownRef}>
                   <input
