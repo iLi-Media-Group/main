@@ -57,6 +57,22 @@ export function YouTubeVisualizersManagement() {
   useEffect(() => {
     fetchVisualizers();
     fetchTracks();
+    
+    // Test simple track fetch
+    const testTracks = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('tracks')
+          .select('id, title')
+          .limit(5);
+        
+        console.log('Test tracks fetch:', { data, error });
+      } catch (err) {
+        console.error('Test tracks error:', err);
+      }
+    };
+    
+    testTracks();
   }, []);
 
   useEffect(() => {
@@ -156,7 +172,11 @@ export function YouTubeVisualizersManagement() {
         .eq('is_active', true)
         .order('title', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tracks:', error);
+        setError(`Failed to load tracks: ${error.message}`);
+        return;
+      }
 
       const transformedData = data?.map(track => ({
         id: track.id,
@@ -170,6 +190,7 @@ export function YouTubeVisualizersManagement() {
       setTracks(transformedData);
     } catch (err: any) {
       console.error('Error fetching tracks:', err);
+      setError(`Failed to load tracks: ${err.message}`);
     }
   };
 
@@ -433,7 +454,12 @@ export function YouTubeVisualizersManagement() {
 
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Linked Track {tracks.length > 0 && <span className="text-xs text-gray-400">({tracks.length} tracks available)</span>}
+                  Linked Track 
+                  {tracks.length > 0 ? (
+                    <span className="text-xs text-green-400">({tracks.length} tracks available)</span>
+                  ) : (
+                    <span className="text-xs text-yellow-400">(Loading tracks...)</span>
+                  )}
                 </label>
                 <div className="relative" ref={trackDropdownRef}>
                   <input
