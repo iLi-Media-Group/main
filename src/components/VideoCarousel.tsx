@@ -213,7 +213,7 @@ export function VideoCarousel() {
         <div className="overflow-hidden rounded-lg">
           <div 
             className="flex transition-transform duration-500 ease-in-out"
-            style={{ transform: `translateX(-${currentIndex * 66.666}%)` }}
+            style={{ transform: `translateX(-${currentIndex * 50}%)` }}
           >
           {allItems.map((item) => {
             const isStatic = 'is_static' in item && item.is_static;
@@ -222,7 +222,7 @@ export function VideoCarousel() {
             if (isStatic) {
               // Render static image item
               return (
-                <div key={item.id} className="w-2/3 flex-shrink-0 px-2">
+                <div key={item.id} className="w-1/2 flex-shrink-0 px-2">
                   <div className="relative group">
                     <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                       <img
@@ -250,7 +250,7 @@ export function VideoCarousel() {
               const isPlaying = playingVideo === video.id;
 
               return (
-                <div key={video.id} className="w-2/3 flex-shrink-0 px-2">
+                <div key={video.id} className="w-1/2 flex-shrink-0 px-2">
                   <div className="relative group">
                     {/* Video Container */}
                     <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
