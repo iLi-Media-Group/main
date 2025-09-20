@@ -73,7 +73,17 @@ export function YouTubeVisualizersManagement() {
         `)
         .order('display_order', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        // If table doesn't exist yet, show empty state instead of error
+        if (error.message.includes('relation "youtube_visualizers" does not exist') || 
+            error.message.includes('relation "public.youtube_visualizers" does not exist')) {
+          console.log('YouTube visualizers table not found - showing empty state');
+          setVisualizers([]);
+          setError('YouTube visualizers table not found. Please apply the database migration first.');
+          return;
+        }
+        throw error;
+      }
 
       // Transform the data to match our interface
       const transformedData = data?.map(item => ({
